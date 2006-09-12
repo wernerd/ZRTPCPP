@@ -63,7 +63,7 @@ class ZrtpUserCallback {
          * in secure mode now.
          *
          */
-        virtual void secureOn() =0;
+        virtual void secureOn(std::string) =0;
 
         /**
          * Inform user interface that security is not active any more.
