@@ -477,7 +477,7 @@ void ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
         secureParts++;
     }
     if (secureParts == 2) {
-        std::string cipher = (secrets->initKeyLen == 128) ? "AES-128" : "AES-256";
+        std::string cipher = (secrets->initKeyLen == 128) ? "AES-CM-128" : "AES-CM-256";
         zrtpUserCallback->secureOn(cipher);
         zrtpUserCallback->showSAS(secrets->sas);
     }

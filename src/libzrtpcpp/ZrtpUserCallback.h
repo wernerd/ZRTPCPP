@@ -62,8 +62,10 @@ class ZrtpUserCallback {
          * ZRTP calls this method if the sender and the receiver are
          * in secure mode now.
          *
+         * @param cipher
+         *    Name and mode of cipher used to encrypt the SRTP stream
          */
-        virtual void secureOn(std::string) =0;
+        virtual void secureOn(std::string cipher) =0;
 
         /**
          * Inform user interface that security is not active any more.
