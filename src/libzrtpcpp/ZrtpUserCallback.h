@@ -126,7 +126,7 @@ class ZrtpUserCallback {
          * @param msg
          *     The message string, terminated with a null byte.
          */
-        virtual void zrtpNegotiationFailed(MessageSeverity severity, char* msg) =0;
+        virtual void zrtpNegotiationFailed(MessageSeverity severity, std::string message) =0;
 
         /**
          * ZRTPQueue calls this methof if the other side does not support ZRTP.

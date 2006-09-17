@@ -38,17 +38,17 @@
 #include <openssl/hmac.h>
 #include <libzrtpcpp/crypto/hmac256.h>
 
-void hmac_sha256(uint8* key, uint32 key_length,
-		uint8* data, int32 data_length,
-		uint8* mac, uint32* mac_length)
+void hmac_sha256(uint8_t* key, uint32_t key_length,
+		uint8_t* data, int32_t data_length,
+                uint8_t* mac, uint32_t* mac_length)
 {
 	HMAC( EVP_sha256(), key, key_length, data, data_length, mac, mac_length );
 }
 
-void hmac_sha256( uint8* key, uint32 key_length,
-		uint8* data_chunks[],
-		uint32 data_chunck_length[],
-		uint8* mac, uint32* mac_length )
+void hmac_sha256(uint8_t* key, uint32_t key_length,
+                 uint8_t* data_chunks[],
+                 uint32_t data_chunck_length[],
+                 uint8_t* mac, uint32_t* mac_length )
 {
 	HMAC_CTX ctx;
 	HMAC_CTX_init( &ctx );

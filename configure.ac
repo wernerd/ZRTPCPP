@@ -23,15 +23,22 @@ case $host in
     ;;
 esac
 
+# PKG_CHECK_MODULES(CCRTP, libccrtp1 >= 1.3.4)
+
+AC_CHECK_HEADERS([stdlib.h string.h pthread.h])
+
+# we need the pthread library as well
+AC_CHECK_LIB([pthread], [pthread_mutex_init], [], AC_MSG_ERROR([pthread library not found.]))
+
 AC_CHECK_LIB([gcrypt],
              [gcry_cipher_open], [
                 CRYPTOBACKEND="libgcrypt >= 1.1"
-                LIBS="-lgcrypt $LIBS"
+                LIBS="-lgcrypt -lccrtp1 $LIBS"
                 ],
              [AC_CHECK_LIB([crypto],
                            [EVP_CipherInit_ex], [
                                 CRYPTOBACKEND="openSSL >= 0.9.8"
-                                LIBS="-lcrypto $LIBS"
+                                LIBS="-lcrypto -lccrtp1 $LIBS"
                                 ],
                            [AC_MSG_ERROR([Cannot find libgcrypt or OpenSSL crypto library.])]
                           )
@@ -57,8 +64,13 @@ AC_SUBST(WARN_FLAGS)
 
 OST_DEBUG
 
+# AC_CHECK_HEADER([ccrtp/rtp.h],
+#                [LIBS="-lccrtp1 $LIBS"],
+#                [AC_MSG_ERROR([Cannot find GNU ccRTP header - install it before using libzrtpcpp])])
+
 # Checks for header files.
 AC_HEADER_STDC
+AC_CHECK_HEADERS([stdlib.h string.h pthread.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
