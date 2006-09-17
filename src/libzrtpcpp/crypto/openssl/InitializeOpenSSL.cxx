@@ -18,6 +18,7 @@
 
 #include <stdio.h>
 #include <openssl/evp.h>
+#include <config.h>
 
 #ifdef OPENSSL_SYS_WIN32
 #include <windows.h>

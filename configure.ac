@@ -32,12 +32,12 @@ AC_CHECK_LIB([pthread], [pthread_mutex_init], [], AC_MSG_ERROR([pthread library 
 
 AC_CHECK_LIB([gcrypt],
              [gcry_cipher_open], [
-                CRYPTOBACKEND="libgcrypt >= 1.1"
+                CRYPTOBACKEND="libccrtp1 >= 1.4.1"
                 LIBS="-lgcrypt -lccrtp1 $LIBS"
                 ],
              [AC_CHECK_LIB([crypto],
                            [EVP_CipherInit_ex], [
-                                CRYPTOBACKEND="openSSL >= 0.9.8"
+                                CRYPTOBACKEND="libcrypto >= 0.9.8. libccrtp1 >= 1.4.1"
                                 LIBS="-lcrypto -lccrtp1 $LIBS"
                                 ],
                            [AC_MSG_ERROR([Cannot find libgcrypt or OpenSSL crypto library.])]
