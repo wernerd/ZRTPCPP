@@ -304,6 +304,11 @@ class ZRtp {
     uint8_t s0[SHA256_DIGEST_LENGTH];
 
     /**
+     * The new Retained Secret
+     */
+    uint8_t newRs1[RS_LENGTH];
+
+    /**
      * The HMAC key
      */
     uint8_t hmacSrtp[SHA256_DIGEST_LENGTH];
@@ -409,7 +414,7 @@ class ZRtp {
 
     void computeSharedSecretSet(ZIDRecord& zidRec);
 
-    void computeSRTPKeys(ZIDRecord& zidRec);
+    void computeSRTPKeys();
 
     void generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec);
 

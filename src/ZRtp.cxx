@@ -114,6 +114,7 @@ ZRtp::~ZRtp() {
     memset (srtpKeyR, 0, SHA256_DIGEST_LENGTH);
     memset (srtpSaltR, 0, SHA256_DIGEST_LENGTH);
 
+    memset(s0, 0, SHA256_DIGEST_LENGTH);
 }
 
 int32_t ZRtp::processExtensionHeader(uint8_t *extHeader, uint8_t* content) {
@@ -244,6 +245,8 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello) {
     }
     dhContext->getPubKeyBytes(pubKeyBytes);
 
+    // Here we act as Initiator. Take other peer's Hello packet and my
+    // PVI (public value initiator) and compute the HVI (hash value initiator)
     computeHvi(pubKeyBytes, maxPubKeySize, hello);
 
     char buffer[128];
@@ -544,8 +547,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart *dhPart2) {
     // thus get the singleton instance to the open file
     ZIDFile *zid = ZIDFile::getInstance();
     zid->getRecord(&zidRec);
-//    int sasFlag = zidRec.isSasVerified() ? 1 : 0;
-    int sasFlag = 0;
+    int sasFlag = zidRec.isSasVerified() ? 1 : 0;
 
     /*
      * The expected shared secret Ids were already computed when we built the
@@ -582,11 +584,8 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1) {
     sendInfo(Info, "Initiator: Confirm1 received, preparing Confirm2");
 
     uint8_t sasFlag = confirm1->getSASFlag();
-    if (sasFlag & 0x1) {
-    }
 
     if (memcmp(knownPlain, confirm1->getPlainText(), 15) != 0) {
-        fprintf(stderr, "1: %s\n", confirm1->getPlainText());
 	sendInfo(Error, "Cannot read confirm1 message");
 	return NULL;
     }
@@ -602,12 +601,42 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1) {
 	sendInfo(Error, "HMAC verification of Confirm1 message failed");
 	return NULL;
     }
+    /*
+     * The Confirm1 is ok, handle the Retained secret stuff and inform
+     * GUI about state.
+     */
+
+    // Initialize a ZID record to get peer's retained secrets
+    ZIDRecord zidRec(peerZid);
+
+    ZIDFile *zid = ZIDFile::getInstance();
+    zid->getRecord(&zidRec);
+
+    // Our peer did not confirm the SAS in last session, thus reset
+    // our SAS flag too.
+    if (!(sasFlag & 0x1)) {
+      zidRec.resetSASVerified();
+    }
+
+    // get verified flag from current RS1 before set a new RS1. This
+    // may not be set even if peer's flag is set in confirm1 message.
+    sasFlag = zidRec.isSasVerified() ? 1 : 0;
+
+    // Inform GUI about security state and SAS state
+    char* c = (cipher == Aes128) ? "AES-CM-128" : "AES-CM-256";
+    char* s = (zidRec.isSASVerified()) ? NULL : SAS;
+    callback->srtpSecretsOn(c, s);
+    
+    // now we are ready to save the new RS1 which inherits the verified
+    // flag from old RS1
+    zidRec.setNewRs1((const uint8_t*)newRs1);
+    zid->saveRecord(&zidRec);
 
     // now generate my Confirm2 message
     ZrtpPacketConfirm* zpConf = new ZrtpPacketConfirm();
     zpConf->setMessage((uint8_t*)Confirm2Msg);
     zpConf->setPlainText((uint8_t*)knownPlain);
-    zpConf->setSASFlag(0);
+    zpConf->setSASFlag(sasFlag);
     zpConf->setExpTime(0);
 
     // The HMAC with length 16 includes the SAS flag inside the Confirm packet
@@ -624,12 +653,9 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2) {
     sendInfo(Info, "Respnder: Confirm2 received, preparing Conf2Ack");
 
     uint8_t sasFlag = confirm2->getSASFlag();
-    if (sasFlag & 0x1) {
-	// prepare the SAS data and display to user
-    }
+
     if (memcmp(knownPlain, confirm2->getPlainText(), 15) != 0) {
-        fprintf(stderr, "2: %s\n", confirm2->getPlainText());
-	sendInfo(Error, "Cannot read confirm2 message");
+     	sendInfo(Error, "Cannot read confirm2 message");
 	return NULL;
     }
     uint8_t confMac[SHA256_DIGEST_LENGTH];
@@ -644,6 +670,33 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2) {
 	sendInfo(Error, "HMAC verification of Confirm2 message failed");
 	return NULL;
     }
+
+    /*
+     * The Confirm2 is ok, handle the Retained secret stuff and inform
+     * GUI about state.
+     */
+
+    // Initialize a ZID record to get peer's retained secrets
+    ZIDRecord zidRec(peerZid);
+
+    ZIDFile *zid = ZIDFile::getInstance();
+    zid->getRecord(&zidRec);
+
+    // Our peer did not confirm the SAS in last session, thus reset
+    // our SAS flag too.
+    if (!(sasFlag & 0x1)) {
+      zidRec.resetSASVerified();
+    }
+
+    // Inform GUI about security state and SAS state
+    char* c = (cipher == Aes128) ? "AES-CM-128" : "AES-CM-256";
+    char* s = (zidRec.isSASVerified()) ? NULL : SAS;
+    callback->srtpSecretsOn(c, s);
+    
+    // save new RS1, this inherits the verified flag from old RS1
+    zidRec.setNewRs1((const uint8_t*)newRs1);
+    zid->saveRecord(&zidRec);
+
     return zrtpConf2Ack;
 }
 
@@ -947,7 +1000,7 @@ void ZRtp::generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     free(DHss);
     DHss = NULL;
 
-    computeSRTPKeys(zidRec);
+    computeSRTPKeys();
 }
 
 void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
@@ -1043,11 +1096,14 @@ void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     unsigned char* data[7];
     uint32_t  length[7];
 
+    // first hash the DH secret
     data[0] = DHss;
     length[0] = dhContext->getSecretSize();
     data[1] = NULL;
     sha256(data, length, DHss);
 
+    // now take the hashed DH secret and the retained secrets and hash
+    // them to get S0
     data[0] = DHss;
     length[0] = SHA256_DIGEST_LENGTH;
 
@@ -1063,33 +1119,32 @@ void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     free(DHss);
     DHss = NULL;
 
-    computeSRTPKeys(zidRec);
+    computeSRTPKeys();
 }
 
-void ZRtp::computeSRTPKeys(ZIDRecord& zidRec) {
+void ZRtp::computeSRTPKeys() {
 
     unsigned int macLen;
 
-    uint8_t newRs1[RS_LENGTH];
-
+    // Inititiator key and salt
     hmac_sha256(s0, SHA256_DIGEST_LENGTH, (unsigned char*)iniMasterKey, strlen(iniMasterKey),
 		srtpKeyI, &macLen);
     hmac_sha256(s0, SHA256_DIGEST_LENGTH, (unsigned char*)iniMasterSalt, strlen(iniMasterSalt),
 		srtpSaltI, &macLen);
 
+    // Responder key and salt
     hmac_sha256(s0, SHA256_DIGEST_LENGTH, (unsigned char*)respMasterKey, strlen(respMasterKey),
 		srtpKeyR, &macLen);
     hmac_sha256(s0, SHA256_DIGEST_LENGTH, (unsigned char*)respMasterSalt, strlen(respMasterSalt),
 		srtpSaltR, &macLen);
 
+    // The HMAC key for GoClear
     hmac_sha256(s0, SHA256_DIGEST_LENGTH, (unsigned char*)hmacKey, strlen(hmacKey),
 		hmacSrtp, &macLen);
 
+    // Compute the new Retained Secret
     hmac_sha256(s0, SHA256_DIGEST_LENGTH, (unsigned char*)retainedSec, strlen(retainedSec),
 		newRs1, &macLen);
-    zidRec.setNewRs1((const uint8_t*)newRs1);
-
-    memset(s0, 0, SHA256_DIGEST_LENGTH);
 }
 
 void ZRtp::srtpSecretsReady(EnableSecurity part) {

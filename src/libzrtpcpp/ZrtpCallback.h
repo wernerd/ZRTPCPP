@@ -219,12 +219,22 @@ class ZrtpCallback {
     virtual void srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part) =0;
 
     /**
-     * This method shall clear the ZRTP secrets.
+     * This method shall clear the SRTP Context and switch off GUI inidicators.
      *
      * @param part
      *    Defines for which part (sender or receiver) to switch on security
      */
     virtual void srtpSecretsOff(EnableSecurity part) =0;
+
+    /**
+     * This method shall switch on GUI inidicators.
+     *
+     * @param c
+     *    The name of the used cipher algorithm and mode, or NULL
+     * @param s
+     *    The SAS string or NULL
+     */
+    virtual void srtpSecretsOn(char* c, char* s) =0;
 
     /**
      * This method shall handle GoClear requests.

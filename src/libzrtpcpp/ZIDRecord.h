@@ -66,6 +66,7 @@ class ZIDRecord {
     int isRs2Valid() { return (record.rs2Valid & valid); }
 
     void setSasVerified() { record.rs1Valid |= SASVerified; }
+    void resetSasVerified() { record.rs1Valid &= ~SASVerified; }
     int isSasVerified()   { return (record.rs2Valid & SASVerified); }
 
     const unsigned char *getRs1() { return record.rs1Data; }
