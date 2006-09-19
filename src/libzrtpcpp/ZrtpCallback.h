@@ -234,7 +234,7 @@ class ZrtpCallback {
      * @param s
      *    The SAS string or NULL
      */
-    virtual void srtpSecretsOn(char* c, char* s) =0;
+    virtual void srtpSecretsOn(const char* c, const char* s) =0;
 
     /**
      * This method shall handle GoClear requests.

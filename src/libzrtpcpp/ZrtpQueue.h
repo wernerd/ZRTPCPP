@@ -242,6 +242,16 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
     void srtpSecretsOff(EnableSecurity part);
 
     /**
+     * This method shall switch on GUI inidicators.
+     *
+     * @param c
+     *    The name of the used cipher algorithm and mode, or NULL
+     * @param s
+     *    The SAS string or NULL
+     */
+    void srtpSecretsOn(const char* c, const char* s);
+
+    /**
      * This method shall handle GoClear requests.
      *
      * According to the ZRTP specification the user must be informed about

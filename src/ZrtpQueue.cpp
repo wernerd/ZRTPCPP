@@ -478,7 +478,7 @@ void ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
     }
 }
 
-void ZrtpQueue::srtpSecretsOn(char* c, char* s)
+void ZrtpQueue::srtpSecretsOn(const char* c, const char* s)
 {
 
   if (c != NULL) {
@@ -550,7 +550,6 @@ void ZrtpQueue::zrtpNotSuppOther() {
         fprintf(stderr, "The other (remote) client does not support ZRTP\n");
     }
 }
-
 
 #ifdef  CCXX_NAMESPACES
 }

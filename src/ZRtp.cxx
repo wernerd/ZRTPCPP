@@ -615,7 +615,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1) {
     // Our peer did not confirm the SAS in last session, thus reset
     // our SAS flag too.
     if (!(sasFlag & 0x1)) {
-      zidRec.resetSASVerified();
+      zidRec.resetSasVerified();
     }
 
     // get verified flag from current RS1 before set a new RS1. This
@@ -623,10 +623,10 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1) {
     sasFlag = zidRec.isSasVerified() ? 1 : 0;
 
     // Inform GUI about security state and SAS state
-    char* c = (cipher == Aes128) ? "AES-CM-128" : "AES-CM-256";
-    char* s = (zidRec.isSASVerified()) ? NULL : SAS;
+    const char* c = (cipher == Aes128) ? "AES-CM-128" : "AES-CM-256";
+    const char* s = (zidRec.isSasVerified()) ? NULL : SAS.c_str();
     callback->srtpSecretsOn(c, s);
-    
+
     // now we are ready to save the new RS1 which inherits the verified
     // flag from old RS1
     zidRec.setNewRs1((const uint8_t*)newRs1);
@@ -685,14 +685,14 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2) {
     // Our peer did not confirm the SAS in last session, thus reset
     // our SAS flag too.
     if (!(sasFlag & 0x1)) {
-      zidRec.resetSASVerified();
+      zidRec.resetSasVerified();
     }
 
     // Inform GUI about security state and SAS state
-    char* c = (cipher == Aes128) ? "AES-CM-128" : "AES-CM-256";
-    char* s = (zidRec.isSASVerified()) ? NULL : SAS;
+    const char* c = (cipher == Aes128) ? "AES-CM-128" : "AES-CM-256";
+    const char* s = (zidRec.isSasVerified()) ? NULL : SAS.c_str();
     callback->srtpSecretsOn(c, s);
-    
+
     // save new RS1, this inherits the verified flag from old RS1
     zidRec.setNewRs1((const uint8_t*)newRs1);
     zid->saveRecord(&zidRec);
