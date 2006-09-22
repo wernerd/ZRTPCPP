@@ -328,10 +328,15 @@ int32_t ZrtpQueue::sendDataRTP(const unsigned char *data, int32_t length) {
     packet->setSSRC(senderZrtpSsrc);
     packet->setPayloadType(13);
 
-    senderZrtpSeqNo = getCurrentSeqNum();
+    // TODO Remove Zfone hacks after Zfone fixed its seq.no handling
+    if (zrtpEngine->Zfone) {
+        senderZrtpSeqNo = getCurrentSeqNum();
+    }
     packet->setSeqNum(senderZrtpSeqNo++);
-    setNextSeqNum(senderZrtpSeqNo);
 
+    if (zrtpEngine->Zfone) {
+        setNextSeqNum(senderZrtpSeqNo);
+    }
     packet->setTimestamp(time(NULL));
 
     // packet->enableZrtpChecksum();
@@ -346,7 +351,6 @@ int32_t ZrtpQueue::sendDataRTP(const unsigned char *data, int32_t length) {
 int32_t ZrtpQueue::sendDataSRTP(const unsigned char *dataHeader, int32_t lengthHeader,
                                             char *dataContent, int32_t lengthContent)
 {
-    time_t ts = time(NULL);
     // plus 2 is for ZRTP checksum
     // uint8* tmpBuffer = new uint8[lengthContent + 2];
     // memcpy(tmpBuffer, dataContent, lengthContent);
@@ -358,11 +362,16 @@ int32_t ZrtpQueue::sendDataSRTP(const unsigned char *dataHeader, int32_t lengthH
     packet->setSSRC(senderZrtpSsrc);
     packet->setPayloadType(13);
 
-    senderZrtpSeqNo = getCurrentSeqNum();
+    // TODO Remove Zfone hacks after Zfone fixed its seq.no handling
+    if (zrtpEngine->Zfone) {
+        senderZrtpSeqNo = getCurrentSeqNum();
+    }
     packet->setSeqNum(senderZrtpSeqNo++);
-    setNextSeqNum(senderZrtpSeqNo);
 
-    packet->setTimestamp(ts);
+    if (zrtpEngine->Zfone) {
+        setNextSeqNum(senderZrtpSeqNo);
+    }
+    packet->setTimestamp(time(NULL));
 
     // packet->enableZrtpChecksum();
     packet->protect(senderZrtpSsrc, pcc);

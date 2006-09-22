@@ -67,6 +67,7 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb):
     zrtpConf2Ack = NULL;
     DHss = NULL;
     pubKeyBytes = NULL;
+    Zfone = 0;
 
     memcpy(zid, myZid, 12);
     zrtpHello = new ZrtpPacketHello();
@@ -1178,6 +1179,17 @@ void ZRtp::SASVerified()
 
     zid->getRecord(&zidRec);
     zidRec.setSasVerified();
+    zid->saveRecord(&zidRec);
+}
+
+void ZRtp::resetSASVerified()
+{
+    // Initialize a ZID record to get peer's retained secrets
+    ZIDRecord zidRec(peerZid);
+    ZIDFile *zid = ZIDFile::getInstance();
+
+    zid->getRecord(&zidRec);
+    zidRec.resetSasVerified();
     zid->saveRecord(&zidRec);
 }
 

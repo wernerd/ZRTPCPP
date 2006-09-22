@@ -238,7 +238,9 @@ int32_t ZrtpStateClass::evAckDetected(void) {
 	 * - switch to state WaitCommit, wait for peer's Commit
 	 */
 	if (first == 'h') {
-	    ZrtpPacketHelloAck *helloAck = parent->prepareHelloAck();
+            ZrtpPacketHello *hpkt = new ZrtpPacketHello(pkt);
+            ZrtpPacketHelloAck *helloAck = parent->prepareHelloAck(hpkt);
+            delete hpkt;
 
 	    nextState(WaitCommit);
 

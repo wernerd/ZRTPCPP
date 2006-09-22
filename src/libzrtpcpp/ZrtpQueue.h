@@ -86,6 +86,15 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
     }
 
     /**
+     * Reset the SAS verfied flag for the current active user's retained secrets.
+     *
+     */
+    void resetSASVerified() {
+        if (zrtpEngine != NULL)
+            zrtpEngine->resetSASVerified();
+    }
+
+    /**
      * Confirm a go clear request.
      *
      * Call this method if the user confirmed a go clear (secure mode off).

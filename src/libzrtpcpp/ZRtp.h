@@ -207,6 +207,14 @@ class ZRtp {
         */
        void SASVerified();
 
+       /**
+        * Reset the SAS verfied flag for the current active user's retained secrets.
+        *
+        */
+       void resetSASVerified();
+
+       int Zfone;
+
  private:
      friend class ZrtpStateClass;
 
@@ -489,7 +497,13 @@ class ZRtp {
      * @return
      *    A pointer to the initialized HelloAck packet.
      */
-    ZrtpPacketHelloAck *prepareHelloAck() {return zrtpHelloAck; }
+    ZrtpPacketHelloAck *prepareHelloAck(ZrtpPacketHello *hello) {
+        uint8_t* cid = hello->getClientId();
+        if (*cid == 'Z') {
+            Zfone = 1;
+        }
+        return zrtpHelloAck;
+    }
 
     /**
      * Prepare a Commit packet.
