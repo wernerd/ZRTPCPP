@@ -196,6 +196,11 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello) {
 
     sendInfo(Info, "Hello received, preparing a Commit");
 
+    uint8_t* cid = hello->getClientId();
+    if (*cid == 'Z') {  // TODO Zfone hack regarding reused sequence numbers
+        Zfone = 1;
+    }
+
     cipher = findBestCipher(hello);
     if (cipher >= NumSupportedSymCiphers) {
 	sendInfo(Error, "Hello message does not contain a supported Cipher");
@@ -602,7 +607,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1) {
     hmac_sha256(hmacSrtp, SHA256_DIGEST_LENGTH, (unsigned char*)confirm1->getPlainText(),
 		20, confMac, &macLen);
 
-    if (memcmp(confMac, confirm1->getHmac(), 32) != 0) {
+    if (memcmp(confMac, confirm1->getHmac(), SHA256_DIGEST_LENGTH) != 0) {
 	sendInfo(Error, "HMAC verification of Confirm1 message failed");
 	return NULL;
     }
@@ -671,7 +676,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2) {
     hmac_sha256(hmacSrtp, SHA256_DIGEST_LENGTH, (unsigned char*)confirm2->getPlainText(),
 		20, confMac, &macLen);
 
-    if (memcmp(confMac, confirm2->getHmac(), 32) != 0) {
+    if (memcmp(confMac, confirm2->getHmac(), SHA256_DIGEST_LENGTH) != 0) {
 	sendInfo(Error, "HMAC verification of Confirm2 message failed");
 	return NULL;
     }
@@ -897,15 +902,6 @@ void ZRtp::generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     const uint8_t* setE[5];
     int32_t rsFound = 0;
 
-#if 0
-    hexdump("rs1IDr (I)", rs1IDr, 8);
-    hexdump("rs1IDi (I)", rs1IDi, 8);
-    hexdump("rs2IDr (I)", rs2IDr, 8);
-    hexdump("rs2IDi (I)", rs2IDi, 8);
-    hexdump("rs1Id (recv)) (I)", dhPart->getRs1Id(), 8);
-    hexdump("rs2Id (recv)) (I)", dhPart->getRs2Id(), 8);
-#endif
-
     setC[0] = (memcmp(rs1IDr, dhPart->getRs1Id(), 8) == 0) ? rs1IDr : NULL;
     setC[1] = (memcmp(rs2IDr, dhPart->getRs2Id(), 8) == 0) ? rs2IDr : NULL;
     setC[2] = (memcmp(sigsIDr, dhPart->getSigsId(), 8) == 0) ? sigsIDr : NULL;
@@ -930,7 +926,6 @@ void ZRtp::generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 	setE[matchingSecrets++] = rs1IDi;  // rs1IDi will be sent in DHPart2 message
         rsFound = 0x1;
     }
-
     if (setC[1] != NULL) {
 	DEBUGOUT((fprintf(stdout, "%c: Match for Rs2 found\n", zid[0])));
         setD[matchingSecrets] = zidRec.getRs2();
@@ -961,7 +956,9 @@ void ZRtp::generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
         while (notDone) {
 	   notDone = 0;
 	   for (i = 0; i < matchingSecrets - 1; i++) {
-	       if (memcmp(setE[i], setE[i+1], 32) > 0) {
+//               if (memcmp(setE[i], setE[i+1], 8) > 0) { // as defined in specifcation
+               if (memcmp(setD[i], setD[i+1], SHA256_DIGEST_LENGTH) > 0) { // as implemented in Zfone-beta2
+
 	           tmpP = setE[i];
 	           setE[i] = setE[i+1];
 	           setE[i+1] = tmpP;
@@ -973,11 +970,6 @@ void ZRtp::generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 	   }
         }
     }
-
-#if 0
-    hexdump("setD0 (I)", setD[0], 32);
-    hexdump("setD1 (I)", setD[1], 32);
-#endif
     /*
      * ready to generate s0 here.
      * Hash the DH shared secret and the available shared secrets (max. 5).
@@ -1013,15 +1005,6 @@ void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     const uint8_t* setD[5];
     const uint8_t* setE[5];     // Set E is the "compressed" C (no NULLs) for sort
     int32_t rsFound = 0;
-
-#if 0
-    hexdump("rs1IDr (R)", rs1IDr, 8);
-    hexdump("rs1IDi (R)", rs1IDi, 8);
-    hexdump("rs2IDr (R)", rs2IDr, 8);
-    hexdump("rs2IDi (R)", rs2IDi, 8);
-    hexdump("rs1Id (recv)) (R)", dhPart->getRs1Id(), 8);
-    hexdump("rs2Id (recv)) (R)", dhPart->getRs2Id(), 8);
-#endif
 
     setC[0] = (memcmp(rs1IDi, dhPart->getRs1Id(), 8) == 0) ? rs1IDi : NULL;
     setC[1] = (memcmp(rs2IDi, dhPart->getRs2Id(), 8) == 0) ? rs2IDi : NULL;
@@ -1077,7 +1060,8 @@ void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 	while (notDone) {
 	    notDone = 0;
 	    for (i = 0; i < matchingSecrets - 1; i++) {
-		if (memcmp(setE[i], setE[i+1], 32) > 0) {
+//                if (memcmp(setE[i], setE[i+1], 8) > 0) { // orignal spec
+                if (memcmp(setD[i], setD[i+1], SHA256_DIGEST_LENGTH) > 0) { // as implemented in Zfone beta2
 		    tmpP = setE[i];
 		    setE[i] = setE[i+1];
 		    setE[i+1] = tmpP;
@@ -1089,11 +1073,6 @@ void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 	    }
         }
     }
-#if 0
-    hexdump("setD0 (R)", setD[0], 32);
-    hexdump("setD1 (R)", setD[1], 32);
-#endif
-
     /*
      * ready to generate s0 here.
      * Hash the DH shared secret and the available shared secrets (max. 5).

@@ -490,10 +490,10 @@ void ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
 void ZrtpQueue::srtpSecretsOn(const char* c, const char* s)
 {
 
-  if (c != NULL) {
+  if (c != NULL && zrtpUserCallback != NULL) {
     zrtpUserCallback->secureOn(c);
   }
-  if (s != NULL) {
+  if (s != NULL && zrtpUserCallback != NULL) {
     zrtpUserCallback->showSAS(s);
   }
 }
@@ -508,7 +508,9 @@ void ZrtpQueue::srtpSecretsOff(EnableSecurity part)
         removeInQueueCryptoContext(NULL);
     }
     secureParts = 0;
-    zrtpUserCallback->secureOff();
+    if (zrtpUserCallback != NULL) {
+        zrtpUserCallback->secureOff();
+    }
 }
 
 
