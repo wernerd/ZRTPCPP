@@ -625,7 +625,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1) {
 
     // Inform GUI about security state and SAS state
     const char* c = (cipher == Aes128) ? "AES-CM-128" : "AES-CM-256";
-    const char* s = (zidRec.isSasVerified()) ? NULL : SAS.c_str();
+    const char* s = (zidRec.isSasVerified()) ? SAS.c_str() : NULL;
     callback->srtpSecretsOn(c, s);
 
     // now we are ready to save the new RS1 which inherits the verified
@@ -691,7 +691,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2) {
 
     // Inform GUI about security state and SAS state
     const char* c = (cipher == Aes128) ? "AES-CM-128" : "AES-CM-256";
-    const char* s = (zidRec.isSasVerified()) ? NULL : SAS.c_str();
+    const char* s = (zidRec.isSasVerified()) ? SAS.c_str() : NULL;
     callback->srtpSecretsOn(c, s);
 
     // save new RS1, this inherits the verified flag from old RS1
