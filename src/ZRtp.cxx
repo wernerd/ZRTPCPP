@@ -81,34 +81,38 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb):
 ZRtp::~ZRtp() {
     if (DHss != NULL) {
 	free(DHss);
+        DHss = NULL;
     }
     if (pubKeyBytes != NULL) {
         free(pubKeyBytes);
+        pubKeyBytes = NULL;
     }
     if (zrtpHello != NULL) {
 	delete zrtpHello;
+        pubKeyBytes = NULL;
     }
     if (zrtpHelloAck != NULL) {
 	delete zrtpHelloAck;
+        zrtpHelloAck = NULL;
     }
     if (zrtpConf2Ack != NULL) {
 	delete zrtpConf2Ack;
+        zrtpConf2Ack = NULL;
     }
     if (stateEngine != NULL) {
 	delete stateEngine;
+        stateEngine = NULL;
     }
     if (dhContext != NULL) {
 	delete dhContext;
+        dhContext = NULL;
     }
-
     memset(hmacSrtp, 0, SHA256_DIGEST_LENGTH);
-
     /*
      * Clear the Initiator's srtp key and salt
      */
     memset(srtpKeyI, 0, SHA256_DIGEST_LENGTH);
     memset(srtpSaltI, 0,  SHA256_DIGEST_LENGTH);
-
     /*
      * Clear he Responder's srtp key and salt
      */
