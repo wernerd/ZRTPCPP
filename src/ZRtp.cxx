@@ -81,6 +81,8 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb):
 ZRtp::~ZRtp() {
     callback->zrtpMutex(true);
 
+    stop();
+
     if (DHss != NULL) {
 	free(DHss);
         DHss = NULL;
@@ -134,8 +136,11 @@ int32_t ZRtp::processExtensionHeader(uint8_t *extHeader, uint8_t* content) {
     ev.type = ZrtpPacket;
     ev.data.packet = extHeader;
     ev.content = content;
-    int32_t ret = stateEngine->processEvent(&ev);
 
+    int32_t ret;
+    if (stateEngine != NULL) {
+        ret = stateEngine->processEvent(&ev);
+    }
     callback->zrtpMutex(false);
     return ret;
 }
@@ -148,8 +153,10 @@ int32_t ZRtp::processTimeout() {
     ev.type = Timer;
     ev.data.packet = NULL;
     ev.content = NULL;
-    int32_t ret = stateEngine->processEvent(&ev);
-
+    int32_t ret;
+    if (stateEngine != NULL) {
+        ret = stateEngine->processEvent(&ev);
+    }
     callback->zrtpMutex(false);
     return ret;
 
@@ -170,8 +177,9 @@ bool ZRtp::handleGoClear(uint8_t *extHeader)
         ev.type = ZrtpGoClear;
         ev.data.packet = extHeader;
         ev.content = NULL;
-        stateEngine->processEvent(&ev);
-
+        if (stateEngine != NULL) {
+            stateEngine->processEvent(&ev);
+        }
         callback->zrtpMutex(false);
         return true;
     }
@@ -195,17 +203,24 @@ void ZRtp::stopZrtp() {
      * reset to initial state only. This state ignores any event except
      * ZrtpInitial and effectively stops the engine.
      */
-    if (!stateEngine->inState(SecureState)) {
-        stateEngine->nextState(Initial);
-        return;
+    if (stateEngine != NULL) {
+        if (!stateEngine->inState(SecureState)) {
+            stateEngine->nextState(Initial);
+            return;
+        }
+        ev.type = ZrtpClose;
+        stateEngine->processEvent(&ev);
     }
-    ev.type = ZrtpClose;
-    stateEngine->processEvent(&ev);
 }
 
 int32_t ZRtp::checkState(int32_t state)
 {
-    return stateEngine->inState(state);
+    if (stateEngine != NULL) {
+        return stateEngine->inState(state);
+    }
+    else {
+        return -1;
+    }
 }
 
 ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello) {
@@ -278,7 +293,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello) {
     computeHvi(pubKeyBytes, maxPubKeySize, hello);
 
     char buffer[128];
-    snprintf((char *)buffer, 128, "Generated a public DH key of size: %d", dhContext->getPubKeySize());
+    snprintf((char *)buffer, 128, "Commit: Generated a public DH key of size: %d", dhContext->getPubKeySize());
     sendInfo(Info, buffer);
 
     ZrtpPacketCommit *commit = new ZrtpPacketCommit();
@@ -391,7 +406,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit) {
     pubKeyLen = dhContext->getPubKeySize();
 
     char buffer[128];
-    snprintf(buffer, 128, "Generated a public DH key of size: %d", pubKeyLen);
+    snprintf(buffer, 128, "DH1Part: Generated a public DH key of size: %d", pubKeyLen);
     sendInfo(Info, buffer);
 
     if (pubKeyLen > maxPubKeySize) {
@@ -652,7 +667,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1) {
 
     // Inform GUI about security state and SAS state
     const char* c = (cipher == Aes128) ? "AES-CM-128" : "AES-CM-256";
-    const char* s = (zidRec.isSasVerified()) ? SAS.c_str() : NULL;
+    const char* s = (zidRec.isSasVerified()) ? NULL : SAS.c_str();
     callback->srtpSecretsOn(c, s);
 
     // now we are ready to save the new RS1 which inherits the verified
@@ -718,7 +733,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2) {
 
     // Inform GUI about security state and SAS state
     const char* c = (cipher == Aes128) ? "AES-CM-128" : "AES-CM-256";
-    const char* s = (zidRec.isSasVerified()) ? SAS.c_str() : NULL;
+    const char* s = (zidRec.isSasVerified()) ? NULL : SAS.c_str();
     callback->srtpSecretsOn(c, s);
 
     // save new RS1, this inherits the verified flag from old RS1
