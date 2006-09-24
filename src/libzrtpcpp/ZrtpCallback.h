@@ -269,6 +269,15 @@ class ZrtpCallback {
      */
     virtual void zrtpNotSuppOther() =0;
 
+    /**
+     * ZRTP calls this method to set or release a mutex.
+     *
+     *@param set
+     *     If true the set the mutex, release otherwise.
+     */
+    virtual void zrtpMutex(bool set) =0;
+
+
 };
 
 #endif // ZRTPCALLBACK

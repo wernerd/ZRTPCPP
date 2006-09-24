@@ -79,6 +79,8 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb):
 }
 
 ZRtp::~ZRtp() {
+    callback->zrtpMutex(true);
+
     if (DHss != NULL) {
 	free(DHss);
         DHss = NULL;
@@ -107,6 +109,8 @@ ZRtp::~ZRtp() {
 	delete dhContext;
         dhContext = NULL;
     }
+    callback->zrtpMutex(false);
+
     memset(hmacSrtp, 0, SHA256_DIGEST_LENGTH);
     /*
      * Clear the Initiator's srtp key and salt
@@ -116,8 +120,8 @@ ZRtp::~ZRtp() {
     /*
      * Clear he Responder's srtp key and salt
      */
-    memset (srtpKeyR, 0, SHA256_DIGEST_LENGTH);
-    memset (srtpSaltR, 0, SHA256_DIGEST_LENGTH);
+    memset(srtpKeyR, 0, SHA256_DIGEST_LENGTH);
+    memset(srtpSaltR, 0, SHA256_DIGEST_LENGTH);
 
     memset(s0, 0, SHA256_DIGEST_LENGTH);
 }
@@ -125,19 +129,30 @@ ZRtp::~ZRtp() {
 int32_t ZRtp::processExtensionHeader(uint8_t *extHeader, uint8_t* content) {
     Event_t ev;
 
+    callback->zrtpMutex(true);
+
     ev.type = ZrtpPacket;
     ev.data.packet = extHeader;
     ev.content = content;
-    return stateEngine->processEvent(&ev);
+    int32_t ret = stateEngine->processEvent(&ev);
+
+    callback->zrtpMutex(false);
+    return ret;
 }
 
 int32_t ZRtp::processTimeout() {
     Event_t ev;
 
+    callback->zrtpMutex(true);
+
     ev.type = Timer;
     ev.data.packet = NULL;
     ev.content = NULL;
-    return stateEngine->processEvent(&ev);
+    int32_t ret = stateEngine->processEvent(&ev);
+
+    callback->zrtpMutex(false);
+    return ret;
+
 }
 
 bool ZRtp::handleGoClear(uint8_t *extHeader)
@@ -150,11 +165,14 @@ bool ZRtp::handleGoClear(uint8_t *extHeader)
 
     if (first == 'g' && last == 'r') {
         Event_t ev;
+        callback->zrtpMutex(true);
 
         ev.type = ZrtpGoClear;
         ev.data.packet = extHeader;
         ev.content = NULL;
         stateEngine->processEvent(&ev);
+
+        callback->zrtpMutex(false);
         return true;
     }
     else {

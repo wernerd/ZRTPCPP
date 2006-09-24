@@ -527,8 +527,6 @@ class ZRtp {
      * a Commit packet received from the peer. Also we a in the role of the
      * Responder.
      *
-     * <p/>
-     *
      * When we receive a Commit packet we get the selected ciphers, hashes, etc
      * and cross-check if this is ok. Then we need to initialize a set of DH
      * keys according to the selected cipher. Using this data we prepare our DHPart1
@@ -626,7 +624,7 @@ class ZRtp {
     }
 
     /**
-     * ZRTP calls this if the negotiation failed.
+     * ZRTP state engine calls this if the negotiation failed.
      *
      * ZRTP calls this method in case ZRTP negotiation failed. The parameters
      * show the severity as well as some explanatory text.
@@ -641,7 +639,7 @@ class ZRtp {
     }
 
     /**
-     * ZRTP calls this method if the other side does not support ZRTP.
+     * ZRTP state engine calls this method if the other side does not support ZRTP.
      *
      * If the other side does not answer the ZRTP <em>Hello</em> packets then
      * ZRTP calls this method,

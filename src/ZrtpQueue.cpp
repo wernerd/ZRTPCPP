@@ -59,13 +59,13 @@ ZrtpQueue::initialize(const char *zidFilename)
 }
 
 ZrtpQueue::ZrtpQueue(uint32 size, RTPApplication& app) :
-        AVPQueue(size,app)
+        AVPQueue(size,app), zrtpLockMutex(NULL)
 {
     init();
 }
 
 ZrtpQueue::ZrtpQueue(uint32 ssrc, uint32 size, RTPApplication& app) :
-        AVPQueue(ssrc,size,app)
+        AVPQueue(ssrc,size,app), zrtpLockMutex(NULL)
 {
     init();
 }
@@ -500,7 +500,6 @@ void ZrtpQueue::srtpSecretsOn(const char* c, const char* s)
 
 void ZrtpQueue::srtpSecretsOff(EnableSecurity part)
 {
-    // TODO: remove all crypto contexts
     if (part == ForSender) {
         removeOutQueueCryptoContext(NULL);
     }
@@ -559,6 +558,16 @@ void ZrtpQueue::zrtpNotSuppOther() {
     }
     else {
         fprintf(stderr, "The other (remote) client does not support ZRTP\n");
+    }
+}
+
+void ZrtpQueue::zrtpMutex(bool set)
+{
+    if (set) {
+        zrtpLockMutex.enterMutex();
+    }
+    else {
+        zrtpLockMutex.leaveMutex();
     }
 }
 
