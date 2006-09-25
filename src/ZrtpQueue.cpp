@@ -202,22 +202,7 @@ ZrtpQueue::takeInDataPacket(void)
     if (pcc != NULL) {
         int32 ret;
         if ((ret = packet->unprotect(pcc)) < 0) {
-           /*
-            * If authentication failed drop the packet if
-            *  - already reached secure state: then every packet should authenticate correctly
-            *  - or this is a ZRTP packet. A ZRTP packet must always authenticate even if
-            *    secure state was not yet reached (we could be in WaitConfirm* or WaitConfAck
-            *    state)
-            */
-            if (ret == -1) {
-                if (zrtpEngine->checkState(SecureState) || doZrtp) {
-                    std::cerr << "Dropping packet because of authentication error!" << std::endl;
-                    delete packet;
-                    return 0;
-                }
-            }
-            else {
-                std::cerr << "Replay problem!" << std::endl;
+            if (!onSRTPPacketError(*packet, ret)) {
                 delete packet;
                 return 0;
             }
@@ -311,6 +296,18 @@ ZrtpQueue::takeInDataPacket(void)
     // mobile telephony applications or other apps that may change
     // the source transport address during the session.
     return rtn;
+}
+
+bool
+ZrtpQueue::onSRTPPacketError(IncomingRTPPkt& pkt, int32 errorCode)
+{
+            if (errorCode == -1) {
+                sendInfo(Error, "Dropping packet because of authentication error!");
+            }
+            else {
+                sendInfo(Error, "Dropping packet because replay check failed!");
+            }
+            return false;
 }
 
 /*

@@ -200,6 +200,22 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
     virtual size_t takeInDataPacket();
 
     /**
+     * A hook that gets called if the decoding of an incoming SRTP was erroneous
+     *
+     * @param pkt
+     *     The SRTP packet with error.
+     * @param errorCode
+     *     The error code: -1 - SRTP authentication failure, -2 - replay
+     *     check failed
+     * @return
+     *     True: put the packet in incoming queue for further processing
+     *     by the applications; false: dismiss packet. The default
+     *     implementation returns false.
+     */
+    virtual bool
+    onSRTPPacketError(IncomingRTPPkt& pkt, int32 errorCode);
+
+    /**
      * Handle timeout event forwarded by the TimeoutProvider.
      *
      * Just call the ZRTP engine for further processing.

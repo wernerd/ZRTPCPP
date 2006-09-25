@@ -81,7 +81,7 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb):
 ZRtp::~ZRtp() {
     callback->zrtpMutex(true);
 
-    stop();
+    stopZrtp();
 
     if (DHss != NULL) {
 	free(DHss);
