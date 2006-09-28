@@ -31,6 +31,10 @@ void ZIDRecord::setNewRs1(const unsigned char *data) {
   // set new RS1 data
   memcpy(record.rs1Data, data, RS_LENGTH);
   record.rs1Valid = 1;
+  // copy the SAS verified flag to new record as well
+  if (record.rs2Valid & SASVerified) {
+      record.rs1Valid |= SASVerified;
+  }
 }
 
 /** EMACS **
