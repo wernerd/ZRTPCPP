@@ -309,14 +309,6 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      */
     void zrtpNotSuppOther();
 
-    /**
-     * ZRTP calls this method to set or release a mutex.
-     *
-     *@param set
-     *     If true the set the mutex, release otherwise.
-     */
-    virtual void zrtpMutex(bool set);
-
     /*
      * End of ZrtpCallback functions.
      */

@@ -120,6 +120,8 @@ void ZrtpQueue::start() {
 }
 
 void ZrtpQueue::stop() {
+    MutexLock lock(zrtpLockMutex);
+    endQueue();
     if (zrtpEngine != NULL) {
         zrtpEngine->stopZrtp();
         delete zrtpEngine;
@@ -164,10 +166,11 @@ ZrtpQueue::takeInDataPacket(void)
         if (magic != 0) {
             magic = ntohs(magic);
             if (magic == ZRTP_EXT_PACKET) {
-                doZrtp = true;
                 // packet->checkZrtpChecksum(false); not in latest Zfone Beta
                 recvZrtpSsrc = packet->getSSRC();
+		MutexLock lock(zrtpLockMutex);
                 if (zrtpEngine != NULL) {
+		    doZrtp = true;
                     unsigned char* extHeader =
                             const_cast<unsigned char*>(packet->getHdrExtContent());
                     // this now points beyond the undefined and length field.
@@ -188,10 +191,13 @@ ZrtpQueue::takeInDataPacket(void)
     // state then create a CryptoContext for this SSRC. Assumption: every
     // SSRC stream sent via this connection is secured _and_ uses the same
     // crypto parameters.
-    if (pcc == NULL && zrtpEngine && zrtpEngine->checkState(SecureState)) {
-        pcc = recvCryptoContext->newCryptoContextForSSRC(packet->getSSRC(), 0, 0L);
-        pcc->deriveSrtpKeys(packet->getSeqNum());
-        setInQueueCryptoContext(pcc);
+    if (pcc == NULL && dataServiceActive) {
+	MutexLock lock(zrtpLockMutex);
+        if (zrtpEngine && zrtpEngine->checkState(SecureState)) {
+	    pcc = recvCryptoContext->newCryptoContextForSSRC(packet->getSSRC(), 0, 0L);
+	    pcc->deriveSrtpKeys(packet->getSeqNum());
+	    setInQueueCryptoContext(pcc);
+	}
     }
 
     // At this point the we either have no crypto context:
@@ -210,28 +216,31 @@ ZrtpQueue::takeInDataPacket(void)
     }
 
     // If this is a ZRTP packet and the ZRTP engine was started - handle packet
-    if (doZrtp && zrtpEngine != NULL) {
-        unsigned char* extHeader = const_cast<unsigned char*>(packet->getHdrExtContent());
-        // this now points beyond the undefined and length field. We need them,
-        // thus adjust
-        extHeader -= 4;
-        int ret = zrtpEngine->processExtensionHeader(extHeader,
-                                                     const_cast<unsigned char*>(packet->getPayload()));
-
-        /*
-         * the ZRTP engine returns OkDismiss in case of the Confirm packets.
-         * They contain payload data that should not be given to the application
-         */
-        recvZrtpSeqNo = packet->getSeqNum();  // used later to initialize CryptoContext
-        if (ret == OkDismiss) {
-            delete packet;
-            return 0;
-        }
-        // if no more payload then it was a pure ZRTP packet, done with it.
-        if (packet->getPayloadSize() <= 0) {
-            delete packet;
-            return 0;
-        }
+    if (doZrtp && dataServiceActive) {
+	MutexLock lock(zrtpLockMutex);
+	if (zrtpEngine != NULL) {
+	    unsigned char* extHeader = const_cast<unsigned char*>(packet->getHdrExtContent());
+	    // this now points beyond the undefined and length field. We need them,
+	    // thus adjust
+	    extHeader -= 4;
+	    int ret = zrtpEngine->processExtensionHeader(extHeader,
+							 const_cast<unsigned char*>(packet->getPayload()));
+	    
+	    /*
+	     * the ZRTP engine returns OkDismiss in case of the Confirm packets.
+	     * They contain payload data that should not be given to the application
+	     */
+	    recvZrtpSeqNo = packet->getSeqNum();  // used later to initialize CryptoContext
+	    if (ret == OkDismiss) {
+		delete packet;
+		return 0;
+	    }
+	    // if no more payload then it was a pure ZRTP packet, done with it.
+	    if (packet->getPayloadSize() <= 0) {
+		delete packet;
+		return 0;
+	    }
+	}
     }
 
     // virtual for profile-specific validation and processing.
@@ -558,16 +567,14 @@ void ZrtpQueue::zrtpNotSuppOther() {
     }
 }
 
-void ZrtpQueue::zrtpMutex(bool set)
-{
-    if (set) {
-        zrtpLockMutex.enterMutex();
-    }
-    else {
-        zrtpLockMutex.leaveMutex();
-    }
-}
-
 #ifdef  CCXX_NAMESPACES
 }
 #endif
+
+/** EMACS **
+ * Local variables:
+ * mode: c++
+ * c-default-style: ellemtel
+ * c-basic-offset: 4
+ * End:
+ */
