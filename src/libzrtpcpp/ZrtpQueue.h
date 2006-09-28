@@ -335,6 +335,7 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
         std::string clientIdString;
 
         bool enableZrtp;
+        bool secureState;
 
         int32 secureParts;
 

@@ -72,7 +72,6 @@ ZrtpQueue::ZrtpQueue(uint32 ssrc, uint32 size, RTPApplication& app) :
 
 void ZrtpQueue::init()
 {
-    std::cerr << "init" << std::endl;
     zrtpUserCallback = NULL;
     enableZrtp = true;
     secureParts = 0;
@@ -113,7 +112,7 @@ void ZrtpQueue::start() {
     ZIDFile *zid = ZIDFile::getInstance();
     const uint8_t* ownZid = zid->getZid();
 
-    std::cerr << "start" << std::endl;
+    secureState = false;
 
     if (zrtpEngine == NULL) {
         zrtpEngine = new ZRtp((uint8_t*)ownZid, (ZrtpCallback*)this);
@@ -164,7 +163,6 @@ ZrtpQueue::takeInDataPacket(void)
         return 0;
     }
     bool doZrtp = false;
-    bool secureState = false;
     if (enableZrtp) {
         uint16 magic = packet->getHdrExtUndefined();
         if (magic != 0) {
@@ -185,7 +183,6 @@ ZrtpQueue::takeInDataPacket(void)
                         zrtpLockMutex.leaveMutex();
                         return 0;
                     }
-                    secureState = zrtpEngine->checkState(SecureState);
                 }
                 zrtpLockMutex.leaveMutex();
             }
@@ -234,6 +231,7 @@ ZrtpQueue::takeInDataPacket(void)
 	    int ret = zrtpEngine->processExtensionHeader(extHeader,
 							 const_cast<unsigned char*>(packet->getPayload()));
 
+            secureState = zrtpEngine->checkState(SecureState);
 	    /*
 	     * the ZRTP engine returns OkDismiss in case of the Confirm packets.
 	     * They contain payload data that should not be given to the application
