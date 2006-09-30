@@ -53,7 +53,7 @@ ZrtpQueue::initialize(const char *zidFilename)
     ZIDFile *zf = ZIDFile::getInstance();
     if (zf->open((char *)zidFilename) < 0) {
         enableZrtp = false;
-        sendInfo(Error, "cannot open or create the ZID file");
+        return -1;
     }
     return 1;
 }

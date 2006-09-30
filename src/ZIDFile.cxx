@@ -62,6 +62,7 @@ int ZIDFile::open(char *name) {
 	    fseek(zidFile, 0L, SEEK_SET);
 	    rec.ownZid = 1;
 	    fwrite(&rec, sizeof(zidrecord_t), 1, zidFile);
+            fflush(zidFile);
 	}
     }
     else {
