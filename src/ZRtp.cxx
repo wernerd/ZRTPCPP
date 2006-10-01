@@ -449,7 +449,8 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1) {
     uint8_t* pvr;
     uint8_t *data[4];
     unsigned int length[4];
-    uint8_t sas[SHA256_DIGEST_LENGTH];
+    uint8_t sas[SHA256_DIGEST_LENGTH+1];
+    uint32_t sasTemp;
 
     sendInfo(Info, "Initiator: DHPart1 received, preparing DHPart2");
 
@@ -486,8 +487,12 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1) {
         length[1] = 512;
         sha256(data, length, sas);
     }
-    SAS = Base32(sas, SHA256_DIGEST_LENGTH*5).getEncoded();
-    SAS = SAS.substr(SAS.length()-4, 4);
+    sas[SHA256_DIGEST_LENGTH] = 0;
+    sasTemp = *(uint32_t*)(sas + SHA256_DIGEST_LENGTH - 3);
+    sasTemp = ntohl(sasTemp);
+    sasTemp <<= 4;
+    *(uint32_t*)sas = htonl(sasTemp);
+    SAS = Base32(sas, 20).getEncoded();
 
     // Initialize a ZID record to get peer's retained secrets
     ZIDRecord zidRec(peerZid);
@@ -534,7 +539,8 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart *dhPart2) {
     uint8_t* pvi;
     uint8_t *data[4];
     unsigned int length[4];
-    uint8_t sas[SHA256_DIGEST_LENGTH];
+    uint8_t sas[SHA256_DIGEST_LENGTH+1];
+    uint32_t sasTemp;
 
     sendInfo(Info, "Responder: DHPart2 received, preparing Confirm1");
 
@@ -572,8 +578,12 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart *dhPart2) {
         length[0] = 512;
         sha256(data, length, sas);
     }
-    SAS = Base32(sas, SHA256_DIGEST_LENGTH*5).getEncoded();
-    SAS = SAS.substr(SAS.length()-4, 4);
+    sas[SHA256_DIGEST_LENGTH] = 0;
+    sasTemp = *(uint32_t*)(sas + SHA256_DIGEST_LENGTH - 3);
+    sasTemp = ntohl(sasTemp);
+    sasTemp <<= 4;
+    *(uint32_t*)sas = htonl(sasTemp);
+    SAS = Base32(sas, 20).getEncoded();
 
     // Here we have the peers pv. Because we are responder re-compute my hvi
     // using my Hello packet and the Initiator's pv and compare with
