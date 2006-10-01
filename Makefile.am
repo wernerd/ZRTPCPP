@@ -8,10 +8,9 @@
 # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-AUTOMAKE_OPTIONS = no-dependencies dist-shar dist-zip
 AUTOMAKE_OPTIONS = foreign
 SUBDIRS = src
-EXTRA_DIST = README AUTHORS COPYING *.pc* autoconf/*
+EXTRA_DIST = README AUTHORS COPYING *.pc* *.spec* autoconf/* reconfig
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libzrtpcpp.pc
