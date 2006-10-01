@@ -1,7 +1,7 @@
 Summary: "libzrtpcpp" - a ccrtp extension for zrtp/zphone support
 Name: libzrtpcpp
 Version: @VERSION@
-Release: @RELEASE@
+Release: 1
 Epoch: 0
 License: GPL
 Group: Development/Libraries
