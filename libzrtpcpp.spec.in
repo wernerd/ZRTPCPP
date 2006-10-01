@@ -1,4 +1,4 @@
-Summary: "libzrtpcpp" - a ccrtp extension for zrtp/zphone support
+Summary: "libzrtpcpp" - a ccrtp extension for zrtp/Zfone support
 Name: libzrtpcpp
 Version: @VERSION@
 Release: 1
@@ -7,7 +7,7 @@ License: GPL
 Group: Development/Libraries
 URL: http://www.gnu.org/software/commoncpp/commoncpp.html
 Source0: ftp://ftp.gnu.org/gnu/cccrtp/libzrtpcpp-%{PACKAGE_VERSION}.tar.gz
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root 
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 Requires: ccrtp >= 1.5.0
 Requires: libgcrypt
 BuildRequires: ccrtp-devel >= 1.5.0
@@ -18,21 +18,21 @@ BuildRequires: libgcrypt-devel
 %package devel
 Group: Development/Libraries
 Summary: Headers and static link library for libzrtpcpp.
-Requires: %{name} = %{epoch}:%{version}-%{release} 
+Requires: %{name} = %{epoch}:%{version}-%{release}
 Requires: ccrtp-devel >= 1.5.0
 Requires: libgcrypt-devel
 
 %description
 
-This library is a GPL licensed extension to the GNU RTP Stack, ccrtp, 
-that offers compatibility with Phil Zimmermen's zrtp/zphone voice 
-encryption, and which can be directly embedded into telephony 
+This library is a GPL licensed extension to the GNU RTP Stack, ccrtp,
+that offers compatibility with Phil Zimmermann's zrtp/Zfone voice
+encryption, and which can be directly embedded into telephony
 applications.  The current release is based on a beta draft of the
 zrtp spec.
 
 %description devel
-This package provides the header files, link libraries, and 
-documentation for building applications that use libzrtpcpp. 
+This package provides the header files, link libraries, and
+documentation for building applications that use libzrtpcpp.
 
 %prep
 %setup
@@ -44,24 +44,24 @@ make %{?_smp_mflags} LDFLAGS="-s" CXXFLAGS="$RPM_OPT_FLAGS"
 %install
 
 %makeinstall
-rm -rf %{buildroot}/%{_infodir} 
+rm -rf %{buildroot}/%{_infodir}
 
 %clean
 rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,0755)
-%doc AUTHORS COPYING README 
+%doc AUTHORS COPYING README
 %{_libdir}/*.so.*
 
 %files devel
 %defattr(-,root,root,0755)
 %{_libdir}/*.a
 %{_libdir}/*.so
-%{_libdir}/*.la   
+%{_libdir}/*.la
 %{_libdir}/pkgconfig/*.pc
 %{_includedir}/libzrtpcpp/*.h
 
 %post -p /sbin/ldconfig
 
-%postun -p /sbin/ldconfig  
+%postun -p /sbin/ldconfig
