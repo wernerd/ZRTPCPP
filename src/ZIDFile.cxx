@@ -68,10 +68,12 @@ int ZIDFile::open(char *name) {
     else {
 	fseek(zidFile, 0L, SEEK_SET);
 	if (fread(&rec, sizeof(zidrecord_t), 1, zidFile) != 1) {
+            fclose(zidFile);
             zidFile = NULL;
 	    return -1;
 	}
 	if (rec.ownZid != 1) {
+            fclose(zidFile);
             zidFile = NULL;
 	    return -1;
 	}
