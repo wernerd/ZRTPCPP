@@ -3,7 +3,12 @@ AC_INIT([libzrtpcpp], [0.9.0])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([libzrtpcpp], [0.9.0])
 
+REQUIRESCCRTP="ccrtp >= 1.5.0"
+AC_SUBST(REQUIRESCCRTP)
+
 REQUIRES="1.3.0"
+LT_RELEASE="0.9"
+LT_VERSION="0:1"
 
 # checks for progs
 AC_PROG_CXX
@@ -80,4 +85,4 @@ AC_FUNC_MALLOC
 
 AC_SUBST(CRYPTOBACKEND)
 AC_CONFIG_FILES([Makefile src/Makefile src/libzrtpcpp/Makefile src/libzrtpcpp/crypto/Makefile])
-AC_OUTPUT(libzrtpcpp.pc)
+AC_OUTPUT(libzrtpcpp.pc libzrtpcpp.spec)

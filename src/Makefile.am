@@ -1,7 +1,11 @@
 # Copyright (C) 2006 Werner Dittmann.
 
+LT_VERSION=@LT_CCXX_VERSION@
+RELEASE = $(LT_VERSION) -release $(LT_RELEASE)
 lib_LTLIBRARIES = libzrtpcpp.la
 # libzrtpcpp_la_LIBADD = @LIBS@
+
+libzrtpcpp_la_LDFLAGS = $(RELEASE)
 
 # http://www.gnu.org/software/libtool/manual.html
 
