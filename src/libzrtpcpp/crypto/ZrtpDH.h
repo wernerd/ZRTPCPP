@@ -112,6 +112,23 @@ public:
     int32_t computeKey(uint8_t *pubKeyBytes, int32_t length, uint8_t *secret);
 
     /**
+     * Check and validate the public key received from peer.
+     *
+     * Check if this is a correct Diffie-Helman public key. If the public
+     * key value is either one or (P-1) then this is a wrong public key
+     * value.
+     *
+     * @param pubKeyBytes
+     *     Pointer to the peer's public key bytes. Must be in big endian order.
+     *
+     * @param length
+     *    Length in bytes of the peer's public key.
+     *
+     * @return 0 if check faild, 1 if public key value is ok.
+     */
+    int32_t checkPubKey(uint8_t* pubKeyBytes, int32_t length) const;
+
+    /**
      * Generates a number of random bytes.
      *
      * @param buf

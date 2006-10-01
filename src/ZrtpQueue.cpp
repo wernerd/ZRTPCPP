@@ -59,13 +59,13 @@ ZrtpQueue::initialize(const char *zidFilename)
 }
 
 ZrtpQueue::ZrtpQueue(uint32 size, RTPApplication& app) :
-        AVPQueue(size,app), zrtpLockMutex(NULL)
+        AVPQueue(size,app)
 {
     init();
 }
 
 ZrtpQueue::ZrtpQueue(uint32 ssrc, uint32 size, RTPApplication& app) :
-        AVPQueue(ssrc,size,app), zrtpLockMutex(NULL)
+        AVPQueue(ssrc,size,app)
 {
     init();
 }
@@ -112,8 +112,6 @@ void ZrtpQueue::start() {
     ZIDFile *zid = ZIDFile::getInstance();
     const uint8_t* ownZid = zid->getZid();
 
-    secureState = false;
-
     if (zrtpEngine == NULL) {
         zrtpEngine = new ZRtp((uint8_t*)ownZid, (ZrtpCallback*)this);
         zrtpEngine->setClientId(clientIdString);
@@ -122,14 +120,12 @@ void ZrtpQueue::start() {
 }
 
 void ZrtpQueue::stop() {
-    zrtpLockMutex.enterMutex();
     endQueue();
     if (zrtpEngine != NULL) {
         zrtpEngine->stopZrtp();
         delete zrtpEngine;
         zrtpEngine = NULL;
     }
-    zrtpLockMutex.leaveMutex();
 }
 
 /*
@@ -170,7 +166,6 @@ ZrtpQueue::takeInDataPacket(void)
             if (magic == ZRTP_EXT_PACKET) {
                 // packet->checkZrtpChecksum(false); not in latest Zfone Beta
                 recvZrtpSsrc = packet->getSSRC();
-                zrtpLockMutex.enterMutex();
                 if (zrtpEngine != NULL) {
 		    doZrtp = true;
                     unsigned char* extHeader =
@@ -180,11 +175,9 @@ ZrtpQueue::takeInDataPacket(void)
                     extHeader -= 4;
                     if (zrtpEngine->handleGoClear(extHeader)) {
                         delete packet;
-                        zrtpLockMutex.leaveMutex();
                         return 0;
                     }
                 }
-                zrtpLockMutex.leaveMutex();
             }
         }
     }
@@ -195,14 +188,10 @@ ZrtpQueue::takeInDataPacket(void)
     // state then create a CryptoContext for this SSRC. Assumption: every
     // SSRC stream sent via this connection is secured _and_ uses the same
     // crypto parameters.
-    if (pcc == NULL && isActive() && secureState) {
-	zrtpLockMutex.enterMutex();
-        if (zrtpEngine && zrtpEngine->checkState(SecureState)) {
-	    pcc = recvCryptoContext->newCryptoContextForSSRC(packet->getSSRC(), 0, 0L);
-	    pcc->deriveSrtpKeys(packet->getSeqNum());
-	    setInQueueCryptoContext(pcc);
-	}
-        zrtpLockMutex.leaveMutex();
+    if (pcc == NULL && zrtpEngine && zrtpEngine->checkState(SecureState)) {
+        pcc = recvCryptoContext->newCryptoContextForSSRC(packet->getSSRC(), 0, 0L);
+        pcc->deriveSrtpKeys(packet->getSeqNum());
+        setInQueueCryptoContext(pcc);
     }
 
     // At this point the we either have no crypto context:
@@ -221,35 +210,27 @@ ZrtpQueue::takeInDataPacket(void)
     }
 
     // If this is a ZRTP packet and the ZRTP engine was started - handle packet
-    if (doZrtp && isActive()) {
-        zrtpLockMutex.enterMutex();
-	if (zrtpEngine != NULL) {
-	    unsigned char* extHeader = const_cast<unsigned char*>(packet->getHdrExtContent());
-	    // this now points beyond the undefined and length field. We need them,
-	    // thus adjust
-	    extHeader -= 4;
-	    int ret = zrtpEngine->processExtensionHeader(extHeader,
-							 const_cast<unsigned char*>(packet->getPayload()));
-
-            secureState = zrtpEngine->checkState(SecureState);
-	    /*
-	     * the ZRTP engine returns OkDismiss in case of the Confirm packets.
-	     * They contain payload data that should not be given to the application
-	     */
-	    recvZrtpSeqNo = packet->getSeqNum();  // used later to initialize CryptoContext
-	    if (ret == OkDismiss) {
-		delete packet;
-                zrtpLockMutex.leaveMutex();
-		return 0;
-	    }
-	    // if no more payload then it was a pure ZRTP packet, done with it.
-	    if (packet->getPayloadSize() <= 0) {
-		delete packet;
-                zrtpLockMutex.leaveMutex();
-		return 0;
-	    }
-	}
-        zrtpLockMutex.leaveMutex();
+    if (doZrtp && zrtpEngine != NULL) {
+        unsigned char* extHeader = const_cast<unsigned char*>(packet->getHdrExtContent());
+	// this now points beyond the undefined and length field. We need them,
+	// thus adjust
+	extHeader -= 4;
+	int ret = zrtpEngine->processExtensionHeader(extHeader,
+                const_cast<unsigned char*>(packet->getPayload()));
+	/*
+	 * the ZRTP engine returns OkDismiss in case of the Confirm packets.
+	 * They contain payload data that should not be given to the application
+	 */
+	recvZrtpSeqNo = packet->getSeqNum();  // used later to initialize CryptoContext
+	if (ret == OkDismiss) {
+            delete packet;
+            return 0;
+        }
+        // if no more payload then it was a pure ZRTP packet, done with it.
+	if (packet->getPayloadSize() <= 0) {
+            delete packet;
+            return 0;
+        }
     }
 
     // virtual for profile-specific validation and processing.

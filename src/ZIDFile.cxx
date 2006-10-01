@@ -49,7 +49,7 @@ int ZIDFile::open(char *name) {
     }
     if ((zidFile = fopen(name, "rb+")) == NULL) {
 	zidFile = fopen(name, "wb+");
-	// New file, generate an associated randomw ZID and save
+	// New file, generate an associated random ZID and save
         // it as first record
 	if (zidFile != NULL) {
 	    ip = (unsigned int*)associatedZid;
@@ -68,9 +68,11 @@ int ZIDFile::open(char *name) {
     else {
 	fseek(zidFile, 0L, SEEK_SET);
 	if (fread(&rec, sizeof(zidrecord_t), 1, zidFile) != 1) {
+            zidFile = NULL;
 	    return -1;
 	}
 	if (rec.ownZid != 1) {
+            zidFile = NULL;
 	    return -1;
 	}
 	memcpy(associatedZid, rec.identifier, IDENTIFIER_LEN);

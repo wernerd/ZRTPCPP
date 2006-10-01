@@ -335,7 +335,6 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
         std::string clientIdString;
 
         bool enableZrtp;
-        bool secureState;
 
         int32 secureParts;
 
@@ -346,8 +345,6 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
         uint32 senderZrtpSsrc;
         uint16 senderZrtpSeqNo;
         CryptoContext* senderCryptoContext;
-
-        Mutex zrtpLockMutex;
 };
 
 #ifdef  CCXX_NAMESPACES

@@ -467,14 +467,21 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1) {
     length[2] = strlen(sasString);
     data[3] = NULL;
 
-    // TODO Check the pvr to avoid MITM
     if (pubKey == Dh3072) {
+        if (!dhContext->checkPubKey(pvr, 384)) {
+            sendInfo(Alert, "Wrong/weak public key value (pvr) received from other party");
+            return NULL;
+        }
 	dhContext->computeKey(pvr, 384, DHss);
         length[1] = 384;
         sha256(data, length, sas);
 
     }
     else {
+        if (!dhContext->checkPubKey(pvr, 512)) {
+            sendInfo(Alert, "Wrong/weak public key value (pvr) received from other party");
+            return NULL;
+        }
         dhContext->computeKey(pvr, 512, DHss);
         length[1] = 512;
         sha256(data, length, sas);
@@ -547,13 +554,20 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart *dhPart2) {
     length[2] = strlen(sasString);
     data[3] = NULL;
 
-    // TODO Check the pvi to avoid MITM
     if (pubKey == Dh3072) {
+        if (!dhContext->checkPubKey(pvi, 384)) {
+            sendInfo(Alert, "Wrong/weak public key value (pvi) received from other party");
+            return NULL;
+        }
 	dhContext->computeKey(pvi, 384, DHss);
         length[0] = 384;
         sha256(data, length, sas);
     }
     else {
+        if (!dhContext->checkPubKey(pvi, 512)) {
+            sendInfo(Alert, "Wrong/weak public key value (pvi) received from other party");
+            return NULL;
+        }
         dhContext->computeKey(pvi, 512, DHss);
         length[0] = 512;
         sha256(data, length, sas);

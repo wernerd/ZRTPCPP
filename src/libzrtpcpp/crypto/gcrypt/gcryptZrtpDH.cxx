@@ -49,6 +49,8 @@ extern void initializeGcrypt();
 static gcry_mpi_t bnP3072 = NULL;
 static gcry_mpi_t bnP4096 = NULL;
 static gcry_mpi_t two = NULL;
+static gcry_mpi_t bnP3072MinusOne = NULL;
+static gcry_mpi_t bnP4096MinusOne = NULL;
 
 static uint8_t dhinit = 0;
 
@@ -148,6 +150,9 @@ ZrtpDH::ZrtpDH(int32_t pl) {
         gcry_mpi_scan(&bnP3072, GCRYMPI_FMT_USG, P3072, sizeof(P3072), NULL);
         gcry_mpi_scan(&bnP4096, GCRYMPI_FMT_USG, P4096, sizeof(P4096), NULL);
         two = gcry_mpi_set_ui(NULL, 2);
+        bnP3072MinusOne = gcry_mpi_new(sizeof(P3072)*8);
+        bnP4096MinusOne = gcry_mpi_new(sizeof(P4096)*8);
+        gcry_mpi_sub_ui(bnP4096MinusOne, bnP4096, 1);
 	dhinit = 1;
     }
 
@@ -178,15 +183,19 @@ ZrtpDH::~ZrtpDH() {
 int32_t ZrtpDH::computeKey(uint8_t *pubKeyBytes,
 			   int32_t length, uint8_t *secret) {
 
+    gcryptCtx* tmpCtx = static_cast<gcryptCtx*>(ctx);
+
     gcry_mpi_t pubKeyOther;
     gcry_mpi_scan(&pubKeyOther, GCRYMPI_FMT_USG, pubKeyBytes, length, NULL);
-
-    gcryptCtx* tmpCtx = static_cast<gcryptCtx*>(ctx);
     gcry_mpi_t sec = gcry_mpi_new(0);
+
     gcry_mpi_powm(sec, pubKeyOther, tmpCtx->privKey, ((tmpCtx->pLength == 3072) ? bnP3072 : bnP4096));
+    gcry_mpi_release(pubKeyOther);
 
     size_t result;
     gcry_mpi_print(GCRYMPI_FMT_USG, secret, length, &result, sec);
+    gcry_mpi_release(sec);
+
     return result;
 }
 
@@ -223,6 +232,28 @@ void ZrtpDH::random(uint8_t *buf, int32_t length) {
     gcry_randomize(buf, length, GCRY_STRONG_RANDOM);
 }
 
+int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes,
+                            int32_t length) const
+{
+    gcryptCtx* tmpCtx = static_cast<gcryptCtx*>(ctx);
+
+    gcry_mpi_t pubKeyOther;
+    gcry_mpi_scan(&pubKeyOther, GCRYMPI_FMT_USG, pubKeyBytes, length, NULL);
+
+    if (gcry_mpi_cmp_ui(pubKeyOther, 1) == 0)
+        return 0;
+
+    if (tmpCtx->pLength == 3072) {
+        if (gcry_mpi_cmp(bnP3072MinusOne, pubKeyOther) == 0)
+            return 0;
+    }
+    else {
+        if (gcry_mpi_cmp(bnP4096MinusOne, pubKeyOther) == 0)
+            return 0;
+    }
+    gcry_mpi_release(pubKeyOther);
+    return 1;
+}
 /** EMACS **
  * Local variables:
  * mode: c++

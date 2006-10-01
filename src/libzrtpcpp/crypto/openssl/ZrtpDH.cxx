@@ -47,8 +47,11 @@
 
 extern void initializeOpenSSL();
 
-static BIGNUM *bnP3072 = NULL;
-static BIGNUM *bnP4096 = NULL;
+static BIGNUM* bnP3072 = NULL;
+static BIGNUM* bnP4096 = NULL;
+
+static BIGNUM* bnP3072MinusOne = NULL;
+static BIGNUM* bnP4096MinusOne = NULL;
 
 static uint8_t dhinit = 0;
 
@@ -146,6 +149,10 @@ ZrtpDH::ZrtpDH(int32_t pkLength) {
     if (!dhinit) {
 	bnP3072 = BN_bin2bn(P3072,sizeof(P3072),NULL);
 	bnP4096 = BN_bin2bn(P4096,sizeof(P4096),NULL);
+        bnP3072MinusOne = BN_dup(bnP3072);
+        BN_sub_word(bnP3072MinusOne, 1);
+        bnP4096MinusOne = BN_dup(bnP4096);
+        BN_sub_word(bnP4096MinusOne, 1);
 	dhinit = 1;
     }
 
@@ -188,7 +195,6 @@ int32_t ZrtpDH::computeKey(uint8_t *pubKeyBytes,
     return result;
 }
 
-
 int32_t ZrtpDH::generateKey()
 {
     return DH_generate_key(static_cast<DH*>(ctx));
@@ -212,6 +218,27 @@ int32_t ZrtpDH::getPubKeyBytes(uint8_t *buf) const
 void ZrtpDH::random(uint8_t *buf, int32_t length)
 {
     RAND_bytes(buf, length);
+}
+
+int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes,
+                            int32_t length) const
+{
+    BIGNUM* pubKeyOther = BN_bin2bn(pubKeyBytes, length, NULL);
+
+    int one = BN_is_one(pubKeyOther);
+    if (one == 1)
+        return 0;
+
+    if (length == 384) {
+        if (BN_cmp(bnP3072MinusOne, pubKeyOther) == 0)
+            return 0;
+    }
+    else {
+        if (BN_cmp(bnP4096MinusOne, pubKeyOther) == 0)
+            return 0;
+    }
+    BN_free(pubKeyOther);
+    return 1;
 }
 
 /** EMACS **
