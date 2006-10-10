@@ -623,7 +623,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart *dhPart2) {
     zpConf->setExpTime(0);
 
     uint8_t confMac[SHA256_DIGEST_LENGTH];
-    unsigned int macLen;
+    uint32_t macLen;
 
     // The HMAC with length 20 includes the SAS flag inside the Confirm packet
     // TODO: Be aware of specific handling of stay secure flag !!!
@@ -645,7 +645,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1) {
 	return NULL;
     }
     uint8_t confMac[SHA256_DIGEST_LENGTH];
-    unsigned int macLen;
+    uint32_t macLen;
 
     // The HMAC with length 16 includes the SAS flag inside the Confirm packet
     // TODO: Be aware of specific handling of stay secure flag !!!
@@ -714,7 +714,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2) {
 	return NULL;
     }
     uint8_t confMac[SHA256_DIGEST_LENGTH];
-    unsigned int macLen;
+    uint32_t macLen;
 
     // The hmac with length 16 includes the SAS flag inside the Confirm packet
     // TODO: Be aware of specific handling of stay secure flag !!!
@@ -883,7 +883,7 @@ void ZRtp:: computeSharedSecretSet(ZIDRecord &zidRec) {
     * Compute the Initiator's and Reponder's retained shared secret Ids.
     */
     uint8_t randBuf[RS_LENGTH];
-    unsigned int macLen;
+    uint32_t macLen;
 
     if (!zidRec.isRs1Valid()) {
 	dhContext->random(randBuf, RS_LENGTH);
@@ -1020,7 +1020,7 @@ void ZRtp::generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
      * Hash the DH shared secret and the available shared secrets (max. 5).
      */
     unsigned char* data[7];
-    uint32_t  length[7];
+    unsigned int   length[7];
 
     data[0] = DHss;
     length[0] = dhContext->getSecretSize();
@@ -1123,7 +1123,7 @@ void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
      * Hash the DH shared secret and the available shared secrets (max. 5).
      */
     unsigned char* data[7];
-    uint32_t  length[7];
+    unsigned int   length[7];
 
     // first hash the DH secret
     data[0] = DHss;
@@ -1153,7 +1153,7 @@ void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 
 void ZRtp::computeSRTPKeys() {
 
-    unsigned int macLen;
+    uint32_t macLen;
 
     // Inititiator key and salt
     hmac_sha256(s0, SHA256_DIGEST_LENGTH, (unsigned char*)iniMasterKey, strlen(iniMasterKey),

@@ -38,8 +38,8 @@
 #include <gcrypt.h>
 #include <libzrtpcpp/crypto/sha256.h>
 
-void sha256(uint8_t* data, int32_t dataLength,
-            uint8_t* mac)
+void sha256(unsigned char* data, unsigned int dataLength,
+            unsigned char* mac)
 {
     gcry_md_hd_t hd;
     gcry_error_t err = 0;
@@ -52,9 +52,9 @@ void sha256(uint8_t* data, int32_t dataLength,
     gcry_md_close (hd);
 }
 
-void sha256(uint8_t* dataChunks[],
-            uint32_t dataChunkLength[],
-            uint8_t* mac)
+void sha256(unsigned char* dataChunks[],
+            unsigned int dataChunkLength[],
+            unsigned char* mac)
 {
     gcry_md_hd_t hd;
     gcry_error_t err = 0;
