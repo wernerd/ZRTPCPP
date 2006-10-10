@@ -185,6 +185,45 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
         clientIdString = id;
     }
 
+    /**
+     * This is used to create a data packet in the send queue.
+     * Sometimes a "NULL" or empty packet will be used instead, and
+     * these are known as "silent" packets.  "Silent" packets are
+     * used simply to "push" the scheduler along more accurately
+     * by giving the appearence that a next packet is waiting to
+     * be sent and to provide a valid timestamp for that packet.
+     *
+     * This method overrides the same method in OutgoingDataQueue class.
+     * During ZRTP processing it may be necessary to control the
+     * flow of outgoing RTP payload packets.
+     *
+     * @param stamp Timestamp for expected send time of packet.
+     * @param data Value or NULL if special "silent" packet.
+     * @param len May be 0 to indicate a default by payload type.
+     **/
+    void
+      putData(uint32 stamp, const unsigned char* data = NULL, size_t len = 0);
+    
+    /**
+     * This is used to create a data packet and send it immediately.
+     * Sometimes a "NULL" or empty packet will be used instead, and
+     * these are known as "silent" packets.  "Silent" packets are
+     * used simply to "push" the scheduler along more accurately
+     * by giving the appearence that a next packet is waiting to
+     * be sent and to provide a valid timestamp for that packet.
+     *
+     * This method overrides the same method in OutgoingDataQueue class.
+     * During ZRTP processing it may be necessary to control the
+     * flow of outgoing RTP payload packets.
+     *
+     * @param stamp Timestamp immediate send time of packet.
+     * @param data Value or NULL if special "silent" packet.
+     * @param len May be 0 to indicate a default by payload type.
+     **/
+    void
+      sendImmediate(uint32 stamp, const unsigned char* data = NULL, size_t len = 0);
+
+
     void start();
     void stop();
 

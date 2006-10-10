@@ -44,8 +44,29 @@ typedef SingleThreadRTPSession<SymmetricRTPChannel,
                                SymmetricRTPChannel,
                                ZrtpQueue> SymmetricZRTPSession;
 
+
+/**
+ * @typedef SymmetricRTPSession
+ *
+ * Uses one pair of sockets, (1) for RTP data and (2) for RTCP
+ * transmission/reception.
+ *
+ * @short Symmetric UDP/IPv6 RTP session scheduled by one thread of execution.
+ **/
+typedef SingleThreadRTPSessionIPV6<SymmetricRTPChannelIPV6,
+				   SymmetricRTPChannelIPV6,
+				   ZrtpQueue> SymmetricZRTPSessionIPV6;
 #ifdef   CCXX_NAMESPACES
 }
 #endif
 
 #endif // _ZRTPCCRTP_H_
+
+
+/** EMACS **
+ * Local variables:
+ * mode: c++
+ * c-default-style: ellemtel
+ * c-basic-offset: 4
+ * End:
+ */

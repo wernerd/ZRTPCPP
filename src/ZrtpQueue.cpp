@@ -300,14 +300,29 @@ ZrtpQueue::takeInDataPacket(void)
 bool
 ZrtpQueue::onSRTPPacketError(IncomingRTPPkt& pkt, int32 errorCode)
 {
-            if (errorCode == -1) {
-                sendInfo(Error, "Dropping packet because of authentication error!");
-            }
-            else {
-                sendInfo(Error, "Dropping packet because replay check failed!");
-            }
-            return false;
+    if (errorCode == -1) {
+	sendInfo(Error, "Dropping packet because of authentication error!");
+    }
+    else {
+	sendInfo(Error, "Dropping packet because replay check failed!");
+    }
+    return false;
 }
+
+
+void
+ZrtpQueue::putData(uint32 stamp, const unsigned char* data, size_t len)
+{
+    OutgoingDataQueue::putData(stamp, data, len);
+}
+
+
+void
+ZrtpQueue::sendImmediate(uint32 stamp, const unsigned char* data, size_t len)
+{
+    OutgoingDataQueue::sendImmediate(stamp, data, len);
+}
+
 
 /*
  * Here the callback methods required by the ZRTP implementation

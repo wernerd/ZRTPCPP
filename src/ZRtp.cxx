@@ -1253,3 +1253,12 @@ void ZRtp::setClientId(std::string id) {
     }
     zrtpHello->setClientId((unsigned char*)id.c_str());
 }
+
+
+/** EMACS **
+ * Local variables:
+ * mode: c++
+ * c-default-style: ellemtel
+ * c-basic-offset: 4
+ * End:
+ */
