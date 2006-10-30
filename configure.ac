@@ -10,7 +10,8 @@
 
 AC_INIT(reconfig)
 
-VERSION="0.9.0"
+VERSION="0.9.1"
+REQUIRES="1.3.0"
 LT_RELEASE="0.9"
 LT_VERSION="0:1"
 
@@ -68,8 +69,6 @@ case $host in
     ;;
 esac
 
-# PKG_CHECK_MODULES(CCRTP, libccrtp1 >= 1.3.4)
-
 AC_CHECK_HEADERS([stdlib.h string.h pthread.h])
 
 # we need the pthread library as well
@@ -77,13 +76,13 @@ AC_CHECK_LIB([pthread], [pthread_mutex_init], [], AC_MSG_ERROR([pthread library 
 
 AC_CHECK_LIB([gcrypt],
              [gcry_cipher_open], [
-                CRYPTOBACKEND="libccrtp1 >= 1.5.0"
-                LIBS="-lgcrypt -lccrtp1 $LIBS"
+                CRYPTOBACKEND=""
+                LIBS="-lgcrypt $LIBS"
                 ],
              [AC_CHECK_LIB([crypto],
                            [EVP_CipherInit_ex], [
-                                CRYPTOBACKEND="libcrypto >= 0.9.8. libccrtp1 >= 1.5.0"
-                                LIBS="-lcrypto -lccrtp1 $LIBS"
+                                CRYPTOBACKEND="libcrypto >= 0.9.8"
+                                LIBS="-lcrypto $LIBS"
                                 ],
                            [AC_MSG_ERROR([Cannot find libgcrypt or OpenSSL crypto library.])]
                           )
@@ -105,18 +104,27 @@ else
         WARN_FLAGS=""
 fi
 AC_SUBST(WARN_FLAGS)
-PKG_CHECK_MODULES(RTPSTACK, libccrtp1 >= 1.5.0, [
-	RTPSTACK_LIBPATH=`pkg-config --variable=libdir libccrtp1`
-	LIBS="-L$RTPSTACK_LIBPATH $RTPSTACK_LIBS $LIBS"
-	CCXX_FLAGS="$CXXFLAGS $RTPSTACK_CFLAGS"
-])
 
+AC_ARG_WITH([ccrtp],
+            [AS_HELP_STRING([--without-ccrtp], [disable support for ccrtp, @<:@default=yes@:>@])],
+            [],
+            [with_ccrtp=yes])
+
+if test "x$with_ccrtp" != xno; then
+    PKG_CHECK_MODULES(RTPSTACK, libccrtp1 >= 1.5.0, [
+        RTPSTACK_LIBPATH=`pkg-config --variable=libdir libccrtp1`
+        LIBS="-L$RTPSTACK_LIBPATH $RTPSTACK_LIBS $LIBS"
+        CCXX_FLAGS="$CXXFLAGS $RTPSTACK_CFLAGS"
+    ])
+    PKG_CHECK_MODULES(COMMON, libccgnu2 >= $REQUIRES)
+    CXXFLAGS="$CXXFLAGS $COMMON_CFLAGS"
+    COMMON_LIBPATH=`pkg-config --variable=libdir libccgnu2`
+    LIBS="-L$COMMON_LIBPATH $COMMON_LIBS $LIBS"
+    CRYPTOBACKEND="$CRYPTOBACKEND libccrtp1 >= 1.5.0"
+fi
+AM_CONDITIONAL(CCRTP_SUPPORT, test "${with_ccrtp}" = "yes")
 
 OST_DEBUG
-
-# AC_CHECK_HEADER([ccrtp/rtp.h],
-#                [LIBS="-lccrtp1 $LIBS"],
-#                [AC_MSG_ERROR([Cannot find GNU ccRTP header - install it before using libzrtpcpp])])
 
 # Checks for header files.
 AC_HEADER_STDC

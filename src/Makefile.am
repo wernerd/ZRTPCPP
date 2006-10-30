@@ -23,7 +23,9 @@ zrtp_src_g =	libzrtpcpp/crypto/gcrypt/gcryptZrtpDH.cxx \
 		libzrtpcpp/crypto/gcrypt/InitializeGcrypt.cxx
 endif
 
-
+if CCRTP_SUPPORT
+ccrtp_src = ZrtpQueue.cpp
+endif
 
 libzrtpcpp_la_SOURCES = ZIDFile.cxx \
 		ZIDRecord.cxx \
@@ -39,7 +41,6 @@ libzrtpcpp_la_SOURCES = ZIDFile.cxx \
 		ZrtpPacketHello.cxx \
 		ZrtpStateClass.cxx \
 		ZrtpTextData.cxx \
-		ZrtpQueue.cpp \
-		Base32.cxx $(zrtp_src_g) $(zrtp_src_o)
+		Base32.cxx $(ccrtp_src) $(zrtp_src_g) $(zrtp_src_o)
 
 SUBDIRS = libzrtpcpp libzrtpcpp/crypto

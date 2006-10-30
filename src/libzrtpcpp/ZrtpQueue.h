@@ -53,6 +53,30 @@ namespace ost {
 class ZrtpQueue : public AVPQueue, public ZrtpCallback {
 
  public:
+
+     /**
+      * Initialize the ZrtpQueue.
+      *
+      * Before a programm can use ZRTP it has to initialize ZRTP
+      * processing. This method initializes the timeout thread and
+      * the ZID file that contais the retained secrets.
+      *
+      * If an application requires several ZRTP sessions all session use
+      * the same timeout thread and use the same ZID file. Therefore an
+      * application does not need to do any synchronisation regading
+      * ZID files or timeouts. This is managed by the ZRTP implementation.
+      *
+      * The application may specify its own ZID file name. If no ZID file name
+      * is specified it defaults to <code>$HOME/.GNUccRTP.zid</code> if the
+      * <code>HOME</code>environment variable is set. If it is not set the
+      * current directory is used.
+      *
+      * @param zidFilename
+      *     The name of the ZID file, can be a relative or absolut filename.
+      * @return 1 on success, -1 on failure. In the latter case the method also
+      *     sets <code>setEnableZrtp(false)</code>.
+      *
+      */
     int32_t initialize(const char *zidFilename);
 
     /*

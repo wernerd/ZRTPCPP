@@ -63,7 +63,7 @@ static HANDLE *lock_cs;
 static void threadLockSetup(void) {
     int i;
 
-    lock_cs=OPENSSL_malloc(CRYPTO_num_locks() * sizeof(HANDLE));
+    lock_cs=(HANDLE*)OPENSSL_malloc(CRYPTO_num_locks() * sizeof(HANDLE));
     for (i = 0; i < CRYPTO_num_locks(); i++) {
 	lock_cs[i] = CreateMutex(NULL,FALSE,NULL);
     }
@@ -161,7 +161,7 @@ static unsigned long solaris_thread_id(void) {
 #endif /* SOLARIS */
 
 
-#if defined HAVE_PTHREAD_H && !defined SOLARIS
+#if defined HAVE_PTHREAD_H && !defined SOLARIS && !defined WIN32
 
 static pthread_mutex_t* lock_cs;
 static long* lock_count;
