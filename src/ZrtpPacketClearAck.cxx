@@ -29,9 +29,10 @@ ZrtpPacketClearAck::ZrtpPacketClearAck() {
     if (allocated == NULL) {
     }
     zrtpHeader = (zrtpPacketHeader_t *)&((ClearAck_t *)allocated)->hdr;	// the standard header
+    clearAckHeader = (ClearAck_t *)&((ClearAckPacket_t *)allocated)->clearAck;
 
     setZrtpId();
-    setLength(MESSAGE_LENGTH);
+    setLength(CLEAR_ACK_LENGTH + MESSAGE_LENGTH);
     setMessage((uint8_t*)ClearAckMsg);
 }
 
@@ -40,6 +41,7 @@ ZrtpPacketClearAck::ZrtpPacketClearAck(uint8_t *data) {
 
     allocated = NULL;
     zrtpHeader = (zrtpPacketHeader_t *)&((ClearAck_t *)data)->hdr;	// the standard header
+    clearAckHeader = (ClearAck_t *)&((ClearAckPacket_t *)data)->clearAck;
 }
 
 ZrtpPacketClearAck::~ZrtpPacketClearAck() {

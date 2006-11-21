@@ -32,10 +32,17 @@
 
 class ZrtpPacketConf2Ack : public ZrtpPacketBase {
 
+ protected:
+    Conf2Ack_t* conf2AckHeader;
+
  public:
     ZrtpPacketConf2Ack();		/* Creates a Conf2Ack packet with default data */
     ZrtpPacketConf2Ack(char* data);	/* Creates a Conf2Ack packet from received data */
     virtual ~ZrtpPacketConf2Ack();
+
+    uint8_t* getCrc()                  { return conf2AckHeader->crc; };
+
+    void setCrc(uint8_t *crc)          { memcpy(conf2AckHeader->crc, crc, 4); };
 
  private:
 };

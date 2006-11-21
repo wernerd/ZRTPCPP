@@ -47,7 +47,8 @@ class ZrtpPacketDHPart : public ZrtpPacketBase {
     uint8_t* getRs2Id()          { return DHPartHeader->rs2Id; };
     uint8_t* getSigsId()         { return DHPartHeader->sigsId; };
     uint8_t* getSrtpsId()        { return DHPartHeader->srtpsId; };
-    uint8_t* getOtherSecretId() { return DHPartHeader->otherSecretId; };
+    uint8_t* getOtherSecretId()  { return DHPartHeader->otherSecretId; };
+    uint8_t* getCrc()            { return DHPartHeader->crc; };
 
     void setPv(uint8_t* text) 	         { memcpy(pv, text, ((pktype == Dh3072) ? 384 :512)); };
     void setRs1Id(uint8_t* text)         { memcpy(DHPartHeader->rs1Id, text, 8); };
@@ -55,6 +56,7 @@ class ZrtpPacketDHPart : public ZrtpPacketBase {
     void setSigsId(uint8_t* text)        { memcpy(DHPartHeader->sigsId, text, 8); };
     void setSrtpsId(uint8_t* text)       { memcpy(DHPartHeader->srtpsId, text, 8); };
     void setOtherSecretId(uint8_t* text) { memcpy(DHPartHeader->otherSecretId, text, 8); };
+    void setCrc(uint8_t *crc)            { memcpy(DHPartHeader->crc, crc, 4); };
 
  private:
     SupportedPubKeys pktype;

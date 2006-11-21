@@ -30,6 +30,9 @@
 #define ZRTP_WORD_SIZE		4
 #define ZRTP_MSG_SIZE		8 	// 2 * WORD_SIZE
 
+/*
+ *  *_LENGTH is defined in Words (each word is 4 bytes)
+ */
 #define MESSAGE_LENGTH		2
 typedef struct zrtpPacketHeader {
     uint16_t    zrtpId;
@@ -38,7 +41,7 @@ typedef struct zrtpPacketHeader {
 } zrtpPacketHeader_t;
 
 
-#define HELLO_LENGTH            62 /* plus the MESSAGE_LENGTH = 64 */
+#define HELLO_LENGTH            63 /* plus the MESSAGE_LENGTH = 65 */
 typedef struct Hello {
     uint8_t	version[4];
     uint8_t	clientId[31];
@@ -49,6 +52,7 @@ typedef struct Hello {
     uint8_t	pubkeys[5][8];
     uint8_t	sas[5][8];
     uint8_t     zid[12];
+    uint8_t     crc[4];
 } Hello_t;
 
 typedef struct HelloPacket {
@@ -56,11 +60,17 @@ typedef struct HelloPacket {
     Hello_t hello;
 } HelloPacket_t;
 
-typedef struct HelloAck {	/* Length is MESSAGE_LENGTH */
-    zrtpPacketHeader_t hdr;
+#define HELLO_ACK_LENGTH        1 /* plus the MESSAGE_LENGTH = 3 */
+typedef struct HelloAck {
+    uint8_t     crc[4];
 } HelloAck_t;
 
-#define COMMIT_LENGTH           21 /* plus MESSAGE_LENGTH = 23 */
+typedef struct HelloAckPacket {
+    zrtpPacketHeader_t hdr;
+    HelloAck_t helloAck;
+} HelloAckPacket_t;
+
+#define COMMIT_LENGTH           22 /* plus MESSAGE_LENGTH = 24 */
 typedef struct Commit {
     uint8_t	zid[12];
     uint8_t     hash[8];
@@ -69,6 +79,7 @@ typedef struct Commit {
     uint8_t	pubkey[8];
     uint8_t	sas[8];
     uint8_t	hvi[32];
+    uint8_t     crc[4];
 } Commit_t;
 
 typedef struct CommitPacket {
@@ -76,13 +87,14 @@ typedef struct CommitPacket {
     Commit_t commit;
 } CommitPacket_t;
 
-#define DHPART_LENGTH		10 /* plus MESSAGE_LENGTH + pvr length */
+#define DHPART_LENGTH		11 /* plus MESSAGE_LENGTH + pvr length */
 typedef struct DHPart {
     uint8_t rs1Id[8];
     uint8_t rs2Id[8];
     uint8_t sigsId[8];
     uint8_t srtpsId[8];
     uint8_t otherSecretId[8];
+    uint8_t crc[4];
 }  DHPart_t;
 
 typedef struct DHPartPacket {
@@ -90,8 +102,9 @@ typedef struct DHPartPacket {
 } DHPartPacket_t;
 
 
-#define CONFIRM_LENGTH		2 /* the rest of Confirm data goes into payload */
+#define CONFIRM_LENGTH		1 /*  plus MESSAGE_LENGTH, the rest of Confirm data goes into payload */
 typedef struct Confirm {
+    uint8_t     crc[4];
     uint8_t	plaintext[15];
     uint8_t	flag;
     uint32_t    expTime;
@@ -103,35 +116,37 @@ typedef struct ConfirmPacket {
     Confirm_t confirm;
 } ConfirmPacket_t;
 
-#define CONF2ACK_LENGTH         2
+#define CONF2ACK_LENGTH         1
 typedef struct Conf2Ack {
-    zrtpPacketHeader_t hdr;
+    uint8_t     crc[4];
 } Conf2Ack_t;
 
-#define ERROR_LENGTH		2 /* plus MESSAGE_LENGTH = 4 */
-typedef struct Error {
-    uint8_t type[8];
-} Error_t;
-
-typedef struct ErrorPacket {
+typedef struct Conf2AckPacket {
     zrtpPacketHeader_t hdr;
-    Error_t error;
-} ErrorPacket_t;
+    Conf2Ack_t  conf2Ack
+} Conf2AckPacket_t;
 
 typedef struct GoClear {
+    uint8_t reason[16]
     uint8_t clearHmac[32];
+    uint8_t crc[4];
 } GoClear_t;
 
-#define GOCLEAR_LENGTH         8 /* plus MESSAGE_LENGTH = 10 */
+#define GOCLEAR_LENGTH         13 /* plus MESSAGE_LENGTH = 10 */
 typedef struct GoClearPacket {
     zrtpPacketHeader_t hdr;
     GoClear_t goClear;
 } GoClearPacket_t;
 
-#define CLEARACK_LENGTH         2
+#define CLEAR_ACK_LENGTH         1
 typedef struct ClearAck {
-    zrtpPacketHeader_t hdr;
+    uint8_t     crc[4];
 } ClearAck_t;
+
+typedef struct ClearAckPacket {
+    zrtpPacketHeader_t hdr;
+    ClearAck_t  clearAck
+} ClearAckPacket_t;
 
 
 /* big/little endian conversion */
@@ -177,3 +192,11 @@ static inline uint64_t U64_AT( void const * _p )
 
 #endif // ZRTPPACKET_H
 
+
+/** EMACS **
+ * Local variables:
+ * mode: c++
+ * c-default-style: ellemtel
+ * c-basic-offset: 4
+ * End:
+ */

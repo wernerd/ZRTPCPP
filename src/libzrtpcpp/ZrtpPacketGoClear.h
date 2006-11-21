@@ -36,13 +36,15 @@ class ZrtpPacketGoClear : public ZrtpPacketBase {
     GoClear_t* clearHeader;
 
  public:
-     ZrtpPacketGoClear();		/* Creates a Error packet with default data */
-     ZrtpPacketGoClear(uint8_t* data);	/* Creates a Error packet from received data */
-     virtual ~ZrtpPacketGoClear();
+    ZrtpPacketGoClear();		/* Creates a Error packet with default data */
+    ZrtpPacketGoClear(uint8_t* data);	/* Creates a Error packet from received data */
+    virtual ~ZrtpPacketGoClear();
 
-     uint8_t* getClearHmac() { return clearHeader->clearHmac; };
+    const uint8_t* getClearHmac() { return clearHeader->clearHmac; };
+    const uint8_t* getCrc()       { return helloAckHeader->crc; };
 
-     void setClearHmac(uint8_t *text) { memcpy(clearHeader->clearHmac, text, 32); };
+    void setClearHmac(uint8_t *text) { memcpy(clearHeader->clearHmac, text, 32); };
+    void setCrc(uint8_t *crc)        { memcpy(helloAckHeader->crc, crc, 4); };
 
  private:
 };

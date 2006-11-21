@@ -53,6 +53,7 @@ class ZrtpPacketHello : public ZrtpPacketBase {
     uint8_t* getPubKeysType(uint32_t number) { return helloHeader->pubkeys[number]; };
     uint8_t* getSasType(uint32_t number)     { return helloHeader->sas[number]; };
     uint8_t* getZid()                        { return helloHeader->zid; };
+    uint8_t* getCrc()                        { return helloHeader->crc; };
 
     void setVersion(uint8_t *text)                   { memcpy(helloHeader->version, text, 4); }
     void setClientId(const uint8_t *text)            { memcpy(helloHeader->clientId, text, 15); }
@@ -62,6 +63,7 @@ class ZrtpPacketHello : public ZrtpPacketBase {
     void setPubKeyType(uint32_t number, char *text)  { memcpy(helloHeader->pubkeys[number], text, 8); };
     void setSasType(uint32_t number, char *text)     { memcpy(helloHeader->sas[number], text, 8); };
     void setZid(uint8_t *text)                       { memcpy(helloHeader->zid, text, 12); };
+    void setCrc(uint8_t *crc)                        { memcpy(helloHeader->crc, crc, 4); };
  private:
 };
 

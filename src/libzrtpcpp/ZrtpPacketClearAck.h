@@ -30,10 +30,17 @@
  */
 class ZrtpPacketClearAck : public ZrtpPacketBase {
 
+ protected:
+    ClearAck_t* clearAckHeader;
+
  public:
-     ZrtpPacketClearAck();		/* Creates a Conf2Ack packet with default data */
-     ZrtpPacketClearAck(uint8_t* data);	/* Creates a Conf2Ack packet from received data */
-     virtual ~ZrtpPacketClearAck();
+    ZrtpPacketClearAck();		/* Creates a ClearAck packet with default data */
+    ZrtpPacketClearAck(uint8_t* data);	/* Creates a ClearAck packet from received data */
+    virtual ~ZrtpPacketClearAck();
+  
+    uint8_t* getCrc()                  { return clearAckHeader->crc; };
+
+    void setCrc(uint8_t *crc)          { memcpy(clearAckHeader->crc, crc, 4); };
 
  private:
 };

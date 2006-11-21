@@ -29,9 +29,10 @@ ZrtpPacketConf2Ack::ZrtpPacketConf2Ack() {
     if (allocated == NULL) {
     }
     zrtpHeader = (zrtpPacketHeader_t *)&((Conf2Ack_t *)allocated)->hdr;	// the standard header
+    conf2AckHeader = (Conf2Ack_t *)&((Conf2AckPacket_t *)allocated)->conf2Ack;
 
     setZrtpId();
-    setLength(MESSAGE_LENGTH);
+    setLength(CONF2ACK_LENGTH + MESSAGE_LENGTH);
     setMessage((uint8_t*)Conf2AckMsg);
 }
 
@@ -40,6 +41,7 @@ ZrtpPacketConf2Ack::ZrtpPacketConf2Ack(char *data) {
 
     allocated = NULL;
     zrtpHeader = (zrtpPacketHeader_t *)&((Conf2Ack_t *)data)->hdr;	// the standard header
+    conf2AckHeader = (Conf2Ack_t *)&((Conf2AckPacket_t *)data)->conf2Ack;
 }
 
 ZrtpPacketConf2Ack::~ZrtpPacketConf2Ack() {
