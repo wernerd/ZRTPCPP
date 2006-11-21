@@ -36,7 +36,6 @@ libzrtpcpp_la_SOURCES = ZIDFile.cxx \
 		ZrtpPacketDHPart.cxx \
 		ZrtpPacketGoClear.cxx \
 		ZrtpPacketClearAck.cxx \
-		ZrtpPacketError.cxx \
 		ZrtpPacketHelloAck.cxx \
 		ZrtpPacketHello.cxx \
 		ZrtpStateClass.cxx \

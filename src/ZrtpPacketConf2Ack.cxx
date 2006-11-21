@@ -28,8 +28,8 @@ ZrtpPacketConf2Ack::ZrtpPacketConf2Ack() {
     allocated = malloc(sizeof (Conf2Ack_t));
     if (allocated == NULL) {
     }
-    zrtpHeader = (zrtpPacketHeader_t *)&((Conf2Ack_t *)allocated)->hdr;	// the standard header
-    conf2AckHeader = (Conf2Ack_t *)&((Conf2AckPacket_t *)allocated)->conf2Ack;
+    zrtpHeader = (zrtpPacketHeader_t *)&((Conf2AckPacket_t*)allocated)->hdr;	// the standard header
+    conf2AckHeader = (Conf2Ack_t *)&((Conf2AckPacket_t*)allocated)->conf2Ack;
 
     setZrtpId();
     setLength(CONF2ACK_LENGTH + MESSAGE_LENGTH);
@@ -40,8 +40,8 @@ ZrtpPacketConf2Ack::ZrtpPacketConf2Ack(char *data) {
     DEBUGOUT((fprintf(stdout, "Creating Conf2Ack packet from data\n")));
 
     allocated = NULL;
-    zrtpHeader = (zrtpPacketHeader_t *)&((Conf2Ack_t *)data)->hdr;	// the standard header
-    conf2AckHeader = (Conf2Ack_t *)&((Conf2AckPacket_t *)data)->conf2Ack;
+    zrtpHeader = (zrtpPacketHeader_t *)&((Conf2AckPacket_t*)data)->hdr;	// the standard header
+    conf2AckHeader = (Conf2Ack_t *)&((Conf2AckPacket_t*)data)->conf2Ack;
 }
 
 ZrtpPacketConf2Ack::~ZrtpPacketConf2Ack() {

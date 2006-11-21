@@ -123,11 +123,11 @@ typedef struct Conf2Ack {
 
 typedef struct Conf2AckPacket {
     zrtpPacketHeader_t hdr;
-    Conf2Ack_t  conf2Ack
+    Conf2Ack_t  conf2Ack;
 } Conf2AckPacket_t;
 
 typedef struct GoClear {
-    uint8_t reason[16]
+    uint8_t reason[16];
     uint8_t clearHmac[32];
     uint8_t crc[4];
 } GoClear_t;
@@ -145,7 +145,7 @@ typedef struct ClearAck {
 
 typedef struct ClearAckPacket {
     zrtpPacketHeader_t hdr;
-    ClearAck_t  clearAck
+    ClearAck_t  clearAck;
 } ClearAckPacket_t;
 
 
