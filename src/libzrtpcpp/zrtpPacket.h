@@ -41,14 +41,14 @@ typedef struct zrtpPacketHeader {
 } zrtpPacketHeader_t;
 
 
-#define HELLO_LENGTH            63 /* plus the MESSAGE_LENGTH = 65 */
+#define HELLO_LENGTH            58 /* plus the MESSAGE_LENGTH = 60 */
 typedef struct Hello {
     uint8_t	version[4];
     uint8_t	clientId[31];
     uint8_t	flag;
     uint8_t     hashes[5][8];
     uint8_t     ciphers[5][8];
-    uint8_t     authlengths[5][8];
+    uint8_t     authlengths[5][4];
     uint8_t	pubkeys[5][8];
     uint8_t	sas[5][8];
     uint8_t     zid[12];
@@ -70,12 +70,12 @@ typedef struct HelloAckPacket {
     HelloAck_t helloAck;
 } HelloAckPacket_t;
 
-#define COMMIT_LENGTH           22 /* plus MESSAGE_LENGTH = 24 */
+#define COMMIT_LENGTH           21 /* plus MESSAGE_LENGTH = 23 */
 typedef struct Commit {
     uint8_t	zid[12];
     uint8_t     hash[8];
     uint8_t     cipher[8];
-    uint8_t     authlengths[8];
+    uint8_t     authlengths[4];
     uint8_t	pubkey[8];
     uint8_t	sas[8];
     uint8_t	hvi[32];
