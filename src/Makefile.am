@@ -30,6 +30,7 @@ endif
 libzrtpcpp_la_SOURCES = ZIDFile.cxx \
 		ZIDRecord.cxx \
 		ZRtp.cxx \
+		ZrtpCrc32.cxx \
 		ZrtpPacketCommit.cxx \
 		ZrtpPacketConf2Ack.cxx \
 		ZrtpPacketConfirm.cxx \

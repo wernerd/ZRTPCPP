@@ -41,10 +41,6 @@ class ZrtpPacketHelloAck : public ZrtpPacketBase {
     ZrtpPacketHelloAck(char* data);	/* Creates a HelloAck packet from received data */
     virtual ~ZrtpPacketHelloAck();
 
-    uint8_t* getCrc()                        { return helloAckHeader->crc; };
-
-    void setCrc(uint8_t *crc)                { memcpy(helloAckHeader->crc, crc, 4); };
-
  private:
 };
 

@@ -16,7 +16,7 @@ ccrtp_header = ZrtpQueue.h ZrtpUserCallback.h TimeoutProvider.h  zrtpccrtp.h
 endif
 
 ccxxinclude_HEADERS = Base32.h    ZrtpPacketBase.h      ZrtpPacketDHPart.h    ZrtpPacketHello.h \
-		  ZIDFile.h       ZrtpPacketClearAck.h  ZrtpStateClass.h \
+		  ZIDFile.h       ZrtpPacketClearAck.h  ZrtpStateClass.h      ZrtpCrc32.h \
 		  ZIDRecord.h     ZrtpPacketCommit.h    ZrtpPacketGoClear.h   ZrtpStates.h \
 		  ZrtpCallback.h  ZrtpPacketConf2Ack.h  zrtpPacket.h          ZrtpTextData.h \
 		  ZRtp.h          ZrtpPacketConfirm.h   ZrtpPacketHelloAck.h  $(ccrtp_header)

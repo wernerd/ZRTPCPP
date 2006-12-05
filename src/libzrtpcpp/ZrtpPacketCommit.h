@@ -52,7 +52,6 @@ class ZrtpPacketCommit : public ZrtpPacketBase {
     uint8_t* getSasType()     { return commitHeader->sas; };
     uint8_t* getZid()         { return commitHeader->zid; };
     uint8_t* getHvi()         { return commitHeader->hvi; };
-    uint8_t* getCrc()         { return commitHeader->crc; };
 
     void setHashType(uint8_t* text)    { memcpy(commitHeader->hash, text, 8); };
     void setCipherType(uint8_t* text)  { memcpy(commitHeader->cipher, text, 8); };
@@ -61,7 +60,6 @@ class ZrtpPacketCommit : public ZrtpPacketBase {
     void setSasType(uint8_t* text)     { memcpy(commitHeader->sas, text, 8); };
     void setZid(uint8_t* text)         { memcpy(commitHeader->zid, text, 12); };
     void setHvi(uint8_t* text)         { memcpy(commitHeader->hvi, text, 32); };
-    void setCrc(uint8_t *crc)          { memcpy(commitHeader->crc, crc, 4); };
 
  private:
 };

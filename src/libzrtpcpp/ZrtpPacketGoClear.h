@@ -41,10 +41,8 @@ class ZrtpPacketGoClear : public ZrtpPacketBase {
     virtual ~ZrtpPacketGoClear();
 
     const uint8_t* getClearHmac() { return clearHeader->clearHmac; };
-    const uint8_t* getCrc()       { return clearHeader->crc; };
 
     void setClearHmac(uint8_t *text) { memcpy(clearHeader->clearHmac, text, 32); };
-    void setCrc(uint8_t *crc)        { memcpy(clearHeader->crc, crc, 4); };
 
  private:
 };

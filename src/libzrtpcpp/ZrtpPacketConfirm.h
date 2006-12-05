@@ -45,13 +45,11 @@ class ZrtpPacketConfirm : public ZrtpPacketBase {
     uint8_t getSASFlag()              { return confirmHeader->flag; }
     const uint8_t* getHmac()          { return confirmHeader->hmac; };
     const uint32_t getExpTime()       { return confirmHeader->expTime; };
-    const uint8_t* getCrc()           { return confirmHeader->crc; };
 
     void setPlainText(uint8_t* text)  { memcpy(confirmHeader->plaintext, text, 15); };
     void setSASFlag(uint8_t flg)      { confirmHeader->flag = flg; };
     void setHmac(uint8_t* text)       { memcpy(confirmHeader->hmac, text, 32); };
     void setExpTime(uint32_t t)       { confirmHeader->expTime = t; };
-    void setCrc(uint8_t *crc)         { memcpy(confirmHeader->crc, crc, 4); };
 };
 
 #endif // ZRTPPACKETCONFIRM

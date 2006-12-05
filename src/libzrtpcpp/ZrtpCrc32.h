@@ -16,32 +16,14 @@
   Foundation, Inc., 59 Temple Place, Boston, MA 02111.
 */
 
-#ifndef _ZRTPPACKETCON2FACK_H_
-#define _ZRTPPACKETCON2FACK_H_
+#ifndef _ZRTPCRC32_H_
+#define _ZRTPCRC32_H_
 
-#include <libzrtpcpp/ZrtpPacketBase.h>
 
-/**
- * Implement the Conf2Ack packet.
- *
- * The ZRTP simple message Conf2Ack. The implementation sends this
- * after receiving and checking the Confirm2 message.
- *
- * @author Werner Dittmann <Werner.Dittmann@t-online.de>
- */
+bool zrtpCheckCksum(uint8_t *buffer, uint16_t length, uint32_t crc32);
 
-class ZrtpPacketConf2Ack : public ZrtpPacketBase {
+uint32_t zrtpGenerateCksum(uint8_t *buffer, uint16_t length);
 
- protected:
-    Conf2Ack_t* conf2AckHeader;
+uint32_t zrtpEndCksum(uint32_t crc32);
 
- public:
-    ZrtpPacketConf2Ack();		/* Creates a Conf2Ack packet with default data */
-    ZrtpPacketConf2Ack(char* data);	/* Creates a Conf2Ack packet from received data */
-    virtual ~ZrtpPacketConf2Ack();
-
- private:
-};
-
-#endif // ZRTPPACKETCONF2ACK
-
+#endif
