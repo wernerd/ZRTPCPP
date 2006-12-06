@@ -217,6 +217,11 @@ ZrtpQueue::takeInDataPacket(void)
 	extHeader -= 4;
 	int ret = zrtpEngine->processExtensionHeader(extHeader,
                 const_cast<unsigned char*>(packet->getPayload()));
+
+	if (ret == FailDismiss) {
+            delete packet;
+            return 0;
+        }
 	/*
 	 * the ZRTP engine returns OkDismiss in case of the Confirm packets.
 	 * They contain payload data that should not be given to the application
@@ -227,7 +232,7 @@ ZrtpQueue::takeInDataPacket(void)
             return 0;
         }
         // if no more payload then it was a pure ZRTP packet, done with it.
-	if (packet->getPayloadSize() <= 0) {
+	if (packet->getPayloadSize() <= 2) {
             delete packet;
             return 0;
         }

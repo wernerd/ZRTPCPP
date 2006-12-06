@@ -39,6 +39,7 @@ state_t states[numberOfStates] = {
     {WaitConfirm1, &ZrtpStateClass::evWaitConfirm1 },
     {WaitConfirm2, &ZrtpStateClass::evWaitConfirm2 },
     {WaitConfAck,  &ZrtpStateClass::evWaitConfAck },
+    {WaitClearAck, &ZrtpStateClass::evWaitClearAck },
     {SecureState,  &ZrtpStateClass::evSecureState }
 };
 
@@ -126,10 +127,15 @@ int32_t ZrtpStateClass::evDetect(void) {
 	 * - don't start timer, we are responder
 	 */
 	if (first == 'c') {
+	    ZrtpPacketCommit *cpkt = new ZrtpPacketCommit(pkt);
+	    if (!cptk->checkCrc32()) {
+		delete cpkt;
+		return (FailDismiss);
+	    }
+	    // Only if ZRTP CRC is ok then accept packet and process event
 	    cancelTimer();	// stop Hello timer processing, don't delete a Hello packet
 	    sentPacket = NULL;
 
-	    ZrtpPacketCommit *cpkt = new ZrtpPacketCommit(pkt);
 	    ZrtpPacketDHPart* dhPart1 = parent->prepareDHPart1(cpkt);
 	    delete cpkt;
 
@@ -151,6 +157,12 @@ int32_t ZrtpStateClass::evDetect(void) {
 	 * - switch to state AckDetected, wait for peer's Hello
 	 */
 	if (first == 'h' && last =='k') {
+	    ZrtpPacketHelloAck* hapkt = new ZrtpPacketHelloAck(pkt);
+	    if (!haptk->checkCrc32()) {
+		delete hapkt;
+		return (FailDismiss);
+	    }
+	    delete hapkt;
 	    cancelTimer();	// stop Hello timer processing, don't delete this Hello packet
 	    sentPacket = NULL;
 	    nextState(AckDetected);
@@ -163,12 +175,15 @@ int32_t ZrtpStateClass::evDetect(void) {
 	 * - switch state to CommitSent, start Commit timer
 	 */
 	if (first == 'h' && last ==' ') {
+	    ZrtpPacketHello *hpkt = new ZrtpPacketHello(pkt);
+	    if (!hptk->checkCrc32()) {
+		delete hpkt;
+		return (FailDismiss);
+	    }
 	    cancelTimer();
-
             parent->sendPacketRTP(sentPacket);    // just resend Hello in case peer missed ours
 	    sentPacket = NULL;
 
-	    ZrtpPacketHello *hpkt = new ZrtpPacketHello(pkt);
 	    ZrtpPacketCommit* commit = parent->prepareCommit(hpkt);
 	    delete hpkt;
 
@@ -239,6 +254,10 @@ int32_t ZrtpStateClass::evAckDetected(void) {
 	 */
 	if (first == 'h') {
             ZrtpPacketHello *hpkt = new ZrtpPacketHello(pkt);
+	    if (!hptk->checkCrc32()) {
+		delete hpkt;
+		return (FailDismiss);
+	    }
             ZrtpPacketHelloAck *helloAck = parent->prepareHelloAck(hpkt);
             delete hpkt;
 
@@ -264,6 +283,10 @@ int32_t ZrtpStateClass::evAckDetected(void) {
         if (first == 'c') {
 
             ZrtpPacketCommit *cpkt = new ZrtpPacketCommit(pkt);
+	    if (!cptk->checkCrc32()) {
+		delete cpkt;
+		return (FailDismiss);
+	    }
             ZrtpPacketDHPart* dhPart1 = parent->prepareDHPart1(cpkt);
             delete cpkt;
 
@@ -319,6 +342,12 @@ int32_t ZrtpStateClass::evWaitCommit(void) {
 	 * - stay in WaitCommit
 	 */
 	if (first == 'h') {
+            ZrtpPacketHello *hpkt = new ZrtpPacketHello(pkt);
+	    if (!hptk->checkCrc32()) {
+		delete hpkt;
+		return (FailDismiss);
+	    }
+	    delete hpkt;
 	    if (!parent->sendPacketRTP(sentPacket)) {
 		nextState(Initial);
 		sentPacket = NULL;    // don't delete HelloAck, it's preconfigured
@@ -335,8 +364,12 @@ int32_t ZrtpStateClass::evWaitCommit(void) {
 	 * - don't start timer, we are responder
 	 */
 	if (first == 'c') {
-            sentPacket = NULL;
 	    ZrtpPacketCommit *cpkt = new ZrtpPacketCommit(pkt);
+	    if (!cptk->checkCrc32()) {
+		delete cpkt;
+		return (FailDismiss);
+	    }
+            sentPacket = NULL;
 	    ZrtpPacketDHPart* dhPart1 = parent->prepareDHPart1(cpkt);
 	    delete cpkt;
 
@@ -400,6 +433,11 @@ int32_t ZrtpStateClass::evCommitSent(void) {
 	 */
 	if (first == 'c') {
 	    ZrtpPacketCommit *zpCo = new ZrtpPacketCommit(pkt);
+	    if (!zpCo->checkCrc32()) {
+		delete zpCo;
+		return (FailDismiss);
+	    }
+            sentPacket = NULL;
 	    cancelTimer();         // this cancels the Commit timer T2
 
 	    // if our hvi is less then peer's hvi - we are Responder and need
@@ -445,11 +483,15 @@ int32_t ZrtpStateClass::evCommitSent(void) {
 	 * - switch on Security for receiver, Confirm1 payload is encrypted
 	 */
 	if (first == 'd') {
+	    ZrtpPacketDHPart* dpkt = new ZrtpPacketDHPart(pkt);
+	    if (!dptk->checkCrc32()) {
+		delete dpkt;
+		return (FailDismiss);
+	    }
 	    cancelTimer();
 	    delete sentPacket;     // deletes the Commit packet
 	    sentPacket = NULL;
 
-	    ZrtpPacketDHPart* dpkt = new ZrtpPacketDHPart(pkt);
 	    ZrtpPacketDHPart* dhPart2 = parent->prepareDHPart2(dpkt);
 	    delete dpkt;
 
@@ -521,6 +563,11 @@ int32_t ZrtpStateClass::evWaitDHPart2(void) {
 	 * - stay in state
 	 */
 	if (first == 'c') {
+	    ZrtpPacketCommit *zpCo = new ZrtpPacketCommit(pkt);
+	    if (!zpCo->checkCrc32()) {
+		delete zpCo;
+		return (FailDismiss);
+	    }
 	    if (!parent->sendPacketRTP(sentPacket)) {
 		delete sentPacket;
 		sentPacket = NULL;
@@ -538,10 +585,14 @@ int32_t ZrtpStateClass::evWaitDHPart2(void) {
 	 * - No timer, we are responder
 	 */
 	if (first == 'd') {
+	    ZrtpPacketDHPart* dpkt = new ZrtpPacketDHPart(pkt);
+	    if (!dptk->checkCrc32()) {
+		delete dpkt;
+		return (FailDismiss);
+	    }
 	    delete sentPacket;     // delete DHPart1 packet
 	    sentPacket = NULL;
 
-	    ZrtpPacketDHPart* dpkt = new ZrtpPacketDHPart(pkt);
 	    ZrtpPacketConfirm* confirm = parent->prepareConfirm1(dpkt);
 	    delete dpkt;
 
@@ -610,11 +661,15 @@ int32_t ZrtpStateClass::evWaitConfirm1(void) {
 	 * - set timer to monitor Confirm2 packet, we are initiator
 	 */
 	if (first == 'c' && last == '1') {
+	    ZrtpPacketConfirm* cpkt = new ZrtpPacketConfirm(pkt, event->content);
+	    if (!cptk->checkCrc32()) {
+		delete cpkt;
+		return (FailDismiss);
+	    }
 	    cancelTimer();
 	    delete sentPacket;             // delete DHPart2 packet
 	    sentPacket = NULL;
 
-	    ZrtpPacketConfirm* cpkt = new ZrtpPacketConfirm(pkt, event->content);
 	    ZrtpPacketConfirm* confirm = parent->prepareConfirm2(cpkt);
 	    delete cpkt;
 
@@ -688,6 +743,13 @@ int32_t ZrtpStateClass::evWaitConfirm2(void) {
 	 * - stay in state
 	 */
 	if (first == 'd') {
+	    ZrtpPacketDHPart* dpkt = new ZrtpPacketDHPart(pkt);
+	    if (!dptk->checkCrc32()) {
+		delete dpkt;
+		return (FailDismiss);
+	    }
+	    delete dpkt;
+
 	    if (!parent->sendPacketSRTP(sentPacket)) {
 		delete sentPacket;
 		sentPacket = NULL;
@@ -705,11 +767,16 @@ int32_t ZrtpStateClass::evWaitConfirm2(void) {
 	 * - SecureState
 	 */
 	if (first == 'c' && last == '2') {
-	    delete sentPacket;             // delete Confirm1 packet
-	    sentPacket = NULL;
 
 	    // send ConfAck via SRTP
 	    ZrtpPacketConfirm* cpkt = new ZrtpPacketConfirm(pkt, event->content);
+	    if (!cptk->checkCrc32()) {
+		delete cpkt;
+		return (FailDismiss);
+	    }
+	    delete sentPacket;             // delete Confirm1 packet
+	    sentPacket = NULL;
+
 	    ZrtpPacketConf2Ack* confack = parent->prepareConf2Ack(cpkt);
 	    delete cpkt;
 
@@ -810,6 +877,10 @@ int32_t ZrtpStateClass::evWaitConfAck(void) {
     }
 }
 
+int32_t ZrtpStateClass::evWaitClearAck(void) {
+  
+}
+
 int32_t ZrtpStateClass::evSecureState(void) {
 
     DEBUGOUT((cout << "Checking for match in SecureState.\n"));
@@ -880,3 +951,11 @@ int32_t ZrtpStateClass::nextTimer(zrtpTimer_t *t) {
     }
     return parent->activateTimer(t->time);
 }
+
+/** EMACS **
+ * Local variables:
+ * mode: c++
+ * c-default-style: ellemtel
+ * c-basic-offset: 4
+ * End:
+ */

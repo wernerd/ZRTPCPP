@@ -81,7 +81,7 @@ class ZrtpPacketBase {
      * These values are the number or words, thus multiply by 4 to get the 
      * length of the data in bytes. Compute the CRC over these number of bytes.
      */
-    virtual bool checkCrc32()
+    bool checkCrc32()
     {
       // Get CRC value into temp (see above how to compute the offset)
       uint32_t temp = *(uint32_t*)(((uint8_t*)zrtpHeader) + ((zrtpHeader->length + 3 - 1) * 4));
@@ -90,7 +90,7 @@ class ZrtpPacketBase {
       return zrtpCheckCksum((uint8_t*)zrtpHeader, (zrtpHeader->length + 3 - 1) * 4, temp); 
     }
 
-    virtual void computeSetCrc32()
+    void computeSetCrc32()
     {
       uint32_t temp = zrtpGenerateCksum((uint8_t*)zrtpHeader, (zrtpHeader->length + 3 - 1) * 4);
       // convert and store CRC in crc field of ZRTP packet.

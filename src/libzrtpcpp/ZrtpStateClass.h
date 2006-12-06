@@ -47,6 +47,7 @@ enum zrtpStates {
     WaitConfirm1,
     WaitConfirm2,
     WaitConfAck,
+    WaitClearAck,
     SecureState,
     numberOfStates
 };
@@ -138,6 +139,7 @@ public:
     int32_t evWaitConfirm1();
     int32_t evWaitConfirm2();
     int32_t evWaitConfAck();
+    int32_t evWaitClearAck();
     int32_t evSecureState();
 
     /**
