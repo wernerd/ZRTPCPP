@@ -36,7 +36,7 @@ ZrtpPacketHelloAck::ZrtpPacketHelloAck() {
     setMessage((uint8_t*)HelloAckMsg);
 }
 
-ZrtpPacketHelloAck::ZrtpPacketHelloAck(char *data) {
+ZrtpPacketHelloAck::ZrtpPacketHelloAck(uint8_t *data) {
     DEBUGOUT((fprintf(stdout, "Creating HelloAck packet from data\n")));
 
     allocated = NULL;

@@ -339,6 +339,7 @@ class ZRtp {
     ZrtpPacketHello*    zrtpHello;
     ZrtpPacketHelloAck* zrtpHelloAck;
     ZrtpPacketConf2Ack* zrtpConf2Ack;
+    ZrtpPacketClearAck* zrtpClearAck;
 
     /**
      * Find the best Hash algorithm that was offered in Hello.
@@ -518,7 +519,7 @@ class ZRtp {
      * @return
      *    A pointer to the prepared Commit packet
      */
-    ZrtpPacketCommit *prepareCommit(ZrtpPacketHello *hello);
+    ZrtpPacketCommit *prepareCommit(ZrtpPacketHello *hello, uint8_t** errMsg = NULL);
 
     /**
      * Prepare the DHPart1 packet.
@@ -532,7 +533,7 @@ class ZRtp {
      * keys according to the selected cipher. Using this data we prepare our DHPart1
      * packet.
      */
-    ZrtpPacketDHPart *prepareDHPart1(ZrtpPacketCommit *commit);
+    ZrtpPacketDHPart *prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMsg = NULL);
 
     /**
      * Prepare the DHPart2 packet.
@@ -543,7 +544,7 @@ class ZRtp {
      * Initiator.
      *
      */
-    ZrtpPacketDHPart *prepareDHPart2(ZrtpPacketDHPart *dhPart1);
+    ZrtpPacketDHPart *prepareDHPart2(ZrtpPacketDHPart* dhPart1, uint8_t** errMsg = NULL);
 
     /**
      * Prepare the Confirm1 packet.
@@ -553,7 +554,7 @@ class ZRtp {
      * as response of our DHPart1. Here we are in the role of the Responder
      *
      */
-    ZrtpPacketConfirm *prepareConfirm1(ZrtpPacketDHPart *dhPart2);
+    ZrtpPacketConfirm *prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint8_t** errMsg = NULL);
 
     /**
      * Prepare the Confirm2 packet.
@@ -562,7 +563,7 @@ class ZRtp {
      * Confirm1 packet received from our peer. The peer sends the Confirm1 packet
      * as response of our DHPart2. Here we are in the role of the Initiator
      */
-    ZrtpPacketConfirm* prepareConfirm2(ZrtpPacketConfirm *confirm1);
+    ZrtpPacketConfirm* prepareConfirm2(ZrtpPacketConfirm* confirm1, uint8_t** errMsg = NULL);
 
     /**
      * Prepare the Conf2Ack packet.
@@ -571,7 +572,7 @@ class ZRtp {
      * Confirm2 packet received from our peer. The peer sends the Confirm2 packet
      * as response of our Confirm1. Here we are in the role of the Initiator
      */
-    ZrtpPacketConf2Ack* prepareConf2Ack(ZrtpPacketConfirm *confirm2);
+    ZrtpPacketConf2Ack* prepareConf2Ack(ZrtpPacketConfirm* confirm2, uint8_t** errMsg = NULL);
 
     /**
      * Prepare a ClearAck packet.
@@ -585,7 +586,19 @@ class ZRtp {
      *     NULL if GoClear could not be authenticated, a ClearAck packet
      *     otherwise.
      */
-    ZrtpPacketClearAck* prepareClearAck(ZrtpPacketGoClear* gpkt);
+    ZrtpPacketClearAck* prepareClearAck(ZrtpPacketGoClear* gpkt, uint8_t** errMsg = NULL);
+
+    /**
+     * Prepare a GoClearAck packet w/o HMAC
+     *
+     * Prepare a GoCLear packet without a HMAC but with a short error message.
+     * This type of GoClear is used if something went wrong during the ZRTP
+     * negotiation phase.
+     *
+     * @return
+     *     A goClear packet without HMAC
+     */
+    ZrtpPacketGoClear* prepareGoClear(uint8_t* errMsg = NULL);
 
     /**
      * Compare the hvi values.

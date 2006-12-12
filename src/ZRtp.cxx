@@ -72,8 +72,16 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb):
     memcpy(zid, myZid, 12);
     zrtpHello = new ZrtpPacketHello();
     zrtpHello->setZid(zid);
+    zrtpHello->computeSetCrc32();
+
     zrtpHelloAck = new ZrtpPacketHelloAck();
+    zrtpHelloAck->computeSetCrc32();
+
     zrtpConf2Ack = new ZrtpPacketConf2Ack();
+    zrtpConf2Ack->computeSetCrc32();
+
+    zrtpClearAck = new ZrtpPacketClearAck();
+    zrtpClearAck->computeSetCrc32();
 
     stateEngine = new ZrtpStateClass(this);
 }
@@ -211,7 +219,7 @@ int32_t ZRtp::checkState(int32_t state)
     }
 }
 
-ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello) {
+ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint8_t** errMsg) {
 
     memcpy(peerZid, hello->getZid(), 12);
 
@@ -292,10 +300,12 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello) {
     commit->setPubKeyType((uint8_t*)supportedPubKey[pubKey]);
     commit->setSasType((uint8_t*)supportedSASType[sasType]);
     commit->setHvi(hvi);
+
+    commit->computeSetCrc32();
     return commit;
 }
 
-ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit) {
+ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMsg) {
 
     int i;
 
@@ -441,10 +451,11 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit) {
     myRole = Responder;
     memcpy(peerHvi, commit->getHvi(), SHA256_DIGEST_LENGTH);
 
+    zpDH->computeSetCrc32();
     return zpDH;
 }
 
-ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1) {
+ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint8_t** errMsg) {
 
     uint8_t* pvr;
     uint8_t *data[4];
@@ -531,10 +542,11 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1) {
     delete dhContext;
     dhContext = NULL;
 
+    zpDH->computeSetCrc32();
     return zpDH;
 }
 
-ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart *dhPart2) {
+ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart *dhPart2, uint8_t** errMsg) {
 
     uint8_t* pvi;
     uint8_t *data[4];
@@ -631,10 +643,11 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart *dhPart2) {
 		20, confMac, &macLen);
 
     zpConf->setHmac(confMac);
+    zpConf->computeSetCrc32();
     return zpConf;
 }
 
-ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1) {
+ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1, uint8_t** errMsg) {
 
     sendInfo(Info, "Initiator: Confirm1 received, preparing Confirm2");
 
@@ -700,10 +713,11 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1) {
 		20, confMac, &macLen);
 
     zpConf->setHmac(confMac);
+    zpConf->computeSetCrc32();
     return zpConf;
 }
 
-ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2) {
+ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint8_t** errMsg) {
 
     sendInfo(Info, "Respnder: Confirm2 received, preparing Conf2Ack");
 
@@ -752,14 +766,33 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2) {
     zidRec.setNewRs1((const uint8_t*)newRs1);
     zid->saveRecord(&zidRec);
 
+    zrtpConf2Ack->computeSetCrc32();
     return zrtpConf2Ack;
 }
 
 // TODO Implement GoClear handling
-ZrtpPacketClearAck* ZRtp::prepareClearAck(ZrtpPacketGoClear* gpkt)
+ZrtpPacketClearAck* ZRtp::prepareClearAck(ZrtpPacketGoClear* gpkt, uint8_t** errMsg)
 {
     sendInfo(Warning, "Received a GoClear message");
-    return NULL;
+    return zrtpClearAck;
+}
+
+ZrtpPacketGoClear* ZRtp::prepareGoClear(uint8_t* errMsg)
+{
+    uint8_t msg[16];
+    ZrtpPacketGoClear* gclr = new ZrtpPacketGoClear();
+    gclr->clrClearHmac();
+    if (errMsg != NULL) {
+	int len = strlen((const char*)errMsg);
+	len = (len > 16) ? 16 : len;
+	strncpy((char*)msg, (const char*)errMsg, len);
+	for (; len < 16; len++) {
+	    msg[len] = ' ';
+	}
+	gclr->setReason(msg);
+    }
+    gclr->computeSetCrc32();
+    return gclr;
 }
 
 
