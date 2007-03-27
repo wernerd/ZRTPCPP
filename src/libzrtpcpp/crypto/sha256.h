@@ -79,5 +79,28 @@ void sha256(unsigned char *data,
 void sha256(unsigned char *data[],
 			   unsigned int data_length[],
 			   unsigned char *digest);
+/**
+ *
+ */
+void* createSha256Context();
+
+/**
+ *
+ */
+void closeSha256Context(void* ctx,
+                        unsigned char* mac);
+
+/**
+ *
+ */
+void sha256Ctx(void* ctx, unsigned char* data, 
+                unsigned int dataLength);
+
+/**
+ *
+ */
+void sha256Ctx(void* ctx, unsigned char* dataChunks[],
+            unsigned int dataChunkLength[]);
+
 #endif
 

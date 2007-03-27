@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006 Werner Dittmann
+  Copyright (C) 2006, 2007 Werner Dittmann
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -22,30 +22,34 @@
 
 #include <libzrtpcpp/ZrtpPacketConfirm.h>
 
-ZrtpPacketConfirm::ZrtpPacketConfirm() {
+ZrtpPacketConfirm::ZrtpPacketConfirm(uint8_t sl) {
     DEBUGOUT((fprintf(stdout, "Creating Confirm packet without data\n")));
 
-    allocated = malloc(sizeof (ConfirmPacket_t));
+    int32_t length = sizeof(ConfirmPacket_t) + (sl * ZRTP_WORD_SIZE) + CRC_SIZE;
+    allocated = malloc(length);
+
     if (allocated == NULL) {
     }
+
+    memset(allocated, 0, length);
     zrtpHeader = (zrtpPacketHeader_t *)&((ConfirmPacket_t *)allocated)->hdr;	// the standard header
     confirmHeader = (Confirm_t *)&((ConfirmPacket_t *)allocated)->confirm;
 
     setZrtpId();
-    setLength(MESSAGE_LENGTH);
+    setLength((sizeof(ConfirmPacket_t) + (sl * ZRTP_WORD_SIZE)) / 4);
 }
 
-ZrtpPacketConfirm::ZrtpPacketConfirm(uint8_t* data, uint8_t* content) {
+ZrtpPacketConfirm::ZrtpPacketConfirm(uint8_t* data) {
     DEBUGOUT((fprintf(stdout, "Creating Confirm packet from data\n")));
 
     allocated = NULL;
     zrtpHeader = (zrtpPacketHeader_t *)&((ConfirmPacket_t *)data)->hdr;	// the standard header
-    confirmHeader = (Confirm_t *)content;
+    confirmHeader = (Confirm_t *)&((ConfirmPacket_t *)data)->confirm;
 }
 
 ZrtpPacketConfirm::~ZrtpPacketConfirm() {
     DEBUGOUT((fprintf(stdout, "Deleting Confirm packet: alloc: %x\n", allocated)));
     if (allocated != NULL) {
-	free(allocated);
+        free(allocated);
     }
 }

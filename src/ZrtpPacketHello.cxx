@@ -26,50 +26,69 @@
 ZrtpPacketHello::ZrtpPacketHello() {
     DEBUGOUT((fprintf(stdout, "Creating Hello packet without data\n")));
 
-    allocated = malloc(sizeof (HelloPacket_t));
+    // The NumSupported* data is in ZrtpTextData.h 
+    nHash = NumSupportedHashes;
+    nCipher = NumSupportedSymCiphers;
+    nPubkey = NumSupportedPubKeys;
+    nSas = NumSupportedSASTypes;
+    nAuth = NumSupportedAuthLenghts;
+
+    int32_t length = sizeof(HelloPacket_t) + CRC_SIZE;
+    length += nHash * ZRTP_WORD_SIZE;
+    length += nCipher * ZRTP_WORD_SIZE;
+    length += nPubkey * ZRTP_WORD_SIZE;
+    length += nSas * ZRTP_WORD_SIZE;
+    length += nAuth * ZRTP_WORD_SIZE;
+
+    // Don't change order of this sequence
+    oHash = sizeof(Hello_t);
+    oCipher = oHash + (nHash * ZRTP_WORD_SIZE);
+    oAuth = oCipher + (nCipher * ZRTP_WORD_SIZE);
+    oPubkey = oAuth + (nAuth * ZRTP_WORD_SIZE);
+    oSas = oPubkey + (nPubkey * ZRTP_WORD_SIZE);
+
+    allocated = malloc(length);
 
     if (allocated == NULL) {
     }
-    memset(allocated, 0, sizeof (HelloPacket_t));
+    memset(allocated, 0, length);
 
     zrtpHeader = (zrtpPacketHeader_t *)&((HelloPacket_t *)allocated)->hdr;	// the standard header
     helloHeader = (Hello_t *)&((HelloPacket_t *)allocated)->hello;
 
     setZrtpId();
-    setLength(HELLO_LENGTH + MESSAGE_LENGTH);
-    setMessage((uint8_t*)HelloMsg);
+
+    // minus 1 for CRC size 
+    setLength((length / ZRTP_WORD_SIZE) - 1);
+    setMessageType((uint8_t*)HelloMsg);
 
     setVersion((uint8_t*)zrtpVersion);
 
-    setHashType(0, supportedHashes[0]);
-    setHashType(1, supportedHashes[1]);
-    setHashType(2, supportedHashes[2]);
-    setHashType(3, supportedHashes[3]);
-    setHashType(4, supportedHashes[4]);
+    uint32_t lenField = nHash << 12;
+    for (int32_t i = 0; i < nHash; i++) {
+        setHashType(i, (int8_t*)supportedHashes[i]);
+    }
 
-    setCipherType(0, supportedCipher[0]);
-    setCipherType(1, supportedCipher[1]);
-    setCipherType(2, supportedCipher[2]);
-    setCipherType(3, supportedCipher[3]);
-    setCipherType(4, supportedCipher[4]);
+    lenField |= nCipher << 16;
+    for (int32_t i = 0; i < nCipher; i++) {
+        setCipherType(i,  (int8_t*)supportedCipher[i]);
+    }
 
-    setAuthLen(0, supportedAuthLen[0]);
-    setAuthLen(1, supportedAuthLen[1]);
-    setAuthLen(2, supportedAuthLen[2]);
-    setAuthLen(3, supportedAuthLen[3]);
-    setAuthLen(4, supportedAuthLen[4]);
+    lenField |= nAuth << 20;
+    for (int32_t i = 0; i < nAuth; i++) {
+        setAuthLen(i,  (int8_t*)supportedAuthLen[i]);
+    }
 
-    setPubKeyType(0, supportedPubKey[0]);
-    setPubKeyType(1, supportedPubKey[1]);
-    setPubKeyType(2, supportedPubKey[2]);
-    setPubKeyType(3, supportedPubKey[3]);
-    setPubKeyType(4, supportedPubKey[4]);
+    lenField |= nPubkey << 24;
+    for (int32_t i = 0; i < nPubkey; i++) {
+        setPubKeyType(i,  (int8_t*)supportedPubKey[i]);
+    }
 
-    setSasType(0, supportedSASType[0]);
-    setSasType(1, supportedSASType[1]);
-    setSasType(2, supportedSASType[2]);
-    setSasType(3, supportedSASType[3]);
-    setSasType(4, supportedSASType[4]);
+    lenField |= nSas << 28;
+    for (int32_t i = 0; i < nSas; i++) {
+        setSasType(i,  (int8_t*)supportedSASType[i]);
+    }
+    helloHeader->flagLength = htonl(lenField);
 }
 
 ZrtpPacketHello::ZrtpPacketHello(uint8_t *data) {
@@ -78,11 +97,25 @@ ZrtpPacketHello::ZrtpPacketHello(uint8_t *data) {
     allocated = NULL;
     zrtpHeader = (zrtpPacketHeader_t *)&((HelloPacket_t *)data)->hdr;	// the standard header
     helloHeader = (Hello_t *)&((HelloPacket_t *)data)->hello;
+
+    uint32_t temp = ntohl(helloHeader->flagLength);
+
+    nHash = (temp & (0xf << 12)) >> 12;
+    nCipher = (temp & (0xf << 16)) >> 16;
+    nAuth = (temp & (0xf << 20)) >> 20;
+    nPubkey = (temp & (0xf << 24)) >> 24;
+    nSas = (temp & (0xf << 28)) >> 28;
+
+    oHash = sizeof(Hello_t);
+    oCipher = oHash + (nHash * ZRTP_WORD_SIZE);
+    oAuth = oCipher + (nCipher * ZRTP_WORD_SIZE);
+    oPubkey = oAuth + (nAuth * ZRTP_WORD_SIZE);
+    oSas = oPubkey + (nPubkey * ZRTP_WORD_SIZE);
 }
 
 ZrtpPacketHello::~ZrtpPacketHello() {
     DEBUGOUT((fprintf(stdout, "Deleting Hello packet: alloc: %x\n", allocated)));
     if (allocated != NULL) {
-	free(allocated);
+        free(allocated);
     }
 }

@@ -138,27 +138,7 @@ class ZrtpCallback {
      * @return
      *    zero if sending failed, one if packet was send
      */
-    virtual int32_t sendDataRTP(const uint8_t* data, int32_t length) =0;
-
-    /**
-     * Send a ZRTP packet via SRTP.
-     *
-     * ZRTP call this method if it needs to send data via SRTP. The
-     * data must be encrypted before transfer.
-     *
-     * @param dataHeader
-     *    Points to ZRTP packet to send as RTP extension header
-     * @param lengthHeader
-     *    The length in bytes of the header data
-     * @param dataContent
-     *    Points to the data to send as SRTP packet content.
-     * @param lengthConten
-     *    The length in bytes of the content data
-     * @return
-     *    zero if sending failed, one if packet was send
-     */
-    virtual int32_t sendDataSRTP(const uint8_t* dataHeader, int32_t lengthHeader,
-				 char* dataContent, int32_t lengthContent) =0;
+    virtual int32_t sendDataZRTP(const uint8_t* data, int32_t length) =0;
 
     /**
      * Activate timer.

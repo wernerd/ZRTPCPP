@@ -29,11 +29,10 @@ ZrtpPacketHelloAck::ZrtpPacketHelloAck() {
     if (allocated == NULL) {
     }
     zrtpHeader = (zrtpPacketHeader_t *)&((HelloAckPacket_t *)allocated)->hdr;	// the standard header
-    helloAckHeader = (HelloAck_t *)&((HelloAckPacket_t *)allocated)->helloAck;
 
     setZrtpId();
-    setLength(HELLO_ACK_LENGTH + MESSAGE_LENGTH);
-    setMessage((uint8_t*)HelloAckMsg);
+    setLength((sizeof(HelloAckPacket_t) / ZRTP_WORD_SIZE) - 1);
+    setMessageType((uint8_t*)HelloAckMsg);
 }
 
 ZrtpPacketHelloAck::ZrtpPacketHelloAck(uint8_t *data) {
@@ -41,7 +40,6 @@ ZrtpPacketHelloAck::ZrtpPacketHelloAck(uint8_t *data) {
 
     allocated = NULL;
     zrtpHeader = (zrtpPacketHeader_t *)&((HelloAckPacket_t *)data)->hdr;	// the standard header
-    helloAckHeader = (HelloAck_t *)&((HelloAckPacket_t *)data)->helloAck;
 
 }
 

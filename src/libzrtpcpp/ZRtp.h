@@ -342,6 +342,10 @@ class ZRtp {
     ZrtpPacketClearAck* zrtpClearAck;
 
     /**
+     * Random IV data to encrypt the confirm data, 128 bit for AES
+     */
+    uint8_t randomIV[32];
+    /**
      * Find the best Hash algorithm that was offered in Hello.
      *
      * Find the best, that is the strongest, Hash algorithm that our peer
@@ -445,7 +449,7 @@ class ZRtp {
      * @return
      *    zero if sending failed, one if packet was send
      */
-    int32_t sendPacketRTP(ZrtpPacketBase *packet);
+    int32_t sendPacketZRTP(ZrtpPacketBase *packet);
 
     /**
      * Send a ZRTP packet using SRTP.
@@ -457,9 +461,9 @@ class ZRtp {
      *    Points to the ZRTP packet.
      * @return
      *    zero if sending failed, one if packet was send
-     */
+     *
     int32_t sendPacketSRTP(ZrtpPacketBase *packet);
-
+     */
     /**
      * Activate a Timer using the host callback.
      *

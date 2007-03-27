@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006 Werner Dittmann
+  Copyright (C) 2006, 2007 Werner Dittmann
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -49,12 +49,12 @@ class ZrtpPacketDHPart : public ZrtpPacketBase {
     uint8_t* getSrtpsId()        { return DHPartHeader->srtpsId; };
     uint8_t* getOtherSecretId()  { return DHPartHeader->otherSecretId; };
 
-    void setPv(uint8_t* text) 	         { memcpy(pv, text, ((pktype == Dh3072) ? 384 :512)); };
-    void setRs1Id(uint8_t* text)         { memcpy(DHPartHeader->rs1Id, text, 8); };
-    void setRs2Id(uint8_t* text)         { memcpy(DHPartHeader->rs2Id, text, 8); };
-    void setSigsId(uint8_t* text)        { memcpy(DHPartHeader->sigsId, text, 8); };
-    void setSrtpsId(uint8_t* text)       { memcpy(DHPartHeader->srtpsId, text, 8); };
-    void setOtherSecretId(uint8_t* text) { memcpy(DHPartHeader->otherSecretId, text, 8); };
+    void setPv(uint8_t* text) 	      { memcpy(pv, text, ((pktype == Dh3072) ? 384 :512)); };
+    void setRs1Id(uint8_t* text)      { memcpy(DHPartHeader->rs1Id, text, sizeof(DHPartHeader->rs1Id)); };
+    void setRs2Id(uint8_t* text)      { memcpy(DHPartHeader->rs2Id, text, sizeof(DHPartHeader->rs2Id)); };
+    void setSigsId(uint8_t* text)     { memcpy(DHPartHeader->sigsId, text, sizeof(DHPartHeader->sigsId)); };
+    void setSrtpsId(uint8_t* t)       { memcpy(DHPartHeader->srtpsId, t, sizeof(DHPartHeader->srtpsId)); };
+    void setOtherSecretId(uint8_t* t) { memcpy(DHPartHeader->otherSecretId,t, sizeof(DHPartHeader->otherSecretId)); };
 
  private:
     SupportedPubKeys pktype;

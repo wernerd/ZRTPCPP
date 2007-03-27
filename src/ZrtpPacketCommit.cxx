@@ -34,8 +34,8 @@ ZrtpPacketCommit::ZrtpPacketCommit() {
     commitHeader = (Commit_t *)&((CommitPacket_t *)allocated)->commit;
 
     setZrtpId();
-    setLength(COMMIT_LENGTH + MESSAGE_LENGTH);
-    setMessage((uint8_t*)CommitMsg);
+    setLength((sizeof (CommitPacket_t) / ZRTP_WORD_SIZE) - 1);
+    setMessageType((uint8_t*)CommitMsg);
 }
 
 ZrtpPacketCommit::ZrtpPacketCommit(uint8_t *data) {

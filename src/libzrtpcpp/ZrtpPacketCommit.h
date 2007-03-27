@@ -53,13 +53,13 @@ class ZrtpPacketCommit : public ZrtpPacketBase {
     uint8_t* getZid()         { return commitHeader->zid; };
     uint8_t* getHvi()         { return commitHeader->hvi; };
 
-    void setHashType(uint8_t* text)    { memcpy(commitHeader->hash, text, 8); };
-    void setCipherType(uint8_t* text)  { memcpy(commitHeader->cipher, text, 8); };
-    void setAuthLen(uint8_t* text)     { memcpy(commitHeader->authlengths, text, 8); };
-    void setPubKeyType(uint8_t* text)  { memcpy(commitHeader->pubkey, text, 8); };
-    void setSasType(uint8_t* text)     { memcpy(commitHeader->sas, text, 8); };
-    void setZid(uint8_t* text)         { memcpy(commitHeader->zid, text, 12); };
-    void setHvi(uint8_t* text)         { memcpy(commitHeader->hvi, text, 32); };
+    void setHashType(uint8_t* text)    { memcpy(commitHeader->hash, text, ZRTP_WORD_SIZE); };
+    void setCipherType(uint8_t* text)  { memcpy(commitHeader->cipher, text, ZRTP_WORD_SIZE); };
+    void setAuthLen(uint8_t* text)     { memcpy(commitHeader->authlengths, text, ZRTP_WORD_SIZE); };
+    void setPubKeyType(uint8_t* text)  { memcpy(commitHeader->pubkey, text, ZRTP_WORD_SIZE); };
+    void setSasType(uint8_t* text)     { memcpy(commitHeader->sas, text, ZRTP_WORD_SIZE); };
+    void setZid(uint8_t* text)         { memcpy(commitHeader->zid, text, sizeof(commitHeader->zid)); };
+    void setHvi(uint8_t* text)         { memcpy(commitHeader->hvi, text, sizeof(commitHeader->hvi)); };
 
  private:
 };

@@ -37,31 +37,50 @@ class ZrtpPacketHello : public ZrtpPacketBase {
 
  protected:
     Hello_t* helloHeader;
+    bool passive;
+    // number of the algorithms
+    int32_t nHash, nCipher, nPubkey, nSas, nAuth;
+    // offsets in bytes into hello packet where algo names are stored
+    int32_t oHash, oCipher, oPubkey, oSas, oAuth;
 
  public:
-    ZrtpPacketHello();		 /* Creates a Hello packet with default data */
+    ZrtpPacketHello();              /* Creates a Hello packet with default data */
     ZrtpPacketHello(uint8_t *data); /* Creates a Hello packet from received data */
     virtual ~ZrtpPacketHello();
 
     uint8_t* getVersion()  { return helloHeader->version; };
     uint8_t* getClientId() { return helloHeader->clientId; };
-    bool isPassive()       { return ((helloHeader->flag & 0x1) == 0x1); };
+    uint8_t* getZid()      { return helloHeader->zid; };
 
-    uint8_t* getHashType(uint32_t number)    { return helloHeader->hashes[number]; };
-    uint8_t* getCipherType(uint32_t number)  { return helloHeader->ciphers[number]; };
-    uint8_t* getAuthLen(uint32_t number)     { return helloHeader->authlengths[number]; };
-    uint8_t* getPubKeysType(uint32_t number) { return helloHeader->pubkeys[number]; };
-    uint8_t* getSasType(uint32_t number)     { return helloHeader->sas[number]; };
-    uint8_t* getZid()                        { return helloHeader->zid; };
+    void setVersion(uint8_t *text)     { memcpy(helloHeader->version, text,ZRTP_WORD_SIZE ); }
+    void setClientId(const uint8_t *t) { memcpy(helloHeader->clientId, t, sizeof(helloHeader->clientId)); }
+    void setZid(uint8_t *text)         { memcpy(helloHeader->zid, text, sizeof(helloHeader->zid)); }
 
-    void setVersion(uint8_t *text)                   { memcpy(helloHeader->version, text, 4); }
-    void setClientId(const uint8_t *text)            { memcpy(helloHeader->clientId, text, 15); }
-    void setHashType(uint32_t number, char *text)    { memcpy(helloHeader->hashes[number], text, 8); };
-    void setCipherType(uint32_t number, char *text)  { memcpy(helloHeader->ciphers[number], text, 8); };
-    void setAuthLen(uint32_t number, char *text)     { memcpy(helloHeader->authlengths[number], text, 8); };
-    void setPubKeyType(uint32_t number, char *text)  { memcpy(helloHeader->pubkeys[number], text, 8); };
-    void setSasType(uint32_t number, char *text)     { memcpy(helloHeader->sas[number], text, 8); };
-    void setZid(uint8_t *text)                       { memcpy(helloHeader->zid, text, 12); };
+    bool isPassive()       { return passive; };
+
+    uint8_t* getHashType(int32_t n)   { return ((uint8_t*)helloHeader)+oHash+(n*ZRTP_WORD_SIZE); }
+    uint8_t* getCipherType(int32_t n) { return ((uint8_t*)helloHeader)+oCipher+(n*ZRTP_WORD_SIZE); }
+    uint8_t* getAuthLen(int32_t n)   { return ((uint8_t*)helloHeader)+oAuth+(n*ZRTP_WORD_SIZE); }
+    uint8_t* getPubKeyType(int32_t n) { return ((uint8_t*)helloHeader)+oPubkey+(n*ZRTP_WORD_SIZE); }
+    uint8_t* getSasType(int32_t n)    { return ((uint8_t*)helloHeader)+oSas+(n*ZRTP_WORD_SIZE); }
+
+    void setHashType(int32_t n, int8_t* t)
+        { memcpy(((uint8_t*)helloHeader)+oHash+(n*ZRTP_WORD_SIZE), t, ZRTP_WORD_SIZE); }
+    void setCipherType(int32_t n, int8_t* t)
+        { memcpy(((uint8_t*)helloHeader)+oCipher+(n*ZRTP_WORD_SIZE), t, ZRTP_WORD_SIZE); }
+    void setAuthLen(int32_t n, int8_t* t)
+        { memcpy(((uint8_t*)helloHeader)+oAuth+(n*ZRTP_WORD_SIZE), t, ZRTP_WORD_SIZE); }
+    void setPubKeyType(int32_t n, int8_t* t)
+        { memcpy(((uint8_t*)helloHeader)+oPubkey+(n*ZRTP_WORD_SIZE), t, ZRTP_WORD_SIZE); }
+    void setSasType(int32_t n, int8_t* t)
+        { memcpy(((uint8_t*)helloHeader)+oSas+(n*ZRTP_WORD_SIZE), t, ZRTP_WORD_SIZE); }
+
+    int32_t getNumHashes()   {return nHash; }
+    int32_t getNumCiphers()  {return nCipher; }
+    int32_t getNumPubKeys()  {return nPubkey; }
+    int32_t getNumSas()      {return nSas; }
+    int32_t getNumAuth()     {return nAuth; }
+
 
  private:
 };

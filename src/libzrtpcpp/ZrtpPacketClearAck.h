@@ -30,9 +30,6 @@
  */
 class ZrtpPacketClearAck : public ZrtpPacketBase {
 
- protected:
-    ClearAck_t* clearAckHeader;
-
  public:
     ZrtpPacketClearAck();		/* Creates a ClearAck packet with default data */
     ZrtpPacketClearAck(uint8_t* data);	/* Creates a ClearAck packet from received data */

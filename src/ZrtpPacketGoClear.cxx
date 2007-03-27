@@ -33,8 +33,8 @@ ZrtpPacketGoClear::ZrtpPacketGoClear() {
     clearHeader = (GoClear_t *)&((GoClearPacket_t *)allocated)->goClear;
 
     setZrtpId();
-    setLength(MESSAGE_LENGTH + GOCLEAR_LENGTH);
-    setMessage((uint8_t*)GoClearMsg);
+    setLength((sizeof(GoClearPacket_t) / ZRTP_WORD_SIZE) - 1);
+    setMessageType((uint8_t*)GoClearMsg);
 }
 
 ZrtpPacketGoClear::ZrtpPacketGoClear(uint8_t *data) {

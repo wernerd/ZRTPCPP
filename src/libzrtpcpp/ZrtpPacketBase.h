@@ -39,7 +39,7 @@
 /*
  * This is the unique ZRTP ID in network order (PZ)
  */
-const uint16_t zrtpId = ZRTP_EXT_PACKET;
+const uint16_t zrtpId = 0x505a;
 
 /**
  * This is the base class for all ZRTP packets
@@ -64,10 +64,11 @@ class ZrtpPacketBase {
     const uint8_t* getHeaderBase() { return (const uint8_t*)zrtpHeader; };
     bool isZrtpPacket()            { return (ntohs(zrtpHeader->zrtpId) == zrtpId); };
     uint16_t getLength()           { return ntohs(zrtpHeader->length); };
-    uint8_t* getMessage()          { return zrtpHeader->message; };
+    uint8_t* getMessageType()      { return zrtpHeader->messageType; };
 
     void setLength(uint16_t len)  { zrtpHeader->length = htons(len); };
-    void setMessage(uint8_t *msg) { memcpy(zrtpHeader->message, msg, ZRTP_MSG_SIZE); };
+    void setMessageType(uint8_t *msg) 
+        { memcpy(zrtpHeader->messageType, msg, sizeof(*zrtpHeader->messageType)); };
     void setZrtpId()              { zrtpHeader->zrtpId = htons(zrtpId); }
 
     /**
@@ -76,25 +77,27 @@ class ZrtpPacketBase {
      * The CRC field is always the last field in the ZRTP packet. Thus take
      * - the length of the packet
      * - add 1 for the extension id and length,
-     * - add 2 for the packet message and
      * - subtract 1 for the CRC field. 
-     * These values are the number or words, thus multiply by 4 to get the 
+     * These values are the number or words, thus multiply by 4 to get the
      * length of the data in bytes. Compute the CRC over these number of bytes.
      */
     bool checkCrc32()
     {
-      // Get CRC value into temp (see above how to compute the offset)
-      uint32_t temp = *(uint32_t*)(((uint8_t*)zrtpHeader) + ((zrtpHeader->length + 3 - 1) * 4));
-      // temp = ntohl(temp);
+        // Get CRC value into crc (see above how to compute the offset)
+        uint16_t temp = getLength();
+        uint32_t crc = *(uint32_t*)(((uint8_t*)zrtpHeader) + (temp * 4));
+        crc = ntohl(crc);
 
-      return zrtpCheckCksum((uint8_t*)zrtpHeader, (zrtpHeader->length + 3 - 1) * 4, temp); 
+        return zrtpCheckCksum((uint8_t*)zrtpHeader, temp * 4, crc);
     }
 
     void computeSetCrc32()
     {
-      uint32_t temp = zrtpGenerateCksum((uint8_t*)zrtpHeader, (zrtpHeader->length + 3 - 1) * 4);
-      // convert and store CRC in crc field of ZRTP packet.
-      *(uint32_t*)(((uint8_t*)zrtpHeader) + ((zrtpHeader->length + 3 - 1) * 4)) = zrtpEndCksum(temp);
+        uint16_t temp = getLength();
+        uint32_t crc = zrtpGenerateCksum((uint8_t*)zrtpHeader, temp * 4);
+        // convert and store CRC in crc field of ZRTP packet.
+        crc = zrtpEndCksum(crc);
+        *(uint32_t*)(((uint8_t*)zrtpHeader) + (temp * 4)) = htonl(crc);
     }
 };
 

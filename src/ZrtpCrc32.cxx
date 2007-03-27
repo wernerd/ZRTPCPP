@@ -43,6 +43,7 @@
  * The code has now been modified for use inside the ZRTP implementation.
  */
 
+#include <stdio.h>
 #include <stdint.h>
 #include <libzrtpcpp/ZrtpCrc32.h>
 
@@ -137,8 +138,9 @@ static const uint32_t crc_c[256] = {
 
 bool zrtpCheckCksum(uint8_t *buffer, uint16_t length, uint32_t crc32)
 {
-    uint32_t chksum =  zrtpGenerateCksum(buffer, length);
+    uint32_t chksum = zrtpGenerateCksum(buffer, length);
     chksum = zrtpEndCksum(chksum);
+    fprintf(stderr, "Received crc %x, computed crc: %x\n", crc32, chksum);
     return (crc32 == chksum);
 }
 
@@ -147,9 +149,10 @@ uint32_t zrtpGenerateCksum(uint8_t *buffer, uint16_t length)
     uint32_t crc32 = ~(uint32_t) 0;
     uint32_t i;
 
+    fprintf(stderr, "Buffer %xl, length: %d\n", buffer, length);
     /* Calculate the CRC. */
     for (i = 0; i < length ; i++)
-	CRC32C(crc32, buffer[i]);
+        CRC32C(crc32, buffer[i]);
 
     return crc32;
 }
@@ -183,6 +186,7 @@ uint32_t zrtpEndCksum(uint32_t crc32)
 	     (byte1 << 16) |
 	     (byte2 << 8)  |
 	     byte3);
+    fprintf(stderr, "Computed crc32: %x\n", crc32);
     return crc32;
 }
 

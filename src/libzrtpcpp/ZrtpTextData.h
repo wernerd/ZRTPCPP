@@ -58,7 +58,6 @@ extern char* respMasterSalt;
 
 extern char* hmacKey;
 extern char* retainedSec;
-extern char* knownPlain;
 
 extern char* sasString;
 /**

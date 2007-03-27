@@ -33,9 +33,6 @@
 
 class ZrtpPacketHelloAck : public ZrtpPacketBase {
 
- protected:
-    HelloAck_t* helloAckHeader;
-
  public:
     ZrtpPacketHelloAck();		/* Creates a HelloAck packet with default data */
     ZrtpPacketHelloAck(uint8_t* data);	/* Creates a HelloAck packet from received data */

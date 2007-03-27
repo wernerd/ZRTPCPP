@@ -14,19 +14,6 @@
   You should have received a copy of the GNU Lesser General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
- * In addition, as a special exception, the copyright holders give
- * permission to link the code of portions of this program with the
- * OpenSSL library under certain conditions as described in each
- * individual source file, and distribute linked combinations
- * including the two.
- * You must obey the GNU General Public License in all respects
- * for all of the code used other than OpenSSL.  If you modify
- * file(s) with this exception, you may extend this exception to your
- * version of the file(s), but you are not obligated to do so.  If you
- * do not wish to do so, delete this exception statement from your
- * version.  If you delete this exception statement from all source
- * files in the program, then also delete it here.
  */
 
 /**
@@ -68,4 +55,45 @@ void sha256(unsigned char* dataChunks[],
     uint8_t* p = gcry_md_read (hd, GCRY_MD_SHA256);
     memcpy(mac, p, SHA256_DIGEST_LENGTH);
     gcry_md_close (hd);
+}
+
+void* createSha256Context()
+{
+    gcry_error_t err = 0;
+    gcry_md_hd_t hd;
+
+    err = gcry_md_open(&hd, GCRY_MD_SHA256, 0);
+    return (void*)hd;
+}
+
+void closeSha256Context(void* ctx, unsigned char* mac)
+{
+    gcry_error_t err = 0;
+    gcry_md_hd_t hd = (gcry_md_hd_t)ctx;
+
+    uint8_t* p = gcry_md_read (hd, GCRY_MD_SHA256);
+    memcpy(mac, p, SHA256_DIGEST_LENGTH);
+    gcry_md_close (hd);
+}
+
+void sha256Ctx(void* ctx, unsigned char* data, 
+                unsigned int dataLength)
+{
+    gcry_md_hd_t hd = (gcry_md_hd_t)ctx;
+
+    gcry_md_write (hd, data, dataLength);
+}
+
+void sha256Ctx(void* ctx, unsigned char* dataChunks[],
+            unsigned int dataChunkLength[])
+{
+    gcry_md_hd_t hd = (gcry_md_hd_t)ctx;
+    gcry_error_t err = 0;
+
+    err = gcry_md_open(&hd, GCRY_MD_SHA256, 0);
+    while (*dataChunks) {
+        gcry_md_write (hd, *dataChunks, (uint32_t)(*dataChunkLength));
+        dataChunks++;
+        dataChunkLength++;
+    }
 }

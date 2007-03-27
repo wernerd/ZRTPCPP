@@ -32,9 +32,6 @@
 
 class ZrtpPacketConf2Ack : public ZrtpPacketBase {
 
- protected:
-    Conf2Ack_t* conf2AckHeader;
-
  public:
     ZrtpPacketConf2Ack();		/* Creates a Conf2Ack packet with default data */
     ZrtpPacketConf2Ack(char* data);	/* Creates a Conf2Ack packet from received data */

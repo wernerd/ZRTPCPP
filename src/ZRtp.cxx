@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006 Werner Dittmann
+  Copyright (C) 2006, 2007 Werner Dittmann
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -99,7 +99,7 @@ ZRtp::~ZRtp() {
     }
     if (zrtpHello != NULL) {
 	delete zrtpHello;
-        pubKeyBytes = NULL;
+        zrtpHello = NULL;
     }
     if (zrtpHelloAck != NULL) {
 	delete zrtpHelloAck;
@@ -226,9 +226,6 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint8_t** errMsg) 
     sendInfo(Info, "Hello received, preparing a Commit");
 
     uint8_t* cid = hello->getClientId();
-    if (*cid == 'Z') {  // TODO Zfone hack regarding reused sequence numbers
-        Zfone = 1;
-    }
 
     cipher = findBestCipher(hello);
     if (cipher >= NumSupportedSymCiphers) {
@@ -284,6 +281,9 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint8_t** errMsg) 
     }
     dhContext->getPubKeyBytes(pubKeyBytes);
 
+    // prepare IV data that we will use during confirm packet handling
+    dhContext->random(randomIV, 32);
+
     // Here we act as Initiator. Take other peer's Hello packet and my
     // PVI (public value initiator) and compute the HVI (hash value initiator)
     computeHvi(pubKeyBytes, maxPubKeySize, hello);
@@ -314,7 +314,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMs
     // check if we support the commited Cipher type
     uint8_t *cp = commit->getCipherType();
     for (i = 0; i < NumSupportedSymCiphers; i++) {
-	if (!memcmp(cp, supportedCipher[i], 8)) {
+	if (!memcmp(cp, supportedCipher[i], ZRTP_WORD_SIZE)) {
 	    break;
 	}
     }
@@ -327,7 +327,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMs
     // check if we support the commited Authentication length
     cp = commit->getAuthLen();
     for (i = 0; i < NumSupportedAuthLenghts; i++) {
-        if (!memcmp(cp, supportedAuthLen[i], 8)) {
+        if (!memcmp(cp, supportedAuthLen[i], ZRTP_WORD_SIZE)) {
             break;
         }
     }
@@ -340,7 +340,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMs
     // check if we support the commited hash type
     cp = commit->getHashType();
     for (i = 0; i < NumSupportedHashes; i++) {
-	if (!memcmp(cp, supportedHashes[i], 8)) {
+        if (!memcmp(cp, supportedHashes[i], ZRTP_WORD_SIZE)) {
 	    break;
 	}
     }
@@ -353,7 +353,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMs
     // check if we support the commited pub key type
     cp = commit->getPubKeysType();
     for (i = 0; i < NumSupportedPubKeys; i++) {
-	if (!memcmp(cp, supportedPubKey[i], 8)) {
+        if (!memcmp(cp, supportedPubKey[i], ZRTP_WORD_SIZE)) {
 	    break;
 	}
     }
@@ -366,7 +366,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMs
     // check if we support the commited SAS type
     cp = commit->getSasType();
     for (i = 0; i < NumSupportedSASTypes; i++) {
-	if (!memcmp(cp, supportedSASType[i], 8)) {
+        if (!memcmp(cp, supportedSASType[i], ZRTP_WORD_SIZE)) {
 	    break;
 	}
     }
@@ -400,6 +400,9 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMs
 	return NULL;
 	// Error - shouldn't happen
     }
+    // prepare IV data that we will use during confirm packet handling
+    dhContext->random(randomIV, 32);
+
     dhContext->generateKey();
     pubKeyLen = dhContext->getPubKeySize();
 
@@ -437,7 +440,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMs
     ZrtpPacketDHPart *zpDH = new ZrtpPacketDHPart(pubKey);
 
     // Fill the values in the DHPart1 packet
-    zpDH->setMessage((uint8_t*)DHPart1Msg);
+    zpDH->setMessageType((uint8_t*)DHPart1Msg);
     zpDH->setRs1Id(rs1IDr);
     zpDH->setRs2Id(rs2IDr);
     zpDH->setSigsId(sigsIDr);
@@ -527,7 +530,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint8_t** errM
     ZrtpPacketDHPart *zpDH = new ZrtpPacketDHPart(pubKey);
 
     // Fill the values in the DHPart2 packet
-    zpDH->setMessage((uint8_t*)DHPart2Msg);
+    zpDH->setMessageType((uint8_t*)DHPart2Msg);
     zpDH->setRs1Id(rs1IDi);
     zpDH->setRs2Id(rs2IDi);
     zpDH->setSigsId(sigsIDi);
@@ -628,21 +631,24 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart *dhPart2, uint8_t** er
 
     zid->saveRecord(&zidRec);
 
-    ZrtpPacketConfirm* zpConf = new ZrtpPacketConfirm();
-    zpConf->setMessage((uint8_t*)Confirm1Msg);
-    zpConf->setPlainText((uint8_t*)knownPlain);
-    zpConf->setSASFlag(sasFlag);
+    ZrtpPacketConfirm* zpConf = new ZrtpPacketConfirm(static_cast<uint8_t>(0));
+    zpConf->setMessageType((uint8_t*)Confirm1Msg);
+    if (sasFlag) {
+        zpConf->setSASFlag();
+    }
     zpConf->setExpTime(0);
+    zpConf->setIv(randomIV);
 
     uint8_t confMac[SHA256_DIGEST_LENGTH];
     uint32_t macLen;
 
+    // TODO: fix HMACA generation: 
     // The HMAC with length 20 includes the SAS flag inside the Confirm packet
-    // TODO: Be aware of specific handling of stay secure flag !!!
-    hmac_sha256(hmacSrtp, SHA256_DIGEST_LENGTH, (unsigned char*)zpConf->getPlainText(),
-		20, confMac, &macLen);
+    hmac_sha256(hmacSrtp, SHA256_DIGEST_LENGTH, (unsigned char*)zpConf->getFiller(),
+                2*ZRTP_WORD_SIZE, confMac, &macLen);
 
     zpConf->setHmac(confMac);
+    // TODO: here encrypt filler, flag, timestamp, HMAC
     zpConf->computeSetCrc32();
     return zpConf;
 }
@@ -651,19 +657,14 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1, uint8_t** 
 
     sendInfo(Info, "Initiator: Confirm1 received, preparing Confirm2");
 
-    uint8_t sasFlag = confirm1->getSASFlag();
-
-    if (memcmp(knownPlain, confirm1->getPlainText(), 15) != 0) {
-	sendInfo(Error, "Cannot read confirm1 message");
-	return NULL;
-    }
+    bool sasFlag = confirm1->isSASFlag();
     uint8_t confMac[SHA256_DIGEST_LENGTH];
     uint32_t macLen;
 
+    // TODO: decrypt confirm packet data
     // The HMAC with length 16 includes the SAS flag inside the Confirm packet
-    // TODO: Be aware of specific handling of stay secure flag !!!
-    hmac_sha256(hmacSrtp, SHA256_DIGEST_LENGTH, (unsigned char*)confirm1->getPlainText(),
-		20, confMac, &macLen);
+    hmac_sha256(hmacSrtp, SHA256_DIGEST_LENGTH, (unsigned char*)confirm1->getFiller(),
+                2*ZRTP_WORD_SIZE, confMac, &macLen);
 
     if (memcmp(confMac, confirm1->getHmac(), SHA256_DIGEST_LENGTH) != 0) {
 	sendInfo(Error, "HMAC verification of Confirm1 message failed");
@@ -682,13 +683,13 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1, uint8_t** 
 
     // Our peer did not confirm the SAS in last session, thus reset
     // our SAS flag too.
-    if (!(sasFlag & 0x1)) {
+    if (!sasFlag) {
       zidRec.resetSasVerified();
     }
 
     // get verified flag from current RS1 before set a new RS1. This
     // may not be set even if peer's flag is set in confirm1 message.
-    sasFlag = zidRec.isSasVerified() ? 1 : 0;
+    sasFlag = zidRec.isSasVerified() ? true : false;
 
     // Inform GUI about security state and SAS state
     const char* c = (cipher == Aes128) ? "AES-CM-128" : "AES-CM-256";
@@ -701,18 +702,20 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1, uint8_t** 
     zid->saveRecord(&zidRec);
 
     // now generate my Confirm2 message
-    ZrtpPacketConfirm* zpConf = new ZrtpPacketConfirm();
-    zpConf->setMessage((uint8_t*)Confirm2Msg);
-    zpConf->setPlainText((uint8_t*)knownPlain);
-    zpConf->setSASFlag(sasFlag);
+    ZrtpPacketConfirm* zpConf = new ZrtpPacketConfirm(static_cast<uint8_t>(0));
+    zpConf->setMessageType((uint8_t*)Confirm2Msg);
+    if (sasFlag) {
+        zpConf->setSASFlag();
+    }
     zpConf->setExpTime(0);
+    zpConf->setIv(randomIV);
 
     // The HMAC with length 16 includes the SAS flag inside the Confirm packet
-    // TODO: Be aware of specific handling of stay secure flag !!!
-    hmac_sha256(hmacSrtp, SHA256_DIGEST_LENGTH, (unsigned char*)zpConf->getPlainText(),
-		20, confMac, &macLen);
+    hmac_sha256(hmacSrtp, SHA256_DIGEST_LENGTH, (unsigned char*)zpConf->getFiller(),
+                2*ZRTP_WORD_SIZE, confMac, &macLen);
 
     zpConf->setHmac(confMac);
+    // TODO: encrypt filler, flag, timestamp, HMAC
     zpConf->computeSetCrc32();
     return zpConf;
 }
@@ -721,19 +724,14 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint8_t**
 
     sendInfo(Info, "Respnder: Confirm2 received, preparing Conf2Ack");
 
-    uint8_t sasFlag = confirm2->getSASFlag();
-
-    if (memcmp(knownPlain, confirm2->getPlainText(), 15) != 0) {
-     	sendInfo(Error, "Cannot read confirm2 message");
-	return NULL;
-    }
+    bool sasFlag = confirm2->isSASFlag();
     uint8_t confMac[SHA256_DIGEST_LENGTH];
     uint32_t macLen;
 
+    // TODO: decrypt confirm packet data
     // The hmac with length 16 includes the SAS flag inside the Confirm packet
-    // TODO: Be aware of specific handling of stay secure flag !!!
-    hmac_sha256(hmacSrtp, SHA256_DIGEST_LENGTH, (unsigned char*)confirm2->getPlainText(),
-		20, confMac, &macLen);
+    hmac_sha256(hmacSrtp, SHA256_DIGEST_LENGTH, (unsigned char*)confirm2->getFiller(),
+                2*ZRTP_WORD_SIZE, confMac, &macLen);
 
     if (memcmp(confMac, confirm2->getHmac(), SHA256_DIGEST_LENGTH) != 0) {
 	sendInfo(Error, "HMAC verification of Confirm2 message failed");
@@ -753,7 +751,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint8_t**
 
     // Our peer did not confirm the SAS in last session, thus reset
     // our SAS flag too.
-    if (!(sasFlag & 0x1)) {
+    if (!sasFlag) {
       zidRec.resetSasVerified();
     }
 
@@ -800,9 +798,10 @@ SupportedHashes ZRtp::findBestHash(ZrtpPacketHello *hello) {
 
     int i;
     int ii;
+    int num = hello->getNumHashes();
 
     for (i = 0; i < NumSupportedHashes; i++) {
-	for (ii = 0; ii < 5; ii++) {
+	for (ii = 0; ii < num; ii++) {
 	    if (!memcmp(hello->getHashType(ii), supportedHashes[i], 8)) {
 		break;
 	    }
@@ -819,9 +818,10 @@ SupportedSymCiphers ZRtp::findBestCipher(ZrtpPacketHello *hello) {
 
     int i;
     int ii;
+    int num = hello->getNumCiphers();
 
     for (i = 0; i < NumSupportedSymCiphers; i++) {
-	for (ii = 0; ii < 5; ii++) {
+	for (ii = 0; ii < num; ii++) {
 	    if (!memcmp(hello->getCipherType(ii), supportedCipher[i], 8)) {
 		break;
 	    }
@@ -838,10 +838,11 @@ SupportedPubKeys ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
 
     int i;
     int ii;
+    int num = hello->getNumPubKeys();
 
     for (i = 0; i < NumSupportedPubKeys; i++) {
-	for (ii = 0; ii < 5; ii++) {
-	    if (!memcmp(hello->getPubKeysType(ii), supportedPubKey[i], 8)) {
+	for (ii = 0; ii < num; ii++) {
+	    if (!memcmp(hello->getPubKeyType(ii), supportedPubKey[i], 8)) {
 		break;
 	    }
 	}
@@ -857,9 +858,10 @@ SupportedSASTypes ZRtp::findBestSASType(ZrtpPacketHello *hello) {
 
     int  i;
     int ii;
+    int num = hello->getNumSas();
 
     for (i = 0; i < NumSupportedSASTypes ; i++) {
-	for (ii = 0; ii < 5; ii++) {
+	for (ii = 0; ii < num; ii++) {
 	    if (!memcmp(hello->getSasType(ii), supportedSASType[i], 8)) {
 		break;
 	    }
@@ -876,9 +878,10 @@ SupportedAuthLengths ZRtp::findBestAuthLen(ZrtpPacketHello *hello) {
 
     int  i;
     int ii;
+    int num = hello->getNumAuth();
 
     for (i = 0; i < NumSupportedAuthLenghts ; i++) {
-        for (ii = 0; ii < 5; ii++) {
+        for (ii = 0; ii < num; ii++) {
             if (!memcmp(hello->getAuthLen(ii), supportedAuthLen[i], 8)) {
                 break;
             }
@@ -1254,11 +1257,12 @@ void ZRtp::resetSASVerified()
     zid->saveRecord(&zidRec);
 }
 
-int32_t ZRtp::sendPacketRTP(ZrtpPacketBase *packet) {
+int32_t ZRtp::sendPacketZRTP(ZrtpPacketBase *packet) {
     return ((packet == NULL) ? 0 :
-            callback->sendDataRTP(packet->getHeaderBase(), (packet->getLength() * 4) + 4));
+            callback->sendDataZRTP(packet->getHeaderBase(), (packet->getLength() * 4) + 4));
 }
 
+/*
 int32_t ZRtp::sendPacketSRTP(ZrtpPacketBase *packet) {
     return ((packet == NULL) ? 0 :
             callback->sendDataSRTP(packet->getHeaderBase(),
@@ -1266,6 +1270,7 @@ int32_t ZRtp::sendPacketSRTP(ZrtpPacketBase *packet) {
                                    ((char *)(packet->getHeaderBase()) + (packet->getLength() * 4) + 4),
                                    52));
 }
+*/
 
 void ZRtp::setSigsSecret(uint8_t* data)
 {
@@ -1280,11 +1285,12 @@ void ZRtp::setOtherSecret(uint8_t* data, int32_t length)
 }
 
 void ZRtp::setClientId(std::string id) {
-    const char* tmp = "                ";
-    if (id.size() < 15) {
+    const char* tmp = "                                ";
+    if (id.size() < 31) {
         zrtpHello->setClientId((unsigned char*)tmp);
     }
     zrtpHello->setClientId((unsigned char*)id.c_str());
+    zrtpHello->computeSetCrc32();
 }
 
 

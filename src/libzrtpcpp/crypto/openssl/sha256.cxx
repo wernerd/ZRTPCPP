@@ -41,19 +41,21 @@
 #include <libzrtpcpp/crypto/sha256.h>
 
 void sha256(unsigned char *data, unsigned int data_length,
-	    unsigned char *digest ){
+	    unsigned char *digest )
+{
 	SHA256(data, data_length, digest);
 }
 
 void sha256(unsigned char * data_chunks[],
 	    unsigned int data_chunck_length[],
-	    unsigned char *digest){
+	    unsigned char *digest)
+{
 	SHA256_CTX ctx;
 	SHA256_Init( &ctx);
 	while(*data_chunks) {
 		SHA256_Update(&ctx, *data_chunks, *data_chunck_length);
-		data_chunks ++;
-		data_chunck_length ++;
+		data_chunks++;
+		data_chunck_length++;
 	}
 	SHA256_Final(digest, &ctx);
 }

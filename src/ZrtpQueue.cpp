@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006 Werner Dittmann
+  Copyright (C) 2006, 2007 Werner Dittmann
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -27,6 +27,8 @@
 #include <libzrtpcpp/ZIDFile.h>
 #include <libzrtpcpp/ZrtpStateClass.h>
 #include <libzrtpcpp/ZrtpUserCallback.h>
+
+
 
 static TimeoutProvider<std::string, ost::ZrtpQueue*>* staticTimeoutProvider = NULL;
 
@@ -139,35 +141,41 @@ ZrtpQueue::takeInDataPacket(void)
 
     uint32 nextSize = (uint32)getNextDataPacketSize();
     unsigned char* buffer = new unsigned char[nextSize];
-    int32 rtn = (int32)recvData(buffer,nextSize,network_address,transport_port);
+    int32 rtn = (int32)recvData(buffer, nextSize, network_address, transport_port);
     if ( (rtn < 0) || ((uint32)rtn > getMaxRecvPacketSize()) ){
         delete buffer;
         return 0;
     }
 
-    // get time of arrival
-    struct timeval recvtime;
-    gettimeofday(&recvtime,NULL);
-
-    //  build a packet. It will link itself to its source
-    IncomingRTPPkt* packet =
+    IncomingZRTPPkt* packet = NULL;
+    // check if this could be a real RTP/SRTP packet. If so handle it.
+    if (*buffer != 0x10) {
+        //  build a packet. It will link itself to its source
+        IncomingRTPPkt* pkt =
             new IncomingRTPPkt(buffer,rtn);
-
-    // Generic header validity check.
-    if ( !packet->isExtended() && !packet->isHeaderValid() ) {
-        delete packet;
-        return 0;
+        // Generic header validity check.
+        if (pkt->isHeaderValid()) {
+            return (rtpDataPacket(pkt, rtn, network_address, transport_port));
+        }
+        else {
+            delete buffer;
+            return 0;
+        }
     }
+    // could be a ZRTP packet. Try it.
+    else {
+        packet = new IncomingZRTPPkt(buffer,rtn);
+    }
+
+
     bool doZrtp = false;
     if (enableZrtp) {
-        uint16 magic = packet->getHdrExtUndefined();
+        uint32 magic = packet->getZrtpMagic();
         if (magic != 0) {
-            magic = ntohs(magic);
-            if (magic == ZRTP_EXT_PACKET) {
-                // packet->checkZrtpChecksum(false); not in latest Zfone Beta
+            if (magic == ZRTP_MAGIC) {
                 recvZrtpSsrc = packet->getSSRC();
                 if (zrtpEngine != NULL) {
-		    doZrtp = true;
+                    doZrtp = true;
                     unsigned char* extHeader =
                             const_cast<unsigned char*>(packet->getHdrExtContent());
                     // this now points beyond the undefined and length field.
@@ -181,6 +189,49 @@ ZrtpQueue::takeInDataPacket(void)
             }
         }
     }
+
+    // If this is a ZRTP packet and the ZRTP engine was started - handle packet
+    if (doZrtp && zrtpEngine != NULL) {
+        unsigned char* extHeader = const_cast<unsigned char*>(packet->getHdrExtContent());
+        // this now points beyond the undefined and length field. We need them,
+        // thus adjust
+        extHeader -= 4;
+        int ret = zrtpEngine->processExtensionHeader(extHeader,
+                const_cast<unsigned char*>(packet->getPayload()));
+
+        if (ret == FailDismiss) {
+            delete packet;
+            return 0;
+        }
+        /*
+        * the ZRTP engine returns OkDismiss in case of the Confirm packets.
+        * They contain payload data that should not be given to the application
+        */
+        recvZrtpSeqNo = packet->getSeqNum();  // used later to initialize CryptoContext
+        if (ret == OkDismiss) {
+            delete packet;
+            return 0;
+        }
+        // if no more payload then it was a pure ZRTP packet, done with it.
+        if (packet->getPayloadSize() <= 2) {
+            delete packet;
+            return 0;
+        }
+    }
+
+
+    // ccRTP keeps packets from the new source, but avoids
+    // flip-flopping. This allows losing less packets and for
+    // mobile telephony applications or other apps that may change
+    // the source transport address during the session.
+    return rtn;
+}
+
+size_t
+ZrtpQueue::rtpDataPacket(IncomingRTPPkt* packet, int32 rtn, 
+                         InetHostAddress network_address, 
+                         tpport_t transport_port)
+{
     // Look for a CryptoContext for this packet's SSRC
     CryptoContext* pcc = getInQueueCryptoContext(packet->getSSRC());
 
@@ -209,40 +260,15 @@ ZrtpQueue::takeInDataPacket(void)
         }
     }
 
-    // If this is a ZRTP packet and the ZRTP engine was started - handle packet
-    if (doZrtp && zrtpEngine != NULL) {
-        unsigned char* extHeader = const_cast<unsigned char*>(packet->getHdrExtContent());
-	// this now points beyond the undefined and length field. We need them,
-	// thus adjust
-	extHeader -= 4;
-	int ret = zrtpEngine->processExtensionHeader(extHeader,
-                const_cast<unsigned char*>(packet->getPayload()));
-
-	if (ret == FailDismiss) {
-            delete packet;
-            return 0;
-        }
-	/*
-	 * the ZRTP engine returns OkDismiss in case of the Confirm packets.
-	 * They contain payload data that should not be given to the application
-	 */
-	recvZrtpSeqNo = packet->getSeqNum();  // used later to initialize CryptoContext
-	if (ret == OkDismiss) {
-            delete packet;
-            return 0;
-        }
-        // if no more payload then it was a pure ZRTP packet, done with it.
-	if (packet->getPayloadSize() <= 2) {
-            delete packet;
-            return 0;
-        }
-    }
-
     // virtual for profile-specific validation and processing.
     if (!onRTPPacketRecv(*packet) ) {
         delete packet;
         return 0;
     }
+
+    // get time of arrival
+    struct timeval recvtime;
+    gettimeofday(&recvtime,NULL);
 
     bool source_created;
     SyncSourceLink* sourceLink =
@@ -287,29 +313,25 @@ ZrtpQueue::takeInDataPacket(void)
         // must be discarded due to collision or loop or
         // invalid source
         delete packet;
+        return 0;
     }
-
     // Start the ZRTP engine only after we got a at least one RTP packet and
     // sent some as well
     if (enableZrtp && zrtpEngine == NULL && getSendPacketCount() >= 3) {
         start();
     }
-
-    // ccRTP keeps packets from the new source, but avoids
-    // flip-flopping. This allows losing less packets and for
-    // mobile telephony applications or other apps that may change
-    // the source transport address during the session.
     return rtn;
 }
+
 
 bool
 ZrtpQueue::onSRTPPacketError(IncomingRTPPkt& pkt, int32 errorCode)
 {
     if (errorCode == -1) {
-	sendInfo(Error, "Dropping packet because of authentication error!");
+        sendInfo(Error, "Dropping packet because of authentication error!");
     }
     else {
-	sendInfo(Error, "Dropping packet because replay check failed!");
+        sendInfo(Error, "Dropping packet because replay check failed!");
     }
     return false;
 }
@@ -332,31 +354,13 @@ ZrtpQueue::sendImmediate(uint32 stamp, const unsigned char* data, size_t len)
 /*
  * Here the callback methods required by the ZRTP implementation
  */
-int32_t ZrtpQueue::sendDataRTP(const unsigned char *data, int32_t length) {
+int32_t ZrtpQueue::sendDataZRTP(const unsigned char *data, int32_t length) {
 
-    /* +++++ Only if ZRTP has checksum enabled
-    uint8 dummyChecksum[] = {0, 0};
-    OutgoingRTPPkt* packet = new OutgoingRTPPkt(NULL, 0, data, length, dummyChecksum, 2, 0);
-    */
-
-    OutgoingRTPPkt* packet = new OutgoingRTPPkt(NULL, 0, data, length, NULL, 0, 0);
+    OutgoingZRTPPkt* packet = new OutgoingZRTPPkt(data, length);
 
     packet->setSSRC(senderZrtpSsrc);
-    packet->setPayloadType(13);
 
-    // TODO Remove Zfone hacks after Zfone fixed its seq.no handling
-    if (zrtpEngine->Zfone) {
-        senderZrtpSeqNo = getCurrentSeqNum();
-    }
     packet->setSeqNum(senderZrtpSeqNo++);
-
-    if (zrtpEngine->Zfone) {
-        setNextSeqNum(senderZrtpSeqNo);
-    }
-    packet->setTimestamp(time(NULL));
-
-    // packet->enableZrtpChecksum();
-    // packet->computeZrtpChecksum();
 
     dispatchImmediate(packet);
     delete packet;
@@ -364,13 +368,10 @@ int32_t ZrtpQueue::sendDataRTP(const unsigned char *data, int32_t length) {
     return 1;
 }
 
+#if 0
 int32_t ZrtpQueue::sendDataSRTP(const unsigned char *dataHeader, int32_t lengthHeader,
                                             char *dataContent, int32_t lengthContent)
 {
-    // plus 2 is for ZRTP checksum
-    // uint8* tmpBuffer = new uint8[lengthContent + 2];
-    // memcpy(tmpBuffer, dataContent, lengthContent);
-
     CryptoContext* pcc = getOutQueueCryptoContext(senderZrtpSsrc);
     OutgoingRTPPkt* packet = new OutgoingRTPPkt(NULL, 0, dataHeader, lengthHeader,
             (uint8*)dataContent, lengthContent, 0, pcc);
@@ -397,6 +398,7 @@ int32_t ZrtpQueue::sendDataSRTP(const unsigned char *dataHeader, int32_t lengthH
     delete packet;
     return 1;
 }
+#endif
 
 void ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
 {
@@ -573,9 +575,24 @@ void ZrtpQueue::zrtpNotSuppOther() {
         zrtpUserCallback->zrtpNotSuppOther();
     }
     else {
-        fprintf(stderr, "The other (remote) client does not support ZRTP\n");
+        fprintf(stderr, "The other (remote) peer does not support ZRTP\n");
     }
 }
+
+
+IncomingZRTPPkt::IncomingZRTPPkt(const unsigned char* const block, size_t len) :
+        IncomingRTPPkt(block,len)
+{
+}
+
+OutgoingZRTPPkt::OutgoingZRTPPkt(
+    const unsigned char* const hdrext, uint32 hdrextlen) :
+        OutgoingRTPPkt(NULL, 0, hdrext, hdrextlen, NULL ,0, 0, NULL)
+{
+    getHeader()->version = 0;
+    getHeader()->timestamp = htonl(ZRTP_MAGIC);
+}
+
 
 #ifdef  CCXX_NAMESPACES
 }

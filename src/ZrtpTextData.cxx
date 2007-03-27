@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006 Werner Dittmann
+  Copyright (C) 2006, 2007 Werner Dittmann
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
  *
  */
 char *clientId = "GNUccRTP      "; // must be 15 chars
-char *zrtpVersion = "0.02";	// must be 4 chars
+char *zrtpVersion = "0.03";	// must be 4 chars
 
 /**
  *
@@ -51,9 +51,11 @@ char *iniMasterSalt = "Initiator SRTP master salt";
 char *respMasterKey = "Responder SRTP master key";
 char *respMasterSalt = "Responder SRTP master salt";
 
-char *hmacKey = "HMAC key";
+char *iniHmacKey = "Initiator HMAC key";
+char *respHmacKey = "Responder HMAC key";
 char *retainedSec = "retained secret";
-char *knownPlain = "known plaintext";
+
+char *zrtpSession = "ZRTP Session Key";
 
 char *sasString = "Short Authentication String";
 
@@ -61,32 +63,16 @@ char *sasString = "Short Authentication String";
  * The arrays are sorted: the most secure / best algorithm is first in the
  * array
  */
-char *supportedHashes[] = { "SHA256  ",
-			    "        ",
-			    "        ",
-			    "        ",
-			    "        " };
+char *supportedHashes[] =  {"S256"};
 
-char *supportedCipher[] = { "AES256  ",
-			    "AES128  ",
-			    "        ",
-			    "        ",
-			    "        " };
+char *supportedCipher[] =  {"AES2",
+                            "AES1"};
 
-char *supportedPubKey[] = { "DH4096  ",
-			    "DH3072  ",
-			    "        ",
-			    "        ",
-			    "        " };
+char *supportedPubKey[] =  {"DH4k",
+                            "DH3k"};
 
-char *supportedSASType[] = { "libase32",
-			    "        ",
-			    "        ",
-			    "        ",
-			    "        " };
+char *supportedSASType[] = {"B32 "};
 
-char *supportedAuthLen[] = { "80      ",
-                             "32      ",
-                             "        ",
-                             "        ",
-                             "        " };
+// TODO: adjust length according to spc (also in header and data layout)
+char *supportedAuthLen[] = {"32  ",
+                            "80  "};

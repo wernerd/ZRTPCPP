@@ -20,6 +20,7 @@
 #define _ZRTPQUEUE_H_
 
 #include <ccrtp/cqueue.h>
+#include <ccrtp/rtppkt.h>
 #include <libzrtpcpp/ZrtpCallback.h>
 #include <libzrtpcpp/ZRtp.h>
 
@@ -292,10 +293,7 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
     /*
      * Refer to ZrtpCallback.h
      */
-    int32_t sendDataRTP(const unsigned char* data, int32_t length);
-
-    int32_t sendDataSRTP(const unsigned char* dataHeader, int32_t lengthHeader,
-                         char *dataContent, int32_t lengthContent);
+    int32_t sendDataZRTP(const unsigned char* data, int32_t length);
 
     int32_t activateTimer(int32_t time);
 
@@ -391,6 +389,9 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
 
     private:
         void init();
+        size_t rtpDataPacket(IncomingRTPPkt* packet, int32 rtn, 
+                             InetHostAddress network_address, 
+                             tpport_t transport_port);
 
         ZRtp *zrtpEngine;
         ZrtpUserCallback* zrtpUserCallback;
@@ -408,6 +409,44 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
         uint32 senderZrtpSsrc;
         uint16 senderZrtpSeqNo;
         CryptoContext* senderCryptoContext;
+};
+
+class IncomingZRTPPkt : public IncomingRTPPkt {
+
+    public:
+    /**
+     * Build a ZRTP packet object from a data buffer.
+     *
+     * @param block pointer to the buffer the whole packet is stored in.
+     * @param len length of the whole packet, expressed in octets.
+     *
+     **/
+
+    IncomingZRTPPkt(const unsigned char* block, size_t len);
+
+    ~IncomingZRTPPkt()
+    { }
+
+    inline uint32
+    getZrtpMagic() const
+    { return ntohl(getHeader()->timestamp); }
+};
+
+class OutgoingZRTPPkt : public OutgoingRTPPkt {
+
+    public:
+    /**
+     * Construct a new ZRTP packet to be sent.
+     *
+     * A new copy in memory (holding all this components
+     * along with the fixed header) is created.
+     *
+     * @param hdrext whole header extension.
+     * @param hdrextlen size of whole header extension, in octets.
+     **/
+    OutgoingZRTPPkt(const unsigned char* const hdrext, uint32 hdrextlen);
+    ~OutgoingZRTPPkt()
+    { }
 };
 
 #ifdef  CCXX_NAMESPACES

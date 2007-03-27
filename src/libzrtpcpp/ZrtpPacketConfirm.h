@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006 Werner Dittmann
+  Copyright (C) 2006, 2007 Werner Dittmann
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -35,21 +35,23 @@
 class ZrtpPacketConfirm : public ZrtpPacketBase {
 
     private:
-	Confirm_t* confirmHeader;
- public:
-    ZrtpPacketConfirm();		/* Creates a Confirm packet with default data */
-    ZrtpPacketConfirm(uint8_t* data, uint8_t* content);	/* Creates a Confirm packet from received data */
-    virtual ~ZrtpPacketConfirm();
+        Confirm_t* confirmHeader;
 
-    const uint8_t* getPlainText()     { return confirmHeader->plaintext; };
-    uint8_t getSASFlag()              { return confirmHeader->flag; }
-    const uint8_t* getHmac()          { return confirmHeader->hmac; };
-    const uint32_t getExpTime()       { return confirmHeader->expTime; };
+    public:
+        ZrtpPacketConfirm(uint8_t sl);		/* Creates a Confirm packet with default data */
+        ZrtpPacketConfirm(uint8_t* d);          /* Creates a Confirm packet from received data */
+        virtual ~ZrtpPacketConfirm();
 
-    void setPlainText(uint8_t* text)  { memcpy(confirmHeader->plaintext, text, 15); };
-    void setSASFlag(uint8_t flg)      { confirmHeader->flag = flg; };
-    void setHmac(uint8_t* text)       { memcpy(confirmHeader->hmac, text, 32); };
-    void setExpTime(uint32_t t)       { confirmHeader->expTime = t; };
+        const bool isSASFlag()            { return confirmHeader->flags & 0x1; }
+        const uint8_t *getFiller()        { return confirmHeader->filler; };
+        const uint8_t* getIv()            { return confirmHeader->iv; };
+        const uint8_t* getHmac()          { return confirmHeader->hmac; };
+        const uint32_t getExpTime()       { return ntohl(confirmHeader->expTime); };
+
+        void setSASFlag()            { confirmHeader->flags |= 0x1; };
+        void setHmac(uint8_t* text)  { memcpy(confirmHeader->hmac, text, sizeof(confirmHeader->hmac)); };
+        void setIv(uint8_t* text)    { memcpy(confirmHeader->iv, text, sizeof(confirmHeader->iv)); };
+        void setExpTime(uint32_t t)  { confirmHeader->expTime = htonl(t); };
 };
 
 #endif // ZRTPPACKETCONFIRM
