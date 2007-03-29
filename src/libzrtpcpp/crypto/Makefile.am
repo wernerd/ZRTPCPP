@@ -11,9 +11,9 @@
 AUTOMAKE_OPTIONS = no-dependencies dist-shar
 ccxxincludedir=$(includedir)/libzrtpcpp/crypto
 
-noinst_HEADERS = hmac256.h sha256.h ZrtpDH.h
+noinst_HEADERS = hmac256.h sha256.h ZrtpDH.h aesCFB.h
 
-kdoc_headers = hmac256.h sha256.h ZrtpDH.h
+kdoc_headers = hmac256.h sha256.h ZrtpDH.h aesCFB.h
 
 # kdoc:
 #	kdoc -f html -d $(KDOC_DIR) -L$(KDOC_DIR) -n ccrtp $(kdoc_headers)

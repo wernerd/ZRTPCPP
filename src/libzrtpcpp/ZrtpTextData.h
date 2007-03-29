@@ -56,8 +56,12 @@ extern char* iniMasterSalt;
 extern char* respMasterKey;
 extern char* respMasterSalt;
 
-extern char* hmacKey;
+extern char* iniHmacKey;
+extern char* respHmacKey;
 extern char* retainedSec;
+
+extern char* iniZrtpKey;
+extern char* respZrtpKey;
 
 extern char* sasString;
 /**

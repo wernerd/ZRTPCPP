@@ -55,7 +55,8 @@ char *iniHmacKey = "Initiator HMAC key";
 char *respHmacKey = "Responder HMAC key";
 char *retainedSec = "retained secret";
 
-char *zrtpSession = "ZRTP Session Key";
+char* iniZrtpKey = "Initiator ZRTP key";
+char* respZrtpKey = "Responder ZRTP key";
 
 char *sasString = "Short Authentication String";
 
@@ -73,6 +74,5 @@ char *supportedPubKey[] =  {"DH4k",
 
 char *supportedSASType[] = {"B32 "};
 
-// TODO: adjust length according to spc (also in header and data layout)
 char *supportedAuthLen[] = {"32  ",
                             "80  "};

@@ -58,8 +58,8 @@
  *    buffer must have a size of at least 32 bytes (SHA256_DIGEST_LENGTH).
  */
 void sha256(unsigned char *data,
-			   unsigned int data_length,
-			   unsigned char *digest);
+            unsigned int data_length,
+            unsigned char *digest);
 
 /**
  * Compute SHA256 digest over several data cunks.
@@ -77,8 +77,8 @@ void sha256(unsigned char *data,
  *    buffer must have a size of at least 32 bytes (SHA256_DIGEST_LENGTH).
  */
 void sha256(unsigned char *data[],
-			   unsigned int data_length[],
-			   unsigned char *digest);
+            unsigned int data_length[],
+            unsigned char *digest);
 /**
  *
  */
@@ -94,13 +94,13 @@ void closeSha256Context(void* ctx,
  *
  */
 void sha256Ctx(void* ctx, unsigned char* data, 
-                unsigned int dataLength);
+               unsigned int dataLength);
 
 /**
  *
  */
 void sha256Ctx(void* ctx, unsigned char* dataChunks[],
-            unsigned int dataChunkLength[]);
+               unsigned int dataChunkLength[]);
 
 #endif
 

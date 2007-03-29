@@ -71,13 +71,15 @@ void closeSha256Context(void* ctx, unsigned char* mac)
     gcry_error_t err = 0;
     gcry_md_hd_t hd = (gcry_md_hd_t)ctx;
 
-    uint8_t* p = gcry_md_read (hd, GCRY_MD_SHA256);
-    memcpy(mac, p, SHA256_DIGEST_LENGTH);
+    if (mac != NULL) {
+        uint8_t* p = gcry_md_read (hd, GCRY_MD_SHA256);
+        memcpy(mac, p, SHA256_DIGEST_LENGTH);
+    }
     gcry_md_close (hd);
 }
 
 void sha256Ctx(void* ctx, unsigned char* data, 
-                unsigned int dataLength)
+               unsigned int dataLength)
 {
     gcry_md_hd_t hd = (gcry_md_hd_t)ctx;
 
@@ -85,7 +87,7 @@ void sha256Ctx(void* ctx, unsigned char* data,
 }
 
 void sha256Ctx(void* ctx, unsigned char* dataChunks[],
-            unsigned int dataChunkLength[])
+               unsigned int dataChunkLength[])
 {
     gcry_md_hd_t hd = (gcry_md_hd_t)ctx;
     gcry_error_t err = 0;

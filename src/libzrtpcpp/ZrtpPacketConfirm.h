@@ -42,13 +42,13 @@ class ZrtpPacketConfirm : public ZrtpPacketBase {
         ZrtpPacketConfirm(uint8_t* d);          /* Creates a Confirm packet from received data */
         virtual ~ZrtpPacketConfirm();
 
-        const bool isSASFlag()            { return confirmHeader->flags & 0x1; }
+        const bool isSASFlag()            { return confirmHeader->flags & 0x4; }
         const uint8_t *getFiller()        { return confirmHeader->filler; };
         const uint8_t* getIv()            { return confirmHeader->iv; };
         const uint8_t* getHmac()          { return confirmHeader->hmac; };
         const uint32_t getExpTime()       { return ntohl(confirmHeader->expTime); };
 
-        void setSASFlag()            { confirmHeader->flags |= 0x1; };
+        void setSASFlag()            { confirmHeader->flags |= 0x4; };
         void setHmac(uint8_t* text)  { memcpy(confirmHeader->hmac, text, sizeof(confirmHeader->hmac)); };
         void setIv(uint8_t* text)    { memcpy(confirmHeader->iv, text, sizeof(confirmHeader->iv)); };
         void setExpTime(uint32_t t)  { confirmHeader->expTime = htonl(t); };

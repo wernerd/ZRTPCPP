@@ -20,6 +20,7 @@ if ZRTP_GCRYPT
 zrtp_src_g =	libzrtpcpp/crypto/gcrypt/gcryptZrtpDH.cxx \
 		libzrtpcpp/crypto/gcrypt/gcrypthmac256.cxx \
 		libzrtpcpp/crypto/gcrypt/gcryptsha256.cxx \
+		libzrtpcpp/crypto/gcrypt/gcryptAesCFB.cpp \
 		libzrtpcpp/crypto/gcrypt/InitializeGcrypt.cxx
 endif
 

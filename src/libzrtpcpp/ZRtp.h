@@ -108,13 +108,10 @@ class ZRtp {
 	 * @param extHeader
 	 *    A pointer to the first byte of the extension header. Refer to
 	 *    RFC3550.
-         * @param content
-         *    Pointer to the content of the received packet. Required for
-         *    Confirm handling.
 	 * @return
 	 *    Code indicating further packet handling, see description above.
          */
-	int32_t processExtensionHeader(uint8_t *extHeader, uint8_t* content);
+	int32_t processZrtpMessage(uint8_t *extHeader);
 
         /**
 	 * Process a timeout event.
@@ -263,10 +260,14 @@ class ZRtp {
     Role myRole;
 
     /**
-     * The SAS value
+     * The human readable SAS value
      */
     std::string SAS;
 
+    /**
+     * The SAS value for signaling and alike
+     */
+    uint8_t sasValue[8];
     /**
      * The variables for the retained shared secrets
      */
@@ -291,6 +292,7 @@ class ZRtp {
      */
     uint8_t peerHvi[SHA256_DIGEST_LENGTH];
 
+    void* msgShaContext;
     /**
      * Commited Hash, Cipher, and public key algorithms
      */
@@ -307,6 +309,10 @@ class ZRtp {
      */
     SupportedAuthLengths authLength;
     /**
+     * The SHA256 hash over selected messages
+     */
+    uint8_t messageHash[SHA256_DIGEST_LENGTH];
+    /**
      * The s0
      */
     uint8_t s0[SHA256_DIGEST_LENGTH];
@@ -317,9 +323,10 @@ class ZRtp {
     uint8_t newRs1[RS_LENGTH];
 
     /**
-     * The HMAC key
+     * The GoClear HMAC keys and confirm HMAC key
      */
-    uint8_t hmacSrtp[SHA256_DIGEST_LENGTH];
+    uint8_t hmacKeyI[SHA256_DIGEST_LENGTH];
+    uint8_t hmacKeyR[SHA256_DIGEST_LENGTH];
 
     /**
      * The Initiator's srtp key and salt
@@ -334,6 +341,12 @@ class ZRtp {
     uint8_t srtpSaltR[SHA256_DIGEST_LENGTH];
 
     /**
+     * The keys used to encrypt/decrypt the confirm message
+     */
+    uint8_t zrtpKeyI[SHA256_DIGEST_LENGTH];
+    uint8_t zrtpKeyR[SHA256_DIGEST_LENGTH];
+
+    /**
      * Pre-initialized packets to start off the whole game.
      */
     ZrtpPacketHello*    zrtpHello;
@@ -344,7 +357,7 @@ class ZRtp {
     /**
      * Random IV data to encrypt the confirm data, 128 bit for AES
      */
-    uint8_t randomIV[32];
+    uint8_t randomIV[16];
     /**
      * Find the best Hash algorithm that was offered in Hello.
      *

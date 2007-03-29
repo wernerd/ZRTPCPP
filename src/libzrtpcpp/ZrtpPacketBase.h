@@ -70,35 +70,6 @@ class ZrtpPacketBase {
     void setMessageType(uint8_t *msg) 
         { memcpy(zrtpHeader->messageType, msg, sizeof(*zrtpHeader->messageType)); };
     void setZrtpId()              { zrtpHeader->zrtpId = htons(zrtpId); }
-
-    /**
-     * Check the CRC 32 value included in ZRTP packet.
-     *
-     * The CRC field is always the last field in the ZRTP packet. Thus take
-     * - the length of the packet
-     * - add 1 for the extension id and length,
-     * - subtract 1 for the CRC field. 
-     * These values are the number or words, thus multiply by 4 to get the
-     * length of the data in bytes. Compute the CRC over these number of bytes.
-     */
-    bool checkCrc32()
-    {
-        // Get CRC value into crc (see above how to compute the offset)
-        uint16_t temp = getLength();
-        uint32_t crc = *(uint32_t*)(((uint8_t*)zrtpHeader) + (temp * 4));
-        crc = ntohl(crc);
-
-        return zrtpCheckCksum((uint8_t*)zrtpHeader, temp * 4, crc);
-    }
-
-    void computeSetCrc32()
-    {
-        uint16_t temp = getLength();
-        uint32_t crc = zrtpGenerateCksum((uint8_t*)zrtpHeader, temp * 4);
-        // convert and store CRC in crc field of ZRTP packet.
-        crc = zrtpEndCksum(crc);
-        *(uint32_t*)(((uint8_t*)zrtpHeader) + (temp * 4)) = htonl(crc);
-    }
 };
 
 #endif // ZRTPPACKETBASE

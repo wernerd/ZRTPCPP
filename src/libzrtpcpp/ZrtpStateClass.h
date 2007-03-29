@@ -73,7 +73,6 @@ typedef struct Event {
 	uint8_t* packet;
 	int32_t* timer;
     } data;
-    uint8_t* content;
 } Event_t;
 
 

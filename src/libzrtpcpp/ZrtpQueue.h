@@ -402,13 +402,9 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
 
         int32 secureParts;
 
-        uint32 recvZrtpSsrc;
-        uint16 recvZrtpSeqNo;
         CryptoContext* recvCryptoContext;
-
-        uint32 senderZrtpSsrc;
-        uint16 senderZrtpSeqNo;
         CryptoContext* senderCryptoContext;
+        int16 senderZrtpSeqNo;
 };
 
 class IncomingZRTPPkt : public IncomingRTPPkt {
