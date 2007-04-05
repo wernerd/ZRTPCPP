@@ -56,10 +56,10 @@ ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t *data) {
     int16_t len = getLength();
     DEBUGOUT((fprintf(stdout, "DHPart length: %d\n", len)));
     SupportedPubKeys pkt;
-    if (len == 108) {
+    if (len == 109) {
 	pkt = Dh3072;
     }
-    else if (len == 140) {
+    else if (len == 141) {
 	pkt = Dh4096;
     }
     else {
@@ -69,7 +69,6 @@ ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t *data) {
     }
     pv = data + sizeof(zrtpPacketHeader_t);
     DHPartHeader = (DHPart_t *)(data + sizeof(zrtpPacketHeader_t) + ((pkt == Dh3072) ? 384 : 512));
-
     pktype = pkt;
 }
 

@@ -68,7 +68,7 @@ class ZrtpPacketBase {
 
     void setLength(uint16_t len)  { zrtpHeader->length = htons(len); };
     void setMessageType(uint8_t *msg) 
-        { memcpy(zrtpHeader->messageType, msg, sizeof(*zrtpHeader->messageType)); };
+        { memcpy(zrtpHeader->messageType, msg, sizeof(zrtpHeader->messageType)); };
     void setZrtpId()              { zrtpHeader->zrtpId = htons(zrtpId); }
 };
 

@@ -105,8 +105,8 @@ extern char* supportedSASType[];
 // Keep the auth len identifers in supportedAuthLen in the same order than the
 // following enum, starting with zero.
 enum SupportedAuthLengths {
-    AuthLen80,
     AuthLen32,
+    AuthLen80,
     NumSupportedAuthLenghts
 };
 extern char *supportedAuthLen[];

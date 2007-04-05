@@ -36,7 +36,7 @@ ZrtpPacketConfirm::ZrtpPacketConfirm(uint8_t sl) {
     confirmHeader = (Confirm_t *)&((ConfirmPacket_t *)allocated)->confirm;
 
     setZrtpId();
-    setLength((sizeof(ConfirmPacket_t) + (sl * ZRTP_WORD_SIZE)) / 4);
+    setLength((length - CRC_SIZE) / 4);
 }
 
 ZrtpPacketConfirm::ZrtpPacketConfirm(uint8_t* data) {

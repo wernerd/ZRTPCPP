@@ -150,32 +150,31 @@ ZrtpQueue::takeInDataPacket(void)
     // check if this could be a real RTP/SRTP packet.
     if ((*buffer & 0xf0) != 0x10) {
 
-        //  Could be real RTP, build a packet. It will link itself to its source
+        //  Could be real RTP, build a packet.
         IncomingRTPPkt* pkt = new IncomingRTPPkt(buffer,rtn);
 
-        // Generic header validity check.
+        // Generic header validity check. If valid perform standard RTP handling
         if (pkt->isHeaderValid()) {
             return (rtpDataPacket(pkt, rtn, network_address, transport_port));
         }
-        delete buffer;
+        delete pkt;
         return 0;
     }
 
     if (enableZrtp) {
-        // TODO: cchek ZRTP CRC (see also send data )
-#if 0
         // Get CRC value into crc (see above how to compute the offset)
-        uint16_t temp = getLength();
-        uint32_t crc = *(uint32_t*)(((uint8_t*)zrtpHeader) + (temp * 4));
+        uint16_t temp = rtn - CRC_SIZE;
+        uint32_t crc = *(uint32_t*)(buffer + temp);
         crc = ntohl(crc);
 
-        return zrtpCheckCksum((uint8_t*)zrtpHeader, temp * 4, crc);
-#endif
+        zrtpCheckCksum(buffer, temp, crc);
+
         packet = new IncomingZRTPPkt(buffer,rtn);
+
         uint32 magic = packet->getZrtpMagic();
 
         // Check if it is a ZRTP packet, if not delete it and return 0
-        if (magic != ZRTP_MAGIC || zrtpEngine != NULL) {
+        if (magic != ZRTP_MAGIC || zrtpEngine == NULL) {
             delete packet;
             return 0;
         }
@@ -331,14 +330,19 @@ int32_t ZrtpQueue::sendDataZRTP(const unsigned char *data, int32_t length) {
 
     /*
      * The compute the ZRTP CRC over the full ZRTP packet. Thus include
-     * the fiexed packet header into the calculation. This header has a
+     * the fixed packet header into the calculation. This header has a
      * size of 3 words.
      */
-    uint16_t temp = length + (3 * ZRTP_WORD_SIZE);
-    uint32_t crc = zrtpGenerateCksum((uint8_t*)packet, temp);
+    uint16_t temp = packet->getRawPacketSize() - CRC_SIZE;
+    uint8_t* pt = (uint8_t*)packet->getRawPacket();
+    uint32_t crc = zrtpGenerateCksum(pt, temp);
     // convert and store CRC in crc field of ZRTP packet.
     crc = zrtpEndCksum(crc);
-    *(uint32_t*)(((uint8_t*)packet) + temp) = htonl(crc);
+
+    // advance pointer to CRC storage
+    pt += temp;
+    // fprintf(stderr, "pt: %X, raw: %X, crc: %x, length: %d\n", pt, packet->getRawPacket(), crc, temp);
+    *(uint32_t*)pt = htonl(crc);
 
     dispatchImmediate(packet);
     delete packet;

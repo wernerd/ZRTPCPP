@@ -159,11 +159,11 @@ ZrtpDH::ZrtpDH(int32_t pl) {
     tmpCtx->pLength = pl;
     if (pl == 3072) {
         tmpCtx->privKey = gcry_mpi_new(256);
-        gcry_mpi_randomize(tmpCtx->privKey, 256, GCRY_VERY_STRONG_RANDOM);
+        gcry_mpi_randomize(tmpCtx->privKey, 256, GCRY_STRONG_RANDOM);
     }
     else {
         tmpCtx->privKey = gcry_mpi_new(512);
-        gcry_mpi_randomize(tmpCtx->privKey, 512, GCRY_VERY_STRONG_RANDOM);
+        gcry_mpi_randomize(tmpCtx->privKey, 512, GCRY_STRONG_RANDOM);
     }
 }
 

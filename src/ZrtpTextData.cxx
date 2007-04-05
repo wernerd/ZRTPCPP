@@ -62,7 +62,8 @@ char *sasString = "Short Authentication String";
 
 /**
  * The arrays are sorted: the most secure / best algorithm is first in the
- * array
+ * array. If we add an algorithm here then we need to adjust the corresponding
+ * value in ZrtpTextData.h as well.
  */
 char *supportedHashes[] =  {"S256"};
 
@@ -72,7 +73,9 @@ char *supportedCipher[] =  {"AES2",
 char *supportedPubKey[] =  {"DH4k",
                             "DH3k"};
 
+// TODO: fix data after Zfone fixed it - B32 is the correct value.
+// char *supportedSASType[] = {"B32 "};
 char *supportedSASType[] = {"B32 "};
 
-char *supportedAuthLen[] = {"32  ",
-                            "80  "};
+char *supportedAuthLen[] = {"HS32",
+                            "HS80"};
