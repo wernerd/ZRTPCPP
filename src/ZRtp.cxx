@@ -392,7 +392,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMs
 	sendInfo(Warning, "Commit contains an AES256 cipher but does not offer a Diffie-Helman 4096");
 	// generate a warning
     }
-    // setup the DH context and generate a fresh public / secret key
+    // setup the DH context and generate a fresh DH key pair
     if (pubKey == Dh3072) {
 	dhContext = new ZrtpDH(3072);
 	maxPubKeySize = 384;
@@ -506,7 +506,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint8_t** errM
         dhContext->computeKey(pvr, 512, DHss);
     }
 
-    // Initialize a ZID record to get peer's retained secrets
+    // Initialize a ZID record to get to retained secrets for this peer
     ZIDRecord zidRec(peerZid);
 
     // ZID file should be opened during initialization step, not here.
@@ -598,7 +598,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart *dhPart2, uint8_t** er
         dhContext->computeKey(pvi, 512, DHss);
     }
 
-    // Here we have the peer's pvi. Because we are responder re-compute my hvi
+    // Now we have the peer's pvi. Because we are responder re-compute my hvi
     // using my Hello packet and the Initiator's pv and compare with
     // hvi sent in commit packet. If it doesn't macht then a MitM attack
     // may have occured.
@@ -654,7 +654,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart *dhPart2, uint8_t** er
     if (sasFlag) {
         zpConf->setSASFlag();
     }
-    zpConf->setExpTime(0);
+    zpConf->setExpTime(0xFFFFFFFF);
     zpConf->setIv(randomIV);
 
     uint8_t confMac[SHA256_DIGEST_LENGTH];
@@ -729,7 +729,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1, uint8_t** 
     if (sasFlag) {
         zpConf->setSASFlag();
     }
-    zpConf->setExpTime(0);
+    zpConf->setExpTime(0xFFFFFFFF);
     zpConf->setIv(randomIV);
 
     // Encrypt and HMAC with Initiator's key - we are Initiator here
@@ -823,16 +823,18 @@ SupportedHashes ZRtp::findBestHash(ZrtpPacketHello *hello) {
 
     int i;
     int ii;
+    bool found = false;
     int num = hello->getNumHashes();
 
     for (i = 0; i < NumSupportedHashes; i++) {
 	for (ii = 0; ii < num; ii++) {
 	    if (!memcmp(hello->getHashType(ii), supportedHashes[i], 4)) {
+                found = true;
 		break;
 	    }
 	}
-	// if ii < NumSupportedHashes we found the hash i in the packet, done
-	if (ii < NumSupportedHashes) {
+	// if found - done
+	if (found) {
 	    break;
 	}
     }
@@ -843,16 +845,17 @@ SupportedSymCiphers ZRtp::findBestCipher(ZrtpPacketHello *hello) {
 
     int i;
     int ii;
+    bool found = false;
     int num = hello->getNumCiphers();
 
     for (i = 0; i < NumSupportedSymCiphers; i++) {
 	for (ii = 0; ii < num; ii++) {
 	    if (!memcmp(hello->getCipherType(ii), supportedCipher[i], 4)) {
+                found = true;
 		break;
 	    }
 	}
-	// if ii < NumSupportedSymCiphers we found the cipher i in the packet, done
-	if (ii < NumSupportedSymCiphers) {
+	if (found) {
 	    break;
 	}
     }
@@ -863,16 +866,17 @@ SupportedPubKeys ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
 
     int i;
     int ii;
+    bool found = false;
     int num = hello->getNumPubKeys();
 
     for (i = 0; i < NumSupportedPubKeys; i++) {
 	for (ii = 0; ii < num; ii++) {
 	    if (!memcmp(hello->getPubKeyType(ii), supportedPubKey[i], 4)) {
+                found = true;
 		break;
 	    }
 	}
-	// if ii < NumSupportedPubKeys we found the cipher i in the packet, done
-	if (ii < NumSupportedPubKeys) {
+	if (found) {
 	    break;
 	}
     }
@@ -883,16 +887,17 @@ SupportedSASTypes ZRtp::findBestSASType(ZrtpPacketHello *hello) {
 
     int  i;
     int ii;
+    bool found = false;
     int num = hello->getNumSas();
 
     for (i = 0; i < NumSupportedSASTypes ; i++) {
 	for (ii = 0; ii < num; ii++) {
 	    if (!memcmp(hello->getSasType(ii), supportedSASType[i], 4)) {
+                found = true;
 		break;
 	    }
 	}
-	// if ii < NumSupportedSASTypes we found the cipher i in the packet, done
-	if (ii < NumSupportedSASTypes) {
+	if (found) {
 	    break;
 	}
     }
@@ -903,16 +908,17 @@ SupportedAuthLengths ZRtp::findBestAuthLen(ZrtpPacketHello *hello) {
 
     int  i;
     int ii;
+    bool found = false;
     int num = hello->getNumAuth();
 
     for (i = 0; i < NumSupportedAuthLenghts ; i++) {
         for (ii = 0; ii < num; ii++) {
             if (!memcmp(hello->getAuthLen(ii), supportedAuthLen[i], 4)) {
+                found = true;
                 break;
             }
         }
-        // if ii < NumSupportedAuthLenghts we found the cipher i in the packet, done
-        if (ii < NumSupportedAuthLenghts) {
+        if (found) {
             break;
         }
     }
@@ -1028,14 +1034,14 @@ void ZRtp::generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     int matchingSecrets = 0;
     if (setC[0] != NULL) {
 	DEBUGOUT((fprintf(stdout, "%c: Match for Rs1 found\n", zid[0])));
-        setD[matchingSecrets++] = zidRec.getRs1();
-//	setE[matchingSecrets++] = rs1IDi;
+        setD[matchingSecrets] = zidRec.getRs1();
+	setE[matchingSecrets++] = rs1IDi;
         rsFound = 0x1;
     }
     if (setC[1] != NULL) {
 	DEBUGOUT((fprintf(stdout, "%c: Match for Rs2 found\n", zid[0])));
-        setD[matchingSecrets++] = zidRec.getRs2();
-//	setE[matchingSecrets++] = rs2IDi;
+        setD[matchingSecrets] = zidRec.getRs2();
+	setE[matchingSecrets++] = rs2IDi;
         rsFound |= 0x2;
     }
 
@@ -1053,7 +1059,7 @@ void ZRtp::generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     }
 
     int32_t i;
-#if 0
+//#if 0
     const uint8_t* tmpP;
     int32_t notDone = 1;
     if (matchingSecrets) {
@@ -1077,7 +1083,7 @@ void ZRtp::generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 	   }
         }
     }
-#endif 
+// #endif 
 
     /*
      * ready to generate s0 here.
@@ -1137,15 +1143,15 @@ void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     int matchingSecrets = 0;
     if (setC[0] != NULL) {
 	DEBUGOUT((fprintf(stdout, "%c: Match for Rs1 found\n", zid[0])));
-        setD[matchingSecrets++] = zidRec.getRs1();
-//	setE[matchingSecrets++] = rs1IDi;
+        setD[matchingSecrets] = zidRec.getRs1();
+	setE[matchingSecrets++] = rs1IDi;
         rsFound = 0x1;
     }
 
     if (setC[1] != NULL) {
 	DEBUGOUT((fprintf(stdout, "%c: Match for Rs2 found\n", zid[0])));
-        setD[matchingSecrets++] = zidRec.getRs2();
-//	setE[matchingSecrets++] = rs2IDi;  // rs2IDi will be sent in DHPart2 message
+        setD[matchingSecrets] = zidRec.getRs2();
+	setE[matchingSecrets++] = rs2IDi;  // rs2IDi will be sent in DHPart2 message
         rsFound |= 0x2;
     }
     if (rsFound == 0) {
@@ -1162,7 +1168,7 @@ void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     }
 
     int32_t i;
-#if 0
+//#if 0
     const uint8_t* tmpP;
     int32_t notDone = 1;
     if (matchingSecrets > 1) {
@@ -1185,7 +1191,7 @@ void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 	    }
         }
     }
-#endif
+//#endif
 
     /*
      * ready to generate s0 here.
@@ -1205,14 +1211,14 @@ void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 	data[1+i] = (unsigned char*)setD[i];
         length[1+i] = SHA256_DIGEST_LENGTH;
     }
-    hexdump("messageHash (R)", messageHash, SHA256_DIGEST_LENGTH);
+    //hexdump("messageHash (R)", messageHash, SHA256_DIGEST_LENGTH);
     data[1+i] = messageHash;
     length[1+i] = SHA256_DIGEST_LENGTH;
 
     data[2+i] = NULL;
     sha256(data, length, s0);
 
-    hexdump("S0 (R)", s0, 32);
+    // hexdump("S0 (R)", s0, 32);
     memset(DHss, 0, dhContext->getSecretSize());
     free(DHss);
     DHss = NULL;

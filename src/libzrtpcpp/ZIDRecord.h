@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006 Werner Dittmann
+  Copyright (C) 2006, 2007 Werner Dittmann
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 
 typedef struct zidrecord {
     char recValid,		// if 1 record is valid, if 0: invalid
-	ownZid,			// if 1 record contains associated ZID, usually 1st record
+	ownZid,			// if 1 record contains own ZID, usually 1st record
 	rs1Valid,			// if 1 RS1 contains valid data
 	rs2Valid;			// if 1 RS2 contains valid data
     unsigned char identifier[IDENTIFIER_LEN]; // the peer's ZID
