@@ -47,10 +47,7 @@ ZrtpPacketHello::ZrtpPacketHello() {
     oPubkey = oAuth + (nAuth * ZRTP_WORD_SIZE);
     oSas = oPubkey + (nPubkey * ZRTP_WORD_SIZE);
 
-    allocated = malloc(length);
-
-    if (allocated == NULL) {
-    }
+    void* allocated = &data;
     memset(allocated, 0, length);
 
     zrtpHeader = (zrtpPacketHeader_t *)&((HelloPacket_t *)allocated)->hdr;	// the standard header
@@ -94,7 +91,6 @@ ZrtpPacketHello::ZrtpPacketHello() {
 ZrtpPacketHello::ZrtpPacketHello(uint8_t *data) {
     DEBUGOUT((fprintf(stdout, "Creating Hello packet from data\n")));
 
-    allocated = NULL;
     zrtpHeader = (zrtpPacketHeader_t *)&((HelloPacket_t *)data)->hdr;	// the standard header
     helloHeader = (Hello_t *)&((HelloPacket_t *)data)->hello;
 
@@ -115,7 +111,4 @@ ZrtpPacketHello::ZrtpPacketHello(uint8_t *data) {
 
 ZrtpPacketHello::~ZrtpPacketHello() {
     DEBUGOUT((fprintf(stdout, "Deleting Hello packet: alloc: %x\n", allocated)));
-    if (allocated != NULL) {
-        free(allocated);
-    }
 }

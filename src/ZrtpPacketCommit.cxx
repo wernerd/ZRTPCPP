@@ -25,13 +25,8 @@
 ZrtpPacketCommit::ZrtpPacketCommit() {
     DEBUGOUT((fprintf(stdout, "Creating commit packet without data\n")));
 
-    allocated = malloc(sizeof (CommitPacket_t));
-
-    if (allocated == NULL) {
-    }
-
-    zrtpHeader = (zrtpPacketHeader_t *)&((CommitPacket_t *)allocated)->hdr;	// the standard header
-    commitHeader = (Commit_t *)&((CommitPacket_t *)allocated)->commit;
+    zrtpHeader = &data.hdr;	// the standard header
+    commitHeader = &data.commit;
 
     setZrtpId();
     setLength((sizeof (CommitPacket_t) / ZRTP_WORD_SIZE) - 1);
@@ -40,14 +35,10 @@ ZrtpPacketCommit::ZrtpPacketCommit() {
 
 ZrtpPacketCommit::ZrtpPacketCommit(uint8_t *data) {
     DEBUGOUT((fprintf(stdout, "Creating commit packet from data\n")));
-    allocated = NULL;
     zrtpHeader = (zrtpPacketHeader_t *)&((CommitPacket_t *)data)->hdr;	// the standard header
     commitHeader = (Commit_t *)&((CommitPacket_t *)data)->commit;
 }
 
 ZrtpPacketCommit::~ZrtpPacketCommit() {
     DEBUGOUT((fprintf(stdout, "Deleting commit packet: alloc: %x\n", allocated)));
-    if (allocated != NULL) {
-	free(allocated);
-    }
 }

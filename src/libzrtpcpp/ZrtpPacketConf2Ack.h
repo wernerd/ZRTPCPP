@@ -38,6 +38,7 @@ class ZrtpPacketConf2Ack : public ZrtpPacketBase {
     virtual ~ZrtpPacketConf2Ack();
 
  private:
+     Conf2AckPacket_t data;
 };
 
 #endif // ZRTPPACKETCONF2ACK

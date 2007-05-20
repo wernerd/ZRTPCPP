@@ -39,6 +39,7 @@ class ZrtpPacketHelloAck : public ZrtpPacketBase {
     virtual ~ZrtpPacketHelloAck();
 
  private:
+     HelloAckPacket_t data;
 };
 
 #endif // ZRTPPACKETHELLOACK

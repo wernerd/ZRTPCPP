@@ -58,6 +58,12 @@ class ZrtpPacketDHPart : public ZrtpPacketBase {
 
  private:
     SupportedPubKeys pktype;
+     // DHPart packet is of variable length. It maximum size is 141 words:
+     // - 13 words fixed sizze 
+     // - up to 128 words variable part, depending on DH algorithm 
+     // leads to a maximum of 4*141=5644 bytes.
+     uint8_t data[768];       // large enough to hold a full blown DHPart packet
+
 };
 
 #endif // ZRTPPACKETDHPART

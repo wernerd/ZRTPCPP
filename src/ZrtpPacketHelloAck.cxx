@@ -25,10 +25,7 @@
 ZrtpPacketHelloAck::ZrtpPacketHelloAck() {
     DEBUGOUT((fprintf(stdout, "Creating HelloAck packet without data\n")));
 
-    allocated = malloc(sizeof (HelloAckPacket_t));
-    if (allocated == NULL) {
-    }
-    zrtpHeader = (zrtpPacketHeader_t *)&((HelloAckPacket_t *)allocated)->hdr;	// the standard header
+    zrtpHeader = &data.hdr;	// the standard header
 
     setZrtpId();
     setLength((sizeof(HelloAckPacket_t) / ZRTP_WORD_SIZE) - 1);
@@ -38,15 +35,11 @@ ZrtpPacketHelloAck::ZrtpPacketHelloAck() {
 ZrtpPacketHelloAck::ZrtpPacketHelloAck(uint8_t *data) {
     DEBUGOUT((fprintf(stdout, "Creating HelloAck packet from data\n")));
 
-    allocated = NULL;
     zrtpHeader = (zrtpPacketHeader_t *)&((HelloAckPacket_t *)data)->hdr;	// the standard header
 
 }
 
 ZrtpPacketHelloAck::~ZrtpPacketHelloAck() {
     DEBUGOUT((fprintf(stdout, "Deleting HelloAck packet: alloc: %x\n", allocated)));
-    if (allocated != NULL) {
-	free(allocated);
-    }
 }
 

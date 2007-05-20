@@ -26,12 +26,10 @@ ZrtpPacketConfirm::ZrtpPacketConfirm(uint8_t sl) {
     DEBUGOUT((fprintf(stdout, "Creating Confirm packet without data\n")));
 
     int32_t length = sizeof(ConfirmPacket_t) + (sl * ZRTP_WORD_SIZE) + CRC_SIZE;
-    allocated = malloc(length);
 
-    if (allocated == NULL) {
-    }
-
+    void* allocated = &data;
     memset(allocated, 0, length);
+
     zrtpHeader = (zrtpPacketHeader_t *)&((ConfirmPacket_t *)allocated)->hdr;	// the standard header
     confirmHeader = (Confirm_t *)&((ConfirmPacket_t *)allocated)->confirm;
 
@@ -49,7 +47,4 @@ ZrtpPacketConfirm::ZrtpPacketConfirm(uint8_t* data) {
 
 ZrtpPacketConfirm::~ZrtpPacketConfirm() {
     DEBUGOUT((fprintf(stdout, "Deleting Confirm packet: alloc: %x\n", allocated)));
-    if (allocated != NULL) {
-        free(allocated);
-    }
 }

@@ -161,6 +161,9 @@ ZrtpQueue::takeInDataPacket(void)
         return 0;
     }
 
+    // We assume all other packets are ZRTP packets here. Process
+    // if ZRTP processing is enabled. Because valid RTP packets are
+    // already handled we delete any packets here after processing.
     if (enableZrtp) {
         // Get CRC value into crc (see above how to compute the offset)
         uint16_t temp = rtn - CRC_SIZE;
@@ -173,7 +176,7 @@ ZrtpQueue::takeInDataPacket(void)
 
         uint32 magic = packet->getZrtpMagic();
 
-        // Check if it is a ZRTP packet, if not delete it and return 0
+        // Check if it is really a ZRTP packet, if not delete it and return 0
         if (magic != ZRTP_MAGIC || zrtpEngine == NULL) {
             delete packet;
             return 0;
@@ -185,7 +188,7 @@ ZrtpQueue::takeInDataPacket(void)
         extHeader -= 4;
 
         // first check for GoClear packet. If this was a GoClear don't 
-        // process any further. 
+        // process any further.
         if (zrtpEngine->handleGoClear(extHeader)) {
             delete packet;
             return 0;
@@ -215,7 +218,9 @@ ZrtpQueue::rtpDataPacket(IncomingRTPPkt* packet, int32 rtn,
     }
 
     // If no crypto context: then either ZRTP is off or in early state
-    // If crypto context: then unprotect data here
+    // If crypto context available then unprotect data here. If an error
+    // occurs during unprotecting the packet report the error and discard
+    // the packet.
     if (pcc != NULL) {
         int32 ret;
         if ((ret = packet->unprotect(pcc)) < 0) {
@@ -330,8 +335,7 @@ int32_t ZrtpQueue::sendDataZRTP(const unsigned char *data, int32_t length) {
 
     /*
      * The compute the ZRTP CRC over the full ZRTP packet. Thus include
-     * the fixed packet header into the calculation. This header has a
-     * size of 3 words.
+     * the fixed packet header into the calculation.
      */
     uint16_t temp = packet->getRawPacketSize() - CRC_SIZE;
     uint8_t* pt = (uint8_t*)packet->getRawPacket();
@@ -341,7 +345,6 @@ int32_t ZrtpQueue::sendDataZRTP(const unsigned char *data, int32_t length) {
 
     // advance pointer to CRC storage
     pt += temp;
-    // fprintf(stderr, "pt: %X, raw: %X, crc: %x, length: %d\n", pt, packet->getRawPacket(), crc, temp);
     *(uint32_t*)pt = htonl(crc);
 
     dispatchImmediate(packet);
@@ -350,45 +353,13 @@ int32_t ZrtpQueue::sendDataZRTP(const unsigned char *data, int32_t length) {
     return 1;
 }
 
-#if 0
-int32_t ZrtpQueue::sendDataSRTP(const unsigned char *dataHeader, int32_t lengthHeader,
-                                            char *dataContent, int32_t lengthContent)
-{
-    CryptoContext* pcc = getOutQueueCryptoContext(senderZrtpSsrc);
-    OutgoingRTPPkt* packet = new OutgoingRTPPkt(NULL, 0, dataHeader, lengthHeader,
-            (uint8*)dataContent, lengthContent, 0, pcc);
-
-    packet->setSSRC(senderZrtpSsrc);
-    packet->setPayloadType(13);
-
-    // TODO Remove Zfone hacks after Zfone fixed its seq.no handling
-    if (zrtpEngine->Zfone) {
-        senderZrtpSeqNo = getCurrentSeqNum();
-    }
-    packet->setSeqNum(senderZrtpSeqNo++);
-
-    if (zrtpEngine->Zfone) {
-        setNextSeqNum(senderZrtpSeqNo);
-    }
-    packet->setTimestamp(time(NULL));
-
-    // packet->enableZrtpChecksum();
-    packet->protect(senderZrtpSsrc, pcc);
-    // packet->computeZrtpChecksum();
-
-    dispatchImmediate(packet);
-    delete packet;
-    return 1;
-}
-#endif
-
 void ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
 {
     CryptoContext* pcc;
 
     if (part == ForSender) {
         // To encrypt packets: intiator uses initiator keys,
-        // responder uses responders keys
+        // responder uses responder keys
         // Create a "half baked" crypto context first and store it. This is
         // the main crypto context for the sending part of the connection.
         if (secrets->role == Initiator) {
@@ -424,15 +395,10 @@ void ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
                     secrets->srtpAuthTagLen / 8);            // authentication tag len
         }
 
-        // Create crypto context for ZRTP SSRC sender stream
-//        pcc = senderCryptoContext->newCryptoContextForSSRC(senderZrtpSsrc, 0, 0L);
-//        pcc->deriveSrtpKeys(senderZrtpSeqNo);
-//        setOutQueueCryptoContext(pcc);
-
-        // create a crypto context for real SSRC sender stream. 
+        // Create a SRTP crypto context for real SSRC sender stream. 
         // Note: key derivation can be done at this time only if the
-        // key derivation rate is 0 (disabled) or greater 2^16. For 
-        // ZRTP this is the case: the key derivation is defined as 2^48 
+        // key derivation rate is 0 (disabled). For ZRTP this is the 
+        // case: the key derivation is defined as 2^48 
         // which is effectively 0.
         pcc = senderCryptoContext->newCryptoContextForSSRC(getLocalSSRC(), 0, 0L);
         pcc->deriveSrtpKeys(0L);
@@ -476,11 +442,6 @@ void ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
                     secrets->initSaltLen / 8,                // session salt len
                     secrets->srtpAuthTagLen / 8);            // authentication tag len
         }
-        // Create crypto context for ZRTP SSRC receiving stream
-//        pcc = recvCryptoContext->newCryptoContextForSSRC(recvZrtpSsrc, 0, 0L);
-//        pcc->deriveSrtpKeys(recvZrtpSeqNo);
-//        setInQueueCryptoContext(pcc);
-
         secureParts++;
     }
 }

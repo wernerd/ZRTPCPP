@@ -24,8 +24,11 @@
  *
  */
 char *clientId = "GNUccRTP      "; // must be 15 chars
+#ifdef ZRTP4a
+char *zrtpVersion = "0.04";	// must be 4 chars
+#else
 char *zrtpVersion = "0.03";	// must be 4 chars
-
+#endif
 /**
  *
  */
@@ -58,7 +61,7 @@ char *retainedSec = "retained secret";
 char* iniZrtpKey = "Initiator ZRTP key";
 char* respZrtpKey = "Responder ZRTP key";
 
-char *sasString = "Short Authentication String";
+char *sasString = "SAS";
 
 /**
  * The arrays are sorted: the most secure / best algorithm is first in the

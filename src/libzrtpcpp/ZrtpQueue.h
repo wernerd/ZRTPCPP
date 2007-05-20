@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006 Werner Dittmann
+  Copyright (C) 2006, 2007 Werner Dittmann
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -220,14 +220,14 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      *
      * This method overrides the same method in OutgoingDataQueue class.
      * During ZRTP processing it may be necessary to control the
-     * flow of outgoing RTP payload packets.
+     * flow of outgoing RTP payload packets (GoClear processing).
      *
      * @param stamp Timestamp for expected send time of packet.
      * @param data Value or NULL if special "silent" packet.
      * @param len May be 0 to indicate a default by payload type.
      **/
     void
-      putData(uint32 stamp, const unsigned char* data = NULL, size_t len = 0);
+    putData(uint32 stamp, const unsigned char* data = NULL, size_t len = 0);
     
     /**
      * This is used to create a data packet and send it immediately.
@@ -239,14 +239,14 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      *
      * This method overrides the same method in OutgoingDataQueue class.
      * During ZRTP processing it may be necessary to control the
-     * flow of outgoing RTP payload packets.
+     * flow of outgoing RTP payload packets (GoClear processing).
      *
      * @param stamp Timestamp immediate send time of packet.
      * @param data Value or NULL if special "silent" packet.
      * @param len May be 0 to indicate a default by payload type.
      **/
     void
-      sendImmediate(uint32 stamp, const unsigned char* data = NULL, size_t len = 0);
+    sendImmediate(uint32 stamp, const unsigned char* data = NULL, size_t len = 0);
 
 
     void start();
@@ -259,7 +259,7 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      * This class overloads the function of IncomingDataQueue
      * implementation.
      *
-     * @return number of payload bytes received.  <0 if error.
+     * @return number of payload bytes received,  <0 if error.
      */
     virtual size_t takeInDataPacket();
 

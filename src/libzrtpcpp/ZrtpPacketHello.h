@@ -83,6 +83,11 @@ class ZrtpPacketHello : public ZrtpPacketBase {
 
 
  private:
+     // Hello packet is of variable length. It maximum size is 46 words:
+     // - 11 words fixed sizze 
+     // - up to 35 words variable part, depending on number of algorithms 
+     // leads to a maximum of 4*46=184 bytes.
+     uint8_t data[256];       // large enough to hold a full blown Hello packet
 };
 
 #endif // ZRTPPACKETHELLO

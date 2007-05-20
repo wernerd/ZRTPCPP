@@ -52,6 +52,14 @@ class ZrtpPacketConfirm : public ZrtpPacketBase {
         void setHmac(uint8_t* text)  { memcpy(confirmHeader->hmac, text, sizeof(confirmHeader->hmac)); };
         void setIv(uint8_t* text)    { memcpy(confirmHeader->iv, text, sizeof(confirmHeader->iv)); };
         void setExpTime(uint32_t t)  { confirmHeader->expTime = htonl(t); };
+
+    private:
+     // Confirm packet is of variable length. It maximum size is 268 words:
+     // - 11 words fixed size 
+     // - up to 257 words variable part, depending if signature is present ant its length 
+     // leads to a maximum of 4*268=1072 bytes.
+     uint8_t data[1280];       // large enough to hold a full blown Confirm packet
+
 };
 
 #endif // ZRTPPACKETCONFIRM

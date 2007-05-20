@@ -25,10 +25,7 @@
 ZrtpPacketClearAck::ZrtpPacketClearAck() {
     DEBUGOUT((fprintf(stdout, "Creating ClearAck packet without data\n")));
 
-    allocated = malloc(sizeof (ClearAckPacket_t));
-    if (allocated == NULL) {
-    }
-    zrtpHeader = (zrtpPacketHeader_t *)&((ClearAckPacket_t*)allocated)->hdr;	// the standard header
+    zrtpHeader = &data.hdr;	// the standard header
 
     setZrtpId();
     setLength((sizeof(ClearAckPacket_t) / ZRTP_WORD_SIZE) - 1);
@@ -38,13 +35,9 @@ ZrtpPacketClearAck::ZrtpPacketClearAck() {
 ZrtpPacketClearAck::ZrtpPacketClearAck(uint8_t *data) {
     DEBUGOUT((fprintf(stdout, "Creating Conf2Ack packet from data\n")));
 
-    allocated = NULL;
     zrtpHeader = (zrtpPacketHeader_t *)&((ClearAckPacket_t*)data)->hdr;	// the standard header
 }
 
 ZrtpPacketClearAck::~ZrtpPacketClearAck() {
     DEBUGOUT((fprintf(stdout, "Deleting ClearAck packet: alloc: %x\n", allocated)));
-    if (allocated != NULL) {
-	free(allocated);
-    }
 }

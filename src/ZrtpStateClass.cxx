@@ -156,7 +156,6 @@ int32_t ZrtpStateClass::evDetect(void) {
 	    if (dhPart1 == NULL) {
 		ZrtpPacketGoClear* gclr = parent->prepareGoClear(errMsg);
 		if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(gclr)) || (startTimer(&T2) <= 0)) {
-		    delete gclr;
 		    nextState(Initial);
 		    parent->sendInfo(Error, sendErrorText);
 		    return(Fail);
@@ -225,7 +224,7 @@ int32_t ZrtpStateClass::evDetect(void) {
             if ((nextTimer(&T1)) <= 0 || !parent->sendPacketZRTP(sentPacket)) {
                 parent->zrtpNotSuppOther();
                 sentPacket = NULL;
-                // Switch state "Detect" to be prepared to receive Hello from
+                // Stay in state detect to get an hello from
                 // other side any time later
                 nextState(Detect);
                 return (Fail);
@@ -267,11 +266,13 @@ int32_t ZrtpStateClass::evAckDetected(void) {
 	 * Hello:
 	 * - Acknowledge my peers Hello, sending HelloACK (F4)
 	 * - switch to state WaitCommit, wait for peer's Commit
+         * - we are going to be in the Responder role
 	 */
 	if (first == 'h') {
-            ZrtpPacketHello *hpkt = new ZrtpPacketHello(pkt);
-            ZrtpPacketHelloAck *helloAck = parent->prepareHelloAck(hpkt);
-            delete hpkt;
+// NOTE: may be useful if protocol state engine changes (preshared mode)
+//            ZrtpPacketHello *hpkt = new ZrtpPacketHello(pkt);
+            ZrtpPacketHelloAck *helloAck = parent->prepareHelloAck();
+//            delete hpkt;
 
 	    nextState(WaitCommit);
 
@@ -417,6 +418,15 @@ int32_t ZrtpStateClass::evCommitSent(void) {
 
 	first = tolower(*msg);
 	last = tolower(*(msg+7));
+
+        /*
+	 * HelloAck:
+	 * - late "helloAck", maybe  due to network latency, just ignore it
+	 * - no switch in state, leave timer as it is
+	 */
+	if (first == 'h' && last =='k') {
+	    return (Done);
+	}
 
 	/*
 	 * Commit:
@@ -846,6 +856,12 @@ int32_t ZrtpStateClass::evWaitConfAck(void) {
     }
 }
 
+/*
+ * When entering this transition function
+ * - sentPacket contains GoClear packet, GoClear timer active
+ * The GoClear packet should no be deleted because it is a static packet.
+ */
+
 int32_t ZrtpStateClass::evWaitClearAck(void) {
     DEBUGOUT((cout << "Checking for match in ClearAck.\n"));
 
@@ -860,15 +876,12 @@ int32_t ZrtpStateClass::evWaitClearAck(void) {
 	last = tolower(*(msg+7));
 
 	/*
-	 * HelloAck:
-	 * - stop resending Hello,
+	 * ClearAck:
+	 * - stop resending GoClear,
 	 * - switch to state AckDetected, wait for peer's Hello
 	 */
 	if (first == 'c' && last =='k') {
-	    ZrtpPacketClearAck* cpkt = new ZrtpPacketClearAck(pkt);
-	    delete cpkt;
-	    cancelTimer();	// stop send go clear timer processing, don't delete this Hello packet
-	    delete sentPacket;
+	    cancelTimer();	// stop send go clear timer processing, don't delete this GoClear packet
 	    sentPacket = NULL;
 	    nextState(Initial);
 	}
@@ -879,7 +892,6 @@ int32_t ZrtpStateClass::evWaitClearAck(void) {
 	if (sentPacket != NULL) {
             if ((nextTimer(&T2)) <= 0 || !parent->sendPacketZRTP(sentPacket)) {
                 parent->sendInfo(Error, resendError);
-                delete sentPacket;
                 sentPacket = NULL;
                 nextState(Initial);
                 return (Fail);

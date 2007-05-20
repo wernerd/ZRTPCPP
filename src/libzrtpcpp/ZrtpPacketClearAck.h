@@ -36,6 +36,7 @@ class ZrtpPacketClearAck : public ZrtpPacketBase {
     virtual ~ZrtpPacketClearAck();
   
  private:
+     ClearAckPacket_t data;
 };
 
 #endif // ZRTPPACKETCLEARACK

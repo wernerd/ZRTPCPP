@@ -25,10 +25,7 @@
 ZrtpPacketConf2Ack::ZrtpPacketConf2Ack() {
     DEBUGOUT((fprintf(stdout, "Creating Conf2Ack packet without data\n")));
 
-    allocated = malloc(sizeof (Conf2AckPacket_t));
-    if (allocated == NULL) {
-    }
-    zrtpHeader = (zrtpPacketHeader_t *)&((Conf2AckPacket_t*)allocated)->hdr;	// the standard header
+    zrtpHeader = &data.hdr;	// the standard header
 
     setZrtpId();
     setLength((sizeof (Conf2AckPacket_t) / ZRTP_WORD_SIZE) - 1);
@@ -38,13 +35,9 @@ ZrtpPacketConf2Ack::ZrtpPacketConf2Ack() {
 ZrtpPacketConf2Ack::ZrtpPacketConf2Ack(char *data) {
     DEBUGOUT((fprintf(stdout, "Creating Conf2Ack packet from data\n")));
 
-    allocated = NULL;
     zrtpHeader = (zrtpPacketHeader_t *)&((Conf2AckPacket_t*)data)->hdr;	// the standard header
 }
 
 ZrtpPacketConf2Ack::~ZrtpPacketConf2Ack() {
     DEBUGOUT((fprintf(stdout, "Deleting Conf2Ack packet: alloc: %x\n", allocated)));
-    if (allocated != NULL) {
-	free(allocated);
-    }
 }

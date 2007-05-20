@@ -26,11 +26,8 @@
 ZrtpPacketGoClear::ZrtpPacketGoClear() {
     DEBUGOUT((fprintf(stdout, "Creating GoClear packet without data\n")));
 
-    allocated = malloc(sizeof (GoClearPacket_t));
-    if (allocated == NULL) {
-    }
-    zrtpHeader = (zrtpPacketHeader_t *)&((GoClearPacket_t *)allocated)->hdr;	// the standard header
-    clearHeader = (GoClear_t *)&((GoClearPacket_t *)allocated)->goClear;
+    zrtpHeader = &data.hdr;	// the standard header
+    clearHeader = &data.goClear;
 
     setZrtpId();
     setLength((sizeof(GoClearPacket_t) / ZRTP_WORD_SIZE) - 1);
@@ -40,15 +37,10 @@ ZrtpPacketGoClear::ZrtpPacketGoClear() {
 ZrtpPacketGoClear::ZrtpPacketGoClear(uint8_t *data) {
     DEBUGOUT((fprintf(stdout, "Creating GoClear packet from data\n")));
 
-    allocated = NULL;
     zrtpHeader = (zrtpPacketHeader_t *)&((GoClearPacket_t *)data)->hdr;	// the standard header
     clearHeader = (GoClear_t *)&((GoClearPacket_t *)data)->goClear;
 }
 
 ZrtpPacketGoClear::~ZrtpPacketGoClear() {
     DEBUGOUT((fprintf(stdout, "Deleting GoClear packet: alloc: %x\n", allocated)));
-
-    if (allocated != NULL) {
-	free(allocated);
-    }
 }

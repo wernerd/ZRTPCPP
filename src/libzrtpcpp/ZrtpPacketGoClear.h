@@ -48,6 +48,7 @@ class ZrtpPacketGoClear : public ZrtpPacketBase {
     void setReason(uint8_t* text)    { memcpy(clearHeader->reason, text, 16); };
 
  private:
+     GoClearPacket_t data;
 };
 
 #endif // ZRTPPACKETGOCLEAR

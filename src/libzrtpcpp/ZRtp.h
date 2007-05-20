@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006 Werner Dittmann
+  Copyright (C) 2006 - 2007 Werner Dittmann
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -210,8 +210,6 @@ class ZRtp {
         */
        void resetSASVerified();
 
-       int Zfone;
-
  private:
      friend class ZrtpStateClass;
 
@@ -249,7 +247,7 @@ class ZRtp {
     /**
      * My computed public key
      */
-    uint8_t* pubKeyBytes;
+    uint8_t pubKeyBytes[1024];
     /**
      * Length off public key
      */
@@ -349,10 +347,11 @@ class ZRtp {
     /**
      * Pre-initialized packets to start off the whole game.
      */
-    ZrtpPacketHello*    zrtpHello;
-    ZrtpPacketHelloAck* zrtpHelloAck;
-    ZrtpPacketConf2Ack* zrtpConf2Ack;
-    ZrtpPacketClearAck* zrtpClearAck;
+    ZrtpPacketHello    zrtpHello;
+    ZrtpPacketHelloAck zrtpHelloAck;
+    ZrtpPacketConf2Ack zrtpConf2Ack;
+    ZrtpPacketClearAck zrtpClearAck;
+    ZrtpPacketGoClear  zrtpGoClear;
 
     /**
      * Random IV data to encrypt the confirm data, 128 bit for AES
@@ -504,7 +503,7 @@ class ZRtp {
      * @return
      *    A pointer to the initialized Hello packet.
      */
-    ZrtpPacketHello *prepareHello() {return zrtpHello; }
+    ZrtpPacketHello *prepareHello() {return &zrtpHello; }
 
     /**
      * Prepare a HelloAck packet.
@@ -515,12 +514,8 @@ class ZRtp {
      * @return
      *    A pointer to the initialized HelloAck packet.
      */
-    ZrtpPacketHelloAck *prepareHelloAck(ZrtpPacketHello *hello) {
-        uint8_t* cid = hello->getClientId();
-        if (*cid == 'Z') {
-            Zfone = 1;
-        }
-        return zrtpHelloAck;
+    ZrtpPacketHelloAck *prepareHelloAck() {
+        return &zrtpHelloAck;
     }
 
     /**
@@ -603,7 +598,7 @@ class ZRtp {
      *     NULL if GoClear could not be authenticated, a ClearAck packet
      *     otherwise.
      */
-    ZrtpPacketClearAck* prepareClearAck(ZrtpPacketGoClear* gpkt, uint8_t** errMsg = NULL);
+    ZrtpPacketClearAck* prepareClearAck(ZrtpPacketGoClear* gpkt);
 
     /**
      * Prepare a GoClearAck packet w/o HMAC

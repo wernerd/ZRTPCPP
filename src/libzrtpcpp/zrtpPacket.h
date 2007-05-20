@@ -81,6 +81,9 @@ typedef struct DHPart {
 
 typedef struct DHPartPacket {
     zrtpPacketHeader_t hdr;
+#ifdef ZRTP4a
+    DHPart_t dhPart;           // Since 0.4a
+#endif
 } DHPartPacket_t;
 
 typedef struct Confirm {

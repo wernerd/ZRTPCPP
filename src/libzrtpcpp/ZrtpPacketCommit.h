@@ -62,6 +62,7 @@ class ZrtpPacketCommit : public ZrtpPacketBase {
     void setHvi(uint8_t* text)         { memcpy(commitHeader->hvi, text, sizeof(commitHeader->hvi)); };
 
  private:
+     CommitPacket_t data;
 };
 
 #endif // ZRTPPACKETCOMMIT
