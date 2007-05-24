@@ -442,7 +442,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMs
     dhContext->getPubKeyBytes(pubKeyBytes);
 
 #ifdef ZRTP4a
-    if (zpDH2 != NULL) {	// DH2 and retained secrets already computed
+    if (zpDH2 != NULL) {	// DH2 and retained secrets already computed but
 	delete zpDH2;		// we are responder, DH2 packet not needed anymore
 	zpDH2 = NULL;
     }
@@ -576,7 +576,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint8_t** errM
     dhContext = NULL;
 
 #ifdef ZRTP4a
-    return zpDH2;
+    return zpDH2;		// ZrtpStateClass evWaitConfirm1() deletes packet
 #else
     return zpDH;
 #endif
