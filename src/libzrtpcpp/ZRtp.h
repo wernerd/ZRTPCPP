@@ -354,6 +354,11 @@ class ZRtp {
     ZrtpPacketGoClear  zrtpGoClear;
 
     /**
+     * Holds a pre-computed DHPart2 packet. Required to compute HVI
+     */
+    ZrtpPacketDHPart* zpDH2;
+
+    /**
      * Random IV data to encrypt the confirm data, 128 bit for AES
      */
     uint8_t randomIV[16];
@@ -435,7 +440,11 @@ class ZRtp {
     /**
      * Compute my hvi value according to ZRTP specification.
      */
+#ifdef ZRTP4a
+    void computeHvi(/* define new parameters */);
+#else
     void computeHvi(uint8_t *pv, uint32_t pvLength, ZrtpPacketHello *hello);
+#endif
 
     void computeSharedSecretSet(ZIDRecord& zidRec);
 

@@ -64,20 +64,14 @@ int ZrtpAvailable()
 ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb):
     callback(cb), dhContext(NULL) {
 
-//    zrtpHello = NULL;
-//    zrtpHelloAck = NULL;
-//    zrtpConf2Ack = NULL;
     DHss = NULL;
-//    pubKeyBytes = NULL;
+#ifdef ZRTP4a
+    zpDH2 = NULL;
+#endif
 
     memcpy(zid, myZid, 12);
     zrtpHello.setZid(zid);
-    /*
-    zrtpHelloAck = new ZrtpPacketHelloAck();
-    zrtpConf2Ack = new ZrtpPacketConf2Ack();
-    zrtpClearAck = new ZrtpPacketClearAck();
-    zrtpGoClear  = new ZrtpPacketGoClear();
-*/
+
     msgShaContext = createSha256Context(); // prepare for Initiator case
 
     stateEngine = new ZrtpStateClass(this);
@@ -90,28 +84,12 @@ ZRtp::~ZRtp() {
 	free(DHss);
         DHss = NULL;
     }
-    /*
-    if (pubKeyBytes != NULL) {
-        free(pubKeyBytes);
-        pubKeyBytes = NULL;
+#ifdef ZRTP4a
+    if (zpDH2 != NULL) {
+	delete zpDH2;
+	zpDH2 = NULL;
     }
-    if (zrtpHello != NULL) {
-	delete zrtpHello;
-        zrtpHello = NULL;
-    }
-    if (zrtpHelloAck != NULL) {
-	delete zrtpHelloAck;
-        zrtpHelloAck = NULL;
-    }
-    if (zrtpConf2Ack != NULL) {
-	delete zrtpConf2Ack;
-        zrtpConf2Ack = NULL;
-    }
-    if (zrtpGoClear != NULL) {
-	delete zrtpGoCLear;
-        zrtpGoClear = NULL;
-    }
-    */
+#endif
     if (stateEngine != NULL) {
 	delete stateEngine;
         stateEngine = NULL;
@@ -286,9 +264,49 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint8_t** errMsg) 
     // prepare IV data that we will use during confirm packet encryption
     dhContext->random(randomIV, sizeof(randomIV));
 
+#ifdef ZRTP4a
+    /*
+     * At this point the code acts as it will take the role of Initiator.
+     * Note, if the protocol receives a commit immediatly after it sent its
+     * hello then this code is not executed - this is taken care of at
+     * prepareDHPart1()
+     */
+
+    // Prepare our DHPart2 packet here. Required to compute HVI. If we stay
+    // in Initiator role then we reuse this packet later in prepareDHPart2().
+
+    // Initialize a ZID record to get to retained secrets for this peer
+    ZIDRecord zidRec(peerZid);
+
+    // ZID file should be opened during initialization step, not here.
+    // Thus get the singleton instance to the open file
+    ZIDFile *zid = ZIDFile::getInstance();
+    zid->getRecord(&zidRec);
+    /*
+     * After the next function call my set of shared secrets and the expected
+     * set of shared secrets are ready. The expected shared secrets are in the
+     * *r variables.
+     */
+    computeSharedSecretSet(zidRec);
+
+    zpDH2 = new ZrtpPacketDHPart(pubKey);
+
+    // Fill the values in the DHPart2 packet
+    zpDH->setMessageType((uint8_t*)DHPart2Msg);
+    zpDH->setRs1Id(rs1IDi);
+    zpDH->setRs2Id(rs2IDi);
+    zpDH->setSigsId(sigsIDi);
+    zpDH->setSrtpsId(srtpsIDi);
+    zpDH->setOtherSecretId(otherSecretIDi);
+
+    // here the public key value
+    zpDH->setPv(pubKeyBytes);
+    computeHvi(/* define new parameters here */);
+#else
     // Here we act as Initiator. Take other peer's Hello packet and my
     // PVI (public value initiator) and compute the HVI (hash value initiator)
     computeHvi(pubKeyBytes, maxPubKeySize, hello);
+#endif
 
     char buffer[128];
     snprintf((char *)buffer, 128, "Commit: Generated a public DH key of size: %d", dhContext->getPubKeySize());
@@ -423,21 +441,30 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMs
     }
     dhContext->getPubKeyBytes(pubKeyBytes);
 
-    // Initialize a ZID record to get retained secrets for this peer
-    memcpy(peerZid, commit->getZid(), 12);
-    ZIDRecord zidRec(peerZid);
-
-    // ZID file should be opened during initialization step, not here
-    // thus get the singleton instance to the open file
-    ZIDFile *zid = ZIDFile::getInstance();
-    zid->getRecord(&zidRec);
-
-    /*
-     * Compute the shared Secret Ids. Because here we are responder the real
-     * keys, salt, and HAMACS are computed after we got the DHPart2.
-     */
-    computeSharedSecretSet(zidRec);
-
+#ifdef ZRTP4a
+    if (zpDH2 != NULL) {	// DH2 and retained secrets already computed
+	delete zpDH2;		// we are responder, DH2 packet not needed anymore
+	zpDH2 = NULL;
+    }
+    else {			// need to compute retained secrets
+#endif
+	// Initialize a ZID record to get retained secrets for this peer
+	memcpy(peerZid, commit->getZid(), 12);
+	ZIDRecord zidRec(peerZid);
+	
+	// ZID file should be opened during initialization step, not here
+	// thus get the singleton instance to the open file
+	ZIDFile *zid = ZIDFile::getInstance();
+	zid->getRecord(&zidRec);
+	
+	/*
+	 * Compute the shared Secret Ids. Because here we are responder the real
+	 * keys, salt, and HAMACS are computed after we got the DHPart2.
+	 */
+	computeSharedSecretSet(zidRec);
+#ifdef ZRTP4a
+    }
+#endif
     ZrtpPacketDHPart *zpDH = new ZrtpPacketDHPart(pubKey);
 
     // Fill the values in the DHPart1 packet
@@ -508,13 +535,11 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint8_t** errM
     // Thus get the singleton instance to the open file
     ZIDFile *zid = ZIDFile::getInstance();
     zid->getRecord(&zidRec);
+#ifndef ZRTP4a
     /*
      * After the next function call my set of shared secrets and the expected
      * set of shared secrets are ready. The expected shared secrets are in the
-     * *r variables. This is "set A" as defined in the ZRTP specification. The
-     * received DHPart1 packet contains the "Set B". Now go on and select the
-     * real shared secrets that we will use to generate s0, all depended
-     * keys, and the new RS1 value of the ZID record.
+     * *r variables.
      */
     computeSharedSecretSet(zidRec);
 
@@ -530,6 +555,8 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint8_t** errM
 
     // here the public key value
     zpDH->setPv(pubKeyBytes);
+
+#endif
 
     myRole = Initiator;
 
@@ -547,22 +574,12 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint8_t** errM
     zid->saveRecord(&zidRec);
     delete dhContext;
     dhContext = NULL;
-#if 0
-    memcpy(sasValue, messageHash+sizeof(messageHash)-sizeof(sasValue), sizeof(sasValue));
 
-    uint32_t sasTemp;
-    uint8_t sasBytes[4];
-    sasBytes[0] = *(sasValue + sizeof(sasValue) - 3);
-    sasBytes[1] = *(sasValue + sizeof(sasValue) - 2);
-    sasBytes[2] = *(sasValue + sizeof(sasValue) - 1);
-    sasBytes[3] = 0;
-    sasTemp = *(uint32_t*)sasBytes;
-    sasTemp = ntohl(sasTemp);
-    sasTemp <<= 4;
-    *(uint32_t*)sasBytes = htonl(sasTemp);
-    SAS = Base32(sasBytes, 20).getEncoded();
-#endif // TODO - remove later
+#ifdef ZRTP4a
+    return zpDH2;
+#else
     return zpDH;
+#endif
 }
 
 ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart *dhPart2, uint8_t** errMsg) {
@@ -609,21 +626,6 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart *dhPart2, uint8_t** er
     closeSha256Context(msgShaContext, messageHash);
     msgShaContext = NULL;
 
-#if 0
-    memcpy(sasValue, messageHash+sizeof(messageHash)-sizeof(sasValue), sizeof(sasValue));
-
-    uint32_t sasTemp;
-    uint8_t sasBytes[4];
-    sasBytes[0] = *(sasValue + sizeof(sasValue) - 3);
-    sasBytes[1] = *(sasValue + sizeof(sasValue) - 2);
-    sasBytes[2] = *(sasValue + sizeof(sasValue) - 1);
-    sasBytes[3] = 0;
-    sasTemp = *(uint32_t*)sasBytes;
-    sasTemp = ntohl(sasTemp);
-    sasTemp <<= 4;
-    *(uint32_t*)sasBytes = htonl(sasTemp);
-    SAS = Base32(sasBytes, 20).getEncoded();
-#endif // TODO - remove later
     // Initialize a ZID record to get peer's retained secrets
     ZIDRecord zidRec(peerZid);
 
@@ -927,7 +929,11 @@ SupportedAuthLengths ZRtp::findBestAuthLen(ZrtpPacketHello *hello) {
     return AuthLen32;
 }
 
+#ifdef ZRTP4a
+void ZRtp::computeHvi(/* define new parameters */) {
+#else
 void ZRtp::computeHvi(uint8_t *pv, uint32_t pvLength, ZrtpPacketHello *hello) {
+#endif
 
     unsigned char* data[3];
     unsigned int length[3];
