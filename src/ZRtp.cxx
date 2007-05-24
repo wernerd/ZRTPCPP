@@ -482,7 +482,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMs
     myRole = Responder;
     memcpy(peerHvi, commit->getHvi(), SHA256_DIGEST_LENGTH);
 
-    // Because we are responder here first check and close a prepared
+    // Because we are responder close a pre-computed
     // SHA256 context because this was prepared for Initiator.
     if (msgShaContext != NULL) {
         closeSha256Context(msgShaContext, NULL);
@@ -535,7 +535,16 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint8_t** errM
     // Thus get the singleton instance to the open file
     ZIDFile *zid = ZIDFile::getInstance();
     zid->getRecord(&zidRec);
-#ifndef ZRTP4a
+
+#ifdef ZRTP4a
+    // Get precomputed DHPart2 packet and set internal pointer to NULL. The
+    // DHPart2 packet is handed over to ZrtpStateClass. The method 
+    // evWaitConfirm1() that eventually deletes this packet after it was sent 
+    // to our peer.
+
+    ZrtpPacketDHPart *zpDH = zpDH2;
+    zpDH2 = NULL;
+#else
     /*
      * After the next function call my set of shared secrets and the expected
      * set of shared secrets are ready. The expected shared secrets are in the
@@ -560,9 +569,9 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint8_t** errM
 
     myRole = Initiator;
 
-    // We are Inititaor: the Responder's Hello and the Initiator's Commit
+    // We are Inititaor: the Responder's Hello and the Initiator's (our) Commit
     // are already hashed in the context. Now hash the Responder's DH1 and then
-    // the Initiator's DH2 in that order.
+    // the Initiator's (our) DH2 in that order.
     sha256Ctx(msgShaContext, (unsigned char*)dhPart1->getHeaderBase(), dhPart1->getLength() * ZRTP_WORD_SIZE);
     sha256Ctx(msgShaContext, (unsigned char*)zpDH->getHeaderBase(), zpDH->getLength() * ZRTP_WORD_SIZE);
 
@@ -570,16 +579,12 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint8_t** errM
     closeSha256Context(msgShaContext, messageHash);
     msgShaContext = NULL;
 
-    generateS0Initiator(dhPart1, zidRec);
+    generateS0Initiator(dhPart1, zidRec); // This computes the new RS1 as well
     zid->saveRecord(&zidRec);
     delete dhContext;
     dhContext = NULL;
 
-#ifdef ZRTP4a
-    return zpDH2;		// ZrtpStateClass evWaitConfirm1() deletes packet
-#else
     return zpDH;
-#endif
 }
 
 ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart *dhPart2, uint8_t** errMsg) {
