@@ -16,32 +16,28 @@
   Foundation, Inc., 59 Temple Place, Boston, MA 02111.
 */
 
-/* Copyright (C) 2006
- *
+/*
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <libzrtpcpp/ZrtpPacketError.h>
+#include <libzrtpcpp/ZrtpPacketErrorAck.h>
 
-ZrtpPacketError::ZrtpPacketError() {
-    DEBUGOUT((fprintf(stdout, "Creating Error packet without data\n")));
+ZrtpPacketErrorAckAck::ZrtpPacketErrorAck() {
+    DEBUGOUT((fprintf(stdout, "Creating ErrorAck packet without data\n")));
 
     zrtpHeader = &data.hdr;	// the standard header
-    errorHeader = &data.error;
 
     setZrtpId();
-    setLength((sizeof(ErrorPacket_t) / ZRTP_WORD_SIZE) - 1);
-    setMessage((uint8_t*)ErrorMsg);
+    setLength((sizeof (ErrorAckPacket_t) / ZRTP_WORD_SIZE) - 1);
+    setMessageType((uint8_t*)ErrorAckMsg);
 }
 
-ZrtpPacketError::ZrtpPacketError(char *data) {
-    DEBUGOUT((fprintf(stdout, "Creating Error packet from data\n")));
+ZrtpPacketErrorAck::ZrtpPacketErrorAck(char *data) {
+    DEBUGOUT((fprintf(stdout, "Creating ErrorAck packet from data\n")));
 
-    allocated = NULL;
-    zrtpHeader = (zrtpPacketHeader_t *)&((ErrorPacket_t *)data)->hdr;	// the standard header
-    errorHeader = (Error_t *)&((ErrorPacket_t *)data)->error;
+    zrtpHeader = (zrtpPacketHeader_t *)&((ErrorAckPacket_t*)data)->hdr;	// the standard header
 }
 
-ZrtpPacketError::~ZrtpPacketError() {
-    DEBUGOUT((fprintf(stdout, "Deleting Error packet: alloc: %x\n", allocated)));
+ZrtpPacketErrorAck::~ZrtpPacketErrorAck() {
+    DEBUGOUT((fprintf(stdout, "Deleting ErrorAck packet: alloc: %x\n", allocated)));
 }
