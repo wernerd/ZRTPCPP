@@ -59,3 +59,39 @@ void sha256(unsigned char * data_chunks[],
 	}
 	SHA256_Final(digest, &ctx);
 }
+
+void* createSha256Context()
+{
+    SHA256_CTX* ctx = (SHA256_CTX*)malloc(sizeof (SHA256_CTX));
+    SHA256_Init(ctx);
+    return (void*)ctx;
+}
+
+void closeSha256Context(void* ctx, unsigned char* digest)
+{
+    SHA256_CTX* hd = (SHA256_CTX*)ctx;
+
+    if (digest != NULL) {
+        SHA256_Final(digest, hd);
+    }
+    free(hd);
+}
+
+void sha256Ctx(void* ctx, unsigned char* data, 
+               unsigned int dataLength)
+{
+    SHA256_CTX* hd = (SHA256_CTX*)ctx;
+    SHA256_Update(hd, data, dataLength);
+}
+
+void sha256Ctx(void* ctx, unsigned char* dataChunks[],
+               unsigned int dataChunkLength[])
+{
+    SHA256_CTX* hd = (SHA256_CTX*)ctx;
+
+    while (*dataChunks) {
+        SHA256_Update (hd, *dataChunks, *dataChunkLength);
+        dataChunks++;
+        dataChunkLength++;
+    }
+}

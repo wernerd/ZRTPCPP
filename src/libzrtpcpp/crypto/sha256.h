@@ -47,7 +47,9 @@
 /**
  * Compute SHA256 digest.
  *
- * This functions takes one data chunk and computes its SHA256 digest.
+ * This functions takes one data chunk and computes its SHA256 digest. This 
+ * function creates and deletes an own SHA256 context to perform the SHA256
+ * operations.
  *
  * @param data
  *    Points to the data chunk.
@@ -64,8 +66,9 @@ void sha256(unsigned char *data,
 /**
  * Compute SHA256 digest over several data cunks.
  *
- * This functions takes several data chunk and computes the SHA256 digest. It
- * uses the openSSL SHA256 implementation as SHA256 engine.
+ * This functions takes several data chunks and computes the SHA256 digest.
+ * This function creates and deletes an own SHA256 context to perform the
+ * SHA256 operations.
  *
  * @param data
  *    Points to an array of pointers that point to the data chunks. A NULL
@@ -80,23 +83,61 @@ void sha256(unsigned char *data[],
             unsigned int data_length[],
             unsigned char *digest);
 /**
+ * Create and initialize a SHA256 context.
  *
+ * An application uses this context to hash several data into one SHA256
+ * digest. See also sha256Ctx(...) and closeSha256Context(...).
+ *
+ * @return Returns a pointer to the initialized SHA256 context
  */
 void* createSha256Context();
 
 /**
+ * Compute a digest and close the SHa256 digest.
  *
+ * An application uses this function to compute the SHA256 digest and to
+ * close the SHA256 context.
+ *
+ * @param ctx
+ *    Points to the SHA256 context.
+ * @param digest
+ *    If this pointer is not NULL then it must point to a byte array that
+ *    is big enough to hold the SHA256 digest (256 bit = 32 Bytes). If this
+ *    pointer is NULL then the functions does not compute the digest but
+ *    closes the context only. The context cannot be used anymore.
  */
 void closeSha256Context(void* ctx,
-                        unsigned char* mac);
+                        unsigned char* digest);
 
 /**
+ * Update the SHA256 context with data.
  *
+ * This functions updates the SHA256 context with some data.
+ * See also CloseSha256Context(...) how to get the digest.
+ *
+ * @param ctx
+ *    Points to the SHA256 context.
+ * @param data
+ *    Points to the data to update the context.
+ * @param dataLength
+ *    The length of the data in bytes.
  */
 void sha256Ctx(void* ctx, unsigned char* data, 
                unsigned int dataLength);
 
 /**
+ * Update the SHA256 context with several data chunks.
+ *
+ * This functions updates the SHA256 context with some data.
+ * See also CloseSha256Context(...) how to get the digest.
+ *
+ * @param ctx
+ *    Points to the SHA256 context.
+ * @param dataChunks
+ *    Points to an array of pointers that point to the data chunks. A NULL
+ *    pointer in an array element terminates the data chunks.
+ * @param dataChunkLength
+ *    Points to an array of integers that hold the length of each data chunk.
  *
  */
 void sha256Ctx(void* ctx, unsigned char* dataChunks[],

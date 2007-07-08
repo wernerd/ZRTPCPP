@@ -31,7 +31,7 @@ ZrtpPacketError::ZrtpPacketError() {
 
     setZrtpId();
     setLength((sizeof(ErrorPacket_t) / ZRTP_WORD_SIZE) - 1);
-    setMessage((uint8_t*)ErrorMsg);
+    setMessageType((uint8_t*)ErrorMsg);
 }
 
 ZrtpPacketError::ZrtpPacketError(char *data) {

@@ -19,7 +19,8 @@ ccxxinclude_HEADERS = Base32.h    ZrtpPacketBase.h      ZrtpPacketDHPart.h    Zr
 		  ZIDFile.h       ZrtpPacketClearAck.h  ZrtpStateClass.h      ZrtpCrc32.h \
 		  ZIDRecord.h     ZrtpPacketCommit.h    ZrtpPacketGoClear.h   ZrtpStates.h \
 		  ZrtpCallback.h  ZrtpPacketConf2Ack.h  zrtpPacket.h          ZrtpTextData.h \
-		  ZRtp.h          ZrtpPacketConfirm.h   ZrtpPacketHelloAck.h  $(ccrtp_header)
+		  ZRtp.h          ZrtpPacketConfirm.h   ZrtpPacketHelloAck.h  ZrtpPacketError.h \
+		  ZrtpPacketErrorAck.h $(ccrtp_header)
 
 
 

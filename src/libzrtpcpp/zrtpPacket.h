@@ -81,9 +81,7 @@ typedef struct DHPart {
 
 typedef struct DHPartPacket {
     zrtpPacketHeader_t hdr;
-#ifdef ZRTP4a
     DHPart_t dhPart;           // Since 0.4a
-#endif
 } DHPartPacket_t;
 
 typedef struct Confirm {
@@ -93,6 +91,8 @@ typedef struct Confirm {
     uint8_t     sigLength;
     uint8_t	flags;
     uint32_t    expTime;
+    uint8_t     SASRenderScheme[ZRTP_WORD_SIZE];
+    uint32_t    trustedSASValue;
 } Confirm_t;
 
 typedef struct ConfirmPacket {
@@ -106,7 +106,6 @@ typedef struct Conf2AckPacket {
 } Conf2AckPacket_t;
 
 typedef struct GoClear {
-    uint8_t reason[4*ZRTP_WORD_SIZE];
     uint8_t clearHmac[2*ZRTP_WORD_SIZE];
 } GoClear_t;
 
@@ -121,6 +120,20 @@ typedef struct ClearAckPacket {
     uint8_t crc[ZRTP_WORD_SIZE];
 } ClearAckPacket_t;
 
+typedef struct Error {
+    uint32_t errorCode;
+} Error_t;
+
+typedef struct ErrorPacket {
+    zrtpPacketHeader_t hdr;
+    Error_t error;
+    uint8_t crc[ZRTP_WORD_SIZE];
+} ErrorPacket_t;
+
+typedef struct ErrorAckPacket {
+    zrtpPacketHeader_t hdr;
+    uint8_t crc[ZRTP_WORD_SIZE];
+} ErrorAckPacket_t;
 
 /* big/little endian conversion */
 

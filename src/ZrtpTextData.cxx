@@ -24,11 +24,7 @@
  *
  */
 char *clientId = "GNUccRTP      "; // must be 15 chars
-#ifdef ZRTP4a
-char *zrtpVersion = "0.04";	// must be 4 chars
-#else
-char *zrtpVersion = "0.03";	// must be 4 chars
-#endif
+char *zrtpVersion = "0.07";	// must be 4 chars
 /**
  *
  */
@@ -41,6 +37,7 @@ char *Confirm1Msg = "Confirm1";
 char *Confirm2Msg = "Confirm2";
 char *Conf2AckMsg = "Conf2ACK";
 char *ErrorMsg =    "Error   ";
+char *ErrorAckMsg = "ErrorACK";
 char *GoClearMsg =  "GoClear ";
 char *ClearAckMsg = "ClearACK";
 
@@ -61,7 +58,9 @@ char *retainedSec = "retained secret";
 char* iniZrtpKey = "Initiator ZRTP key";
 char* respZrtpKey = "Responder ZRTP key";
 
-char *sasString = "SAS";
+char* sasString = "SAS";
+
+char* KDFString = "ZRTP-HMAC-KDF";
 
 /**
  * The arrays are sorted: the most secure / best algorithm is first in the
@@ -76,8 +75,6 @@ char *supportedCipher[] =  {"AES2",
 char *supportedPubKey[] =  {"DH4k",
                             "DH3k"};
 
-// TODO: fix data after Zfone fixed it - B32 is the correct value.
-// char *supportedSASType[] = {"B32 "};
 char *supportedSASType[] = {"B32 "};
 
 char *supportedAuthLen[] = {"HS32",

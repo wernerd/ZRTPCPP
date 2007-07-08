@@ -25,7 +25,7 @@
 
 ZrtpPacketDHPart::ZrtpPacketDHPart(SupportedPubKeys pkt) {
     DEBUGOUT((fprintf(stdout, "Creating DHPart packet without data\n")));
-#ifndef ZRTP4a
+#if 0
     int length = sizeof(DHPart_t) + sizeof(zrtpPacketHeader_t) + CRC_SIZE + ((pkt == Dh3072) ? 384 : 512);
 
     void* allocated = &data;
@@ -61,7 +61,7 @@ ZrtpPacketDHPart::ZrtpPacketDHPart(SupportedPubKeys pkt) {
 
 ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t *data) {
     DEBUGOUT((fprintf(stdout, "Creating DHPart packet from data\n")));
-#ifndef ZRTP4a
+#if 0
     zrtpHeader = (zrtpPacketHeader_t *)&((DHPartPacket_t *)data)->hdr;	// the standard header
 
     int16_t len = getLength();

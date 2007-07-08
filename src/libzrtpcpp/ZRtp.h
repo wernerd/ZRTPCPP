@@ -440,11 +440,7 @@ class ZRtp {
     /**
      * Compute my hvi value according to ZRTP specification.
      */
-#ifdef ZRTP4a
-    void computeHvi(/* define new parameters */);
-#else
-    void computeHvi(uint8_t *pv, uint32_t pvLength, ZrtpPacketHello *hello);
-#endif
+    void computeHvi(ZrtpPacketDHPart* dh, ZrtpPacketHello *hello);
 
     void computeSharedSecretSet(ZIDRecord& zidRec);
 

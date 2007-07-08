@@ -43,7 +43,7 @@ class ZrtpPacketConfirm : public ZrtpPacketBase {
         virtual ~ZrtpPacketConfirm();
 
         const bool isSASFlag()            { return confirmHeader->flags & 0x4; }
-        const uint8_t *getFiller()        { return confirmHeader->filler; };
+        const uint8_t* getFiller()        { return confirmHeader->filler; };
         const uint8_t* getIv()            { return confirmHeader->iv; };
         const uint8_t* getHmac()          { return confirmHeader->hmac; };
         const uint32_t getExpTime()       { return ntohl(confirmHeader->expTime); };

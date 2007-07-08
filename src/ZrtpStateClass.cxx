@@ -96,7 +96,7 @@ int32_t ZrtpStateClass::evInitial(void) {
 	// remember packet for easy resend in case timer triggers
 	sentPacket = static_cast<ZrtpPacketBase *>(hello);
 
-	if (/*!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(hello)) ||*/ (startTimer(&T1) <= 0)) {
+	if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(hello)) || (startTimer(&T1) <= 0)) {
 	    nextState(Initial);
 	    parent->sendInfo(Error, sendErrorText);
 	    return(Fail);
@@ -287,7 +287,7 @@ int32_t ZrtpStateClass::evAckDetected(void) {
 	    return (Done);
 	}
        /*
-        * Commit:  (Actually illegal here, but handle it because of problem in Zfone)
+        * Commit:
         * - Act as Responder
         * - send our DHPart1
         * - switch to state WaitDHPart2, wait for peer's DHPart2

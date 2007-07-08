@@ -13,6 +13,7 @@ if ZRTP_OPENSSL
 zrtp_src_o =    libzrtpcpp/crypto/openssl/ZrtpDH.cxx \
 		libzrtpcpp/crypto/openssl/hmac256.cxx \
 		libzrtpcpp/crypto/openssl/sha256.cxx \
+		libzrtpcpp/crypto/openssl/AesCFB.cpp \
 		libzrtpcpp/crypto/openssl/InitializeOpenSSL.cxx
 endif
 
@@ -40,6 +41,8 @@ libzrtpcpp_la_SOURCES = ZIDFile.cxx \
 		ZrtpPacketClearAck.cxx \
 		ZrtpPacketHelloAck.cxx \
 		ZrtpPacketHello.cxx \
+		ZrtpPacketError.cxx \
+		ZrtpPacketErrorAck.cxx \
 		ZrtpStateClass.cxx \
 		ZrtpTextData.cxx \
 		Base32.cxx $(ccrtp_src) $(zrtp_src_g) $(zrtp_src_o)

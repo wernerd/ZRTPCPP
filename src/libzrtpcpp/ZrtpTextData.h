@@ -43,6 +43,7 @@ extern char* Confirm1Msg;
 extern char* Confirm2Msg;
 extern char* Conf2AckMsg;
 extern char* ErrorMsg;
+extern char* ErrorAckMsg;
 extern char* GoClearMsg;
 extern char* ClearAckMsg;
 
@@ -64,6 +65,8 @@ extern char* iniZrtpKey;
 extern char* respZrtpKey;
 
 extern char* sasString;
+
+extern char* KDFString;
 /**
  *
  */

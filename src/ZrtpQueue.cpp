@@ -288,7 +288,7 @@ ZrtpQueue::rtpDataPacket(IncomingRTPPkt* packet, int32 rtn,
     }
     // Start the ZRTP engine only after we got a at least one RTP packet and
     // sent some as well
-    if (enableZrtp && zrtpEngine == NULL && getSendPacketCount() >= 3) {
+    if (enableZrtp && zrtpEngine == NULL && getSendPacketCount() >= 1) {
         start();
     }
     return rtn;

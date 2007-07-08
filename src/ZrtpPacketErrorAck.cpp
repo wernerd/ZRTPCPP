@@ -22,7 +22,7 @@
 
 #include <libzrtpcpp/ZrtpPacketErrorAck.h>
 
-ZrtpPacketErrorAckAck::ZrtpPacketErrorAck() {
+ZrtpPacketErrorAck::ZrtpPacketErrorAck() {
     DEBUGOUT((fprintf(stdout, "Creating ErrorAck packet without data\n")));
 
     zrtpHeader = &data.hdr;	// the standard header

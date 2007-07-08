@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006 Werner Dittmann
+  Copyright (C) 2006, 2007 Werner Dittmann
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -41,11 +41,9 @@ class ZrtpPacketGoClear : public ZrtpPacketBase {
     virtual ~ZrtpPacketGoClear();
 
     const uint8_t* getClearHmac() { return clearHeader->clearHmac; };
-    const uint8_t* getReason()    { return clearHeader->reason; };
 
     void setClearHmac(uint8_t *text) { memcpy(clearHeader->clearHmac, text, 32); };
     void clrClearHmac()              { memset(clearHeader->clearHmac, 0, 32); };
-    void setReason(uint8_t* text)    { memcpy(clearHeader->reason, text, 16); };
 
  private:
      GoClearPacket_t data;

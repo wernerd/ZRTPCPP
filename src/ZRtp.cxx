@@ -65,9 +65,7 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb):
     callback(cb), dhContext(NULL) {
 
     DHss = NULL;
-#ifdef ZRTP4a
     zpDH2 = NULL;
-#endif
 
     memcpy(zid, myZid, 12);
     zrtpHello.setZid(zid);
@@ -84,12 +82,10 @@ ZRtp::~ZRtp() {
 	free(DHss);
         DHss = NULL;
     }
-#ifdef ZRTP4a
     if (zpDH2 != NULL) {
 	delete zpDH2;
 	zpDH2 = NULL;
     }
-#endif
     if (stateEngine != NULL) {
 	delete stateEngine;
         stateEngine = NULL;
@@ -264,7 +260,6 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint8_t** errMsg) 
     // prepare IV data that we will use during confirm packet encryption
     dhContext->random(randomIV, sizeof(randomIV));
 
-#ifdef ZRTP4a
     /*
      * At this point the code acts as it will take the role of Initiator.
      * Note, if the protocol receives a commit immediatly after it sent its
@@ -280,8 +275,8 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint8_t** errMsg) 
 
     // ZID file should be opened during initialization step, not here.
     // Thus get the singleton instance to the open file
-    ZIDFile *zid = ZIDFile::getInstance();
-    zid->getRecord(&zidRec);
+    ZIDFile *zidFile = ZIDFile::getInstance();
+    zidFile->getRecord(&zidRec);
     /*
      * After the next function call my set of shared secrets and the expected
      * set of shared secrets are ready. The expected shared secrets are in the
@@ -292,21 +287,16 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint8_t** errMsg) 
     zpDH2 = new ZrtpPacketDHPart(pubKey);
 
     // Fill the values in the DHPart2 packet
-    zpDH->setMessageType((uint8_t*)DHPart2Msg);
-    zpDH->setRs1Id(rs1IDi);
-    zpDH->setRs2Id(rs2IDi);
-    zpDH->setSigsId(sigsIDi);
-    zpDH->setSrtpsId(srtpsIDi);
-    zpDH->setOtherSecretId(otherSecretIDi);
+    zpDH2->setMessageType((uint8_t*)DHPart2Msg);
+    zpDH2->setRs1Id(rs1IDi);
+    zpDH2->setRs2Id(rs2IDi);
+    zpDH2->setSigsId(sigsIDi);
+    zpDH2->setSrtpsId(srtpsIDi);
+    zpDH2->setOtherSecretId(otherSecretIDi);
 
     // here the public key value
-    zpDH->setPv(pubKeyBytes);
-    computeHvi(/* define new parameters here */);
-#else
-    // Here we act as Initiator. Take other peer's Hello packet and my
-    // PVI (public value initiator) and compute the HVI (hash value initiator)
-    computeHvi(pubKeyBytes, maxPubKeySize, hello);
-#endif
+    zpDH2->setPv(pubKeyBytes);
+    computeHvi(zpDH2, hello);
 
     char buffer[128];
     snprintf((char *)buffer, 128, "Commit: Generated a public DH key of size: %d", dhContext->getPubKeySize());
@@ -441,13 +431,11 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMs
     }
     dhContext->getPubKeyBytes(pubKeyBytes);
 
-#ifdef ZRTP4a
     if (zpDH2 != NULL) {	// DH2 and retained secrets already computed but
 	delete zpDH2;		// we are responder, DH2 packet not needed anymore
 	zpDH2 = NULL;
     }
     else {			// need to compute retained secrets
-#endif
 	// Initialize a ZID record to get retained secrets for this peer
 	memcpy(peerZid, commit->getZid(), 12);
 	ZIDRecord zidRec(peerZid);
@@ -462,9 +450,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMs
 	 * keys, salt, and HAMACS are computed after we got the DHPart2.
 	 */
 	computeSharedSecretSet(zidRec);
-#ifdef ZRTP4a
     }
-#endif
     ZrtpPacketDHPart *zpDH = new ZrtpPacketDHPart(pubKey);
 
     // Fill the values in the DHPart1 packet
@@ -536,36 +522,13 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint8_t** errM
     ZIDFile *zid = ZIDFile::getInstance();
     zid->getRecord(&zidRec);
 
-#ifdef ZRTP4a
     // Get precomputed DHPart2 packet and set internal pointer to NULL. The
     // DHPart2 packet is handed over to ZrtpStateClass. The method 
-    // evWaitConfirm1() that eventually deletes this packet after it was sent 
+    // evWaitConfirm1() eventually deletes this packet after it was sent 
     // to our peer.
 
     ZrtpPacketDHPart *zpDH = zpDH2;
     zpDH2 = NULL;
-#else
-    /*
-     * After the next function call my set of shared secrets and the expected
-     * set of shared secrets are ready. The expected shared secrets are in the
-     * *r variables.
-     */
-    computeSharedSecretSet(zidRec);
-
-    ZrtpPacketDHPart *zpDH = new ZrtpPacketDHPart(pubKey);
-
-    // Fill the values in the DHPart2 packet
-    zpDH->setMessageType((uint8_t*)DHPart2Msg);
-    zpDH->setRs1Id(rs1IDi);
-    zpDH->setRs2Id(rs2IDi);
-    zpDH->setSigsId(sigsIDi);
-    zpDH->setSrtpsId(srtpsIDi);
-    zpDH->setOtherSecretId(otherSecretIDi);
-
-    // here the public key value
-    zpDH->setPv(pubKeyBytes);
-
-#endif
 
     myRole = Initiator;
 
@@ -587,7 +550,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint8_t** errM
     return zpDH;
 }
 
-ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart *dhPart2, uint8_t** errMsg) {
+ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint8_t** errMsg) {
 
     uint8_t* pvi;
     uint8_t sas[SHA256_DIGEST_LENGTH+1];
@@ -616,13 +579,13 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart *dhPart2, uint8_t** er
     }
 
     // Now we have the peer's pvi. Because we are responder re-compute my hvi
-    // using my Hello packet and the Initiator's pv and compare with
+    // using my Hello packet and the Initiator's pv (DHPart2) and compare with
     // hvi sent in commit packet. If it doesn't macht then a MitM attack
     // may have occured.
-    computeHvi(pvi, ((pubKey == Dh3072) ? 384 : 512), &zrtpHello);
+    computeHvi(dhPart2, &zrtpHello);
     if (memcmp(hvi, peerHvi, SHA256_DIGEST_LENGTH) != 0) {
-	sendInfo(Alert, "Mismatch of HVI values. Possible MitM problem?");
-	return NULL;
+        sendInfo(Alert, "Mismatch of HVI values. Possible MitM problem?");
+        return NULL;
     }
     // Hash the Initiator's DH2 into the message Hash (other messages already
     // prepared, see 
@@ -664,7 +627,9 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart *dhPart2, uint8_t** er
     uint32_t macLen;
 
     // Encrypt and HMAC with Responder's key - we are Respondere here
-    int16_t hmlen = (zpConf->getLength() - 9) * ZRTP_WORD_SIZE;
+//    TODO: int16_t hmlen = (zpConf->getLength() - 9) * ZRTP_WORD_SIZE;
+    int16_t hmlen = (zpConf->getLength() - 11) * ZRTP_WORD_SIZE;
+
     aesCfbEncrypt(zrtpKeyR, (cipher == Aes128) ? 16 : 32, randomIV,
                   (unsigned char*)zpConf->getFiller(), hmlen);
     hmac_sha256(hmacKeyR, SHA256_DIGEST_LENGTH, (unsigned char*)zpConf->getFiller(),
@@ -678,13 +643,14 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1, uint8_t** 
 
     sendInfo(Info, "Initiator: Confirm1 received, preparing Confirm2");
 
-    bool sasFlag = confirm1->isSASFlag();
     uint8_t confMac[SHA256_DIGEST_LENGTH];
     uint32_t macLen;
 
     // Use the Responder's keys here because we are Initiator here and
     // receive packets from Responder
-    int16_t hmlen = (confirm1->getLength() - 9) * ZRTP_WORD_SIZE;
+//    TODO: int16_t hmlen = (confirm1->getLength() - 9) * ZRTP_WORD_SIZE;
+    int16_t hmlen = (confirm1->getLength() - 11) * ZRTP_WORD_SIZE;
+
     hmac_sha256(hmacKeyR, SHA256_DIGEST_LENGTH, (unsigned char*)confirm1->getFiller(),
                 hmlen, confMac, &macLen);
 
@@ -699,6 +665,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1, uint8_t** 
      * The Confirm1 is ok, handle the Retained secret stuff and inform
      * GUI about state.
      */
+    bool sasFlag = confirm1->isSASFlag();
 
     // Initialize a ZID record to get peer's retained secrets
     ZIDRecord zidRec(peerZid);
@@ -736,7 +703,9 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1, uint8_t** 
     zpConf->setIv(randomIV);
 
     // Encrypt and HMAC with Initiator's key - we are Initiator here
-    hmlen = (zpConf->getLength() - 9) * ZRTP_WORD_SIZE;
+//    TODO: hmlen = (zpConf->getLength() - 9) * ZRTP_WORD_SIZE;
+    hmlen = (zpConf->getLength() - 11) * ZRTP_WORD_SIZE;
+
     aesCfbEncrypt(zrtpKeyI, (cipher == Aes128) ? 16 : 32, randomIV,
                   (unsigned char*)zpConf->getFiller(), hmlen);
     hmac_sha256(hmacKeyI, SHA256_DIGEST_LENGTH, (unsigned char*)zpConf->getFiller(),
@@ -750,13 +719,13 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint8_t**
 
     sendInfo(Info, "Responder: Confirm2 received, preparing Conf2Ack");
 
-    bool sasFlag = confirm2->isSASFlag();
     uint8_t confMac[SHA256_DIGEST_LENGTH];
     uint32_t macLen;
 
     // Use the Initiator's keys here because we are Responder here and
     // reveice packets from Initiator
-    int16_t hmlen = (confirm2->getLength() - 9) * ZRTP_WORD_SIZE;
+//    TODO: int16_t hmlen = (confirm2->getLength() - 9) * ZRTP_WORD_SIZE;
+    int16_t hmlen = (confirm2->getLength() - 11) * ZRTP_WORD_SIZE;
     hmac_sha256(hmacKeyI, SHA256_DIGEST_LENGTH, (unsigned char*)confirm2->getFiller(),
                 hmlen, confMac, &macLen);
 
@@ -772,6 +741,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint8_t**
      * The Confirm2 is ok, handle the Retained secret stuff and inform
      * GUI about state.
      */
+    bool sasFlag = confirm2->isSASFlag();
 
     // Initialize a ZID record to get peer's retained secrets
     ZIDRecord zidRec(peerZid);
@@ -816,7 +786,6 @@ ZrtpPacketGoClear* ZRtp::prepareGoClear(uint8_t* errMsg)
 	for (; len < 16; len++) {
 	    msg[len] = ' ';
 	}
-	gclr->setReason(msg);
     }
     return gclr;
 }
@@ -934,11 +903,7 @@ SupportedAuthLengths ZRtp::findBestAuthLen(ZrtpPacketHello *hello) {
     return AuthLen32;
 }
 
-#ifdef ZRTP4a
-void ZRtp::computeHvi(/* define new parameters */) {
-#else
-void ZRtp::computeHvi(uint8_t *pv, uint32_t pvLength, ZrtpPacketHello *hello) {
-#endif
+void ZRtp::computeHvi(ZrtpPacketDHPart* dh, ZrtpPacketHello *hello) {
 
     unsigned char* data[3];
     unsigned int length[3];
@@ -946,8 +911,8 @@ void ZRtp::computeHvi(uint8_t *pv, uint32_t pvLength, ZrtpPacketHello *hello) {
      * populate the vector to compute the HVI hash according to the
      * ZRTP specification.
      */
-    data[0] = pv;
-    length[0] = pvLength;
+    data[0] = (uint8_t*)dh->getHeaderBase();;
+    length[0] = dh->getLength() * ZRTP_WORD_SIZE;
 
     data[1] = (uint8_t*)hello->getHeaderBase();
     length[1] = hello->getLength() * ZRTP_WORD_SIZE;
@@ -1100,28 +1065,98 @@ void ZRtp::generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 
     /*
      * ready to generate s0 here.
-     * Hash the DH shared secret and the available shared secrets (max. 5).
-     */
-    unsigned char* data[8];
-    unsigned int   length[8];
+     * The formular to compute S0:
+      s0 = hash( counter | DHResult | "ZRTP-HMAC-KDF" | ZIDi | ZIDr | \
+      total_hash | len(s1) | s1 | len(s2) | s2 | len(s3) | s3 | len(s4) | s4 | len(s5) | s5 )
+    *
+    * Note: in this function we are Initiator, thus ZIDi is our zid, ZIDr is the
+    * peer's zid (peerZid)
+    */
 
+    // According to the formula the max number of elements to hash is 17, add one for the 
+    // terminating "NULL"
+    unsigned char* data[18];
+    unsigned int   length[18];
+
+    // we need a number of length data items, so define them here 
+    uint32_t counter,
+             DHResultLen,
+             totalHashLen,
+             sLen[5], 
+             pos;
     // first hash the DH result (computed during protocol handling)
-    sha256(DHss, dhContext->getSecretSize(), DHss);
+    // sha256(DHss, dhContext->getSecretSize(), DHss); gone since 4j
 
-    // Now hash all togehter
-    data[0] = DHss;
-    length[0] = SHA256_DIGEST_LENGTH;
+    // Now prepare structure to hash anything 
+    pos = 0;
+    counter = 1;
+    counter = htonl(counter);
+    data[pos] = (unsigned char*)&counter;
+    length[pos++] = sizeof(uint32_t);
 
-    for (i = 0; i < matchingSecrets; i++) {
-	data[1+i] = (unsigned char*)setD[i];
-        length[1+i] = SHA256_DIGEST_LENGTH;
+    // setup length of DH result as 32 bit big-endian number
+//    DHResultLen = dhContext->getSecretSize();
+//    DHResultLen = htonl(DHResultLen);
+
+    // Hash the length oh DHResult (DHss) as big-endian number
+//    data[pos] = (unsigned char*)&DHResultLen;
+//    length[pos++] = sizeof(uint32_t);
+
+    // Next is the DH result itself
+    data[pos] = DHss;
+    length[pos++] = dhContext->getSecretSize();
+
+    // Next the fixed string "ZRTP-HMAC-KDF"
+    data[pos] = (unsigned char*)KDFString;
+    length[pos++] = strlen(KDFString);
+
+    // Next is Initiator's id (ZIDi), in this case as Initiator 
+    // it is zid 
+    data[pos] = zid;
+    length[pos++] = 3*ZRTP_WORD_SIZE;
+
+    // Next is Responder's id (ZIDr), in this case our peer's id 
+    data[pos] = peerZid;
+    length[pos++] = 3*ZRTP_WORD_SIZE;
+
+    // Next is the length of total hash (messageHash) as 32bit big-endian number 
+    // length of total_hash is SHA256_DIGEST_LENGTH 
+//    totalHashLen = SHA256_DIGEST_LENGTH;
+//    totalHashLen = htonl(totalHashLen);
+//    data[pos] = (unsigned char*)&totalHashLen;
+//    length[pos++] = sizeof(uint32_t);
+
+    // Next ist total hash (messageHash) itself 
+    data[pos] = messageHash;
+    length[pos++] = SHA256_DIGEST_LENGTH;
+
+    // Now for each matching shared secret hash the length of 
+    // the shared secret as 32 bit big-endian number and then the 
+    // shared secret itself. The length of a shared seceret is 
+    // currently fixed to SHA256_DIGEST_LENGTH. If a shared 
+    // secret is not used _only_ its length is hased as zero 
+    // length. 
+
+    int secretHashLen = SHA256_DIGEST_LENGTH;
+    secretHashLen = htonl(secretHashLen);        // prepare 32 bit big-endian number 
+
+    for (i = 0; i < 5; i++) {
+        if (setD[i] != NULL) {           // a matching secret, set length, then secret
+            sLen[i] = secretHashLen;
+            data[pos] = (unsigned char*)&sLen[i];
+            length[pos++] = sizeof(uint32_t);
+            data[pos] = (unsigned char*)setD[i];
+            length[pos++] = SHA256_DIGEST_LENGTH;
+        }
+        else {                           // no machting secret, set length 0, skip secret
+            sLen[i] = 0;
+            data[pos] = (unsigned char*)&sLen[i];
+            length[pos++] = sizeof(uint32_t);
+        }
     }
-    data[1+i] = messageHash;
-    length[1+i] = SHA256_DIGEST_LENGTH;
 
-    data[2+i] = NULL;
+    data[pos] = NULL;
     sha256(data, length, s0);
-    // hexdump("S0 (I)", s0, 32);
 
     memset(DHss, 0, dhContext->getSecretSize());
     free(DHss);
@@ -1208,30 +1243,101 @@ void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 
     /*
      * ready to generate s0 here.
-     * Hash the DH shared secret and the available shared secrets (max. 5).
-     */
-    unsigned char* data[8];
-    unsigned int   length[8];
+     * The formular to compute S0:
+      s0 = hash( counter | DHResult | "ZRTP-HMAC-KDF" | ZIDi | ZIDr | \
+      total_hash | len(s1) | s1 | len(s2) | s2 | len(s3) | s3 | len(s4) | s4 | len(s5) | s5 )
+    *
+    * Note: in this function we are Responder, thus ZIDi is the peer's zid (peerZid), ZIDr
+    * is our zid.
+    */
 
+    // According to the formula the max number of elements to hash is 17, add one for the 
+    // terminating "NULL"
+    unsigned char* data[19];
+    unsigned int   length[19];
+
+    // we need a number of length data items, so define them here 
+    uint32_t counter, 
+             DHResultLen,
+             totalHashLen,
+             sLen[5],
+             pos;
     // first hash the DH result (computed during protocol handling)
-    sha256(DHss, dhContext->getSecretSize(), DHss);
-    // now take the hashed DH secret and the retained secrets and hash
-    // them to get S0
-    data[0] = DHss;
-    length[0] = SHA256_DIGEST_LENGTH;
+    // sha256(DHss, dhContext->getSecretSize(), DHss); gone since 4j
 
-    for (i = 0; i < matchingSecrets; i++) {
-	data[1+i] = (unsigned char*)setD[i];
-        length[1+i] = SHA256_DIGEST_LENGTH;
+    // Now prepare structure to hash anything 
+
+    pos = 0;             // position of data to hash 
+    counter = 1;
+    counter = htonl(counter);
+    data[pos] = (unsigned char*)&counter;
+    length[pos++] = sizeof(uint32_t);
+
+    // setup length of DH result as 32 bit big-endian number
+//    DHResultLen = dhContext->getSecretSize();
+//    DHResultLen = htonl(DHResultLen);
+
+    // Hash the length oh DHResult (DHss) as big-endian number
+//    data[pos] = (unsigned char*)&DHResultLen;
+//    length[pos++] = sizeof(uint32_t);
+
+    // Next is the DH result itself
+    data[pos] = DHss;
+    length[pos++] = dhContext->getSecretSize();
+
+    // Next the fixed string "ZRTP-HMAC-KDF"
+    data[pos] = (unsigned char*)KDFString;
+    length[pos++] = strlen(KDFString);
+
+    // Next is Initiator's id (ZIDi), in this case as Responder 
+    // it is peerZid 
+    data[pos] = peerZid;
+    length[pos++] = 3*ZRTP_WORD_SIZE;
+
+    // Next is Responder's id (ZIDr), in this case our own zid 
+    data[pos] = zid;
+    length[pos++] = 3*ZRTP_WORD_SIZE;
+
+    // Next is the length of total hash (messageHash) as 32bit big-endian number 
+    // length of total_hash is SHA256_DIGEST_LENGTH 
+//    totalHashLen = SHA256_DIGEST_LENGTH;
+//    totalHashLen = htonl(totalHashLen);
+//    data[6] = (unsigned char*)&totalHashLen;
+//    length[6] = sizeof(uint32_t);
+
+    // Next ist total hash (messageHash) itself 
+    data[pos] = messageHash;
+    length[pos++] = SHA256_DIGEST_LENGTH;
+
+    // Now for each matching shared secret hash the length of 
+    // the shared secret as 32 bit big-endian number and then the 
+    // shared secret itself. The length of a shared seceret is 
+    // currently fixed to SHA256_DIGEST_LENGTH. If a shared 
+    // secret is not used _only_ its length is hased as zero 
+    // length. 
+
+    int secretHashLen = SHA256_DIGEST_LENGTH;
+    secretHashLen = htonl(secretHashLen);        // prepare 32 bit big-endian number 
+
+    for (i = 0; i < 5; i++) {
+        if (setD[i] != NULL) {           // a matching secret, set length, then secret
+            sLen[i] = secretHashLen;
+            data[pos] = (unsigned char*)&sLen[i];
+            length[pos++] = sizeof(uint32_t);
+            data[pos] = (unsigned char*)setD[i];
+            length[pos++] = SHA256_DIGEST_LENGTH;
+        }
+        else {                           // no machting secret, set length 0, skip secret
+            sLen[i] = 0;
+            data[pos] = (unsigned char*)&sLen[i];
+            length[pos++] = sizeof(uint32_t);
+        }
     }
-    //hexdump("messageHash (R)", messageHash, SHA256_DIGEST_LENGTH);
-    data[1+i] = messageHash;
-    length[1+i] = SHA256_DIGEST_LENGTH;
 
-    data[2+i] = NULL;
+    data[pos] = NULL;
     sha256(data, length, s0);
+//    hexdump("S0 (R)", s0, 32);
 
-    // hexdump("S0 (R)", s0, 32);
     memset(DHss, 0, dhContext->getSecretSize());
     free(DHss);
     DHss = NULL;
@@ -1274,23 +1380,16 @@ void ZRtp::computeSRTPKeys() {
      // perform SAS generation
     uint32_t sasTemp;
     uint8_t sasBytes[4];
-#ifdef ZRTP4a
     uint8_t hmacTmp[SHA256_DIGEST_LENGTH];
 
     hmac_sha256(hmacKeyI, SHA256_DIGEST_LENGTH, (unsigned char*)sasString, strlen(sasString),
                 hmacTmp, &macLen);
-    memcpy(sasValue, hmacTmp+sizeof(hmacTmp)-sizeof(sasValue), sizeof(sasValue));
-#else
-    memcpy(sasValue, messageHash+sizeof(messageHash)-sizeof(sasValue), sizeof(sasValue));
-#endif
-    sasBytes[0] = *(sasValue + sizeof(sasValue) - 3);
-    sasBytes[1] = *(sasValue + sizeof(sasValue) - 2);
-    sasBytes[2] = *(sasValue + sizeof(sasValue) - 1);
+    memcpy(sasValue, hmacTmp, sizeof(sasValue));
+
+    sasBytes[0] = sasValue[0];
+    sasBytes[1] = sasValue[1];
+    sasBytes[2] = sasValue[2] & 0xf0;
     sasBytes[3] = 0;
-    sasTemp = *(uint32_t*)sasBytes;
-    sasTemp = ntohl(sasTemp);
-    sasTemp <<= 4;
-    *(uint32_t*)sasBytes = htonl(sasTemp);
     SAS = Base32(sasBytes, 20).getEncoded();
 }
 
