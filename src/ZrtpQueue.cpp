@@ -334,7 +334,7 @@ int32_t ZrtpQueue::sendDataZRTP(const unsigned char *data, int32_t length) {
     packet->setSeqNum(senderZrtpSeqNo++);
 
     /*
-     * The compute the ZRTP CRC over the full ZRTP packet. Thus include
+     * Compute the ZRTP CRC over the full ZRTP packet. Thus include
      * the fixed packet header into the calculation.
      */
     uint16_t temp = packet->getRawPacketSize() - CRC_SIZE;

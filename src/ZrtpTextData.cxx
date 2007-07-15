@@ -24,7 +24,7 @@
  *
  */
 char *clientId = "GNUccRTP      "; // must be 15 chars
-char *zrtpVersion = "0.07";	// must be 4 chars
+char *zrtpVersion = "0.08";	// must be 4 chars
 /**
  *
  */
