@@ -195,8 +195,11 @@ class ZrtpCallback {
      *     data.
      * @param part
      *    Defines for which part (sender or receiver) to switch on security
+     * @return
+     *    Returns false if something went wrong during initialization of SRTP
+     *    context, for example memory shortage.
      */
-    virtual void srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part) =0;
+    virtual bool srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part) =0;
 
     /**
      * This method shall clear the SRTP Context and switch off GUI inidicators.

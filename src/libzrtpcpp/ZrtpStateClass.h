@@ -49,22 +49,20 @@ enum zrtpStates {
     WaitConfAck,
     WaitClearAck,
     SecureState,
+    WaitErrorAck,
     numberOfStates
 };
 
 enum EventReturnCodes {
-    Fail = 0,			// Event processing failed. Process RTP data.
-    Done = 1,			// Event processing ok. Process RTP data.
-    FailDismiss = 2,		// Event processing failed, dismiss RTP data.
-    OkDismiss = 3		// Event Processing ok, dismiss RTP data.
+    Fail = 0,			// ZRTP event processing failed.
+    Done = 1,			// Event processing ok.
 };
 
 enum EventDataType {
     ZrtpInitial = 1,
     ZrtpClose,
     ZrtpPacket,
-    Timer,
-    ZrtpGoClear
+    Timer
 };
 
 typedef struct Event {
@@ -111,7 +109,7 @@ private:
      * If we are <code>Initiator</code> then resend this packet in case of
      * timeout.
      */
-    ZrtpPacketBase *sentPacket;
+    ZrtpPacketBase* sentPacket;
 
     zrtpTimer_t T1;
     zrtpTimer_t T2;
@@ -140,6 +138,7 @@ public:
     int32_t evWaitConfAck();
     int32_t evWaitClearAck();
     int32_t evSecureState();
+    int32_t evWaitErrorAck();
 
     /**
      * Initialize and activate a timer.
@@ -172,6 +171,15 @@ public:
      *    0 cancelation failed
      */
     int32_t cancelTimer() {return parent->cancelTimer(); };
+
+    /**
+     * Prepare and send an Error packet.
+     *
+     * Preparse an Error packet and sends it. It stores the Error
+     * packet in the sentPacket variable to enable resending. The
+     * method switches to protocol state Initial.
+     */
+    int32_t sendErrorPacket(uint32_t errorCode);
 
 };
 

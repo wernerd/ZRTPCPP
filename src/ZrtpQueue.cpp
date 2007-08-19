@@ -170,7 +170,11 @@ ZrtpQueue::takeInDataPacket(void)
         uint32_t crc = *(uint32_t*)(buffer + temp);
         crc = ntohl(crc);
 
-        zrtpCheckCksum(buffer, temp, crc);
+        if (!zrtpCheckCksum(buffer, temp, crc)) {
+            delete buffer;
+            zrtpUserCallback->showMessage(Error, "ZRTP packet checksum mismatch");
+            return 0;
+        }
 
         packet = new IncomingZRTPPkt(buffer,rtn);
 
@@ -187,12 +191,6 @@ ZrtpQueue::takeInDataPacket(void)
         // We need them, thus adjust
         extHeader -= 4;
 
-        // first check for GoClear packet. If this was a GoClear don't 
-        // process any further.
-        if (zrtpEngine->handleGoClear(extHeader)) {
-            delete packet;
-            return 0;
-        }
         zrtpEngine->processZrtpMessage(extHeader);
     }
     delete packet;
@@ -211,16 +209,20 @@ ZrtpQueue::rtpDataPacket(IncomingRTPPkt* packet, int32 rtn,
     // Secure state then create a CryptoContext for this SSRC.
     // Assumption: every SSRC stream sent via this connection is secured 
     // _and_ uses the same crypto parameters.
-    if (pcc == NULL && zrtpEngine && zrtpEngine->checkState(SecureState)) {
+    if (pcc == NULL && zrtpEngine && recvCryptoContext) {
         pcc = recvCryptoContext->newCryptoContextForSSRC(packet->getSSRC(), 0, 0L);
-        pcc->deriveSrtpKeys(packet->getSeqNum());
-        setInQueueCryptoContext(pcc);
+        if (pcc != NULL) {
+            pcc->deriveSrtpKeys(packet->getSeqNum());
+            setInQueueCryptoContext(pcc);
+        }
+        else {
+            srtpSecretsOff(ForSender);
+        }
     }
 
     // If no crypto context: then either ZRTP is off or in early state
-    // If crypto context available then unprotect data here. If an error
-    // occurs during unprotecting the packet report the error and discard
-    // the packet.
+    // If crypto context is available then unprotect data here. If an error
+    // occurs report the error and discard the packet.
     if (pcc != NULL) {
         int32 ret;
         if ((ret = packet->unprotect(pcc)) < 0) {
@@ -353,7 +355,7 @@ int32_t ZrtpQueue::sendDataZRTP(const unsigned char *data, int32_t length) {
     return 1;
 }
 
-void ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
+bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
 {
     CryptoContext* pcc;
 
@@ -394,16 +396,20 @@ void ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
                     secrets->respSaltLen / 8,                // session salt len
                     secrets->srtpAuthTagLen / 8);            // authentication tag len
         }
-
+        if (senderCryptoContext == NULL) {
+            return false;
+        }
         // Create a SRTP crypto context for real SSRC sender stream. 
         // Note: key derivation can be done at this time only if the
         // key derivation rate is 0 (disabled). For ZRTP this is the 
         // case: the key derivation is defined as 2^48 
         // which is effectively 0.
         pcc = senderCryptoContext->newCryptoContextForSSRC(getLocalSSRC(), 0, 0L);
+        if (pcc == NULL) {
+            return false;
+        }
         pcc->deriveSrtpKeys(0L);
         setOutQueueCryptoContext(pcc);
-
         secureParts++;
     }
     if (part == ForReceiver) {
@@ -441,6 +447,9 @@ void ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
                     20,                                      // authentication key len
                     secrets->initSaltLen / 8,                // session salt len
                     secrets->srtpAuthTagLen / 8);            // authentication tag len
+        }
+        if (recvCryptoContext == NULL) {
+            return false;
         }
         secureParts++;
     }

@@ -118,7 +118,7 @@ void Base32::b2a_l(const unsigned char* os, int len,
      */
     string result(divceil(len*8, 5), ' ');
 
-    /* pointer into the result buffer, initially pointing to the
+    /* index into the result buffer, initially pointing to the
      * "one-past-the-end" quintet
      */
     int resp = result.size();

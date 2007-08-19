@@ -143,6 +143,7 @@ int32_t ZRtp::processTimeout() {
 
 }
 
+#ifdef oldgoclear
 bool ZRtp::handleGoClear(uint8_t *message)
 {
     char *msg, first, last;
@@ -165,6 +166,7 @@ bool ZRtp::handleGoClear(uint8_t *message)
         return false;
     }
 }
+#endif
 
 void ZRtp::startZrtpEngine() {
     Event_t ev;
@@ -202,17 +204,27 @@ int32_t ZRtp::checkState(int32_t state)
 }
 
 /*
- * At this point we will presume the role of Initiator. This role may change
+ * At this point we will assume the role of Initiator. This role may change
  * in case we have a commit-clash. Refer to chapter 5.2 in the spec how
  * to break this tie.
  */
-ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint8_t** errMsg) {
+ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) {
 
     sendInfo(Info, "Hello received, preparing a Commit");
 
+    if (memcmp(hello->getVersion(), zrtpVersion, 4) != 0) {
+        *errMsg = UnsuppZRTPVersion;
+        sendInfo(Error, "Received Hello packet with unsupported version number.");
+        return NULL;
+    }
     // Save our peer's (presumably the Responder) ZRTP id
     uint8_t* cid = hello->getClientId();
     memcpy(peerZid, hello->getZid(), 12);
+    if (memcmp(peerZid, zid, 12) == 0) {       // peers have same ZID????
+        *errMsg = EqualZIDHello;
+        sendInfo(Error, "Received Hello packet with same ZID.");
+        return NULL;
+    }
 
     /*
      * The Following section extracts the algorithm from the Hello
@@ -221,26 +233,31 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint8_t** errMsg) 
      */
     cipher = findBestCipher(hello);
     if (cipher >= NumSupportedSymCiphers) {
+        *errMsg = UnsuppCiphertype;
 	sendInfo(Error, "Hello message does not contain a supported Cipher");
 	return NULL;
     }
     hash = findBestHash(hello);
     if (hash >= NumSupportedHashes) {
+        *errMsg = UnsuppHashType;
 	sendInfo(Error, "Hello message does not contain a supported Hash");
 	return NULL;
     }
     pubKey = findBestPubkey(hello);
     if (pubKey >= NumSupportedPubKeys) {
+        *errMsg = UnsuppPKExchange;
 	sendInfo(Error, "Hello message does not contain a supported public key algorithm");
 	return NULL;
     }
     sasType = findBestSASType(hello);
     if (sasType >= NumSupportedSASTypes) {
+        *errMsg = UnsuppSASScheme;
 	sendInfo(Error, "Hello message does not contain a supported SAS algorithm");
 	return NULL;
     }
     authLength = findBestAuthLen(hello);
     if (authLength >= NumSupportedAuthLenghts) {
+        *errMsg = UnsuppSRTPAuthTag;
         sendInfo(Error, "Hello message does not contain a supported authentication length");
         return NULL;
     }
@@ -261,6 +278,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint8_t** errMsg) 
 	maxPubKeySize = 512;
     }
     else {
+        *errMsg = CriticalSWError;
 	return NULL;
 	// Error - shouldn't happen
     }
@@ -332,7 +350,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint8_t** errMsg) 
  * possible Initiator preparation. This belongs to a prepared DHPart2 packet,
  * DH data, message hash SHA context
  */
-ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMsg) {
+ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMsg) {
 
     int i;
 
@@ -346,6 +364,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMs
 	}
     }
     if (i >= NumSupportedSymCiphers) { // no match - something went wrong
+        *errMsg = UnsuppCiphertype;
 	sendInfo(Alert, "Cannot find a supported Cipher in Commit message");
 	return NULL;
     }
@@ -359,6 +378,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMs
         }
     }
     if (i >= NumSupportedAuthLenghts) { // no match - something went wrong
+        *errMsg = UnsuppSRTPAuthTag;
         sendInfo(Alert, "Cannot find a supported authentication length in Commit message");
         return NULL;
     }
@@ -372,6 +392,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMs
 	}
     }
     if (i >= NumSupportedHashes) { // no match - something went wrong
+        *errMsg = UnsuppHashType;
 	sendInfo(Alert, "Cannot find a supported Hash in Commit message");
 	return NULL;
     }
@@ -385,6 +406,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMs
 	}
     }
     if (i >= NumSupportedPubKeys) { // no match - something went wrong
+        *errMsg = UnsuppPKExchange;
 	sendInfo(Alert, "Cannot find a supported public key algorithm in Commit message");
 	return NULL;
     }
@@ -398,6 +420,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMs
 	}
     }
     if (i >= NumSupportedSASTypes) { // no match - something went wrong
+        *errMsg = UnsuppSASScheme;
 	sendInfo(Alert, "Cannot find a supported SAS algorithm in Commit message");
 	return NULL;
     }
@@ -426,6 +449,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMs
         maxPubKeySize = 512;
     }
     else {
+        *errMsg = CriticalSWError;
         return NULL;
         // Error - shouldn't happen
     }
@@ -437,6 +461,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMs
     sendInfo(Info, buffer);
 
     if (pubKeyLen > maxPubKeySize) {
+        *errMsg = CriticalSWError;
         snprintf(buffer, 128, "Generated DH public key too big: %d, max: %d", pubKeyLen, maxPubKeySize);
         sendInfo(Error, buffer);
         return NULL;
@@ -513,7 +538,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMs
 /*
  * At this point we will take the role of the Initiator.
  */
-ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint8_t** errMsg) {
+ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errMsg) {
 
     uint8_t* pvr;
     uint8_t sas[SHA256_DIGEST_LENGTH+1];
@@ -531,6 +556,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint8_t** errM
     pvr = dhPart1->getPv();
     if (pubKey == Dh3072) {
         if (!dhContext->checkPubKey(pvr, 384)) {
+            *errMsg = DHErrorWrongPV;
             sendInfo(Alert, "Wrong/weak public key value (pvr) received from other party");
             return NULL;
         }
@@ -538,6 +564,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint8_t** errM
     }
     else {
         if (!dhContext->checkPubKey(pvr, 512)) {
+            *errMsg = DHErrorWrongPV;
             sendInfo(Alert, "Wrong/weak public key value (pvr) received from other party");
             return NULL;
         }
@@ -579,7 +606,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint8_t** errM
 /*
  * At this point we are Responder.
  */
-ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint8_t** errMsg) {
+ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* errMsg) {
 
     uint8_t* pvi;
     uint8_t sas[SHA256_DIGEST_LENGTH+1];
@@ -597,6 +624,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint8_t** er
     pvi = dhPart2->getPv();
     if (pubKey == Dh3072) {
         if (!dhContext->checkPubKey(pvi, 384)) {
+            *errMsg = DHErrorWrongPV;
             sendInfo(Alert, "Wrong/weak public key value (pvi) received from other party");
             return NULL;
         }
@@ -604,6 +632,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint8_t** er
     }
     else {
         if (!dhContext->checkPubKey(pvi, 512)) {
+            *errMsg = DHErrorWrongPV;
             sendInfo(Alert, "Wrong/weak public key value (pvi) received from other party");
             return NULL;
         }
@@ -616,6 +645,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint8_t** er
     // may have occured.
     computeHvi(dhPart2, &zrtpHello);
     if (memcmp(hvi, peerHvi, SHA256_DIGEST_LENGTH) != 0) {
+        *errMsg = DHErrorWrongHVI;
         sendInfo(Alert, "Mismatch of HVI values. Possible MitM problem?");
         return NULL;
     }
@@ -669,7 +699,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint8_t** er
     return zpConf;
 }
 
-ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1, uint8_t** errMsg) {
+ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1, uint32_t* errMsg) {
 
     sendInfo(Info, "Initiator: Confirm1 received, preparing Confirm2");
 
@@ -683,6 +713,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1, uint8_t** 
                 hmlen, confMac, &macLen);
 
     if (memcmp(confMac, confirm1->getHmac(), 2*ZRTP_WORD_SIZE) != 0) {
+        *errMsg = ConfirmHMACWrong;
         sendInfo(Error, "HMAC verification of Confirm1 message failed");
         return NULL;
     }
@@ -741,7 +772,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1, uint8_t** 
     return zpConf;
 }
 
-ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint8_t** errMsg) {
+ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t* errMsg) {
 
     sendInfo(Info, "Responder: Confirm2 received, preparing Conf2Ack");
 
@@ -755,6 +786,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint8_t**
                 hmlen, confMac, &macLen);
 
     if (memcmp(confMac, confirm2->getHmac(), 2*ZRTP_WORD_SIZE) != 0) {
+        *errMsg = ConfirmHMACWrong;
         sendInfo(Error, "HMAC verification of Confirm2 message failed");
         return NULL;
     }
@@ -792,6 +824,21 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint8_t**
     return &zrtpConf2Ack;
 }
 
+
+// TODO Implement ErrorAck handling
+ZrtpPacketErrorAck* ZRtp::prepareErrorAck(ZrtpPacketError* epkt)
+{
+    sendInfo(Warning, "Received a Error message");
+    return &zrtpErrorAck;
+}
+
+ZrtpPacketError* ZRtp::prepareError(uint32_t errMsg)
+{
+    ZrtpPacketError* err = &zrtpError;
+    err->setErrorCode(errMsg);
+    return err;
+}
+
 // TODO Implement GoClear handling
 ZrtpPacketClearAck* ZRtp::prepareClearAck(ZrtpPacketGoClear* gpkt)
 {
@@ -799,19 +846,11 @@ ZrtpPacketClearAck* ZRtp::prepareClearAck(ZrtpPacketGoClear* gpkt)
     return &zrtpClearAck;
 }
 
-ZrtpPacketGoClear* ZRtp::prepareGoClear(uint8_t* errMsg)
+ZrtpPacketGoClear* ZRtp::prepareGoClear(uint32_t errMsg)
 {
     uint8_t msg[16];
     ZrtpPacketGoClear* gclr = &zrtpGoClear;
     gclr->clrClearHmac();
-    if (errMsg != NULL) {
-	int len = strlen((const char*)errMsg);
-	len = (len > 16) ? 16 : len;
-	strncpy((char*)msg, (const char*)errMsg, len);
-	for (; len < 16; len++) {
-	    msg[len] = ' ';
-	}
-    }
     return gclr;
 }
 
@@ -1338,7 +1377,7 @@ void ZRtp::computeSRTPKeys() {
     SAS = Base32(sasBytes, 20).getEncoded();
 }
 
-void ZRtp::srtpSecretsReady(EnableSecurity part) {
+bool ZRtp::srtpSecretsReady(EnableSecurity part) {
 
     SrtpSecret_t sec;
 
@@ -1354,7 +1393,7 @@ void ZRtp::srtpSecretsReady(EnableSecurity part) {
     sec.sas = SAS;
     sec.role = myRole;
 
-    callback->srtpSecretsReady(&sec, part);
+    return callback->srtpSecretsReady(&sec, part);
 }
 
 void ZRtp::srtpSecretsOff(EnableSecurity part) {

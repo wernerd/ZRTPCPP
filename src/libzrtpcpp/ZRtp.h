@@ -29,12 +29,33 @@
 #include <libzrtpcpp/ZrtpPacketConf2Ack.h>
 #include <libzrtpcpp/ZrtpPacketGoClear.h>
 #include <libzrtpcpp/ZrtpPacketClearAck.h>
+#include <libzrtpcpp/ZrtpPacketError.h>
+#include <libzrtpcpp/ZrtpPacketErrorAck.h>
 #include <libzrtpcpp/ZrtpCallback.h>
 #include <libzrtpcpp/ZIDRecord.h>
 
 #ifndef SHA256_DIGEST_LENGTH
 #define SHA256_DIGEST_LENGTH 32
 #endif
+
+
+// The ZRTP error codes accroding the specification chapter 6.9
+enum zrtpErrorCodes {
+    MalformedPacket =   0x10,
+    CriticalSWError =   0x20,
+    UnsuppZRTPVersion = 0x30,
+    HelloCompMismatch = 0x40,
+    UnsuppHashType =    0x51,
+    UnsuppCiphertype =  0x52,
+    UnsuppPKExchange =  0x53,
+    UnsuppSRTPAuthTag = 0x54,
+    UnsuppSASScheme =   0x55,
+    DHErrorWrongPV =    0x61,
+    DHErrorWrongHVI =   0x62,
+    ConfirmHMACWrong =  0x70,
+    NonceReused =       0x80,
+    EqualZIDHello =     0x90
+};
 
 class ZrtpStateClass;
 class ZrtpDH;
@@ -345,13 +366,15 @@ class ZRtp {
     uint8_t zrtpKeyR[SHA256_DIGEST_LENGTH];
 
     /**
-     * Pre-initialized packets to start off the whole game.
+     * Pre-initialized packets.
      */
     ZrtpPacketHello    zrtpHello;
     ZrtpPacketHelloAck zrtpHelloAck;
     ZrtpPacketConf2Ack zrtpConf2Ack;
     ZrtpPacketClearAck zrtpClearAck;
     ZrtpPacketGoClear  zrtpGoClear;
+    ZrtpPacketError    zrtpError;
+    ZrtpPacketErrorAck zrtpErrorAck;
 
     /**
      * Holds a pre-computed DHPart2 packet. Required to compute HVI
@@ -536,7 +559,7 @@ class ZRtp {
      * @return
      *    A pointer to the prepared Commit packet
      */
-    ZrtpPacketCommit *prepareCommit(ZrtpPacketHello *hello, uint8_t** errMsg = NULL);
+    ZrtpPacketCommit *prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg);
 
     /**
      * Prepare the DHPart1 packet.
@@ -550,7 +573,7 @@ class ZRtp {
      * keys according to the selected cipher. Using this data we prepare our DHPart1
      * packet.
      */
-    ZrtpPacketDHPart *prepareDHPart1(ZrtpPacketCommit *commit, uint8_t** errMsg = NULL);
+    ZrtpPacketDHPart *prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMsg);
 
     /**
      * Prepare the DHPart2 packet.
@@ -561,7 +584,7 @@ class ZRtp {
      * Initiator.
      *
      */
-    ZrtpPacketDHPart *prepareDHPart2(ZrtpPacketDHPart* dhPart1, uint8_t** errMsg = NULL);
+    ZrtpPacketDHPart *prepareDHPart2(ZrtpPacketDHPart* dhPart1, uint32_t* errMsg);
 
     /**
      * Prepare the Confirm1 packet.
@@ -571,7 +594,7 @@ class ZRtp {
      * as response of our DHPart1. Here we are in the role of the Responder
      *
      */
-    ZrtpPacketConfirm *prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint8_t** errMsg = NULL);
+    ZrtpPacketConfirm *prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* errMsg);
 
     /**
      * Prepare the Confirm2 packet.
@@ -580,7 +603,7 @@ class ZRtp {
      * Confirm1 packet received from our peer. The peer sends the Confirm1 packet
      * as response of our DHPart2. Here we are in the role of the Initiator
      */
-    ZrtpPacketConfirm* prepareConfirm2(ZrtpPacketConfirm* confirm1, uint8_t** errMsg = NULL);
+    ZrtpPacketConfirm* prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* errMsg);
 
     /**
      * Prepare the Conf2Ack packet.
@@ -589,7 +612,23 @@ class ZRtp {
      * Confirm2 packet received from our peer. The peer sends the Confirm2 packet
      * as response of our Confirm1. Here we are in the role of the Initiator
      */
-    ZrtpPacketConf2Ack* prepareConf2Ack(ZrtpPacketConfirm* confirm2, uint8_t** errMsg = NULL);
+    ZrtpPacketConf2Ack* prepareConf2Ack(ZrtpPacketConfirm* confirm2, uint32_t* errMsg);
+
+    /**
+     * Prepare the ErrorAck packet.
+     *
+     * This method prepares the ErrorAck packet. The input to this method is the
+     * Error packet received from the peer.
+     */
+    ZrtpPacketErrorAck* prepareErrorAck(ZrtpPacketError* epkt);
+
+    /**
+     * Prepare the Error packet.
+     *
+     * This method prepares the Error packet. The input to this method is the
+     * error code to be included into the message.
+     */
+    ZrtpPacketError* prepareError(uint32_t errMsg);
 
     /**
      * Prepare a ClearAck packet.
@@ -615,7 +654,7 @@ class ZRtp {
      * @return
      *     A goClear packet without HMAC
      */
-    ZrtpPacketGoClear* prepareGoClear(uint8_t* errMsg = NULL);
+    ZrtpPacketGoClear* prepareGoClear(uint32_t errMsg = 0);
 
     /**
      * Compare the hvi values.
@@ -687,8 +726,11 @@ class ZRtp {
      *
      * @param part
      *    Defines for which part (sender or receiver) to switch on security
+     * @return
+     *    Returns false if something went wrong during initialization of SRTP
+     *    context. Propagate error back to state engine.
      */
-    void srtpSecretsReady(EnableSecurity part);
+    bool srtpSecretsReady(EnableSecurity part);
 
     /**
      * Switch off SRTP secrets.

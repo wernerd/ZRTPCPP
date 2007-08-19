@@ -312,8 +312,11 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      *    The secret keys and salt negotiated by ZRTP
      * @param part
      *    An enum that defines wich direction to switch on: sender or receiver
+     * @return
+     *    Returns false if something went wrong during initialization of SRTP
+     *    context, for example memory shortage.
      */
-    void srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part);
+    bool srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part);
 
     /**
      * Switch off the security for the defined part.
