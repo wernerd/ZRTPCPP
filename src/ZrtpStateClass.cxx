@@ -1,10 +1,10 @@
 /*
-  Copyright (C) 2006, 2007 Werner Dittmann
+  Copyright (C) 2006-2007 Werner Dittmann
 
-  This program is free software; you can redistribute it and/or modify
+  This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2, or (at your option)
-  any later version.
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
 
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -12,8 +12,7 @@
   GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Boston, MA 02111.
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /**
@@ -75,16 +74,37 @@ ZrtpStateClass::~ZrtpStateClass(void) {
 int32_t ZrtpStateClass::processEvent(Event_t *ev) {
 
     /*
-     * Ignore any events except Initial and GoClear if we are not really 
+     * Ignore any events except Initial if we are not really 
      * started yet.
-     * We may receive additional "GoClear" packets if the "clearAck" packet
-     * was lost. Thus just resend a ClearAck in this case.
-     * TODO: goclear
      */
-    if (inState(Initial) && !(ev->type == ZrtpInitial /* || ev->type == ZrtpGoClear */)) {
+    if (inState(Initial) && !(ev->type == ZrtpInitial)) {
 	return (Done);
     }
     event = ev;
+    char *msg, first, last;
+    uint8_t *pkt;
+    if (event->type == ZrtpPacket) {
+	pkt = event->data.packet;
+	msg = (char *)pkt + 4;
+	first = tolower(*msg);
+	last = tolower(*(msg+4));
+
+        // Check if this is an Error packet.
+	if (first == 'e' && last =='r') {
+            /*
+             * Process a received Error packet.
+             *
+             * Use callback method to prepare and get an ErrorAck packet. Send this
+             * to our peer and reset to protocol engine to Initial state.
+             */
+            ZrtpPacketError* epkt = new ZrtpPacketError(pkt);
+            ZrtpPacketErrorAck* eapkt =  parent->prepareErrorAck(epkt);
+            delete epkt;
+            parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(eapkt));
+            nextState(Initial);
+            return (Done);
+        }
+    }
     return engine->processEvent(*this);
 }
 
@@ -108,12 +128,24 @@ int32_t ZrtpStateClass::evInitial(void) {
     return (Done);
 }
 
-/*
- * We are in state "detect" and got an event.
+/**
+ * Detect state.
+ *
+ * When in this state the protocol engine sent an Hello packet to the peer.
  * When entering this state transition function then:
  * - Assume Initiator mode, mode may change later on peer reaction
- * - sentPacket contains Hello
+ * - Instance variable sentPacket contains the sent Hello packet
  * - Hello timer T1 is active
+ *
+ * Possible events in this state are: 
+ * timeout for sent Hello packet - causes a resend check an possible resend of
+ * Hello packet
+ * received a Commit - stop active timer, prepare a DHPart1 packet, switch to 
+ * Resonder mode
+ * received a HelloAck - stop active timer, prepare and send Hello packet.
+ * received a Hello - stop active timer, prepare and send Commit packet.
+ * 
+ * Refer to state event diagram to see which are valid next states.
  */
 int32_t ZrtpStateClass::evDetect(void) {
 
@@ -136,8 +168,9 @@ int32_t ZrtpStateClass::evDetect(void) {
 
 	/*
 	 * Commit:
-	 * - go the responder path
-	 * - send our DHPart1
+         * The peer answers with Commit to our Hello, thus switch to 
+         * responder mode.
+	 * - prepare and send our DHPart1
 	 * - switch to state WaitDHPart2 and wait for peer's DHPart2
 	 * - don't start timer, we are responder
 	 */

@@ -1,10 +1,10 @@
 This package provides a library that adds support to the GNU RTP stack 
-for the zrtp protocol specification developed by Phil Zimmermen for 
-zphone.  Using this package, together with GNU ccrtp (1.5.0 or later) 
-provides a zrtp implimentation that can be directly embedded into client
+for the ZRTP protocol specification developed by Phil Zimmermann for 
+zfone.  Using this package, together with GNU ccrtp (1.5.0 or later) 
+provides a ZRTP implimentation that can be directly embedded into client
 and server applications, rather than the overhead penalty of using an 
 external proxy such as zphone.  The first application to demonstrate 
 this capability is the 0.8.2 release of the Twinkle softphone client.
 
-Please note, this library is licensed under the GNU GPL, version 2 or 
+Please note, this library is licensed under the GNU GPL, version 3 or 
 later, and has been copyright assigned to the Free Software Foundation.

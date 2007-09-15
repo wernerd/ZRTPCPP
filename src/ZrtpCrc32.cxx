@@ -40,7 +40,8 @@
 /* The following code has been taken directly from
  * draft-ietf-tsvwg-sctpcsum-03.txt
  *
- * The code has now been modified for use inside the ZRTP implementation.
+ * The code has now been modified by Werner.Dittmann@t-online.de for use 
+ * inside the ZRTP implementation.
  */
 
 #include <stdio.h>

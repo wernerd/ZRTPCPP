@@ -1,10 +1,10 @@
 /*
-  Copyright (C) 2006 - 2007 Werner Dittmann
+  Copyright (C) 2006-2007 Werner Dittmann
 
-  This program is free software; you can redistribute it and/or modify
+  This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2, or (at your option)
-  any later version.
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
 
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -12,8 +12,7 @@
   GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Boston, MA 02111.
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*
@@ -824,11 +823,12 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
     return &zrtpConf2Ack;
 }
 
-
-// TODO Implement ErrorAck handling
 ZrtpPacketErrorAck* ZRtp::prepareErrorAck(ZrtpPacketError* epkt)
 {
-    sendInfo(Warning, "Received a Error message");
+    char buffer[128];
+    snprintf((char *)buffer, 128, "Error: Received an Error message, code: %x", epkt->getErrorCode());
+
+    sendInfo(Error, buffer);
     return &zrtpErrorAck;
 }
 
@@ -1440,8 +1440,8 @@ void ZRtp::setOtherSecret(uint8_t* data, int32_t length)
 }
 
 void ZRtp::setClientId(std::string id) {
-    const char* tmp = "                                ";
-    if (id.size() < 31) {
+    const char* tmp = "            ";
+    if (id.size() < 3*ZRTP_WORD_SIZE) {
         zrtpHello.setClientId((unsigned char*)tmp);
     }
     zrtpHello.setClientId((unsigned char*)id.c_str());
