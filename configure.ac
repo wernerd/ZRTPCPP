@@ -10,10 +10,10 @@
 
 AC_INIT(reconfig)
 
-VERSION="0.9.1"
+VERSION="0.9.2"
 REQUIRES="1.3.0"
 LT_RELEASE="0.9"
-LT_VERSION="0:1"
+LT_VERSION="0:2"
 
 cfg_options=""
 if test -z "$*" ; then
