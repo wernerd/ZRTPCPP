@@ -42,7 +42,7 @@ libzrtpcpp_la_SOURCES = ZIDFile.cxx \
 		ZrtpPacketHelloAck.cxx \
 		ZrtpPacketHello.cxx \
 		ZrtpPacketError.cxx \
-		ZrtpPacketErrorAck.cxx \
+		ZrtpPacketErrorAck.cpp \
 		ZrtpStateClass.cxx \
 		ZrtpTextData.cxx \
 		Base32.cxx $(ccrtp_src) $(zrtp_src_g) $(zrtp_src_o)
