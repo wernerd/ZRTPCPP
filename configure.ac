@@ -1,4 +1,4 @@
-# Copyright (C) 2006 Werner Dittmen
+# Copyright (C) 2006, 2007 Werner Dittmen
 #
 # This file is free software; as a special exception the author gives
 # unlimited permission to copy and/or distribute it, with or without
@@ -10,10 +10,9 @@
 
 AC_INIT(reconfig)
 
-VERSION="0.9.2"
+VERSION="1.0.0"
+LT_VERSION="1:0:0"
 REQUIRES="1.3.0"
-LT_RELEASE="0.9"
-LT_VERSION="0:2"
 
 cfg_options=""
 if test -z "$*" ; then
@@ -74,22 +73,26 @@ AC_CHECK_HEADERS([stdlib.h string.h pthread.h])
 # we need the pthread library as well
 AC_CHECK_LIB([pthread], [pthread_mutex_init], [], AC_MSG_ERROR([pthread library not found.]))
 
-AC_CHECK_LIB([gcrypt],
-             [gcry_cipher_open], [
-                CRYPTOBACKEND=""
-                LIBS="-lgcrypt $LIBS"
-                ],
-             [AC_CHECK_LIB([crypto],
-                           [EVP_CipherInit_ex], [
-                                CRYPTOBACKEND="libcrypto >= 0.9.8"
-                                LIBS="-lcrypto $LIBS"
-                                ],
-                           [AC_MSG_ERROR([Cannot find libgcrypt or OpenSSL crypto library.])]
-                          )
-             ]
-            )
-AM_CONDITIONAL(ZRTP_GCRYPT, test "${ac_cv_lib_gcrypt_gcry_cipher_open}" = "yes")
-AM_CONDITIONAL(ZRTP_OPENSSL, test "${ac_cv_lib_crypto_EVP_CipherInit_ex}" = "yes")
+openssl="false"
+gcrypt="false"
+AM_PATH_LIBGCRYPT_CCRTP([1:1.2.3],
+                  [CRYPTOBACKEND=""
+                    LIBS="$LIBGCRYPT_LIBS $LIBS"
+                    gcrypt="true"
+                  ],
+                  [AC_CHECK_LIB([crypto],
+                    [EVP_CipherInit_ex],
+                    [CRYPTOBACKEND="libcrypto >= 0.9.8"
+                      LIBS="-lcrypto $LIBS"
+                      openssl="true"
+                    ],
+                    [AC_MSG_ERROR([Cannot find libgcrypt or OpenSSL crypto library.])]
+                  ]
+                  )
+                 )
+# don't forget AM_CONDITIONALs, see blow
+AM_CONDITIONAL(ZRTP_OPENSSL, test "$openssl" = "true")
+AM_CONDITIONAL(ZRTP_GCRYPT, test "$gcrypt" = "true")
 
 OST_PROG_COMMON
 OST_PROG_LIBVER
