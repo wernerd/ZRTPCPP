@@ -76,13 +76,17 @@ AC_CHECK_LIB([pthread], [pthread_mutex_init], [], AC_MSG_ERROR([pthread library 
 openssl="false"
 gcrypt="false"
 AM_PATH_LIBGCRYPT_CCRTP([1:1.2.3],
-                  [CRYPTOBACKEND=""
+                  [AC_CHECK_HEADERS([gcrypt.h],
+                                    [], AC_MSG_ERROR([libgcrypt headers not found.]))
+                    CRYPTOBACKEND=""
                     LIBS="$LIBGCRYPT_LIBS $LIBS"
                     gcrypt="true"
                   ],
                   [AC_CHECK_LIB([crypto],
                     [EVP_CipherInit_ex],
-                    [CRYPTOBACKEND="libcrypto >= 0.9.8"
+                    [AC_CHECK_HEADERS([openssl/bn.h openssl/aes.h openssl/sha.h],
+                                        [], AC_MSG_ERROR([OpenSSL headers not found.]))
+                      CRYPTOBACKEND="libcrypto >= 0.9.8"
                       LIBS="-lcrypto $LIBS"
                       openssl="true"
                     ],
