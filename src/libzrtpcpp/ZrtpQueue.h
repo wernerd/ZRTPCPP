@@ -298,7 +298,7 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
 
     int32_t cancelTimer();
 
-    void sendInfo(MessageSeverity severity, char* msg);
+    void sendInfo(MessageSeverity severity, const char* msg);
     /**
      * Switch on the security for the defined part.
      *
@@ -361,7 +361,7 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      * @param msg
      *     The message string, terminated with a null byte.
      */
-    void zrtpNegotiationFailed(MessageSeverity severity, char* msg);
+    void zrtpNegotiationFailed(MessageSeverity severity, const char* msg);
 
     /**
      * ZRTP calls this methof if the other side does not support ZRTP.

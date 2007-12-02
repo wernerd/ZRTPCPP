@@ -40,6 +40,7 @@ enum zrtpStates {
     Initial,
     Detect,
     AckDetected,
+    AckSent,
     WaitCommit,
     CommitSent,
     WaitDHPart2,
@@ -109,7 +110,8 @@ private:
      * timeout.
      */
     ZrtpPacketBase* sentPacket;
-
+    ZrtpPacketHello* peerHelloPkt;
+    
     zrtpTimer_t T1;
     zrtpTimer_t T2;
 
@@ -129,6 +131,7 @@ public:
     int32_t evInitial();
     int32_t evDetect();
     int32_t evAckDetected();
+    int32_t evAckSent();
     int32_t evWaitCommit();
     int32_t evCommitSent();
     int32_t evWaitDHPart2();

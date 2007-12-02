@@ -24,11 +24,16 @@ Requires: libgcrypt-devel
 
 %description
 
-This library is a GPL licensed extension to the GNU RTP Stack, ccrtp,
-that offers compatibility with Phil Zimmermann's zrtp/Zfone voice
-encryption, and which can be directly embedded into telephony
-applications.  The current release is based on a beta draft of the
-zrtp spec.
+This library is a GPL licensed extension to the GNU RTP Stack (GNU ccrtp).
+This extension offers a C++ implementation of Phil Zimmermann's ZRTP 
+specification. The current release is based on 
+draft-zimmermann-avt-zrtp-04.txt.
+
+This implementation was tested to work with Phil's Zfone implementation
+of the ZRTP spefication. Applications that use GNU ccrtp can use this
+library to use ZRTP and to encrypt the RTP (not RTCP) communication. 
+
+This release does not support preshared mode specified in the draft.
 
 %description devel
 This package provides the header files, link libraries, and

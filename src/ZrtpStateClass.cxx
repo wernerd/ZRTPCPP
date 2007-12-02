@@ -32,6 +32,7 @@ state_t states[numberOfStates] = {
     {Initial,      &ZrtpStateClass::evInitial },
     {Detect,       &ZrtpStateClass::evDetect },
     {AckDetected,  &ZrtpStateClass::evAckDetected },
+    {AckSent,      &ZrtpStateClass::evAckSent },
     {WaitCommit,   &ZrtpStateClass::evWaitCommit },
     {CommitSent,   &ZrtpStateClass::evCommitSent },
     {WaitDHPart2,  &ZrtpStateClass::evWaitDHPart2 },
@@ -43,13 +44,13 @@ state_t states[numberOfStates] = {
     {WaitErrorAck, &ZrtpStateClass::evWaitErrorAck }
 };
 
-static char* sendErrorText = "Cannot send data via RTP - connection or peer down?";
-static char* sendErrorTextSrtp = "Cannot send data via SRTP - connection or peer down?";
-static char* timerError = "Cannot start a timer - internal resources exhausted?";
-static char* resendError = "Too much retries during ZRTP negotiation - connection or peer down?";
-static char* internalProtocolError = "Internal protocol error occured!";
-static char* zrtpClosed = "No more security for this session";
-static char* goClearReceived = "Received a GoClear message - no security processing!";
+static const char* sendErrorText = "Cannot send data via RTP - connection or peer down?";
+static const char* sendErrorTextSrtp = "Cannot send data via SRTP - connection or peer down?";
+static const char* timerError = "Cannot start a timer - internal resources exhausted?";
+static const char* resendError = "Too much retries during ZRTP negotiation - connection or peer down?";
+static const char* internalProtocolError = "Internal protocol error occured!";
+static const char* zrtpClosed = "No more security for this session";
+static const char* goClearReceived = "Received a GoClear message - no security processing!";
 
 ZrtpStateClass::ZrtpStateClass(ZRtp *p) {
     parent = p;
@@ -121,6 +122,7 @@ int32_t ZrtpStateClass::evInitial(void) {
 	if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(hello)) || (startTimer(&T1) <= 0)) {
 	    nextState(Initial);
 	    parent->sendInfo(Error, sendErrorText);
+            sentPacket = NULL;
 	    return(Fail);
 	}
 	nextState(Detect);
@@ -132,6 +134,7 @@ int32_t ZrtpStateClass::evInitial(void) {
  * Detect state.
  *
  * When in this state the protocol engine sent an Hello packet to the peer.
+ * (sentPacket contains the pointer to Hello packet)
  * When entering this state transition function then:
  * - Assume Initiator mode, mode may change later on peer reaction
  * - Instance variable sentPacket contains the sent Hello packet
@@ -173,14 +176,13 @@ int32_t ZrtpStateClass::evDetect(void) {
 	 * - prepare and send our DHPart1
 	 * - switch to state WaitDHPart2 and wait for peer's DHPart2
 	 * - don't start timer, we are responder
+         * NOTE: This shouldn't happen any more - keep code untils spec changed.
 	 */
 	if (first == 'c') {
 	    ZrtpPacketCommit *cpkt = new ZrtpPacketCommit(pkt);
 	    // Only if ZRTP CRC is ok then accept packet and process event
 	    cancelTimer();	// stop Hello timer processing, don't delete a Hello packet
 	    sentPacket = NULL;
-
-	    // TODO: check for multistream request
 	    ZrtpPacketDHPart* dhPart1 = parent->prepareDHPart1(cpkt, &errorCode);
 	    delete cpkt;
 
@@ -191,19 +193,19 @@ int32_t ZrtpStateClass::evDetect(void) {
 	    }
 	    nextState(WaitDHPart2);
 
-	    if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(dhPart1))) {
+	    sentPacket = static_cast<ZrtpPacketBase *>(dhPart1);
+            if (!parent->sendPacketZRTP(sentPacket)) {
 		delete dhPart1;
 		nextState(Initial);
 		parent->sendInfo(Error, sendErrorText);
 		return(Fail);
 	    }
-	    // remember packet for easy resend in new state
-	    sentPacket = static_cast<ZrtpPacketBase *>(dhPart1);
 	    return (Done);
 	}
 	/*
 	 * HelloAck:
-	 * - stop resending Hello,
+         * - our peer acknowledged our Hello packet
+	 * - cancel timer T1 to stop resending Hello
 	 * - switch to state AckDetected, wait for peer's Hello (F3)
 	 */
 	if (first == 'h' && last =='k') {
@@ -212,6 +214,7 @@ int32_t ZrtpStateClass::evDetect(void) {
 	    nextState(AckDetected);
 	    return (Done);
 	}
+#ifdef FAST_COMMIT
 	/*
 	 * Hello:
 	 * - stop Hello timer
@@ -219,13 +222,149 @@ int32_t ZrtpStateClass::evDetect(void) {
 	 * - switch state to CommitSent, start Commit timer, assume Initiator
 	 */
 	if (first == 'h' && last ==' ') {
-	    ZrtpPacketHello *hpkt = new ZrtpPacketHello(pkt);
 	    cancelTimer();
             parent->sendPacketZRTP(sentPacket);    // just resend Hello in case peer missed ours
 	    sentPacket = NULL;
 
-	    ZrtpPacketCommit* commit = parent->prepareCommit(hpkt,  &errorCode);
-	    delete hpkt;
+            // Parse peer's packet data into a Hello packet
+            ZrtpPacketHello *hpkt = new ZrtpPacketHello(pkt);
+            ZrtpPacketCommit* commit = parent->prepareCommit(hpkt,  &errorCode);
+            delete hpkt;
+            // Something went wrong during processing of the Hello packet  
+            if (commit == NULL) {
+                sendErrorPacket(errorCode);
+                return (Done);
+            }
+            nextState(CommitSent);
+
+            // remember packet for easy resend in case timer triggers
+            // Timer trigger received in new state CommitSend
+            sentPacket = static_cast<ZrtpPacketBase *>(commit);
+            if (!parent->sendPacketZRTP(sentPacket) || (startTimer(&T2) <= 0)) {
+                delete sentPacket;
+                sentPacket = NULL;
+                nextState(Initial);
+                parent->zrtpNegotiationFailed(Error, sendErrorText);
+                return(Fail);
+            }
+            return (Done);
+        }
+#else
+        /*
+         * Hello:
+         * - stop timer T1, 
+         * - send HelloAck packet to acknowledge the received Hello packet 
+         * - send own Hello packet until peer acknowledges this (state AckSent)
+         * - activate and count up timer T1
+         * - switch to new state AckSent
+         */
+        if (first == 'h' && last ==' ') {
+            cancelTimer();
+            ZrtpPacketHelloAck *helloAck = parent->prepareHelloAck();
+
+            // HelloAck packet is always allocated and reused, never delete it.
+            if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(helloAck))) {
+                nextState(Detect);
+                parent->zrtpNegotiationFailed(Error, sendErrorText);
+                return(Fail);
+            }
+            nextState(AckSent);
+
+            // sentPacket points to "Hello" packet, send it and restart T1.
+            // Store peer's Hello packet because it's needed it to create a
+            // Commit packet in state AckSent.
+            // Fail if resend counter exceeds limit.
+            peerHelloPkt = new ZrtpPacketHello(pkt);
+            if ((nextTimer(&T1)) <= 0 || !parent->sendPacketZRTP(sentPacket)) {
+                parent->zrtpNotSuppOther();
+                sentPacket = NULL;
+                delete peerHelloPkt;
+                peerHelloPkt = NULL;
+                // Stay in state Detect to be prepared get an hello from
+                // other peer any time later
+                nextState(Detect);
+                return (Fail);
+            }
+            return (Done);
+        }
+#endif  // FAST_COMMIT
+        return (Done);      // unknown packet for this state - Just ignore it
+    }
+    // Timer event triggered - this is Timer T1 to resend Hello
+    else if (event->type == Timer) {
+	if (sentPacket != NULL) {
+            if ((nextTimer(&T1)) <= 0 || !parent->sendPacketZRTP(sentPacket)) {
+                parent->zrtpNotSuppOther();
+                sentPacket = NULL;
+                if (peerHelloPkt != NULL) {
+                    delete peerHelloPkt;
+                    peerHelloPkt = NULL;
+                }
+                // Stay in state Detect to be prepared get an hello from
+                // other peer any time later
+                nextState(Detect);
+                return (Fail);
+            }
+        }
+        return (Done);
+    }
+    else {      // unknown Event type for this state
+        parent->sendInfo(Error, internalProtocolError);
+	sentPacket = NULL;    // don't delete sentPacket, contains Hello
+	nextState(Initial);
+        return (Fail);
+    }
+}
+
+/*
+ * The protocol engine got a Hello packet from peer and answered with a 
+ * HelloAck/Hello response and waits for HelloAck or Commit from peer that
+ * acknowledges it has seen our Hello.
+ *
+ * When entering this transition function:
+ * - sent packet contains own Hello packet
+ * - peerHelloPkt points to a peer's Hello packet 
+ * - Timer T1 is active
+ *
+ * In this state we repeat the HelloAck/Hello response until the protocol 
+ * engine gets a HelloAck or Commit from peer or the counter of Timer T1 
+ * exceeds its maximum
+ */
+int32_t ZrtpStateClass::evAckSent(void) {
+
+    DEBUGOUT((cout << "Checking for match in AckSent.\n"));
+
+    char *msg, first, last;
+    uint8_t *pkt;
+    uint32_t errorCode = 0;
+
+    /*
+     * First check the general event type, then discrimnate
+     * the real event.
+     */
+    if (event->type == ZrtpPacket) {
+        pkt = event->data.packet;
+	msg = (char *)pkt + 4;
+
+	first = tolower(*msg);
+	last = tolower(*(msg+7));
+
+	/*
+         * HelloAck:
+         * The peer answers with HelloAck to HelloAck/Hello, going to
+         * Initiator mode.
+	 * - stop Hello timer, clear sentPacket
+	 * - prepare and send my Commit,
+	 * - switch state to CommitSent, start Commit timer, assume Initiator
+	 */
+	if (first == 'h' && last =='k') {
+            sentPacket = NULL;
+	    cancelTimer();
+
+            // Parse peer's packet data into a Hello packet
+	    ZrtpPacketCommit* commit = parent->prepareCommit(peerHelloPkt,  &errorCode);
+	    delete peerHelloPkt;
+            peerHelloPkt = NULL;
 
 	    // Something went wrong during processing of the Hello packet
 	    if (commit == NULL) {
@@ -237,7 +376,7 @@ int32_t ZrtpStateClass::evDetect(void) {
             // remember packet for easy resend in case timer triggers
             // Timer trigger received in new state CommitSend
             sentPacket = static_cast<ZrtpPacketBase *>(commit);
-            if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(commit)) || (startTimer(&T2) <= 0)) {
+            if (!parent->sendPacketZRTP(sentPacket) || (startTimer(&T2) <= 0)) {
 		delete sentPacket;
 		sentPacket = NULL;
 		nextState(Initial);
@@ -245,10 +384,86 @@ int32_t ZrtpStateClass::evDetect(void) {
 		return(Fail);
 	    }
 	    return (Done);
+        }
+        /*
+         * Hello:
+         * - peer missed HelloAck
+         * - repeat HelloAck/Hello response:
+         *  -- stop timer T1, get HelloAck packet, send it
+         *  -- resend Hello packet (pointer from sentPacket)
+         *  -- activate and count up timer T1
+         *  -- stay in state AckSent
+         */
+
+        if (first == 'h' && last ==' ') {
+            cancelTimer();
+            ZrtpPacketHelloAck *helloAck = parent->prepareHelloAck();
+
+            // HelloAck packet is always allocated and reused, never delete it.
+            if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(helloAck))) {
+                nextState(Detect);
+                parent->zrtpNegotiationFailed(Error, sendErrorText);
+                return(Fail);
+            }
+            // sentPacket points to "Hello" packet, send it and restart T1.
+            // Fail if resend counter exceeds limit
+            if (sentPacket != NULL) {
+                if ((nextTimer(&T1)) <= 0 || !parent->sendPacketZRTP(sentPacket)) {
+                    parent->zrtpNotSuppOther();
+                    sentPacket = NULL;
+                    if (peerHelloPkt != NULL) {
+                        delete peerHelloPkt;
+                        peerHelloPkt = NULL;
+                    }
+
+                    // Switch state Detect to be prepared get an hello from
+                    // other peer any time later
+                    nextState(Detect);
+                    return (Fail);
+                }
+                nextState(AckSent);
+            }
+            return (Done);
+        }
+      	/*
+	 * Commit:
+         * The peer answers with Commit to HelloAck/Hello, thus switch to
+         * responder mode.
+         * - stop timer T1
+	 * - prepare and send our DHPart1
+	 * - switch to state WaitDHPart2 and wait for peer's DHPart2
+	 * - don't start timer, we are responder
+	 */
+	if (first == 'c') {
+            cancelTimer();           // stop Hello timer processing, don't delete a Hello packet
+	    ZrtpPacketCommit *cpkt = new ZrtpPacketCommit(pkt);
+	    sentPacket = NULL;
+	    ZrtpPacketDHPart* dhPart1 = parent->prepareDHPart1(cpkt, &errorCode);
+	    delete cpkt;
+
+	    // Something went wrong during processing of the commit packet
+	    if (dhPart1 == NULL) {
+                sendErrorPacket(errorCode);
+		return (Done);
+	    }
+	    nextState(WaitDHPart2);
+
+            // remember packet for easy resend in new state
+	    sentPacket = static_cast<ZrtpPacketBase *>(dhPart1);
+	    if (!parent->sendPacketZRTP(sentPacket)) {
+		delete dhPart1;
+		nextState(Initial);
+		parent->sendInfo(Error, sendErrorText);
+		return(Fail);
+	    }
+	    return (Done);
 	}
-        return (Done);      // unknown packet for this state - Just ignore it
     }
-    // Timer event triggered - this is Timer T1 to resend Hello
+    /*
+     * Timer:
+     * - resend Hello packet, stay in state, restart timer until repeat counter triggers
+     * - if repeat counter triggers switch to state Detect
+     */
     else if (event->type == Timer) {
 	if (sentPacket != NULL) {
             if ((nextTimer(&T1)) <= 0 || !parent->sendPacketZRTP(sentPacket)) {
@@ -256,6 +471,10 @@ int32_t ZrtpStateClass::evDetect(void) {
                 sentPacket = NULL;
                 // Stay in state Detect to be prepared get an hello from
                 // other peer any time later
+                if (peerHelloPkt != NULL) {
+                    delete peerHelloPkt;
+                    peerHelloPkt = NULL;
+                }
                 nextState(Detect);
                 return (Fail);
             }
@@ -264,15 +483,18 @@ int32_t ZrtpStateClass::evDetect(void) {
     }
     else {      // unknown Event type for this state
         parent->sendInfo(Error, internalProtocolError);
-	sentPacket = NULL;
+	sentPacket = NULL;  // don't delete sentPacket, points to own Hello 
 	nextState(Initial);
         return (Fail);
     }
 }
-
 /*
+ * The protocol engine got a peer's Hello and acknowledged it in state Detect.
+ * Peer mustsend its Hello until the protocol engine sees it in this state and
+ * can acknowledge Hello with a Commit.
+ *
  * When entering this transition function
- * - sentPacket contains NULL, Hello timer stopped
+ * - sentPacket is NULL, Hello timer stopped
  */
 int32_t ZrtpStateClass::evAckDetected(void) {
 
@@ -288,12 +510,14 @@ int32_t ZrtpStateClass::evAckDetected(void) {
 
 	first = tolower(*msg);
 	last = tolower(*(msg+7));
-	/*
+#if 0
+        /*
 	 * Hello:
-	 * - Acknowledge my peers Hello, sending HelloACK (F4)
+	 * - Acknowledge peers Hello, sending HelloACK (F4)
 	 * - switch to state WaitCommit, wait for peer's Commit
          * - we are going to be in the Responder role
 	 */
+
 	if (first == 'h') {
 // NOTE: may be useful if protocol state engine changes (preshared mode)
 //            ZrtpPacketHello *hpkt = new ZrtpPacketHello(pkt);
@@ -312,8 +536,41 @@ int32_t ZrtpStateClass::evAckDetected(void) {
 	    sentPacket = static_cast<ZrtpPacketBase *>(helloAck);
 	    return (Done);
 	}
+#endif
+	/*
+	 * Hello:
+	 * - Acknowledge peers Hello by sending Commit (F5) (fast-track)
+	 * - switch to state CommitSent
+         * - Initiator role, thus start timer T2 to monitor timeout for Commit
+	 */
+
+        if (first == 'h') {
+            // Parse peer's packet data into a Hello packet
+            ZrtpPacketHello *hpkt = new ZrtpPacketHello(pkt);
+            ZrtpPacketCommit* commit = parent->prepareCommit(hpkt,  &errorCode);
+            delete hpkt;
+            // Something went wrong during processing of the Hello packet  
+            if (commit == NULL) {
+                sendErrorPacket(errorCode);
+                return (Done);
+            }
+            nextState(CommitSent);
+
+            // remember packet for easy resend in case timer triggers
+            // Timer trigger received in new state CommitSend
+            sentPacket = static_cast<ZrtpPacketBase *>(commit);
+            if (!parent->sendPacketZRTP(sentPacket) || (startTimer(&T2) <= 0)) {
+                delete sentPacket;
+                sentPacket = NULL;
+                nextState(Initial);
+                parent->zrtpNegotiationFailed(Error, sendErrorText);
+                return(Fail);
+            }
+            return (Done);
+        }
+#if 0
        /*
-        * Commit:
+        * Commit: (shouldn't happen in this state)
         * - act as Responder
         * - send our DHPart1
         * - switch to state WaitDHPart2, wait for peer's DHPart2
@@ -343,11 +600,11 @@ int32_t ZrtpStateClass::evAckDetected(void) {
             sentPacket = static_cast<ZrtpPacketBase *>(dhPart1);
             return (Done);
         }
+#endif
         return (Done);      // unknown packet for this state - Just ignore it
     }
     else {
         parent->sendInfo(Error, internalProtocolError);
-	sentPacket = NULL;
 	nextState(Initial);
         return (Fail);
     }
@@ -431,7 +688,8 @@ int32_t ZrtpStateClass::evWaitCommit(void) {
 /*
  * When entering this transition function
  * - assume Initiator mode, may change if we reveice a Commit here
- * - sentPacket contains Commit packet, Hello timer stopped, Commit timer active
+ * - sentPacket contains Commit packet
+ * - Commit timer (T2) active
  */
 
 int32_t ZrtpStateClass::evCommitSent(void) {

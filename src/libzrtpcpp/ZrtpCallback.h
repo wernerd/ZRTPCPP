@@ -171,7 +171,7 @@ class ZrtpCallback {
      *     The message string, terminated with a null byte.
      * @see #MessageSeverity
      */
-    virtual void sendInfo(MessageSeverity severity, char* msg) =0;
+    virtual void sendInfo(MessageSeverity severity, const char* msg) =0;
 
     /**
      * This method gets call by ZRTP as soon as the SRTP secrets are available.
@@ -240,7 +240,7 @@ class ZrtpCallback {
      * @param msg
      *     The message string, terminated with a null byte.
      */
-    virtual void zrtpNegotiationFailed(MessageSeverity severity, char* msg) =0;
+    virtual void zrtpNegotiationFailed(MessageSeverity severity, const char* msg) =0;
 
     /**
      * ZRTP calls this methof if the other side does not support ZRTP.

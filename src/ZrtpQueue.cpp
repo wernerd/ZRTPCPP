@@ -501,7 +501,7 @@ void ZrtpQueue::handleGoClear()
     fprintf(stderr, "Need to process a GoClear message!");
 }
 
-void ZrtpQueue::sendInfo(MessageSeverity severity, char* msg) {
+void ZrtpQueue::sendInfo(MessageSeverity severity, const char* msg) {
     if (zrtpUserCallback != NULL) {
         zrtpUserCallback->showMessage(severity, msg);
     }
@@ -510,7 +510,7 @@ void ZrtpQueue::sendInfo(MessageSeverity severity, char* msg) {
     }
 }
 
-void ZrtpQueue::zrtpNegotiationFailed(MessageSeverity severity, char* msg) {
+void ZrtpQueue::zrtpNegotiationFailed(MessageSeverity severity, const char* msg) {
     if (zrtpUserCallback != NULL) {
         zrtpUserCallback->zrtpNegotiationFailed(severity, msg);
     }

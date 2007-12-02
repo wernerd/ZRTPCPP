@@ -24,59 +24,59 @@
  */
 //                            1
 //                   123456789012345
-char *clientId =    "GNUccRTP    "; // must be 12 chars
-char *zrtpVersion = "0.09";	// must be 4 chars
+const char *clientId =    "GNUccRTP    "; // must be 12 chars
+const char *zrtpVersion = "0.09";	// must be 4 chars
 /**
  *
  */
-char *HelloMsg =    "Hello   ";
-char *HelloAckMsg = "HelloACK";
-char *CommitMsg =   "Commit  ";
-char *DHPart1Msg =  "DHPart1 ";
-char *DHPart2Msg =  "DHPart2 ";
-char *Confirm1Msg = "Confirm1";
-char *Confirm2Msg = "Confirm2";
-char *Conf2AckMsg = "Conf2ACK";
-char *ErrorMsg =    "Error   ";
-char *ErrorAckMsg = "ErrorACK";
-char *GoClearMsg =  "GoClear ";
-char *ClearAckMsg = "ClearACK";
+const char *HelloMsg =    "Hello   ";
+const char *HelloAckMsg = "HelloACK";
+const char *CommitMsg =   "Commit  ";
+const char *DHPart1Msg =  "DHPart1 ";
+const char *DHPart2Msg =  "DHPart2 ";
+const char *Confirm1Msg = "Confirm1";
+const char *Confirm2Msg = "Confirm2";
+const char *Conf2AckMsg = "Conf2ACK";
+const char *ErrorMsg =    "Error   ";
+const char *ErrorAckMsg = "ErrorACK";
+const char *GoClearMsg =  "GoClear ";
+const char *ClearAckMsg = "ClearACK";
 
 /**
  *
  */
-char *responder = "Responder";
-char *initiator = "Initiator";
-char *iniMasterKey = "Initiator SRTP master key";
-char *iniMasterSalt = "Initiator SRTP master salt";
-char *respMasterKey = "Responder SRTP master key";
-char *respMasterSalt = "Responder SRTP master salt";
+const char *responder = "Responder";
+const char *initiator = "Initiator";
+const char *iniMasterKey = "Initiator SRTP master key";
+const char *iniMasterSalt = "Initiator SRTP master salt";
+const char *respMasterKey = "Responder SRTP master key";
+const char *respMasterSalt = "Responder SRTP master salt";
 
-char *iniHmacKey = "Initiator HMAC key";
-char *respHmacKey = "Responder HMAC key";
-char *retainedSec = "retained secret";
+const char *iniHmacKey = "Initiator HMAC key";
+const char *respHmacKey = "Responder HMAC key";
+const char *retainedSec = "retained secret";
 
-char* iniZrtpKey = "Initiator ZRTP key";
-char* respZrtpKey = "Responder ZRTP key";
+const char* iniZrtpKey = "Initiator ZRTP key";
+const char* respZrtpKey = "Responder ZRTP key";
 
-char* sasString = "SAS";
+const char* sasString = "SAS";
 
-char* KDFString = "ZRTP-HMAC-KDF";
+const char* KDFString = "ZRTP-HMAC-KDF";
 
 /**
  * The arrays are sorted: the most secure / best algorithm is first in the
  * array. If we add an algorithm here then we need to adjust the corresponding
  * value in ZrtpTextData.h as well.
  */
-char *supportedHashes[] =  {"S256"};
+const char *supportedHashes[] =  {"S256"};
 
-char *supportedCipher[] =  {"AES2",
+const char *supportedCipher[] =  {"AES2",
                             "AES1"};
 
-char *supportedPubKey[] =  {"DH4k",
+const char *supportedPubKey[] =  {"DH4k",
                             "DH3k"};
 
-char *supportedSASType[] = {"B32 "};
+const char *supportedSASType[] = {"B32 "};
 
-char *supportedAuthLen[] = {"HS32",
+const char *supportedAuthLen[] = {"HS32",
                             "HS80"};
