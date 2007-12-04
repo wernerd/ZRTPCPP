@@ -332,6 +332,11 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     commit->setSasType((uint8_t*)supportedSASType[sasType]);
     commit->setHvi(hvi);
 
+//    hexdump("my HVI", hvi, SHA256_DIGEST_LENGTH);
+//    fprintf(stderr, "Hello: %p, length: %d\n", hello, hello->getLength() * ZRTP_WORD_SIZE);
+//    hexdump("peer's hello", (const unsigned char*)hello, hello->getLength() * ZRTP_WORD_SIZE);
+//    hexdump("peer's hello", (const unsigned char*)hello->getHeaderBase(), 72);
+//    hexdump("my dhp2(1)", (const unsigned char*)zpDH2, zpDH2->getLength() * ZRTP_WORD_SIZE);
     // hash first messages to produce overall message hash
     // First the Responder's Hello message, second the Commit 
     // (always Initator's)
@@ -471,7 +476,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
      * If a DH2 packet was computed then also the retained secret ids were
      * computed. This maybe a leftover acting as Initiator. Delete the DH2
      * packet only and keep the computed retained secretd ids. 
-     * If no DH2 packet exists just compute the reteined secrets.
+     * If no DH2 packet exists just compute the retained secrets.
      */
     if (zpDH2 != NULL) {        // DH2 and retained secrets already computed but
         delete zpDH2;           // we are responder, DH2 packet not needed anymore
@@ -598,6 +603,8 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
     generateS0Initiator(dhPart1, zidRec);
     delete dhContext;
     dhContext = NULL;
+
+//    hexdump("my dhp2(2)", (const unsigned char*)zpDH, zpDH->getLength() * ZRTP_WORD_SIZE);
 
     return zpDH;
 }
@@ -975,7 +982,7 @@ void ZRtp::computeHvi(ZrtpPacketDHPart* dh, ZrtpPacketHello *hello) {
      * populate the vector to compute the HVI hash according to the
      * ZRTP specification.
      */
-    data[0] = (uint8_t*)dh->getHeaderBase();;
+    data[0] = (uint8_t*)dh->getHeaderBase();
     length[0] = dh->getLength() * ZRTP_WORD_SIZE;
 
     data[1] = (uint8_t*)hello->getHeaderBase();

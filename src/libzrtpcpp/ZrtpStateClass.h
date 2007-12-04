@@ -110,8 +110,8 @@ private:
      * timeout.
      */
     ZrtpPacketBase* sentPacket;
-    ZrtpPacketHello* peerHelloPkt;
-    
+    ZrtpPacketCommit* commitPkt;
+
     zrtpTimer_t T1;
     zrtpTimer_t T2;
 
