@@ -42,7 +42,9 @@ void hmac_sha256(uint8_t* key, uint32_t key_length,
 		uint8_t* data, int32_t data_length,
                 uint8_t* mac, uint32_t* mac_length)
 {
-	HMAC( EVP_sha256(), key, key_length, data, data_length, mac, mac_length );
+    unsigned int tmp;
+    HMAC( EVP_sha256(), key, key_length, data, data_length, mac, &tmp );
+    *mac_length = tmp;
 }
 
 void hmac_sha256(uint8_t* key, uint32_t key_length,
@@ -50,14 +52,16 @@ void hmac_sha256(uint8_t* key, uint32_t key_length,
                  uint32_t data_chunck_length[],
                  uint8_t* mac, uint32_t* mac_length )
 {
-	HMAC_CTX ctx;
-	HMAC_CTX_init( &ctx );
-	HMAC_Init_ex( &ctx, key, key_length, EVP_sha256(), NULL );
-	while( *data_chunks ){
-		HMAC_Update( &ctx, *data_chunks, *data_chunck_length );
-		data_chunks ++;
-		data_chunck_length ++;
-	}
-	HMAC_Final( &ctx, mac, mac_length );
-	HMAC_CTX_cleanup( &ctx );
+    unsigned int tmp;
+    HMAC_CTX ctx;
+    HMAC_CTX_init( &ctx );
+    HMAC_Init_ex( &ctx, key, key_length, EVP_sha256(), NULL );
+    while( *data_chunks ){
+      HMAC_Update( &ctx, *data_chunks, *data_chunck_length );
+      data_chunks ++;
+      data_chunck_length ++;
+    }
+    HMAC_Final( &ctx, mac, &tmp);
+    *mac_length = tmp;
+    HMAC_CTX_cleanup( &ctx );
 }

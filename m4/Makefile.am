@@ -11,7 +11,7 @@
 AUTOMAKE_OPTIONS = no-dependencies
 
 M4 = ost_prog.m4 ost_cxx.m4 ost_posix.m4 ost_systime.m4 \
-     ost_maint.m4 ost_misc.m4 ost_endian.m4 ost_debug.m4
+     ost_maint.m4 ost_misc.m4 ost_endian.m4 ost_debug.m4 libgcrypt_local.m4
 
 SOURCES = $(M4)
 

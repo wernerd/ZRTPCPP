@@ -144,5 +144,7 @@ AC_C_CONST
 AC_FUNC_MALLOC
 
 AC_SUBST(CRYPTOBACKEND)
-AC_CONFIG_FILES([Makefile src/Makefile src/libzrtpcpp/Makefile src/libzrtpcpp/crypto/Makefile])
-AC_OUTPUT(libzrtpcpp.pc libzrtpcpp.spec)
+AC_CONFIG_FILES([Makefile src/Makefile src/libzrtpcpp/Makefile 
+                src/libzrtpcpp/crypto/Makefile m4/Makefile libzrtpcpp.pc
+		libzrtpcpp.spec])
+AC_OUTPUT
