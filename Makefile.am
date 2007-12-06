@@ -11,6 +11,7 @@
 AUTOMAKE_OPTIONS = foreign
 SUBDIRS = src
 EXTRA_DIST = README AUTHORS COPYING *.pc* *.spec* autoconf/* reconfig
+ACLOCAL_AMFLAGS = -I m4
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libzrtpcpp.pc
