@@ -80,6 +80,8 @@ AM_PATH_LIBGCRYPT_CCRTP([1:1.2.3],
                   [AC_CHECK_HEADERS([gcrypt.h],
                                     [], AC_MSG_ERROR([libgcrypt headers not found.]))
                     CRYPTOBACKEND=""
+                    PACKAGE_REQ="libgcrypt"
+                    BUILD_REQ="libgcrypt-devel"
                     LIBS="$LIBGCRYPT_LIBS $LIBS"
                     gcrypt="true"
                   ],
@@ -88,6 +90,9 @@ AM_PATH_LIBGCRYPT_CCRTP([1:1.2.3],
                     [AC_CHECK_HEADERS([openssl/bn.h openssl/aes.h openssl/sha.h],
                                         [], AC_MSG_ERROR([OpenSSL headers not found.]))
                       CRYPTOBACKEND="libcrypto >= 0.9.8"
+                      PACKAGE_REQ="libopenssl >= 0.9.8"
+                      BUILD_REQ="libopenssl-devel >= 0.9.8"
+
                       LIBS="-lcrypto $LIBS"
                       openssl="true"
                     ],
@@ -144,8 +149,8 @@ AC_C_CONST
 # Checks for library functions.
 AC_FUNC_MALLOC
 
-AC_SUBST(CRYPTOBACKEND)
+AC_SUBST(CRYPTOBACKEND PACKAGE_REQ BUILD_REQ)
 AC_CONFIG_FILES([Makefile src/Makefile src/libzrtpcpp/Makefile 
-                src/libzrtpcpp/crypto/Makefile m4/Makefile libzrtpcpp.pc
-		libzrtpcpp.spec])
+                src/libzrtpcpp/crypto/Makefile libzrtpcpp.pc
+		libzrtpcpp.spec])  # m4/Makefile
 AC_OUTPUT

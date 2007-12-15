@@ -9,18 +9,18 @@ URL: http://www.gnu.org/software/commoncpp/commoncpp.html
 Source0: ftp://ftp.gnu.org/gnu/cccrtp/libzrtpcpp-%{PACKAGE_VERSION}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 Requires: ccrtp >= 1.5.0
-Requires: libgcrypt
+Requires: @PACKAGE_REQ@
 BuildRequires: ccrtp-devel >= 1.5.0
 BuildRequires: pkgconfig
 BuildRequires: libstdc++-devel
-BuildRequires: libgcrypt-devel
+BuildRequires: @BUILD_REQ@
 
 %package devel
 Group: Development/Libraries
 Summary: Headers and static link library for libzrtpcpp.
 Requires: %{name} = %{epoch}:%{version}-%{release}
 Requires: ccrtp-devel >= 1.5.0
-Requires: libgcrypt-devel
+Requires: @BUILD_REQ@
 
 %description
 
@@ -43,30 +43,34 @@ documentation for building applications that use libzrtpcpp.
 %setup
 %build
 %configure
-
 make %{?_smp_mflags} LDFLAGS="-s" CXXFLAGS="$RPM_OPT_FLAGS"
 
 %install
-
 %makeinstall
+rm $RPM_BUILD_ROOT/%{_libdir}/libzrtpcpp.la
 rm -rf %{buildroot}/%{_infodir}
 
 %clean
 rm -rf %{buildroot}
 
 %files
-%defattr(-,root,root,0755)
+%defattr(-,root,root)
 %doc AUTHORS COPYING README
 %{_libdir}/*.so.*
 
 %files devel
-%defattr(-,root,root,0755)
+%defattr(-,root,root)
 %{_libdir}/*.a
 %{_libdir}/*.so
-%{_libdir}/*.la
 %{_libdir}/pkgconfig/*.pc
 %{_includedir}/libzrtpcpp/*.h
 
 %post -p /sbin/ldconfig
 
 %postun -p /sbin/ldconfig
+
+%changelog
+* Tue Dec 11 2007 - werner.dittmann@t-online.de
+- this is the first spec file for version 1.x.x
+- remove the .la file in devel package
+- use default file atttribute instead of 755

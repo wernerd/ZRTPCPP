@@ -332,11 +332,6 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     commit->setSasType((uint8_t*)supportedSASType[sasType]);
     commit->setHvi(hvi);
 
-//    hexdump("my HVI", hvi, SHA256_DIGEST_LENGTH);
-//    fprintf(stderr, "Hello: %p, length: %d\n", hello, hello->getLength() * ZRTP_WORD_SIZE);
-//    hexdump("peer's hello", (const unsigned char*)hello, hello->getLength() * ZRTP_WORD_SIZE);
-//    hexdump("peer's hello", (const unsigned char*)hello->getHeaderBase(), 72);
-//    hexdump("my dhp2(1)", (const unsigned char*)zpDH2, zpDH2->getLength() * ZRTP_WORD_SIZE);
     // hash first messages to produce overall message hash
     // First the Responder's Hello message, second the Commit 
     // (always Initator's)
@@ -603,8 +598,6 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
     generateS0Initiator(dhPart1, zidRec);
     delete dhContext;
     dhContext = NULL;
-
-//    hexdump("my dhp2(2)", (const unsigned char*)zpDH, zpDH->getLength() * ZRTP_WORD_SIZE);
 
     return zpDH;
 }
@@ -1327,7 +1320,6 @@ void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 
     data[pos] = NULL;
     sha256(data, length, s0);
-//    hexdump("S0 (R)", s0, 32);
 
     memset(DHss, 0, dhContext->getSecretSize());
     free(DHss);
@@ -1368,7 +1360,7 @@ void ZRtp::computeSRTPKeys() {
     hmac_sha256(s0, SHA256_DIGEST_LENGTH, (unsigned char*)retainedSec, strlen(retainedSec),
                 newRs1, &macLen);
 
-     // perform SAS generation
+    // perform SAS generation
     uint32_t sasTemp;
     uint8_t sasBytes[4];
     uint8_t hmacTmp[SHA256_DIGEST_LENGTH];

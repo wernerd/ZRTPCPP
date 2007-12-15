@@ -36,6 +36,7 @@
 
 #include <openssl/crypto.h>
 #include <openssl/aes.h>
+#include <string.h>
 
 #include <libzrtpcpp/crypto/aesCFB.h>
 
@@ -49,10 +50,11 @@ void aesCfbEncrypt(unsigned char *key,
             unsigned int dataLength)
 {
     AES_KEY aesKey;
-    int usedBytes;
+    int usedBytes = 0;
 
     initializeOpenSSL();
 
+    memset(&aesKey, 0, sizeof( AES_KEY ) );
     if (keyLength == 16) {
         AES_set_encrypt_key(key, 128, &aesKey);
     }
@@ -74,10 +76,11 @@ void aesCfbDecrypt(unsigned char *key,
             unsigned int dataLength)
 {
     AES_KEY aesKey;
-    int usedBytes;
+    int usedBytes = 0;
 
     initializeOpenSSL();
 
+    memset(&aesKey, 0, sizeof( AES_KEY ) );
     if (keyLength == 16) {
         AES_set_decrypt_key(key, 128, &aesKey);
     }

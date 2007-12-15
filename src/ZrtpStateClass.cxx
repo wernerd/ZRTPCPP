@@ -45,21 +45,6 @@ state_t states[numberOfStates] = {
 };
 
 
-static void hexdump(const char* title, const unsigned char *s, int l) {
-    int n=0;
-
-    if (s == NULL) return;
-
-    fprintf(stderr, "%s",title);
-    for( ; n < l ; ++n)
-    {
-        if((n%16) == 0)
-            fprintf(stderr, "\n%04x",n);
-        fprintf(stderr, " %02x",s[n]);
-    }
-    fprintf(stderr, "\n");
-}
-
 static const char* sendErrorText = "Cannot send data via RTP - connection or peer down?";
 static const char* sendErrorTextSrtp = "Cannot send data via SRTP - connection or peer down?";
 static const char* timerError = "Cannot start a timer - internal resources exhausted?";
@@ -87,6 +72,7 @@ ZrtpStateClass::~ZrtpStateClass(void) {
     if (engine != NULL) {
 	delete engine;
     }
+#if 0    // possible race condition with timer thread (sentPacket)
     if (commitPkt != NULL) {
         delete commitPkt;
         commitPkt = NULL;
@@ -95,6 +81,7 @@ ZrtpStateClass::~ZrtpStateClass(void) {
         delete sentPacket;
         sentPacket = NULL;
     }
+#endif
 }
 
 int32_t ZrtpStateClass::processEvent(Event_t *ev) {
