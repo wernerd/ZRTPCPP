@@ -55,7 +55,11 @@ static BIGNUM* bnP4096MinusOne = NULL;
 
 static uint8_t dhinit = 0;
 
-// void initializeOpenSSL();
+void randomZRTP(uint8_t *buf, int32_t length)
+{
+    initializeOpenSSL();
+    RAND_bytes(buf, length);
+}
 
 static const uint8_t P3072[] =
     {
@@ -213,11 +217,6 @@ int32_t ZrtpDH::getPubKeySize() const
 int32_t ZrtpDH::getPubKeyBytes(uint8_t *buf) const
 {
     return BN_bn2bin(static_cast<DH*>(ctx)->pub_key, buf);
-}
-
-void ZrtpDH::random(uint8_t *buf, int32_t length)
-{
-    RAND_bytes(buf, length);
 }
 
 int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes,

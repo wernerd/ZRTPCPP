@@ -326,6 +326,21 @@ class ZRtp {
      * The selected SAS type.
      */
     SupportedAuthLengths authLength;
+
+    /**
+     * The Hash images as defined in chapter 5.1.1 (H0 is a random value,
+     * not stored here). Need full SHA 256 lenght to store hash value but
+     * only the leftmost 128 bits are used in computations and comparisons.
+     */
+    uint8_t H1[SHA256_DIGEST_LENGTH];
+    uint8_t H2[SHA256_DIGEST_LENGTH];
+    uint8_t H3[SHA256_DIGEST_LENGTH];
+    uint8_t H4[SHA256_DIGEST_LENGTH];
+
+    // need 128 bits only to store peer's values
+    uint8_t peerH2[SHA256_DIGEST_LENGTH/2];
+    uint8_t peerH3[SHA256_DIGEST_LENGTH/2];
+
     /**
      * The SHA256 hash over selected messages
      */
@@ -490,19 +505,6 @@ class ZRtp {
      */
     int32_t sendPacketZRTP(ZrtpPacketBase *packet);
 
-    /**
-     * Send a ZRTP packet using SRTP.
-     *
-     * The state engines calls this method to send a packet via the SRTP
-     * stack.
-     *
-     * @param packet
-     *    Points to the ZRTP packet.
-     * @return
-     *    zero if sending failed, one if packet was send
-     *
-    int32_t sendPacketSRTP(ZrtpPacketBase *packet);
-     */
     /**
      * Activate a Timer using the host callback.
      *

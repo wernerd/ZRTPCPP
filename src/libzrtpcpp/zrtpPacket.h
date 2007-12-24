@@ -39,6 +39,7 @@ typedef struct zrtpPacketHeader {
 typedef struct Hello {
     uint8_t	version[ZRTP_WORD_SIZE];
     uint8_t	clientId[3*ZRTP_WORD_SIZE];
+//  uint8_t     hashH3[4*ZRTP_WORD_SIZE];
     uint8_t     zid[3*ZRTP_WORD_SIZE];
     uint32_t	flagLength;
 } Hello_t;
@@ -55,6 +56,7 @@ typedef struct HelloAckPacket {
 } HelloAckPacket_t;
 
 typedef struct Commit {
+//  uint8_t     hashH2[4*ZRTP_WORD_SIZE];
     uint8_t	zid[3*ZRTP_WORD_SIZE];
     uint8_t     hash[ZRTP_WORD_SIZE];
     uint8_t     cipher[ZRTP_WORD_SIZE];
@@ -71,6 +73,7 @@ typedef struct CommitPacket {
 } CommitPacket_t;
 
 typedef struct DHPart {
+//  uint8_t     hashH1[4*ZRTP_WORD_SIZE];
     uint8_t rs1Id[2*ZRTP_WORD_SIZE];
     uint8_t rs2Id[2*ZRTP_WORD_SIZE];
     uint8_t sigsId[2*ZRTP_WORD_SIZE];

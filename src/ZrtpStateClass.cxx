@@ -267,6 +267,13 @@ int32_t ZrtpStateClass::evDetect(void) {
          * Hello:
          * - stop timer T1, 
          * - send HelloAck packet to acknowledge the received Hello packet 
+         * - use received Hello packet to prepare own Commit packet. We nedd to
+         *   do it at this point because we need the hash value computed from 
+         *   peer's Hello packet. Data received is deleted after the function
+         *   returns. This also guarantees that prepareCommit() is always 
+         *   called. Follwing states my use the prepared Commit, in any case it
+         *   is deleted by follwoing protocol states if it is no longer 
+         *   required.
          * - send own Hello packet until peer acknowledges this (state AckSent)
          * - activate and count up timer T1
          * - switch to new state AckSent
@@ -275,7 +282,7 @@ int32_t ZrtpStateClass::evDetect(void) {
             cancelTimer();
             ZrtpPacketHelloAck *helloAck = parent->prepareHelloAck();
 
-            // HelloAck packet is always allocated and reused, never delete it.
+            // HelloAck packet is statically allocated and reused, never delete it.
             if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(helloAck))) {
                 nextState(Detect);
                 parent->zrtpNegotiationFailed(Error, sendErrorText);
@@ -283,7 +290,7 @@ int32_t ZrtpStateClass::evDetect(void) {
             }
             // sentPacket points to "Hello" packet, send it and restart T1.
             // Use peer's Hello packet to create my commit packet, store it 
-            // for later use in AckSent
+            // for possible later use in AckSent
             // Fail if resend counter exceeds limit.
             ZrtpPacketHello *hpkt = new ZrtpPacketHello(pkt);
             commitPkt = parent->prepareCommit(hpkt, &errorCode);
@@ -460,8 +467,10 @@ int32_t ZrtpStateClass::evAckSent(void) {
 	    sentPacket = NULL;
 	    ZrtpPacketDHPart* dhPart1 = parent->prepareDHPart1(cpkt, &errorCode);
 	    delete cpkt;
+            delete commitPkt;        // we don't need the prepared commit packet
+            commitPkt = NULL;
 
-	    // Something went wrong during processing of the commit packet
+	    // Error detected during processing of received commit packet
 	    if (dhPart1 == NULL) {
                 sendErrorPacket(errorCode);
 		return (Done);

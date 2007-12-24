@@ -24,6 +24,20 @@
 
 #include <stdint.h>
 
+
+/**
+ * Generates a number of random bytes.
+ *
+ * @param buf
+ *    Pointer to a buffer that receives the random data. Must have a size
+ *    of at least <code>length</code> bytes.
+ *
+ * @param length
+ *    Number of random bytes to produce.
+ */
+void randomZRTP(uint8_t *buf, int32_t length);
+
+
 /**
  * Implementation of Diffie-Helman for ZRTP
  *
@@ -34,6 +48,7 @@
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
+
 class ZrtpDH {
 
 private:
@@ -113,18 +128,6 @@ public:
      * @return 0 if check faild, 1 if public key value is ok.
      */
     int32_t checkPubKey(uint8_t* pubKeyBytes, int32_t length) const;
-
-    /**
-     * Generates a number of random bytes.
-     *
-     * @param buf
-     *    Pointer to a buffer that receives the random data. Must have a size
-     *    of at least <code>length</code> bytes.
-     *
-     * @param length
-     *    Number of random bytes to produce.
-     */
-    void random(uint8_t *buf, int32_t length);
 };
 
 #endif // ZRTPDH_H

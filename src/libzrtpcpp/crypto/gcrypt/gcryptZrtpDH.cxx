@@ -40,6 +40,11 @@ static gcry_mpi_t bnP4096MinusOne = NULL;
 
 static uint8_t dhinit = 0;
 
+void randomZRTP(uint8_t *buf, int32_t length) {
+    initializeGcrypt();
+    gcry_randomize(buf, length, GCRY_STRONG_RANDOM);
+}
+
 static const uint8_t P3072[] =
     {
 	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xC9, 0x0F, 0xDA, 0xA2,
@@ -212,10 +217,6 @@ int32_t ZrtpDH::getSecretSize() const
 int32_t ZrtpDH::getPubKeySize() const
 {
     return ((gcry_mpi_get_nbits(static_cast<gcryptCtx*>(ctx)->pubKey) + 7) / 8);
-}
-
-void ZrtpDH::random(uint8_t *buf, int32_t length) {
-    gcry_randomize(buf, length, GCRY_STRONG_RANDOM);
 }
 
 int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes,
