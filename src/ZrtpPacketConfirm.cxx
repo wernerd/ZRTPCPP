@@ -21,19 +21,31 @@
 
 #include <libzrtpcpp/ZrtpPacketConfirm.h>
 
+ZrtpPacketConfirm::ZrtpPacketConfirm() {
+    DEBUGOUT((fprintf(stdout, "Creating Confirm packet without data, no sl data\n")));
+    initialize();
+}
+
 ZrtpPacketConfirm::ZrtpPacketConfirm(uint8_t sl) {
     DEBUGOUT((fprintf(stdout, "Creating Confirm packet without data\n")));
+    initialize();
+    setSignatureLength(sl);
+}
 
-    int32_t length = sizeof(ConfirmPacket_t) + (sl * ZRTP_WORD_SIZE) + CRC_SIZE;
-
+void ZrtpPacketConfirm::initialize() {
     void* allocated = &data;
-    memset(allocated, 0, length);
+    memset(allocated, 0, sizeof(data));
 
     zrtpHeader = (zrtpPacketHeader_t *)&((ConfirmPacket_t *)allocated)->hdr;	// the standard header
     confirmHeader = (Confirm_t *)&((ConfirmPacket_t *)allocated)->confirm;
 
     setZrtpId();
-    setLength((length - CRC_SIZE) / 4);
+}
+
+void ZrtpPacketConfirm::setSignatureLength(uint8_t sl) {
+    int32_t length = sizeof(ConfirmPacket_t) + (sl * ZRTP_WORD_SIZE);
+    confirmHeader->sigLength = sl;
+    setLength(length / 4);
 }
 
 ZrtpPacketConfirm::ZrtpPacketConfirm(uint8_t* data) {

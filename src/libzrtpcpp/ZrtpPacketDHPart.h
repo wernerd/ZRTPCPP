@@ -37,6 +37,7 @@ class ZrtpPacketDHPart : public ZrtpPacketBase {
     DHPart_t* DHPartHeader;
 
  public:
+    ZrtpPacketDHPart();	                        /* Creates a DHPart packet no data, must use setPubKeyType(...) */
     ZrtpPacketDHPart(SupportedPubKeys pkt);	/* Creates a DHPart packet with default data */
     ZrtpPacketDHPart(uint8_t* data);            /* Creates a DHPart packet from received data */
     virtual ~ZrtpPacketDHPart();
@@ -56,15 +57,16 @@ class ZrtpPacketDHPart : public ZrtpPacketBase {
     void setSrtpsId(uint8_t* t)       { memcpy(DHPartHeader->srtpsId, t, sizeof(DHPartHeader->srtpsId)); };
     void setOtherSecretId(uint8_t* t) { memcpy(DHPartHeader->otherSecretId,t, sizeof(DHPartHeader->otherSecretId)); };
 //    void setH1(uint8_t* t)            { memcpy(DHPartHeader->hashH1, t, sizeof(DHPartHeader->hashH1)); };
+    void setPubKeyType(SupportedPubKeys pkt);
 
  private:
+    void initialize();
     SupportedPubKeys pktype;
      // DHPart packet is of variable length. It maximum size is 141 words:
      // - 13 words fixed sizze 
      // - up to 128 words variable part, depending on DH algorithm 
-     // leads to a maximum of 4*141=5644 bytes.
+     //   leads to a maximum of 4*141=564 bytes.
      uint8_t data[768];       // large enough to hold a full blown DHPart packet
-
 };
 
 #endif // ZRTPPACKETDHPART

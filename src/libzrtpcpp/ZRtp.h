@@ -51,9 +51,11 @@ enum zrtpErrorCodes {
     UnsuppSASScheme =   0x55,
     DHErrorWrongPV =    0x61,
     DHErrorWrongHVI =   0x62,
+    SASuntrustedMiTM =  0x93,
     ConfirmHMACWrong =  0x70,
     NonceReused =       0x80,
-    EqualZIDHello =     0x90
+    EqualZIDHello =     0x90,
+    IgnorePacket =      0x7fffffff
 };
 
 class ZrtpStateClass;
@@ -389,11 +391,16 @@ class ZRtp {
     ZrtpPacketGoClear  zrtpGoClear;
     ZrtpPacketError    zrtpError;
     ZrtpPacketErrorAck zrtpErrorAck;
+    ZrtpPacketDHPart   zrtpDH1;
+    ZrtpPacketDHPart   zrtpDH2;
+    ZrtpPacketCommit   zrtpCommit;
+    ZrtpPacketConfirm  zrtpConfirm1;
+    ZrtpPacketConfirm  zrtpConfirm2;
 
     /**
      * Holds a pre-computed DHPart2 packet. Required to compute HVI
      */
-    ZrtpPacketDHPart* zpDH2;
+    // ZrtpPacketDHPart* zpDH2;
 
     /**
      * Random IV data to encrypt the confirm data, 128 bit for AES

@@ -62,7 +62,8 @@ enum EventDataType {
     ZrtpInitial = 1,
     ZrtpClose,
     ZrtpPacket,
-    Timer
+    Timer,
+    ErrorPkt
 };
 
 typedef struct Event {

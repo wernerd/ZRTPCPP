@@ -37,27 +37,32 @@ class ZrtpPacketConfirm : public ZrtpPacketBase {
         Confirm_t* confirmHeader;
 
     public:
+        ZrtpPacketConfirm();                    /* Creates a Confirm packet */
         ZrtpPacketConfirm(uint8_t sl);		/* Creates a Confirm packet with default data */
         ZrtpPacketConfirm(uint8_t* d);          /* Creates a Confirm packet from received data */
         virtual ~ZrtpPacketConfirm();
 
         const bool isSASFlag()            { return confirmHeader->flags & 0x4; }
-        const uint8_t* getFiller()        { return confirmHeader->filler; };
-        const uint8_t* getIv()            { return confirmHeader->iv; };
-        const uint8_t* getHmac()          { return confirmHeader->hmac; };
-        const uint32_t getExpTime()       { return ntohl(confirmHeader->expTime); };
+        const uint8_t* getFiller()        { return confirmHeader->filler; }
+        const uint8_t* getIv()            { return confirmHeader->iv; }
+        const uint8_t* getHmac()          { return confirmHeader->hmac; }
+        const uint32_t getExpTime()       { return ntohl(confirmHeader->expTime); }
+//        uint8_t* getNewH3()               { return confirmHeader->newH3; }
 
-        void setSASFlag()            { confirmHeader->flags |= 0x4; };
-        void setHmac(uint8_t* text)  { memcpy(confirmHeader->hmac, text, sizeof(confirmHeader->hmac)); };
-        void setIv(uint8_t* text)    { memcpy(confirmHeader->iv, text, sizeof(confirmHeader->iv)); };
-        void setExpTime(uint32_t t)  { confirmHeader->expTime = htonl(t); };
+        void setSASFlag()            { confirmHeader->flags |= 0x4; }
+        void setHmac(uint8_t* text)  { memcpy(confirmHeader->hmac, text, sizeof(confirmHeader->hmac)); }
+        void setIv(uint8_t* text)    { memcpy(confirmHeader->iv, text, sizeof(confirmHeader->iv)); }
+        void setExpTime(uint32_t t)  { confirmHeader->expTime = htonl(t); }
+//        void setNewH3(uint8_t* t)    { memcpy(confirmHeader->newH3, t, sizeof(confirmHeader->newH3)); }
+        void setSignatureLength(uint8_t sl);
 
     private:
+        void initialize();
      // Confirm packet is of variable length. It maximum size is 268 words:
      // - 11 words fixed size 
      // - up to 257 words variable part, depending if signature is present ant its length 
      // leads to a maximum of 4*268=1072 bytes.
-     uint8_t data[1280];       // large enough to hold a full blown Confirm packet
+        uint8_t data[1280];       // large enough to hold a full blown Confirm packet
 
 };
 

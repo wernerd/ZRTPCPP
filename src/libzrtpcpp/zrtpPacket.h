@@ -89,6 +89,7 @@ typedef struct DHPartPacket {
 typedef struct Confirm {
     uint8_t	hmac[2*ZRTP_WORD_SIZE];
     uint8_t     iv[4*ZRTP_WORD_SIZE];
+//    uint8_t     newH3[4*ZRTP_WORD_SIZE];
     uint8_t     filler[2];
     uint8_t     sigLength;
     uint8_t	flags;

@@ -21,72 +21,45 @@
 
 #include <libzrtpcpp/ZrtpPacketDHPart.h>
 
+ZrtpPacketDHPart::ZrtpPacketDHPart() {
+    DEBUGOUT((fprintf(stdout, "Creating DHPart packet without data and pkt type\n")));
+    initialize();
+}
 
 ZrtpPacketDHPart::ZrtpPacketDHPart(SupportedPubKeys pkt) {
     DEBUGOUT((fprintf(stdout, "Creating DHPart packet without data\n")));
-#if 0
-    int length = sizeof(DHPart_t) + sizeof(zrtpPacketHeader_t) + CRC_SIZE + ((pkt == Dh3072) ? 384 : 512);
+    initialize();
+    setPubKeyType(pkt);
+}
+
+void ZrtpPacketDHPart::initialize() {
 
     void* allocated = &data;
-    memset(allocated, 0, length);
-
-    pktype = pkt;
-
-    zrtpHeader = (zrtpPacketHeader_t *)&((DHPartPacket_t *)allocated)->hdr;	// the standard header
-    pv = ((uint8_t *)allocated) + sizeof(zrtpPacketHeader_t);    // point to the public key value
-    DHPartHeader = (DHPart_t *)(pv + ((pkt == Dh3072) ? 384 : 512));
-
-    setZrtpId();
-    // Subtract one to exclude the CRC word from length in ZRTP message 
-    setLength((length / 4) - 1);
-    // setLength(DHPART_LENGTH + MESSAGE_LENGTH + ((pkt == Dh3072) ? 96 : 128));
-#else
-    int length = sizeof(DHPartPacket_t) + CRC_SIZE + ((pkt == Dh3072) ? 384 : 512);
-
-    void* allocated = &data;
-    memset(allocated, 0, length);
-
-    pktype = pkt;
+    memset(allocated, 0, sizeof(data));
 
     zrtpHeader = (zrtpPacketHeader_t *)&((DHPartPacket_t *)allocated)->hdr;	// the standard header
     DHPartHeader = (DHPart_t *)&((DHPartPacket_t *)allocated)->dhPart;
-    pv = ((uint8_t *)allocated) + sizeof(DHPartPacket_t);    // point to the public key value
+    pv = ((uint8_t*)allocated) + sizeof(DHPartPacket_t);    // point to the public key value
 
     setZrtpId();
-    // Subtract one to exclude the CRC word from length in ZRTP message 
-    setLength((length / 4) - 1);
-#endif
+}
+
+void ZrtpPacketDHPart::setPubKeyType(SupportedPubKeys pkt) {
+    int length = sizeof(DHPartPacket_t) + ((pkt == Dh3072) ? 384 : 512);
+    pktype = pkt;
+    setLength(length / 4);
 }
 
 ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t *data) {
     DEBUGOUT((fprintf(stdout, "Creating DHPart packet from data\n")));
-#if 0
-    zrtpHeader = (zrtpPacketHeader_t *)&((DHPartPacket_t *)data)->hdr;	// the standard header
 
-    int16_t len = getLength();
-    DEBUGOUT((fprintf(stdout, "DHPart length: %d\n", len)));
-    SupportedPubKeys pkt;
-    if (len == 109) {
-	pkt = Dh3072;
-    }
-    else if (len == 141) {
-	pkt = Dh4096;
-    }
-    else {
-	fprintf(stderr, "Wrong DHPart length: %d\n", len);
-	pv = NULL;
-	return;
-    }
-    pv = data + sizeof(zrtpPacketHeader_t);
-    DHPartHeader = (DHPart_t *)(data + sizeof(zrtpPacketHeader_t) + ((pkt == Dh3072) ? 384 : 512));
-    pktype = pkt;
-#else
     zrtpHeader = (zrtpPacketHeader_t *)&((DHPartPacket_t *)data)->hdr;	// the standard header
     DHPartHeader = (DHPart_t *)&((DHPartPacket_t *)data)->dhPart;
 
     int16_t len = getLength();
     DEBUGOUT((fprintf(stdout, "DHPart length: %d\n", len)));
     SupportedPubKeys pkt;
+    // TODO: fix check for length if Hash images are enable (+4 words)
     if (len == 109) {
 	pkt = Dh3072;
     }
@@ -100,7 +73,6 @@ ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t *data) {
     }
     pv = data + sizeof(DHPartPacket_t);    // point to the public key value
     pktype = pkt;
-#endif
 }
 
 ZrtpPacketDHPart::~ZrtpPacketDHPart() {

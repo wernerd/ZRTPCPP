@@ -249,6 +249,7 @@ protected:
 	    if (time == 0 && size > 0) {
 		if (stop){	// This must be checked so that we will
 				// stop even if we have timeouts to deliver.
+                    synchLock.leave();
 		    return;
 		}
                 TPRequest<TOCommand, TOSubscriber>* req = requests.front();

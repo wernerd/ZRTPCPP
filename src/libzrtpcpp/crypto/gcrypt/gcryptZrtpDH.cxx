@@ -142,9 +142,10 @@ ZrtpDH::ZrtpDH(int32_t pl) {
         gcry_mpi_scan(&bnP4096, GCRYMPI_FMT_USG, P4096, sizeof(P4096), NULL);
         two = gcry_mpi_set_ui(NULL, 2);
         bnP3072MinusOne = gcry_mpi_new(sizeof(P3072)*8);
+        gcry_mpi_sub_ui(bnP3072MinusOne, bnP3072, 1);
         bnP4096MinusOne = gcry_mpi_new(sizeof(P4096)*8);
         gcry_mpi_sub_ui(bnP4096MinusOne, bnP4096, 1);
-	dhinit = 1;
+        dhinit = 1;
     }
 
     tmpCtx->pLength = pl;
