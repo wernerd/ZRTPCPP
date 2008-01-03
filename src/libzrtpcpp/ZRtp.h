@@ -684,6 +684,20 @@ class ZRtp {
 	return (memcmp(hvi, commit->getHvi(), SHA256_DIGEST_LENGTH)); };
 
     /**
+     * Verify the H2 hash image.
+     *
+     * Verifies the H2 hash contained in a received commit message.
+     * This functions just verifies H2 but does not store it.
+     *
+     * @param commit
+     *    Pointer to the peer's commit packet we just received.
+     * @return
+     *    true if H2 is ok and verified
+     *    false if H2 could not be verified
+     */
+    bool verifyH2(ZrtpPacketCommit *commit);
+
+    /**
      * Send information messages to the hosting environment.
      *
      * The ZRTP implementation uses this method to send information messages
@@ -750,6 +764,18 @@ class ZRtp {
      *    Defines for which part (sender or receiver) to clear
      */
     void srtpSecretsOff(EnableSecurity part);
+
+    /**
+     * ZRTP state engine calls these methods to enter or leave its 
+     * synchronization mutex.
+     */
+    void synchEnter() {
+        callback->synchEnter();
+    }
+    void synchLeave() {
+        callback->synchLeave();
+    }
+
 };
 
 #endif // ZRTP

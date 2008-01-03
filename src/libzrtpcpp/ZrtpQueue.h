@@ -227,7 +227,7 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      **/
     void
     putData(uint32 stamp, const unsigned char* data = NULL, size_t len = 0);
-    
+
     /**
      * This is used to create a data packet and send it immediately.
      * Sometimes a "NULL" or empty packet will be used instead, and
@@ -372,6 +372,12 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      */
     void zrtpNotSuppOther();
 
+    /**
+     * ZRTP calls these methods to enter or leave its synchronization mutex.
+     */
+    void synchEnter();
+    void synchLeave();
+
     /*
      * End of ZrtpCallback functions.
      */
@@ -407,6 +413,8 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
         CryptoContext* recvCryptoContext;
         CryptoContext* senderCryptoContext;
         int16 senderZrtpSeqNo;
+        ost::Mutex synchLock;	// Mutex for ZRTP (used by ZrtpStateClass)
+
 };
 
 class IncomingZRTPPkt : public IncomingRTPPkt {

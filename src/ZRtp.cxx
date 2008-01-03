@@ -228,43 +228,20 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     /*
      * The Following section extracts the algorithm from the Hello
      * packet. Always the best possible (offered) algorithms are
-     * used.
+     * used. If the received Hello does not contain algo specifiers
+     * or offers only unsupported (optional) alogos then replace
+     * these with mandatory algos and put them into the Commit packet.
+     * Refer to the findBest*() functions.
      */
     cipher = findBestCipher(hello);
-    if (cipher >= NumSupportedSymCiphers) {
-        *errMsg = UnsuppCiphertype;
-	sendInfo(Error, "Hello message does not contain a supported Cipher");
-	return NULL;
-    }
     hash = findBestHash(hello);
-    if (hash >= NumSupportedHashes) {
-        *errMsg = UnsuppHashType;
-	sendInfo(Error, "Hello message does not contain a supported Hash");
-	return NULL;
-    }
     pubKey = findBestPubkey(hello);
-    if (pubKey >= NumSupportedPubKeys) {
-        *errMsg = UnsuppPKExchange;
-	sendInfo(Error, "Hello message does not contain a supported public key algorithm");
-	return NULL;
-    }
     sasType = findBestSASType(hello);
-    if (sasType >= NumSupportedSASTypes) {
-        *errMsg = UnsuppSASScheme;
-	sendInfo(Error, "Hello message does not contain a supported SAS algorithm");
-	return NULL;
-    }
     authLength = findBestAuthLen(hello);
-    if (authLength >= NumSupportedAuthLenghts) {
-        *errMsg = UnsuppSRTPAuthTag;
-        sendInfo(Error, "Hello message does not contain a supported authentication length");
-        return NULL;
-    }
 
     if (cipher == Aes256 && pubKey != Dh4096) {
 	sendInfo(Warning, "Hello offers an AES256 cipher but does not offer a Diffie-Helman 4096");
     }
-
     // Generate the DH data and keys regarding the selected DH algorithm
     int32_t maxPubKeySize;
     if (pubKey == Dh3072) {
@@ -290,8 +267,6 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     sendInfo(Info, buffer);
 
     // Prepare IV data that we will use during confirm packet encryption. 
-    // This is done in advance to that we can destroy the DH data at the 
-    // earliest posible time.
     randomZRTP(randomIV, sizeof(randomIV));
 
     /*
@@ -976,6 +951,19 @@ SupportedAuthLengths ZRtp::findBestAuthLen(ZrtpPacketHello *hello) {
         }
     }
     return AuthLen32;
+}
+
+bool ZRtp::verifyH2(ZrtpPacketCommit *commit) {
+    uint8_t tmpH3[SHA256_DIGEST_LENGTH];
+
+    // TODO
+#if 0
+    sha256(commit->getH2, 16, tmpH3);
+    if (memcmp(tmpH3, peerH3, 16) != 0) {
+        return false;
+    }
+#endif 
+    return true;
 }
 
 void ZRtp::computeHvi(ZrtpPacketDHPart* dh, ZrtpPacketHello *hello) {

@@ -528,6 +528,13 @@ void ZrtpQueue::zrtpNotSuppOther() {
     }
 }
 
+void ZrtpQueue::synchEnter() {
+    synchLock.enter();
+}
+
+void ZrtpQueue::synchLeave() {
+    synchLock.leave();
+}
 
 IncomingZRTPPkt::IncomingZRTPPkt(const unsigned char* const block, size_t len) :
         IncomingRTPPkt(block,len)

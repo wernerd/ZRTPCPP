@@ -53,9 +53,10 @@ class ZrtpDH {
 
 private:
     void* ctx;
+    int32_t pkLength;
 
 public:
-    ZrtpDH(int32_t pkLength);
+    ZrtpDH(int32_t pl);
     ~ZrtpDH();
 
     /**
@@ -128,6 +129,8 @@ public:
      * @return 0 if check faild, 1 if public key value is ok.
      */
     int32_t checkPubKey(uint8_t* pubKeyBytes, int32_t length) const;
+
+    int32_t getDHlength() { return pkLength; }
 };
 
 #endif // ZRTPDH_H

@@ -243,13 +243,20 @@ class ZrtpCallback {
     virtual void zrtpNegotiationFailed(MessageSeverity severity, const char* msg) =0;
 
     /**
-     * ZRTP calls this methof if the other side does not support ZRTP.
+     * ZRTP calls this method if the other side does not support ZRTP.
      *
      * If the other side does not answer the ZRTP <em>Hello</em> packets then
      * ZRTP calls this method,
      *
      */
     virtual void zrtpNotSuppOther() =0;
+
+    /**
+     * ZRTP calls these methods to enter or leave its synchronization mutex.
+     */
+    virtual void synchEnter() =0;
+    virtual void synchLeave() =0;
+
 };
 
 #endif // ZRTPCALLBACK

@@ -144,7 +144,7 @@ static const uint8_t P4096[] =
 	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
     };
 
-ZrtpDH::ZrtpDH(int32_t pkLength) {
+ZrtpDH::ZrtpDH(int32_t pl): pkLength(pl) {
 
     uint8_t random[64];
 

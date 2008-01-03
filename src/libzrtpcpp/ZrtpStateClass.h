@@ -184,6 +184,27 @@ public:
      */
     int32_t sendErrorPacket(uint32_t errorCode);
 
+    /**
+     * Set status if an error occured while sending a ZRTP packet.
+     *
+     * This functions clears data and set the state to Initial after the engine
+     * detected a problem while sending a ZRTP packet.
+     *
+     * @return
+     *    Fail code
+     */
+    int32_t sendFailed();
+
+    /**
+     * Set status if a timer problems occure.
+     *
+     * This functions clears data and set state to Initial after a timer
+     * error occured. Either no timer available or resend counter exceedeed.
+     *
+     * @return
+     *    Fail code
+     */
+    int32_t timerFailed(const char* msg);
 };
 
 #endif // _ZRTPSTATECLASS_H_
