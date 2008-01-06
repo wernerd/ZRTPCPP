@@ -411,31 +411,38 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     sasType = (SupportedSASTypes)i;
 
     int32_t maxPubKeySize;
+    switch (pubKey) {
+        case Dh3072:
+            maxPubKeySize = 384;
+            break;
+        case Dh4096:
+            maxPubKeySize = 512;
+            break;
+        default:
+            *errMsg = CriticalSWError;
+            return NULL;
+    }
 
     if (cipher == Aes256 && pubKey != Dh4096) {
         sendInfo(Warning, "Commit contains an AES256 cipher but does not offer a Diffie-Helman 4096");
         // generate a warning
     }
 
-    // check if a cleanup is required 
-    if (dhContext != NULL) {
+    // Check if we can reuse DH context created during prepareCommit()
+    if (dhContext == NULL || 
+        !((pubKey == Dh3072 && dhContext->getDHlength() == 3072) ||
+          (pubKey == Dh4096 && dhContext->getDHlength() == 4096))) {
+        fprintf(stderr, "No reuse of DH context\n");
         delete dhContext;
         dhContext = NULL;
-    }
-    // setup the DH context and generate a fresh DH key pair
-    if (pubKey == Dh3072) {
-        dhContext = new ZrtpDH(3072);
-        maxPubKeySize = 384;
+        // setup the DH context and generate a fresh DH key pair
+        if (pubKey == Dh3072) {
+            dhContext = new ZrtpDH(3072);
 
-    }
-    else if (pubKey == Dh4096) {
-        dhContext = new ZrtpDH(4096);
-        maxPubKeySize = 512;
-    }
-    else {
-        *errMsg = CriticalSWError;
-        return NULL;
-        // Error - shouldn't happen
+        }
+        else if (pubKey == Dh4096) {
+            dhContext = new ZrtpDH(4096);
+        }
     }
     dhContext->generateKey();
     pubKeyLen = dhContext->getPubKeySize();
