@@ -59,11 +59,10 @@ ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t *data) {
     int16_t len = getLength();
     DEBUGOUT((fprintf(stdout, "DHPart length: %d\n", len)));
     SupportedPubKeys pkt;
-    // TODO: fix check for length if Hash images are enable (+4 words)
-    if (len == 109) {
+    if (len == 113) {
 	pkt = Dh3072;
     }
-    else if (len == 141) {
+    else if (len == 145) {
 	pkt = Dh4096;
     }
     else {

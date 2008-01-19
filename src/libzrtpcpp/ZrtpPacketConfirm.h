@@ -47,13 +47,13 @@ class ZrtpPacketConfirm : public ZrtpPacketBase {
         const uint8_t* getIv()            { return confirmHeader->iv; }
         const uint8_t* getHmac()          { return confirmHeader->hmac; }
         const uint32_t getExpTime()       { return ntohl(confirmHeader->expTime); }
-//        uint8_t* getNewH3()               { return confirmHeader->newH3; }
+        uint8_t* getNewH3()               { return confirmHeader->newH3; }
 
         void setSASFlag()            { confirmHeader->flags |= 0x4; }
         void setHmac(uint8_t* text)  { memcpy(confirmHeader->hmac, text, sizeof(confirmHeader->hmac)); }
         void setIv(uint8_t* text)    { memcpy(confirmHeader->iv, text, sizeof(confirmHeader->iv)); }
         void setExpTime(uint32_t t)  { confirmHeader->expTime = htonl(t); }
-//        void setNewH3(uint8_t* t)    { memcpy(confirmHeader->newH3, t, sizeof(confirmHeader->newH3)); }
+        void setNewH3(uint8_t* t)    { memcpy(confirmHeader->newH3, t, sizeof(confirmHeader->newH3)); }
         void setSignatureLength(uint8_t sl);
 
     private:

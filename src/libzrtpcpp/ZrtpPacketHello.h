@@ -49,12 +49,12 @@ class ZrtpPacketHello : public ZrtpPacketBase {
 
     uint8_t* getVersion()  { return helloHeader->version; };
     uint8_t* getClientId() { return helloHeader->clientId; };
-//    uint8_t* getH3()      { return helloHeader->hashH3; };
+    uint8_t* getH3()       { return helloHeader->hashH3; };
     uint8_t* getZid()      { return helloHeader->zid; };
 
     void setVersion(uint8_t *text)     { memcpy(helloHeader->version, text,ZRTP_WORD_SIZE ); }
     void setClientId(const uint8_t *t) { memcpy(helloHeader->clientId, t, sizeof(helloHeader->clientId)); }
-//    void setH3(uint8_t *hash)          { memcpy(helloHeader->hashH3, hash, sizeof(helloHeader->hashH3)); }
+    void setH3(uint8_t *hash)          { memcpy(helloHeader->hashH3, hash, sizeof(helloHeader->hashH3)); }
     void setZid(uint8_t *text)         { memcpy(helloHeader->zid, text, sizeof(helloHeader->zid)); }
 
     bool isPassive()       { return passive; };

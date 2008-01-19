@@ -76,7 +76,7 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb):
     sha256(H0, 16, H1);             // hash H0 and generate H1
     sha256(H1, 16, H2);             // H2
     sha256(H2, 16, H3);             // H3
-//TODO    zrtpHello.setH3(H3);             // set H3 in Hello, included in H4
+    zrtpHello.setH3(H3);             // set H3 in Hello, included in H4
 
     memcpy(zid, myZid, 12);
     zrtpHello.setZid(zid);
@@ -223,7 +223,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
         sendInfo(Error, "Received Hello packet with same ZID.");
         return NULL;
     }
-// TODO   memcpy(peerH3, hello->getH3, sizeof(hello->hashH3));
+    memcpy(peerH3, hello->getH3(), 4*ZRTP_WORD_SIZE);
 
     /*
      * The Following section extracts the algorithm from the Hello
@@ -294,7 +294,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     zrtpDH2.setSrtpsId(srtpsIDi);
     zrtpDH2.setOtherSecretId(otherSecretIDi);
     zrtpDH2.setPv(pubKeyBytes);
-//TODO    zrtpDH2.setH1(H1);
+    zrtpDH2.setH1(H1);
 
     // Compute the HVI, refer to chapter 5.4.1 of the specification
     computeHvi(&zrtpDH2, hello);
@@ -306,7 +306,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     zrtpCommit.setPubKeyType((uint8_t*)supportedPubKey[pubKey]);
     zrtpCommit.setSasType((uint8_t*)supportedSASType[sasType]);
     zrtpCommit.setHvi(hvi);
-//TODO    zrtpCommit.setH2(H2);
+    zrtpCommit.setH2(H2);
 
     // hash first messages to produce overall message hash
     // First the Responder's Hello message, second the Commit 
@@ -331,15 +331,18 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
 
     sendInfo(Info, "Responder: Commit received, preparing DHPart1");
 
-    /* TODO
     uint8_t tmpH3[SHA256_DIGEST_LENGTH];
-    memcpy(peerH2, commit->getH2, sizeof(commit->hashH2));
+    memcpy(peerH2, commit->getH2(), 4*ZRTP_WORD_SIZE);
     sha256(peerH2, 16, tmpH3);
+ /*
+    hexdump("R peer H2", peerH2, 16);
+    hexdump("R peer H3", peerH3, 16);
+    hexdump("R temp H3", tmpH3, 16);
+*/
     if (memcmp(tmpH3, peerH3, 16) != 0) {
         *errMsg = IgnorePacket;
         return NULL;
     }
-    */
     // check if we support the commited Cipher type
     uint8_t *cp = commit->getCipherType();
     for (i = 0; i < NumSupportedSymCiphers; i++) {
@@ -468,7 +471,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     zrtpDH1.setSrtpsId(srtpsIDr);
     zrtpDH1.setOtherSecretId(otherSecretIDr);
     zrtpDH1.setPv(pubKeyBytes);
-// TODO zrtpDH1.setH1(H1);
+    zrtpDH1.setH1(H1);
 
     // We are definitly responder. Save the peer's hvi for later compare.
     myRole = Responder;
@@ -505,18 +508,16 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
 
     sendInfo(Info, "Initiator: DHPart1 received, preparing DHPart2");
 
-    /* TODO
     // Because we are initiator the protocol engine didn't receive Commit
     // thus could not store a peer's H2. A two step SHA 256 required to 
     // re-compute H3. Then compare with peer's H3 from peer's Hello packet.
     uint8_t tmpHash[SHA256_DIGEST_LENGTH];
-    sha256(dhPart1->getH1, 16, tmpHash);         // tmpHash is now peerH2
+    sha256(dhPart1->getH1(), 16, tmpHash);         // tmpHash is now peerH2
     sha256(tmpHash, 16, tmpHash);                // tmpHash is now peerH3
     if (memcmp(tmpHash, peerH3, 16) != 0) {
         *errMsg = IgnorePacket;
         return NULL;
     }
-    */
 
     // get memory to store DH result TODO: make it fixed memory
     DHss = (uint8_t*)malloc(dhContext->getSecretSize());
@@ -580,18 +581,16 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
 
     sendInfo(Info, "Responder: DHPart2 received, preparing Confirm1");
 
-    /* TODO
     // Because we are responder the protocol engine received a Commit
     // H3 from peer's Hello packet. 
     // Now re-compute H2 from received H1 and compare with peer's H2 from 
     // peer's Commit packet.
     uint8_t tmpHash[SHA256_DIGEST_LENGTH];
-    sha256(dhPart2->getH1, 16, tmpHash);         // tmpHash is now peerH2
+    sha256(dhPart2->getH1(), 16, tmpHash);         // tmpHash is now peerH2
     if (memcmp(tmpHash, peerH2, 16) != 0) {
         *errMsg = IgnorePacket;
         return NULL;
     }
-    */
     // TODO: fixed memory
     DHss = (uint8_t*)malloc(dhContext->getSecretSize());
     if (DHss == NULL) {
@@ -673,11 +672,13 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
 
     // Encrypt and HMAC with Responder's key - we are Respondere here
     int16_t hmlen = (zrtpConfirm1.getLength() - 9) * ZRTP_WORD_SIZE;
-    aesCfbEncrypt(zrtpKeyR, (cipher == Aes128) ? 16 : 32, randomIV,
-                  (unsigned char*)zrtpConfirm1.getFiller(), hmlen); // TODO: replace filler with newH3
-    hmac_sha256(hmacKeyR, SHA256_DIGEST_LENGTH, 
-                (unsigned char*)zrtpConfirm1.getFiller(),
-                hmlen, confMac, &macLen);  // TODO: replace filler with newH3
+    int keylen = (cipher == Aes128) ? 16 : 32;
+
+    aesCfbEncrypt(zrtpKeyR, keylen, randomIV,
+                  (unsigned char*)zrtpConfirm1.getNewH3(), hmlen);
+    hmac_sha256(hmacKeyR, keylen,
+                (unsigned char*)zrtpConfirm1.getNewH3(),
+                hmlen, confMac, &macLen);
 
     zrtpConfirm1.setHmac(confMac);
     return &zrtpConfirm1;
@@ -693,18 +694,20 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1, uint32_t* 
     // Use the Responder's keys here because we are Initiator here and
     // receive packets from Responder
     int16_t hmlen = (confirm1->getLength() - 9) * ZRTP_WORD_SIZE;
-    hmac_sha256(hmacKeyR, SHA256_DIGEST_LENGTH, 
-                (unsigned char*)confirm1->getFiller(),
-                hmlen, confMac, &macLen); // TODO: replace filler with newH3
+    int keylen = (cipher == Aes128) ? 16 : 32;
+
+    hmac_sha256(hmacKeyR, keylen, 
+                (unsigned char*)confirm1->getNewH3(),
+                hmlen, confMac, &macLen);
 
     if (memcmp(confMac, confirm1->getHmac(), 2*ZRTP_WORD_SIZE) != 0) {
         *errMsg = ConfirmHMACWrong;
         sendInfo(Error, "HMAC verification of Confirm1 message failed");
         return NULL;
     }
-    aesCfbDecrypt(zrtpKeyR, (cipher == Aes128) ? 16 : 32, 
+    aesCfbDecrypt(zrtpKeyR, keylen, 
                   (unsigned char*)confirm1->getIv(),
-                  (unsigned char*)confirm1->getFiller(), hmlen); // TODO: replace filler with newH3
+                  (unsigned char*)confirm1->getNewH3(), hmlen);
     /*
      * The Confirm1 is ok, handle the Retained secret stuff and inform
      * GUI about state.
@@ -753,11 +756,11 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1, uint32_t* 
 
     // Encrypt and HMAC with Initiator's key - we are Initiator here
     hmlen = (zrtpConfirm2.getLength() - 9) * ZRTP_WORD_SIZE;
-    aesCfbEncrypt(zrtpKeyI, (cipher == Aes128) ? 16 : 32, randomIV,
-                  (unsigned char*)zrtpConfirm2.getFiller(), hmlen); // TODO: replace filler with newH3
-    hmac_sha256(hmacKeyI, SHA256_DIGEST_LENGTH,
-                (unsigned char*)zrtpConfirm2.getFiller(),
-                hmlen, confMac, &macLen); // TODO: replace filler with newH3
+    aesCfbEncrypt(zrtpKeyI, keylen, randomIV,
+                  (unsigned char*)zrtpConfirm2.getNewH3(), hmlen); 
+    hmac_sha256(hmacKeyI, keylen,
+                (unsigned char*)zrtpConfirm2.getNewH3(),
+                hmlen, confMac, &macLen);
 
     zrtpConfirm2.setHmac(confMac);
     return &zrtpConfirm2;
@@ -773,18 +776,20 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
     // Use the Initiator's keys here because we are Responder here and
     // reveice packets from Initiator
     int16_t hmlen = (confirm2->getLength() - 9) * ZRTP_WORD_SIZE;
-    hmac_sha256(hmacKeyI, SHA256_DIGEST_LENGTH,
-                (unsigned char*)confirm2->getFiller(),
-                hmlen, confMac, &macLen); // TODO: replace filler with newH3
+    int keylen = (cipher == Aes128) ? 16 : 32;
+
+    hmac_sha256(hmacKeyI, keylen,
+                (unsigned char*)confirm2->getNewH3(),
+                hmlen, confMac, &macLen);
 
     if (memcmp(confMac, confirm2->getHmac(), 2*ZRTP_WORD_SIZE) != 0) {
         *errMsg = ConfirmHMACWrong;
         sendInfo(Error, "HMAC verification of Confirm2 message failed");
         return NULL;
     }
-    aesCfbDecrypt(zrtpKeyI, (cipher == Aes128) ? 16 : 32, 
+    aesCfbDecrypt(zrtpKeyI, keylen, 
                   (unsigned char*)confirm2->getIv(),
-                  (unsigned char*)confirm2->getFiller(), hmlen); // TODO: replace filler with newH3
+                  (unsigned char*)confirm2->getNewH3(), hmlen);
 
     /*
      * The Confirm2 is ok, handle the Retained secret stuff and inform
@@ -963,13 +968,10 @@ SupportedAuthLengths ZRtp::findBestAuthLen(ZrtpPacketHello *hello) {
 bool ZRtp::verifyH2(ZrtpPacketCommit *commit) {
     uint8_t tmpH3[SHA256_DIGEST_LENGTH];
 
-    // TODO
-#if 0
-    sha256(commit->getH2, 16, tmpH3);
+    sha256(commit->getH2(), 16, tmpH3);
     if (memcmp(tmpH3, peerH3, 16) != 0) {
         return false;
     }
-#endif 
     return true;
 }
 
@@ -1187,6 +1189,7 @@ void ZRtp::generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 
     data[pos] = NULL;
     sha256(data, length, s0);
+//  hexdump("S0 I", s0, SHA256_DIGEST_LENGTH);
 
     memset(DHss, 0, dhContext->getSecretSize());
     free(DHss);
@@ -1326,6 +1329,7 @@ void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 
     data[pos] = NULL;
     sha256(data, length, s0);
+//  hexdump("S0 R", s0, SHA256_DIGEST_LENGTH);
 
     memset(DHss, 0, dhContext->getSecretSize());
     free(DHss);
@@ -1371,7 +1375,7 @@ void ZRtp::computeSRTPKeys() {
     uint8_t sasBytes[4];
     uint8_t hmacTmp[SHA256_DIGEST_LENGTH];
 
-    hmac_sha256(hmacKeyI, SHA256_DIGEST_LENGTH, (unsigned char*)sasString, strlen(sasString),
+    hmac_sha256(hmacKeyI, (cipher == Aes128) ? 16 : 32, (unsigned char*)sasString, strlen(sasString),
                 hmacTmp, &macLen);
     memcpy(sasValue, hmacTmp, sizeof(sasValue));
 

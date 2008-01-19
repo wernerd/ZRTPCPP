@@ -25,7 +25,7 @@
 //                            1
 //                   123456789012345
 const char *clientId =    "GNUccRTP    "; // must be 12 chars
-const char *zrtpVersion = "0.09";	// must be 4 chars
+const char *zrtpVersion = "0.80";	// must be 4 chars
 /**
  *
  */

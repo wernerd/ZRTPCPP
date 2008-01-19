@@ -455,7 +455,7 @@ int32_t ZrtpStateClass::evAckDetected(void) {
 	first = tolower(*msg);
 	last = tolower(*(msg+7));
 
-#if 1
+#if 0
         /*
 	 * Hello:
 	 * - Acknowledge peers Hello, sending HelloACK (F4)

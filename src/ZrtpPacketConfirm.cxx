@@ -24,6 +24,7 @@
 ZrtpPacketConfirm::ZrtpPacketConfirm() {
     DEBUGOUT((fprintf(stdout, "Creating Confirm packet without data, no sl data\n")));
     initialize();
+    setSignatureLength(0);
 }
 
 ZrtpPacketConfirm::ZrtpPacketConfirm(uint8_t sl) {
