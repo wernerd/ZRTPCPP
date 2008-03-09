@@ -66,6 +66,7 @@ extern char* respZrtpKey;
 extern char* sasString;
 
 extern char* KDFString;
+extern char* zrtpSessionKey;
 /**
  *
  */

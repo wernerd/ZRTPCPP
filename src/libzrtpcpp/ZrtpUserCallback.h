@@ -36,11 +36,14 @@
  *
  * <p/>
  *
- * This ZRTP interface defines five abstract callback methods to be
- * implemented by the user interface environment.
+ * This ZRTP interface defines seven abstract callback methods to be
+ * implemented by the user interface environment, for example a SIP
+ * client or any other client that uses SRTP to set up a connection.
  *
- * This class also defines standard methods to interact with the ZrtpQueue
- * to control ZRTP behaviour.
+ * In addition this class also defines several methods tha a client may
+ * call to interact with the ZrtpQueue to control the ZRTP behaviour, for
+ * example to set the client id or to get data needed for singaling purposes
+ * (refer to ZRTP specification chapter 9).
  *
  * The destructor does not destroy any objects, it only sets pointers to
  * referenced classes to <ode>NULL</code>.
@@ -168,6 +171,14 @@ class ZrtpUserCallback {
         }
 
         /**
+         * Reset the SAS verfied flag for the current active user's retained secrets.
+         *
+         */
+        virtual void resetSASVerified() {
+            zrtpQueue->resetSASVerified();
+        }
+
+        /**
          * Confirm a go clear request.
          *
          * Call this method if the user confirmed a go clear (secure mode off).
@@ -206,7 +217,7 @@ class ZrtpUserCallback {
          * Set the srtps secret.
          *
          * Use this method to set the srtps secret data. Refer to ZRTP
-         * specification, chapter 3.2.1
+         * specification, chapter 5.3
          *
          * @param data
          *     Points to the srtps secret data. The data must have a length
@@ -220,7 +231,7 @@ class ZrtpUserCallback {
          * Set the other secret.
          *
          * Use this method to set the other secret data. Refer to ZRTP
-         * specification, chapter 3.2.1
+         * specification, chapter 5.3
          *
          * @param data
          *     Points to the other secret data.
@@ -229,6 +240,36 @@ class ZrtpUserCallback {
          */
         virtual void setOtherSecret(uint8* data, int32 length)  {
             zrtpQueue->setOtherSecret(data, length);
+        }
+
+        /**
+         * Get the ZRTP Hello Hash data.
+         *
+         * Use this method to get the ZRTP Hello Hash data. The method 
+         * returns the data as a string containing hex-digits. Refer to ZRTP
+         * specification, chapter 9.1.
+         *
+         * @return
+         *    a std:string containing the Hello hash value as hex-digits.
+         *    If ZRTP was not started return a string containing "0"
+         */
+        virtual std::string getHelloHash()  {
+            zrtpQueue->getHelloHash();
+        }
+
+        /**
+         * Get the ZRTP SAS data.
+         *
+         * Use this method to get the ZRTP SAS data formatted as string and
+         * ready to use in the SDP. Refer to ZRTP specification, chapter 9.4
+         *
+         * @return
+         *    a std:string containing the SAS and SAS hash formatted as string
+         *    as specified in chapter 9.4. If ZRTP was not started return a 
+         *    string containing "0"
+         */
+        virtual std::string getSasData()  {
+            zrtpQueue->getSasData();
         }
 
     private:

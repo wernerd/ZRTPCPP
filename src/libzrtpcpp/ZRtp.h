@@ -232,6 +232,30 @@ class ZRtp {
         */
        void resetSASVerified();
 
+       /**
+        * Get the ZRTP Hello Hash data.
+        *
+        * Use this method to get the ZRTP Hello Hash data. The method 
+        * returns the data as a string containing hex-digits. Refer to ZRTP
+        * specification, chapter 9.1.
+        *
+        * @return
+        *    a std:string containing the Hello hash value as hex-digits.
+        */
+       std::string getHelloHash();
+
+        /**
+        * Get the ZRTP SAS data.
+        *
+        * Use this method to get the ZRTP SAS data formatted as string and
+        * ready to use in the SDP. Refer to ZRTP specification, chapter 9.4
+        *
+        * @return
+        *    a std:string containing the SAS and SAS hash formatted as string
+        *    as specified in chapter 9.4. 
+        */
+       std::string getSasData();
+
  private:
      friend class ZrtpStateClass;
 
@@ -285,9 +309,11 @@ class ZRtp {
     std::string SAS;
 
     /**
-     * The SAS value for signaling and alike
+     * The SAS hash for signaling and alike. Refer to chapters
+     * 5.5, 6.13, 9.4. sasValue and the SAS string are derived
+     * from sasHash.
      */
-    uint8_t sasValue[8];
+    uint8_t sasHash[SHA256_DIGEST_LENGTH];
     /**
      * The variables for the retained shared secrets
      */
@@ -312,6 +338,10 @@ class ZRtp {
      */
     uint8_t peerHvi[SHA256_DIGEST_LENGTH];
 
+    /**
+     * Context to compute the4 SHA256 hash of selected messages.
+     * Used to compute the s0, refer to chapter 5.4.1.4
+     */
     void* msgShaContext;
     /**
      * Commited Hash, Cipher, and public key algorithms
@@ -334,14 +364,17 @@ class ZRtp {
      * not stored here). Need full SHA 256 lenght to store hash value but
      * only the leftmost 128 bits are used in computations and comparisons.
      */
+    uint8_t H0[SHA256_DIGEST_LENGTH];
     uint8_t H1[SHA256_DIGEST_LENGTH];
     uint8_t H2[SHA256_DIGEST_LENGTH];
     uint8_t H3[SHA256_DIGEST_LENGTH];
-    uint8_t H4[SHA256_DIGEST_LENGTH];
+    uint8_t helloHash[SHA256_DIGEST_LENGTH];
 
     // need 128 bits only to store peer's values
-    uint8_t peerH2[SHA256_DIGEST_LENGTH/2];
-    uint8_t peerH3[SHA256_DIGEST_LENGTH/2];
+    uint8_t peerH0[SHA256_DIGEST_LENGTH];
+    uint8_t peerH1[SHA256_DIGEST_LENGTH];
+    uint8_t peerH2[SHA256_DIGEST_LENGTH];
+    uint8_t peerH3[SHA256_DIGEST_LENGTH];
 
     /**
      * The SHA256 hash over selected messages
@@ -382,6 +415,11 @@ class ZRtp {
     uint8_t zrtpKeyR[SHA256_DIGEST_LENGTH];
 
     /**
+     * The ZRTP Session Key
+     * Refer to chapter 5.4.1.4
+     */
+    uint8_t zrtpSession[SHA256_DIGEST_LENGTH];
+    /**
      * Pre-initialized packets.
      */
     ZrtpPacketHello    zrtpHello;
@@ -398,14 +436,14 @@ class ZRtp {
     ZrtpPacketConfirm  zrtpConfirm2;
 
     /**
-     * Holds a pre-computed DHPart2 packet. Required to compute HVI
-     */
-    // ZrtpPacketDHPart* zpDH2;
-
-    /**
      * Random IV data to encrypt the confirm data, 128 bit for AES
      */
     uint8_t randomIV[16];
+
+    uint8_t tempMsgBuffer[1024];
+    int32_t lengthOfMsgData;
+
+
     /**
      * Find the best Hash algorithm that was offered in Hello.
      *
@@ -776,6 +814,33 @@ class ZRtp {
         callback->synchLeave();
     }
 
+    /**
+     * Helper function to store ZRTP message data in a temporary buffer
+     *
+     * This functions first clears the temporary buffer, then stores
+     * the packet's data to it. We use this to check the packet's HMAC
+     * after we received the HMAC key in to following packet.
+     *
+     * @param data
+     *    Pointer to the packet's ZRTP message
+    */
+     void storeMsgTemp(ZrtpPacketBase* pkt);
+
+     /**
+      * Helper function to check a ZRTP message HMAC
+      *
+      * This function gets a HMAC key and uses it to compute a HMAC
+      * with this key and the stored data of a previous received ZRTP
+      * message. It compares the computed HMAC and the HMAC stored in
+      * the received message and returns the result.
+      *
+      * @param key
+      *    Pointer to the HMAC key.
+      * @return
+      *    Returns true if the computed HMAC and the stored HMAC match,
+      *    false otherwise.
+      */
+     bool checkMsgHmac(uint8_t* key);
 };
 
 #endif // ZRTP

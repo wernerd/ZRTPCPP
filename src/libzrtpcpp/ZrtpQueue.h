@@ -198,15 +198,54 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      * Set the client ID for ZRTP Hello message.
      *
      * The GNU ccRTP client may set its id to identify itself in the
-     * ZRTP HELLO message. The maximum length is 15 characters. Shorter
-     * id string are allowed, the will be filled with blanks. Longer id
-     * will be truncated to 15 characters.
+     * ZRTP HELLO message. The maximum length is 16 characters. Shorter
+     * id string are allowed, they will be filled with blanks. Longer id
+     * will be truncated to 16 characters.
+     *
+     * Setting the client's id must be done before starting the ZRTP
+     * protocol with start().
      *
      * @param id
      *     The client's id
      */
     void setClientId(std::string id) {
         clientIdString = id;
+    }
+
+    /**
+     * Get the ZRTP Hello Hash data.
+     *
+     * Use this method to get the ZRTP Hello Hash data. The method 
+     * returns the data as a string containing hex-digits. Refer to ZRTP
+     * specification, chapter 9.1.
+     *
+     * @return
+     *    a std:string containing the Hello hash value as hex-digits.
+     *    If ZRTP was not started return a string containing "0"
+     */
+    std::string getHelloHash()  {
+        if (zrtpEngine != NULL)
+            return zrtpEngine->getHelloHash();
+        else
+            return std::string("0");
+    }
+
+    /**
+     * Get the ZRTP SAS data.
+     *
+     * Use this method to get the ZRTP SAS data formatted as string and
+     * ready to use in the SDP. Refer to ZRTP specification, chapter 9.4
+     *
+     * @return
+     *    a std:string containing the SAS and SAS hash formatted as string
+     *    as specified in chapter 9.4. If ZRTP was not started return a 
+     *    string containing "0"
+     */
+    virtual std::string getSasData()  {
+        if (zrtpEngine != NULL)
+            return zrtpEngine->getSasData();
+        else
+            return std::string("0");
     }
 
     /**

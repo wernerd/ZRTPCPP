@@ -32,7 +32,8 @@ ZrtpPacketHello::ZrtpPacketHello() {
     nSas = NumSupportedSASTypes;
     nAuth = NumSupportedAuthLenghts;
 
-    int32_t length = sizeof(HelloPacket_t) + CRC_SIZE;
+    // length is fixed Header plus HMAC size (2*ZRTP_WORD_SIZE)
+    int32_t length = sizeof(HelloPacket_t) + (2 * ZRTP_WORD_SIZE);
     length += nHash * ZRTP_WORD_SIZE;
     length += nCipher * ZRTP_WORD_SIZE;
     length += nPubkey * ZRTP_WORD_SIZE;
@@ -45,9 +46,10 @@ ZrtpPacketHello::ZrtpPacketHello() {
     oAuth = oCipher + (nCipher * ZRTP_WORD_SIZE);
     oPubkey = oAuth + (nAuth * ZRTP_WORD_SIZE);
     oSas = oPubkey + (nPubkey * ZRTP_WORD_SIZE);
+    oHmac = oSas + (nSas * ZRTP_WORD_SIZE);         // offset to HMAC
 
     void* allocated = &data;
-    memset(allocated, 0, length);
+    memset(allocated, 0, sizeof(data));
 
     zrtpHeader = (zrtpPacketHeader_t *)&((HelloPacket_t *)allocated)->hdr;	// the standard header
     helloHeader = (Hello_t *)&((HelloPacket_t *)allocated)->hello;
@@ -55,7 +57,7 @@ ZrtpPacketHello::ZrtpPacketHello() {
     setZrtpId();
 
     // minus 1 for CRC size 
-    setLength((length / ZRTP_WORD_SIZE) - 1);
+    setLength(length / ZRTP_WORD_SIZE);
     setMessageType((uint8_t*)HelloMsg);
 
     setVersion((uint8_t*)zrtpVersion);
@@ -106,6 +108,7 @@ ZrtpPacketHello::ZrtpPacketHello(uint8_t *data) {
     oAuth = oCipher + (nCipher * ZRTP_WORD_SIZE);
     oPubkey = oAuth + (nAuth * ZRTP_WORD_SIZE);
     oSas = oPubkey + (nPubkey * ZRTP_WORD_SIZE);
+    oHmac = oSas + (nSas * ZRTP_WORD_SIZE);         // offset to HMAC
 }
 
 ZrtpPacketHello::~ZrtpPacketHello() {

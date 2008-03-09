@@ -82,10 +82,10 @@ void aesCfbDecrypt(unsigned char *key,
 
     memset(&aesKey, 0, sizeof( AES_KEY ) );
     if (keyLength == 16) {
-        AES_set_decrypt_key(key, 128, &aesKey);
+        AES_set_encrypt_key(key, 128, &aesKey);
     }
     else if (keyLength == 32) {
-        AES_set_decrypt_key(key, 256, &aesKey);
+        AES_set_encrypt_key(key, 256, &aesKey);
     }
     else {
         return;

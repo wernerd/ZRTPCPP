@@ -45,9 +45,10 @@ void ZrtpPacketDHPart::initialize() {
 }
 
 void ZrtpPacketDHPart::setPubKeyType(SupportedPubKeys pkt) {
-    int length = sizeof(DHPartPacket_t) + ((pkt == Dh3072) ? 384 : 512);
-    pktype = pkt;
-    setLength(length / 4);
+    dhLength = (pkt == Dh3072) ? 384 : 512;
+    int length = sizeof(DHPartPacket_t) + dhLength + (2 * ZRTP_WORD_SIZE); // HMAC field is 2*ZRTP_WORD_SIZE
+    // pktype = pkt;
+    setLength(length / ZRTP_WORD_SIZE);
 }
 
 ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t *data) {
@@ -59,10 +60,10 @@ ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t *data) {
     int16_t len = getLength();
     DEBUGOUT((fprintf(stdout, "DHPart length: %d\n", len)));
     SupportedPubKeys pkt;
-    if (len == 113) {
+    if (len == 119) {
 	pkt = Dh3072;
     }
-    else if (len == 145) {
+    else if (len == 151) {
 	pkt = Dh4096;
     }
     else {
@@ -71,7 +72,8 @@ ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t *data) {
 	return;
     }
     pv = data + sizeof(DHPartPacket_t);    // point to the public key value
-    pktype = pkt;
+    // pktype = pkt;
+    dhLength = (pkt == Dh3072) ? 384 : 512;
 }
 
 ZrtpPacketDHPart::~ZrtpPacketDHPart() {

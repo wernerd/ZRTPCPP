@@ -29,7 +29,13 @@
 #define ZRTP_WORD_SIZE		4
 #define CRC_SIZE                4
 
-// The ZRTP Message header, refer to chapter 6.2ff
+/**
+ * This include file defines the ZRTP message structures. Refer to chapter
+ * 6 of the ZRTP specification for detailled information about the messages,
+ * the fileds and their lengths.
+ */
+
+// The ZRTP Message header, refer to chapter 6ff
 typedef struct zrtpPacketHeader {
     uint16_t    zrtpId;
     uint16_t    length;
@@ -38,8 +44,8 @@ typedef struct zrtpPacketHeader {
 
 typedef struct Hello {
     uint8_t	version[ZRTP_WORD_SIZE];
-    uint8_t	clientId[3*ZRTP_WORD_SIZE];
-    uint8_t     hashH3[4*ZRTP_WORD_SIZE];
+    uint8_t	clientId[4*ZRTP_WORD_SIZE];
+    uint8_t     hashH3[8*ZRTP_WORD_SIZE];
     uint8_t     zid[3*ZRTP_WORD_SIZE];
     uint32_t	flagLength;
 } Hello_t;
@@ -56,7 +62,7 @@ typedef struct HelloAckPacket {
 } HelloAckPacket_t;
 
 typedef struct Commit {
-    uint8_t     hashH2[4*ZRTP_WORD_SIZE];
+    uint8_t     hashH2[8*ZRTP_WORD_SIZE];
     uint8_t	zid[3*ZRTP_WORD_SIZE];
     uint8_t     hash[ZRTP_WORD_SIZE];
     uint8_t     cipher[ZRTP_WORD_SIZE];
@@ -64,6 +70,7 @@ typedef struct Commit {
     uint8_t	pubkey[ZRTP_WORD_SIZE];
     uint8_t	sas[ZRTP_WORD_SIZE];
     uint8_t	hvi[8*ZRTP_WORD_SIZE];
+    uint8_t	hmac[2*ZRTP_WORD_SIZE];
 } Commit_t;
 
 typedef struct CommitPacket {
@@ -73,7 +80,7 @@ typedef struct CommitPacket {
 } CommitPacket_t;
 
 typedef struct DHPart {
-    uint8_t     hashH1[4*ZRTP_WORD_SIZE];
+    uint8_t hashH1[8*ZRTP_WORD_SIZE];
     uint8_t rs1Id[2*ZRTP_WORD_SIZE];
     uint8_t rs2Id[2*ZRTP_WORD_SIZE];
     uint8_t sigsId[2*ZRTP_WORD_SIZE];
@@ -89,7 +96,7 @@ typedef struct DHPartPacket {
 typedef struct Confirm {
     uint8_t	hmac[2*ZRTP_WORD_SIZE];
     uint8_t     iv[4*ZRTP_WORD_SIZE];
-    uint8_t     newH3[4*ZRTP_WORD_SIZE];
+    uint8_t     hashH0[8*ZRTP_WORD_SIZE];
     uint8_t     filler[2];
     uint8_t     sigLength;
     uint8_t	flags;

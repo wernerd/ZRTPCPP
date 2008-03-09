@@ -35,6 +35,7 @@ class ZrtpPacketDHPart : public ZrtpPacketBase {
  protected:
     uint8_t *pv;
     DHPart_t* DHPartHeader;
+    int32_t dhLength;
 
  public:
     ZrtpPacketDHPart();	                        /* Creates a DHPart packet no data, must use setPubKeyType(...) */
@@ -49,8 +50,9 @@ class ZrtpPacketDHPart : public ZrtpPacketBase {
     uint8_t* getSrtpsId()        { return DHPartHeader->srtpsId; };
     uint8_t* getOtherSecretId()  { return DHPartHeader->otherSecretId; };
     uint8_t* getH1()             { return DHPartHeader->hashH1; };
+    uint8_t* getHMAC()           { return pv+dhLength; };
 
-    void setPv(uint8_t* text) 	      { memcpy(pv, text, ((pktype == Dh3072) ? 384 :512)); };
+    void setPv(uint8_t* text) 	      { memcpy(pv, text, dhLength); };
     void setRs1Id(uint8_t* text)      { memcpy(DHPartHeader->rs1Id, text, sizeof(DHPartHeader->rs1Id)); };
     void setRs2Id(uint8_t* text)      { memcpy(DHPartHeader->rs2Id, text, sizeof(DHPartHeader->rs2Id)); };
     void setSigsId(uint8_t* text)     { memcpy(DHPartHeader->sigsId, text, sizeof(DHPartHeader->sigsId)); };
@@ -58,10 +60,11 @@ class ZrtpPacketDHPart : public ZrtpPacketBase {
     void setOtherSecretId(uint8_t* t) { memcpy(DHPartHeader->otherSecretId,t, sizeof(DHPartHeader->otherSecretId)); };
     void setH1(uint8_t* t)            { memcpy(DHPartHeader->hashH1, t, sizeof(DHPartHeader->hashH1)); };
     void setPubKeyType(SupportedPubKeys pkt);
+    void setHMAC(uint8_t* t) 	      { memcpy(pv+dhLength, t, 2*ZRTP_WORD_SIZE); };
 
  private:
     void initialize();
-    SupportedPubKeys pktype;
+    // SupportedPubKeys pktype;
      // DHPart packet is of variable length. It maximum size is 141 words:
      // - 13 words fixed sizze 
      // - up to 128 words variable part, depending on DH algorithm 

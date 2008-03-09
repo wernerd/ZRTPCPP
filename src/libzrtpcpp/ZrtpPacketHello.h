@@ -40,7 +40,7 @@ class ZrtpPacketHello : public ZrtpPacketBase {
     // number of the algorithms
     int32_t nHash, nCipher, nPubkey, nSas, nAuth;
     // offsets in bytes into hello packet where algo names are stored
-    int32_t oHash, oCipher, oPubkey, oSas, oAuth;
+    int32_t oHash, oCipher, oPubkey, oSas, oAuth, oHmac;
 
  public:
     ZrtpPacketHello();              /* Creates a Hello packet with default data */
@@ -61,9 +61,11 @@ class ZrtpPacketHello : public ZrtpPacketBase {
 
     uint8_t* getHashType(int32_t n)   { return ((uint8_t*)helloHeader)+oHash+(n*ZRTP_WORD_SIZE); }
     uint8_t* getCipherType(int32_t n) { return ((uint8_t*)helloHeader)+oCipher+(n*ZRTP_WORD_SIZE); }
-    uint8_t* getAuthLen(int32_t n)   { return ((uint8_t*)helloHeader)+oAuth+(n*ZRTP_WORD_SIZE); }
+    uint8_t* getAuthLen(int32_t n)    { return ((uint8_t*)helloHeader)+oAuth+(n*ZRTP_WORD_SIZE); }
     uint8_t* getPubKeyType(int32_t n) { return ((uint8_t*)helloHeader)+oPubkey+(n*ZRTP_WORD_SIZE); }
     uint8_t* getSasType(int32_t n)    { return ((uint8_t*)helloHeader)+oSas+(n*ZRTP_WORD_SIZE); }
+
+    uint8_t* getHMAC()                { return ((uint8_t*)helloHeader)+oHmac; }
 
     void setHashType(int32_t n, int8_t* t)
         { memcpy(((uint8_t*)helloHeader)+oHash+(n*ZRTP_WORD_SIZE), t, ZRTP_WORD_SIZE); }
@@ -75,6 +77,9 @@ class ZrtpPacketHello : public ZrtpPacketBase {
         { memcpy(((uint8_t*)helloHeader)+oPubkey+(n*ZRTP_WORD_SIZE), t, ZRTP_WORD_SIZE); }
     void setSasType(int32_t n, int8_t* t)
         { memcpy(((uint8_t*)helloHeader)+oSas+(n*ZRTP_WORD_SIZE), t, ZRTP_WORD_SIZE); }
+
+    void setHMAC(uint8_t* t)
+        { memcpy(((uint8_t*)helloHeader)+oHmac, t, 2*ZRTP_WORD_SIZE); }
 
     int32_t getNumHashes()   {return nHash; }
     int32_t getNumCiphers()  {return nCipher; }

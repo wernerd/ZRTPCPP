@@ -22,39 +22,39 @@
 /**
  *
  */
-//                            1
-//                   123456789012345
-const char *clientId =    "GNUccRTP    "; // must be 12 chars
-const char *zrtpVersion = "0.80";	// must be 4 chars
+//                                  1
+//                         1234567890123456
+const char *clientId =    "GNU ccRTP ZRTP  "; // must be 16 chars
+const char *zrtpVersion = "0.83";	// must be 4 chars
 /**
  *
  */
-const char *HelloMsg =    "Hello   ";
-const char *HelloAckMsg = "HelloACK";
-const char *CommitMsg =   "Commit  ";
-const char *DHPart1Msg =  "DHPart1 ";
-const char *DHPart2Msg =  "DHPart2 ";
-const char *Confirm1Msg = "Confirm1";
-const char *Confirm2Msg = "Confirm2";
-const char *Conf2AckMsg = "Conf2ACK";
-const char *ErrorMsg =    "Error   ";
-const char *ErrorAckMsg = "ErrorACK";
-const char *GoClearMsg =  "GoClear ";
-const char *ClearAckMsg = "ClearACK";
+const char* HelloMsg =    "Hello   ";
+const char* HelloAckMsg = "HelloACK";
+const char* CommitMsg =   "Commit  ";
+const char* DHPart1Msg =  "DHPart1 ";
+const char* DHPart2Msg =  "DHPart2 ";
+const char* Confirm1Msg = "Confirm1";
+const char* Confirm2Msg = "Confirm2";
+const char* Conf2AckMsg = "Conf2ACK";
+const char* ErrorMsg =    "Error   ";
+const char* ErrorAckMsg = "ErrorACK";
+const char* GoClearMsg =  "GoClear ";
+const char* ClearAckMsg = "ClearACK";
 
 /**
  *
  */
-const char *responder = "Responder";
-const char *initiator = "Initiator";
-const char *iniMasterKey = "Initiator SRTP master key";
-const char *iniMasterSalt = "Initiator SRTP master salt";
-const char *respMasterKey = "Responder SRTP master key";
-const char *respMasterSalt = "Responder SRTP master salt";
+const char* responder = "Responder";
+const char* initiator = "Initiator";
+const char* iniMasterKey = "Initiator SRTP master key";
+const char* iniMasterSalt = "Initiator SRTP master salt";
+const char* respMasterKey = "Responder SRTP master key";
+const char* respMasterSalt = "Responder SRTP master salt";
 
-const char *iniHmacKey = "Initiator HMAC key";
-const char *respHmacKey = "Responder HMAC key";
-const char *retainedSec = "retained secret";
+const char* iniHmacKey = "Initiator HMAC key";
+const char* respHmacKey = "Responder HMAC key";
+const char* retainedSec = "retained secret";
 
 const char* iniZrtpKey = "Initiator ZRTP key";
 const char* respZrtpKey = "Responder ZRTP key";
@@ -62,6 +62,8 @@ const char* respZrtpKey = "Responder ZRTP key";
 const char* sasString = "SAS";
 
 const char* KDFString = "ZRTP-HMAC-KDF";
+
+const char* zrtpSessionKey = "ZRTP Session Key";
 
 /**
  * The arrays are sorted: the most secure / best algorithm is first in the
@@ -71,12 +73,12 @@ const char* KDFString = "ZRTP-HMAC-KDF";
 const char *supportedHashes[] =  {"S256"};
 
 const char *supportedCipher[] =  {"AES2",
-                            "AES1"};
+                                  "AES1"};
 
 const char *supportedPubKey[] =  {"DH4k",
-                            "DH3k"};
+                                  "DH3k"};
 
 const char *supportedSASType[] = {"B32 "};
 
 const char *supportedAuthLen[] = {"HS32",
-                            "HS80"};
+                                  "HS80"};
