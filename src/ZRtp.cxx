@@ -367,7 +367,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     // Commit packet. Refer to chapter 9.1.
     if (!checkMsgHmac(peerH2)) {
         sendInfo(Alert, "Commit: Hello HMAC check failed!");
-        // TODO: return NULL;
+        return NULL;
     }
 
     // check if we support the commited Cipher type
@@ -565,7 +565,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
     // Refer to chapter 9.1 and chapter 10.
     if (!checkMsgHmac(peerH2)) {
         sendInfo(Alert, "DHPart1: Hello HMAC check failed!");
-        // TODO: return NULL;
+        return NULL;
     }
 
     // get memory to store DH result TODO: make it fixed memory
@@ -646,7 +646,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     // DHPart2. Refer to chapter 9.1 and chapter 10.
     if (!checkMsgHmac(dhPart2->getH1())) {
         sendInfo(Alert, "DHPart2: Commit HMAC check failed!");
-        // TODO: return NULL;
+        return NULL;
     }
     // TODO: fixed memory
     DHss = (uint8_t*)malloc(dhContext->getSecretSize());
@@ -771,7 +771,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1, uint32_t* 
     // Confirm1. Refer to chapter 9.1 and chapter 10.
     if (!checkMsgHmac(confirm1->getHashH0())) {
         sendInfo(Alert, "Confirm1: DHPart1 HMAC check failed!");
-        // TODO: return NULL;
+        return NULL;
     }
 
     /*
@@ -859,7 +859,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
     // Confirm2. Refer to chapter 9.1 and chapter 10.
     if (!checkMsgHmac(confirm2->getHashH0())) {
         sendInfo(Alert, "Confirm2: DHPart2 HMAC check failed!");
-        // TODO: return NULL;
+        return NULL;
     }
 
     /*

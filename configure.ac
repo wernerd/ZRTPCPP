@@ -8,11 +8,29 @@
 # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-
 AC_INIT(reconfig)
 
+# LT_VERSION actually is meant to be in the form ABI-LINK_VER:ABI_PATCH_VER. 
+# This eventaully goes into libtool as "version-info" (via LT_CCXX_VERSION in
+# Makefile.am). LT_RELEASE goes into libtool as "release".
+#
+# Hence, if the binary api is not changed for a given release, 1.0.0 should have:
+#
+# VERSION=1.0.0
+# LT_RELEASE=1.0
+# LT_VERSION=0:0
+#
+# VERSION=1.0.1 might have either LT_VERSION=0:1 if binary linking remains 
+# unchanged, or LT_VERSION=1:0 if binary linking is changed.
+# (see macros "OST_PROG_LIBVER" and "OST_PROG_LIBRARY" below)
+#
 VERSION="1.0.0"
-LT_VERSION="1:0:0"
+# AC_INIT([libzrtpcpp], [1.0.0] )
+# AC_CONFIG_SRCDIR([configure.ac])
+
+LT_RELEASE="1.0"
+LT_VERSION="0:0"
+
 REQUIRES="1.3.0"
 
 cfg_options=""
@@ -44,6 +62,7 @@ AC_PROG_CXX
 AM_PROG_LIBTOOL
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([libzrtpcpp], [$VERSION])
+# AM_INIT_AUTOMAKE
 
 if test -z "$PKG_CONFIG_PATH" ; then
         PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:/usr/lib/pkgconfig"

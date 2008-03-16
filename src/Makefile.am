@@ -1,8 +1,8 @@
 # Copyright (C) 2006 Werner Dittmann.
 
 LT_VERSION=@LT_CCXX_VERSION@
-#RELEASE = $(LT_VERSION) -release $(LT_RELEASE)
-RELEASE = $(LT_VERSION)
+RELEASE = $(LT_VERSION) -release $(LT_RELEASE)
+#RELEASE = $(LT_VERSION)
 lib_LTLIBRARIES = libzrtpcpp.la
 # libzrtpcpp_la_LIBADD = @LIBS@
 
