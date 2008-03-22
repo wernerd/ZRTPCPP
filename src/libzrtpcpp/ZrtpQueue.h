@@ -24,12 +24,23 @@
 #include <libzrtpcpp/ZRtp.h>
 
 /**
- * The bridge between the ZRTP implementation and GNU ccRTP.
+ * This class is the bridge between the ZRTP implementation, GNU ccRTP and
+ * a signaling application.
  *
- * The ZRPT implementation is fairly independent from the underlying
- * RTP/SRTP implementation. This class implements specific
- * functions and interfaces that ZRTP uses to call functions of the
- * hosting RTP/SRTP environment. In this case the host is GNU ccRTP.
+ * The ZRPT implementation is independent from the underlying RTP/SRTP 
+ * implementation. This class implements specific functions and interfaces
+ * that the ZRTP implementation uses to hook onto the actual RTP/SRTP
+ * implementation. Thus this class extends the actual GNU ccRTP class
+ * AVPQueue to add ZRTP specific functions.
+ *
+ * This class also provides additional methods that an application uses to
+ * control ZRTP.
+ *
+ * The application may implement a callback class that implement the functions
+ * defined in <code>ZrtpUserCallback.h</code>. If an application implements
+ * a callback class and sets its reference (<code>setUserCallback</code>) then
+ * the ZRTP iomplementation uses the callback functions to inform the 
+ * application about the current ZRTP status.
  *
  * <p/>
  *
@@ -80,8 +91,8 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
     int32_t initialize(const char *zidFilename);
 
     /*
-     * The following methods implement the external interface to control
-     * ZRTP behaviour.
+     * Applications use the following methods to control ZRTP, for example
+     * to enable ZRTP, set flags etc.
      */
 
     /**
@@ -241,7 +252,7 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      *    as specified in chapter 9.4. If ZRTP was not started return a 
      *    string containing "0"
      */
-    virtual std::string getSasData()  {
+    std::string getSasData()  {
         if (zrtpEngine != NULL)
             return zrtpEngine->getSasData();
         else
@@ -249,6 +260,67 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
     }
 
     /**
+     * Get Multi-stream parameters.
+     *
+     * Use this method to get the Multi-stream that were computed during
+     * the ZRTP handshake. An application may use these parameters to
+     * enable multi-stream processing for an associated SRTP session.
+     * Refer to chapter 5.4.2 in the ZRTP specification for further details
+     * and restriction how and when to use multi-stream mode.
+     *
+     * @param zrtpSession
+     *     Pointer to a buffer of at least 32 bytes. This buffer stores
+     *     the ZRTP session key (refer to chapter 5.4.1.4)
+     * @param cipherType
+     *     Pointer to an int32 that receives the type identifier of the 
+     *     symmetrical cipher. This is an opaque value for the application.
+     * @param authLength
+     *     Pointer to an int32 that receives the length of the SRTP 
+     *     authentication field. This is an opaque value for the application.
+     */
+    void getMultiStrParams(uint8* data, int32* cipherType, int32* authLength)  {
+        if (zrtpEngine != NULL)
+            zrtpEngine->getMultiStrParams(data, cipherType, authLength);
+    }
+
+    /**
+     * Set Multi-stream parameters.
+     *
+     * Use this method to set the parameters required to enable Multi-stream
+     * processing of ZRTP. Refer to chapter 5.4.2 in the ZRTP specification.
+     *
+     * @param zrtpSession
+     *     Pointer to a buffer of at least 32 bytes. This buffer containes
+     *     the ZRTP session key (refer to chapter 5.4.1.4)
+     * @param cipherType
+     *     Contain the type of the symmetrical cipher.
+     * @param authLength
+     *     Length of the SRTP authentication field.
+     */
+    void setMultiStrParams(uint8* data, int32 cipherType, int32 authLength)  {
+        if (zrtpEngine != NULL)
+            zrtpEngine->setMultiStrParams(data, cipherType, authLength);
+    }
+
+    /**
+     * Check if this ZRTP use Multi-stream.
+     *
+     * Use this method to check if this ZRTP instance uses multi-stream. Even
+     * if the application provided multi-stram parameters it may happen that
+     * full DH mode was used. Refer to chapters 5.2 and 5.4.2 in the ZRTP #
+     * when this may happen.
+     *
+     * @return
+     *     True if multi-stream is used, false otherwise.
+     */
+    bool isMultiStrParams()  {
+        if (zrtpEngine != NULL)
+            zrtpEngine->isMultiStrParams();
+    }
+
+    /**
+     * Put data into the RTP output queue.
+     *
      * This is used to create a data packet in the send queue.
      * Sometimes a "NULL" or empty packet will be used instead, and
      * these are known as "silent" packets.  "Silent" packets are
@@ -268,6 +340,8 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
     putData(uint32 stamp, const unsigned char* data = NULL, size_t len = 0);
 
     /**
+     * Immediatly send a data packet.
+     *
      * This is used to create a data packet and send it immediately.
      * Sometimes a "NULL" or empty packet will be used instead, and
      * these are known as "silent" packets.  "Silent" packets are
@@ -287,7 +361,27 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
     sendImmediate(uint32 stamp, const unsigned char* data = NULL, size_t len = 0);
 
 
+    /**
+     * Starts the ZRTP protocol engine.
+     *
+     * Applications must call this method to start the ZRTP protocol engine.
+     * Applications may call this method any time after initializing ZRTP and
+     * setting optinal parameters, for example client id or multi-stream
+     * parameters.
+     *
+     * Wtihout calling <code>start</code> the ZRTP implementation behaves like
+     * the normal RTP/SRTP GNU ccRTP implementation.
+     *
+     */
     void start();
+
+    /**
+     * Stops the ZRTP protocol engine and stops SRTP.
+     *
+     * Applications call this method to stop the ZRTP protocol engine and
+     * SRTP processing.
+     *
+     */
     void stop();
 
     /**

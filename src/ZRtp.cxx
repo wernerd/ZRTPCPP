@@ -64,7 +64,7 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb):
     callback(cb), dhContext(NULL) {
 
     DHss = NULL;
-
+    multiStream = false;
     /*
      * Generate H0 as a random number (256 bits, 32 bytes) and then
      * the hash chain, refer to chapter 10
@@ -459,13 +459,13 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     }
 
     // Check if we can reuse DH context created during prepareCommit()
+    // If no dhContext availabe of the parameters don't match - generate 
+    // a new one
     if (dhContext == NULL || 
         !((pubKey == Dh3072 && dhContext->getDHlength() == 3072) ||
           (pubKey == Dh4096 && dhContext->getDHlength() == 4096))) {
-        fprintf(stderr, "No reuse of DH context\n");
         delete dhContext;
-        dhContext = NULL;
-        // setup the DH context and generate a fresh DH key pair
+        // setup a new DH context and generate a fresh DH key pair
         if (pubKey == Dh3072) {
             dhContext = new ZrtpDH(3072);
 
@@ -1562,6 +1562,16 @@ std::string ZRtp::getHelloHash() {
 }
 
 std::string ZRtp::getSasData() {
+}
+
+void ZRtp::getMultiStrParams(uint8_t* data, int32_t* cipherType, int32_t* authLength) {
+}
+
+void ZRtp::setMultiStrParams(uint8_t* data, int32_t cipherType, int32_t authLength) {
+}
+
+bool ZRtp::isMultiStrParams() {
+    return multiStream;
 }
 
 

@@ -90,6 +90,7 @@ void ZrtpQueue::init()
 ZrtpQueue::~ZrtpQueue() {
 
     cancelTimer();
+    endQueue();
     stop();
 
     if (zrtpUserCallback != NULL) {
@@ -120,7 +121,6 @@ void ZrtpQueue::start() {
 }
 
 void ZrtpQueue::stop() {
-    endQueue();
     if (zrtpEngine != NULL) {
         zrtpEngine->stopZrtp();
         delete zrtpEngine;

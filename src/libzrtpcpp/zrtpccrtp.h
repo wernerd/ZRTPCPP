@@ -45,10 +45,14 @@ typedef SingleThreadRTPSession<SymmetricRTPChannel,
 
 
 /**
- * @typedef SymmetricRTPSession
+ * @typedef SymmetricZRTPSession
  *
  * Uses one pair of sockets, (1) for RTP data and (2) for RTCP
  * transmission/reception.
+ *
+ * This session uses the ZrtpQueue instead of the AVPQueue. The ZrtpQueue
+ * inherits from AVPQueue and adds support for ZRTP thus enabling
+ * ad-hoc key negotiation to setup SRTP sessions.
  *
  * @short Symmetric UDP/IPv6 RTP session scheduled by one thread of execution.
  **/

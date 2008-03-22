@@ -57,6 +57,8 @@ ZrtpStateClass::ZrtpStateClass(ZRtp *p) {
     engine = new ZrtpStates(states, numberOfStates, Initial);
 
     commitPkt = NULL;
+    multiStream = false;
+
     // Set up timers according to ZRTP spec
     T1.start = 50;
     T1.maxResend = 20;
@@ -1249,6 +1251,14 @@ int32_t ZrtpStateClass::timerFailed(const char* msg) {
     nextState(Initial);
     parent->sendInfo(Error, msg);
     return(Fail);
+}
+
+void ZrtpStateClass::setMultiStream(bool multi) {
+    multiStream = multi;
+}
+
+bool ZrtpStateClass::isMultiStream() {
+    return multiStream;
 }
 
 /** EMACS **

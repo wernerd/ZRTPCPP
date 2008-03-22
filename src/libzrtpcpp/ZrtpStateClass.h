@@ -111,10 +111,20 @@ private:
      * timeout.
      */
     ZrtpPacketBase* sentPacket;
+
+    /**
+     * Points to prepared Commit packet after receiving a Hello packet
+     */
     ZrtpPacketCommit* commitPkt;
 
     zrtpTimer_t T1;
     zrtpTimer_t T2;
+
+    /*
+     * If this is set to true the protocol engine handle the multi-stream
+     * variant of ZRTP. Refer to chapter 5.4.2 in the ZRTP specification.
+     */
+    bool multiStream;
 
 public:
     ZrtpStateClass(ZRtp *p);
@@ -205,6 +215,28 @@ public:
      *    Fail code
      */
     int32_t timerFailed(const char* msg);
+
+    /**
+     * Set multi-stream mode flag.
+     *
+     * This functions set the multi-stream mode. The protocol
+     * engine will run the multi-stream mode variant of the ZRTP
+     * protocol if this flag is set to true.
+     *
+     * @param multi
+     *    Set the multi-stream mode flag to true or false.
+     */
+    void setMultiStream(bool multi);
+
+    /**
+     * Status of multi-stream mode flag.
+     *
+     * This functions returns the value of the multi-stream mode flag.
+     *
+     * @return
+     *    Value of the multi-stream mode flag. 
+     */
+    bool isMultiStream();
 };
 
 #endif // _ZRTPSTATECLASS_H_

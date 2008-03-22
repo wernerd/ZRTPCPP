@@ -256,6 +256,56 @@ class ZRtp {
         */
        std::string getSasData();
 
+    /**
+     * Get Multi-stream parameters.
+     *
+     * Use this method to get the Multi-stream that were computed during
+     * the ZRTP handshake. An application may use these parameters to
+     * enable multi-stream processing for an associated SRTP session.
+     * Refer to chapter 5.4.2 in the ZRTP specification for further details
+     * and restriction how and when to use multi-stream mode.
+     *
+     * @param zrtpSession
+     *     Pointer to a buffer of at least 32 bytes. This buffer stores
+     *     the ZRTP session key (refer to chapter 5.4.1.4)
+     * @param cipherType
+     *     Pointer to an int32 that receives the type identifier of the 
+     *     symmetrical cipher. This is an opaque value for the application.
+     * @param authLength
+     *     Pointer to an int32 that receives the length of the SRTP 
+     *     authentication field. This is an opaque value for the application.
+     */
+    void getMultiStrParams(uint8_t* data, int32_t* cipherType, int32_t* authLength);
+
+    /**
+     * Set Multi-stream parameters.
+     *
+     * Use this method to set the parameters required to enable Multi-stream
+     * processing of ZRTP. Refer to chapter 5.4.2 in the ZRTP specification.
+     *
+     * @param zrtpSession
+     *     Pointer to a buffer of at least 32 bytes. This buffer containes
+     *     the ZRTP session key (refer to chapter 5.4.1.4)
+     * @param cipherType
+     *     Contain the type of the symmetrical cipher.
+     * @param authLength
+     *     Length of the SRTP authentication field.
+     */
+    void setMultiStrParams(uint8_t* data, int32_t cipherType, int32_t authLength);
+
+    /**
+     * Check if this ZRTP use Multi-stream.
+     *
+     * Use this method to check if this ZRTP instance uses multi-stream. Even
+     * if the application provided multi-stram parameters it may happen that
+     * full DH mode was used. Refer to chapters 5.2 and 5.4.2 in the ZRTP #
+     * when this may happen.
+     *
+     * @return
+     *     True if multi-stream is used, false otherwise.
+     */
+    bool isMultiStrParams();
+
  private:
      friend class ZrtpStateClass;
 
@@ -419,6 +469,12 @@ class ZRtp {
      * Refer to chapter 5.4.1.4
      */
     uint8_t zrtpSession[SHA256_DIGEST_LENGTH];
+
+    /**
+     * True if this ZRTP instance uses multi-stream mode.
+     */
+    bool multiStream;
+
     /**
      * Pre-initialized packets.
      */
