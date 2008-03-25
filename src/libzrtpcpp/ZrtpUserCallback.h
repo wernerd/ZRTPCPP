@@ -163,18 +163,6 @@ class ZrtpUserCallback {
         }
 
         /**
-         * ZRTPQueue uses this method to inform about SAS verification status.
-         *
-         * @param verified
-         *    If <code>verified</code> is true then SAS was verified by both
-         *    parties during a previous call, otherwise it is set to false.
-         *
-         */
-        virtual void zrtpSASVerifyStatus(bool verified) {
-            return;
-        }
-
-        /**
          * ZRTPQueue uses this method to inform about a PBX enrollment request.
          *
          * Please refer to chapter 8.3 ff to get more details about PBX enrollment
