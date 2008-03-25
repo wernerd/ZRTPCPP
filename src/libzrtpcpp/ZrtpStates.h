@@ -60,7 +60,7 @@ class ZrtpStates {
 	return (zsc.*states[state].handler)();
     }
 
-    int32_t inState(const int32_t s) { return ((s == state)? true : false); }
+    bool inState(const int32_t s) { return ((s == state)? true : false); }
 
     void nextState(int32_t s)        { state = s; }
 

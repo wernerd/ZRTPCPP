@@ -211,7 +211,8 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      * The GNU ccRTP client may set its id to identify itself in the
      * ZRTP HELLO message. The maximum length is 16 characters. Shorter
      * id string are allowed, they will be filled with blanks. Longer id
-     * will be truncated to 16 characters.
+     * will be truncated to 16 characters. The standard client id
+     * is <code>GNU ccRTP ZRTP  </code>.
      *
      * Setting the client's id must be done before starting the ZRTP
      * protocol with start().
@@ -231,14 +232,15 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      * specification, chapter 9.1.
      *
      * @return
-     *    a std:string containing the Hello hash value as hex-digits.
-     *    If ZRTP was not started return a string containing "0"
+     *    a std:string containing the Hello hash value as hex-digits. The
+     *    hello hash is available immediatly after starting the ZrtpQueue.
+     *    If ZRTP was not started or ZRTP the method returns an empty string.
      */
     std::string getHelloHash()  {
         if (zrtpEngine != NULL)
             return zrtpEngine->getHelloHash();
         else
-            return std::string("0");
+            return std::string();
     }
 
     /**
@@ -249,14 +251,14 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      *
      * @return
      *    a std:string containing the SAS and SAS hash formatted as string
-     *    as specified in chapter 9.4. If ZRTP was not started return a 
-     *    string containing "0"
+     *    as specified in chapter 9.4. If ZRTP was not started or ZRTP is 
+     *    not yet in secure state the method returns an empty string.
      */
     std::string getSasData()  {
         if (zrtpEngine != NULL)
             return zrtpEngine->getSasData();
         else
-            return std::string("0");
+            return std::string();
     }
 
     /**
@@ -265,41 +267,43 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      * Use this method to get the Multi-stream that were computed during
      * the ZRTP handshake. An application may use these parameters to
      * enable multi-stream processing for an associated SRTP session.
+     *
      * Refer to chapter 5.4.2 in the ZRTP specification for further details
      * and restriction how and when to use multi-stream mode.
      *
-     * @param zrtpSession
-     *     Pointer to a buffer of at least 32 bytes. This buffer stores
-     *     the ZRTP session key (refer to chapter 5.4.1.4)
-     * @param cipherType
-     *     Pointer to an int32 that receives the type identifier of the 
-     *     symmetrical cipher. This is an opaque value for the application.
-     * @param authLength
-     *     Pointer to an int32 that receives the length of the SRTP 
-     *     authentication field. This is an opaque value for the application.
+     * @return
+     *    a string that contains the multi-stream parameters. The application
+     *    must not modify the contents of this string, it is opaque data. The
+     *    application may hand over this string to a new ZrtpQueue instance
+     *    to enable multi-stream processing for this ZrtpQueue. If ZRTP was 
+     *    not started or ZRTP is not yet in secure state the method returns an
+     *    empty string.
      */
-    void getMultiStrParams(uint8* data, int32* cipherType, int32* authLength)  {
+    std::string getMultiStrParams()  {
         if (zrtpEngine != NULL)
-            zrtpEngine->getMultiStrParams(data, cipherType, authLength);
+            return zrtpEngine->getMultiStrParams();
+        else
+            return std::string();
     }
 
     /**
      * Set Multi-stream parameters.
      *
      * Use this method to set the parameters required to enable Multi-stream
-     * processing of ZRTP. Refer to chapter 5.4.2 in the ZRTP specification.
+     * processing of ZRTP. The multi-stream parameters must be set before the
+     * application starts the ZRTP protocol engine.
      *
-     * @param zrtpSession
-     *     Pointer to a buffer of at least 32 bytes. This buffer containes
-     *     the ZRTP session key (refer to chapter 5.4.1.4)
-     * @param cipherType
-     *     Contain the type of the symmetrical cipher.
-     * @param authLength
-     *     Length of the SRTP authentication field.
+     * Refer to chapter 5.4.2 in the ZRTP specification for further details
+     * of multi-stream mode.
+     *
+     * @param parameters
+     *     A string that contains the multi-stream parameters that this
+     *     new ZrtpQueue instanace shall use. See also 
+     *     <code>getMultiStrParams()</code>
      */
-    void setMultiStrParams(uint8* data, int32 cipherType, int32 authLength)  {
+    void setMultiStrParams(std::string parameters)  {
         if (zrtpEngine != NULL)
-            zrtpEngine->setMultiStrParams(data, cipherType, authLength);
+            zrtpEngine->setMultiStrParams(parameters);
     }
 
     /**
@@ -313,9 +317,86 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      * @return
      *     True if multi-stream is used, false otherwise.
      */
-    bool isMultiStrParams()  {
+    bool isMultiStream()  {
         if (zrtpEngine != NULL)
-            zrtpEngine->isMultiStrParams();
+            zrtpEngine->isMultiStream();
+    }
+
+    /**
+     * Accept a PBX enrollment request.
+     *
+     * If a PBX service asks to enroll the MiTM key and the user accepts this
+     * requtes, for example by pressing an OK button, the client application
+     * shall call this method and set the parameter <code>accepted</code> to
+     * true. If the user does not accept the request set the parameter to 
+     * false.
+     *
+     * @param accepted
+     *     True if the enrollment request is accepted, false otherwise.
+     */
+    void acceptEnrollment(bool accepted) {
+        if (zrtpEngine != NULL)
+            zrtpEngine->acceptEnrollment(accepted);
+    }
+
+    /**
+     * Set signature data
+     *
+     * This functions stores signature data and transmitts it during ZRTP
+     * processing to the other party as part of the Confirm packets. Refer to 
+     * chapters 6.7 and 8.2.
+     *
+     * The signature data must be set before ZRTP the application calls
+     * <code>start()</code>.
+     *
+     * @param data
+     *    The signature data including the signature type block. The method
+     *    copies this data into the Confirm packet at signature type block.
+     * @param length
+     *    The length of the signature data in bytes. This length must be
+     *    multiple of 4.
+     * @return
+     *    True if the method stored the data, false otherwise.
+     */
+    bool setSignatureData(uint8* data, int32 length) {
+        if (zrtpEngine != NULL) 
+            zrtpEngine->setSignatureData(data, length);
+    }
+
+    /**
+     * Get signature data
+     *
+     * This functions returns signature data that was receivied during ZRTP
+     * processing. Refer to chapters 6.7 and 8.2.
+     *
+     * The signature data can be retrieved after ZRTP enters secure state.
+     * <code>start()</code>.
+     *
+     * @param data
+     *    Pointer to a data buffer. This buffer must be large enough to
+     *    hold the signature data. Refer to <code>getSignatureLength()</code>
+     *    to get the length of the received signature data.
+     * @return
+     *    Number of bytes copied into the data buffer
+     */
+    int32 getSignatureData(uint8* data) {
+        if (zrtpEngine != NULL) 
+            zrtpEngine->getSignatureData(data);
+    }
+
+    /**
+     * Get length of signature data
+     *
+     * This functions returns the length of signature data that was receivied 
+     * during ZRTP processing. Refer to chapters 6.7 and 8.2.
+     *
+     * @return
+     *    Length in bytes of the received signature data. The method returns
+     *    zero if no signature data avilable.
+     */
+    int32 getSignatureLength() {
+        if (zrtpEngine != NULL) 
+            zrtpEngine->getSignatureLength();
     }
 
     /**
@@ -423,6 +504,7 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
     };
 
     /*
+     * The following methods implement the internal callback interface.
      * Refer to ZrtpCallback.h
      */
     int32_t sendDataZRTP(const unsigned char* data, int32_t length);
@@ -432,6 +514,7 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
     int32_t cancelTimer();
 
     void sendInfo(MessageSeverity severity, const char* msg);
+
     /**
      * Switch on the security for the defined part.
      *
@@ -468,9 +551,12 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      * @param c
      *    The name of the used cipher algorithm and mode, or NULL
      * @param s
-     *    The SAS string or NULL
+     *    The SAS string
+     * @param verified
+     *    if <code>verified</code> is true then SAS was verified by both
+     *    parties during a previous call.
      */
-    void srtpSecretsOn(const char* c, const char* s);
+    void srtpSecretsOn(std::string c, std::string s, bool verified);
 
     /**
      * This method shall handle GoClear requests.
@@ -510,6 +596,32 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      */
     void synchEnter();
     void synchLeave();
+
+    /**
+     * ZRTP uses this method to inform about a PBX enrollment request.
+     *
+     * Please refer to chapter 8.3 ff to get more details about PBX enrollment
+     * and SAS relay.
+     *
+     * @param info
+     *    Give some information to the user about the PBX requesting an
+     *    enrollment.
+     *
+     */
+    void zrtpAskEnrollment(std::string info);
+
+    /**
+     * ZRTP uses this method to inform about PBX enrollment result.
+     *
+     * Informs the use about the acceptance or denial of an PBX enrollment
+     * request
+     *
+     * @param info
+     *    Give some information to the user about the result of an
+     *    enrollment.
+     *
+     */
+    void zrtpInformEnrollment(std::string info);
 
     /*
      * End of ZrtpCallback functions.

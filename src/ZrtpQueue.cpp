@@ -114,8 +114,7 @@ void ZrtpQueue::start() {
     const uint8_t* ownZid = zid->getZid();
 
     if (zrtpEngine == NULL) {
-        zrtpEngine = new ZRtp((uint8_t*)ownZid, (ZrtpCallback*)this);
-        zrtpEngine->setClientId(clientIdString);
+        zrtpEngine = new ZRtp((uint8_t*)ownZid, (ZrtpCallback*)this, clientIdString);
         zrtpEngine->startZrtpEngine();
     }
 }
@@ -454,14 +453,14 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
     }
 }
 
-void ZrtpQueue::srtpSecretsOn(const char* c, const char* s)
+void ZrtpQueue::srtpSecretsOn(std::string c, std::string s, bool verified)
 {
 
-  if (c != NULL && zrtpUserCallback != NULL) {
+  if (zrtpUserCallback != NULL) {
     zrtpUserCallback->secureOn(c);
   }
-  if (s != NULL && zrtpUserCallback != NULL) {
-    zrtpUserCallback->showSAS(s);
+  if (zrtpUserCallback != NULL) {
+    zrtpUserCallback->showSAS(s, verified);
   }
 }
 
@@ -534,6 +533,24 @@ void ZrtpQueue::synchEnter() {
 
 void ZrtpQueue::synchLeave() {
     synchLock.leave();
+}
+
+void ZrtpQueue::zrtpAskEnrollment(std::string info) {
+    if (zrtpUserCallback != NULL) {
+        zrtpUserCallback->zrtpAskEnrollment(info);
+    }
+    else {
+        fprintf(stderr, "Enrollment request: %s\n", info.c_str());
+    }
+}
+
+void ZrtpQueue::zrtpInformEnrollment(std::string info) {
+    if (zrtpUserCallback != NULL) {
+        zrtpUserCallback->zrtpInformEnrollment(info);
+    }
+    else {
+        fprintf(stderr, "Result of enrollment: %s\n", info.c_str());
+    }
 }
 
 IncomingZRTPPkt::IncomingZRTPPkt(const unsigned char* const block, size_t len) :

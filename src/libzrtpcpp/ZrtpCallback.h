@@ -214,9 +214,12 @@ class ZrtpCallback {
      * @param c
      *    The name of the used cipher algorithm and mode, or NULL
      * @param s
-     *    The SAS string or NULL
+     *    The SAS string
+     * @param verified
+     *    if <code>verified</code> is true then SAS was verified by both
+     *    parties during a previous call.
      */
-    virtual void srtpSecretsOn(const char* c, const char* s) =0;
+    virtual void srtpSecretsOn(std::string c, std::string s, bool verified) =0;
 
     /**
      * This method shall handle GoClear requests.
@@ -256,6 +259,32 @@ class ZrtpCallback {
      */
     virtual void synchEnter() =0;
     virtual void synchLeave() =0;
+
+    /**
+     * ZRTP uses this method to inform about a PBX enrollment request.
+     *
+     * Please refer to chapter 8.3 ff to get more details about PBX enrollment
+     * and SAS relay.
+     *
+     * @param info
+     *    Give some information to the user about the PBX requesting an
+     *    enrollment.
+     *
+     */
+    virtual void zrtpAskEnrollment(std::string info) =0;
+
+    /**
+     * ZRTP uses this method to inform about PBX enrollment result.
+     *
+     * Informs the use about the acceptance or denial of an PBX enrollment
+     * request
+     *
+     * @param info
+     *    Give some information to the user about the result of an
+     *    enrollment.
+     *
+     */
+    virtual void zrtpInformEnrollment(std::string info) =0;
 
 };
 

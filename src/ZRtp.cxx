@@ -18,6 +18,7 @@
 /*
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
+#include <sstream>
 
 #include <libzrtpcpp/crypto/ZrtpDH.h>
 #include <libzrtpcpp/crypto/hmac256.h>
@@ -60,7 +61,7 @@ int ZrtpAvailable()
 }
 #endif
 
-ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb):
+ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id):
     callback(cb), dhContext(NULL) {
 
     DHss = NULL;
@@ -70,13 +71,15 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb):
      * the hash chain, refer to chapter 10
      */
     randomZRTP(H0, SHA256_DIGEST_LENGTH);
-    sha256(H0, SHA256_DIGEST_LENGTH, H1);             // hash H0 and generate H1
-    sha256(H1, SHA256_DIGEST_LENGTH, H2);             // H2
-    sha256(H2, SHA256_DIGEST_LENGTH, H3);             // H3
-    zrtpHello.setH3(H3);             // set H3 in Hello, included in H4
+    sha256(H0, SHA256_DIGEST_LENGTH, H1);        // hash H0 and generate H1
+    sha256(H1, SHA256_DIGEST_LENGTH, H2);        // H2
+    sha256(H2, SHA256_DIGEST_LENGTH, H3);        // H3
+
+    zrtpHello.setH3(H3);             // set H3 in Hello, included in helloHash
 
     memcpy(zid, myZid, 12);
     zrtpHello.setZid(zid);
+    setClientId(id);                // set id, compute HMAC and final helloHash
 
     msgShaContext = createSha256Context(); // prepare for Initiator case
 
@@ -188,7 +191,7 @@ void ZRtp::stopZrtp() {
     }
 }
 
-int32_t ZRtp::checkState(int32_t state)
+bool ZRtp::inState(int32_t state)
 {
     if (stateEngine != NULL) {
         return stateEngine->inState(state);
@@ -797,9 +800,9 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm *confirm1, uint32_t* 
     sasFlag = zidRec.isSasVerified() ? true : false;
 
     // Inform GUI about security state and SAS state
-    const char* c = (cipher == Aes128) ? "AES-CM-128" : "AES-CM-256";
-    const char* s = (zidRec.isSasVerified()) ? NULL : SAS.c_str();
-    callback->srtpSecretsOn(c, s);
+    bool sasVerified = zidRec.isSasVerified();
+    std::string cs((cipher == Aes128) ? "AES-CM-128" : "AES-CM-256");
+    callback->srtpSecretsOn(cs, SAS, sasVerified);
 
     // now we are ready to save the new RS1 which inherits the verified
     // flag from old RS1
@@ -881,9 +884,9 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
     }
 
     // Inform GUI about security state and SAS state
-    const char* c = (cipher == Aes128) ? "AES-CM-128" : "AES-CM-256";
-    const char* s = (zidRec.isSasVerified()) ? NULL : SAS.c_str();
-    callback->srtpSecretsOn(c, s);
+    bool sasVerified = zidRec.isSasVerified();
+    std::string cs((cipher == Aes128) ? "AES-CM-128" : "AES-CM-256");
+    callback->srtpSecretsOn(cs, SAS, sasVerified);
 
     // save new RS1, this inherits the verified flag from old RS1
     zidRec.setNewRs1((const uint8_t*)newRs1);
@@ -1445,11 +1448,16 @@ void ZRtp::computeSRTPKeys() {
     hmac_sha256(s0, SHA256_DIGEST_LENGTH, (unsigned char*)zrtpSessionKey, strlen(zrtpSessionKey),
                 zrtpSession, &macLen);
 
-    // perform SAS generation
+    // perform SAS generation according to chapter 5.5 and 8.
+    // we don't need a speciai sasValue filed. sasValue are the first 
+    // (leftmost) 32 bits (4 bytes) of sasHash
     uint8_t sasBytes[4];
     hmac_sha256(zrtpSession, SHA256_DIGEST_LENGTH, (unsigned char*)sasString, strlen(sasString),
                 sasHash, &macLen);
 
+    // according to chapter 8 only the leftmost 20 bits of sasValue (aka
+    //  sasHash) are used to create the character SAS string of type SAS 
+    // base 32 (5 bits per character)
     sasBytes[0] = sasHash[0];
     sasBytes[1] = sasHash[1];
     sasBytes[2] = sasHash[2] & 0xf0;
@@ -1528,24 +1536,24 @@ void ZRtp::setClientId(std::string id) {
     zrtpHello.setClientId((unsigned char*)id.c_str());
     int32_t len = zrtpHello.getLength() * ZRTP_WORD_SIZE;
 
-    // Compute HMAC over Hello, excluding the HMAC field (2*ZTP_WORD_SIZE)
-    // and store in Hello
+    // Hello packet is ready now, compute its HMAC
+    // (excluding the HMAC field (2*ZTP_WORD_SIZE)) and store in Hello
     uint8_t hmac[SHA256_DIGEST_LENGTH];
     uint32_t macLen;
     hmac_sha256(H2, SHA256_DIGEST_LENGTH, (uint8_t*)zrtpHello.getHeaderBase(), 
                 len-(2*ZRTP_WORD_SIZE), hmac, &macLen);
     zrtpHello.setHMAC(hmac);
 
-    // calculate hash over the Hello message, refer to chap 9.1 how to
+    // calculate hash over the final Hello packet, refer to chap 9.1 how to
     // use this hash in SIP/SDP
     sha256((uint8_t*)zrtpHello.getHeaderBase(), len, helloHash);
 }
 
 void ZRtp::storeMsgTemp(ZrtpPacketBase* pkt) {
-        int32_t length = pkt->getLength() * ZRTP_WORD_SIZE;
-        memset(tempMsgBuffer, 0, sizeof(tempMsgBuffer));
-        memcpy(tempMsgBuffer, (uint8_t*)pkt->getHeaderBase(), length);
-        lengthOfMsgData = length;
+    int32_t length = pkt->getLength() * ZRTP_WORD_SIZE;
+    memset(tempMsgBuffer, 0, sizeof(tempMsgBuffer));
+    memcpy(tempMsgBuffer, (uint8_t*)pkt->getHeaderBase(), length);
+    lengthOfMsgData = length;
 }
 
 bool ZRtp::checkMsgHmac(uint8_t* key) {
@@ -1559,19 +1567,86 @@ bool ZRtp::checkMsgHmac(uint8_t* key) {
 
 
 std::string ZRtp::getHelloHash() {
+    std::ostringstream stm;
+
+    uint8_t* hp = helloHash;
+
+    stm << hex;
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+        stm << static_cast<uint32_t>(*hp++);
+    }
+    return stm.str();
 }
 
 std::string ZRtp::getSasData() {
+    std::ostringstream stm;
+
+    uint8_t* hp = sasHash;
+
+    if (!inState(SecureState)) {
+        return std::string();
+    }
+
+    // create  the zrtp-sas-attribute according to chapter 9.4:
+    // first the SAS string, a blank, then leftmost 64 bit of sasHash in hex
+    stm << SAS << ' ' << hex;
+    for (int i = 0; i < 8; i++) {
+        stm << static_cast<uint32_t>(*hp++);
+    }
+    return stm.str();
 }
 
-void ZRtp::getMultiStrParams(uint8_t* data, int32_t* cipherType, int32_t* authLength) {
+std::string ZRtp::getMultiStrParams() {
+
+    // the string will hold binary data - it's opaque to the application
+    std::string str;
+    char tmp[SHA256_DIGEST_LENGTH + 1 + 1]; // digest length + cipher + authLength
+
+    if (inState(SecureState) && !multiStream) {
+        // construct array that holds zrtpSession, cipher type and auth-length
+        memcpy(tmp, zrtpSession, SHA256_DIGEST_LENGTH);
+        tmp[SHA256_DIGEST_LENGTH] = cipher;          //cipher is enumeration (int)
+        tmp[SHA256_DIGEST_LENGTH + 1] = authLength;  //authLength is enumeration (int)
+        str.assign(tmp, 0, SHA256_DIGEST_LENGTH + 1 + 1);   // set chars (bytes) to the string
+    }
+    return str;
 }
 
-void ZRtp::setMultiStrParams(uint8_t* data, int32_t cipherType, int32_t authLength) {
+void ZRtp::setMultiStrParams(std::string parameters) {
+
+    char tmp[SHA256_DIGEST_LENGTH + 1 + 1]; // digest length + cipher + authLength
+
+    // use string.copy(buffer, num, start=0) to retrieve chars (bytes) from the string
+    parameters.copy(tmp, SHA256_DIGEST_LENGTH + 1 + 1, 0);
+
+    memcpy(zrtpSession, tmp, SHA256_DIGEST_LENGTH);
+    cipher = static_cast<SupportedSymCiphers>(tmp[SHA256_DIGEST_LENGTH]);
+    authLength = static_cast<SupportedAuthLengths>(tmp[SHA256_DIGEST_LENGTH + 1]);
+
+    // after setting zrtpSession, cipher and auth-length set multi-stream to true
+    // TODO - enable this only after multi-stream is really implemented and tested
+//    multiStream = true;
+//    stateEngine->setMultiStream(true);
 }
 
-bool ZRtp::isMultiStrParams() {
+bool ZRtp::isMultiStream() {
     return multiStream;
+}
+
+void ZRtp::acceptEnrollment(bool accepted) {
+    return;
+}
+
+bool ZRtp::setSignatureData(uint8_t* data, int32_t length) {
+    return false;
+}
+
+int32_t ZRtp::getSignatureData(uint8_t* data) {
+    return 0;
+}
+
+int32_t ZRtp::getSignatureLength() {
+    return 0;
 }
 
 

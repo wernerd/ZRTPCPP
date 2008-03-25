@@ -130,7 +130,7 @@ public:
     ZrtpStateClass(ZRtp *p);
     ~ZrtpStateClass();
 
-    int32_t inState(const int32_t state) { return engine->inState(state); };
+    bool inState(const int32_t state) { return engine->inState(state); };
     void nextState(int32_t state)        { engine->nextState(state); };
     int32_t processEvent(Event_t *ev);
 

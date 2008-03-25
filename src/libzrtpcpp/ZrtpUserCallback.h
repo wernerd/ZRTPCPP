@@ -54,7 +54,13 @@
 class ZrtpUserCallback {
 
     public:
-        ZrtpUserCallback(ost::ZrtpQueue* queue) : zrtpQueue(queue) {}
+
+        ZrtpUserCallback() {}
+
+        /**
+         * @deprecated use standard constructor. The parameter <code>queue</code> is not required anymore.
+         */
+        // ZrtpUserCallback(ost::ZrtpQueue* queue) : zrtpQueue(queue) {}
 
         virtual ~ZrtpUserCallback() {};
 
@@ -67,8 +73,9 @@ class ZrtpUserCallback {
          * @param cipher
          *    Name and mode of cipher used to encrypt the SRTP stream
          */
-        virtual void secureOn(std::string cipher) =0;
-
+        virtual void secureOn(std::string cipher) {
+            return;
+        }
         /**
          * Inform user interface that security is not active any more.
          *
@@ -76,7 +83,9 @@ class ZrtpUserCallback {
          * left secure mode.
          *
          */
-        virtual void secureOff() =0;
+        virtual void secureOff() {
+            return;
+        }
 
         /**
          * Show the Short Authentication String (SAS) on user interface.
@@ -86,10 +95,16 @@ class ZrtpUserCallback {
          * button (or similar UI element). The user shall click on this UI
          * element after he/she confirmed the SAS code with the partner.
          *
+         * @deprecated Use <code>showSASWithState()</code> instead.
          * @param sas
          *     The string containing the SAS.
+         * @param verified
+         *    If <code>verified</code> is true then SAS was verified by both
+         *    parties during a previous call, otherwise it is set to false.
          */
-        virtual void showSAS(std::string sas) =0;
+        virtual void showSAS(std::string sas, bool verified) {
+            return;
+        }
 
         /**
          * Inform the user that ZRTP received "go clear" message from its peer.
@@ -98,7 +113,9 @@ class ZrtpUserCallback {
          * a switch to unsecure (clear) modus. Until the user confirms ZRTP
          * (and the underlying RTP) does not send any data.
          */
-        virtual void confirmGoClear() =0;
+        virtual void confirmGoClear() {
+            return;
+        }
 
         /**
          * Show some information to user.
@@ -114,7 +131,9 @@ class ZrtpUserCallback {
          * @param message
          *     The string containing the SAS.
          */
-        virtual void showMessage(MessageSeverity sev, std::string message) =0;
+        virtual void showMessage(MessageSeverity sev, std::string message) {
+            return;
+        }
 
         /**
          * ZRTPQueue calls this if the negotiation failed.
@@ -128,150 +147,62 @@ class ZrtpUserCallback {
          * @param msg
          *     The message string, terminated with a null byte.
          */
-        virtual void zrtpNegotiationFailed(MessageSeverity severity, std::string message) =0;
+        virtual void zrtpNegotiationFailed(MessageSeverity severity, std::string message) {
+            return;
+        }
 
         /**
-         * ZRTPQueue calls this methof if the other side does not support ZRTP.
+         * ZRTPQueue calls this method if the other side does not support ZRTP.
          *
          * If the other side does not answer the ZRTP <em>Hello</em> packets then
-         * ZRTP calls this method,
+         * ZRTP calls this method.
          *
          */
-        virtual void zrtpNotSuppOther() =0;
-
-        /**
-         * A user interface implementation uses the following methods to
-         * control ZRTP. The standard methods are just proxies to the
-         * according ZrtpQueue methods. An inheriting class may override
-         * this implementation.
-         */
-
-        /**
-         * Enable overall ZRTP processing.
-         *
-         * Call this method to enable ZRTP processing and switch to secure
-         * mode eventually. This can be done before a call or at any time
-         * during a call.
-         *
-         * @param onOff
-         *     If set to true enable ZRTP, disable otherwise
-         */
-        virtual void enableZrtp(bool onOff) {
-            zrtpQueue->setEnableZrtp(onOff);
+        virtual void zrtpNotSuppOther() {
+            return;
         }
 
         /**
-         * Set SAS as verified.
+         * ZRTPQueue uses this method to inform about SAS verification status.
          *
-         * Call this method if the user confirmed (verfied) the SAS. ZRTP
-         * remembers this together with the retained secrets data.
+         * @param verified
+         *    If <code>verified</code> is true then SAS was verified by both
+         *    parties during a previous call, otherwise it is set to false.
+         *
          */
-        virtual void SASVerified() {
-            zrtpQueue->SASVerified();
+        virtual void zrtpSASVerifyStatus(bool verified) {
+            return;
         }
 
         /**
-         * Reset the SAS verfied flag for the current active user's retained secrets.
+         * ZRTPQueue uses this method to inform about a PBX enrollment request.
+         *
+         * Please refer to chapter 8.3 ff to get more details about PBX enrollment
+         * and SAS relay.
+         *
+         * @param info
+         *    Give some information to the user about the PBX requesting an
+         *    enrollment.
          *
          */
-        virtual void resetSASVerified() {
-            zrtpQueue->resetSASVerified();
+        virtual void zrtpAskEnrollment(std::string info) {
+            return;
         }
 
         /**
-         * Confirm a go clear request.
+         * ZRTPQueue uses this method to inform about PBX enrollment result.
          *
-         * Call this method if the user confirmed a go clear (secure mode off).
+         * Informs the use about the acceptance or denial of an PBX enrollment
+         * request
+         *
+         * @param info
+         *    Give some information to the user about the result of an
+         *    enrollment.
+         *
          */
-        virtual void goClearOk() {
-            zrtpQueue->goClearOk();
+        virtual void zrtpInformEnrollment(std::string info) {
+            return;
         }
-
-        /**
-         * Request to switch off secure mode.
-         *
-         * Call this method is the user itself wants to switch off secure
-         * mode (go clear). After sending the "go clear" request to the peer
-         * ZRTP immediatly switch off SRTP processing. Every RTP data is sent
-         * in clear after the go clear request.
-         */
-        virtual void requestGoClear()  {
-            zrtpQueue->requestGoClear();
-        }
-
-        /**
-         * Set the sigs secret.
-         *
-         * Use this method to set the sigs secret data. Refer to ZRTP
-         * specification, chapter 3.2.1
-         *
-         * @param data
-         *     Points to the sigs secret data. The data must have a length
-         *     of 32 bytes (length of SHA256 hash)
-         */
-        virtual void setSigsSecret(uint8* data)  {
-            zrtpQueue->setSigsSecret(data);
-        }
-
-        /**
-         * Set the srtps secret.
-         *
-         * Use this method to set the srtps secret data. Refer to ZRTP
-         * specification, chapter 5.3
-         *
-         * @param data
-         *     Points to the srtps secret data. The data must have a length
-         *     of 32 bytes (length of SHA256 hash)
-         */
-        virtual void setSrtpsSecret(uint8* data)  {
-            zrtpQueue->setSrtpsSecret(data);
-        }
-
-        /**
-         * Set the other secret.
-         *
-         * Use this method to set the other secret data. Refer to ZRTP
-         * specification, chapter 5.3
-         *
-         * @param data
-         *     Points to the other secret data.
-         * @param length
-         *     The length in bytes of the data.
-         */
-        virtual void setOtherSecret(uint8* data, int32 length)  {
-            zrtpQueue->setOtherSecret(data, length);
-        }
-
-        /**
-         * Get the ZRTP Hello Hash data.
-         *
-         * Use this method to get the ZRTP Hello Hash data. The method 
-         * returns the data as a string containing hex-digits. Refer to ZRTP
-         * specification, chapter 9.1.
-         *
-         * @return
-         *    a std:string containing the Hello hash value as hex-digits.
-         *    If ZRTP was not started return a string containing "0"
-         */
-        virtual std::string getHelloHash()  {
-            zrtpQueue->getHelloHash();
-        }
-
-        /**
-         * Get the ZRTP SAS data.
-         *
-         * Use this method to get the ZRTP SAS data formatted as string and
-         * ready to use in the SDP. Refer to ZRTP specification, chapter 9.4
-         *
-         * @return
-         *    a std:string containing the SAS and SAS hash formatted as string
-         *    as specified in chapter 9.4. If ZRTP was not started return a 
-         *    string containing "0"
-         */
-        virtual std::string getSasData()  {
-            zrtpQueue->getSasData();
-        }
-
     private:
         ost::ZrtpQueue* zrtpQueue;
 

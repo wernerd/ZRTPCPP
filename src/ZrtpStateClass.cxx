@@ -958,15 +958,15 @@ int32_t ZrtpStateClass::evWaitConfirm2(void) {
                 sendErrorPacket(errorCode);
                 return (Done);
             }
-            nextState(SecureState);
             sentPacket = static_cast<ZrtpPacketBase *>(confack);
 
             if (!parent->sendPacketZRTP(sentPacket)) {
                 return sendFailed();             // returns to state Initial
             }
-            parent->sendInfo(Info, "Switching to secure state");
             parent->srtpSecretsReady(ForSender);
             parent->srtpSecretsReady(ForReceiver);
+            nextState(SecureState);
+            parent->sendInfo(Info, "Entered secure state");
 
             return (Done);
         }
@@ -1019,10 +1019,10 @@ int32_t ZrtpStateClass::evWaitConfAck(void) {
         if (first == 'c') {
             cancelTimer();
             sentPacket = NULL;
-            parent->sendInfo(Info, "Switching to secure state");
-            nextState(SecureState);
             parent->srtpSecretsReady(ForSender);
             parent->srtpSecretsReady(ForReceiver);
+            nextState(SecureState);
+            parent->sendInfo(Info, "Entered secure state");
             return (Done);
         }
         return (Done);      // unknown packet for this state - Just ignore it

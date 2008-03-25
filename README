@@ -1,10 +1,20 @@
 This package provides a library that adds support to the GNU RTP stack 
 for the ZRTP protocol specification developed by Phil Zimmermann for 
 zfone.  Using this package, together with GNU ccrtp (1.5.0 or later) 
-provides a ZRTP implimentation that can be directly embedded into client
-and server applications, rather than the overhead penalty of using an 
-external proxy such as zphone.  The first application to demonstrate 
-this capability is the 0.8.2 release of the Twinkle softphone client.
+provides a ZRTP implementation that can be directly embedded into client
+and server applications.
+
+The first application to demonstrate this capability is the 0.8.2 release 
+of the Twinkle softphone client. All following version of Twinkle support
+this as well.
 
 Please note, this library is licensed under the GNU GPL, version 3 or 
 later, and has been copyright assigned to the Free Software Foundation.
+
+The ccRTP ZRTP implementation is compliant to the basic functions of
+ZRTP as decsribed in "draft-zimmermann-avt-zrtp-06". Currently ccRTP ZRTP
+does support the basic features only, not the enhacned feature like
+SAS relaying and Multi-Stream mode. The ccRTP ZRTP implementation already
+defined the necessary interfaces and functions fot these enhanced features
+but they are not yet implemented.
+

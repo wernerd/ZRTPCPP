@@ -80,7 +80,12 @@ class ZrtpDH;
  * This class does not directly handle the protocol states, timers,
  * and packet resend. The protocol state engine is responsible for
  * these actions.
+ * <p/>
+ * Example how to use ZRtp:
  *
+ *    zrtpEngine = new ZRtp((uint8_t*)ownZid, (ZrtpCallback*)this, idString);
+ *    zrtpEngine->startZrtpEngine();
+ * <p/>
  * @see ZrtpCallback
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
@@ -93,7 +98,7 @@ class ZRtp {
          * Constructor intializes all relevant data but does not start the
          * engine.
          */
-	ZRtp(uint8_t* myZid, ZrtpCallback* cb);
+	ZRtp(uint8_t* myZid, ZrtpCallback* cb, std::string id);
 
         /**
 	 * Destructor cleans up.
@@ -196,27 +201,14 @@ class ZRtp {
         void setOtherSecret(uint8_t* data, int32_t length);
 
        /**
-        * Set the client ID for ZRTP Hello message.
-        *
-        * The GNU ccRTP client may set its id to identify itself in the
-        * ZRTP HELLO message. The maximum length is 15 characters. Shorter
-        * id string are allowed, the will be filled with blanks. A Longer id
-        * is truncated to 15 characters.
-        *
-        * @param id
-        *     The client's id
-        */
-       void setClientId(std::string id);
-
-       /**
         * Check current state of the ZRTP state engine
         *
         * @param state
         *    The state to check.
         * @return
-        *    Return true id ZRTP engine is in the given state, false otherwise.
+        *    Returns true id ZRTP engine is in the given state, false otherwise.
         */
-       int32_t checkState(int32_t state);
+       bool inState(int32_t state);
 
        /**
         * Set SAS as verified.
@@ -240,7 +232,8 @@ class ZRtp {
         * specification, chapter 9.1.
         *
         * @return
-        *    a std:string containing the Hello hash value as hex-digits.
+        *    a std:string containing the Hello hash value as hex-digits. The
+        *    hello hash is available immediately after class instantiation.
         */
        std::string getHelloHash();
 
@@ -252,7 +245,9 @@ class ZRtp {
         *
         * @return
         *    a std:string containing the SAS and SAS hash formatted as string
-        *    as specified in chapter 9.4. 
+        *    as specified in chapter 9.4. The string length is zero if ZRTP 
+        *    was not ready to get the data. If ZRTP was not started or ZRTP is
+        *    not yet in secure state the method returns an empty string.
         */
        std::string getSasData();
 
@@ -262,36 +257,37 @@ class ZRtp {
      * Use this method to get the Multi-stream that were computed during
      * the ZRTP handshake. An application may use these parameters to
      * enable multi-stream processing for an associated SRTP session.
+     *
      * Refer to chapter 5.4.2 in the ZRTP specification for further details
      * and restriction how and when to use multi-stream mode.
      *
-     * @param zrtpSession
-     *     Pointer to a buffer of at least 32 bytes. This buffer stores
-     *     the ZRTP session key (refer to chapter 5.4.1.4)
-     * @param cipherType
-     *     Pointer to an int32 that receives the type identifier of the 
-     *     symmetrical cipher. This is an opaque value for the application.
-     * @param authLength
-     *     Pointer to an int32 that receives the length of the SRTP 
-     *     authentication field. This is an opaque value for the application.
+     * @return
+     *    a string that contains the multi-stream parameters. The application
+     *    must not modify the contents of this string, it is opaque data. The
+     *    application may hand over this string to a new ZrtpQueue instance
+     *    to enable multi-stream processing for this ZrtpQueue.
+     *    If ZRTP was 
+     *    not started or ZRTP is not yet in secure state the method returns an
+     *    empty string.
      */
-    void getMultiStrParams(uint8_t* data, int32_t* cipherType, int32_t* authLength);
+    std::string getMultiStrParams();
 
     /**
      * Set Multi-stream parameters.
      *
      * Use this method to set the parameters required to enable Multi-stream
-     * processing of ZRTP. Refer to chapter 5.4.2 in the ZRTP specification.
+     * processing of ZRTP. The multi-stream parameters must be set before the
+     * application starts the ZRTP protocol engine.
      *
-     * @param zrtpSession
-     *     Pointer to a buffer of at least 32 bytes. This buffer containes
-     *     the ZRTP session key (refer to chapter 5.4.1.4)
-     * @param cipherType
-     *     Contain the type of the symmetrical cipher.
-     * @param authLength
-     *     Length of the SRTP authentication field.
+     * Refer to chapter 5.4.2 in the ZRTP specification for further details
+     * of multi-stream mode.
+     *
+     * @param parameters
+     *     A string that contains the multi-stream parameters that this
+     *     new ZrtpQueue instanace shall use. See also 
+     *     <code>getMultiStrParams()</code>
      */
-    void setMultiStrParams(uint8_t* data, int32_t cipherType, int32_t authLength);
+    void setMultiStrParams(std::string parameters);
 
     /**
      * Check if this ZRTP use Multi-stream.
@@ -304,7 +300,72 @@ class ZRtp {
      * @return
      *     True if multi-stream is used, false otherwise.
      */
-    bool isMultiStrParams();
+    bool isMultiStream();
+
+    /**
+     * Accept a PBX enrollment request.
+     *
+     * If a PBX service asks to enroll the MiTM key and the user accepts this
+     * request, for example by pressing an OK button, the client application
+     * shall call this method and set the parameter <code>accepted</code> to
+     * true. If the user does not accept the request set the parameter to 
+     * false.
+     *
+     * @param accepted
+     *     True if the enrollment request is accepted, false otherwise.
+     */
+    void acceptEnrollment(bool accepted);
+
+    /**
+     * Set signature data
+     *
+     * This functions stores signature data and transmitts it during ZRTP
+     * processing to the other party as part of the Confirm packets. Refer to 
+     * chapters 6.7 and 8.2.
+     *
+     * The signature data must be set before ZRTP the application calls
+     * <code>start()</code>.
+     *
+     * @param data
+     *    The signature data including the signature type block. The method
+     *    copies this data into the Confirm packet at signature type block.
+     * @param length
+     *    The length of the signature data in bytes. This length must be
+     *    multiple of 4.
+     * @return
+     *    True if the method stored the data, false otherwise.
+     */
+    bool setSignatureData(uint8_t* data, int32_t length);
+
+    /**
+     * Get signature data
+     *
+     * This functions returns signature data that was receivied during ZRTP
+     * processing. Refer to chapters 6.7 and 8.2.
+     *
+     * The signature data can be retrieved after ZRTP enters secure state.
+     * <code>start()</code>.
+     *
+     * @param data
+     *    Pointer to a data buffer. This buffer must be large enough to
+     *    hold the signature data. Refer to <code>getSignatureLength()</code>
+     *    to get the length of the received signature data.
+     * @return
+     *    Number of bytes copied into the data buffer
+     */
+    int32_t getSignatureData(uint8_t* data);
+
+    /**
+     * Get length of signature data
+     *
+     * This functions returns the length of signature data that was receivied 
+     * during ZRTP processing. Refer to chapters 6.7 and 8.2.
+     *
+     * @return
+     *    Length in bytes of the received signature data. The method returns
+     *    zero if no signature data avilable.
+     */
+    int32_t getSignatureLength();
 
  private:
      friend class ZrtpStateClass;
@@ -499,6 +560,11 @@ class ZRtp {
     uint8_t tempMsgBuffer[1024];
     int32_t lengthOfMsgData;
 
+    /**
+     * Variables to store signature data. Includes the signature type block
+     */
+    uint8_t* signatureData;       // will be allocated when needed
+    int32_t  signatureLength;     // overall length in bytes
 
     /**
      * Find the best Hash algorithm that was offered in Hello.
@@ -897,6 +963,22 @@ class ZRtp {
       *    false otherwise.
       */
      bool checkMsgHmac(uint8_t* key);
+       /**
+        * Set the client ID for ZRTP Hello message.
+        *
+        * The user of ZRTP must set its id to identify itself in the
+        * ZRTP HELLO message. The maximum length is 16 characters. Shorter
+        * id string are allowed, they will be filled with blanks. A longer id
+        * is truncated to 16 characters.
+        *
+        * The identifier is set in the Hello packet of ZRTP. Thus only after
+        * setting the identifier ZRTP can compute the HMAC and the final
+        * helloHash. 
+        *
+        * @param id
+        *     The client's id
+        */
+       void setClientId(std::string id);
 };
 
 #endif // ZRTP
