@@ -28,25 +28,16 @@
 /**
  * This class defines the user callback functions supported by ZRTP.
  *
- * This class is a pure abstract class, aka Interface in Java, that specifies
- * the user callback interface for the ZRTP implementation. The ZRTP
- * implementation uses these functions to communicate with a user interface
- * environment, for example to inform about security state, display messages,
- * and so on.
+ * This class specifies the user callback interface for the ZRTP 
+ * implementation. The ZRTP implementation uses these functions to communicate
+ * with an user interface environment, for example to inform about security 
+ * state, display messages, and so on.
  *
  * <p/>
  *
- * This ZRTP interface defines seven abstract callback methods to be
- * implemented by the user interface environment, for example a SIP
- * client or any other client that uses SRTP to set up a connection.
- *
- * In addition this class also defines several methods tha a client may
- * call to interact with the ZrtpQueue to control the ZRTP behaviour, for
- * example to set the client id or to get data needed for singaling purposes
- * (refer to ZRTP specification chapter 9).
- *
- * The destructor does not destroy any objects, it only sets pointers to
- * referenced classes to <ode>NULL</code>.
+ * This ZRTP interface defines the callback methods to be implemented by the
+ * user interface environment, for example a SIP client or any other client
+ * that uses SRTP to set up a connection.
  *
  * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
@@ -56,11 +47,6 @@ class ZrtpUserCallback {
     public:
 
         ZrtpUserCallback() {}
-
-        /**
-         * @deprecated use standard constructor. The parameter <code>queue</code> is not required anymore.
-         */
-        // ZrtpUserCallback(ost::ZrtpQueue* queue) : zrtpQueue(queue) {}
 
         virtual ~ZrtpUserCallback() {};
 
@@ -90,12 +76,11 @@ class ZrtpUserCallback {
         /**
          * Show the Short Authentication String (SAS) on user interface.
          *
-         * ZRTP calls this method to display the SAS. After the SAS was
-         * displayed the user interface code shall enable a SAS verfication
+         * ZRTP calls this method to display the SAS and inform about the SAS
+         * verification status. The user interface shall enable a SAS verfication
          * button (or similar UI element). The user shall click on this UI
          * element after he/she confirmed the SAS code with the partner.
          *
-         * @deprecated Use <code>showSASWithState()</code> instead.
          * @param sas
          *     The string containing the SAS.
          * @param verified
@@ -191,9 +176,6 @@ class ZrtpUserCallback {
         virtual void zrtpInformEnrollment(std::string info) {
             return;
         }
-    private:
-        ost::ZrtpQueue* zrtpQueue;
-
 };
 
 #endif
