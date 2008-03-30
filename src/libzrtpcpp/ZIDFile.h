@@ -86,9 +86,9 @@ public:
      * Check if ZIDFile has an active (open) file.
      *
      * @return
-     *    1 if ZIDFile has an active file, 0 otherwise
+     *    True if ZIDFile has an active file, flase otherwise
      */
-    int isOpen() { return (zidFile == NULL); };
+    bool isOpen() { return (zidFile == NULL); };
 
      /**
      * Close the ZID file.

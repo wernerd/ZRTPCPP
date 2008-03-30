@@ -668,7 +668,7 @@ int32_t ZrtpStateClass::evCommitSent(void) {
             // send DHPart1 packet. Peer (as Initiator) will retrigger if
             // necessary
             //
-            if (parent->compareHvi(&zpCo) < 0) {
+            if (parent->compareCommit(&zpCo) < 0) {
                 ZrtpPacketDHPart* dhPart1 = parent->prepareDHPart1(&zpCo, &errorCode);
 
                 // Something went wrong during processing of the Commit packet

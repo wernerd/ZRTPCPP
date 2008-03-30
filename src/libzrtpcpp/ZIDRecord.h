@@ -25,12 +25,23 @@
 
 typedef struct zidrecord {
     char recValid,		// if 1 record is valid, if 0: invalid
-	ownZid,			// if 1 record contains own ZID, usually 1st record
-	rs1Valid,			// if 1 RS1 contains valid data
-	rs2Valid;			// if 1 RS2 contains valid data
-    unsigned char identifier[IDENTIFIER_LEN]; // the peer's ZID
+	ownZid,			// if >1 record contains own ZID, usually 1st record,
+                                // the numebr als represents the file format version
+	rs1Valid,		// if 1 RS1 contains valid data
+	rs2Valid;		// if 1 RS2 contains valid data
+    unsigned char identifier[IDENTIFIER_LEN]; // the peer's ZID or own ZID
     unsigned char rs1Data[RS_LENGTH], rs2Data[RS_LENGTH]; // the peer's RS data
 } zidrecord_t;
+
+typedef struct zidrecord2 {
+    char recValid,		// if 1 record is valid, if 0: invalid
+	ownZid,			// if >1 record contains own ZID, usually 1st record,
+                                // the numebr als represents the file format version
+	rs1Valid,		// if 1 RS1 contains valid data
+	rs2Valid;		// if 1 RS2 contains valid data
+    unsigned char identifier[IDENTIFIER_LEN]; // the peer's ZID or own ZID
+    unsigned char rs1Data[RS_LENGTH], rs2Data[RS_LENGTH]; // the peer's RS data
+} zidrecord2_t;
 
 /**
  * This class implements the ZID record.

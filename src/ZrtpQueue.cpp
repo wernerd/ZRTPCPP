@@ -27,8 +27,6 @@
 #include <libzrtpcpp/ZrtpStateClass.h>
 #include <libzrtpcpp/ZrtpUserCallback.h>
 
-
-
 static TimeoutProvider<std::string, ost::ZrtpQueue*>* staticTimeoutProvider = NULL;
 
 #ifdef  CCXX_NAMESPACES
@@ -38,25 +36,30 @@ namespace ost {
 int32_t
 ZrtpQueue::initialize(const char *zidFilename)
 {
+    int32_t ret = 1;
+    synchEnter();
+
     if (staticTimeoutProvider == NULL) {
         staticTimeoutProvider = new TimeoutProvider<std::string, ZrtpQueue*>();
         staticTimeoutProvider->start();
     }
-    std::string fname;
-    if (zidFilename == NULL) {
-        char *home = getenv("HOME");
-
-        std::string baseDir = (home != NULL) ? (std::string(home) + std::string("/."))
-                                             : std::string(".");
-        fname = baseDir + std::string("GNUccRTP.zid");
-        zidFilename = fname.c_str();
-    }
     ZIDFile *zf = ZIDFile::getInstance();
-    if (zf->open((char *)zidFilename) < 0) {
-        enableZrtp = false;
-        return -1;
+    if (!zf->isOpen()) {
+        std::string fname;
+        if (zidFilename == NULL) {
+            char *home = getenv("HOME");
+            std::string baseDir = (home != NULL) ? (std::string(home) + std::string("/."))
+                                                    : std::string(".");
+            fname = baseDir + std::string("GNUccRTP.zid");
+            zidFilename = fname.c_str();
+        }
+        if (zf->open((char *)zidFilename) < 0) {
+            enableZrtp = false;
+            ret = -1;
+        }
     }
-    return 1;
+    synchLeave();
+    return ret;
 }
 
 ZrtpQueue::ZrtpQueue(uint32 size, RTPApplication& app) :

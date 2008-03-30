@@ -65,13 +65,14 @@ int ZIDFile::open(char *name) {
 	}
     }
     else {
+        // doMigration(name);
 	fseek(zidFile, 0L, SEEK_SET);
 	if (fread(&rec, sizeof(zidrecord_t), 1, zidFile) != 1) {
             fclose(zidFile);
             zidFile = NULL;
 	    return -1;
 	}
-	if (rec.ownZid != 1) {
+	if (rec.ownZid != 1) { // check for newest version here
             fclose(zidFile);
             zidFile = NULL;
 	    return -1;
@@ -101,7 +102,7 @@ unsigned int ZIDFile::getRecord(ZIDRecord *zidRecord) {
 	numRead = fread(&rec, sizeof(zidrecord_t), 1, zidFile);
 
 	// skip invalid records
-	while(rec.ownZid == 1 && rec.recValid == 0 && numRead == 1) {
+	while(rec.ownZid >= 1 && rec.recValid == 0 && numRead == 1) {
 	    numRead = fread(&rec, sizeof(zidrecord_t), 1, zidFile);
 	}
 

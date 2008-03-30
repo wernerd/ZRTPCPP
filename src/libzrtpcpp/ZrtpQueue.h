@@ -400,6 +400,23 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
     }
 
     /**
+     * Enable PBX enrollment
+     *
+     * The application calls this method to allow or disallow PBX enrollment.
+     * If the applications allows PBX enrollment then the ZRTP implementation
+     * honors the PBX enrollment flag in Confirm packets. Refer to chapter 8.3
+     * for further details of PBX enrollment.
+     *
+     * @param yesNo
+     *    If set to true then ZRTP honors the PBX enrollment flag in Commit
+     *    packets and calls the appropriate user callback methods. If
+     *    the parameter is set to false ZRTP ignores the PBX enrollment flags.
+     */
+    void setPBXEnrollment(bool yesNo) {
+        if (zrtpEngine != NULL) 
+            zrtpEngine->setPBXEnrollment(yesNo);
+    }
+   /**
      * Put data into the RTP output queue.
      *
      * This is used to create a data packet in the send queue.
@@ -440,7 +457,6 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      **/
     void
     sendImmediate(uint32 stamp, const unsigned char* data = NULL, size_t len = 0);
-
 
     /**
      * Starts the ZRTP protocol engine.

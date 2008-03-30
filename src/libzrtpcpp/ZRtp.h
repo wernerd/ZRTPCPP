@@ -317,6 +317,21 @@ class ZRtp {
     void acceptEnrollment(bool accepted);
 
     /**
+     * Enable PBX enrollment
+     *
+     * The application calls this method to allow or disallow PBX enrollment.
+     * If the applications allows PBX enrollment then the ZRTP implementation
+     * honors the PBX enrollment flag in Confirm packets. Refer to chapter 8.3
+     * for further details of PBX enrollment.
+     *
+     * @param yesNo
+     *    If set to true then ZRTP honors the PBX enrollment flag in Commit
+     *    packets and calls the appropriate user callback methods. If
+     *    the parameter is set to false ZRTP ignores the PBX enrollment flags.
+     */
+    void setPBXEnrollment(bool yesNo);
+
+    /**
      * Set signature data
      *
      * This functions stores signature data and transmitts it during ZRTP
@@ -535,6 +550,11 @@ class ZRtp {
      * True if this ZRTP instance uses multi-stream mode.
      */
     bool multiStream;
+
+    /**
+     * True if PBX enrollment is enabled.
+     */
+    bool PBXEnrollment;
 
     /**
      * Pre-initialized packets.
@@ -827,21 +847,18 @@ class ZRtp {
     /**
      * Compare the hvi values.
      *
-     * Compares the hvi hashes of both commit packets, the one we just
-     * received and the one we sent in response of peer's hello. The
-     * outcome of the compare determines which peer is Initiator or
-     * Responder. If the hvi of the commit we sent is smaller then we are
-     * Responder, otherwise we are Inititiator.
+     * Compare a received Commit packet with our Commit packet and returns
+     * which Commit packt is "more important". See chapter 5.2 to get further
+     * information how to compare Commit packets.
      *
      * @param commit
      *    Pointer to the peer's commit packet we just received.
      * @return
-     *    <0 if our hvi is smaller
-     *    >0 if our hvi is bigger
+     *    <0 if our Commit packet is "less important"
+     *    >0 if our is "more important"
      *     0 shouldn't happen because we compare crypto hashes
      */
-    int32_t compareHvi(ZrtpPacketCommit *commit) {
-	return (memcmp(hvi, commit->getHvi(), SHA256_DIGEST_LENGTH)); };
+    int32_t compareCommit(ZrtpPacketCommit *commit);
 
     /**
      * Verify the H2 hash image.

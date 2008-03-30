@@ -66,6 +66,7 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id):
 
     DHss = NULL;
     multiStream = false;
+    PBXEnrollment = false;
     /*
      * Generate H0 as a random number (256 bits, 32 bytes) and then
      * the hash chain, refer to chapter 10
@@ -1649,6 +1650,14 @@ int32_t ZRtp::getSignatureLength() {
     return 0;
 }
 
+int32_t ZRtp::compareCommit(ZrtpPacketCommit *commit) {
+    // TODO: enhance to compare according to rules defined in chapter 5.2
+    return (memcmp(hvi, commit->getHvi(), SHA256_DIGEST_LENGTH)); 
+}
+
+void ZRtp:: setPBXEnrollment(bool yesNo) {
+    PBXEnrollment = yesNo;
+}
 
 /** EMACS **
  * Local variables:
