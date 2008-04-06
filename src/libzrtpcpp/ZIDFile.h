@@ -47,6 +47,8 @@ private:
      */
     ZIDFile(): zidFile(NULL) {};
     ~ZIDFile();
+    void createZIDFile(char* name);
+    void checkDoMigration(char* name);
 
 public:
 
@@ -86,9 +88,9 @@ public:
      * Check if ZIDFile has an active (open) file.
      *
      * @return
-     *    True if ZIDFile has an active file, flase otherwise
+     *    True if ZIDFile has an active file, false otherwise
      */
-    bool isOpen() { return (zidFile == NULL); };
+    bool isOpen() { return (zidFile != NULL); };
 
      /**
      * Close the ZID file.
@@ -100,17 +102,19 @@ public:
      * Get a ZID record from the active ZID file.
      *
      * The method get the identifier data from the ZID record parameter,
-     * locates the record in the ZID file and fills in the RS1 and RS2
-     * data. If no matching record exists in the ZID file the method creates
+     * locates the record in the ZID file and fills in the RS1, RS2, and
+     * other data. 
+     *
+     * If no matching record exists in the ZID file the method creates
      * it and fills it with default values.
      *
      * @param zidRecord
      *    The ZID record that contains the identifier data. The method
-     *    fills in the RS1 and RS2 data.
+     *    fills in data .
      * @return
-     *    TODO
+     *    Currently always 1 to indicate sucess
      */
-    unsigned int getRecord(ZIDRecord *zidRecord);
+    unsigned int getRecord(ZIDRecord* zidRecord);
 
     /**
      * Save a ZID record into the active ZID file.
@@ -122,7 +126,7 @@ public:
      * @param zidRecord
      *    The ZID record to save.
      * @return
-     *    1 on success, 0 on failure
+     *    1 on success
      */
     unsigned int saveRecord(ZIDRecord *zidRecord);
 

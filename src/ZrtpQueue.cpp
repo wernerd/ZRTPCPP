@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006-2007 Werner Dittmann
+  Copyright (C) 2006-2008 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -555,6 +555,27 @@ void ZrtpQueue::zrtpInformEnrollment(std::string info) {
         fprintf(stderr, "Result of enrollment: %s\n", info.c_str());
     }
 }
+
+void ZrtpQueue::signSAS(std::string sas) {
+    if (zrtpUserCallback != NULL) {
+        zrtpUserCallback->signSAS(sas);
+    }
+    else {
+        fprintf(stderr, "Sign the SAS: %s\n", sas.c_str());
+    }
+}
+
+
+bool ZrtpQueue::checkSASSignature(std::string sas) {
+    if (zrtpUserCallback != NULL) {
+        return zrtpUserCallback->checkSASSignature(sas);
+    }
+    else {
+        fprintf(stderr, "Check the signature for SAS: %s\n", sas.c_str());
+    }
+}
+
+
 
 IncomingZRTPPkt::IncomingZRTPPkt(const unsigned char* const block, size_t len) :
         IncomingRTPPkt(block,len)

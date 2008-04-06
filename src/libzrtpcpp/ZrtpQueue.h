@@ -193,13 +193,13 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
     }
 
     /**
-     * Set the callback class for UI intercation.
+     * Set the application's callback class.
      *
-     * The destructior of ZrtpQueue also destorys the user callback
+     * The destructor of ZrtpQueue also destorys the user callback
      * class if it was set.
      *
      * @param ucb
-     *     Implementation of the ZrtpUserCallback interface class
+     *     Implementation of the application's ZrtpUserCallback class
      */
     void setUserCallback(ZrtpUserCallback* ucb) {
         zrtpUserCallback = ucb;
@@ -638,6 +638,43 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      *
      */
     void zrtpInformEnrollment(std::string info);
+
+    /**
+     * ZRTPQueue calls this method to request a SAS signature.
+     *
+     * After ZRTP was able to compute the Short Authentication String
+     * (SAS) it calls this method. The client may now use an approriate
+     * method to sign the SAS. The client may use 
+     * <code>setSignatureData()</code> of ZrtpQueue to store the signature
+     * data an enable signature transmission to the other peer. Refer
+     * to chapter 8.2 of ZRTP specification.
+     *
+     * @param sas
+     *    The SAS string to sign.
+     *
+     */
+    void signSAS(std::string sas);
+
+    /**
+     * ZRTPQueue calls this method to request a SAS signature check.
+     *
+     * After ZRTP received a SAS signature in one of the Confirm packets it
+     * call this method. The client may use <code>getSignatureLength()</code>
+     * and <code>getSignatureData()</code>of ZrtpQueue to get the signature
+     * data and perform the signature check. Refer to chapter 8.2 of ZRTP 
+     * specification.
+     *
+     * If the signature check fails the client may return false to ZRTP. In
+     * this case ZRTP signals an error to the other peer and terminates
+     * the ZRTP handshake.
+     *
+     * @param sas
+     *    The SAS string that was signed by the other peer.
+     * @return
+     *    true if the signature was ok, false otherwise.
+     *
+     */
+    bool checkSASSignature(std::string sas);
 
     /*
      * End of ZrtpCallback functions.

@@ -26,18 +26,17 @@
 #include <libzrtpcpp/ZrtpQueue.h>
 
 /**
- * This class defines the user callback functions supported by ZRTP.
+ * This class defines the user callback functions used by ZRTP.
  *
- * This class specifies the user callback interface for the ZRTP 
- * implementation. The ZRTP implementation uses these functions to communicate
- * with an user interface environment, for example to inform about security 
- * state, display messages, and so on.
+ * This class specifies the user callback functions used by the ZRTP 
+ * implementation to communicate with the application that requires ZRTP
+ * support.
  *
  * <p/>
  *
- * This ZRTP interface defines the callback methods to be implemented by the
- * user interface environment, for example a SIP client or any other client
- * that uses SRTP to set up a connection.
+ * This ZRTP user callback class defines the methods that an application may
+ * implement (overwrite) to trigger own activities, for example to inform about
+ * security state, display information or error messages, and so on.
  *
  * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
@@ -148,7 +147,7 @@ class ZrtpUserCallback {
         }
 
         /**
-         * ZRTPQueue uses this method to inform about a PBX enrollment request.
+         * ZRTPQueue calls this method to inform about a PBX enrollment request.
          *
          * Please refer to chapter 8.3 ff to get more details about PBX enrollment
          * and SAS relay.
@@ -163,7 +162,7 @@ class ZrtpUserCallback {
         }
 
         /**
-         * ZRTPQueue uses this method to inform about PBX enrollment result.
+         * ZRTPQueue calls this method to inform about PBX enrollment result.
          *
          * Informs the use about the acceptance or denial of an PBX enrollment
          * request
@@ -175,6 +174,47 @@ class ZrtpUserCallback {
          */
         virtual void zrtpInformEnrollment(std::string info) {
             return;
+        }
+
+        /**
+         * ZRTPQueue calls this method to request a SAS signature.
+         *
+         * After ZRTP was able to compute the Short Authentication String
+         * (SAS) it calls this method. The client may now use an approriate
+         * method to sign the SAS. The client may use 
+         * <code>setSignatureData()</code> of ZrtpQueue to store the signature
+         * data an enable signature transmission to the other peer. Refer
+         * to chapter 8.2 of ZRTP specification.
+         *
+         * @param sas
+         *    The SAS string to sign.
+         *
+         */
+        virtual void signSAS(std::string sas) {
+            return;
+        }
+
+        /**
+         * ZRTPQueue calls this method to request a SAS signature check.
+         *
+         * After ZRTP received a SAS signature in one of the Confirm packets it
+         * call this method. The client may use <code>getSignatureLength()</code>
+         * and <code>getSignatureData()</code>of ZrtpQueue to get the signature
+         * data and perform the signature check. Refer to chapter 8.2 of ZRTP 
+         * specification.
+         *
+         * If the signature check fails the client may return false to ZRTP. In
+         * this case ZRTP signals an error to the other peer and terminates
+         * the ZRTP handshake.
+         *
+         * @param sas
+         *    The SAS string that was signed by the other peer.
+         * @return
+         *    true if the signature was ok, false otherwise.
+         *
+         */
+        virtual bool checkSASSignature(std::string sas) {
+            return true;
         }
 };
 

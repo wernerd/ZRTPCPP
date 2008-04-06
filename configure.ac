@@ -168,8 +168,13 @@ AC_C_CONST
 # Checks for library functions.
 AC_FUNC_MALLOC
 
+# Check for documentation formatter
+AC_PATH_PROG(DOXYGEN, doxygen, no)
+AC_SUBST(DOXYGEN)
+AM_CONDITIONAL(DOXY, test "$DOXYGEN" != "no")
+
 AC_SUBST(CRYPTOBACKEND PACKAGE_REQ BUILD_REQ)
 AC_CONFIG_FILES([Makefile src/Makefile src/libzrtpcpp/Makefile 
-                src/libzrtpcpp/crypto/Makefile libzrtpcpp.pc
-		libzrtpcpp.spec])  # m4/Makefile
+                src/libzrtpcpp/crypto/Makefile doc/Makefile 
+                libzrtpcpp.pc libzrtpcpp.spec])  # m4/Makefile
 AC_OUTPUT

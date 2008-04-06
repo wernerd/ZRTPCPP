@@ -19,21 +19,89 @@
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
+#include <time.h>
+
 #include <libzrtpcpp/ZIDRecord.h>
 
-void ZIDRecord::setNewRs1(const unsigned char *data) {
+void ZIDRecord::setNewRs1(const unsigned char* data, int32_t expire) {
 
-  // shift RS1 data and flag into RS2
-  memcpy(record.rs2Data, record.rs1Data, RS_LENGTH);
-  record.rs2Valid = record.rs1Valid;
+    // shift RS1 data into RS2 position
+    memcpy(record.rs2Data, record.rs1Data, RS_LENGTH);
+    memcpy(record.rs2Interval, record.rs1Interval, TIME_LENGTH);
 
-  // set new RS1 data
-  memcpy(record.rs1Data, data, RS_LENGTH);
-  record.rs1Valid = 1;
-  // copy the SAS verified flag to new record as well
-  if (record.rs2Valid & SASVerified) {
-      record.rs1Valid |= SASVerified;
-  }
+    // now propagate flags as well
+    if (isRs1Valid()) {
+	setRs2Valid();
+    }
+
+    // set new RS1 data
+    memcpy(record.rs1Data, data, RS_LENGTH);
+
+    time_t validThru;
+    if (expire == -1) {
+	validThru = -1;
+    }
+    else if (expire <= 0) {
+	validThru = 0;
+    }
+    else {
+	validThru = time(NULL) + expire;
+    }
+
+    if (sizeof(time_t) == 4) {
+	long long temp = validThru;
+	memcpy(record.rs1Interval, (unsigned char*)&temp, TIME_LENGTH);
+    }
+    else {
+	memcpy(record.rs1Interval, (unsigned char*)&validThru, TIME_LENGTH);
+    }
+    setRs1Valid();
+}
+
+
+const bool ZIDRecord::isRs1NotExpired() {
+    time_t current = time(NULL);
+    time_t validThru;
+
+    if (sizeof(time_t) == 4) {
+	long long temp;
+	memcpy((unsigned char*)&temp, record.rs1Interval, TIME_LENGTH);
+	validThru = temp;
+    }
+    else {
+	memcpy((unsigned char*)&validThru, record.rs1Interval, TIME_LENGTH);
+    }
+
+    if (validThru == -1)
+	return true;
+    if (validThru == 0)
+	return false;
+    return (current <= validThru) ? true : false;
+}
+
+const bool ZIDRecord::isRs2NotExpired() {
+    time_t current = time(NULL);
+    time_t validThru;
+
+    if (sizeof(time_t) == 4) {
+	long long temp;
+	memcpy((unsigned char*)&temp, record.rs2Interval, TIME_LENGTH);
+	validThru = temp;
+    }
+    else {
+	memcpy((unsigned char*)&validThru, record.rs2Interval, TIME_LENGTH);
+    }
+
+    if (validThru == -1)
+	return true;
+    if (validThru == 0)
+	return false;
+    return (current <= validThru) ? true : false;
+}
+
+void ZIDRecord::setMiTMData(const unsigned char* data) {
+    memcpy(record.mitmKey, data, RS_LENGTH);
+    setMITMKeyAvailable();
 }
 
 /** EMACS **

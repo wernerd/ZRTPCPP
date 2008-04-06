@@ -286,6 +286,42 @@ class ZrtpCallback {
      */
     virtual void zrtpInformEnrollment(std::string info) =0;
 
+    /**
+     * ZRTPQueue calls this method to request a SAS signature.
+     *
+     * After ZRTP was able to compute the Short Authentication String
+     * (SAS) it calls this method. The client may now use an approriate
+     * method to sign the SAS. The client may use 
+     * <code>setSignatureData()</code> of ZrtpQueue to store the signature
+     * data an enable signature transmission to the other peer. Refer
+     * to chapter 8.2 of ZRTP specification.
+     *
+     * @param sas
+     *    The SAS string to sign.
+     *
+     */
+    virtual void signSAS(std::string sas) =0;
+
+    /**
+     * ZRTPQueue calls this method to request a SAS signature check.
+     *
+     * After ZRTP received a SAS signature in one of the Confirm packets it
+     * call this method. The client may use <code>getSignatureLength()</code>
+     * and <code>getSignatureData()</code>of ZrtpQueue to get the signature
+     * data and perform the signature check. Refer to chapter 8.2 of ZRTP 
+     * specification.
+     *
+     * If the signature check fails the client may return false to ZRTP. In
+     * this case ZRTP signals an error to the other peer and terminates
+     * the ZRTP handshake.
+     *
+     * @param sas
+     *    The SAS string that was signed by the other peer.
+     * @return
+     *    true if the signature was ok, false otherwise.
+     *
+     */
+    virtual bool checkSASSignature(std::string sas) =0;
 };
 
 #endif // ZRTPCALLBACK
