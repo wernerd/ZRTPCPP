@@ -513,26 +513,17 @@ void ZrtpQueue::sendInfo(MessageSeverity severity, const char* msg) {
     if (zrtpUserCallback != NULL) {
         zrtpUserCallback->showMessage(severity, msg);
     }
-    else {
-        fprintf(stderr, "Severity: %d - %s\n", severity, msg);
-    }
 }
 
 void ZrtpQueue::zrtpNegotiationFailed(MessageSeverity severity, const char* msg) {
     if (zrtpUserCallback != NULL) {
         zrtpUserCallback->zrtpNegotiationFailed(severity, msg);
     }
-    else {
-        fprintf(stderr, "Severity: %d - %s\n", severity, msg);
-    }
 }
 
 void ZrtpQueue::zrtpNotSuppOther() {
     if (zrtpUserCallback != NULL) {
         zrtpUserCallback->zrtpNotSuppOther();
-    }
-    else {
-        fprintf(stderr, "The other (remote) peer does not support ZRTP\n");
     }
 }
 
@@ -548,17 +539,11 @@ void ZrtpQueue::zrtpAskEnrollment(std::string info) {
     if (zrtpUserCallback != NULL) {
         zrtpUserCallback->zrtpAskEnrollment(info);
     }
-    else {
-        fprintf(stderr, "Enrollment request: %s\n", info.c_str());
-    }
 }
 
 void ZrtpQueue::zrtpInformEnrollment(std::string info) {
     if (zrtpUserCallback != NULL) {
         zrtpUserCallback->zrtpInformEnrollment(info);
-    }
-    else {
-        fprintf(stderr, "Result of enrollment: %s\n", info.c_str());
     }
 }
 
@@ -566,18 +551,11 @@ void ZrtpQueue::signSAS(std::string sas) {
     if (zrtpUserCallback != NULL) {
         zrtpUserCallback->signSAS(sas);
     }
-    else {
-        fprintf(stderr, "Sign the SAS: %s\n", sas.c_str());
-    }
 }
-
 
 bool ZrtpQueue::checkSASSignature(std::string sas) {
     if (zrtpUserCallback != NULL) {
         return zrtpUserCallback->checkSASSignature(sas);
-    }
-    else {
-        fprintf(stderr, "Check the signature for SAS: %s\n", sas.c_str());
     }
 }
 
