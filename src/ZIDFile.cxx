@@ -126,6 +126,7 @@ void ZIDFile::checkDoMigration(char* name) {
 }
 
 ZIDFile::~ZIDFile() {
+    close();
 }
 
 ZIDFile* ZIDFile::getInstance() {
@@ -220,6 +221,7 @@ unsigned int ZIDFile::saveRecord(ZIDRecord *zidRecord) {
 
     fseek(zidFile, zidRecord->getPosition(), SEEK_SET);
     fwrite(zidRecord->getRecordData(), zidRecord->getRecordLength(), 1, zidFile);
+    fflush(zidFile);
     return 1;
 }
 

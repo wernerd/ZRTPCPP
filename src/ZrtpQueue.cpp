@@ -29,6 +29,7 @@
 
 static TimeoutProvider<std::string, ost::ZrtpQueue*>* staticTimeoutProvider = NULL;
 
+
 #ifdef  CCXX_NAMESPACES
 namespace ost {
 #endif
@@ -58,6 +59,7 @@ ZrtpQueue::initialize(const char *zidFilename)
             ret = -1;
         }
     }
+    enableZrtp = true;
     synchLeave();
     return ret;
 }
@@ -77,7 +79,7 @@ ZrtpQueue::ZrtpQueue(uint32 ssrc, uint32 size, RTPApplication& app) :
 void ZrtpQueue::init()
 {
     zrtpUserCallback = NULL;
-    enableZrtp = true;
+    enableZrtp = false;
     secureParts = 0;
     zrtpEngine = NULL;
 
@@ -94,7 +96,7 @@ ZrtpQueue::~ZrtpQueue() {
 
     cancelTimer();
     endQueue();
-    stop();
+    stopZrtp();
 
     if (zrtpUserCallback != NULL) {
         delete zrtpUserCallback;
@@ -112,7 +114,7 @@ ZrtpQueue::~ZrtpQueue() {
     }
 }
 
-void ZrtpQueue::start() {
+void ZrtpQueue::startZrtp() {
     ZIDFile *zid = ZIDFile::getInstance();
     const uint8_t* ownZid = zid->getZid();
 
@@ -122,7 +124,7 @@ void ZrtpQueue::start() {
     }
 }
 
-void ZrtpQueue::stop() {
+void ZrtpQueue::stopZrtp() {
     if (zrtpEngine != NULL) {
         zrtpEngine->stopZrtp();
         delete zrtpEngine;
@@ -289,10 +291,10 @@ ZrtpQueue::rtpDataPacket(IncomingRTPPkt* packet, int32 rtn,
         delete packet;
         return 0;
     }
-    // Start the ZRTP engine only after we got a at least one RTP packet and
+    // Start the ZRTP engine after we got a at least one RTP packet and
     // sent some as well
-    if (enableZrtp && zrtpEngine == NULL && getSendPacketCount() >= 1) {
-        start();
+    if (zrtpEngine == NULL && enableZrtp && getSendPacketCount() >= 1) {
+        startZrtp();
     }
     return rtn;
 }
@@ -486,7 +488,9 @@ int32_t
 ZrtpQueue::activateTimer(int32_t time)
 {
     std::string s("ZRTP");
-    staticTimeoutProvider->requestTimeout(time, this, s);
+    if (staticTimeoutProvider != NULL) {
+        staticTimeoutProvider->requestTimeout(time, this, s);
+    }
     return 1;
 }
 
@@ -494,7 +498,9 @@ int32_t
 ZrtpQueue::cancelTimer()
 {
     std::string s("ZRTP");
-    staticTimeoutProvider->cancelRequest(this, s);
+    if (staticTimeoutProvider != NULL) {
+        staticTimeoutProvider->cancelRequest(this, s);
+    }
     return 1;
 }
 

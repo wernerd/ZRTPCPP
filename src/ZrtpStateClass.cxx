@@ -88,7 +88,7 @@ ZrtpStateClass::~ZrtpStateClass(void) {
 int32_t ZrtpStateClass::processEvent(Event_t *ev) {
 
     event = ev;
-    char *msg, first, last;
+    char *msg, first, middle, last;
     uint8_t *pkt;
 
     parent->synchEnter();
@@ -97,10 +97,11 @@ int32_t ZrtpStateClass::processEvent(Event_t *ev) {
 	pkt = event->data.packet;
 	msg = (char *)pkt + 4;
 	first = tolower(*msg);
-	last = tolower(*(msg+4));
+	middle = tolower(*(msg+4));
+        last = tolower(*(msg+7));
 
         // Check if this is an Error packet.
-	if (first == 'e' && last =='r') {
+	if (first == 'e' && middle =='r' && last == ' ') {
             /*
              * Process a received Error packet.
              *
@@ -158,8 +159,24 @@ int32_t ZrtpStateClass::evInitial(void) {
  * When entering this state transition function then:
  * - Assume Initiator mode, mode may change later on peer reaction
  * - Instance variable sentPacket contains the sent Hello packet
- * - Hello timer T1 is active
+ * - Hello timer T1 may be active. This is the case if the other peer
+ *   has prepared its RTP session and answers our Hello packets nearly 
+ *   immediately, i.e. before the Hello timeout counter expires. If the
+ *   other peer does not send a Hello during this time the state engine
+ *   reports "other peer does not support ZRTP" but stays
+ *   in state Detect with no active timer (passiv mode). Staying in state 
+ *   Detect allows another peer to start its detect phase any time later.
  *
+ *   This restart capability is the reason why we use "startTimer(&T1)" in 
+ *   case we received a Hello packet from another peer. This effectively 
+ *   restarts the Hello timeout counter.
+ *
+ *   Usually applications use some sort of signaling protocol, for example
+ *   SIP, to negotiate the RTP parameters. Thus the RTP sessions setup is
+ *   fairly sychronized and thus also the ZRTP detection phase. Applications
+ *   that use some other ways to setup the RTP sessions this restart capability
+ *   comes in handy because no RTP setup sychronization is necessary.
+ * 
  * Possible events in this state are:
  * - timeout for sent Hello packet: causes a resend check and 
  *   repeat sending of Hello packet
@@ -210,6 +227,7 @@ int32_t ZrtpStateClass::evDetect(void) {
          * - Don't clear sentPacket, points to Hello
          */
         if (first == 'h' && last ==' ') {
+            cancelTimer();
             ZrtpPacketHelloAck* helloAck = parent->prepareHelloAck();
 
             if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(helloAck))) {
@@ -224,6 +242,9 @@ int32_t ZrtpStateClass::evDetect(void) {
             if (commitPkt == NULL) {
                 sendErrorPacket(errorCode);    // switches to Error state
                 return (Done);
+            }
+            if (startTimer(&T1) <= 0) {        // restart own Hello timer/counter
+                return timerFailed(timerError);      // returns to state Initial
             }
             nextState(AckSent);
             return (Done);

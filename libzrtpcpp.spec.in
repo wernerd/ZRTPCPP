@@ -6,7 +6,7 @@ Epoch: 0
 License: GPL
 Group: Development/Libraries
 URL: http://www.gnu.org/software/commoncpp/commoncpp.html
-Source0: ftp://ftp.gnu.org/gnu/cccrtp/libzrtpcpp-%{PACKAGE_VERSION}.tar.gz
+Source0: ftp://ftp.gnu.org/gnu/ccrtp/libzrtpcpp-%{PACKAGE_VERSION}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 Requires: ccrtp >= 1.5.0
 Requires: @PACKAGE_REQ@
@@ -27,13 +27,16 @@ Requires: @BUILD_REQ@
 This library is a GPL licensed extension to the GNU RTP Stack (GNU ccrtp).
 This extension offers a C++ implementation of Phil Zimmermann's ZRTP 
 specification. The current release is based on 
-draft-zimmermann-avt-zrtp-04.txt.
+draft-zimmermann-avt-zrtp-06x.txt. Phil's Zfone site provide more information,
+see http://zfoneproject.com/index.html
 
 This implementation was tested to work with Phil's Zfone implementation
 of the ZRTP spefication. Applications that use GNU ccrtp can use this
 library to use ZRTP and to encrypt the RTP (not RTCP) communication. 
 
-This release does not support preshared mode specified in the draft.
+This release does not support the basic ZRTP, it does not yet support
+preshared or multi-stream mode specified in the draft. Also the specific
+Asterisk PBX mode is not yet implemented. 
 
 %description devel
 This package provides the header files, link libraries, and

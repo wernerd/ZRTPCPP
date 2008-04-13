@@ -10,7 +10,10 @@
 
 AUTOMAKE_OPTIONS = foreign
 SUBDIRS = src
-EXTRA_DIST = README AUTHORS COPYING *.pc* *.spec* autoconf/* reconfig
+DIST_SUBDIRS = m4 src doc demo
+
+EXTRA_DIST = README AUTHORS COPYING libzrtpcpp.pc libzrtpcpp.pc.in libzrtpcpp.spec \
+	libzrtpcpp.spec.in autoconf/* reconfig
 ACLOCAL_AMFLAGS = -I m4
 
 pkgconfigdir = $(libdir)/pkgconfig

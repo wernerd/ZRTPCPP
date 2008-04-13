@@ -84,8 +84,9 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
       *
       * @param zidFilename
       *     The name of the ZID file, can be a relative or absolut filename.
-      * @return 1 on success, -1 on failure. In the latter case the method also
-      *     sets <code>setEnableZrtp(false)</code>.
+      * @return 
+      *     1 on success and enables ZRTP processing, -1 on failure and
+      *     disables ZRTP processing.
       *
       */
     int32_t initialize(const char *zidFilename);
@@ -98,9 +99,9 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
     /**
      * Enable overall ZRTP processing.
      *
-     * Call this method to enable ZRTP processing and switch to secure
-     * mode eventually. This can be done before a call or at any time
-     * during a call.
+     * Call this method to enable or disable ZRTP processing after calling
+     * <code>initialize()</code> and switch to secure mode eventually. This
+     * can be done before a call or at any time during a call
      *
      * @param onOff
      *     If set to true enable ZRTP, disable otherwise
@@ -319,7 +320,7 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      */
     bool isMultiStream()  {
         if (zrtpEngine != NULL)
-            zrtpEngine->isMultiStream();
+            return zrtpEngine->isMultiStream();
     }
 
     /**
@@ -360,7 +361,7 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      */
     bool setSignatureData(uint8* data, int32 length) {
         if (zrtpEngine != NULL) 
-            zrtpEngine->setSignatureData(data, length);
+            return zrtpEngine->setSignatureData(data, length);
     }
 
     /**
@@ -381,7 +382,7 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      */
     int32 getSignatureData(uint8* data) {
         if (zrtpEngine != NULL) 
-            zrtpEngine->getSignatureData(data);
+            return zrtpEngine->getSignatureData(data);
     }
 
     /**
@@ -396,7 +397,7 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      */
     int32 getSignatureLength() {
         if (zrtpEngine != NULL) 
-            zrtpEngine->getSignatureLength();
+            return zrtpEngine->getSignatureLength();
     }
 
     /**
@@ -461,16 +462,19 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
     /**
      * Starts the ZRTP protocol engine.
      *
-     * Applications must call this method to start the ZRTP protocol engine.
-     * Applications may call this method any time after initializing ZRTP and
-     * setting optinal parameters, for example client id or multi-stream
-     * parameters.
+     * Applications may call this method to immediatly start the ZRTP protocol
+     * engine any time after initializing ZRTP and setting optinal parameters,
+     * for example client id or multi-stream parameters.
      *
-     * Wtihout calling <code>start</code> the ZRTP implementation behaves like
-     * the normal RTP/SRTP GNU ccRTP implementation.
+     * If the application does not call this method but sucessfully initialized
+     * the ZRTP engine using <code>initialize()</code> then ZRTP also starts
+     * after the application sent and received RTP packets. An application can
+     * disable this automatic, delayed start of the ZRTP engine using 
+     * <code>setEnableZrtp(false)</code> before sending or receiving RTP
+     * packets.
      *
      */
-    void start();
+    void startZrtp();
 
     /**
      * Stops the ZRTP protocol engine and stops SRTP.
@@ -479,7 +483,7 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      * SRTP processing.
      *
      */
-    void stop();
+    void stopZrtp();
 
     /**
      * This function is used by the service thread to process
@@ -754,7 +758,7 @@ class OutgoingZRTPPkt : public OutgoingRTPPkt {
 };
 
 #ifdef  CCXX_NAMESPACES
-};
+}
 #endif
 
 #endif
