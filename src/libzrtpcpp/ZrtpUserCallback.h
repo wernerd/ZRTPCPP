@@ -128,10 +128,11 @@ class ZrtpUserCallback {
          *
          * @param severity
          *     This defines the message's severity
-         * @param msg
+         * @param message
          *     The message string, terminated with a null byte.
          */
-        virtual void zrtpNegotiationFailed(MessageSeverity severity, std::string message) {
+        virtual void zrtpNegotiationFailed(MessageSeverity severity,
+					   std::string message) {
             return;
         }
 
