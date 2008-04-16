@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006-2007 Werner Dittmann
+  Copyright (C) 2006-2008 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -23,43 +23,100 @@
 #include <libzrtpcpp/ZrtpCallback.h>
 #include <libzrtpcpp/ZRtp.h>
 
-/**
- * This class is the bridge between the ZRTP implementation, GNU ccRTP and
- * a signaling application.
- *
- * The ZRPT implementation is independent from the underlying RTP/SRTP 
- * implementation. This class implements specific functions and interfaces
- * that the ZRTP implementation uses to hook onto the actual RTP/SRTP
- * implementation. Thus this class extends the actual GNU ccRTP class
- * AVPQueue to add ZRTP specific functions.
- *
- * This class also provides additional methods that an application uses to
- * control ZRTP.
- *
- * The application may implement a callback class that implement the functions
- * defined in <code>ZrtpUserCallback.h</code>. If an application implements
- * a callback class and sets its reference (<code>setUserCallback</code>) then
- * the ZRTP iomplementation uses the callback functions to inform the 
- * application about the current ZRTP status.
- *
- * <p/>
- *
- * As required by the ZRTP implementation this class implements
- * the ZrtpCallback interface.
- *
- * <p/>
- *
- * The <code>initialize</code> method stores the timeout provider and
- * reuses it for every instance.
- *
- * @author Werner Dittmann <Werner.Dittmann@t-online.de>
- */
 
 class ZrtpUserCallback;
 
 #ifdef  CCXX_NAMESPACES
 namespace ost {
 #endif
+
+/** 
+ * GNU ZRTP extension to GNU ccRTP.
+ *
+ * ZRTP was developed by Phil Zimmermann and provides functions to
+ * negotiate keys and other necessary data to set-up Secure RTP
+ * (SRTP). Refer to Phil's ZRTP specification at his <a
+ * href="http://zfoneproject.com/">Zfone project</a> site to get more
+ * detailed imformation about the capabilities of ZRTP.
+ * 
+ * <b>Short overview of the ZRTP implementation</b>
+ *
+ * ZRTP is a specific protocol to negotiate encryption algorithms and
+ * the required key material. ZRTP uses a RTP session to exchange its
+ * protocol messages.
+ *
+ * The ZRTP implementation splits into two parts:
+ * <ul>
+ * <li>The ZRTP core implementation consisting of the ZRTP protocol
+ *     engine, the ZRTP protocol message, and the ZRTP methods to
+ *     compute the data to set-up SRTP. This part of the ZRTP
+ *     implementation is independent of a RTP/SRTP implementation.
+ * </li>
+ * <li>The second part of the implementation is specific <em>glue</em>
+ *     code the binds the independent part to the actual RTP/SRTP
+ *     implementation and other operatind system specific services
+ *     such as timers.
+ * </li>
+ * </ul>
+ *
+ * The independent part of the ZRTP implementation defines a callback
+ * interface class (refer to ZrtpCallback) that the glue code must
+ * implement. The independent part uses the fucntions of the callback
+ * to communication with the actual RTP/SRTP implementation, to access
+ * timers and semaphores.
+ *
+ * ZrtpQueue implements the ZrtpCallback interface and extends the GNU
+ * ccRTP AVPQueue class to provide access to the underlying RTP/SRTP
+ * send and receive queues. Applications use the ZRTP specific methods
+ * of ZrtpQueue to control ZRTP, for example enable or disable ZRTP
+ * processing or geting ZRTP status information.
+ *
+ * GNU ZRTP provides a ZrtpUserCallback class that an application may
+ * extend and register with ZrtpQueue. ZRTP uses the callback methods
+ * to inform the application of events during ZRTP processing. The
+ * application may display this information or act otherwise. The
+ * following figure depicts the relationships between ZrtpQueue,
+ * AVPQueue, the generic ZRTP protocol implementation, and an
+ * application.
+
+ * <pre>
+ *
+ *                          +----------+
+ *                          |          |
+ *                          | AVPQueue |
+ *                          |          |
+ *                          +----------+
+ *                               ^
+ *                               |
+ * +----------------+      +-----+------+
+ * |                |      |            |      +-----------------+
+ * |  Application   | uses |  ZrtpQueue | uses |                 |
+ * |    provides    +------+    impl.   +------+  generic ZRTP   |
+ * |ZrtpUserCallback|      |ZrtpCallback|      |    protocol     |
+ * |                |      |            |      | implementation  |
+ * +----------------+      +------------+      |                 |
+ *                                             |                 |
+ *                                             +-----------------+
+ *</pre>
+ *
+ * Because ZrtpQueue extends AVPQueue all public methods defined by
+ * AVPQueue are also available. ZrtpQueue overwrites some of the
+ * public methods of AVPQueue to implement ZRTP specific code. 
+ *
+ * Similar to GNU ccRTP the ZRTP implementation provides typedef to
+ * simplify usage of the ZrtpQueue in applications. The following
+ * paragraphs show some small examples on how to use ZrtpQueue and
+ * what are the differences to a normal GNU ccRTP RTPSession.
+ *
+ * ZrtpQueue implements code that is specific to the GNU ccRTP
+ * implementation. ZrtpQueue also implements specific code to provide
+ * semaphores and timeout handling. Both, the semaphores and the
+ * timeout handling, use the GNU Common C++ library. Refer to the <a
+ * href="http://www.gnutelephony.org/index.php/GNU_Common_C%2B%2B">GNU
+ * Common C++</a> web site.
+ *
+ * @author Werner Dittmann <Werner.Dittmann@t-online.de>
+ */
 
 class ZrtpQueue : public AVPQueue, public ZrtpCallback {
 
@@ -68,25 +125,36 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      /**
       * Initialize the ZrtpQueue.
       *
-      * Before a programm can use ZRTP it has to initialize ZRTP
-      * processing. This method initializes the timeout thread and
-      * the ZID file that contais the retained secrets.
+      * Before an application can use ZRTP it has to initialize the
+      * ZRTP implementation. This method initializes the timeout
+      * thread and a specific file that contains ZRTP specific
+      * information such as the retained shared secrets.
       *
-      * If an application requires several ZRTP sessions all session use
-      * the same timeout thread and use the same ZID file. Therefore an
-      * application does not need to do any synchronisation regading
-      * ZID files or timeouts. This is managed by the ZRTP implementation.
+      * If one application requires several ZRTP sessions all session
+      * use the same timeout thread and use the same ZID
+      * file. Therefore an application does not need to do any
+      * synchronisation regading ZID files or timeouts. This is
+      * managed by the ZRTP implementation.
       *
-      * The application may specify its own ZID file name. If no ZID file name
-      * is specified it defaults to <code>$HOME/.GNUccRTP.zid</code> if the
-      * <code>HOME</code>environment variable is set. If it is not set the
-      * current directory is used.
+      * The current implementation of ZrtpQueue does not support
+      * different ZID files for one application instance. This
+      * restriction may be removed in later versions. 
+      *
+      * The application may specify its own ZID file name. If no ZID
+      * file name is specified it defaults to
+      * <code>$HOME/.GNUccRTP.zid</code> if the
+      * <code>HOME</code>environment variable is set. If it is not set
+      * the current directory is used.
+      *
+      * If the method could set up the timeout thread and open the ZID
+      * file then it enables ZRTP processing and returns.
       *
       * @param zidFilename
-      *     The name of the ZID file, can be a relative or absolut filename.
+      *     The name of the ZID file, can be a relative or absolut 
+      *     filename.
       * @return 
-      *     1 on success and enables ZRTP processing, -1 on failure and
-      *     disables ZRTP processing.
+      *     1 on success, ZRTP processing enabled, -1 on failure,
+      *     ZRTP processing disabled.
       *
       */
     int32_t initialize(const char *zidFilename);
@@ -97,24 +165,65 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      */
 
     /**
-     * Enable overall ZRTP processing.
+     * Enable or diable ZRTP processing.
      *
-     * Call this method to enable or disable ZRTP processing after calling
-     * <code>initialize()</code> and switch to secure mode eventually. This
-     * can be done before a call or at any time during a call
+     * Call this method to enable or disable ZRTP processing after
+     * calling <code>initialize()</code>. This can be done before
+     * using a RTP session or at any time during a RTP session.
+     *
+     * Existing SRTP sessions or currently active ZRTP processing will
+     * not be stopped or disconnected.
+     *
+     * If the application enables ZRTP then:
+     * <ul>
+     * <li>ZrtpQueue starts to send ZRTP Hello packets after at least
+     * one RTP packet was sent and received on the associated RTP
+     * session. Thus if an application enables ZRTP and ZrtpQueue
+     * detects traffic on the RTP session then ZrtpQueue automatically
+     * starts the ZRTP protocol. This automatic start is convenient
+     * for applications that negotiate RTP parameters and set up RTP
+     * sessions but the actual RTP traffic starts some time later.
+     * </li>
+     * <li>ZrtpQueue analyses incoming packets if they are ZRTP
+     * messages and ZRTP is started, either via automatic start (see
+     * above) or explicitly via startZrtp() then ZrtpQueue
+     * forwards these packets to the ZRTP protocol engine.
+     * </ul>
      *
      * @param onOff
-     *     If set to true enable ZRTP, disable otherwise
+     *     If set to true enable ZRTP, false to disable ZRTP
      */
     void setEnableZrtp(bool onOff)   {
         enableZrtp = onOff;
     }
 
     /**
+     * Return the state of ZRTP enable state.
+     *
+     * @return <code>true</code> if ZRTP processing is enabled,
+     * <code>false</code> otherwise.
+     */
+    bool isEnableZrtp() {
+        return enableZrtp;
+    }
+    /**
      * Set SAS as verified.
      *
-     * Call this method if the user confirmed (verfied) the SAS. ZRTP
-     * remembers this together with the retained secrets data.
+     * The application may call this method if the user confirmed
+     * (verfied) the Short Authentication String (SAS) with the peer.
+     *
+     * ZRTP calls ZrtpUserCallback#showSAS after it computed the SAS
+     * and the application registered a user callback class. The
+     * application should display the SAS and provide a mechanism at
+     * the user interface that enables the user to confirm the SAS.
+     *
+     * ZRTP remembers the SAS confirmation status together with the
+     * retained secrets data. If both parties confirmed the SAS then
+     * ZRTP informs the application about this status on the next ZRTP
+     * session.
+     *
+     * For more detailed information regarding SAS please refer to the
+     * ZRTP specification, chapter 8.
      */
     void SASVerified() {
         if (zrtpEngine != NULL)
@@ -122,7 +231,7 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
     }
 
     /**
-     * Reset the SAS verfied flag for the current active user's retained secrets.
+     * Reset the SAS verfied flag for the current user's retained secrets.
      *
      */
     void resetSASVerified() {
@@ -210,16 +319,16 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
      * Set the client ID for ZRTP Hello message.
      *
      * The GNU ccRTP client may set its id to identify itself in the
-     * ZRTP HELLO message. The maximum length is 16 characters. Shorter
-     * id string are allowed, they will be filled with blanks. Longer id
-     * will be truncated to 16 characters. The standard client id
-     * is <code>GNU ccRTP ZRTP  </code>.
+     * ZRTP Hello message. The maximum length is 16 characters. A
+     * shorter id string is possible, it will be filled with blanks. A
+     * longer id string will be truncated to 16 characters. The
+     * standard client id is <code>GNU ccRTP ZRTP </code>.
      *
-     * Setting the client's id must be done before starting the ZRTP
-     * protocol with start().
+     * Setting the client's id must be done before calling
+     * initialize() or starting the ZRTP protocol with startZrtp() .
      *
      * @param id
-     *     The client's id
+     *     The client's id string
      */
     void setClientId(std::string id) {
         clientIdString = id;
@@ -247,13 +356,16 @@ class ZrtpQueue : public AVPQueue, public ZrtpCallback {
     /**
      * Get the ZRTP SAS data.
      *
-     * Use this method to get the ZRTP SAS data formatted as string and
-     * ready to use in the SDP. Refer to ZRTP specification, chapter 9.4
+     * Use this method to get the ZRTP SAS data formatted as string
+     * and ready to use in the SDP as defined in the ZRTP
+     * specification, chapter 9.4. The format of this SAS string is
+     * different from the SAS string sent to the application via
+     * ZrtpUserCallback#showSAS.
      *
-     * @return
-     *    a std:string containing the SAS and SAS hash formatted as string
-     *    as specified in chapter 9.4. If ZRTP was not started or ZRTP is 
-     *    not yet in secure state the method returns an empty string.
+     * @return a std:string containing the SAS and the SAS hash,
+     *    formatted as specified in chapter 9.4. If ZRTP was not
+     *    started or ZRTP is not yet in secure state the method
+     *    returns an empty string.
      */
     std::string getSasData()  {
         if (zrtpEngine != NULL)
