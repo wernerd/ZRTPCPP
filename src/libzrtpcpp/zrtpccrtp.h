@@ -44,6 +44,7 @@ typedef SingleThreadRTPSession<SymmetricRTPChannel,
                                ZrtpQueue> SymmetricZRTPSession;
 
 
+#ifdef CCXX_IPV6
 /**
  * @typedef SymmetricZRTPSession
  *
@@ -56,9 +57,11 @@ typedef SingleThreadRTPSession<SymmetricRTPChannel,
  *
  * @short Symmetric UDP/IPv6 RTP session scheduled by one thread of execution.
  **/
-//typedef SingleThreadRTPSessionIPV6<SymmetricRTPChannelIPV6,
-//				   SymmetricRTPChannelIPV6,
-//				   ZrtpQueue> SymmetricZRTPSessionIPV6;
+typedef SingleThreadRTPSessionIPV6<SymmetricRTPChannelIPV6,
+				   SymmetricRTPChannelIPV6,
+				   ZrtpQueue> SymmetricZRTPSessionIPV6;
+#endif // CCXX_IPV6
+
 #ifdef   CCXX_NAMESPACES
 }
 #endif
