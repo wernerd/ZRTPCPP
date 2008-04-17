@@ -143,47 +143,6 @@ typedef struct ErrorAckPacket {
     uint8_t crc[ZRTP_WORD_SIZE];
 } ErrorAckPacket_t;
 
-/* big/little endian conversion */
-
-#if 0
-
-static inline uint16_t U16_AT( void const * _p )
-{
-    const uint8_t * p = (const uint8_t *)_p;
-    return ( ((uint16_t)p[0] << 8) | p[1] );
-}
-static inline uint32_t U32_AT( void const * _p )
-{
-    const uint8_t * p = (const uint8_t *)_p;
-    return ( ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16)
-              | ((uint32_t)p[2] << 8) | p[3] );
-}
-static inline uint64_t U64_AT( void const * _p )
-{
-    const uint8_t * p = (const uint8_t *)_p;
-    return ( ((uint64_t)p[0] << 56) | ((uint64_t)p[1] << 48)
-              | ((uint64_t)p[2] << 40) | ((uint64_t)p[3] << 32)
-              | ((uint64_t)p[4] << 24) | ((uint64_t)p[5] << 16)
-              | ((uint64_t)p[6] << 8) | p[7] );
-}
-#if defined WORDS_BIGENDIAN
-#   define hton16(i)   ( i )
-#   define hton32(i)   ( i )
-#   define hton64(i)   ( i )
-#   define ntoh16(i)   ( i )
-#   define ntoh32(i)   ( i )
-#   define ntoh64(i)   ( i )
-#else
-#   define hton16(i)   U16_AT(&i)
-#   define hton32(i)   U32_AT(&i)
-#   define hton64(i)   U64_AT(&i)
-#   define ntoh16(i)   U16_AT(&i)
-#   define ntoh32(i)   U32_AT(&i)
-#   define ntoh64(i)   U64_AT(&i)
-#endif
-
-#endif //hton16
-
 #endif // ZRTPPACKET_H
 
 

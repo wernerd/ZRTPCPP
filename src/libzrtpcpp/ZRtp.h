@@ -64,28 +64,31 @@ class ZrtpDH;
 /**
  * The main ZRTP class.
  *
- * This contains the whole ZRTP implementation. It handles the ZRTP
- * HMAC, DH, and other data management. The user of this class needs
- * to know only a few methods and needs to provide only a few external
- * functions to connect to a Timer mechanism and to send data via RTP
- * and SRTP.
+ * This is the main class of the RTP/SRTP independent part of the GNU
+ * ZRTP. It handles the ZRTP HMAC, DH, and other data management. The
+ * user of this class needs to know only a few methods and needs to
+ * provide only a few external functions to connect to a Timer
+ * mechanism and to send data via RTP and SRTP. Refer to the
+ * ZrtpCallback class to get detailed information regading the
+ * callback methods required by GNU RTP.
  *
- * <p/>
+ * The class ZrtpQueue is the GNU ccRTP specific implementation that
+ * extends standard ccRTP RTP provide ZRTP support. Refer to the
+ * documentation of ZrtpQueue to get more information about the usage
+ * of ZRtp and associated classes.
  *
- * The main entry into the ZRTP class is the <code>
- * processExtensionHeader() </code> method.
- *
- * <p/>
+ * The main entry into the ZRTP class is the processExtensionHeader()
+ * method.
  *
  * This class does not directly handle the protocol states, timers,
  * and packet resend. The protocol state engine is responsible for
  * these actions.
- * <p/>
+ * 
  * Example how to use ZRtp:
- *
+ *<pre>
  *    zrtpEngine = new ZRtp((uint8_t*)ownZid, (ZrtpCallback*)this, idString);
  *    zrtpEngine->startZrtpEngine();
- * <p/>
+ *</pre>
  * @see ZrtpCallback
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>

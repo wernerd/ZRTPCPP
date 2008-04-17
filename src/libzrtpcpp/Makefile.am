@@ -12,17 +12,16 @@ AUTOMAKE_OPTIONS = no-dependencies dist-shar
 ccxxincludedir=$(includedir)/libzrtpcpp
 
 if CCRTP_SUPPORT
-ccrtp_header = ZrtpQueue.h ZrtpUserCallback.h TimeoutProvider.h  zrtpccrtp.h
+ccrtp_noinst = TimeoutProvider.h
+ccrtp_inst = ZrtpQueue.h ZrtpUserCallback.h zrtpccrtp.h
 endif
 
-ccxxinclude_HEADERS = Base32.h    ZrtpPacketBase.h      ZrtpPacketDHPart.h    ZrtpPacketHello.h \
+ccxxinclude_HEADERS = ZrtpCodes.h ZrtpCallback.h $(ccrtp_inst)
+
+
+noinst_HEADERS =  Base32.h        ZrtpPacketBase.h      ZrtpPacketDHPart.h    ZrtpPacketHello.h \
 		  ZIDFile.h       ZrtpPacketClearAck.h  ZrtpStateClass.h      ZrtpCrc32.h \
 		  ZIDRecord.h     ZrtpPacketCommit.h    ZrtpPacketGoClear.h   ZrtpStates.h \
-		  ZrtpCallback.h  ZrtpPacketConf2Ack.h  zrtpPacket.h          ZrtpTextData.h \
+		  ZrtpPacketConf2Ack.h  zrtpPacket.h          ZrtpTextData.h \
 		  ZRtp.h          ZrtpPacketConfirm.h   ZrtpPacketHelloAck.h  ZrtpPacketError.h \
-		  ZrtpPacketErrorAck.h $(ccrtp_header)
-
-
-
-# kdoc:
-#	kdoc -f html -d $(KDOC_DIR) -L$(KDOC_DIR) -n ccrtp $(ccxxinclude_HEADERS)
+		  ZrtpPacketErrorAck.h  $(ccrtp_noinst)

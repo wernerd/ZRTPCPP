@@ -72,7 +72,7 @@ static const int OwnZIDRecord     = 0x20;
 class ZIDRecord {
     friend class ZIDFile;
 
- private:
+private:
     zidrecord2_t record;
     unsigned long position;
 
@@ -93,16 +93,16 @@ class ZIDRecord {
 
     zidrecord2_t* getRecordData() {return &record; }
     int getRecordLength()         {return sizeof(zidrecord2_t); }
+
+    bool isValid()    { return ((record.flags & Valid) == Valid); }
+    void setValid()   { record.flags |= Valid; }
     
- public:
+public:
     ZIDRecord(const unsigned char *idData) {
 	memset(&record, 0, sizeof(zidrecord2_t));
 	memcpy(record.identifier, idData, IDENTIFIER_LEN);
 	record.version = 2;
     }
-
-    bool isValid()    { return ((record.flags & Valid) == Valid); }
-    void setValid()   { record.flags |= Valid; }
 
     void setRs1Valid()   { record.flags |= RS1Valid; }
     void resetRs1Valid() { record.flags &= ~RS1Valid; }

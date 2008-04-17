@@ -90,8 +90,6 @@ class Base32 {
      * Constructor was used. Otherwise we return <code>NULL</code>
      * pointer and length zero.
      *
-     * <p/>
-     *
      * <em>Note:</em> This method returns a pointer to the decoded
      * binary data. The Base32 object manages this pointer, thus you
      * may need to copy the data to a save place before deleting this

@@ -22,23 +22,20 @@
 #include <string>
 
 // For message severity codes
-#include <libzrtpcpp/ZrtpCallback.h>
-#include <libzrtpcpp/ZrtpQueue.h>
+#include <libzrtpcpp/ZrtpCodes.h>
 
 /**
- * This class defines the user callback functions used by ZRTP.
+ * Application callback methods.
  *
- * This class specifies the user callback functions used by the ZRTP 
- * implementation to communicate with the application that requires ZRTP
- * support.
+ * The ccRTP specific part of GNU ZRTP uses these callback methods
+ * to report ZRTP events to the application. This class implements a
+ * default behaviour for each callback method, usually just a return.
  *
- * <p/>
+ * An application may extend this class and overload methods
+ * to implement its own behaviour. The application must register its
+ * callback class using ZrtpQueue#setUserCallback().
  *
- * This ZRTP user callback class defines the methods that an application may
- * implement (overwrite) to trigger own activities, for example to inform about
- * security state, display information or error messages, and so on.
- *
- * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
+ * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
 class ZrtpUserCallback {

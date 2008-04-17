@@ -28,8 +28,6 @@
  * handle the ZRTP HMAC, DH, and other data management. This is done in
  * class ZRtp which is the parent of this class.
  *
- * <p/>
- *
  * The methods of this class implement the ZRTP state actions.
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
@@ -156,7 +154,7 @@ public:
     /**
      * Initialize and activate a timer.
      *
-     * @param
+     * @param t
      *    The ZRTP timer structure to use for the timer.
      * @return
      *    1 timer was activated
@@ -167,7 +165,7 @@ public:
     /**
      * Compute and set the next timeout value.
      *
-     * @param
+     * @param t
      *    The ZRTP timer structure to use for the timer.
      * @return
      *    1 timer was activated

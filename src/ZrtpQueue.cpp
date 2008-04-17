@@ -24,7 +24,8 @@
 
 #include <libzrtpcpp/ZrtpQueue.h>
 #include <libzrtpcpp/ZIDFile.h>
-#include <libzrtpcpp/ZrtpStateClass.h>
+#include <libzrtpcpp/ZRtp.h>
+//#include <libzrtpcpp/ZrtpStateClass.h>
 #include <libzrtpcpp/ZrtpUserCallback.h>
 
 static TimeoutProvider<std::string, ost::ZrtpQueue*>* staticTimeoutProvider = NULL;
@@ -33,36 +34,6 @@ static TimeoutProvider<std::string, ost::ZrtpQueue*>* staticTimeoutProvider = NU
 #ifdef  CCXX_NAMESPACES
 namespace ost {
 #endif
-
-int32_t
-ZrtpQueue::initialize(const char *zidFilename)
-{
-    int32_t ret = 1;
-    synchEnter();
-
-    if (staticTimeoutProvider == NULL) {
-        staticTimeoutProvider = new TimeoutProvider<std::string, ZrtpQueue*>();
-        staticTimeoutProvider->start();
-    }
-    ZIDFile *zf = ZIDFile::getInstance();
-    if (!zf->isOpen()) {
-        std::string fname;
-        if (zidFilename == NULL) {
-            char *home = getenv("HOME");
-            std::string baseDir = (home != NULL) ? (std::string(home) + std::string("/."))
-                                                    : std::string(".");
-            fname = baseDir + std::string("GNUccRTP.zid");
-            zidFilename = fname.c_str();
-        }
-        if (zf->open((char *)zidFilename) < 0) {
-            enableZrtp = false;
-            ret = -1;
-        }
-    }
-    enableZrtp = true;
-    synchLeave();
-    return ret;
-}
 
 ZrtpQueue::ZrtpQueue(uint32 size, RTPApplication& app) :
         AVPQueue(size,app)
@@ -113,6 +84,37 @@ ZrtpQueue::~ZrtpQueue() {
         senderCryptoContext = NULL;
     }
 }
+
+int32_t
+ZrtpQueue::initialize(const char *zidFilename)
+{
+    int32_t ret = 1;
+    synchEnter();
+
+    if (staticTimeoutProvider == NULL) {
+        staticTimeoutProvider = new TimeoutProvider<std::string, ZrtpQueue*>();
+        staticTimeoutProvider->start();
+    }
+    ZIDFile *zf = ZIDFile::getInstance();
+    if (!zf->isOpen()) {
+        std::string fname;
+        if (zidFilename == NULL) {
+            char *home = getenv("HOME");
+            std::string baseDir = (home != NULL) ? (std::string(home) + std::string("/."))
+                                                    : std::string(".");
+            fname = baseDir + std::string("GNUccRTP.zid");
+            zidFilename = fname.c_str();
+        }
+        if (zf->open((char *)zidFilename) < 0) {
+            enableZrtp = false;
+            ret = -1;
+        }
+    }
+    enableZrtp = true;
+    synchLeave();
+    return ret;
+}
+
 
 void ZrtpQueue::startZrtp() {
     ZIDFile *zid = ZIDFile::getInstance();
@@ -504,6 +506,13 @@ ZrtpQueue::cancelTimer()
     return 1;
 }
 
+void ZrtpQueue::handleTimeout(const std::string &c) {
+    if (zrtpEngine != NULL) {
+	zrtpEngine->processTimeout();
+    }
+}
+
+
 void ZrtpQueue::handleGoClear()
 {
     fprintf(stderr, "Need to process a GoClear message!");
@@ -560,6 +569,106 @@ bool ZrtpQueue::checkSASSignature(std::string sas) {
 }
 
 
+void ZrtpQueue::setEnableZrtp(bool onOff)   {
+    enableZrtp = onOff;
+}
+
+bool ZrtpQueue::isEnableZrtp() {
+    return enableZrtp;
+}
+
+void ZrtpQueue::SASVerified() {
+    if (zrtpEngine != NULL)
+	zrtpEngine->SASVerified();
+}
+
+void ZrtpQueue::resetSASVerified() {
+    if (zrtpEngine != NULL)
+	zrtpEngine->resetSASVerified();
+}
+
+void ZrtpQueue::goClearOk()    {  }
+
+void ZrtpQueue::requestGoClear()  { }
+
+void ZrtpQueue::setSigsSecret(uint8* data)  {
+    if (zrtpEngine != NULL)
+	zrtpEngine->setSigsSecret(data);
+}
+
+void ZrtpQueue::setSrtpsSecret(uint8* data)  {
+    if (zrtpEngine != NULL)
+	zrtpEngine->setSrtpsSecret(data);
+}
+
+void ZrtpQueue::setOtherSecret(uint8* data, int32 length)  {
+    if (zrtpEngine != NULL)
+	zrtpEngine->setOtherSecret(data, length);
+}
+
+void ZrtpQueue::setUserCallback(ZrtpUserCallback* ucb) {
+    zrtpUserCallback = ucb;
+}
+
+void ZrtpQueue::setClientId(std::string id) {
+    clientIdString = id;
+}
+
+std::string ZrtpQueue::getHelloHash()  {
+    if (zrtpEngine != NULL)
+	return zrtpEngine->getHelloHash();
+    else
+	return std::string();
+}
+
+std::string ZrtpQueue::getSasData()  {
+    if (zrtpEngine != NULL)
+	return zrtpEngine->getSasData();
+    else
+	return std::string();
+}
+
+std::string ZrtpQueue::getMultiStrParams()  {
+    if (zrtpEngine != NULL)
+	return zrtpEngine->getMultiStrParams();
+    else
+	return std::string();
+}
+
+void ZrtpQueue::setMultiStrParams(std::string parameters)  {
+    if (zrtpEngine != NULL)
+	zrtpEngine->setMultiStrParams(parameters);
+}
+
+bool ZrtpQueue::isMultiStream()  {
+    if (zrtpEngine != NULL)
+	return zrtpEngine->isMultiStream();
+}
+
+void ZrtpQueue::acceptEnrollment(bool accepted) {
+    if (zrtpEngine != NULL)
+	zrtpEngine->acceptEnrollment(accepted);
+}
+
+bool ZrtpQueue::setSignatureData(uint8* data, int32 length) {
+    if (zrtpEngine != NULL) 
+	return zrtpEngine->setSignatureData(data, length);
+}
+
+int32 ZrtpQueue::getSignatureData(uint8* data) {
+    if (zrtpEngine != NULL) 
+	return zrtpEngine->getSignatureData(data);
+}
+
+int32 ZrtpQueue::getSignatureLength() {
+    if (zrtpEngine != NULL) 
+	return zrtpEngine->getSignatureLength();
+}
+
+void ZrtpQueue::setPBXEnrollment(bool yesNo) {
+    if (zrtpEngine != NULL) 
+	zrtpEngine->setPBXEnrollment(yesNo);
+}
 
 IncomingZRTPPkt::IncomingZRTPPkt(const unsigned char* const block, size_t len) :
         IncomingRTPPkt(block,len)

@@ -20,56 +20,7 @@
 
 #include <string>
 #include <libzrtpcpp/ZrtpPacketBase.h>
-
-/**
- * This class defines the callback functions required by ZRTP.
- *
- * This class is a pure abstract class, aka Interface in Java, that specifies
- * the callback interface for the ZRTP implementation. The ZRTP implementation
- * uses these functions to communicate with the host environment, for example
- * to send data via the RTP/SRTP stack, to set timers and cancel timer and so
- * on.
- *
- * <p/>
- *
- * This ZRTP needs only ten callback methods to be implemented by the host
- * environment.
- *
- * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
- */
-
-/**
- * This enum defines the information message severity.
- *
- * The ZRTP implementation issues information messages to inform the user
- * about ongoing processing, unusual behavior, or alerts in case of severe
- * problems. The severity levels and their meaning are:
- *
- * <dl>
- * <dt>Info</dt> <dd>keeps the user informed about ongoing processing and
- *     security setup.
- * </dd>
- * <dt>Warning</dt> <dd>is an information about some security issues, e.g. if
- *     an AES 256 encryption is request but only DH 3072 as public key scheme
- *     is supported. ZRTP will establish a secure session (SRTP).
- * </dd>
- * <dt>Error</dt> <dd>is used if an error occured during ZRTP protocol usage. For
- *     example if an unknown or unsupported alogrithm is offerd. In case of
- *     <em>Error</em> ZRTP will <b>not</b> establish a secure session.
- * </dd>
- * <dt>Alert</dt> <dd>shows a real security problem. This probably falls into
- *     a <em>MitM</em> category. ZRTP of course will <b>not</b> establish a
- *     secure session.
- * </dd>
- * </dl>
- *
- */
-enum MessageSeverity {
-    Info = 1,
-    Warning,
-    Error,
-    Alert
-};
+#include <libzrtpcpp/ZrtpCodes.h>
 
 /**
  * This enum defines which role a ZRTP peer has.
@@ -119,19 +70,34 @@ enum EnableSecurity {
     ForSender   = 2
 };
 
+/**
+ * This abstract class defines the callback functions required by GNU ZRTP.
+ *
+ * This class is a pure abstract class, aka Interface in Java, that
+ * defines the callback interface that the specific part of a GNU ZRTP
+ * must implement. The generic part of GNU ZRTP uses these mehtods
+ * to communicate with the specific part, for example to send data
+ * via the RTP/SRTP stack, to set timers and cancel timer and so on.
+ *
+ * The generiy part of GNU ZRTP needs only a few callback methods to
+ * be implemented by the specific part.
+ *
+ * @author Werner Dittmann <Werner.Dittmann@t-online.de>
+ */
 
 class ZrtpCallback {
 
- public:
+protected:
+    friend class ZRtp;
+
     virtual ~ZrtpCallback() {};
     /**
      * Send a ZRTP packet via RTP.
      *
-     * ZRTP call this method if it needs to send data via RTP. The
-     * data must not be encrypted before transfer.
+     * ZRTP calls this method to send a ZRTP packet via the RTP session.
      *
      * @param data
-     *    Points to ZRTP packet to send as RTP extension header.
+     *    Points to ZRTP packet to send.
      * @param length
      *    The length in bytes of the data
      * @return
@@ -153,7 +119,7 @@ class ZrtpCallback {
      * Cancel the active timer.
      *
      * @return
-     *    zero if activation failed, one if timer was activated
+     *    zero if cancel action failed, one if timer was canceled
      */
     virtual int32_t cancelTimer() =0;
 
@@ -174,74 +140,87 @@ class ZrtpCallback {
     virtual void sendInfo(MessageSeverity severity, const char* msg) =0;
 
     /**
-     * This method gets call by ZRTP as soon as the SRTP secrets are available.
+     * SRTP crypto data ready for the sender or receiver.
      *
      * The ZRTP implementation calls this method right after all SRTP
      * secrets are computed and ready to be used. The parameter points
      * to a structure that contains pointers to the SRTP secrets and a
-     * <code>enum Role</code>. The called host method (the
-     * implementation of this abstract method) must copy the pointers
-     * to the SRTP secrets it needs into a save place. The
-     * SrtpSecret_t structure is destroyed when the callback method
-     * returns to the ZRTP implementation.
+     * <code>enum Role</code>. The called method (the implementation
+     * of this abstract method) must either copy the pointers to the SRTP
+     * data or the SRTP data itself to a save place. The SrtpSecret_t
+     * structure is destroyed after the callback method returns to the
+     * ZRTP implementation.
      *
-     * The SRTP secrets themselfs are ontained in the ZRtp object and
-     * are valid as long as the ZRtp object is active. TheZRtp's
-     * destructor clears the secrets.
+     * The SRTP data themselfs are ontained in the ZRtp object and are
+     * valid as long as the ZRtp object is active. TheZRtp's
+     * destructor clears the secrets. Thus the called method needs to
+     * save the pointers only, ZRtp takes care of the data.
      *
-     * @param secrets
-     *     A pointer to a SrtpSecret_t structure that contains all necessary
-     *     data.
-     * @param part
-     *    Defines for which part (sender or receiver) to switch on security
-     * @return
-     *    Returns false if something went wrong during initialization of SRTP
-     *    context, for example memory shortage.
+     * The implementing class may enable SRTP processing in this
+     * method or delay it to srtpSecertsOn().
+     *
+     * @param secrets A pointer to a SrtpSecret_t structure that
+     *     contains all necessary data.
+     *
+     * @param part for which part (Sender or Receiver) this data is
+     *     valid.
+     *
+     * @return Returns false if something went wrong during
+     *    initialization of SRTP context, for example memory shortage.
      */
     virtual bool srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part) =0;
 
     /**
-     * This method shall clear the SRTP Context and switch off GUI inidicators.
+     * Switch off the security for the defined part.
      *
-     * @param part
-     *    Defines for which part (sender or receiver) to switch on security
+     * @param part Defines for which part (sender or receiver) to
+     *    switch on security
      */
     virtual void srtpSecretsOff(EnableSecurity part) =0;
 
     /**
-     * This method shall switch on GUI inidicators.
+     * Switch on the security.
      *
-     * @param c
-     *    The name of the used cipher algorithm and mode, or NULL
-     * @param s
-     *    The SAS string
-     * @param verified
-     *    if <code>verified</code> is true then SAS was verified by both
-     *    parties during a previous call.
+     * ZRTP calls this method after it has computed the SAS and check
+     * if it is verified or not. In addition ZRTP provides information
+     * about the cipher algorithm and key length for the SRTP session.
+     *
+     * This method must enable SRTP processing if it was not enabled
+     * during sertSecretsReady().
+     *
+     * @param c The name of the used cipher algorithm and mode, or
+     *    NULL
+     *
+     * @param s The SAS string
+     *
+     * @param verified if <code>verified</code> is true then SAS was
+     *    verified by both parties during a previous call.
      */
     virtual void srtpSecretsOn(std::string c, std::string s, bool verified) =0;
 
     /**
-     * This method shall handle GoClear requests.
+     * This method handles GoClear requests.
      *
      * According to the ZRTP specification the user must be informed about
-     * this message because the ZRTP implementation switches off security
+     * a GoClear request because the ZRTP implementation switches off security
      * if it could authenticate the GoClear packet.
+     *
+     * <b>Note:</b> GoClear is not yet implemented in GNU ZRTP.
      *
      */
     virtual void handleGoClear() =0;
 
     /**
-     * ZRTP calls this if the negotiation failed.
+     * Handle ZRTP negotiation failed.
      *
-     * ZRTP calls this method in case ZRTP negotiation failed. The parameters
-     * show the severity as well as some explanatory text.
-     * Refer to the <code>MessageSeverity</code> enum above.
+     * ZRTP calls this method in case ZRTP negotiation failed. The
+     * parameters show the severity as well as some explanatory text.
      *
      * @param severity
      *     This defines the message's severity
      * @param msg
      *     The message string, terminated with a null byte.
+     * @see MessageSeverity
      */
     virtual void zrtpNegotiationFailed(MessageSeverity severity, const char* msg) =0;
 
@@ -255,46 +234,61 @@ class ZrtpCallback {
     virtual void zrtpNotSuppOther() =0;
 
     /**
-     * ZRTP calls these methods to enter or leave its synchronization mutex.
+     * Enter synchronization mutex.
+     *
+     * GNU ZRTP requires one mutes to synchronize its
+     * processing. Because mutex implementations depend on the
+     * underlying infrastructure, for example operating system or
+     * thread implementation, GNU ZRTP delegates mutex handling to the
+     * spcific part of its implementation.
      */
     virtual void synchEnter() =0;
+
+    /**
+     * Leave synchronization mutex.
+     */
     virtual void synchLeave() =0;
 
     /**
-     * ZRTP uses this method to inform about a PBX enrollment request.
+     * Inform about a PBX enrollment request.
      *
-     * Please refer to chapter 8.3 ff to get more details about PBX enrollment
-     * and SAS relay.
+     * Please refer to chapter 8.3 ff to get more details about PBX
+     * enrollment and SAS relay.
      *
-     * @param info
-     *    Give some information to the user about the PBX requesting an
-     *    enrollment.
+     * <b>Note:</b> PBX enrollement is not yet fully supported by GNU
+     * ZRTP.
      *
+     * @param info Give some information to the user about the PBX
+     *    requesting an enrollment.
      */
     virtual void zrtpAskEnrollment(std::string info) =0;
 
     /**
-     * ZRTP uses this method to inform about PBX enrollment result.
+     * Inform about PBX enrollment result.
      *
      * Informs the use about the acceptance or denial of an PBX enrollment
      * request
      *
-     * @param info
-     *    Give some information to the user about the result of an
-     *    enrollment.
+     * <b>Note:</b> PBX enrollement is not yet fully supported by GNU
+     * ZRTP.
      *
+     * @param info Give some information to the user about the result
+     *    of an enrollment.
      */
     virtual void zrtpInformEnrollment(std::string info) =0;
 
     /**
-     * ZRTPQueue calls this method to request a SAS signature.
+     * Request a SAS signature.
      *
      * After ZRTP was able to compute the Short Authentication String
-     * (SAS) it calls this method. The client may now use an approriate
-     * method to sign the SAS. The client may use 
-     * <code>setSignatureData()</code> of ZrtpQueue to store the signature
-     * data an enable signature transmission to the other peer. Refer
-     * to chapter 8.2 of ZRTP specification.
+     * (SAS) it calls this method. The client may now use an
+     * approriate method to sign the SAS. The client may use
+     * ZrtpQueue#setSignatureData() to store the signature data an
+     * enable signature transmission to the other peer. Refer to
+     * chapter 8.2 of ZRTP specification.
+     *
+     * <b>Note:</b> SAS signing is not yet fully supported by GNU
+     * ZRTP.
      *
      * @param sas
      *    The SAS string to sign.
@@ -315,6 +309,9 @@ class ZrtpCallback {
      * this case ZRTP signals an error to the other peer and terminates
      * the ZRTP handshake.
      *
+     * <b>Note:</b> SAS signing is not yet fully supported by GNU
+     * ZRTP.
+     *
      * @param sas
      *    The SAS string that was signed by the other peer.
      * @return
@@ -326,3 +323,10 @@ class ZrtpCallback {
 
 #endif // ZRTPCALLBACK
 
+/** EMACS **
+ * Local variables:
+ * mode: c++
+ * c-default-style: ellemtel
+ * c-basic-offset: 4
+ * End:
+ */

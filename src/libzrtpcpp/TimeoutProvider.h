@@ -170,6 +170,8 @@ public:
     }
 
     /**
+     * Request a timeout trigger.
+     *
      * @param time_ms	Number of milli-seconds until the timeout is
      * 			wanted. Note that a small additional period of time is
      * 			added that depends on execution speed.

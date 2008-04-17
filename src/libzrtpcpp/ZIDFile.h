@@ -27,11 +27,6 @@
  *
  * The ZID file holds information about peers.
  *
- * <p/>
- *
- * NOTE: This class is a friend of the ZIDRecord class. Please keep both
- * classes synchronized.
- *
  * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
@@ -57,7 +52,7 @@ public:
      *
      * This method just creates an instance an store a pointer to it
      * in a static variable. The ZIDFile is a singleton, thus only
-     * <e>one</e> ZID file can be open at one time.
+     * <em>one</em> ZID file can be open at one time.
      *
      * @return
      *    A pointer to the global ZIDFile singleton instance.
@@ -68,10 +63,8 @@ public:
      *
      * This static function either opens an existing ZID file or
      * creates a new ZID file with the given name. The ZIDFile is a
-     * singleton, thus only <e>one</e> ZID file can be open at one
+     * singleton, thus only <em>one</em> ZID file can be open at one
      * time.
-     *
-     * <p/>
      *
      * To open another ZID file you must close the active ZID file
      * first.
