@@ -19,7 +19,6 @@
 #define _ZRTPCALLBACK_H_
 
 #include <string>
-#include <libzrtpcpp/ZrtpPacketBase.h>
 #include <libzrtpcpp/ZrtpCodes.h>
 
 /**
