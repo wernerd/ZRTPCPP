@@ -12,8 +12,8 @@ AUTOMAKE_OPTIONS = no-dependencies dist-shar
 ccxxincludedir=$(includedir)/libzrtpcpp
 
 if CCRTP_SUPPORT
-ccrtp_noinst = TimeoutProvider.h
-ccrtp_inst = ZrtpQueue.h ZrtpUserCallback.h zrtpccrtp.h
+ccrtp_noinst = 
+ccrtp_inst = ZrtpQueue.h ZrtpUserCallback.h zrtpccrtp.h TimeoutProvider.h
 endif
 
 ccxxinclude_HEADERS = ZrtpCodes.h ZrtpCallback.h $(ccrtp_inst)

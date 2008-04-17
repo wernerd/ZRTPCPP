@@ -21,6 +21,7 @@
 #include <ccrtp/cqueue.h>
 #include <ccrtp/rtppkt.h>
 #include <libzrtpcpp/ZrtpCallback.h>
+#include <libzrtpcpp/TimeoutProvider.h>
 
 class ZrtpUserCallback;
 class ZRtp;

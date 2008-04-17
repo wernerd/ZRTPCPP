@@ -20,12 +20,10 @@
  */
 
 #include <string>
-#include <libzrtpcpp/TimeoutProvider.h>
 
 #include <libzrtpcpp/ZrtpQueue.h>
 #include <libzrtpcpp/ZIDFile.h>
 #include <libzrtpcpp/ZRtp.h>
-//#include <libzrtpcpp/ZrtpStateClass.h>
 #include <libzrtpcpp/ZrtpUserCallback.h>
 
 static TimeoutProvider<std::string, ost::ZrtpQueue*>* staticTimeoutProvider = NULL;
