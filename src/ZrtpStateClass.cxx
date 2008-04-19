@@ -275,7 +275,9 @@ int32_t ZrtpStateClass::evDetect(void) {
         return (Done);
     }
     else { // unknown Event type for this state (covers Error and ZrtpClose)
-        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        if (event->type != ZrtpClose) {
+            parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        }
         sentPacket = NULL;
         nextState(Initial);
         return (Fail);
@@ -372,7 +374,7 @@ int32_t ZrtpStateClass::evAckSent(void) {
          */
 
         if (first == 'h' && last ==' ') {
-            ZrtpPacketHelloAck *helloAck = parent->prepareHelloAck();
+            ZrtpPacketHelloAck* helloAck = parent->prepareHelloAck();
 
             if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(helloAck))) {
                 nextState(Detect);
@@ -436,7 +438,9 @@ int32_t ZrtpStateClass::evAckSent(void) {
         return (Done);
     }
     else {   // unknown Event type for this state (covers Error and ZrtpClose)
-        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        if (event->type != ZrtpClose) {
+            parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        }
         commitPkt = NULL;
         sentPacket = NULL;
         nextState(Initial);
@@ -545,7 +549,9 @@ int32_t ZrtpStateClass::evAckDetected(void) {
         return (Done);      // unknown packet for this state - Just ignore it
     }
     else {  // unknown Event type for this state (covers Error and ZrtpClose)
-        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        if (event->type != ZrtpClose) {
+            parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        }
         nextState(Initial);
         return (Fail);
     }
@@ -620,8 +626,10 @@ int32_t ZrtpStateClass::evWaitCommit(void) {
         return (Done);      // unknown packet for this state - Just ignore it
     }
     else {  // unknown Event type for this state (covers Error and ZrtpClose)
-        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
-        sentPacket = NULL;   // Don't delet sent packet - it's a fixed helloack
+        if (event->type != ZrtpClose) {
+            parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        }
+        sentPacket = NULL;
         nextState(Initial);
         return (Fail);
     }
@@ -768,7 +776,9 @@ int32_t ZrtpStateClass::evCommitSent(void) {
         return (Done);
     }
     else {  // unknown Event type for this state (covers Error and ZrtpClose)
-        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        if (event->type != ZrtpClose) {
+            parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        }
         sentPacket = NULL;
         nextState(Initial);
         return (Fail);
@@ -841,7 +851,9 @@ int32_t ZrtpStateClass::evWaitDHPart2(void) {
         return (Done);      // unknown packet for this state - Just ignore it
     }
     else {  // unknown Event type for this state (covers Error and ZrtpClose)
-        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        if (event->type != ZrtpClose) {
+            parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        }
         sentPacket = NULL;
         nextState(Initial);
         return (Fail);
@@ -921,7 +933,9 @@ int32_t ZrtpStateClass::evWaitConfirm1(void) {
         return (Done);
     }
     else {  // unknown Event type for this state (covers Error and ZrtpClose)
-        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        if (event->type != ZrtpClose) {
+            parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        }
         sentPacket = NULL;
         nextState(Initial);
         return (Fail);
@@ -1004,7 +1018,9 @@ int32_t ZrtpStateClass::evWaitConfirm2(void) {
         return (Done);      // unknown packet for this state - Just ignore it
     }
     else {  // unknown Event type for this state (covers Error and ZrtpClose)
-        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        if (event->type != ZrtpClose) {
+            parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        }
         sentPacket = NULL;
         nextState(Initial);
         return (Fail);
@@ -1068,7 +1084,9 @@ int32_t ZrtpStateClass::evWaitConfAck(void) {
         return (Done);
     }
     else {  // unknown Event type for this state (covers Error and ZrtpClose)
-        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        if (event->type != ZrtpClose) {
+            parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        }
         sentPacket = NULL;
         nextState(Initial);
         return (Fail);
@@ -1116,7 +1134,9 @@ int32_t ZrtpStateClass::evWaitClearAck(void) {
         return (Done);
     }
     else {  // unknown Event type for this state (covers Error and ZrtpClose)
-        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        if (event->type != ZrtpClose) {
+            parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        }
 	sentPacket = NULL;
 	nextState(Initial);
         return (Fail);
@@ -1178,7 +1198,9 @@ int32_t ZrtpStateClass::evWaitErrorAck(void) {
         return (Done);
     }
     else {  // unknown Event type for this state (covers Error and ZrtpClose)
-        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        if (event->type != ZrtpClose) {
+            parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        }
         sentPacket = NULL;
         nextState(Initial);
         return (Fail);
@@ -1233,7 +1255,9 @@ int32_t ZrtpStateClass::evSecureState(void) {
         parent->srtpSecretsOff(ForSender);
         parent->srtpSecretsOff(ForReceiver);
         nextState(Initial);
-        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        if (event->type != ZrtpClose) {
+            parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        }
         parent->sendInfo(Info, InfoSecureStateOff);
     }
     return (Done);
