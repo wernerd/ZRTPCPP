@@ -659,7 +659,7 @@ namespace ost {
 
         int32_t cancelTimer();
 
-        void sendInfo(MessageSeverity severity, const char* msg);
+        void sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t subCode);
 
         bool srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part);
 
@@ -669,7 +669,7 @@ namespace ost {
 
         void handleGoClear();
 
-        void zrtpNegotiationFailed(MessageSeverity severity, const char* msg);
+        void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode);
 
         void zrtpNotSuppOther();
 

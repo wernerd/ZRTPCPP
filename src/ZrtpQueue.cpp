@@ -28,6 +28,7 @@
 
 static TimeoutProvider<std::string, ost::ZrtpQueue*>* staticTimeoutProvider = NULL;
 
+using namespace GnuZrtpCodes;
 
 #ifdef  CCXX_NAMESPACES
 namespace ost {
@@ -175,7 +176,7 @@ ZrtpQueue::takeInDataPacket(void)
 
         if (!zrtpCheckCksum(buffer, temp, crc)) {
             delete buffer;
-            zrtpUserCallback->showMessage(Error, "ZRTP packet checksum mismatch");
+            zrtpUserCallback->showMessage(Warning, WarningCRCmismatch);
             return 0;
         }
 
@@ -304,10 +305,10 @@ bool
 ZrtpQueue::onSRTPPacketError(IncomingRTPPkt& pkt, int32 errorCode)
 {
     if (errorCode == -1) {
-        sendInfo(Error, "Dropping packet because of authentication error!");
+        sendInfo(Warning, WarningSRTPauthError);
     }
     else {
-        sendInfo(Error, "Dropping packet because replay check failed!");
+        sendInfo(Warning, WarningSRTPreplayError);
     }
     return false;
 }
@@ -506,25 +507,24 @@ ZrtpQueue::cancelTimer()
 
 void ZrtpQueue::handleTimeout(const std::string &c) {
     if (zrtpEngine != NULL) {
-	zrtpEngine->processTimeout();
+        zrtpEngine->processTimeout();
     }
 }
-
 
 void ZrtpQueue::handleGoClear()
 {
     fprintf(stderr, "Need to process a GoClear message!");
 }
 
-void ZrtpQueue::sendInfo(MessageSeverity severity, const char* msg) {
+void ZrtpQueue::sendInfo(MessageSeverity severity, int32_t subCode) {
     if (zrtpUserCallback != NULL) {
-        zrtpUserCallback->showMessage(severity, msg);
+        zrtpUserCallback->showMessage(severity, subCode);
     }
 }
 
-void ZrtpQueue::zrtpNegotiationFailed(MessageSeverity severity, const char* msg) {
+void ZrtpQueue::zrtpNegotiationFailed(MessageSeverity severity, int32_t subCode) {
     if (zrtpUserCallback != NULL) {
-        zrtpUserCallback->zrtpNegotiationFailed(severity, msg);
+        zrtpUserCallback->zrtpNegotiationFailed(severity, subCode);
     }
 }
 
@@ -566,7 +566,6 @@ bool ZrtpQueue::checkSASSignature(std::string sas) {
     }
 }
 
-
 void ZrtpQueue::setEnableZrtp(bool onOff)   {
     enableZrtp = onOff;
 }
@@ -577,12 +576,12 @@ bool ZrtpQueue::isEnableZrtp() {
 
 void ZrtpQueue::SASVerified() {
     if (zrtpEngine != NULL)
-	zrtpEngine->SASVerified();
+        zrtpEngine->SASVerified();
 }
 
 void ZrtpQueue::resetSASVerified() {
     if (zrtpEngine != NULL)
-	zrtpEngine->resetSASVerified();
+        zrtpEngine->resetSASVerified();
 }
 
 void ZrtpQueue::goClearOk()    {  }

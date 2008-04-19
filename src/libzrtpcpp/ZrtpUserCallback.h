@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006-2007 Werner Dittmann
+  Copyright (C) 2006-2008 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -109,10 +109,10 @@ class ZrtpUserCallback {
          *
          * @param sev
          *     Severity of the message.
-         * @param message
-         *     The string containing the SAS.
+         * @param subCode
+         *     The subcode identifying the reason.
          */
-        virtual void showMessage(MessageSeverity sev, std::string message) {
+        virtual void showMessage(GnuZrtpCodes::MessageSeverity sev, int32_t subCode) {
             return;
         }
 
@@ -125,11 +125,11 @@ class ZrtpUserCallback {
          *
          * @param severity
          *     This defines the message's severity
-         * @param message
-         *     The message string, terminated with a null byte.
+         * @param subCode
+         *     The subcode identifying the reason.
          */
-        virtual void zrtpNegotiationFailed(MessageSeverity severity,
-					   std::string message) {
+        virtual void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity,
+					   int32_t subCode) {
             return;
         }
 

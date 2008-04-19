@@ -212,7 +212,7 @@ public:
      * @return
      *    Fail code
      */
-    int32_t timerFailed(const char* msg);
+    int32_t timerFailed(int32_t subCode);
 
     /**
      * Set multi-stream mode flag.

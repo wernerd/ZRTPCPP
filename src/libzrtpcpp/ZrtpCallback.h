@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006-2007 Werner Dittmann
+  Copyright (C) 2006-2008 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -132,11 +132,11 @@ protected:
      *
      * @param severity
      *     This defines the message's severity
-     * @param msg
-     *     The message string, terminated with a null byte.
-     * @see #MessageSeverity
+     * @param subCode
+     *     The subcode identifying the reason.
+     * @see ZrtpCodes#MessageSeverity
      */
-    virtual void sendInfo(MessageSeverity severity, const char* msg) =0;
+    virtual void sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) =0;
 
     /**
      * SRTP crypto data ready for the sender or receiver.
@@ -213,15 +213,15 @@ protected:
      * Handle ZRTP negotiation failed.
      *
      * ZRTP calls this method in case ZRTP negotiation failed. The
-     * parameters show the severity as well as some explanatory text.
+     * parameters show the severity as well as the reason.
      *
      * @param severity
      *     This defines the message's severity
-     * @param msg
-     *     The message string, terminated with a null byte.
-     * @see MessageSeverity
+     * @param subCode
+     *     The subcode identifying the reason.
+     * @see ZrtpCodes#MessageSeverity
      */
-    virtual void zrtpNegotiationFailed(MessageSeverity severity, const char* msg) =0;
+    virtual void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) =0;
 
     /**
      * ZRTP calls this method if the other side does not support ZRTP.

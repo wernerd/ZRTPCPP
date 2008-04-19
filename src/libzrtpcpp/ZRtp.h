@@ -37,27 +37,6 @@
 #define SHA256_DIGEST_LENGTH 32
 #endif
 
-
-// The ZRTP error codes accroding the specification chapter 6.9
-enum zrtpErrorCodes {
-    MalformedPacket =   0x10,
-    CriticalSWError =   0x20,
-    UnsuppZRTPVersion = 0x30,
-    HelloCompMismatch = 0x40,
-    UnsuppHashType =    0x51,
-    UnsuppCiphertype =  0x52,
-    UnsuppPKExchange =  0x53,
-    UnsuppSRTPAuthTag = 0x54,
-    UnsuppSASScheme =   0x55,
-    DHErrorWrongPV =    0x61,
-    DHErrorWrongHVI =   0x62,
-    SASuntrustedMiTM =  0x93,
-    ConfirmHMACWrong =  0x70,
-    NonceReused =       0x80,
-    EqualZIDHello =     0x90,
-    IgnorePacket =      0x7fffffff
-};
-
 class ZrtpStateClass;
 class ZrtpDH;
 
@@ -887,11 +866,12 @@ class ZRtp {
      *
      * @param severity
      *     This defines the message's severity
-     * @param msg
-     *     The message string, terminated with a null byte.
+     * @param subCode
+     *     The subcode identifying the reason.
+     * @see ZrtpCodes#MessageSeverity
      */
-    void sendInfo(MessageSeverity severity, const char* msg) {
-	callback->sendInfo(severity, msg);
+    void sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) {
+	callback->sendInfo(severity, subCode);
     }
 
     /**
@@ -902,11 +882,12 @@ class ZRtp {
      *
      * @param severity
      *     This defines the message's severity
-     * @param msg
-     *     The message string, terminated with a null byte.
+     * @param subCode
+     *     The subcode identifying the reason.
+     * @see ZrtpCodes#MessageSeverity
      */
-    void zrtpNegotiationFailed(MessageSeverity severity, const char* msg) {
-        callback->zrtpNegotiationFailed(severity, msg);
+    void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) {
+        callback->zrtpNegotiationFailed(severity, subCode);
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006-2007 Werner Dittmann
+  Copyright (C) 2006-2008 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 #include <libzrtpcpp/ZrtpStateClass.h>
 
 using namespace std;
+using namespace GnuZrtpCodes;
 
 state_t states[numberOfStates] = {
     {Initial,      &ZrtpStateClass::evInitial },
@@ -44,13 +45,6 @@ state_t states[numberOfStates] = {
     {WaitErrorAck, &ZrtpStateClass::evWaitErrorAck }
 };
 
-
-static const char* sendErrorText = "Cannot send data - connection or peer down?";
-static const char* timerError = "Cannot start a timer - internal resources exhausted?";
-static const char* resendError = "Too much retries during ZRTP negotiation - connection or peer down?";
-static const char* internalProtocolError = "Internal protocol error occured!";
-static const char* zrtpClosed = "No more security for this session";
-static const char* goClearReceived = "Received a GoClear message - no security processing!";
 
 ZrtpStateClass::ZrtpStateClass(ZRtp *p) {
     parent = p;
@@ -143,7 +137,7 @@ int32_t ZrtpStateClass::evInitial(void) {
             return sendFailed();                 // returns to state Initial
         }
         if (startTimer(&T1) <= 0) {
-            return timerFailed(timerError);      // returns to state Initial
+            return timerFailed(SevereNoTimer);      // returns to state Initial
         }
 	nextState(Detect);
     }
@@ -170,6 +164,11 @@ int32_t ZrtpStateClass::evInitial(void) {
  *   This restart capability is the reason why we use "startTimer(&T1)" in 
  *   case we received a Hello packet from another peer. This effectively 
  *   restarts the Hello timeout counter.
+ *
+ *   In this state we also handle ZrtpInitialize event. This forces a
+ *   restart of ZRTP discovery if an application calls ZrtpQueue#startZrtp
+ *   again. This may happen after a previous discovery phase were not 
+ *   successful.
  *
  *   Usually applications use some sort of signaling protocol, for example
  *   SIP, to negotiate the RTP parameters. Thus the RTP sessions setup is
@@ -231,7 +230,7 @@ int32_t ZrtpStateClass::evDetect(void) {
             ZrtpPacketHelloAck* helloAck = parent->prepareHelloAck();
 
             if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(helloAck))) {
-                parent->zrtpNegotiationFailed(Error, sendErrorText);
+                parent->zrtpNegotiationFailed(Severe, SevereCannotSend);
                 return(Fail);
             }
             // Use peer's Hello packet to create my commit packet, store it 
@@ -244,7 +243,7 @@ int32_t ZrtpStateClass::evDetect(void) {
                 return (Done);
             }
             if (startTimer(&T1) <= 0) {        // restart own Hello timer/counter
-                return timerFailed(timerError);      // returns to state Initial
+                return timerFailed(SevereNoTimer);      // returns to state Initial
             }
             nextState(AckSent);
             return (Done);
@@ -264,8 +263,19 @@ int32_t ZrtpStateClass::evDetect(void) {
         }
         return (Done);
     }
+    // If application call zrtpStart() to restart discovery
+    else if (event->type == ZrtpInitial) {
+        cancelTimer();
+        if (!parent->sendPacketZRTP(sentPacket)) {
+            return sendFailed();                 // returns to state Initial
+        }
+        if (startTimer(&T1) <= 0) {
+            return timerFailed(SevereNoTimer);   // returns to state Initial
+        }
+        return (Done);
+    }
     else { // unknown Event type for this state (covers Error and ZrtpClose)
-        parent->sendInfo(Error, internalProtocolError);
+        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
         sentPacket = NULL;
         nextState(Initial);
         return (Fail);
@@ -344,7 +354,7 @@ int32_t ZrtpStateClass::evAckSent(void) {
                 return sendFailed();             // returns to state Initial
             }
             if (startTimer(&T2) <= 0) {
-                return timerFailed(timerError);  // returns to state Initial
+                return timerFailed(SevereNoTimer);  // returns to state Initial
 	    }
 	    nextState(CommitSent);
 	    return (Done);
@@ -366,7 +376,7 @@ int32_t ZrtpStateClass::evAckSent(void) {
 
             if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(helloAck))) {
                 nextState(Detect);
-                parent->zrtpNegotiationFailed(Error, sendErrorText);
+                parent->zrtpNegotiationFailed(Severe, SevereCannotSend);
                 return(Fail);
             }
             return (Done);
@@ -426,7 +436,7 @@ int32_t ZrtpStateClass::evAckSent(void) {
         return (Done);
     }
     else {   // unknown Event type for this state (covers Error and ZrtpClose)
-        parent->sendInfo(Error, internalProtocolError);
+        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
         commitPkt = NULL;
         sentPacket = NULL;
         nextState(Initial);
@@ -527,7 +537,7 @@ int32_t ZrtpStateClass::evAckDetected(void) {
                 return sendFailed();
             }
             if (startTimer(&T2) <= 0) {
-                return timerFailed(timerError);
+                return timerFailed(SevereNoTimer);
             }
             return (Done);
         }
@@ -535,7 +545,7 @@ int32_t ZrtpStateClass::evAckDetected(void) {
         return (Done);      // unknown packet for this state - Just ignore it
     }
     else {  // unknown Event type for this state (covers Error and ZrtpClose)
-        parent->sendInfo(Error, internalProtocolError);
+        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
         nextState(Initial);
         return (Fail);
     }
@@ -610,7 +620,7 @@ int32_t ZrtpStateClass::evWaitCommit(void) {
         return (Done);      // unknown packet for this state - Just ignore it
     }
     else {  // unknown Event type for this state (covers Error and ZrtpClose)
-        parent->sendInfo(Error, internalProtocolError);
+        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
         sentPacket = NULL;   // Don't delet sent packet - it's a fixed helloack
         nextState(Initial);
         return (Fail);
@@ -710,7 +720,7 @@ int32_t ZrtpStateClass::evCommitSent(void) {
             // Resend Commit after timeout until we get a DHPart1
             else {
                 if (startTimer(&T2) <= 0) { // restart the Commit timer, gives peer more time to react
-                    return timerFailed(timerError);    // returns to state Initial
+                    return timerFailed(SevereNoTimer);    // returns to state Initial
                 }
             }
             return (Done);
@@ -742,7 +752,7 @@ int32_t ZrtpStateClass::evCommitSent(void) {
                 return sendFailed();       // returns to state Initial
             }
             if (startTimer(&T2) <= 0) {
-                return timerFailed(timerError);       // returns to state Initial
+                return timerFailed(SevereNoTimer);       // returns to state Initial
             }
         }
         return (Done);      // unknown packet for this state - Just ignore it
@@ -753,12 +763,12 @@ int32_t ZrtpStateClass::evCommitSent(void) {
                 return sendFailed();       // returns to state Initial
         }
         if (nextTimer(&T2) <= 0) {
-            return timerFailed(resendError);       // returns to state Initial
+            return timerFailed(SevereTooMuchRetries);       // returns to state Initial
         }
         return (Done);
     }
     else {  // unknown Event type for this state (covers Error and ZrtpClose)
-        parent->sendInfo(Error, internalProtocolError);
+        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
         sentPacket = NULL;
         nextState(Initial);
         return (Fail);
@@ -831,7 +841,7 @@ int32_t ZrtpStateClass::evWaitDHPart2(void) {
         return (Done);      // unknown packet for this state - Just ignore it
     }
     else {  // unknown Event type for this state (covers Error and ZrtpClose)
-        parent->sendInfo(Error, internalProtocolError);
+        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
         sentPacket = NULL;
         nextState(Initial);
         return (Fail);
@@ -895,7 +905,7 @@ int32_t ZrtpStateClass::evWaitConfirm1(void) {
                     return sendFailed();         // returns to state Initial
             }
             if (startTimer(&T2) <= 0) {
-                return timerFailed(timerError);  // returns to state Initial
+                return timerFailed(SevereNoTimer);  // returns to state Initial
             }
             return (Done);
         }
@@ -906,12 +916,12 @@ int32_t ZrtpStateClass::evWaitConfirm1(void) {
                 return sendFailed();             // returns to state Initial
         }
         if (nextTimer(&T2) <= 0) {
-            return timerFailed(resendError);     // returns to state Initial
+            return timerFailed(SevereTooMuchRetries);     // returns to state Initial
         }
         return (Done);
     }
     else {  // unknown Event type for this state (covers Error and ZrtpClose)
-        parent->sendInfo(Error, internalProtocolError);
+        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
         sentPacket = NULL;
         nextState(Initial);
         return (Fail);
@@ -987,14 +997,14 @@ int32_t ZrtpStateClass::evWaitConfirm2(void) {
             parent->srtpSecretsReady(ForSender);
             parent->srtpSecretsReady(ForReceiver);
             nextState(SecureState);
-            parent->sendInfo(Info, "Entered secure state");
+            parent->sendInfo(Info, InfoSecureStateOn);
 
             return (Done);
         }
         return (Done);      // unknown packet for this state - Just ignore it
     }
     else {  // unknown Event type for this state (covers Error and ZrtpClose)
-        parent->sendInfo(Error, internalProtocolError);
+        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
         sentPacket = NULL;
         nextState(Initial);
         return (Fail);
@@ -1043,7 +1053,7 @@ int32_t ZrtpStateClass::evWaitConfAck(void) {
             parent->srtpSecretsReady(ForSender);
             parent->srtpSecretsReady(ForReceiver);
             nextState(SecureState);
-            parent->sendInfo(Info, "Entered secure state");
+            parent->sendInfo(Info, InfoSecureStateOn);
             return (Done);
         }
         return (Done);      // unknown packet for this state - Just ignore it
@@ -1053,12 +1063,12 @@ int32_t ZrtpStateClass::evWaitConfAck(void) {
             return sendFailed();             // returns to state Initial
         }
         if (nextTimer(&T2) <= 0) {
-            return timerFailed(resendError); // returns to state Initial
+            return timerFailed(SevereTooMuchRetries); // returns to state Initial
         }
         return (Done);
     }
     else {  // unknown Event type for this state (covers Error and ZrtpClose)
-        parent->sendInfo(Error, internalProtocolError);
+        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
         sentPacket = NULL;
         nextState(Initial);
         return (Fail);
@@ -1101,12 +1111,12 @@ int32_t ZrtpStateClass::evWaitClearAck(void) {
             return sendFailed();                 // returns to state Initial
         }
         if (nextTimer(&T2) <= 0) {
-            return timerFailed(resendError);     // returns to state Initial
+            return timerFailed(SevereTooMuchRetries);     // returns to state Initial
         }
         return (Done);
     }
     else {  // unknown Event type for this state (covers Error and ZrtpClose)
-        parent->sendInfo(Error, internalProtocolError);
+        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
 	sentPacket = NULL;
 	nextState(Initial);
         return (Fail);
@@ -1163,12 +1173,12 @@ int32_t ZrtpStateClass::evWaitErrorAck(void) {
             return sendFailed();                 // returns to state Initial
         }
         if (nextTimer(&T2) <= 0) {
-            return timerFailed(resendError);     // returns to state Initial
+            return timerFailed(SevereTooMuchRetries);     // returns to state Initial
         }
         return (Done);
     }
     else {  // unknown Event type for this state (covers Error and ZrtpClose)
-        parent->sendInfo(Error, internalProtocolError);
+        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
         sentPacket = NULL;
         nextState(Initial);
         return (Fail);
@@ -1200,7 +1210,7 @@ int32_t ZrtpStateClass::evSecureState(void) {
                 nextState(Initial);
                 parent->srtpSecretsOff(ForSender);
                 parent->srtpSecretsOff(ForReceiver);
-                parent->sendInfo(Error, sendErrorText);
+                parent->zrtpNegotiationFailed(Severe, SevereCannotSend);
                 return(Fail);
             }
             return (Done);
@@ -1223,7 +1233,8 @@ int32_t ZrtpStateClass::evSecureState(void) {
         parent->srtpSecretsOff(ForSender);
         parent->srtpSecretsOff(ForReceiver);
         nextState(Initial);
-        parent->sendInfo(Info, zrtpClosed);
+        parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
+        parent->sendInfo(Info, InfoSecureStateOff);
     }
     return (Done);
 }
@@ -1252,7 +1263,7 @@ int32_t ZrtpStateClass::sendErrorPacket(uint32_t errorCode) {
     cancelTimer();
     if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(err)) || (startTimer(&T2) <= 0)) {
         nextState(Initial);
-        parent->sendInfo(Error, sendErrorText);
+        parent->zrtpNegotiationFailed(ZrtpError, errorCode);
         return (Fail);
     }
     sentPacket =  static_cast<ZrtpPacketBase *>(err);
@@ -1263,14 +1274,14 @@ int32_t ZrtpStateClass::sendErrorPacket(uint32_t errorCode) {
 int32_t ZrtpStateClass::sendFailed() {
     sentPacket = NULL;
     nextState(Initial);
-    parent->sendInfo(Error, sendErrorText);
+    parent->zrtpNegotiationFailed(Severe, SevereCannotSend);
     return(Fail);
 }
 
-int32_t ZrtpStateClass::timerFailed(const char* msg) {
+int32_t ZrtpStateClass::timerFailed(int32_t subCode) {
     sentPacket = NULL;
     nextState(Initial);
-    parent->sendInfo(Error, msg);
+    parent->zrtpNegotiationFailed(Severe, subCode);
     return(Fail);
 }
 
