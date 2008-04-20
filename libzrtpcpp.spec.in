@@ -1,7 +1,7 @@
 Summary: "libzrtpcpp" - a ccrtp extension for zrtp/Zfone support
 Name: libzrtpcpp
 Version: @VERSION@
-Release: 1
+Release: 0
 Epoch: 0
 License: GPL
 Group: Development/Libraries
@@ -27,14 +27,14 @@ Requires: @BUILD_REQ@
 This library is a GPL licensed extension to the GNU RTP Stack (GNU ccrtp).
 This extension offers a C++ implementation of Phil Zimmermann's ZRTP 
 specification. The current release is based on 
-draft-zimmermann-avt-zrtp-06x.txt. Phil's Zfone site provide more information,
-see http://zfoneproject.com/index.html
+draft-zimmermann-avt-zrtp-06x.txt. Phil's Zfone site provides more 
+information, see http://zfoneproject.com/index.html
 
 This implementation was tested to work with Phil's Zfone implementation
 of the ZRTP spefication. Applications that use GNU ccrtp can use this
-library to use ZRTP and to encrypt the RTP (not RTCP) communication. 
+library to use ZRTP and to encrypt the RTP (not RTCP) communication.
 
-This release does not support the basic ZRTP, it does not yet support
+This release supports the basic ZRTP features, it does not yet support
 preshared or multi-stream mode specified in the draft. Also the specific
 Asterisk PBX mode is not yet implemented. 
 
@@ -77,3 +77,8 @@ rm -rf %{buildroot}
 - this is the first spec file for version 1.x.x
 - remove the .la file in devel package
 - use default file atttribute instead of 755
+
+* Sat Apr 18 2007 - werner.dittmann@t-online.de
+- set version to 1.1.0
+- GNU ZRTP is compatible with the latest Zfone Beta
+  from April 2 2008
