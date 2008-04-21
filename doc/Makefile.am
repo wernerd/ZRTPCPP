@@ -9,7 +9,7 @@
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 AUTOMAKE_OPTIONS = no-dependencies
-EXTRA_DIST = Doxyfile Doxymini
+EXTRA_DIST = Doxymini
 
 # info_TEXINFOS = ccrtp.texi
 zrtp_TEXINFOS = gpl.texi fdl.texi fdlnotice.texi
@@ -19,7 +19,7 @@ noinst_DATA = doxy
 
 doxy:   Doxymini
 	(cd @srcdir@ ; $(DOXYGEN) Doxymini)
-	touch doxy
+#	touch doxy
 
 endif
 

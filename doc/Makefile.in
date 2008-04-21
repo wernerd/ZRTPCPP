@@ -188,7 +188,7 @@ target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = no-dependencies
-EXTRA_DIST = Doxyfile Doxymini
+EXTRA_DIST = Doxymini
 
 # info_TEXINFOS = ccrtp.texi
 zrtp_TEXINFOS = gpl.texi fdl.texi fdlnotice.texi
@@ -362,7 +362,7 @@ uninstall-am:
 
 @DOXY_TRUE@doxy:   Doxymini
 @DOXY_TRUE@	(cd @srcdir@ ; $(DOXYGEN) Doxymini)
-@DOXY_TRUE@	touch doxy
+#	touch doxy
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
