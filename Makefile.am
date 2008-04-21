@@ -13,8 +13,7 @@ SUBDIRS = src
 DIST_SUBDIRS = m4 src doc demo
 
 EXTRA_DIST = README AUTHORS COPYING INSTALL NEWS \
-	libzrtpcpp.pc libzrtpcpp.pc.in libzrtpcpp.spec \
-	libzrtpcpp.spec.in autoconf/* reconfig
+	libzrtpcpp.pc.in libzrtpcpp.spec.in autoconf/*
 
 ACLOCAL_AMFLAGS = -I m4
 
