@@ -58,7 +58,7 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root)
-%doc AUTHORS COPYING README
+%doc AUTHORS COPYING README NEWS INSTALL
 %{_libdir}/*.so.*
 
 %files devel
