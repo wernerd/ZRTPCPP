@@ -1,20 +1,30 @@
-This package provides a library that adds support to the GNU RTP stack 
-for the ZRTP protocol specification developed by Phil Zimmermann for 
-zfone.  Using this package, together with GNU ccrtp (1.5.0 or later) 
-provides a ZRTP implementation that can be directly embedded into client
-and server applications.
+This package provides a library that adds ZRTP support to the GNU
+ccRTP stack. Phil Zimmermann developed ZRTP to allow ad-hoc, easy to
+use key negotiation to setup Secure RTP (SRTP) sessions. GNU ZRTP
+together with GNU ccRTP (1.5.0 or later) provides a ZRTP
+implementation that can be directly embedded into client and server
+applications.
 
-The first application to demonstrate this capability is the 0.8.2 release 
-of the Twinkle softphone client. All following version of Twinkle support
+The GNU ZRTP implementation is compliant to the basic functions of
+ZRTP as described in ''draft-zimmermann-avt-zrtp-06x''. Currently GNU
+ZRTP supports the basic features only, not the enhanced features like
+PBX SAS relay and Multi-Stream mode. The GNU ZRTP implementation
+already defines the necessary external interfaces and functions for
+these enhanced features but they are not yet implemented (stubs only).
+
+You may access the ZRTP specification at this URL:
+[http://zfoneproject.com/zrtp_ietf.html]
+
+The first application to demonstrate this capability was the 0.8.2 release 
+of the Twinkle softphone client. All following versions of Twinkle support
 this as well.
 
 Please note, this library is licensed under the GNU GPL, version 3 or 
 later, and has been copyright assigned to the Free Software Foundation.
 
-The ccRTP ZRTP implementation is compliant to the basic functions of
-ZRTP as decsribed in "draft-zimmermann-avt-zrtp-06". Currently ccRTP ZRTP
-does support the basic features only, not the enhacned feature like
-SAS relaying and Multi-Stream mode. The ccRTP ZRTP implementation already
-defined the necessary interfaces and functions fot these enhanced features
-but they are not yet implemented.
+For further information refer to the ZRTP FAQ and the GNU ZRTP
+How-To. Both are part of the GNU Telephony wiki and are located in its
+documentation category. Here are the URLs:
 
+http://www.gnutelephony.org/index.php/GNU_ZRTP_How_To
+http://www.gnutelephony.org/index.php/ZRTP_FAQ

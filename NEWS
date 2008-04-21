@@ -1,0 +1,81 @@
+== GNU ZRTP 1.1.0 ==
+
+GNU ZRTP 1.1.0 implements the basic ZRTP as specificied in the document
+''draft-zimmermann-avt-zrtp-06x''. You may access this at this URL:
+[http://zfoneproject.com/zrtp_ietf.html]
+
+This version of GNU ZRTP does not support the additiona featur of ZRTP
+such as Multi-stream mode, Pre-shared mode, PBX enrollement, and SAS
+Signature.  However, to keep the external interface as stable as
+possible I already implmented stubs for the additional features. Some
+later versions may have these features implemented, depending if they
+are required by the community.
+
+The current version of GNU ZRTP is compatible and was tested to work
+with the latest Zfone beta (dated April, 2nd) (see Zfone project
+site).
+
+=== Interface changes ==
+
+The ''SymmetricZRTPSession'' implements some new methods to control
+ZRTP and its new features. An application usually uses only a few
+methods to setup GNU ZRTP. All others are optional and an application
+may use them only if it requires a special feature (which are not yet
+implemented :-) ).
+
+The ''ZrtpUserCallback'' class was modified as well. From an
+application's point of view
+
+ * The methods in ''ZrtpUserCallback'' are not pure virtual anymore
+   but just virtual and have a default implementation, usually a
+   simple return. An application may extend this class and overwrite
+   only those methods it requires.
+
+ * Change of the constructor - remove the queue parameter thus we have
+  a very simple standard constructor. This modifcation may requires a
+  small change in the application or class that uses or extends
+  ''ZrtpUserCallback''.
+
+ * The method showSAS has an additional parameter:
+
+     showSAS(std::string sas, bool verified);
+
+  the verified flag is set to true in SAS is verified, false if not verified.
+  This allows a more flexible support to display the SAS even if SAS is
+  verified. Formerly ZRTP did not call "showSAS()" if SAS was verified. Now
+  ZRTP always calls showSAS and provides the verification information
+  explicitly.
+
+* The siganture of the following user callback methods was changed:
+
+        showMessage(GnuZrtpCodes::MessageSeverity sev, int32_t subCode)
+
+        zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity,
+                                           int32_t subCode)
+
+  The GNU ZRTP core and the ZRTP ccRTP extension do not contain
+  message strings anymore. Both use codes to inform an application
+  about events, problems or failure. The folder ''demo'' contains a
+  small demo program that shows one way how to map the codes to
+  strings. Delegating string handling and formating to the application
+  simplifies internationalization etc.
+
+Plaese note: some new callback methods and ''SymmetricZRTPSession''
+methods are only stubs in the currect version. The real implementation
+(filling the stubs with real code) will be done some time later (see
+above about unsupported features).
+
+=== Header files ===
+
+The new version greatly reduces the number of header files installed
+in the include directory. In the new version I decoupled the internal
+header files and implementation from the external classes and
+interfaces an application requires. Only six header files are
+installed in GNU ZRTP's include directory (libzrtpcpp subdirectory in
+the usual include paths)
+
+== Demo program ==
+
+The new folder ''demo'' contains a small demo program that shows
+various ways how to use GNU ZRTP to setup secure RTP (SRTP) sessions
+even without signaling protocols
