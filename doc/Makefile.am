@@ -17,7 +17,7 @@ zrtp_TEXINFOS = gpl.texi fdl.texi fdlnotice.texi
 if DOXY
 noinst_DATA = doxy
 
-doxy:   Doxyfile
+doxy:   Doxymini
 	(cd @srcdir@ ; $(DOXYGEN) Doxymini)
 	touch doxy
 

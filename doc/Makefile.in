@@ -360,7 +360,7 @@ uninstall-am:
 	mostlyclean-libtool pdf pdf-am ps ps-am uninstall uninstall-am
 
 
-@DOXY_TRUE@doxy:   Doxyfile
+@DOXY_TRUE@doxy:   Doxymini
 @DOXY_TRUE@	(cd @srcdir@ ; $(DOXYGEN) Doxymini)
 @DOXY_TRUE@	touch doxy
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
