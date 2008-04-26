@@ -35,6 +35,12 @@
  * to implement its own behaviour. The application must register its
  * callback class using ZrtpQueue#setUserCallback().
  *
+ * <b>CAVEAT</b><br/>
+ * All methods of the user callback class and classes that
+ * extend this class run in the context of the RTP thread. Thus it is
+ * of paramount importance to keep the execution time of the methods
+ * as short as possible.
+ *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
@@ -104,7 +110,7 @@ class ZrtpUserCallback {
          * ZRTP calls this method to display some information to the user.
          * Along with the message ZRTP provides a severity indicator that
          * defines: Info, Warning, Error, and Alert. Refer to the <code>
-         * MessageSeverity</code> enum in <code>ZrtpCallback.h</code>. The
+         * MessageSeverity</code> enum in <code>ZrtpCodes.h</code>. The
          * UI may use this indicator to highlight messages or alike.
          *
          * @param sev
@@ -129,7 +135,7 @@ class ZrtpUserCallback {
          *     The subcode identifying the reason.
          */
         virtual void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity,
-					   int32_t subCode) {
+                                           int32_t subCode) {
             return;
         }
 
@@ -177,15 +183,16 @@ class ZrtpUserCallback {
         /**
          * ZRTPQueue calls this method to request a SAS signature.
          *
-         * After ZRTP was able to compute the Short Authentication String
+         * After ZRTP core was able to compute the Short Authentication String
          * (SAS) it calls this method. The client may now use an approriate
          * method to sign the SAS. The client may use 
-         * <code>setSignatureData()</code> of ZrtpQueue to store the signature
+         * setSignatureData() of ZrtpQueue to store the signature
          * data an enable signature transmission to the other peer. Refer
          * to chapter 8.2 of ZRTP specification.
          *
          * @param sas
          *    The SAS string to sign.
+         * @see ZrtpQueue#setSignatureData
          *
          */
         virtual void signSAS(std::string sas) {

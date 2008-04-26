@@ -481,10 +481,7 @@ namespace ost {
          *
          * This functions stores signature data and transmitts it during ZRTP
          * processing to the other party as part of the Confirm packets. Refer to 
-         * chapters 6.7 and 8.2.
-         *
-         * The signature data must be set before ZRTP the application calls
-         * <code>start()</code>.
+         * chapters 6.7 and 8.2 in the ZRTP specification.
          *
          * @param data
          *    The signature data including the signature type block. The method
