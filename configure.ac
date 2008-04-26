@@ -174,7 +174,7 @@ AC_SUBST(DOXYGEN)
 AM_CONDITIONAL(DOXY, test "$DOXYGEN" != "no")
 
 AC_SUBST(CRYPTOBACKEND PACKAGE_REQ BUILD_REQ)
-AC_CONFIG_FILES([Makefile src/Makefile src/libzrtpcpp/Makefile 
+AC_CONFIG_FILES([Makefile src/Makefile src/libzrtpcpp/Makefile m4/Makefile
                 src/libzrtpcpp/crypto/Makefile doc/Makefile demo/Makefile
                 libzrtpcpp.pc libzrtpcpp.spec])  # m4/Makefile
 AC_OUTPUT
