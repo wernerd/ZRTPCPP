@@ -130,26 +130,26 @@ public:
 
     bool inState(const int32_t state) { return engine->inState(state); };
     void nextState(int32_t state)        { engine->nextState(state); };
-    int32_t processEvent(Event_t *ev);
+    void processEvent(Event_t *ev);
 
     /**
      * The state event handling methods.
      *
      * Refer to the protocol state diagram for further documentation.
      */
-    int32_t evInitial();
-    int32_t evDetect();
-    int32_t evAckDetected();
-    int32_t evAckSent();
-    int32_t evWaitCommit();
-    int32_t evCommitSent();
-    int32_t evWaitDHPart2();
-    int32_t evWaitConfirm1();
-    int32_t evWaitConfirm2();
-    int32_t evWaitConfAck();
-    int32_t evWaitClearAck();
-    int32_t evSecureState();
-    int32_t evWaitErrorAck();
+    void evInitial();
+    void evDetect();
+    void evAckDetected();
+    void evAckSent();
+    void evWaitCommit();
+    void evCommitSent();
+    void evWaitDHPart2();
+    void evWaitConfirm1();
+    void evWaitConfirm2();
+    void evWaitConfAck();
+    void evWaitClearAck();
+    void evSecureState();
+    void evWaitErrorAck();
 
     /**
      * Initialize and activate a timer.
@@ -190,7 +190,7 @@ public:
      * packet in the sentPacket variable to enable resending. The
      * method switches to protocol state Initial.
      */
-    int32_t sendErrorPacket(uint32_t errorCode);
+    void sendErrorPacket(uint32_t errorCode);
 
     /**
      * Set status if an error occured while sending a ZRTP packet.
@@ -201,7 +201,7 @@ public:
      * @return
      *    Fail code
      */
-    int32_t sendFailed();
+    void sendFailed();
 
     /**
      * Set status if a timer problems occure.
@@ -212,7 +212,7 @@ public:
      * @return
      *    Fail code
      */
-    int32_t timerFailed(int32_t subCode);
+    void timerFailed(int32_t subCode);
 
     /**
      * Set multi-stream mode flag.

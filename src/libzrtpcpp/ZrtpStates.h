@@ -44,7 +44,7 @@ class ZrtpStateClass;
  */
 typedef struct  {
     int32_t stateName;
-    int32_t (ZrtpStateClass::* handler)(void);
+    void (ZrtpStateClass::* handler)(void);
 } state_t;
 
 class ZrtpStates {
@@ -56,11 +56,11 @@ class ZrtpStates {
 	numStates(numStates), states(zstates), state(initialState) {}
 
     int32_t processEvent(ZrtpStateClass& zsc) {
-	DEBUGOUT((fprintf(stdout, "ZrtpStates::processEvent, state: %d\n", state)));
-	return (zsc.*states[state].handler)();
+	// fprintf(stdout, "ZrtpStates::processEvent, state: %d\n", state);
+	(zsc.*states[state].handler)();
     }
 
-    bool inState(const int32_t s) { return ((s == state)? true : false); }
+    bool inState(const int32_t s) { return ((s == state)); }
 
     void nextState(int32_t s)        { state = s; }
 
