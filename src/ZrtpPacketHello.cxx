@@ -97,11 +97,11 @@ ZrtpPacketHello::ZrtpPacketHello(uint8_t *data) {
 
     uint32_t temp = ntohl(helloHeader->flagLength);
 
-    nHash = (temp & (0xf << 12)) >> 12;
-    nCipher = (temp & (0xf << 16)) >> 16;
-    nAuth = (temp & (0xf << 20)) >> 20;
-    nPubkey = (temp & (0xf << 24)) >> 24;
-    nSas = (temp & (0xf << 28)) >> 28;
+    nHash = (temp & (0xf << 16)) >> 16;
+    nCipher = (temp & (0xf << 12)) >> 12;
+    nAuth = (temp & (0xf << 8)) >> 8;
+    nPubkey = (temp & (0xf << 4)) >> 4;
+    nSas = temp & 0xf;
 
     oHash = sizeof(Hello_t);
     oCipher = oHash + (nHash * ZRTP_WORD_SIZE);
