@@ -220,12 +220,17 @@ namespace ost {
          * @param zidFilename
          *     The name of the ZID file, can be a relative or absolut 
          *     filename.
+         *
+         * @param autoEnable
+         *     if set to true the method automatically sets enableZrtp to
+         *     true. This enables the ZRTP auto-sense mode.
+         *
          * @return 
          *     1 on success, ZRTP processing enabled, -1 on failure,
          *     ZRTP processing disabled.
          *
          */
-        int32_t initialize(const char *zidFilename);
+        int32_t initialize(const char *zidFilename, bool autoEnable = true);
 
         /*
          * Applications use the following methods to control ZRTP, for example
@@ -316,18 +321,6 @@ namespace ost {
         void requestGoClear();
 
         /**
-         * Set the sigs secret.
-         *
-         * Use this method to set the sigs secret data. Refer to ZRTP
-         * specification, chapter 3.2.1
-         *
-         * @param data
-         *     Points to the sigs secret data. The data must have a length
-         *     of 32 bytes (length of SHA256 hash)
-         */
-        void setSigsSecret(uint8* data);
-
-        /**
          * Set the srtps secret.
          *
          * Use this method to set the srtps secret data. Refer to ZRTP
@@ -372,10 +365,11 @@ namespace ost {
          * ZRTP Hello message. The maximum length is 16 characters. A
          * shorter id string is possible, it will be filled with blanks. A
          * longer id string will be truncated to 16 characters. The
-         * standard client id is <code>GNU ccRTP ZRTP </code>.
+         * standard client id is <code>'GNU ccRTP ZRTP '</code> (without
+         * the quotes).
          *
          * Setting the client's id must be done before calling
-         * initialize() or starting the ZRTP protocol with startZrtp() .
+         * ZrtpQueue#initialize() or ZrtpQueue#startZrtp() .
          *
          * @param id
          *     The client's id string
@@ -386,31 +380,16 @@ namespace ost {
          * Get the ZRTP Hello Hash data.
          *
          * Use this method to get the ZRTP Hello Hash data. The method 
-         * returns the data as a string containing hex-digits. Refer to ZRTP
-         * specification, chapter 9.1.
+         * returns the data as a string containing hex-digits. Refer 
+         * to ZRTP specification, chapter 9.1.
          *
          * @return
          *    a std:string containing the Hello hash value as hex-digits. The
-         *    hello hash is available immediatly after starting the ZrtpQueue.
-         *    If ZRTP was not started or ZRTP the method returns an empty string.
+         *    hello hash is available immediatly after calling 
+         *    ZrtpQueue#startZrtp. If ZRTP was not started the method returns
+         *    an empty string.
          */
         std::string getHelloHash();
-
-        /**
-         * Get the ZRTP SAS data.
-         *
-         * Use this method to get the ZRTP SAS data formatted as string
-         * and ready to use in the SDP as defined in the ZRTP
-         * specification, chapter 9.4. The format of this SAS string is
-         * different from the SAS string sent to the application via
-         * ZrtpUserCallback#showSAS.
-         *
-         * @return a std:string containing the SAS and the SAS hash,
-         *    formatted as specified in chapter 9.4. If ZRTP was not
-         *    started or ZRTP is not yet in secure state the method
-         *    returns an empty string.
-         */
-        std::string getSasData();
 
         /**
          * Get Multi-stream parameters.
@@ -429,6 +408,8 @@ namespace ost {
          *    to enable multi-stream processing for this ZrtpQueue. If ZRTP was 
          *    not started or ZRTP is not yet in secure state the method returns an
          *    empty string.
+         *
+         * @see setMultiStrParams()
          */
         std::string getMultiStrParams();
 
@@ -444,8 +425,9 @@ namespace ost {
          *
          * @param parameters
          *     A string that contains the multi-stream parameters that this
-         *     new ZrtpQueue instanace shall use. See also 
-         *     <code>getMultiStrParams()</code>
+         *     new ZrtpQueue instanace shall use.
+         *
+         * @see getMultiStrParams()
          */
         void setMultiStrParams(std::string parameters);
 
@@ -713,10 +695,12 @@ namespace ost {
 
         int32 secureParts;
 
-        CryptoContext* recvCryptoContext;
-        CryptoContext* senderCryptoContext;
+//        CryptoContext* recvCryptoContext;
+//        CryptoContext* senderCryptoContext;
         int16 senderZrtpSeqNo;
         ost::Mutex synchLock;   // Mutex for ZRTP (used by ZrtpStateClass)
+        uint32 peerSSRC;
+        bool started;
 
     };
 
@@ -736,9 +720,11 @@ namespace ost {
         ~IncomingZRTPPkt()
             { }
 
-        inline uint32
-        getZrtpMagic() const
-            { return ntohl(getHeader()->timestamp); }
+        uint32
+        getZrtpMagic() const;
+
+        uint32
+        getSSRC() const;
     };
 
     class OutgoingZRTPPkt : public OutgoingRTPPkt {

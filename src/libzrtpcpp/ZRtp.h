@@ -120,7 +120,7 @@ class ZRtp {
 	 * @return
 	 *    Code indicating further packet handling, see description above.
          */
-	int32_t processZrtpMessage(uint8_t *extHeader);
+	void processZrtpMessage(uint8_t *extHeader);
 
         /**
 	 * Process a timeout event.
@@ -129,7 +129,7 @@ class ZRtp {
 	 * protocol state engine.
 	 *
          */
-	int32_t processTimeout();
+	void processTimeout();
 
         /**
          * Check for and handle GoClear ZRTP packet header.
@@ -143,19 +143,7 @@ class ZRtp {
          * @return
          *    False if not a GoClear, true otherwise.
          */
-        bool handleGoClear(uint8_t *extHeader);
-
-        /**
-         * Set the sigs secret.
-         *
-         * USe this method to set the sigs secret data. Refer to ZRTP
-         * specification, chapter 3.2.1
-         *
-         * @param data
-         *     Points to the sigs secret data. The data must have a length
-         *     of 32 bytes (length of SHA256 hash)
-         */
-        void setSigsSecret(uint8_t* data);
+       bool handleGoClear(uint8_t *extHeader);
 
        /**
         * Set the srtps secret.
@@ -218,20 +206,6 @@ class ZRtp {
         *    hello hash is available immediately after class instantiation.
         */
        std::string getHelloHash();
-
-        /**
-        * Get the ZRTP SAS data.
-        *
-        * Use this method to get the ZRTP SAS data formatted as string and
-        * ready to use in the SDP. Refer to ZRTP specification, chapter 9.4
-        *
-        * @return
-        *    a std:string containing the SAS and SAS hash formatted as string
-        *    as specified in chapter 9.4. The string length is zero if ZRTP 
-        *    was not ready to get the data. If ZRTP was not started or ZRTP is
-        *    not yet in secure state the method returns an empty string.
-        */
-       std::string getSasData();
 
     /**
      * Get Multi-stream parameters.
@@ -427,13 +401,11 @@ class ZRtp {
      */
     uint8_t rs1IDr[SHA256_DIGEST_LENGTH];
     uint8_t rs2IDr[SHA256_DIGEST_LENGTH];
-    uint8_t sigsIDr[SHA256_DIGEST_LENGTH];
     uint8_t srtpsIDr[SHA256_DIGEST_LENGTH];
     uint8_t otherSecretIDr[SHA256_DIGEST_LENGTH];
 
     uint8_t rs1IDi[SHA256_DIGEST_LENGTH];
     uint8_t rs2IDi[SHA256_DIGEST_LENGTH];
-    uint8_t sigsIDi[SHA256_DIGEST_LENGTH];
     uint8_t srtpsIDi[SHA256_DIGEST_LENGTH];
     uint8_t otherSecretIDi[SHA256_DIGEST_LENGTH];
     /**

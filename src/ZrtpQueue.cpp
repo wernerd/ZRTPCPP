@@ -50,21 +50,23 @@ void ZrtpQueue::init()
 {
     zrtpUserCallback = NULL;
     enableZrtp = false;
+    started = false;
     secureParts = 0;
     zrtpEngine = NULL;
 
-    senderCryptoContext = NULL;
+    // senderCryptoContext = NULL;
 
-    recvCryptoContext = NULL;
+    // recvCryptoContext = NULL;
 
     senderZrtpSeqNo = 1;
 
     clientIdString = clientId;
+    peerSSRC = 0;
 }
 
 ZrtpQueue::~ZrtpQueue() {
 
-    cancelTimer();
+//    cancelTimer();
     endQueue();
     stopZrtp();
 
@@ -73,6 +75,7 @@ ZrtpQueue::~ZrtpQueue() {
         zrtpUserCallback = NULL;
     }
 
+    /*
     if (recvCryptoContext != NULL) {
         delete recvCryptoContext;
         recvCryptoContext = NULL;
@@ -82,19 +85,23 @@ ZrtpQueue::~ZrtpQueue() {
         delete senderCryptoContext;
         senderCryptoContext = NULL;
     }
+    */
 }
 
 int32_t
-ZrtpQueue::initialize(const char *zidFilename)
+ZrtpQueue::initialize(const char *zidFilename, bool autoEnable)
 {
     int32_t ret = 1;
+
     synchEnter();
+
+    enableZrtp = autoEnable;
 
     if (staticTimeoutProvider == NULL) {
         staticTimeoutProvider = new TimeoutProvider<std::string, ZrtpQueue*>();
         staticTimeoutProvider->start();
     }
-    ZIDFile *zf = ZIDFile::getInstance();
+    ZIDFile* zf = ZIDFile::getInstance();
     if (!zf->isOpen()) {
         std::string fname;
         if (zidFilename == NULL) {
@@ -109,27 +116,26 @@ ZrtpQueue::initialize(const char *zidFilename)
             ret = -1;
         }
     }
-    enableZrtp = true;
+    if (ret > 0) {
+        const uint8_t* ownZid = zf->getZid();
+        zrtpEngine = new ZRtp((uint8_t*)ownZid, (ZrtpCallback*)this, clientIdString);
+    }
     synchLeave();
     return ret;
 }
 
-
 void ZrtpQueue::startZrtp() {
-    ZIDFile *zid = ZIDFile::getInstance();
-    const uint8_t* ownZid = zid->getZid();
-
-    if (zrtpEngine == NULL) {
-        zrtpEngine = new ZRtp((uint8_t*)ownZid, (ZrtpCallback*)this, clientIdString);
+    if (zrtpEngine != NULL) {
         zrtpEngine->startZrtpEngine();
+        started = true;
     }
 }
 
 void ZrtpQueue::stopZrtp() {
     if (zrtpEngine != NULL) {
-        zrtpEngine->stopZrtp();
         delete zrtpEngine;
         zrtpEngine = NULL;
+        started = false;
     }
 }
 
@@ -195,6 +201,8 @@ ZrtpQueue::takeInDataPacket(void)
         // We need them, thus adjust
         extHeader -= 4;
 
+        // store peer's SSRC, used when creating the CryptoContext
+        peerSSRC = packet->getSSRC();
         zrtpEngine->processZrtpMessage(extHeader);
     }
     delete packet;
@@ -213,17 +221,16 @@ ZrtpQueue::rtpDataPacket(IncomingRTPPkt* packet, int32 rtn,
     // Secure state then create a CryptoContext for this SSRC.
     // Assumption: every SSRC stream sent via this connection is secured 
     // _and_ uses the same crypto parameters.
-    if (pcc == NULL && zrtpEngine && recvCryptoContext) {
-        pcc = recvCryptoContext->newCryptoContextForSSRC(packet->getSSRC(), 0, 0L);
+    if (pcc == NULL) {
+        pcc = getInQueueCryptoContext(0);
         if (pcc != NULL) {
-            pcc->deriveSrtpKeys(packet->getSeqNum());
-            setInQueueCryptoContext(pcc);
-        }
-        else {
-            srtpSecretsOff(ForSender);
+            pcc = pcc->newCryptoContextForSSRC(packet->getSSRC(), 0, 0L);
+            if (pcc != NULL) {
+                pcc->deriveSrtpKeys(0);
+                setInQueueCryptoContext(pcc);
+            }
         }
     }
-
     // If no crypto context: then either ZRTP is off or in early state
     // If crypto context is available then unprotect data here. If an error
     // occurs report the error and discard the packet.
@@ -294,7 +301,7 @@ ZrtpQueue::rtpDataPacket(IncomingRTPPkt* packet, int32 rtn,
     }
     // Start the ZRTP engine after we got a at least one RTP packet and
     // sent some as well
-    if (zrtpEngine == NULL && enableZrtp && getSendPacketCount() >= 1) {
+    if (!started && enableZrtp && getSendPacketCount() >= 1) {
         startZrtp();
     }
     return rtn;
@@ -362,6 +369,8 @@ int32_t ZrtpQueue::sendDataZRTP(const unsigned char *data, int32_t length) {
 bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
 {
     CryptoContext* pcc;
+    CryptoContext* recvCryptoContext;
+    CryptoContext* senderCryptoContext;
 
     if (part == ForSender) {
         // To encrypt packets: intiator uses initiator keys,
@@ -455,8 +464,30 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
         if (recvCryptoContext == NULL) {
             return false;
         }
+        // Create a SRTP crypto context for real SSRC input stream.
+        // If the sender didn't provide a SSRC just insert the template
+        // into the queue. After we received the first packet the real
+        // crypto context will be created.
+        //
+        // Note: key derivation can be done at this time only if the
+        // key derivation rate is 0 (disabled). For ZRTP this is the 
+        // case: the key derivation is defined as 2^48 
+        // which is effectively 0.
+        if (peerSSRC != 0) {
+            pcc = recvCryptoContext->newCryptoContextForSSRC(peerSSRC, 0, 0L);
+            if (pcc == NULL) {
+                return false;
+            }
+            pcc->deriveSrtpKeys(0L);
+            setInQueueCryptoContext(pcc);
+        }
+        else {
+            setInQueueCryptoContext(recvCryptoContext);
+        }
+
         secureParts++;
     }
+    return true;
 }
 
 void ZrtpQueue::srtpSecretsOn(std::string c, std::string s, bool verified)
@@ -470,8 +501,7 @@ void ZrtpQueue::srtpSecretsOn(std::string c, std::string s, bool verified)
   }
 }
 
-void ZrtpQueue::srtpSecretsOff(EnableSecurity part)
-{
+void ZrtpQueue::srtpSecretsOff(EnableSecurity part) {
     if (part == ForSender) {
         removeOutQueueCryptoContext(NULL);
     }
@@ -484,10 +514,7 @@ void ZrtpQueue::srtpSecretsOff(EnableSecurity part)
     }
 }
 
-
-int32_t
-ZrtpQueue::activateTimer(int32_t time)
-{
+int32_t ZrtpQueue::activateTimer(int32_t time) {
     std::string s("ZRTP");
     if (staticTimeoutProvider != NULL) {
         staticTimeoutProvider->requestTimeout(time, this, s);
@@ -495,9 +522,7 @@ ZrtpQueue::activateTimer(int32_t time)
     return 1;
 }
 
-int32_t
-ZrtpQueue::cancelTimer()
-{
+int32_t ZrtpQueue::cancelTimer() {
     std::string s("ZRTP");
     if (staticTimeoutProvider != NULL) {
         staticTimeoutProvider->cancelRequest(this, s);
@@ -588,11 +613,6 @@ void ZrtpQueue::goClearOk()    {  }
 
 void ZrtpQueue::requestGoClear()  { }
 
-void ZrtpQueue::setSigsSecret(uint8* data)  {
-    if (zrtpEngine != NULL)
-	zrtpEngine->setSigsSecret(data);
-}
-
 void ZrtpQueue::setSrtpsSecret(uint8* data)  {
     if (zrtpEngine != NULL)
 	zrtpEngine->setSrtpsSecret(data);
@@ -614,13 +634,6 @@ void ZrtpQueue::setClientId(std::string id) {
 std::string ZrtpQueue::getHelloHash()  {
     if (zrtpEngine != NULL)
 	return zrtpEngine->getHelloHash();
-    else
-	return std::string();
-}
-
-std::string ZrtpQueue::getSasData()  {
-    if (zrtpEngine != NULL)
-	return zrtpEngine->getSasData();
     else
 	return std::string();
 }
@@ -668,8 +681,15 @@ void ZrtpQueue::setPBXEnrollment(bool yesNo) {
 }
 
 IncomingZRTPPkt::IncomingZRTPPkt(const unsigned char* const block, size_t len) :
-        IncomingRTPPkt(block,len)
-{
+        IncomingRTPPkt(block,len) {
+}
+
+uint32 IncomingZRTPPkt::getZrtpMagic() const {
+     return ntohl(getHeader()->timestamp);
+}
+
+uint32 IncomingZRTPPkt::getSSRC() const	{
+     return ntohl(getHeader()->sources[0]);
 }
 
 OutgoingZRTPPkt::OutgoingZRTPPkt(
