@@ -271,7 +271,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     zrtpDH2.setRs1Id(rs1IDi);
     zrtpDH2.setRs2Id(rs2IDi);
     zrtpDH2.setSrtpsId(srtpsIDi);
-    zrtpDH2.setOtherSecretId(otherSecretIDi);
+    zrtpDH2.setPbxSecretId(pbxSecretIDi);
     zrtpDH2.setPv(pubKeyBytes);
     zrtpDH2.setH1(H1);
 
@@ -436,7 +436,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     zrtpDH1.setRs1Id(rs1IDr);
     zrtpDH1.setRs2Id(rs2IDr);
     zrtpDH1.setSrtpsId(srtpsIDr);
-    zrtpDH1.setOtherSecretId(otherSecretIDr);
+    zrtpDH1.setPbxSecretId(pbxSecretIDr);
     zrtpDH1.setPv(pubKeyBytes);
     zrtpDH1.setH1(H1);
 
@@ -1054,9 +1054,9 @@ void ZRtp:: computeSharedSecretSet(ZIDRecord &zidRec) {
 
     randomZRTP(randBuf, RS_LENGTH);
     hmac_sha256(randBuf, RS_LENGTH, (unsigned char*)initiator,
-		strlen(initiator), otherSecretIDi, &macLen);
+		strlen(initiator), pbxSecretIDi, &macLen);
     hmac_sha256(randBuf, RS_LENGTH, (unsigned char*)responder,
-		strlen(responder), otherSecretIDr, &macLen);
+		strlen(responder), pbxSecretIDr, &macLen);
 }
 
 /*
@@ -1089,7 +1089,7 @@ void ZRtp::generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 	DEBUGOUT((fprintf(stdout, "%c: Match for Srtps found\n", zid[0])));
         setD[matchingSecrets++] = ;
     }
-    if (memcmp(otherSecretIDr, dhPart->getOtherSecretId(), 8) == 0) {
+    if (memcmp(pbxSecretIDr, dhPart->getPbxSecretId(), 8) == 0) {
 	DEBUGOUT((fprintf(stdout, "%c: Match for Other_secret found\n", zid[0])));
         setD[matchingSecrets++] = ;
     }
@@ -1227,7 +1227,7 @@ void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 	DEBUGOUT((fprintf(stdout, "%c: Match for Srtps found\n", zid[0])));
         setD[matchingSecrets++] = ;
     }
-    if (memcmp(otherSecretIDi, dhPart->getOtherSecretId(), 8) == 0) {
+    if (memcmp(pbxSecretIDi, dhPart->getPbxSecretId(), 8) == 0) {
 	DEBUGOUT((fprintf(stdout, "%c: Match for Other_secret found\n", zid[0])));
         setD[matchingSecrets++] = ;
     }
@@ -1414,8 +1414,7 @@ void ZRtp::srtpSecretsOff(EnableSecurity part) {
     callback->srtpSecretsOff(part);
 }
 
-void ZRtp::SASVerified()
-{
+void ZRtp::SASVerified() {
     // Initialize a ZID record to get peer's retained secrets
     ZIDRecord zidRec(peerZid);
     ZIDFile *zid = ZIDFile::getInstance();
@@ -1425,8 +1424,7 @@ void ZRtp::SASVerified()
     zid->saveRecord(&zidRec);
 }
 
-void ZRtp::resetSASVerified()
-{
+void ZRtp::resetSASVerified() {
     // Initialize a ZID record to get peer's retained secrets
     ZIDRecord zidRec(peerZid);
     ZIDFile *zid = ZIDFile::getInstance();
@@ -1441,12 +1439,10 @@ int32_t ZRtp::sendPacketZRTP(ZrtpPacketBase *packet) {
             callback->sendDataZRTP(packet->getHeaderBase(), (packet->getLength() * 4) + 4));
 }
 
-void ZRtp::setSrtpsSecret(uint8_t* data)
-{
+void ZRtp::setSrtpsSecret(uint8_t* data) {
 }
 
-void ZRtp::setOtherSecret(uint8_t* data, int32_t length)
-{
+void ZRtp::setPbxSecret(uint8_t* data, int32_t length) {
 }
 
 void ZRtp::setClientId(std::string id) {
@@ -1571,3 +1567,4 @@ void ZRtp:: setPBXEnrollment(bool yesNo) {
  * c-basic-offset: 4
  * End:
  */
+

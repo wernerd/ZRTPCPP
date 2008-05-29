@@ -343,7 +343,7 @@ namespace ost {
          * @param length
          *     The length in bytes of the data.
          */
-        void setOtherSecret(uint8* data, int32 length);
+        void setPbxSecret(uint8* data, int32 length);
 
         /**
          * Set the application's callback class.
@@ -757,3 +757,4 @@ namespace ost {
  * c-basic-offset: 4
  * End:
  */
+

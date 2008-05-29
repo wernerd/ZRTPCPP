@@ -20,6 +20,7 @@
  */
 
 #include <string>
+#include <stdio.h>
 
 #include <libzrtpcpp/ZrtpQueue.h>
 #include <libzrtpcpp/ZIDFile.h>
@@ -618,9 +619,9 @@ void ZrtpQueue::setSrtpsSecret(uint8* data)  {
 	zrtpEngine->setSrtpsSecret(data);
 }
 
-void ZrtpQueue::setOtherSecret(uint8* data, int32 length)  {
+void ZrtpQueue::setPbxSecret(uint8* data, int32 length)  {
     if (zrtpEngine != NULL)
-	zrtpEngine->setOtherSecret(data, length);
+	zrtpEngine->setPbxSecret(data, length);
 }
 
 void ZrtpQueue::setUserCallback(ZrtpUserCallback* ucb) {
@@ -712,3 +713,4 @@ OutgoingZRTPPkt::OutgoingZRTPPkt(
  * c-basic-offset: 4
  * End:
  */
+

@@ -168,7 +168,7 @@ class ZRtp {
         * @param length
         *     The length in bytes of the data.
         */
-        void setOtherSecret(uint8_t* data, int32_t length);
+        void setPbxSecret(uint8_t* data, int32_t length);
 
        /**
         * Check current state of the ZRTP state engine
@@ -402,12 +402,12 @@ class ZRtp {
     uint8_t rs1IDr[SHA256_DIGEST_LENGTH];
     uint8_t rs2IDr[SHA256_DIGEST_LENGTH];
     uint8_t srtpsIDr[SHA256_DIGEST_LENGTH];
-    uint8_t otherSecretIDr[SHA256_DIGEST_LENGTH];
+    uint8_t pbxSecretIDr[SHA256_DIGEST_LENGTH];
 
     uint8_t rs1IDi[SHA256_DIGEST_LENGTH];
     uint8_t rs2IDi[SHA256_DIGEST_LENGTH];
     uint8_t srtpsIDi[SHA256_DIGEST_LENGTH];
-    uint8_t otherSecretIDi[SHA256_DIGEST_LENGTH];
+    uint8_t pbxSecretIDi[SHA256_DIGEST_LENGTH];
     /**
      * My hvi
      */
