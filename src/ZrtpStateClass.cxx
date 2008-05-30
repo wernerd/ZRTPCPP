@@ -992,8 +992,12 @@ void ZrtpStateClass::evWaitConfirm2(void) {
                 sendFailed();             // returns to state Initial
                 return;
             }
-            parent->srtpSecretsReady(ForSender);
-            parent->srtpSecretsReady(ForReceiver);
+            if (!parent->srtpSecretsReady(ForSender) ||
+                !parent->srtpSecretsReady(ForReceiver)) {
+                parent->sendInfo(Severe, CriticalSWError);
+                sendErrorPacket(CriticalSWError);
+                return;
+            }
             nextState(SecureState);
             parent->sendInfo(Info, InfoSecureStateOn);
         }
@@ -1046,8 +1050,12 @@ void ZrtpStateClass::evWaitConfAck(void) {
         if (first == 'c') {
             cancelTimer();
             sentPacket = NULL;
-            parent->srtpSecretsReady(ForSender);
-            parent->srtpSecretsReady(ForReceiver);
+            if (!parent->srtpSecretsReady(ForSender) ||
+                !parent->srtpSecretsReady(ForReceiver)) {
+                parent->sendInfo(Severe, CriticalSWError);
+                sendErrorPacket(CriticalSWError);
+                return;
+            }
             nextState(SecureState);
             parent->sendInfo(Info, InfoSecureStateOn);
         }
