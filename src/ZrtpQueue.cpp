@@ -52,7 +52,6 @@ void ZrtpQueue::init()
     zrtpUserCallback = NULL;
     enableZrtp = false;
     started = false;
-    secureParts = 0;
     zrtpEngine = NULL;
 
     // senderCryptoContext = NULL;
@@ -424,7 +423,6 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
         }
         pcc->deriveSrtpKeys(0L);
         setOutQueueCryptoContext(pcc);
-        secureParts++;
     }
     if (part == ForReceiver) {
         // To decrypt packets: intiator uses responder keys,
@@ -485,8 +483,6 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
         else {
             setInQueueCryptoContext(recvCryptoContext);
         }
-
-        secureParts++;
     }
     return true;
 }
@@ -509,7 +505,6 @@ void ZrtpQueue::srtpSecretsOff(EnableSecurity part) {
     if (part == ForReceiver) {
         removeInQueueCryptoContext(NULL);
     }
-    secureParts = 0;
     if (zrtpUserCallback != NULL) {
         zrtpUserCallback->secureOff();
     }
