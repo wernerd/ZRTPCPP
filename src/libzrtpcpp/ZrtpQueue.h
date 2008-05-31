@@ -321,7 +321,7 @@ namespace ost {
         void requestGoClear();
 
         /**
-         * Set the srtps secret.
+         * Set the S3 secret.
          *
          * Use this method to set the srtps secret data. Refer to ZRTP
          * specification, chapter 3.2.1
@@ -330,7 +330,7 @@ namespace ost {
          *     Points to the srtps secret data. The data must have a length
          *     of 32 bytes (length of SHA256 hash)
          */
-        void setSrtpsSecret(uint8* data);
+        void setS3Secret(uint8* data);
 
         /**
          * Set the other secret.

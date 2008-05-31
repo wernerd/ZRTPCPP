@@ -84,8 +84,8 @@ typedef struct DHPart {
     uint8_t rs1Id[2*ZRTP_WORD_SIZE];
     uint8_t rs2Id[2*ZRTP_WORD_SIZE];
 //    uint8_t sigsId[2*ZRTP_WORD_SIZE];
-    uint8_t srtpsId[2*ZRTP_WORD_SIZE];
-    uint8_t otherSecretId[2*ZRTP_WORD_SIZE];
+    uint8_t s3Id[2*ZRTP_WORD_SIZE];
+    uint8_t pbxSecretId[2*ZRTP_WORD_SIZE];
 }  DHPart_t;
 
 typedef struct DHPartPacket {
