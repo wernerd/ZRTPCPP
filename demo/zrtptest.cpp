@@ -56,7 +56,7 @@ public:
 
 private:
     static const InetHostAddress destinationAddress;
-    static const uint16 destinationPort = 10002;
+    static const uint16 destinationPort = 5002;
     static const uint32 packetsNumber = 10;
     static const uint32 packetsSize = 12;
     static const unsigned char* data[];
@@ -72,14 +72,6 @@ const unsigned char* PacketsPattern::data[] = {
 
 PacketsPattern pattern;
 
-class
-Test
-{
-public:
-    virtual int
-    doTest() = 0;
-};
-
 /**
  * SymmetricZRTPSession in non-security mode (RTPSession compatible).
  *
@@ -87,18 +79,14 @@ public:
  * in the same way as <code>RTPSession</code>. This is straightforward,
  * just don't do any configuration or initialization.
  */
-class
-SendPacketTransmissionTest : public Test, public Thread, public TimerPort
-{
+class SendPacketTransmissionTest: public Thread, public TimerPort {
 public:
     void
-    run()
-    {
+    run() {
         doTest();
     }
 
-    int doTest()
-    {
+    int doTest() {
         // should be valid?
         //RTPSession tx();
         SymmetricZRTPSession tx(pattern.getSsrc(), InetHostAddress("localhost"));
@@ -127,16 +115,13 @@ public:
             TimerPort::incTimer(period);
         }
         tx.putData(i*inc, (unsigned char*)"exit", 5);
-        cout << "Sent exit string: " << i << endl;
         Thread::sleep(TimerPort::getTimer());
         return 0;
     }
 };
 
 
-class
-RecvPacketTransmissionTest : public Test, public Thread
-{
+class RecvPacketTransmissionTest: public Thread {
 public:
     void
     run() {
@@ -145,7 +130,7 @@ public:
 
     int
     doTest() {
-        SymmetricZRTPSession rx(pattern.getSsrc(), pattern.getDestinationAddress(),
+        SymmetricZRTPSession rx(pattern.getSsrc()+1, pattern.getDestinationAddress(),
                                 pattern.getDestinationPort());
 
         rx.setSchedulingTimeout(10000);
@@ -154,11 +139,16 @@ public:
         rx.startRunning();
         rx.setPayloadFormat(StaticPayloadFormat(sptPCMU));
         // arbitrary number of loops to provide time to start transmitter
+        if (!rx.addDestination(pattern.getDestinationAddress(),
+                               pattern.getDestinationPort()+2) ) {
+            return 1;
+        }
         for ( int i = 0; i < 5000 ; i++ ) {
             const AppDataUnit* adu;
             while ( (adu = rx.getData(rx.getFirstTimestamp())) ) {
                 cerr << "got some data: " << adu->getData() << endl;
                 if (*adu->getData() == 'e') {
+                    delete adu;
                     return 0;
                 }
                 delete adu;
@@ -179,18 +169,14 @@ public:
  * Some embedded logging informs about the ZRTP processing.
  */
 
-class
-ZrtpSendPacketTransmissionTest : public Test, public Thread, public TimerPort
-{
+class ZrtpSendPacketTransmissionTest: public Thread, public TimerPort {
 public:
     void
-    run()
-    {
+    run() {
         doTest();
     }
 
-    int doTest()
-    {
+    int doTest() {
         // should be valid?
         //RTPSession tx();
         SymmetricZRTPSession tx(pattern.getSsrc(), pattern.getDestinationAddress(),
@@ -222,15 +208,12 @@ public:
             TimerPort::incTimer(period);
         }
         tx.putData(i*inc, (unsigned char*)"exit", 5);
-        cout << "Sent exit string: " << i << endl;
-        Thread::sleep(TimerPort::getTimer());
+        Thread::sleep(200);
         return 0;
     }
 };
 
-class
-ZrtpRecvPacketTransmissionTest : public Test, public Thread
-{
+class ZrtpRecvPacketTransmissionTest: public Thread {
 public:
     void
     run() {
@@ -239,7 +222,7 @@ public:
 
     int
     doTest() {
-        SymmetricZRTPSession rx(pattern.getSsrc(), pattern.getDestinationAddress(),
+        SymmetricZRTPSession rx(pattern.getSsrc()+1, pattern.getDestinationAddress(),
                                 pattern.getDestinationPort());
 
         rx.initialize("test_r.zid");
@@ -260,6 +243,7 @@ public:
             while ( (adu = rx.getData(rx.getFirstTimestamp())) ) {
                 cerr << "got some data: " << adu->getData() << endl;
                 if (*adu->getData() == 'e') {
+                    delete adu;
                     return 0;
                 }
                 delete adu;
@@ -278,8 +262,7 @@ public:
  * implementation of this class just perform return, thus effectively
  * supressing any callback or trigger.
  */
-class
-MyUserCallback: public ZrtpUserCallback {
+class MyUserCallback: public ZrtpUserCallback {
 
         static map<int32, std::string*> infoMap;
         static map<int32, std::string*> warningMap;
@@ -288,8 +271,10 @@ MyUserCallback: public ZrtpUserCallback {
 
         static bool initialized;
 
+        SymmetricZRTPSession* session;
     public:
-        MyUserCallback() {
+        MyUserCallback(SymmetricZRTPSession* s) {
+            session = s;
         if (initialized) {
             return;
         }
@@ -301,7 +286,7 @@ MyUserCallback: public ZrtpUserCallback {
         infoMap.insert(pair<int32, std::string*>(InfoRespDH2Received, new string("Responder: DHPart2 received, preparing Confirm1")));
         infoMap.insert(pair<int32, std::string*>(InfoInitConf1Received, new string("Initiator: Confirm1 received, preparing Confirm2")));
         infoMap.insert(pair<int32, std::string*>(InfoRespConf2Received, new string("Responder: Confirm2 received, preparing Conf2Ack")));
-        infoMap.insert(pair<int32, std::string*>(InfoBothRSMatch, new string("Both retained secrets match - security OK")));
+        infoMap.insert(pair<int32, std::string*>(InfoBothRSMatch, new string("Both retained secrets match - shared secrets OK")));
         infoMap.insert(pair<int32, std::string*>(InfoSecureStateOn, new string("Entered secure state")));
         infoMap.insert(pair<int32, std::string*>(InfoSecureStateOff, new string("No more security for this session")));
 
@@ -412,7 +397,7 @@ bool MyUserCallback::initialized = false;
  */
 
 class
-ZrtpSendPacketTransmissionTestCB : public Test, public Thread, public TimerPort
+ZrtpSendPacketTransmissionTestCB : public Thread, public TimerPort
 {
 public:
     void
@@ -425,10 +410,16 @@ public:
     {
         // should be valid?
         //RTPSession tx();
-        SymmetricZRTPSession tx(pattern.getSsrc(), pattern.getDestinationAddress(),
+        SymmetricZRTPSession tx(/*pattern.getSsrc(),*/ pattern.getDestinationAddress(),
                                 pattern.getDestinationPort()+2);
         tx.initialize("test_t.zid");
-        tx.setUserCallback(new MyUserCallback());
+        // At this point the Hello hash is available. See ZRTP specification
+        // chapter 9.1 for further information when an how to use the Hello
+        // hash.
+        cout << "TX Hello hash: " << tx.getHelloHash() << endl;
+        cout << "TX Hello hash length: " << tx.getHelloHash().length() << endl;
+
+        tx.setUserCallback(new MyUserCallback(&tx));
 
         tx.setSchedulingTimeout(10000);
         tx.setExpireTimeout(1000000);
@@ -441,6 +432,7 @@ public:
             return 1;
         }
         tx.startZrtp();
+
         // 2 packets per second (packet duration of 500ms)
         uint32 period = 500;
         uint16 inc = tx.getCurrentRTPClockRate()/2;
@@ -455,7 +447,6 @@ public:
             TimerPort::incTimer(period);
         }
         tx.putData(i*inc, (unsigned char*)"exit", 5);
-        cout << "Sent exit string: " << i << endl;
         Thread::sleep(TimerPort::getTimer());
         return 0;
     }
@@ -463,7 +454,7 @@ public:
 
 
 class
-ZrtpRecvPacketTransmissionTestCB : public Test, public Thread
+ZrtpRecvPacketTransmissionTestCB: public Thread
 {
 public:
     void
@@ -473,11 +464,17 @@ public:
 
     int
     doTest() {
-        SymmetricZRTPSession rx(pattern.getSsrc(), pattern.getDestinationAddress(),
+        SymmetricZRTPSession rx( /*pattern.getSsrc()+1,*/ pattern.getDestinationAddress(),
                                 pattern.getDestinationPort());
 
         rx.initialize("test_r.zid");
-        rx.setUserCallback(new MyUserCallback());
+        // At this point the Hello hash is available. See ZRTP specification
+        // chapter 9.1 for further information when an how to use the Hello
+        // hash.
+        cout << "RX Hello hash: " << rx.getHelloHash() << endl;
+        cout << "RX Hello hash length: " << rx.getHelloHash().length() << endl;
+
+        rx.setUserCallback(new MyUserCallback(&rx));
 
         rx.setSchedulingTimeout(10000);
         rx.setExpireTimeout(1000000);
@@ -490,6 +487,7 @@ public:
             return 1;
         }
         rx.startZrtp();
+
         for ( int i = 0; i < 5000 ; i++ ) {
             const AppDataUnit* adu;
             while ( (adu = rx.getData(rx.getFirstTimestamp())) ) {
@@ -529,7 +527,7 @@ int main(int argc, char *argv[])
             send = true;
             break;
         default:
-            cerr << "Wrong Arguments" << endl;
+            cerr << "Wrong Arguments, only -s and -r are accepted" << endl;
         }
     }
 
@@ -562,8 +560,8 @@ int main(int argc, char *argv[])
         rx->start();
         rx->join();
     }
-#endif
-#if 0
+//#endif
+//#if 0
     ZrtpRecvPacketTransmissionTest *zrx;
     ZrtpSendPacketTransmissionTest *ztx;
 
