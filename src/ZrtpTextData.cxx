@@ -72,7 +72,7 @@ const char* zrtpSessionKey = "ZRTP Session Key";
  */
 const char *supportedHashes[] =  {"S256"};
 
-const char *supportedCipher[] =  {"AES2",
+const char *supportedCipher[] =  {"AES3",
                                   "AES1"};
 
 const char *supportedPubKey[] =  {"DH3k"};
