@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <netinet/in.h>
 
 #include <libzrtpcpp/zrtpPacket.h>
