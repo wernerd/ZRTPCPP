@@ -270,7 +270,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     zrtpDH2.setMessageType((uint8_t*)DHPart2Msg);
     zrtpDH2.setRs1Id(rs1IDi);
     zrtpDH2.setRs2Id(rs2IDi);
-    zrtpDH2.setS3Id(s3IDi);
+    zrtpDH2.setAuxSecretId(auxSecretIDi);
     zrtpDH2.setPbxSecretId(pbxSecretIDi);
     zrtpDH2.setPv(pubKeyBytes);
     zrtpDH2.setH1(H1);
@@ -435,7 +435,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     zrtpDH1.setMessageType((uint8_t*)DHPart1Msg);
     zrtpDH1.setRs1Id(rs1IDr);
     zrtpDH1.setRs2Id(rs2IDr);
-    zrtpDH1.setS3Id(s3IDr);
+    zrtpDH1.setAuxSecretId(auxSecretIDr);
     zrtpDH1.setPbxSecretId(pbxSecretIDr);
     zrtpDH1.setPv(pubKeyBytes);
     zrtpDH1.setH1(H1);
@@ -1048,9 +1048,9 @@ void ZRtp:: computeSharedSecretSet(ZIDRecord &zidRec) {
     */
     randomZRTP(randBuf, RS_LENGTH);
     hmac_sha256(randBuf, RS_LENGTH, (unsigned char*)initiator,
-		strlen(initiator), s3IDi, &macLen);
+		strlen(initiator), auxSecretIDi, &macLen);
     hmac_sha256(randBuf, RS_LENGTH, (unsigned char*)responder,
-		strlen(responder), s3IDr, &macLen);
+		strlen(responder), auxSecretIDr, &macLen);
 
     randomZRTP(randBuf, RS_LENGTH);
     hmac_sha256(randBuf, RS_LENGTH, (unsigned char*)initiator,
@@ -1085,8 +1085,8 @@ void ZRtp::generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
         rsFound |= 0x2;
     }
     /* *** Not yet supported 
-    if (memcmp(s3IDr, dhPart->getS3Id(), 8) == 0) {
-	DEBUGOUT((fprintf(stdout, "%c: Match for S3 found\n", zid[0])));
+    if (memcmp(auxSecretIDr, dhPart->getAuxSecretId(), 8) == 0) {
+	DEBUGOUT((fprintf(stdout, "%c: Match for aux secret found\n", zid[0])));
         setD[matchingSecrets++] = ;
     }
     if (memcmp(pbxSecretIDr, dhPart->getPbxSecretId(), 8) == 0) {
@@ -1223,12 +1223,12 @@ void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
         rsFound |= 0x2;
     }
     /* ***** not yet supported
-    if (memcmp(s3IDi, dhPart->getS3Id(), 8) == 0) {
-	DEBUGOUT((fprintf(stdout, "%c: Match for S3 found\n", zid[0])));
+    if (memcmp(auxSecretIDi, dhPart->getauxSecretId(), 8) == 0) {
+	DEBUGOUT((fprintf(stdout, "%c: Match for aux secret found\n", zid[0])));
         setD[matchingSecrets++] = ;
     }
     if (memcmp(pbxSecretIDi, dhPart->getPbxSecretId(), 8) == 0) {
-	DEBUGOUT((fprintf(stdout, "%c: Match for Other_secret found\n", zid[0])));
+	DEBUGOUT((fprintf(stdout, "%c: Match for PBX secret found\n", zid[0])));
         setD[matchingSecrets++] = ;
     }
     */
@@ -1439,7 +1439,7 @@ int32_t ZRtp::sendPacketZRTP(ZrtpPacketBase *packet) {
             callback->sendDataZRTP(packet->getHeaderBase(), (packet->getLength() * 4) + 4));
 }
 
-void ZRtp::setS3Secret(uint8_t* data) {
+void ZRtp::setAuxSecret(uint8_t* data) {
 }
 
 void ZRtp::setPbxSecret(uint8_t* data, int32_t length) {

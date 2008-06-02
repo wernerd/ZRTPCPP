@@ -609,9 +609,9 @@ void ZrtpQueue::goClearOk()    {  }
 
 void ZrtpQueue::requestGoClear()  { }
 
-void ZrtpQueue::setS3Secret(uint8* data)  {
+void ZrtpQueue::setAuxSecret(uint8* data)  {
     if (zrtpEngine != NULL)
-	zrtpEngine->setS3Secret(data);
+	zrtpEngine->setAuxSecret(data);
 }
 
 void ZrtpQueue::setPbxSecret(uint8* data, int32 length)  {

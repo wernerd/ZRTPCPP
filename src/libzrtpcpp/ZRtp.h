@@ -146,7 +146,7 @@ class ZRtp {
        bool handleGoClear(uint8_t *extHeader);
 
        /**
-        * Set the S3 secret.
+        * Set the auxilliary secret.
         *
         * USe this method to set the srtps secret data. Refer to ZRTP
         * specification, chapter 3.2.1
@@ -155,10 +155,10 @@ class ZRtp {
         *     Points to the srtps secret data. The data must have a length
         *      of 32 bytes (length of SHA256 hash)
         */
-        void setS3Secret(uint8_t* data);
+        void setAuxSecret(uint8_t* data);
 
        /**
-        * Set the other secret.
+        * Set the PBX secret.
         *
         * USe this method to set the other secret data. Refer to ZRTP
         * specification, chapter 3.2.1
@@ -401,12 +401,12 @@ class ZRtp {
      */
     uint8_t rs1IDr[SHA256_DIGEST_LENGTH];
     uint8_t rs2IDr[SHA256_DIGEST_LENGTH];
-    uint8_t s3IDr[SHA256_DIGEST_LENGTH];
+    uint8_t auxSecretIDr[SHA256_DIGEST_LENGTH];
     uint8_t pbxSecretIDr[SHA256_DIGEST_LENGTH];
 
     uint8_t rs1IDi[SHA256_DIGEST_LENGTH];
     uint8_t rs2IDi[SHA256_DIGEST_LENGTH];
-    uint8_t s3IDi[SHA256_DIGEST_LENGTH];
+    uint8_t auxSecretIDi[SHA256_DIGEST_LENGTH];
     uint8_t pbxSecretIDi[SHA256_DIGEST_LENGTH];
     /**
      * My hvi

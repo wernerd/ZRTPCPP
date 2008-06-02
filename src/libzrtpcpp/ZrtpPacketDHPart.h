@@ -46,16 +46,16 @@ class ZrtpPacketDHPart : public ZrtpPacketBase {
     uint8_t* getPv()             { return pv; }
     uint8_t* getRs1Id()          { return DHPartHeader->rs1Id; };
     uint8_t* getRs2Id()          { return DHPartHeader->rs2Id; };
-    uint8_t* getS3Id()        { return DHPartHeader->s3Id; };
-    uint8_t* getPbxSecretId()  { return DHPartHeader->pbxSecretId; };
+    uint8_t* getAuxSecretId()    { return DHPartHeader->auxSecretId; };
+    uint8_t* getPbxSecretId()    { return DHPartHeader->pbxSecretId; };
     uint8_t* getH1()             { return DHPartHeader->hashH1; };
     uint8_t* getHMAC()           { return pv+dhLength; };
 
     void setPv(uint8_t* text) 	      { memcpy(pv, text, dhLength); };
     void setRs1Id(uint8_t* text)      { memcpy(DHPartHeader->rs1Id, text, sizeof(DHPartHeader->rs1Id)); };
     void setRs2Id(uint8_t* text)      { memcpy(DHPartHeader->rs2Id, text, sizeof(DHPartHeader->rs2Id)); };
-    void setS3Id(uint8_t* t)       { memcpy(DHPartHeader->s3Id, t, sizeof(DHPartHeader->s3Id)); };
-    void setPbxSecretId(uint8_t* t) { memcpy(DHPartHeader->pbxSecretId,t, sizeof(DHPartHeader->pbxSecretId)); };
+    void setAuxSecretId(uint8_t* t)   { memcpy(DHPartHeader->auxSecretId, t, sizeof(DHPartHeader->auxSecretId)); };
+    void setPbxSecretId(uint8_t* t)   { memcpy(DHPartHeader->pbxSecretId,t, sizeof(DHPartHeader->pbxSecretId)); };
     void setH1(uint8_t* t)            { memcpy(DHPartHeader->hashH1, t, sizeof(DHPartHeader->hashH1)); };
     void setPubKeyType(SupportedPubKeys pkt);
     void setHMAC(uint8_t* t) 	      { memcpy(pv+dhLength, t, 2*ZRTP_WORD_SIZE); };
