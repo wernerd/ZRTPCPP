@@ -64,11 +64,10 @@ int ZrtpAvailable()
 #endif
 
 ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id):
-    callback(cb), dhContext(NULL) {
+    callback(cb), dhContext(NULL), auxSecret(NULL), auxSecretLength(0),
+    rs1Valid(false), rs2Valid(false), DHss(NULL), multiStream(false),
+    PBXEnrollment(false) {
 
-    DHss = NULL;
-    multiStream = false;
-    PBXEnrollment = false;
     /*
      * Generate H0 as a random number (256 bits, 32 bytes) and then
      * the hash chain, refer to chapter 10
@@ -93,7 +92,7 @@ ZRtp::~ZRtp() {
     stopZrtp();
 
     if (DHss != NULL) {
-	free(DHss);
+	delete DHss;
         DHss = NULL;
     }
     if (stateEngine != NULL) {
@@ -107,6 +106,11 @@ ZRtp::~ZRtp() {
     if (msgShaContext != NULL) {
         closeSha256Context(msgShaContext, NULL);
         msgShaContext = NULL;
+    }
+    if (auxSecret != NULL) {
+        delete auxSecret;
+        auxSecret = NULL;
+        auxSecretLength = 0;
     }
     memset(hmacKeyI, 0, SHA256_DIGEST_LENGTH);
     memset(hmacKeyR, 0, SHA256_DIGEST_LENGTH);
@@ -216,7 +220,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     uint8_t* cid = hello->getClientId();
     memcpy(peerZid, hello->getZid(), 12);
     if (memcmp(peerZid, zid, 12) == 0) {       // peers have same ZID????
-        *errMsg = UnsuppZRTPVersion;
+        *errMsg = EqualZIDHello;
         return NULL;
     }
     memcpy(peerH3, hello->getH3(), SHA256_DIGEST_LENGTH);
@@ -509,7 +513,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
     }
 
     // get memory to store DH result TODO: make it fixed memory
-    DHss = (uint8_t*)malloc(dhContext->getSecretSize());
+    DHss = new uint8_t[dhContext->getSecretSize()];
     if (DHss == NULL) {
         *errMsg = CriticalSWError;
 	return NULL;
@@ -589,8 +593,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
         *errMsg = CriticalSWError;
         return NULL;
     }
-    // TODO: fixed memory
-    DHss = (uint8_t*)malloc(dhContext->getSecretSize());
+    DHss = new uint8_t[dhContext->getSecretSize()];
     if (DHss == NULL) {
         *errMsg = CriticalSWError;
         return NULL;
@@ -831,28 +834,23 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
     return &zrtpConf2Ack;
 }
 
-ZrtpPacketErrorAck* ZRtp::prepareErrorAck(ZrtpPacketError* epkt)
-{
+ZrtpPacketErrorAck* ZRtp::prepareErrorAck(ZrtpPacketError* epkt) {
     sendInfo(ZrtpError, epkt->getErrorCode() * -1);
     return &zrtpErrorAck;
 }
 
-ZrtpPacketError* ZRtp::prepareError(uint32_t errMsg)
-{
-    ZrtpPacketError* err = &zrtpError;
-    err->setErrorCode(errMsg);
-    return err;
+ZrtpPacketError* ZRtp::prepareError(uint32_t errMsg) {
+    zrtpError.setErrorCode(errMsg);
+    return &zrtpError;
 }
 
 // TODO Implement GoClear handling
-ZrtpPacketClearAck* ZRtp::prepareClearAck(ZrtpPacketGoClear* gpkt)
-{
+ZrtpPacketClearAck* ZRtp::prepareClearAck(ZrtpPacketGoClear* gpkt) {
     sendInfo(Warning, WarningGoClearReceived);
     return &zrtpClearAck;
 }
 
-ZrtpPacketGoClear* ZRtp::prepareGoClear(uint32_t errMsg)
-{
+ZrtpPacketGoClear* ZRtp::prepareGoClear(uint32_t errMsg) {
     uint8_t msg[16];
     ZrtpPacketGoClear* gclr = &zrtpGoClear;
     gclr->clrClearHmac();
@@ -1017,6 +1015,7 @@ void ZRtp:: computeSharedSecretSet(ZIDRecord &zidRec) {
 		    strlen(responder), rs1IDr, &macLen);
     }
     else {
+        rs1Valid = true;
 	hmac_sha256((unsigned char*)zidRec.getRs1(), RS_LENGTH,
 		     (unsigned char*)initiator, strlen(initiator),
 		     rs1IDi, &macLen);
@@ -1033,6 +1032,7 @@ void ZRtp:: computeSharedSecretSet(ZIDRecord &zidRec) {
 		    strlen(responder), rs2IDr, &macLen);
     }
     else {
+        rs2Valid = true;
 	hmac_sha256((unsigned char*)zidRec.getRs2(), RS_LENGTH,
 		     (unsigned char*)initiator, strlen(initiator),
 		     rs2IDi, &macLen);
@@ -1062,32 +1062,41 @@ void ZRtp:: computeSharedSecretSet(ZIDRecord &zidRec) {
 /*
  * The DH packet for this function is DHPart1 and contains the Responder's
  * retained secret ids. Compare them with the expected secret ids (refer
- * to chapter 5.3.2 in the specification).
+ * to chapter 5.3 in the specification).
+ * When using this method then we are in Initiator role.
  */
 void ZRtp::generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
-    const uint8_t* setD[4];
+    const uint8_t* setD[3];
     int32_t rsFound = 0;
 
-    setD[0] = setD[1] = setD[2] = setD[3] = NULL;
+    setD[0] = setD[1] = setD[2] = NULL;
 
     /*
-     * Select the real secrets into setD
+     * Select the real secrets into setD. The dhPart is DHpart1 message 
+     * received from responder. rs1IDr and rs2IDr are the expected ids using
+     * the initator's cached retained secrets.
      */
     int matchingSecrets = 0;
     if (memcmp(rs1IDr, dhPart->getRs1Id(), 8) == 0) {
-	DEBUGOUT((fprintf(stdout, "%c: Match for Rs1 found\n", zid[0])));
         setD[matchingSecrets++] = zidRec.getRs1();
         rsFound = 0x1;
+    } 
+    else if (memcmp(rs1IDr, dhPart->getRs2Id(), 8) == 0) {
+        setD[matchingSecrets++] = zidRec.getRs1();
+        rsFound = 0x2;
     }
-    if (memcmp(rs2IDr, dhPart->getRs2Id(), 8) == 0) {
-	DEBUGOUT((fprintf(stdout, "%c: Match for Rs2 found\n", zid[0])));
+    else if (memcmp(rs2IDr, dhPart->getRs2Id(), 8) == 0) {
         setD[matchingSecrets++] = zidRec.getRs2();
-        rsFound |= 0x2;
+        rsFound |= 0x4;
+    }
+    else if (memcmp(rs2IDr, dhPart->getRs1Id(), 8) == 0) {
+        setD[matchingSecrets++] = zidRec.getRs2();
+        rsFound |= 0x8;
     }
     /* *** Not yet supported 
     if (memcmp(auxSecretIDr, dhPart->getAuxSecretId(), 8) == 0) {
 	DEBUGOUT((fprintf(stdout, "%c: Match for aux secret found\n", zid[0])));
-        setD[matchingSecrets++] = ;
+        setD[matchingSecrets++] = auxSecret;
     }
     if (memcmp(pbxSecretIDr, dhPart->getPbxSecretId(), 8) == 0) {
 	DEBUGOUT((fprintf(stdout, "%c: Match for Other_secret found\n", zid[0])));
@@ -1095,20 +1104,12 @@ void ZRtp::generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     }
     */
     // Check if some retained secrets found
-    if ((rsFound & 0x1) && (rsFound & 0x2)) {
-        sendInfo(Info, InfoBothRSMatch);
+    if (rsFound == 0 && (rs1Valid || rs2Valid)) {
+        sendInfo(Warning, WarningNoRSMatch);
+        zidRec.resetSasVerified();
     }
     else {
-        zidRec.resetSasVerified();
-        if (rsFound == 0) {
-            sendInfo(Warning, WarningNoRSMatch);
-        }
-        if ((rsFound & 0x1) && !(rsFound & 0x2)) {
-            sendInfo(Warning, WarningFirstRSMatch);
-        }
-        if (!(rsFound & 0x1) && (rsFound & 0x2)) {
-            sendInfo(Warning, WarningSecondRSMatch);
-        }
+        sendInfo(Info, InfoRSMatchFound);
     }
     /*
      * Ready to generate s0 here.
@@ -1125,14 +1126,14 @@ void ZRtp::generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     /*
      * These arrays hold the pointers and lengths of the data that must be
      * hashed to create S0.  According to the formula the max number of 
-     * elements to hash is 14, add one for the terminating "NULL"
+     * elements to hash is 12, add one for the terminating "NULL"
      */
-    unsigned char* data[15];
-    unsigned int   length[15];
+    unsigned char* data[13];
+    unsigned int   length[13];
     uint32_t pos = 0;                  // index into the array
 
     // we need a number of length data items, so define them here 
-    uint32_t counter, sLen[4];
+    uint32_t counter, sLen[3];
 
     //Very first element is a fixed counter, big endian 
     counter = 1;
@@ -1172,7 +1173,7 @@ void ZRtp::generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     int secretHashLen = SHA256_DIGEST_LENGTH;
     secretHashLen = htonl(secretHashLen);        // prepare 32 bit big-endian number 
 
-    for (int32_t i = 0; i < 4; i++) {
+    for (int32_t i = 0; i < 3; i++) {
         if (setD[i] != NULL) {           // a matching secret, set length, then secret
             sLen[i] = secretHashLen;
             data[pos] = (unsigned char*)&sLen[i];
@@ -1192,7 +1193,7 @@ void ZRtp::generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 //  hexdump("S0 I", s0, SHA256_DIGEST_LENGTH);
 
     memset(DHss, 0, dhContext->getSecretSize());
-    free(DHss);
+    delete DHss;
     DHss = NULL;
 
     computeSRTPKeys();
@@ -1203,24 +1204,30 @@ void ZRtp::generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
  * to chapter 5.3.1 in the specification).
  */
 void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
-    const uint8_t* setD[4];
+    const uint8_t* setD[3];
     int32_t rsFound = 0;
 
-    setD[0] = setD[1] = setD[2] = setD[3] = NULL;
+    setD[0] = setD[1] = setD[2] = NULL;
 
     /*
      * Select the real secrets into setD
      */
     int matchingSecrets = 0;
     if (memcmp(rs1IDi, dhPart->getRs1Id(), 8) == 0) {
-	DEBUGOUT((fprintf(stdout, "%c: Match for Rs1 found\n", zid[0])));
         setD[matchingSecrets++] = zidRec.getRs1();
         rsFound = 0x1;
     }
-    if (memcmp(rs2IDi, dhPart->getRs2Id(), 8) == 0) {
-	DEBUGOUT((fprintf(stdout, "%c: Match for Rs2 found\n", zid[0])));
+    else if (memcmp(rs1IDi, dhPart->getRs2Id(), 8) == 0) {
+        setD[matchingSecrets++] = zidRec.getRs1();
+        rsFound = 0x2;
+    }
+    else if (memcmp(rs2IDi, dhPart->getRs2Id(), 8) == 0) {
         setD[matchingSecrets++] = zidRec.getRs2();
-        rsFound |= 0x2;
+        rsFound |= 0x4;
+    }
+    else if (memcmp(rs2IDi, dhPart->getRs1Id(), 8) == 0) {
+        setD[matchingSecrets++] = zidRec.getRs2();
+        rsFound |= 0x8;
     }
     /* ***** not yet supported
     if (memcmp(auxSecretIDi, dhPart->getauxSecretId(), 8) == 0) {
@@ -1232,21 +1239,13 @@ void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
         setD[matchingSecrets++] = ;
     }
     */
-    if ((rsFound & 0x1) && (rsFound & 0x2)) {
-        sendInfo(Info, InfoBothRSMatch);
+    // Check if some retained secrets found
+    if (rsFound == 0 && (rs1Valid || rs2Valid)) {
+        sendInfo(Warning, WarningNoRSMatch);
+        zidRec.resetSasVerified();
     }
     else {
-        zidRec.resetSasVerified();
-        // Check if some retained secrets found
-        if (rsFound == 0) {
-            sendInfo(Warning, WarningNoRSMatch);
-        }
-        if ((rsFound & 0x1) && !(rsFound & 0x2)) {
-            sendInfo(Warning, WarningFirstRSMatch);
-        }
-        if (!(rsFound & 0x1) && (rsFound & 0x2)) {
-            sendInfo(Warning, WarningSecondRSMatch);
-        }
+        sendInfo(Info, InfoRSMatchFound);
     }
 
     /*
@@ -1254,8 +1253,7 @@ void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
      * The formular to compute S0 (Refer to ZRTP specification 5.4.4):
      *
       s0 = hash( counter | DHResult | "ZRTP-HMAC-KDF" | ZIDi | ZIDr | \
-      total_hash | len(s1) | s1 | len(s2) | s2 | len(s3) | s3 | len(s4) | \
-      s4)
+      total_hash | len(s1) | s1 | len(s2) | s2 | len(s3) | s3)
      *
      * Note: in this function we are Responder, thus ZIDi is the peer's zid 
      * (peerZid), ZIDr is our zid.
@@ -1264,15 +1262,15 @@ void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     /*
      * These arrays hold the pointers and lengths of the data that must be
      * hashed to create S0.  According to the formula the max number of 
-     * elements to hash is 16, add one for the terminating "NULL"
+     * elements to hash is 12, add one for the terminating "NULL"
      */
-    unsigned char* data[15];
-    unsigned int   length[15];
+    unsigned char* data[13];
+    unsigned int   length[13];
     uint32_t pos = 0;                  // index into the array
 
 
     // we need a number of length data items, so define them here 
-    uint32_t counter, sLen[4];
+    uint32_t counter, sLen[3];
 
     //Very first element is a fixed counter, big endian 
     counter = 1;
@@ -1312,7 +1310,7 @@ void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     int secretHashLen = SHA256_DIGEST_LENGTH;
     secretHashLen = htonl(secretHashLen);        // prepare 32 bit big-endian number 
 
-    for (int32_t i = 0; i < 4; i++) {
+    for (int32_t i = 0; i < 3; i++) {
         if (setD[i] != NULL) {           // a matching secret, set length, then secret
             sLen[i] = secretHashLen;
             data[pos] = (unsigned char*)&sLen[i];
@@ -1332,7 +1330,7 @@ void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 //  hexdump("S0 R", s0, SHA256_DIGEST_LENGTH);
 
     memset(DHss, 0, dhContext->getSecretSize());
-    free(DHss);
+    delete DHss;
     DHss = NULL;
 
     computeSRTPKeys();
@@ -1439,7 +1437,12 @@ int32_t ZRtp::sendPacketZRTP(ZrtpPacketBase *packet) {
             callback->sendDataZRTP(packet->getHeaderBase(), (packet->getLength() * 4) + 4));
 }
 
-void ZRtp::setAuxSecret(uint8_t* data) {
+void ZRtp::setAuxSecret(uint8_t* data, int32_t length) {
+    if (length > 0) {
+        auxSecret = new uint8_t[length];
+        auxSecretLength = length;
+        memcpy(auxSecret, data, length);
+    }
 }
 
 void ZRtp::setPbxSecret(uint8_t* data, int32_t length) {

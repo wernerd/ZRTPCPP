@@ -324,19 +324,20 @@ namespace ost {
          * Set the auxilliary secret.
          *
          * Use this method to set the srtps secret data. Refer to ZRTP
-         * specification, chapter 3.2.1
+         * specification, chapter 5.3 ff
          *
          * @param data
-         *     Points to the srtps secret data. The data must have a length
-         *     of 32 bytes (length of SHA256 hash)
+         *     Points to the auxilliary secret data.
+         * @param length
+         *     Length of the auxilliary secrect in bytes
          */
-        void setAuxSecret(uint8* data);
+        void setAuxSecret(uint8_t* data, int32_t length);
 
         /**
          * Set the other secret.
          *
          * Use this method to set the other secret data. Refer to ZRTP
-         * specification, chapter 3.2.1
+         * specification, chapter 5.3 ff
          *
          * @param data
          *     Points to the other secret data.

@@ -148,20 +148,21 @@ class ZRtp {
        /**
         * Set the auxilliary secret.
         *
-        * USe this method to set the srtps secret data. Refer to ZRTP
-        * specification, chapter 3.2.1
+        * Use this method to set the auxilliary secret data. Refer to ZRTP
+        * specification, chapter 5.3 ff
         *
         * @param data
-        *     Points to the srtps secret data. The data must have a length
-        *      of 32 bytes (length of SHA256 hash)
+        *     Points to the srtps secret data.
+        * @param length
+        *     Length of the auxilliary secrect in bytes
         */
-        void setAuxSecret(uint8_t* data);
+        void setAuxSecret(uint8_t* data, int32_t length);
 
        /**
         * Set the PBX secret.
         *
         * USe this method to set the other secret data. Refer to ZRTP
-        * specification, chapter 3.2.1
+        * specification, chapter 5.3 ff
         *
         * @param data
         *     Points to the other secret data.
@@ -397,7 +398,7 @@ class ZRtp {
      */
     uint8_t sasHash[SHA256_DIGEST_LENGTH];
     /**
-     * The variables for the retained shared secrets
+     * The ids for the retained and other shared secrets
      */
     uint8_t rs1IDr[SHA256_DIGEST_LENGTH];
     uint8_t rs2IDr[SHA256_DIGEST_LENGTH];
@@ -408,6 +409,19 @@ class ZRtp {
     uint8_t rs2IDi[SHA256_DIGEST_LENGTH];
     uint8_t auxSecretIDi[SHA256_DIGEST_LENGTH];
     uint8_t pbxSecretIDi[SHA256_DIGEST_LENGTH];
+
+    /**
+     * pointers to aux secret storage and length of aux secret
+     */
+    uint8_t* auxSecret;
+    int32_t auxSecretLength;
+
+    /**
+     * Record if valid rs1 and/or rs1 were found in the 
+     * retaind secret cache.
+     */
+    bool rs1Valid;
+    bool rs2Valid;
     /**
      * My hvi
      */

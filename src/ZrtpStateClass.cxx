@@ -474,7 +474,7 @@ void ZrtpStateClass::evAckDetected(void) {
         first = tolower(*msg);
         last = tolower(*(msg+7));
 
-#if 0
+#if 1
         /*
          * Implementation for choice 1)
          * Hello:
@@ -494,17 +494,16 @@ void ZrtpStateClass::evAckDetected(void) {
             // example wrong version, duplicate ZID.
             if (commit == NULL) {
                 sendErrorPacket(errorCode);
-                return (Done);
+                return;
             }
             ZrtpPacketHelloAck *helloAck = parent->prepareHelloAck();
             nextState(WaitCommit);
 
-            if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(helloAck))) {
-                return sendFailed();
-            }
             // remember packet for easy resend
             sentPacket = static_cast<ZrtpPacketBase *>(helloAck);
-            return (Done);
+            if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(helloAck))) {
+                sendFailed();
+            }
         }
 #else
         /*
@@ -1261,16 +1260,16 @@ int32_t ZrtpStateClass::nextTimer(zrtpTimer_t *t) {
 }
 
 void ZrtpStateClass::sendErrorPacket(uint32_t errorCode) {
-    ZrtpPacketError* err = parent->prepareError(errorCode);
-
     cancelTimer();
-    if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(err)) || (startTimer(&T2) <= 0)) {
-        nextState(Initial);
-        parent->zrtpNegotiationFailed(ZrtpError, errorCode);
-        return;
-    }
+
+    ZrtpPacketError* err = parent->prepareError(errorCode);
+    parent->zrtpNegotiationFailed(ZrtpError, errorCode);
+
     sentPacket =  static_cast<ZrtpPacketBase *>(err);
     nextState(WaitErrorAck);
+    if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(err)) || (startTimer(&T2) <= 0)) {
+        sendFailed();
+    }
 }
 
 void ZrtpStateClass::sendFailed() {

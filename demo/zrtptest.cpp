@@ -286,7 +286,7 @@ class MyUserCallback: public ZrtpUserCallback {
         infoMap.insert(pair<int32, std::string*>(InfoRespDH2Received, new string("Responder: DHPart2 received, preparing Confirm1")));
         infoMap.insert(pair<int32, std::string*>(InfoInitConf1Received, new string("Initiator: Confirm1 received, preparing Confirm2")));
         infoMap.insert(pair<int32, std::string*>(InfoRespConf2Received, new string("Responder: Confirm2 received, preparing Conf2Ack")));
-        infoMap.insert(pair<int32, std::string*>(InfoBothRSMatch, new string("Both retained secrets match - shared secrets OK")));
+        infoMap.insert(pair<int32, std::string*>(InfoRSMatchFound, new string("At least one retained secrets matches - security OK")));
         infoMap.insert(pair<int32, std::string*>(InfoSecureStateOn, new string("Entered secure state")));
         infoMap.insert(pair<int32, std::string*>(InfoSecureStateOff, new string("No more security for this session")));
 
@@ -296,8 +296,6 @@ class MyUserCallback: public ZrtpUserCallback {
         warningMap.insert(pair<int32, std::string*>(WarningDHShort,
                           new string("Hello offers an AES256 cipher but does not offer a Diffie-Helman 4096")));
         warningMap.insert(pair<int32, std::string*>(WarningNoRSMatch, new string("No retained secret matches - verify SAS")));
-        warningMap.insert(pair<int32, std::string*>(WarningFirstRSMatch, new string("Only the first retained secret matches - verify SAS")));
-        warningMap.insert(pair<int32, std::string*>(WarningSecondRSMatch, new string("Only the second retained secret matches - verify SAS")));
         warningMap.insert(pair<int32, std::string*>(WarningCRCmismatch, new string("Internal ZRTP packet checksum mismatch - packet dropped")));
         warningMap.insert(pair<int32, std::string*>(WarningSRTPauthError, new string("Dropping packet because SRTP authentication failed!")));
         warningMap.insert(pair<int32, std::string*>(WarningSRTPreplayError, new string("Dropping packet because SRTP replay check failed!")));
@@ -353,7 +351,7 @@ class MyUserCallback: public ZrtpUserCallback {
                     cout << *msg << endl;
                 }
             }
-            if (sev == Severe) {
+            if (sev == ZrtpError) {
                 if (subCode < 0) {  // received an error packet from peer
                     subCode *= -1;
                     cout << "Received error packet: ";
@@ -361,10 +359,31 @@ class MyUserCallback: public ZrtpUserCallback {
                 else {
                     cout << "Sent error packet: ";
                 }
-                msg = severeMap[subCode];
+                msg = zrtpMap[subCode];
                 if (msg != NULL) {
                     cout << *msg << endl;
                 }
+            }
+        }
+
+        void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity sev, int32_t subCode) {
+            string* msg;
+            if (sev == ZrtpError) {
+                if (subCode < 0) {  // received an error packet from peer
+                    subCode *= -1;
+                    cout << "Received error packet: ";
+                }
+                else {
+                    cout << "Sent error packet: ";
+                }
+                msg = zrtpMap[subCode];
+                if (msg != NULL) {
+                    cout << *msg << endl;
+                }
+            }
+            else {
+                msg = severeMap[subCode];
+                cout << *msg << endl;
             }
         }
 

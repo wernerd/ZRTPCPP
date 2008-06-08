@@ -73,7 +73,7 @@ enum InfoCodes {
     InfoRespDH2Received,            //!< Responder: DHPart2 received, preparing Confirm1
     InfoInitConf1Received,          //!< Initiator: Confirm1 received, preparing Confirm2
     InfoRespConf2Received,          //!< Responder: Confirm2 received, preparing Conf2Ack
-    InfoBothRSMatch,                //!< Both retained secrets match - security OK
+    InfoRSMatchFound,               //!< At least one retained secrets matches - security OK
     InfoSecureStateOn,              //!< Entered secure state
     InfoSecureStateOff              //!< No more security for this session
 };
@@ -86,8 +86,6 @@ enum WarningCodes {
     WarningGoClearReceived,         //!< Received a GoClear message
     WarningDHShort,                 //!< Hello offers an AES256 cipher but does not offer a Diffie-Helman 4096
     WarningNoRSMatch,               //!< No retained secret matches - verify SAS
-    WarningFirstRSMatch,            //!< Only the first retained secret matches - verify SAS
-    WarningSecondRSMatch,           //!< Only the second retained secret matches - verify SAS
     WarningCRCmismatch,             //!< Internal ZRTP packet checksum mismatch - packet dropped
     WarningSRTPauthError,           //!< Dropping packet because SRTP authentication failed!
     WarningSRTPreplayError          //!< Dropping packet because SRTP replay check failed!
