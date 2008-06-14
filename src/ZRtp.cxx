@@ -1085,13 +1085,13 @@ void ZRtp::generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
         setD[matchingSecrets++] = zidRec.getRs1();
         rsFound = 0x2;
     }
-    else if (memcmp(rs2IDr, dhPart->getRs2Id(), 8) == 0) {
-        setD[matchingSecrets++] = zidRec.getRs2();
-        rsFound |= 0x4;
-    }
     else if (memcmp(rs2IDr, dhPart->getRs1Id(), 8) == 0) {
         setD[matchingSecrets++] = zidRec.getRs2();
-        rsFound |= 0x8;
+        rsFound = 0x4;
+    }
+    else if (memcmp(rs2IDr, dhPart->getRs2Id(), 8) == 0) {
+        setD[matchingSecrets++] = zidRec.getRs2();
+        rsFound = 0x8;
     }
     /* *** Not yet supported 
     if (memcmp(auxSecretIDr, dhPart->getAuxSecretId(), 8) == 0) {
@@ -1104,11 +1104,16 @@ void ZRtp::generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     }
     */
     // Check if some retained secrets found
-    if (rsFound == 0 && (rs1Valid || rs2Valid)) {
-        sendInfo(Warning, WarningNoRSMatch);
-        zidRec.resetSasVerified();
+    if (rsFound == 0) {                        // no RS matches found
+        if (rs1Valid || rs2Valid) {            // but valid RS records in cache
+            sendInfo(Warning, WarningNoExpectedRSMatch);
+            zidRec.resetSasVerified();
+        }
+        else {                                 // No valid RS record in cache
+            sendInfo(Warning, WarningNoRSMatch);
+        }
     }
-    else {
+    else {                                     // at least one RS matches
         sendInfo(Info, InfoRSMatchFound);
     }
     /*
@@ -1240,11 +1245,16 @@ void ZRtp::generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     }
     */
     // Check if some retained secrets found
-    if (rsFound == 0 && (rs1Valid || rs2Valid)) {
-        sendInfo(Warning, WarningNoRSMatch);
-        zidRec.resetSasVerified();
+    if (rsFound == 0) {                        // no RS matches found
+        if (rs1Valid || rs2Valid) {            // but valid RS records in cache
+            sendInfo(Warning, WarningNoExpectedRSMatch);
+            zidRec.resetSasVerified();
+        }
+        else {                                 // No valid RS record in cache
+            sendInfo(Warning, WarningNoRSMatch);
+        }
     }
-    else {
+    else {                                     // at least one RS matches
         sendInfo(Info, InfoRSMatchFound);
     }
 
