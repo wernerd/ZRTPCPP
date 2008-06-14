@@ -1,19 +1,28 @@
-== GNU ZRTP 1.2.0 ==
+== GNU ZRTP 1.3.0 ==
 
 This version is and update to version 1.1.0 an implements the latest
-changes of the ZRTP draft. The changes resulted in an update of the
+changes define in the ZRTP draft. The changes resulted in an update of the
 API, therefore existing applications must be recompiled.
 
 This version of GNU ZRTP is compatible to and was tested to work with
-the latest Zfone beta (dated May 22nd, see Zfone project site).
+the latest Zfone beta (dated June, 10, see Zfone project site). Only
+in one specific error case is a slight incompatibility that will be
+fixed with the next Zfone beta. This incompatibility results in a 
+severe error information at the client. The error only happens if
+someone modified the first retained shared secret entry in the
+retained secret cache, for example disk/storage read error. This is
+a very unlikely situation.
 
-=== Interface changes in Version 1.2.0 ===
+=== Interface changes in Version 1.3.0 ===
 
 The Method ''setSipsSecret(...)'' is no longer available. ZRTP does
 not support this additional secret anymore.
 
-The method ''setOtherSecret(...)'' was renamed to setPbxSecret(...)''
-to refelect the modification in the draft.
+The method ''setOtherSecret(...)'' was renamed to ''setPbxSecret(...)''
+to reflect the modification in the draft.
+
+The methos ''setSrtpsSecret(...)'' is was renamed to ''setAuxSecret(...)''
+to reflect the modification in the draft.
 
 
 == GNU ZRTP 1.1.0 ==
