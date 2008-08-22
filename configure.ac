@@ -173,6 +173,12 @@ AC_PATH_PROG(DOXYGEN, doxygen, no)
 AC_SUBST(DOXYGEN)
 AM_CONDITIONAL(DOXY, test "$DOXYGEN" != "no")
 
+LIB_VERSION=`echo $LT_RELEASE | sed -e 's/[\.]/_/'` 
+LIB_MAJOR=`echo $LT_VERSION | sed -e 's/[:].*$//'`
+
+AC_SUBST(LIB_VERSION)
+AC_SUBST(LIB_MAJOR)
+
 AC_SUBST(CRYPTOBACKEND PACKAGE_REQ BUILD_REQ)
 AC_CONFIG_FILES([Makefile src/Makefile src/libzrtpcpp/Makefile m4/Makefile
                 src/libzrtpcpp/crypto/Makefile doc/Makefile demo/Makefile

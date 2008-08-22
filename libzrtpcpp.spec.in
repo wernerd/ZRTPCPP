@@ -1,29 +1,21 @@
+%define _libname libzrtpcpp-@LIB_VERSION@-@LIB_MAJOR@
+%define _devname libzrtpcpp-devel
+
 Summary: "libzrtpcpp" - a ccrtp extension for zrtp/Zfone support
 Name: libzrtpcpp
 Version: @VERSION@
 Release: 0
-Epoch: 0
 License: GPL
 Group: Development/Libraries
 URL: http://www.gnu.org/software/commoncpp/commoncpp.html
 Source0: ftp://ftp.gnu.org/gnu/ccrtp/libzrtpcpp-%{PACKAGE_VERSION}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-Requires: ccrtp >= 1.5.0
-Requires: @PACKAGE_REQ@
-BuildRequires: ccrtp-devel >= 1.5.0
+BuildRequires: libccrtp-devel >= 1.5.0
 BuildRequires: pkgconfig
 BuildRequires: libstdc++-devel
 BuildRequires: @BUILD_REQ@
 
-%package devel
-Group: Development/Libraries
-Summary: Headers and static link library for libzrtpcpp.
-Requires: %{name} = %{epoch}:%{version}-%{release}
-Requires: ccrtp-devel >= 1.5.0
-Requires: @BUILD_REQ@
-
 %description
-
 This library is a GPL licensed extension to the GNU RTP Stack (GNU ccrtp).
 This extension offers a C++ implementation of Phil Zimmermann's ZRTP 
 specification. The current release is based on 
@@ -38,7 +30,24 @@ This release supports the basic ZRTP features, it does not yet support
 preshared or multi-stream mode specified in the draft. Also the specific
 Asterisk PBX mode is not yet implemented. 
 
-%description devel
+%package -n %{_libname}
+Group: System/Libraries
+Summary: Runtime library for GNU ZRTP Stack
+Provides: %{name} = %{version}-%{release}
+
+%package -n %{_devname}
+Group: Development/Libraries
+Summary: Headers and static link library for libzrtpcpp.
+Requires: %{name} = %{version}
+Requires: libccrtp-devel >= 1.5.0
+Requires: @BUILD_REQ@
+Provides: %{name}-devel = %{version}-%{release}
+
+%description -n %{_libname}
+This package contains the runtime library needed by applications that use 
+the GNU ZRTP stack.
+
+%description -n %{_devname}
 This package provides the header files, link libraries, and
 documentation for building applications that use libzrtpcpp.
 
@@ -46,33 +55,38 @@ documentation for building applications that use libzrtpcpp.
 %setup
 %build
 %configure
-make %{?_smp_mflags} LDFLAGS="-s" CXXFLAGS="$RPM_OPT_FLAGS"
+%{__make} %{?_smp_mflags} CXXFLAGS="$RPM_OPT_FLAGS"
 
 %install
+
 %makeinstall
-rm $RPM_BUILD_ROOT/%{_libdir}/libzrtpcpp.la
-rm -rf %{buildroot}/%{_infodir}
+%{__strip} %{buildroot}/%{_libdir}/lib*.so.*.*
+%{__rm} -rf %{buildroot}/%{_infodir} 
 
 %clean
-rm -rf %{buildroot}
+%{__rm} -rf %{buildroot}
 
-%files
+%files -n %{_libname}
 %defattr(-,root,root)
 %doc AUTHORS COPYING README NEWS INSTALL
 %{_libdir}/*.so.*
 
-%files devel
+%files -n %{_devname}
 %defattr(-,root,root)
 %{_libdir}/*.a
 %{_libdir}/*.so
+%{_libdir}/*.la
 %{_libdir}/pkgconfig/*.pc
 %{_includedir}/libzrtpcpp/*.h
 
-%post -p /sbin/ldconfig
+%post -n %{_libname} -p /sbin/ldconfig
 
-%postun -p /sbin/ldconfig
+%postun -n %{_devname} -p /sbin/ldconfig
 
 %changelog
+* Fri Aug 22 2008 - dyfet@gnutelephony.org
+- Adapted for newer library naming conventions.
+
 * Tue Dec 11 2007 - werner.dittmann@t-online.de
 - this is the first spec file for version 1.x.x
 - remove the .la file in devel package
