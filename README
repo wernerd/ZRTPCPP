@@ -6,9 +6,9 @@ implementation that can be directly embedded into client and server
 applications.
 
 The GNU ZRTP implementation is compliant to the basic functions of
-ZRTP as described in ''draft-zimmermann-avt-zrtp-06x''. Currently GNU
-ZRTP supports the basic features only, not the enhanced features like
-PBX SAS relay and Multi-Stream mode. The GNU ZRTP implementation
+ZRTP as described in ''draft-zimmermann-avt-zrtp-08x''. Currently GNU
+ZRTP supports the basic features and multi-stream mode , not the enhanced
+features like PBX SAS relay or preshared mode. The GNU ZRTP implementation
 already defines the necessary external interfaces and functions for
 these enhanced features but they are not yet implemented (stubs only).
 
@@ -17,7 +17,7 @@ You may access the ZRTP specification at this URL:
 
 The first application to demonstrate this capability was the 0.8.2 release 
 of the Twinkle softphone client. All following versions of Twinkle support
-this as well.
+GNU ZRTP as well.
 
 Please note, this library is licensed under the GNU GPL, version 3 or 
 later, and has been copyright assigned to the Free Software Foundation.
