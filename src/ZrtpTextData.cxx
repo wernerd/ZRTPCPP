@@ -24,8 +24,8 @@
  */
 //                                  1
 //                         1234567890123456
-const char *clientId =    "GNU ZRTP 1.2.0  "; // must be 16 chars
-const char *zrtpVersion = "0.85";	// must be 4 chars
+const char *clientId =    "GNU ZRTP 1.3.0  "; // must be 16 chars
+const char *zrtpVersion = "0.90";	// must be 4 chars
 /**
  *
  */
@@ -75,7 +75,8 @@ const char *supportedHashes[] =  {"S256"};
 const char *supportedCipher[] =  {"AES3",
                                   "AES1"};
 
-const char *supportedPubKey[] =  {"DH3k"};
+const char *supportedPubKey[] =  {"DH3k",
+                                  "Mult"};
 
 const char *supportedSASType[] = {"B32 "};
 

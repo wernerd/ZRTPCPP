@@ -555,7 +555,7 @@ class ZRtp {
     int32_t  signatureLength;     // overall length in bytes
 
     /**
-     * Find the best Hash algorithm that was offered in Hello.
+     * Find the best Hash algorithm that is offered in Hello.
      *
      * Find the best, that is the strongest, Hash algorithm that our peer
      * offers in its Hello packet.
@@ -570,7 +570,7 @@ class ZRtp {
     SupportedHashes findBestHash(ZrtpPacketHello *hello);
 
     /**
-     * Find the best symmetric cipher algorithm that was offered in Hello.
+     * Find the best symmetric cipher algorithm that is offered in Hello.
      *
      * Find the best, that is the strongest, cipher algorithm that our peer
      * offers in its Hello packet.
@@ -585,7 +585,7 @@ class ZRtp {
     SupportedSymCiphers findBestCipher(ZrtpPacketHello *hello);
 
     /**
-     * Find the best Public Key algorithm that was offered in Hello.
+     * Find the best Public Key algorithm that is offered in Hello.
      *
      * Find the best, that is the strongest, public key algorithm that our peer
      * offers in its Hello packet.
@@ -600,7 +600,7 @@ class ZRtp {
     SupportedPubKeys findBestPubkey(ZrtpPacketHello *hello);
 
     /**
-     * Find the best SAS algorithm that was offered in Hello.
+     * Find the best SAS algorithm that is offered in Hello.
      *
      * Find the best, that is the strongest, SAS algorithm that our peer
      * offers in its Hello packet.
@@ -612,10 +612,10 @@ class ZRtp {
      *    <code>NumSupportedSASTypes</code> to signal that no matching SAS algorithm
      *    was found at all.
      */
-    SupportedSASTypes findBestSASType(ZrtpPacketHello *hello);
+    SupportedSASTypes findBestSASType(ZrtpPacketHello* hello);
 
     /**
-     * Find the best authentication length that was offered in Hello.
+     * Find the best authentication length that is offered in Hello.
      *
      * Find the best, that is the strongest, authentication length that our peer
      * offers in its Hello packet.
@@ -627,7 +627,20 @@ class ZRtp {
      *    <code>NumSupportedAuthLenghts</code> to signal that no matching length
      *    was found at all.
      */
-    SupportedAuthLengths findBestAuthLen(ZrtpPacketHello *hello);
+    SupportedAuthLengths findBestAuthLen(ZrtpPacketHello* hello);
+
+    /**
+     * Check if MultiStream mode is offered in Hello.
+     *
+     * Find the best, that is the strongest, authentication length that our peer
+     * offers in its Hello packet.
+     *
+     * @param hello
+     *    The Hello packet.
+     * @return
+     *    True if multi stream mode is available, false otherwise.
+     */
+    bool checkMultiStream(ZrtpPacketHello* hello);
 
     /**
      * Compute my hvi value according to ZRTP specification.
@@ -638,9 +651,11 @@ class ZRtp {
 
     void computeSRTPKeys();
 
-    void generateS0Initiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec);
+    void generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec);
 
-    void generateS0Responder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec);
+    void generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec);
+
+    void generateKeysMultiStream();
 
     /*
      * The following methods are helper functions for ZrtpStateClass.
@@ -712,10 +727,25 @@ class ZRtp {
      *
      * @param hello
      *    Points to the received Hello packet
+     * @param errMsg
+     *    Points to an integer that can hold a ZRTP error code.
      * @return
      *    A pointer to the prepared Commit packet
      */
     ZrtpPacketCommit *prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg);
+
+    /**
+     * Prepare a Commit packet for Multi Stream mode.
+     *
+     * Using the selected values prepare a Commit packet and return it to protocol
+     * state engine.
+     *
+     * @param hello
+     *    Points to the received Hello packet
+     * @return
+     *    A pointer to the prepared Commit packet for multi stream mode
+     */
+    ZrtpPacketCommit *prepareCommitMultiStream(ZrtpPacketHello *hello);
 
     /**
      * Prepare the DHPart1 packet.
@@ -753,6 +783,17 @@ class ZRtp {
     ZrtpPacketConfirm *prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* errMsg);
 
     /**
+     * Prepare the Confirm1 packet in multi stream mode.
+     *
+     * This method prepares the Confirm1 packet. The state engine call this method 
+     * if multi stream mode is selected and a Commit packet was received. The input to 
+     * this method is the Commit.
+     * Here we are in the role of the Responder
+     *
+     */
+    ZrtpPacketConfirm *prepareConfirm1MultiStream(ZrtpPacketCommit* commit, uint32_t* errMsg);
+
+    /**
      * Prepare the Confirm2 packet.
      *
      * This method prepare the Confirm2 packet. The input to this method is the
@@ -760,6 +801,17 @@ class ZRtp {
      * as response of our DHPart2. Here we are in the role of the Initiator
      */
     ZrtpPacketConfirm* prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* errMsg);
+
+    /**
+     * Prepare the Confirm2 packet in multi stream mode.
+     *
+     * This method prepares the Confirm2 packet. The state engine call this method if
+     * multi stream mode is active and in state CommitSent. The input to this method is 
+     * the Confirm1 packet received from our peer. The peer sends the Confirm1 packet
+     * as response of our Commit packet in multi stream mode. 
+     * Here we are in the role of the Initiator
+     */
+    ZrtpPacketConfirm* prepareConfirm2MultiStream(ZrtpPacketConfirm* confirm1, uint32_t* errMsg);
 
     /**
      * Prepare the Conf2Ack packet.

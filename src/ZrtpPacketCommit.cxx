@@ -32,6 +32,13 @@ ZrtpPacketCommit::ZrtpPacketCommit() {
     setMessageType((uint8_t*)CommitMsg);
 }
 
+void ZrtpPacketCommit::setNonce(uint8_t* text) {
+    memcpy(commitHeader->hvi, text, sizeof(commitHeader->hvi-4*ZRTP_WORD_SIZE));
+    uint16_t len = getLength();
+    len -= 4;
+    setLength(len);
+}
+
 ZrtpPacketCommit::ZrtpPacketCommit(uint8_t *data) {
     DEBUGOUT((fprintf(stdout, "Creating commit packet from data\n")));
     zrtpHeader = (zrtpPacketHeader_t *)&((CommitPacket_t *)data)->hdr;	// the standard header

@@ -51,8 +51,10 @@ class ZrtpPacketCommit : public ZrtpPacketBase {
     uint8_t* getSasType()     { return commitHeader->sas; };
     uint8_t* getZid()         { return commitHeader->zid; };
     uint8_t* getHvi()         { return commitHeader->hvi; };
+    uint8_t* getNonce()       { return commitHeader->hvi; };
     uint8_t* getH2()          { return commitHeader->hashH2; };
     uint8_t* getHMAC()        { return commitHeader->hmac; };
+    uint8_t* getHMACMulti()   { return commitHeader->hmac-4*ZRTP_WORD_SIZE; };
 
     void setHashType(uint8_t* text)    { memcpy(commitHeader->hash, text, ZRTP_WORD_SIZE); };
     void setCipherType(uint8_t* text)  { memcpy(commitHeader->cipher, text, ZRTP_WORD_SIZE); };
@@ -61,8 +63,10 @@ class ZrtpPacketCommit : public ZrtpPacketBase {
     void setSasType(uint8_t* text)     { memcpy(commitHeader->sas, text, ZRTP_WORD_SIZE); };
     void setZid(uint8_t* text)         { memcpy(commitHeader->zid, text, sizeof(commitHeader->zid)); };
     void setHvi(uint8_t* text)         { memcpy(commitHeader->hvi, text, sizeof(commitHeader->hvi)); };
+    void setNonce(uint8_t* text);
     void setH2(uint8_t* hash)          { memcpy(commitHeader->hashH2, hash, sizeof(commitHeader->hashH2)); };
     void setHMAC(uint8_t* hash)        { memcpy(commitHeader->hmac, hash, sizeof(commitHeader->hmac)); };
+    void setHMACMulti(uint8_t* hash)   { memcpy(commitHeader->hmac-4*ZRTP_WORD_SIZE, hash, sizeof(commitHeader->hmac)); };
 
  private:
      CommitPacket_t data;

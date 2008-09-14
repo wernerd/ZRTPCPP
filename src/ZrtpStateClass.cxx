@@ -205,7 +205,7 @@ void ZrtpStateClass::evDetect(void) {
         last = tolower(*(msg+7));
         /*
          * HelloAck:
-         * - our peer acknowledged our Hello packet
+         * - our peer acknowledged our Hello packet, we have not seen the peer's Hello yet
          * - cancel timer T1 to stop resending Hello
          * - switch to state AckDetected, wait for peer's Hello (F3)
          */
@@ -244,7 +244,7 @@ void ZrtpStateClass::evDetect(void) {
                 return;
             }
             if (startTimer(&T1) <= 0) {        // restart own Hello timer/counter
-                timerFailed(SevereNoTimer);      // returns to state Initial
+                timerFailed(SevereNoTimer);    // returns to state Initial
             }
         }
         return;      // unknown packet for this state - Just ignore it
@@ -258,7 +258,7 @@ void ZrtpStateClass::evDetect(void) {
         if (nextTimer(&T1) <= 0) {
             commitPkt = NULL;
             parent->zrtpNotSuppOther();
-            nextState(Detect);  // TODO: DetectPassive - pre-shared / multi-stream??
+            nextState(Detect);
         }
     }
     // If application call zrtpStart() to restart discovery
@@ -290,9 +290,10 @@ void ZrtpStateClass::evDetect(void) {
  * HelloACK (F2) must be followed by Hello (F3)). We use the timeout in 
  * this state to send the required Hello (F3).
  *
- * Our peer can acknowledge the Hello either with HelloAck or Commit.
- * Figure 1 shows the HelloAck, chapter 7 states that a Commit may be send 
- * to acknowledge Hello. There is one constraint when using a Commit to
+ * Our peer must acknowledge the Hello with HelloAck. In earlier versions 
+ * also a Commit was a valid packet thus the code covers this.
+ * Figure 1 in the RFC shows the HelloAck, chapter 7 states that a Commit 
+ * may be send to acknowledge Hello. There is one constraint when using a Commit to
  * acknowledge Hello: refer to chapter 4.1 that requires that both parties
  * have completed the Hello/HelloAck discovery handshake. This implies that 
  * only message F4 may be replaced by a Commit. This constraint guarantees
@@ -392,21 +393,34 @@ void ZrtpStateClass::evAckSent(void) {
         if (first == 'c') {
             cancelTimer();
             ZrtpPacketCommit cpkt(pkt);
-            ZrtpPacketDHPart* dhPart1 = parent->prepareDHPart1(&cpkt, &errorCode);
 
-            // Error detected during processing of received commit packet
-            if (dhPart1 == NULL) {
-                if (errorCode != IgnorePacket) {
-                    sendErrorPacket(errorCode);
+            if (!multiStream) {
+                ZrtpPacketDHPart* dhPart1 = parent->prepareDHPart1(&cpkt, &errorCode);
+
+                // Something went wrong during processing of the Commit packet
+                if (dhPart1 == NULL) {
+                    if (errorCode != IgnorePacket) {
+                        sendErrorPacket(errorCode);
+                    }
+                    return;
                 }
-                return;
+                commitPkt = NULL;
+                sentPacket = static_cast<ZrtpPacketBase *>(dhPart1);
+                nextState(WaitDHPart2);
             }
-            commitPkt = NULL;
-            sentPacket = NULL;
-            nextState(WaitDHPart2);
+            else {
+                ZrtpPacketConfirm* confirm = parent->prepareConfirm1MultiStream(&cpkt, &errorCode);
 
-            // remember packet for easy resend in new state
-            sentPacket = static_cast<ZrtpPacketBase *>(dhPart1);
+                // Something went wrong during processing of the Commit packet
+                if (confirm == NULL) {
+                    if (errorCode != IgnorePacket) {
+                        sendErrorPacket(errorCode);
+                    }
+                    return;
+                }
+                sentPacket = static_cast<ZrtpPacketBase *>(confirm);
+                nextState(WaitConfirm2);
+            }
             if (!parent->sendPacketZRTP(sentPacket)) {
                 sendFailed();      // returns to state Initial
             }
@@ -428,7 +442,7 @@ void ZrtpStateClass::evAckSent(void) {
             commitPkt = NULL;
             // Stay in state Detect to be prepared get an hello from
             // other peer any time later
-            nextState(Detect);   // TODO: DetectPassive?
+            nextState(Detect);
         }
     }
     else {   // unknown Event type for this state (covers Error and ZrtpClose)
@@ -457,7 +471,8 @@ void ZrtpStateClass::evAckSent(void) {
  *  1) we can acknowledge the peer's Hello with a HelloAck
  *  2) we can acknowledge the peer's Hello with a Commit
  *  Both choices are implemented and may be enabled by setting a compile
- *  time #if (see code below). Currently we use choice 2) here.
+ *  time #if (see code below). Currently we use choice 1) here because
+ *  it's more aligned to the ZRTP specification
  */
 void ZrtpStateClass::evAckDetected(void) {
 
@@ -589,25 +604,40 @@ void ZrtpStateClass::evWaitCommit(void) {
         }
         /*
          * Commit:
-         * - prepare DH1Part packet
+         * - prepare DH1Part packet or Confirm1 if multi stream mode
          * - send it to peer
-         * - switch state to WaitDHPart2
+         * - switch state to WaitDHPart2 or WaitConfirm2 if multi stream mode
          * - don't start timer, we are responder
          */
         if (first == 'c') {
             ZrtpPacketCommit cpkt(pkt);
-            ZrtpPacketDHPart* dhPart1 = parent->prepareDHPart1(&cpkt, &errorCode);
 
-            // Something went wrong during processing of the Commit packet
-            if (dhPart1 == NULL) {
-                if (errorCode != IgnorePacket) {
-                    sendErrorPacket(errorCode);
+            if (!multiStream) {
+                ZrtpPacketDHPart* dhPart1 = parent->prepareDHPart1(&cpkt, &errorCode);
+
+                // Something went wrong during processing of the Commit packet
+                if (dhPart1 == NULL) {
+                    if (errorCode != IgnorePacket) {
+                        sendErrorPacket(errorCode);
+                    }
+                    return;
                 }
-                return;
+                sentPacket = static_cast<ZrtpPacketBase *>(dhPart1);
+                nextState(WaitDHPart2);
             }
-            sentPacket = static_cast<ZrtpPacketBase *>(dhPart1);
-            nextState(WaitDHPart2);
+            else {
+                ZrtpPacketConfirm* confirm = parent->prepareConfirm1MultiStream(&cpkt, &errorCode);
 
+                // Something went wrong during processing of the Commit packet
+                if (confirm == NULL) {
+                    if (errorCode != IgnorePacket) {
+                        sendErrorPacket(errorCode);
+                    }
+                    return;
+                }
+                sentPacket = static_cast<ZrtpPacketBase *>(confirm);
+                nextState(WaitConfirm2);
+            }
             if (!parent->sendPacketZRTP(sentPacket)) {
                 sendFailed();       // returns to state Initial
             }
@@ -681,7 +711,7 @@ void ZrtpStateClass::evCommitSent(void) {
          *   - prepare and send DH1Packt,
          *   - switch to state WaitDHPart2, implies Responder path
          */
-        if (first == 'c') {
+        if (first == 'c' && last == ' ') {
             ZrtpPacketCommit zpCo(pkt);
 
             if (!parent->verifyH2(&zpCo)) {
@@ -691,28 +721,42 @@ void ZrtpStateClass::evCommitSent(void) {
             cancelTimer();         // this cancels the Commit timer T2
 
             // if our hvi is less than peer's hvi: switch to Responder mode and
-            // send DHPart1 packet. Peer (as Initiator) will retrigger if
+            // send DHPart1 or Confirm1 packet. Peer (as Initiator) will retrigger if
             // necessary
             //
             if (parent->compareCommit(&zpCo) < 0) {
-                ZrtpPacketDHPart* dhPart1 = parent->prepareDHPart1(&zpCo, &errorCode);
+                if (!multiStream) {
+                    ZrtpPacketDHPart* dhPart1 = parent->prepareDHPart1(&zpCo, &errorCode);
 
-                // Something went wrong during processing of the Commit packet
-                if (dhPart1 == NULL) {
-                    if (errorCode != IgnorePacket) {
-                        sendErrorPacket(errorCode);
+                    // Something went wrong during processing of the Commit packet
+                    if (dhPart1 == NULL) {
+                        if (errorCode != IgnorePacket) {
+                            sendErrorPacket(errorCode);
+                        }
+                        return;
                     }
-                    return;
+                    nextState(WaitDHPart2);
+                    sentPacket = static_cast<ZrtpPacketBase *>(dhPart1);
                 }
-                nextState(WaitDHPart2);
-                sentPacket = static_cast<ZrtpPacketBase *>(dhPart1);
+                else {
+                    ZrtpPacketConfirm* confirm = parent->prepareConfirm1MultiStream(&zpCo, &errorCode);
 
+                    // Something went wrong during processing of the Commit packet
+                    if (confirm == NULL) {
+                        if (errorCode != IgnorePacket) {
+                            sendErrorPacket(errorCode);
+                        }
+                        return;
+                    }
+                    nextState(WaitConfirm2);
+                    sentPacket = static_cast<ZrtpPacketBase *>(confirm);
+                }
                 if (!parent->sendPacketZRTP(sentPacket)) {
                     sendFailed();       // returns to state Initial
                 }
             }
-            // Stay in state, we are Initiator, wait for DHPart1 packet from peer.
-            // Resend Commit after timeout until we get a DHPart1
+            // Stay in state, we are Initiator, wait for DHPart1 of Confirm1 packet from peer.
+            // Resend Commit after timeout until we get a DHPart1 or Confirm1
             else {
                 if (startTimer(&T2) <= 0) { // restart the Commit timer, gives peer more time to react
                     timerFailed(SevereNoTimer);    // returns to state Initial
@@ -729,6 +773,8 @@ void ZrtpStateClass::evCommitSent(void) {
          * - start timer to resend DHPart2 if necessary, we are Initiator
          */
         if (first == 'd') {
+            cancelTimer();
+            sentPacket = NULL;
             ZrtpPacketDHPart dpkt(pkt);
             ZrtpPacketDHPart* dhPart2 = parent->prepareDHPart2(&dpkt, &errorCode);
 
@@ -739,7 +785,6 @@ void ZrtpStateClass::evCommitSent(void) {
                 }
                 return;
             }
-            cancelTimer();
             sentPacket = static_cast<ZrtpPacketBase *>(dhPart2);
             nextState(WaitConfirm1);
 
@@ -748,7 +793,32 @@ void ZrtpStateClass::evCommitSent(void) {
                 return;
             }
             if (startTimer(&T2) <= 0) {
-                timerFailed(SevereNoTimer);       // returns to state Initial
+                timerFailed(SevereNoTimer);       // switches to state Initial
+            }
+            return;
+        }
+
+        if (multiStream && (first == 'c' && last == '1')) {
+            cancelTimer();
+            ZrtpPacketConfirm cpkt(pkt);
+            sentPacket = NULL;
+
+            ZrtpPacketConfirm* confirm = parent->prepareConfirm2MultiStream(&cpkt, &errorCode);
+
+            // Something went wrong during processing of the Confirm1 packet
+            if (confirm == NULL) {
+                sendErrorPacket(errorCode);
+                return;
+            }
+            nextState(WaitConfAck);
+
+            sentPacket = static_cast<ZrtpPacketBase *>(confirm);
+            if (!parent->sendPacketZRTP(sentPacket)) {
+                sendFailed();         // returns to state Initial
+                return;
+            }
+            if (startTimer(&T2) <= 0) {
+                timerFailed(SevereNoTimer);  // returns to state Initial
             }
         }
     }
@@ -850,15 +920,19 @@ void ZrtpStateClass::evWaitDHPart2(void) {
  * This state handles a received Confirm1 message and only the Initiator
  * can enter this state.
  *
- * When entering this transition function
+ * When entering this transition function in DH mode:
  * - Initiator mode
  * - sentPacket contains DHPart2 packet, DHPart2 timer active
  *
- * Possible events in this state are:
+ * When entering this transition function in Multi stream mode via AckSent:
+ * - Initiator mode
+ * - sentPacket contains my Commit packet, Commit timer active
+ * 
+* Possible events in this state are:
  * - timeout for sent DHPart2 packet: causes a resend check and repeat sending
- *   of DHPart2 packet
+ *   of DHPart2 packet.
  * - Confirm1: Check Confirm1 message. If it is ok then prepare and send own
- *   Confirm2 packe and switch to state WaitConfAck.
+ *   Confirm2 packet and switch to state WaitConfAck.
  */
 void ZrtpStateClass::evWaitConfirm1(void) {
 
@@ -959,11 +1033,11 @@ void ZrtpStateClass::evWaitConfirm2(void) {
         last = tolower(*(msg+7));
 
         /*
-         * DHPart2:
-         * - resend Confirm1 packet via SRTP
+         * DHPart2 or Commit in multi stream mode:
+         * - resend Confirm1 packet
          * - stay in state
          */
-        if (first == 'd') {
+        if (first == 'd' || (multiStream && (first == 'c' && last == ' '))) {
             if (!parent->sendPacketZRTP(sentPacket)) {
                 sendFailed();             // returns to state Initial
             }
@@ -972,7 +1046,7 @@ void ZrtpStateClass::evWaitConfirm2(void) {
         /*
          * Confirm2:
          * - prepare ConfAck
-         * - switch on security
+         * - switch on security (SRTP)
          * - switch to SecureState
          */
         if (first == 'c' && last == '2') {

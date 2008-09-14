@@ -38,7 +38,7 @@ class ZrtpPacketConfirm : public ZrtpPacketBase {
 
     public:
         ZrtpPacketConfirm();                    /* Creates a Confirm packet */
-        ZrtpPacketConfirm(uint8_t sl);		/* Creates a Confirm packet with default data */
+        ZrtpPacketConfirm(uint32_t sl);		/* Creates a Confirm packet with default data */
         ZrtpPacketConfirm(uint8_t* d);          /* Creates a Confirm packet from received data */
         virtual ~ZrtpPacketConfirm();
 
@@ -48,21 +48,22 @@ class ZrtpPacketConfirm : public ZrtpPacketBase {
         const uint8_t* getHmac()          { return confirmHeader->hmac; }
         const uint32_t getExpTime()       { return ntohl(confirmHeader->expTime); }
         uint8_t* getHashH0()              { return confirmHeader->hashH0; }
+        uint32_t getSignatureLength();
 
         void setSASFlag()            { confirmHeader->flags |= 0x4; }
         void setHmac(uint8_t* text)  { memcpy(confirmHeader->hmac, text, sizeof(confirmHeader->hmac)); }
         void setIv(uint8_t* text)    { memcpy(confirmHeader->iv, text, sizeof(confirmHeader->iv)); }
         void setExpTime(uint32_t t)  { confirmHeader->expTime = htonl(t); }
         void setHashH0(uint8_t* t)   { memcpy(confirmHeader->hashH0, t, sizeof(confirmHeader->hashH0)); }
-        void setSignatureLength(uint8_t sl);
+        void setSignatureLength(uint32_t sl);
 
     private:
         void initialize();
-     // Confirm packet is of variable length. It maximum size is 268 words:
+     // Confirm packet is of variable length. It maximum size is 524 words:
      // - 11 words fixed size 
-     // - up to 257 words variable part, depending if signature is present ant its length 
-     // leads to a maximum of 4*268=1072 bytes.
-        uint8_t data[1280];       // large enough to hold a full blown Confirm packet
+     // - up to 513 words variable part, depending if signature is present and its length. 
+     // This leads to a maximum of 4*524=2096 bytes.
+        uint8_t data[2100];       // large enough to hold a full blown Confirm packet
 
 };
 

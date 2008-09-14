@@ -92,6 +92,7 @@ extern char* supportedCipher[];
 // following enum, starting with zero.
 enum SupportedPubKeys {
     Dh3072,
+    MultiStream,
     NumSupportedPubKeys
 };
 extern char* supportedPubKey[];

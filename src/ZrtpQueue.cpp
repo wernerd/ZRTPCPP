@@ -53,11 +53,6 @@ void ZrtpQueue::init()
     enableZrtp = false;
     started = false;
     zrtpEngine = NULL;
-
-    // senderCryptoContext = NULL;
-
-    // recvCryptoContext = NULL;
-
     senderZrtpSeqNo = 1;
 
     clientIdString = clientId;
@@ -66,7 +61,6 @@ void ZrtpQueue::init()
 
 ZrtpQueue::~ZrtpQueue() {
 
-//    cancelTimer();
     endQueue();
     stopZrtp();
 
@@ -74,18 +68,6 @@ ZrtpQueue::~ZrtpQueue() {
         delete zrtpUserCallback;
         zrtpUserCallback = NULL;
     }
-
-    /*
-    if (recvCryptoContext != NULL) {
-        delete recvCryptoContext;
-        recvCryptoContext = NULL;
-    }
-
-    if (senderCryptoContext != NULL) {
-        delete senderCryptoContext;
-        senderCryptoContext = NULL;
-    }
-    */
 }
 
 int32_t
@@ -492,9 +474,9 @@ void ZrtpQueue::srtpSecretsOn(std::string c, std::string s, bool verified)
 
   if (zrtpUserCallback != NULL) {
     zrtpUserCallback->secureOn(c);
-  }
-  if (zrtpUserCallback != NULL) {
-    zrtpUserCallback->showSAS(s, verified);
+    if (!s.empty()) {
+        zrtpUserCallback->showSAS(s, verified);
+    }
   }
 }
 
