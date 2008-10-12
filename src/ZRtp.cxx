@@ -128,7 +128,7 @@ ZRtp::~ZRtp() {
     memset(srtpKeyR, 0, SHA256_DIGEST_LENGTH);
     memset(srtpSaltR, 0, SHA256_DIGEST_LENGTH);
 
-    memset(s0, 0, SHA256_DIGEST_LENGTH);
+    memset(zrtpSession, 0, SHA256_DIGEST_LENGTH);
 }
 
 void ZRtp::processZrtpMessage(uint8_t *message) {
@@ -251,6 +251,9 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
             // we are in multi-stream but peer does not offer multi-stream
             // switch off multi-stream and fall back to DH mode
             multiStream = false;
+            authLength = findBestAuthLen(hello);
+            cipher = findBestCipher(hello);
+            pubKey = findBestPubkey(hello);
         }
     }
     // Modify here when introducing new DH key agreement, for example
@@ -836,7 +839,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
                   (unsigned char*)confirm1->getHashH0(), hmlen);
 
     // Check HMAC of DHPart1 packet stored in temporary buffer. The
-    // HMAC key of the DHPart1 packet is peer's H0 that is contained in.
+    // HMAC key of the DHPart1 packet is peer's H0 that is contained in
     // Confirm1. Refer to chapter 9.1 and chapter 10.
     if (!checkMsgHmac(confirm1->getHashH0())) {
         sendInfo(Severe, SevereDH1HMACFailed);
@@ -942,12 +945,6 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2MultiStream(ZrtpPacketConfirm* confirm1,
     uint8_t tmpHash[SHA256_DIGEST_LENGTH];
     sha256(confirm1->getHashH0(), SHA256_DIGEST_LENGTH, tmpHash); // Compute peer's H1 in tmpHash
     sha256(tmpHash, SHA256_DIGEST_LENGTH, peerH2);            // Compute peer's H2
-    sha256(peerH2, SHA256_DIGEST_LENGTH, tmpHash);            // Compute peer's H3 (tmpHash)
-
-    if (memcmp(tmpHash, peerH3, SHA256_DIGEST_LENGTH) != 0) {
-        *errMsg = IgnorePacket;
-        return NULL;
-    }
 
     // Check HMAC of previous Hello packet stored in temporary buffer. The
     // HMAC key of the Hello packet is peer's H2 that was computed above.
@@ -1051,12 +1048,6 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
         uint8_t tmpHash[SHA256_DIGEST_LENGTH];
         uint8_t tmpH2[SHA256_DIGEST_LENGTH];
         sha256(confirm2->getHashH0(), SHA256_DIGEST_LENGTH, tmpHash); // Compute initiator's H1 in tmpHash
-        sha256(tmpHash, SHA256_DIGEST_LENGTH, tmpH2);             // Compute initiator's H2
-
-        if (memcmp(tmpH2, peerH2, SHA256_DIGEST_LENGTH) != 0) {
-            *errMsg = IgnorePacket;
-            return NULL;
-        }
 
         if (!checkMsgHmac(tmpHash)) {
             sendInfo(Severe, SevereCommitHMACFailed);
@@ -1456,6 +1447,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     DHss = NULL;
 
     computeSRTPKeys();
+    memset(s0, 0, SHA256_DIGEST_LENGTH);
 }
 /*
  * The DH packet for this function is DHPart2 and contains the Initiator's
@@ -1598,7 +1590,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     DHss = NULL;
 
     computeSRTPKeys();
-    // TODO: Clear S0 ? Check with GoClear ??
+    memset(s0, 0, SHA256_DIGEST_LENGTH);
 }
 
 void ZRtp::generateKeysMultiStream() {
@@ -1782,7 +1774,6 @@ std::string ZRtp::getMultiStrParams() {
     char tmp[SHA256_DIGEST_LENGTH + 1 + 1]; // digest length + cipher + authLength
 
     if (inState(SecureState) && !multiStream) {
-        fprintf(stderr, "Constructing multi-stream parameters\n");
         // construct array that holds zrtpSession, cipher type and auth-length
         memcpy(tmp, zrtpSession, SHA256_DIGEST_LENGTH);
         tmp[SHA256_DIGEST_LENGTH] = cipher;          //cipher is enumeration (int)

@@ -55,7 +55,7 @@ void ZrtpPacketConfirm::setSignatureLength(uint32_t sl) {
 
 uint32_t ZrtpPacketConfirm::getSignatureLength() {
     uint32_t sl = confirmHeader->sigLength;
-    if (confirmHeader->filler[1] & 0x1) {                              // do we have a 9th bit
+    if (confirmHeader->filler[1] == 1) {                              // do we have a 9th bit
         sl |= 0x100;
     }
     return sl;
