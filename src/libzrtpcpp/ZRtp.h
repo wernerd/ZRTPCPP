@@ -339,7 +339,17 @@ class ZRtp {
      */
     int32_t getSignatureLength();
 
- private:
+    /**
+     * Emulate a Conf2Ack packet.
+     *
+     * This method emulates a Conf2Ack packet. According to ZRTP specification
+     * the first valid SRTP packet that the Initiator receives must switch 
+     * on secure mode. Refer to chapter 5.6 in the specificaton
+     *
+     */
+    void conf2AckSecure();
+
+private:
      friend class ZrtpStateClass;
 
     /**

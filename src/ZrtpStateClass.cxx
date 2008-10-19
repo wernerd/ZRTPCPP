@@ -820,6 +820,14 @@ void ZrtpStateClass::evCommitSent(void) {
             if (startTimer(&T2) <= 0) {
                 timerFailed(SevereNoTimer);  // returns to state Initial
             }
+            // according to chap 5.6: after sending Confirm2 the Initiator must
+            // be ready to receive SRTP data. SRTP sender will be enabled in WaitConfAck
+            // state.
+            if (!parent->srtpSecretsReady(ForReceiver)) {
+                parent->sendInfo(Severe, CriticalSWError);
+                sendErrorPacket(CriticalSWError);
+                return;
+            }
         }
     }
     // Timer event triggered, resend the Commit packet
@@ -978,6 +986,14 @@ void ZrtpStateClass::evWaitConfirm1(void) {
             if (startTimer(&T2) <= 0) {
                 timerFailed(SevereNoTimer);  // returns to state Initial
             }
+            // according to chap 5.6: after sending Confirm2 the Initiator must
+            // be ready to receive SRTP data. SRTP sender will be enabled in WaitConfAck
+            // state.
+            if (!parent->srtpSecretsReady(ForReceiver)) {
+                parent->sendInfo(Severe, CriticalSWError);
+                sendErrorPacket(CriticalSWError);
+                return;
+            }
         }
     }
     else if (event->type == Timer) {
@@ -1123,8 +1139,9 @@ void ZrtpStateClass::evWaitConfAck(void) {
         if (first == 'c') {
             cancelTimer();
             sentPacket = NULL;
-            if (!parent->srtpSecretsReady(ForSender) ||
-                !parent->srtpSecretsReady(ForReceiver)) {
+            // Receiver was already enabled after sending Confirm2 packet
+            // see previous states.
+            if (!parent->srtpSecretsReady(ForSender)) {
                 parent->sendInfo(Severe, CriticalSWError);
                 sendErrorPacket(CriticalSWError);
                 return;

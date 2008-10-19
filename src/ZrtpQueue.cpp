@@ -25,6 +25,7 @@
 #include <libzrtpcpp/ZrtpQueue.h>
 #include <libzrtpcpp/ZIDFile.h>
 #include <libzrtpcpp/ZRtp.h>
+#include <libzrtpcpp/ZrtpStateClass.h>
 #include <libzrtpcpp/ZrtpUserCallback.h>
 
 static TimeoutProvider<std::string, ost::ZrtpQueue*>* staticTimeoutProvider = NULL;
@@ -223,6 +224,9 @@ ZrtpQueue::rtpDataPacket(IncomingRTPPkt* packet, int32 rtn,
                 delete packet;
                 return 0;
             }
+        }
+        if (!zrtpEngine->inState(SecureState)) {
+            zrtpEngine->conf2AckSecure();
         }
     }
 

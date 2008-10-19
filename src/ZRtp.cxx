@@ -199,7 +199,7 @@ bool ZRtp::inState(int32_t state)
         return stateEngine->inState(state);
     }
     else {
-        return -1;
+        return false;
     }
 }
 
@@ -762,6 +762,28 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
         *errMsg = CriticalSWError;
         return NULL;
     }
+
+    // check if we support the commited hash type
+    int i;
+    uint32_t cp = *(uint32_t*)commit->getHashType();
+    for (i = 0; i < NumSupportedHashes; i++) {
+        if (cp == *(uint32_t*)supportedHashes[i]) {
+            break;
+        }
+    }
+    if (i >= NumSupportedHashes) { // no match - something went wrong
+        *errMsg = UnsuppHashType;
+        return NULL;
+    }
+    hash = (SupportedHashes)i;
+
+    // check if Commit contains "Mult" as pub key type
+    cp = *(uint32_t*)commit->getPubKeysType();
+    if (cp != *(uint32_t*)supportedPubKey[MultiStream]) {
+        *errMsg = UnsuppPKExchange;
+        return NULL;
+    }
+
     myRole = Responder;
     // We are responder. Release a possibly pre-computed SHA256 context
     // because this was prepared for Initiator. Then create a new one.
@@ -1809,6 +1831,18 @@ void ZRtp::acceptEnrollment(bool accepted) {
 
 bool ZRtp::setSignatureData(uint8_t* data, int32_t length) {
     return false;
+}
+
+void ZRtp::conf2AckSecure() {
+    Event_t ev;
+
+    ev.type = ZrtpPacket;
+    ev.data.packet = (uint8_t*)&zrtpConf2Ack;
+
+    if (stateEngine != NULL) {
+        stateEngine->processEvent(&ev);
+    }
+
 }
 
 int32_t ZRtp::getSignatureData(uint8_t* data) {
