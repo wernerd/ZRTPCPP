@@ -8,6 +8,8 @@ interoperability tests using the latest Zfone build and Zfone Beta
 No changes in the external API and ABI with respect to 1.3.0 - thus no
 recompile or rebuild of clients are necessary if they use 1.3.0.
 
+To checkout version 1.3.1 specify revision 494 (-r 494).
+
 
 == GNU ZRTP 1.3.0 ==
 
