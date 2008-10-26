@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006-2007 Werner Dittmann
+  Copyright (C) 2006-2008 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
  */
 //                                  1
 //                         1234567890123456
-const char *clientId =    "GNU ZRTP 1.3.0  "; // must be 16 chars
+const char *clientId =    "GNU ZRTP 1.3.1  "; // must be 16 chars
 const char *zrtpVersion = "0.90";	// must be 4 chars
 /**
  *

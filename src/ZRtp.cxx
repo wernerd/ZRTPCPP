@@ -235,25 +235,23 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
      * If this is a MultiStream ZRTP object then do not get the cipher,
      * authentication from hello packet but use the pre-initialized values.
      */
-    hash = findBestHash(hello);
     sasType = findBestSASType(hello);
 
     if (!multiStream) {
         authLength = findBestAuthLen(hello);
         cipher = findBestCipher(hello);
         pubKey = findBestPubkey(hello);
+        hash = findBestHash(hello);
     }
     else {
         if (checkMultiStream(hello)) {
             return prepareCommitMultiStream(hello);
         }
-        else {
+        else { 
             // we are in multi-stream but peer does not offer multi-stream
-            // switch off multi-stream and fall back to DH mode
-            multiStream = false;
-            authLength = findBestAuthLen(hello);
-            cipher = findBestCipher(hello);
-            pubKey = findBestPubkey(hello);
+            // return error code to other party - unsupported PK, must be Mult
+            *errMsg = UnsuppPKExchange;
+            return NULL;
         }
     }
     // Modify here when introducing new DH key agreement, for example
@@ -763,9 +761,42 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
         return NULL;
     }
 
-    // check if we support the commited hash type
+    // check if Commit contains "Mult" as pub key type
     int i;
-    uint32_t cp = *(uint32_t*)commit->getHashType();
+    uint32_t cp = *(uint32_t*)commit->getPubKeysType();
+    if (cp != *(uint32_t*)supportedPubKey[MultiStream]) {
+        *errMsg = UnsuppPKExchange;
+        return NULL;
+    }
+
+    // check if we support the commited cipher
+    cp = *(uint32_t*)commit->getCipherType();
+    for (i = 0; i < NumSupportedSymCiphers; i++) {
+        if (cp == *(uint32_t*)supportedCipher[i]) {
+	    break;
+	}
+    }
+    if (i >= NumSupportedSymCiphers) { // no match - something went wrong
+        *errMsg = UnsuppCiphertype;
+	return NULL;
+    }
+    cipher = (SupportedSymCiphers)i;
+
+    // check if we support the commited Authentication length
+    cp = *(uint32_t*)commit->getAuthLen();
+    for (i = 0; i < NumSupportedAuthLenghts; i++) {
+        if (cp == *(uint32_t*)supportedAuthLen[i]) {
+            break;
+        }
+    }
+    if (i >= NumSupportedAuthLenghts) { // no match - something went wrong
+        *errMsg = UnsuppSRTPAuthTag;
+        return NULL;
+    }
+    authLength = (SupportedAuthLengths)i;
+
+    // check if we support the commited hash type
+    cp = *(uint32_t*)commit->getHashType();
     for (i = 0; i < NumSupportedHashes; i++) {
         if (cp == *(uint32_t*)supportedHashes[i]) {
             break;
@@ -776,13 +807,6 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
         return NULL;
     }
     hash = (SupportedHashes)i;
-
-    // check if Commit contains "Mult" as pub key type
-    cp = *(uint32_t*)commit->getPubKeysType();
-    if (cp != *(uint32_t*)supportedPubKey[MultiStream]) {
-        *errMsg = UnsuppPKExchange;
-        return NULL;
-    }
 
     myRole = Responder;
     // We are responder. Release a possibly pre-computed SHA256 context
@@ -1793,28 +1817,30 @@ std::string ZRtp::getMultiStrParams() {
 
     // the string will hold binary data - it's opaque to the application
     std::string str("");
-    char tmp[SHA256_DIGEST_LENGTH + 1 + 1]; // digest length + cipher + authLength
+    char tmp[SHA256_DIGEST_LENGTH + 1 + 1 + 1]; // digest length + cipher + authLength +hash
 
     if (inState(SecureState) && !multiStream) {
         // construct array that holds zrtpSession, cipher type and auth-length
         memcpy(tmp, zrtpSession, SHA256_DIGEST_LENGTH);
         tmp[SHA256_DIGEST_LENGTH] = cipher;          //cipher is enumeration (int)
         tmp[SHA256_DIGEST_LENGTH + 1] = authLength;  //authLength is enumeration (int)
-        str.assign(tmp, SHA256_DIGEST_LENGTH + 1 + 1);   // set chars (bytes) to the string
+        tmp[SHA256_DIGEST_LENGTH + 2] = hash;        //hash is enumeration (int)
+        str.assign(tmp, SHA256_DIGEST_LENGTH + 1 + 1 + 1); // set chars (bytes) to the string
     }
     return str;
 }
 
 void ZRtp::setMultiStrParams(std::string parameters) {
 
-    char tmp[SHA256_DIGEST_LENGTH + 1 + 1]; // digest length + cipher + authLength
+    char tmp[SHA256_DIGEST_LENGTH + 1 + 1 + 1]; // digest length + cipher + authLength + hash
 
     // use string.copy(buffer, num, start=0) to retrieve chars (bytes) from the string
-    parameters.copy(tmp, SHA256_DIGEST_LENGTH + 1 + 1, 0);
+    parameters.copy(tmp, SHA256_DIGEST_LENGTH + 1 + 1 + 1, 0);
 
     memcpy(zrtpSession, tmp, SHA256_DIGEST_LENGTH);
     cipher = static_cast<SupportedSymCiphers>(tmp[SHA256_DIGEST_LENGTH]&0xff);
     authLength = static_cast<SupportedAuthLengths>(tmp[SHA256_DIGEST_LENGTH + 1]&0xff);
+    hash = static_cast<SupportedHashes>(tmp[SHA256_DIGEST_LENGTH + 1 + 1]&0xff);
 
     // after setting zrtpSession, cipher, and auth-length set multi-stream to true
     multiStream = true;
