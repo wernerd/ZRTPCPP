@@ -203,6 +203,14 @@ bool ZRtp::inState(int32_t state)
     }
 }
 
+ZrtpPacketHello* ZRtp::prepareHello() {
+    return &zrtpHello; 
+}
+
+ZrtpPacketHelloAck* ZRtp::prepareHelloAck() {
+    return &zrtpHelloAck;
+}
+
 /*
  * At this point we will assume the role of Initiator. This role may change
  * in case we have a commit-clash. Refer to chapter 5.2 in the spec how
@@ -1744,10 +1752,42 @@ void ZRtp::resetSASVerified() {
     zid->saveRecord(&zidRec);
 }
 
+
+void ZRtp::sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) {
+    callback->sendInfo(severity, subCode);
+}
+
+
+void ZRtp::zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) {
+    callback->zrtpNegotiationFailed(severity, subCode);
+}
+
+void ZRtp::zrtpNotSuppOther() {
+    callback->zrtpNotSuppOther();
+}
+
+void ZRtp::synchEnter() {
+    callback->synchEnter();
+}
+
+void ZRtp::synchLeave() {
+    callback->synchLeave();
+}
+
+
 int32_t ZRtp::sendPacketZRTP(ZrtpPacketBase *packet) {
     return ((packet == NULL) ? 0 :
             callback->sendDataZRTP(packet->getHeaderBase(), (packet->getLength() * 4) + 4));
 }
+
+int32_t ZRtp::activateTimer(int32_t tm) {
+    return (callback->activateTimer(tm));
+}
+
+int32_t ZRtp::cancelTimer() {
+    return (callback->cancelTimer());
+}
+
 
 void ZRtp::setAuxSecret(uint8_t* data, int32_t length) {
     if (length > 0) {
@@ -1804,6 +1844,8 @@ std::string ZRtp::getHelloHash() {
 
     uint8_t* hp = helloHash;
 
+    stm << zrtpVersion;
+    stm << " ";
     stm.fill('0');
     stm << hex;
     for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
@@ -1890,6 +1932,11 @@ int32_t ZRtp::compareCommit(ZrtpPacketCommit *commit) {
 
 void ZRtp:: setPBXEnrollment(bool yesNo) {
     PBXEnrollment = yesNo;
+}
+
+int32_t ZRtp::getZid(uint8_t* data) {
+    memcpy(data, peerZid, IDENTIFIER_LEN);
+    return IDENTIFIER_LEN;
 }
 
 /** EMACS **

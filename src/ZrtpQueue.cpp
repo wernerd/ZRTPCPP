@@ -662,6 +662,15 @@ void ZrtpQueue::setPBXEnrollment(bool yesNo) {
 	zrtpEngine->setPBXEnrollment(yesNo);
 }
 
+
+int32 ZrtpQueue::getZid(uint8* data) {
+    if (data == NULL)
+        return 0;
+
+    if (zrtpEngine != NULL)
+        return zrtpEngine->getZid(data);
+}
+
 IncomingZRTPPkt::IncomingZRTPPkt(const unsigned char* const block, size_t len) :
         IncomingRTPPkt(block,len) {
 }

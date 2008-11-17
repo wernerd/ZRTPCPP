@@ -591,6 +591,26 @@ namespace ost {
          */
         void stopZrtp();
 
+        /**
+         * Get other party's ZID (ZRTP Identifier) data
+         *
+         * This functions returns the other party's ZID that was receivied 
+         * during ZRTP processing. 
+         *
+         * The ZID data can be retrieved after ZRTP receive the first Hello
+         * packet from the other party. The application may call this method
+         * for example during SAS processing in showSAS(...) user callback
+         * method.
+         *
+         * @param data
+         *    Pointer to a data buffer. This buffer must have a size of
+         *    at least 12 bytes (96 bit) (ZRTP Identifier, see chap. 4.9)
+         * @return
+         *    Number of bytes copied into the data buffer - must be equivalent
+         *    to 96 bit, usually 12 bytes.
+         */
+        int32 getZid(uint8* data);
+
     protected:
 	friend class TimeoutProvider<std::string, ost::ZrtpQueue*>;
 
