@@ -1,3 +1,25 @@
+== GNU ZRTP 1.4.0 ==
+
+This is the first release that is conformant to the ZRTP specification
+that eventually will become a RFC. See:
+[http://tools.ietf.org/html/draft-zimmermann-avt-zrtp-10]
+
+The ZRTP protocol version was updated to 1.00.
+
+
+=== Interface changes in 1.4.0 ===
+
+The ZrtpQueue and ZRtp classes implement a new method to get the other
+party's ZID (ZRTP identifier). An application, for example a SIP or XMPP
+client, may use this method to get the other party's ZID and store it
+together in a contact list. This enable the application to check the ZID
+if the user calls the other party again. A client shall implement such
+a feature to enhance security if user's don't compare the SAS on every
+call after they confirmed a SAS once.
+
+Clients must be compiled and linked with the new library.
+
+
 == GNU ZRTP 1.3.1 ==
 
 This is an update to version 1.3.0 and implements the ZRTP multi-stream

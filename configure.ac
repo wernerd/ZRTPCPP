@@ -20,16 +20,16 @@ AC_INIT(src/ZRtp.cxx)
 # LT_RELEASE=1.0
 # LT_VERSION=0:0
 #
-# VERSION=1.0.1 might have either LT_VERSION=0:1 if binary linking remains 
+# VERSION=1.0.1 might have either LT_VERSION=0:1 if binary linking remains
 # unchanged, or LT_VERSION=1:0 if binary linking is changed.
 # (see macros "OST_PROG_LIBVER" and "OST_PROG_LIBRARY" below)
 #
-VERSION="1.3.1"
+VERSION="1.4.0"
 # AC_INIT([libzrtpcpp], [1.0.0] )
 # AC_CONFIG_SRCDIR([configure.ac])
 
-LT_RELEASE="1.3"
-LT_VERSION="0:1"
+LT_RELEASE="1.4"
+LT_VERSION="0:0"
 
 REQUIRES="1.3.0"
 
