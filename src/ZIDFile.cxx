@@ -28,6 +28,7 @@
 
 
 static ZIDFile* instance;
+static int errors = 0;	// maybe we will use as member of ZIDFile later...
 
 void ZIDFile::createZIDFile(char* name) {
     zidFile = fopen(name, "wb+");
@@ -44,7 +45,8 @@ void ZIDFile::createZIDFile(char* name) {
 	ZIDRecord rec(associatedZid);
 	rec.setOwnZIDRecord();
 	fseek(zidFile, 0L, SEEK_SET);
-	fwrite(rec.getRecordData(), rec.getRecordLength(), 1, zidFile);
+	if(fwrite(rec.getRecordData(), rec.getRecordLength(), 1, zidFile) < 1)
+		++errors;
 	fflush(zidFile);
     }
 }
@@ -63,7 +65,11 @@ void ZIDFile::checkDoMigration(char* name) {
     zidrecord1_t recOld;
 
     fseek(zidFile, 0L, SEEK_SET);
-    fread(inb, 2, 1, zidFile);
+    if(fread(inb, 2, 1, zidFile) < 1) {
+		++errors;
+		inb[0] = 0;
+	}
+		
     if (inb[0] > 0 ) {          // if it's new format just return
 	return;
     }
@@ -98,7 +104,8 @@ void ZIDFile::checkDoMigration(char* name) {
     // create ZIDRecord in new format, copy over own ZID and write the record
     ZIDRecord rec(recOld.identifier);
     rec.setOwnZIDRecord();
-    fwrite(rec.getRecordData(), rec.getRecordLength(), 1, zidFile);
+    if(fwrite(rec.getRecordData(), rec.getRecordLength(), 1, zidFile) < 1)
+		++errors;
 
     // now copy over all valid records from old ZID file format.
     // Sequentially read old records, sequentially write new records
@@ -119,7 +126,8 @@ void ZIDFile::checkDoMigration(char* name) {
 	}
 	rec2.setNewRs1(recOld.rs2Data);
 	rec2.setNewRs1(recOld.rs1Data);
-	fwrite(rec2.getRecordData(), rec2.getRecordLength(), 1, zidFile);
+	if(fwrite(rec2.getRecordData(), rec2.getRecordLength(), 1, zidFile) < 1)
+		++errors;
 
      } while (numRead == 1);
      fflush(zidFile);
@@ -204,7 +212,8 @@ unsigned int ZIDFile::getRecord(ZIDRecord* zidRecord) {
 	// create new record
 	ZIDRecord rec1(zidRecord->getIdentifier());
 	rec1.setValid();
-	fwrite(rec1.getRecordData(), rec1.getRecordLength(), 1, zidFile);
+	if(fwrite(rec1.getRecordData(), rec1.getRecordLength(), 1, zidFile) < 1)
+		++errors;
 	memcpy(zidRecord->getRecordData(), rec1.getRecordData(), rec1.getRecordLength());	
     }
     else {
@@ -220,7 +229,8 @@ unsigned int ZIDFile::getRecord(ZIDRecord* zidRecord) {
 unsigned int ZIDFile::saveRecord(ZIDRecord *zidRecord) {
 
     fseek(zidFile, zidRecord->getPosition(), SEEK_SET);
-    fwrite(zidRecord->getRecordData(), zidRecord->getRecordLength(), 1, zidFile);
+    if(fwrite(zidRecord->getRecordData(), zidRecord->getRecordLength(), 1, zidFile) < 1)
+		++errors;
     fflush(zidFile);
     return 1;
 }

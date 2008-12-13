@@ -76,7 +76,8 @@ extern char* zrtpSessionKey;
 typedef enum  SupportedHashes {
     Sha256,
     NumSupportedHashes
-};
+} supported_hashes_t;
+
 extern char* supportedHashes[];
 
 // Keep the Cipher identifers in supportedCipher in the same order than the

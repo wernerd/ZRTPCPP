@@ -53,7 +53,7 @@ enum zrtpStates {
 
 enum EventReturnCodes {
     Fail = 0,			// ZRTP event processing failed.
-    Done = 1,			// Event processing ok.
+    Done = 1			// Event processing ok.
 };
 
 enum EventDataType {

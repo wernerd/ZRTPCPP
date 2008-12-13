@@ -24,12 +24,12 @@ AC_INIT(src/ZRtp.cxx)
 # unchanged, or LT_VERSION=1:0 if binary linking is changed.
 # (see macros "OST_PROG_LIBVER" and "OST_PROG_LIBRARY" below)
 #
-VERSION="1.4.0"
+VERSION="1.4.1"
 # AC_INIT([libzrtpcpp], [1.0.0] )
 # AC_CONFIG_SRCDIR([configure.ac])
 
 LT_RELEASE="1.4"
-LT_VERSION="0:0"
+LT_VERSION="0:1"
 
 REQUIRES="1.3.0"
 
@@ -130,7 +130,8 @@ OST_AUTOMAKE_MODE
 OST_MAINTAINER_MODE
 # OST_CC_ENDIAN - now in Common C++
 # Are we using the GNU compiler?
-if test $GCC = yes ; then
+if test x"$GCC" = xyes ; then
+		CXXFLAGS="$CXXFLAGS -Wno-long-long"
         WARN_FLAGS="-Wall -ansi -pedantic"
 else
         WARN_FLAGS=""
