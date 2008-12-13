@@ -27,6 +27,7 @@ using namespace std;
 using namespace GnuZrtpCodes;
 #endif
 
+/* maybe should be by special define...
 static void hexdump(const char* title, const unsigned char *s, int l) {
     int n=0;
 
@@ -41,7 +42,7 @@ static void hexdump(const char* title, const unsigned char *s, int l) {
     }
     fprintf(stderr, "\n");
 }
-
+*/
 
 class PacketsPattern
 {

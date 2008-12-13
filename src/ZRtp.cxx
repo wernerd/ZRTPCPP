@@ -33,6 +33,8 @@
 
 using namespace GnuZrtpCodes;
 
+/* disabled...but used in testing and debugging, probably should have a
+   controlling #define...
 static void hexdump(const char* title, const unsigned char *s, int l) {
     int n=0;
 
@@ -47,6 +49,7 @@ static void hexdump(const char* title, const unsigned char *s, int l) {
     }
     fprintf(stderr, "\n");
 }
+*/
 
 /*
  * This method simplifies detection of libzrtpcpp inside Automake, configure
@@ -64,8 +67,8 @@ int ZrtpAvailable()
 #endif
 
 ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id):
-    callback(cb), dhContext(NULL), auxSecret(NULL), auxSecretLength(0),
-    rs1Valid(false), rs2Valid(false), DHss(NULL), multiStream(false),
+    callback(cb), dhContext(NULL), DHss(NULL), auxSecret(NULL), auxSecretLength(0),
+    rs1Valid(false), rs2Valid(false), multiStream(false),
     PBXEnrollment(false) {
 
     /*
@@ -225,7 +228,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
         return NULL;
     }
     // Save our peer's (presumably the Responder) ZRTP id
-    uint8_t* cid = hello->getClientId();
+//FIXME:    uint8_t* cid = hello->getClientId(); - unused?
     memcpy(peerZid, hello->getZid(), 12);
     if (memcmp(peerZid, zid, 12) == 0) {       // peers have same ZID????
         *errMsg = EqualZIDHello;
@@ -264,7 +267,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     }
     // Modify here when introducing new DH key agreement, for example
     // elliptic curves.
-    int32_t maxPubKeySize = 384;
+//FIXME:    int32_t maxPubKeySize = 384; - unused?
     dhContext = new ZrtpDH(3072);
     dhContext->generateKey();
     pubKeyLen = dhContext->getPubKeySize();
@@ -546,7 +549,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
 ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errMsg) {
 
     uint8_t* pvr;
-    uint8_t sas[SHA256_DIGEST_LENGTH+1];
+//FIXME: unused??    uint8_t sas[SHA256_DIGEST_LENGTH+1];
 
     sendInfo(Info, InfoInitDH1Received);
 
@@ -630,7 +633,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
 ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* errMsg) {
 
     uint8_t* pvi;
-    uint8_t sas[SHA256_DIGEST_LENGTH+1];
+//FIXME: unused?    uint8_t sas[SHA256_DIGEST_LENGTH+1];
 
     sendInfo(Info, InfoRespDH2Received);
 
@@ -1100,7 +1103,6 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
         // Check HMAC of Commit packet stored in temporary buffer. The
         // HMAC key of the Commit packet is initiator's H1
         uint8_t tmpHash[SHA256_DIGEST_LENGTH];
-        uint8_t tmpH2[SHA256_DIGEST_LENGTH];
         sha256(confirm2->getHashH0(), SHA256_DIGEST_LENGTH, tmpHash); // Compute initiator's H1 in tmpHash
 
         if (!checkMsgHmac(tmpHash)) {
@@ -1133,7 +1135,6 @@ ZrtpPacketClearAck* ZRtp::prepareClearAck(ZrtpPacketGoClear* gpkt) {
 }
 
 ZrtpPacketGoClear* ZRtp::prepareGoClear(uint32_t errMsg) {
-    uint8_t msg[16];
     ZrtpPacketGoClear* gclr = &zrtpGoClear;
     gclr->clrClearHmac();
     return gclr;

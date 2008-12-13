@@ -58,6 +58,7 @@ class ZrtpStates {
     int32_t processEvent(ZrtpStateClass& zsc) {
 	// fprintf(stdout, "ZrtpStates::processEvent, state: %d\n", state);
 	(zsc.*states[state].handler)();
+	return 0;	// hmm...maybe we can do more??  but handlers are void...
     }
 
     bool inState(const int32_t s) { return ((s == state)); }

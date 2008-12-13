@@ -29,8 +29,10 @@ AC_DEFUN([OST_CXX_PROGRAMMING],[
   dnl Check for common C++ portability problems
   dnl
 
+  ac_save_CXXFLAGS="$CXXFLAGS"
   AC_LANG_SAVE
   AC_LANG_CPLUSPLUS
+  CXXFLAGS=""
 
   dnl Check whether we have bool
   AC_CACHE_CHECK(whether ${CXX} has built-in bool type,
@@ -47,6 +49,7 @@ AC_DEFUN([OST_CXX_PROGRAMMING],[
   fi
 
   AC_LANG_RESTORE
+  CXXFLAGS="$ac_save_CXXFLAGS"
 ])
 
 AC_DEFUN([OST_CXX_EXCEPTIONS],[
@@ -55,9 +58,6 @@ AC_DEFUN([OST_CXX_EXCEPTIONS],[
   dnl 
   dnl Enable C++ exception handling whenever possible.
   dnl 
-
-  AC_LANG_SAVE
-  AC_LANG_CPLUSPLUS
 
   dnl strip -fno-exceptions flag if used
   optflags=$CXXFLAGS
@@ -74,11 +74,16 @@ AC_DEFUN([OST_CXX_EXCEPTIONS],[
 	done
   fi
 
+  ac_save_CXXFLAGS="$CXXFLAGS"
+  AC_LANG_SAVE
+  AC_LANG_CPLUSPLUS
+  CXXFLAGS=""
+
   dnl Check for exception handling
   AC_CACHE_CHECK(whether ${CXX} supports -fhandle-exceptions,
 	ac_cv_cxx_exception_flag,
-	[echo 'void f(){}' >conftest.c
-	 if test -z "`${CXX} -fhandle-exceptions -c conftest.c 2>&1`"; then
+	[echo 'void f(){}' >conftest.cpp
+	 if test -z "`${CXX} -fhandle-exceptions -c conftest.cpp 2>&1`"; then
 		ac_cv_cxx_exception_flag=yes
 		CXXFLAGS="$CXXFLAGS -fhandle-exceptions"
 	 else
@@ -117,6 +122,7 @@ AC_DEFUN([OST_CXX_EXCEPTIONS],[
   fi
 
   AC_LANG_RESTORE
+  CXXFLAGS="$ac_save_CXXFLAGS"
 ])
 
 dnl ACCONFIG TEMPLATE
