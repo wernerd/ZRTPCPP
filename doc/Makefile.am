@@ -1,4 +1,5 @@
-# Copyright (C) 2000-2002 Open Source Telecom Corporation.
+# Copyright (C) 2000-2005 Open Source Telecom Corporation.
+# Copyright (C) 2006-2008 David Sugar, Tycho Softworks.
 #  
 # This file is free software; as a special exception the author gives
 # unlimited permission to copy and/or distribute it, with or without 
