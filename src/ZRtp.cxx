@@ -228,7 +228,6 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
         return NULL;
     }
     // Save our peer's (presumably the Responder) ZRTP id
-//FIXME:    uint8_t* cid = hello->getClientId(); - unused?
     memcpy(peerZid, hello->getZid(), 12);
     if (memcmp(peerZid, zid, 12) == 0) {       // peers have same ZID????
         *errMsg = EqualZIDHello;
@@ -258,7 +257,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
         if (checkMultiStream(hello)) {
             return prepareCommitMultiStream(hello);
         }
-        else { 
+        else {
             // we are in multi-stream but peer does not offer multi-stream
             // return error code to other party - unsupported PK, must be Mult
             *errMsg = UnsuppPKExchange;
@@ -267,7 +266,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     }
     // Modify here when introducing new DH key agreement, for example
     // elliptic curves.
-//FIXME:    int32_t maxPubKeySize = 384; - unused?
+//FIXME:    int32_t maxPubKeySize = 384; - unused for time being
     dhContext = new ZrtpDH(3072);
     dhContext->generateKey();
     pubKeyLen = dhContext->getPubKeySize();
@@ -549,7 +548,6 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
 ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errMsg) {
 
     uint8_t* pvr;
-//FIXME: unused??    uint8_t sas[SHA256_DIGEST_LENGTH+1];
 
     sendInfo(Info, InfoInitDH1Received);
 
@@ -633,7 +631,6 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
 ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* errMsg) {
 
     uint8_t* pvi;
-//FIXME: unused?    uint8_t sas[SHA256_DIGEST_LENGTH+1];
 
     sendInfo(Info, InfoRespDH2Received);
 
@@ -1648,56 +1645,123 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     memset(s0, 0, SHA256_DIGEST_LENGTH);
 }
 
+
+static void KDF(uint8_t* key, uint32_t keyLength, uint8_t* label, int32_t labelLength,
+               uint8_t* context, int32_t contextLength, int32_t L, uint8_t* output) {
+
+    unsigned char* data[6];
+    unsigned int   length[6];
+    uint32_t pos = 0;                  // index into the array
+    uint32_t maclen = 0;
+
+    // Very first element is a fixed counter, big endian 
+    uint32_t counter = 1;
+    counter = htonl(counter);
+    data[pos] = (unsigned char*)&counter;
+    length[pos++] = sizeof(uint32_t);
+
+    // Next element is the label, null terminated, labelLength includes null byte.
+    data[pos] = label;
+    length[pos++] = labelLength;
+
+    // Next is the KDF context
+    data[pos] = context;
+    length[pos++] = contextLength;
+
+    // last element is HMAC length in bits, big endian
+    uint32_t len = htonl(L);
+    data[pos] = (unsigned char*)&len;
+    length[pos++] = sizeof(uint32_t);
+
+    data[pos] = NULL;
+
+    hmac_sha256(key, keyLength, data, length, output, &maclen);
+}
+
 void ZRtp::generateKeysMultiStream() {
     // Compute the Multi Stream mode s0
-    uint32_t macLen = 0;
-    hmac_sha256(zrtpSession, SHA256_DIGEST_LENGTH, messageHash, SHA256_DIGEST_LENGTH, s0, &macLen);
+    uint8_t KDFcontext[sizeof(peerZid)+sizeof(zid)+sizeof(messageHash)];
+
+    if (myRole == Responder) {
+        memcpy(KDFcontext, peerZid, sizeof(peerZid));
+        memcpy(KDFcontext+sizeof(peerZid), zid, sizeof(zid));
+    }
+    else {
+        memcpy(KDFcontext, zid, sizeof(zid));
+        memcpy(KDFcontext+sizeof(zid), peerZid, sizeof(peerZid));
+    }
+    memcpy(KDFcontext+sizeof(zid)+sizeof(peerZid), messageHash, sizeof(messageHash));
+
+    KDF(zrtpSession, SHA256_DIGEST_LENGTH, (unsigned char*)zrtpMsk, strlen(zrtpMsk)+1,
+        KDFcontext, sizeof(KDFcontext), SHA256_DIGEST_LENGTH*8, s0);
+
+    memset(KDFcontext, 0, sizeof(KDFcontext));
+
     computeSRTPKeys();
 }
 
 void ZRtp::computeSRTPKeys() {
 
-    uint32_t macLen;
+    uint8_t KDFcontext[sizeof(peerZid)+sizeof(zid)+sizeof(messageHash)];
+    uint8_t sasContext[sizeof(peerZid)+sizeof(zid)];
+
+    uint32_t keyLen = (cipher == Aes128) ? 128 :256;
+
+    if (myRole == Responder) {
+        memcpy(KDFcontext, peerZid, sizeof(peerZid));
+        memcpy(KDFcontext+sizeof(peerZid), zid, sizeof(zid));
+
+        memcpy(sasContext, peerZid, sizeof(peerZid));
+        memcpy(sasContext+sizeof(peerZid), zid, sizeof(zid));
+    }
+    else {
+        memcpy(KDFcontext, zid, sizeof(zid));
+        memcpy(KDFcontext+sizeof(zid), peerZid, sizeof(peerZid));
+
+        memcpy(sasContext, zid, sizeof(zid));
+        memcpy(sasContext+sizeof(zid), peerZid, sizeof(peerZid));
+    }
+    memcpy(KDFcontext+sizeof(zid)+sizeof(peerZid), messageHash, sizeof(messageHash));
 
     // Inititiator key and salt
-    hmac_sha256(s0, SHA256_DIGEST_LENGTH, (unsigned char*)iniMasterKey, strlen(iniMasterKey),
-                srtpKeyI, &macLen);
-    hmac_sha256(s0, SHA256_DIGEST_LENGTH, (unsigned char*)iniMasterSalt, strlen(iniMasterSalt),
-                srtpSaltI, &macLen);
+    KDF(s0, SHA256_DIGEST_LENGTH, (unsigned char*)iniMasterKey, strlen(iniMasterKey)+1,
+        KDFcontext, sizeof(KDFcontext), keyLen, srtpKeyI);
+    KDF(s0, SHA256_DIGEST_LENGTH, (unsigned char*)iniMasterSalt, strlen(iniMasterSalt)+1,
+        KDFcontext, sizeof(KDFcontext), 112, srtpSaltI);
 
     // Responder key and salt
-    hmac_sha256(s0, SHA256_DIGEST_LENGTH, (unsigned char*)respMasterKey, strlen(respMasterKey),
-                srtpKeyR, &macLen);
-    hmac_sha256(s0, SHA256_DIGEST_LENGTH, (unsigned char*)respMasterSalt, strlen(respMasterSalt),
-                srtpSaltR, &macLen);
+    KDF(s0, SHA256_DIGEST_LENGTH, (unsigned char*)respMasterKey, strlen(respMasterKey)+1,
+        KDFcontext, sizeof(KDFcontext), keyLen, srtpKeyR);
+    KDF(s0, SHA256_DIGEST_LENGTH, (unsigned char*)respMasterSalt, strlen(respMasterSalt)+1,
+        KDFcontext, sizeof(KDFcontext), 112, srtpSaltR);
 
     // The HMAC keys for GoClear
-    hmac_sha256(s0, SHA256_DIGEST_LENGTH, (unsigned char*)iniHmacKey, strlen(iniHmacKey),
-                hmacKeyI, &macLen);
-    hmac_sha256(s0, SHA256_DIGEST_LENGTH, (unsigned char*)respHmacKey, strlen(respHmacKey),
-                hmacKeyR, &macLen);
+    KDF(s0, SHA256_DIGEST_LENGTH, (unsigned char*)iniHmacKey, strlen(iniHmacKey)+1,
+        KDFcontext, sizeof(KDFcontext), SHA256_DIGEST_LENGTH*8, hmacKeyI);
+    KDF(s0, SHA256_DIGEST_LENGTH, (unsigned char*)respHmacKey, strlen(respHmacKey)+1,
+        KDFcontext, sizeof(KDFcontext), SHA256_DIGEST_LENGTH*8, hmacKeyR);
 
     // The keys for Confirm messages
-    hmac_sha256(s0, SHA256_DIGEST_LENGTH, (unsigned char*)iniZrtpKey, strlen(iniZrtpKey),
-                zrtpKeyI, &macLen);
-    hmac_sha256(s0, SHA256_DIGEST_LENGTH, (unsigned char*)respZrtpKey, strlen(respZrtpKey),
-                zrtpKeyR, &macLen);
+    KDF(s0, SHA256_DIGEST_LENGTH, (unsigned char*)iniZrtpKey, strlen(iniZrtpKey)+1,
+        KDFcontext, sizeof(KDFcontext), keyLen, zrtpKeyI);
+    KDF(s0, SHA256_DIGEST_LENGTH, (unsigned char*)respZrtpKey, strlen(respZrtpKey)+1,
+        KDFcontext, sizeof(KDFcontext), keyLen, zrtpKeyR);
 
     if (!multiStream) {
         // Compute the new Retained Secret
-        hmac_sha256(s0, SHA256_DIGEST_LENGTH, (unsigned char*)retainedSec, strlen(retainedSec),
-                    newRs1, &macLen);
+        KDF(s0, SHA256_DIGEST_LENGTH, (unsigned char*)retainedSec, strlen(retainedSec)+1,
+            KDFcontext, sizeof(KDFcontext), SHA256_DIGEST_LENGTH*8, newRs1);
 
         // Compute the ZRTP Session Key
-        hmac_sha256(s0, SHA256_DIGEST_LENGTH, (unsigned char*)zrtpSessionKey, strlen(zrtpSessionKey),
-                    zrtpSession, &macLen);
+        KDF(s0, SHA256_DIGEST_LENGTH, (unsigned char*)zrtpSessionKey, strlen(zrtpSessionKey)+1,
+            KDFcontext, sizeof(KDFcontext), SHA256_DIGEST_LENGTH*8, zrtpSession);
 
         // perform SAS generation according to chapter 5.5 and 8.
         // we don't need a speciai sasValue filed. sasValue are the first 
         // (leftmost) 32 bits (4 bytes) of sasHash
         uint8_t sasBytes[4];
-        hmac_sha256(zrtpSession, SHA256_DIGEST_LENGTH, (unsigned char*)sasString, strlen(sasString),
-                    sasHash, &macLen);
+        KDF(zrtpSession, SHA256_DIGEST_LENGTH, (unsigned char*)sasString, strlen(sasString)+1,
+            sasContext, sizeof(sasContext), SHA256_DIGEST_LENGTH*8, sasHash);
 
         // according to chapter 8 only the leftmost 20 bits of sasValue (aka
         //  sasHash) are used to create the character SAS string of type SAS 
@@ -1708,6 +1772,7 @@ void ZRtp::computeSRTPKeys() {
         sasBytes[3] = 0;
         SAS = Base32(sasBytes, 20).getEncoded();
     }
+    memset(KDFcontext, 0, sizeof(KDFcontext));
 }
 
 bool ZRtp::srtpSecretsReady(EnableSecurity part) {

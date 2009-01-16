@@ -1,3 +1,15 @@
+== GNU ZRTP 1.4.2 ==
+
+Introduce the Key Derivation Function (KDF) as defined in
+[http://tools.ietf.org/html/draft-zimmermann-avt-zrtp-12].
+
+The ZRTP protocol version was updated to 1.10.
+
+=== Interface changes in 1.4.2 ===
+
+No interfaces were changes, API and ABI remain stable.
+
+
 == GNU ZRTP 1.4.0 ==
 
 This is the first release that is conformant to the ZRTP specification

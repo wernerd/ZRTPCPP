@@ -24,8 +24,8 @@
  */
 //                                  1
 //                         1234567890123456
-const char *clientId =    "GNU ZRTP 1.4.0  "; // 16 chars
-const char *zrtpVersion = "1.00";	// must be 4 chars
+const char *clientId =    "GNU ZRTP 1.4.2  "; // 16 chars
+const char *zrtpVersion = "1.10";	// must be 4 chars
 /**
  *
  */
@@ -64,6 +64,8 @@ const char* sasString = "SAS";
 const char* KDFString = "ZRTP-HMAC-KDF";
 
 const char* zrtpSessionKey = "ZRTP Session Key";
+
+const char* zrtpMsk = "ZRTP MSK";
 
 /**
  * The arrays are sorted: the most secure / best algorithm is first in the

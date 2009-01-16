@@ -19,7 +19,8 @@ BuildRequires: @BUILD_REQ@
 This library is a GPL licensed extension to the GNU RTP Stack (GNU ccrtp).
 This extension offers a C++ implementation of Phil Zimmermann's ZRTP 
 specification. The current release is based on 
-draft-zimmermann-avt-zrtp-08x.txt. Phil's Zfone site provides more 
+draft-zimmermann-avt-zrtp-12.txt which is intended to become the
+RFC. Phil's Zfone site provides more 
 information, see http://zfoneproject.com/index.html
 
 This implementation was tested to work with Phil's Zfone implementation
@@ -36,6 +37,8 @@ is not supported.
 %package -n %{_libname}
 Group: System/Libraries
 Summary: Runtime library for GNU ZRTP Stack
+Requires: ccrtp >= 1.5.0
+Requires: @PACKAGE_REQ@
 Provides: %{name} = %{version}-%{release}
 
 %package -n %{_devname}
@@ -87,6 +90,10 @@ documentation for building applications that use libzrtpcpp.
 %postun -n %{_devname} -p /sbin/ldconfig
 
 %changelog
+* Fri Jan 26 2009 - werner.dittmann@t-online.de
+- Update to version 1.4.2 to support the latest ZRTP
+  specification draft-zimmermann-avt-zrtp-12
+
 * Fri Aug 22 2008 - dyfet@gnutelephony.org
 - Adapted for newer library naming conventions.
 
