@@ -571,7 +571,7 @@ bool ZrtpQueue::checkSASSignature(std::string sas) {
     if (zrtpUserCallback != NULL) {
         return zrtpUserCallback->checkSASSignature(sas);
     }
-	return false; //FIXME: confirm
+    return false;
 }
 
 void ZrtpQueue::setEnableZrtp(bool onOff)   {
@@ -598,12 +598,12 @@ void ZrtpQueue::requestGoClear()  { }
 
 void ZrtpQueue::setAuxSecret(uint8* data, int32_t length)  {
     if (zrtpEngine != NULL)
-	zrtpEngine->setAuxSecret(data, length);
+        zrtpEngine->setAuxSecret(data, length);
 }
 
 void ZrtpQueue::setPbxSecret(uint8* data, int32 length)  {
     if (zrtpEngine != NULL)
-	zrtpEngine->setPbxSecret(data, length);
+        zrtpEngine->setPbxSecret(data, length);
 }
 
 void ZrtpQueue::setUserCallback(ZrtpUserCallback* ucb) {
@@ -616,50 +616,50 @@ void ZrtpQueue::setClientId(std::string id) {
 
 std::string ZrtpQueue::getHelloHash()  {
     if (zrtpEngine != NULL)
-	return zrtpEngine->getHelloHash();
+        return zrtpEngine->getHelloHash();
     else
-	return std::string();
+        return std::string();
 }
 
 std::string ZrtpQueue::getMultiStrParams()  {
     if (zrtpEngine != NULL)
-	return zrtpEngine->getMultiStrParams();
+        return zrtpEngine->getMultiStrParams();
     else
-	return std::string();
+        return std::string();
 }
 
 void ZrtpQueue::setMultiStrParams(std::string parameters)  {
     if (zrtpEngine != NULL)
-		zrtpEngine->setMultiStrParams(parameters);
+        zrtpEngine->setMultiStrParams(parameters);
 }
 
 bool ZrtpQueue::isMultiStream()  {
     if (zrtpEngine != NULL)
-		return zrtpEngine->isMultiStream();
-	return false; //FIXME: confirm
+        return zrtpEngine->isMultiStream();
+    return false;
 }
 
 void ZrtpQueue::acceptEnrollment(bool accepted) {
     if (zrtpEngine != NULL)
-		zrtpEngine->acceptEnrollment(accepted);
+        zrtpEngine->acceptEnrollment(accepted);
 }
 
 bool ZrtpQueue::setSignatureData(uint8* data, int32 length) {
     if (zrtpEngine != NULL) 
-		return zrtpEngine->setSignatureData(data, length);
-	return 0; //FIXME: confirm
+        return zrtpEngine->setSignatureData(data, length);
+    return 0;
 }
 
 int32 ZrtpQueue::getSignatureData(uint8* data) {
     if (zrtpEngine != NULL) 
-		return zrtpEngine->getSignatureData(data);
-	return 0; //FIXME: confirm
+        return zrtpEngine->getSignatureData(data);
+    return 0;
 }
 
 int32 ZrtpQueue::getSignatureLength() {
     if (zrtpEngine != NULL) 
-		return zrtpEngine->getSignatureLength();
-	return 0;	//FIXME: confirm...
+        return zrtpEngine->getSignatureLength();
+    return 0;
 }
 
 void ZrtpQueue::setPBXEnrollment(bool yesNo) {
@@ -675,7 +675,7 @@ int32 ZrtpQueue::getZid(uint8* data) {
     if (zrtpEngine != NULL)
         return zrtpEngine->getZid(data);
 
-	return 0;	//FIXME: confirm default return??
+    return 0;
 }
 
 IncomingZRTPPkt::IncomingZRTPPkt(const unsigned char* const block, size_t len) :
