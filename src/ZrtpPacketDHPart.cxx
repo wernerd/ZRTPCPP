@@ -58,7 +58,6 @@ ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t *data) {
 
     int16_t len = getLength();
     DEBUGOUT((fprintf(stdout, "DHPart length: %d\n", len)));
-    SupportedPubKeys pkt;
     if (len == 117) {
 	dhLength = 384;
     }
