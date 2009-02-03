@@ -1703,7 +1703,7 @@ void ZRtp::generateKeysMultiStream() {
 void ZRtp::computeSRTPKeys() {
 
     uint8_t KDFcontext[sizeof(peerZid)+sizeof(zid)+sizeof(messageHash)];
-    uint8_t sasContext[sizeof(peerZid)+sizeof(zid)];
+//    uint8_t sasContext[sizeof(peerZid)+sizeof(zid)];
 
     uint32_t keyLen = (cipher == Aes128) ? 128 :256;
 
@@ -1711,15 +1711,15 @@ void ZRtp::computeSRTPKeys() {
         memcpy(KDFcontext, peerZid, sizeof(peerZid));
         memcpy(KDFcontext+sizeof(peerZid), zid, sizeof(zid));
 
-        memcpy(sasContext, peerZid, sizeof(peerZid));
-        memcpy(sasContext+sizeof(peerZid), zid, sizeof(zid));
+//        memcpy(sasContext, peerZid, sizeof(peerZid));
+//        memcpy(sasContext+sizeof(peerZid), zid, sizeof(zid));
     }
     else {
         memcpy(KDFcontext, zid, sizeof(zid));
         memcpy(KDFcontext+sizeof(zid), peerZid, sizeof(peerZid));
 
-        memcpy(sasContext, zid, sizeof(zid));
-        memcpy(sasContext+sizeof(zid), peerZid, sizeof(peerZid));
+//        memcpy(sasContext, zid, sizeof(zid));
+//        memcpy(sasContext+sizeof(zid), peerZid, sizeof(peerZid));
     }
     memcpy(KDFcontext+sizeof(zid)+sizeof(peerZid), messageHash, sizeof(messageHash));
 
@@ -1760,8 +1760,8 @@ void ZRtp::computeSRTPKeys() {
         // we don't need a speciai sasValue filed. sasValue are the first 
         // (leftmost) 32 bits (4 bytes) of sasHash
         uint8_t sasBytes[4];
-        KDF(zrtpSession, SHA256_DIGEST_LENGTH, (unsigned char*)sasString, strlen(sasString)+1,
-            sasContext, sizeof(sasContext), SHA256_DIGEST_LENGTH*8, sasHash);
+        KDF(s0, SHA256_DIGEST_LENGTH, (unsigned char*)sasString, strlen(sasString)+1,
+            KDFcontext, sizeof(KDFcontext), SHA256_DIGEST_LENGTH*8, sasHash);
 
         // according to chapter 8 only the leftmost 20 bits of sasValue (aka
         //  sasHash) are used to create the character SAS string of type SAS 
