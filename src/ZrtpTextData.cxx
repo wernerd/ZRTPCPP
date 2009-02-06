@@ -24,7 +24,7 @@
  */
 //                                  1
 //                         1234567890123456
-const char *clientId =    "GNU ZRTP 1.4.2  "; // 16 chars
+const char *clientId =    "GNU ZRTP 1.4.3  "; // 16 chars
 const char *zrtpVersion = "1.10";	// must be 4 chars
 /**
  *
