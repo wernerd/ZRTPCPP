@@ -67,7 +67,6 @@ void* createSha256Context()
 
 void closeSha256Context(void* ctx, unsigned char* digest)
 {
-    gcry_error_t err = 0;
     gcry_md_hd_t hd = (gcry_md_hd_t)ctx;
 
     if (digest != NULL) {

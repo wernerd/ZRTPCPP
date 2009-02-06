@@ -135,7 +135,7 @@ OST_MAINTAINER_MODE
 # OST_CC_ENDIAN - now in Common C++
 # Are we using the GNU compiler?
 if test x"$GCC" = xyes ; then
-		CXXFLAGS="$CXXFLAGS -Wno-long-long"
+		CXXFLAGS="$CXXFLAGS -Wno-long-long -Wno-char-subscripts"
         WARN_FLAGS="-Wall -ansi -pedantic"
 else
         WARN_FLAGS=""
@@ -183,6 +183,7 @@ LIB_MAJOR=`echo $LT_VERSION | sed -e 's/[:].*$//'`
 
 AC_SUBST(LIB_VERSION)
 AC_SUBST(LIB_MAJOR)
+AC_SUBST(LT_VERSION)
 
 AC_SUBST(CRYPTOBACKEND)
 AC_SUBST(PACKAGE_REQ)
