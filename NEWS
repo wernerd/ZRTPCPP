@@ -1,7 +1,13 @@
-== GNU ZRTP 1.4.3 ==
+== GNU ZRTP 1.4.4 ==
 
 Implement the Ping/PingAck packets and associated protocol extensions
 as defined in [http://tools.ietf.org/html/draft-zimmermann-avt-zrtp-15].
+
+=== Interface changes in 1.4.3 ===
+
+No external interfaces were changed, external API and ABI remain stable.
+Internal interface modifications only to implement Ping/PingAck handling.
+
 
 == GNU ZRTP 1.4.2 ==
 
@@ -12,7 +18,7 @@ The ZRTP protocol version was updated to 1.10.
 
 === Interface changes in 1.4.2 ===
 
-No interfaces were changes, API and ABI remain stable.
+No interfaces were changed, API and ABI remain stable.
 
 
 == GNU ZRTP 1.4.0 ==
