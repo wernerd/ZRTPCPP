@@ -1,3 +1,8 @@
+== GNU ZRTP 1.4.3 ==
+
+Implement the Ping/PingAck packets and associated protocol extensions
+as defined in [http://tools.ietf.org/html/draft-zimmermann-avt-zrtp-15].
+
 == GNU ZRTP 1.4.2 ==
 
 Introduce the Key Derivation Function (KDF) as defined in

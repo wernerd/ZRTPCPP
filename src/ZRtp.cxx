@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006-2008 Werner Dittmann
+  Copyright (C) 2006-2009 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -134,11 +134,12 @@ ZRtp::~ZRtp() {
     memset(zrtpSession, 0, SHA256_DIGEST_LENGTH);
 }
 
-void ZRtp::processZrtpMessage(uint8_t *message) {
+void ZRtp::processZrtpMessage(uint8_t *message, uint32_t pSSRC) {
     Event_t ev;
 
+    peerSSRC = pSSRC;
     ev.type = ZrtpPacket;
-    ev.data.packet = message;
+    ev.packet = message;
 
     if (stateEngine != NULL) {
         stateEngine->processEvent(&ev);
@@ -149,7 +150,6 @@ void ZRtp::processTimeout() {
     Event_t ev;
 
     ev.type = Timer;
-    ev.data.packet = NULL;
     if (stateEngine != NULL) {
         stateEngine->processEvent(&ev);
     }
@@ -168,7 +168,7 @@ bool ZRtp::handleGoClear(uint8_t *message)
         Event_t ev;
 
         ev.type = ZrtpGoClear;
-        ev.data.packet = message;
+        ev.packet = message;
         if (stateEngine != NULL) {
             stateEngine->processEvent(&ev);
         }
@@ -1125,6 +1125,17 @@ ZrtpPacketError* ZRtp::prepareError(uint32_t errMsg) {
     return &zrtpError;
 }
 
+ZrtpPacketPingAck* ZRtp::preparePingAck(ZrtpPacketPing* ppkt) {
+
+    // Because we do not support ZRTP proxy mode use the truncated ZID.
+    // If this code shall be used in ZRTP proxy implementation the computation
+    // of the endpoint hash must be enhanced (see chaps 5.15ff and 5.16)
+    zrtpPingAck.setLocalEpHash(zid);
+    zrtpPingAck.setRemoteEpHash(ppkt->getEpHash());
+    zrtpPingAck.setSSRC(peerSSRC);
+    return &zrtpPingAck;
+}
+
 // TODO Implement GoClear handling
 ZrtpPacketClearAck* ZRtp::prepareClearAck(ZrtpPacketGoClear* gpkt) {
     sendInfo(Warning, WarningGoClearReceived);
@@ -1703,23 +1714,16 @@ void ZRtp::generateKeysMultiStream() {
 void ZRtp::computeSRTPKeys() {
 
     uint8_t KDFcontext[sizeof(peerZid)+sizeof(zid)+sizeof(messageHash)];
-//    uint8_t sasContext[sizeof(peerZid)+sizeof(zid)];
 
     uint32_t keyLen = (cipher == Aes128) ? 128 :256;
 
     if (myRole == Responder) {
         memcpy(KDFcontext, peerZid, sizeof(peerZid));
         memcpy(KDFcontext+sizeof(peerZid), zid, sizeof(zid));
-
-//        memcpy(sasContext, peerZid, sizeof(peerZid));
-//        memcpy(sasContext+sizeof(peerZid), zid, sizeof(zid));
     }
     else {
         memcpy(KDFcontext, zid, sizeof(zid));
         memcpy(KDFcontext+sizeof(zid), peerZid, sizeof(peerZid));
-
-//        memcpy(sasContext, zid, sizeof(zid));
-//        memcpy(sasContext+sizeof(zid), peerZid, sizeof(peerZid));
     }
     memcpy(KDFcontext+sizeof(zid)+sizeof(peerZid), messageHash, sizeof(messageHash));
 
@@ -1925,10 +1929,10 @@ std::string ZRtp::getMultiStrParams() {
 
     // the string will hold binary data - it's opaque to the application
     std::string str("");
-    char tmp[SHA256_DIGEST_LENGTH + 1 + 1 + 1]; // digest length + cipher + authLength +hash
+    char tmp[SHA256_DIGEST_LENGTH + 1 + 1 + 1]; // digest length + cipher + authLength + hash
 
     if (inState(SecureState) && !multiStream) {
-        // construct array that holds zrtpSession, cipher type and auth-length
+        // construct array that holds zrtpSession, cipher type, auth-length, and hash type
         memcpy(tmp, zrtpSession, SHA256_DIGEST_LENGTH);
         tmp[SHA256_DIGEST_LENGTH] = cipher;          //cipher is enumeration (int)
         tmp[SHA256_DIGEST_LENGTH + 1] = authLength;  //authLength is enumeration (int)
@@ -1971,7 +1975,7 @@ void ZRtp::conf2AckSecure() {
     Event_t ev;
 
     ev.type = ZrtpPacket;
-    ev.data.packet = (uint8_t*)&zrtpConf2Ack;
+    ev.packet = (uint8_t*)&zrtpConf2Ack;
 
     if (stateEngine != NULL) {
         stateEngine->processEvent(&ev);
@@ -1988,9 +1992,7 @@ int32_t ZRtp::getSignatureLength() {
 }
 
 int32_t ZRtp::compareCommit(ZrtpPacketCommit *commit) {
-    // TODO: enhance to compare according to rules defined in chapter 5.2
-    // This would imply that we have to reset multi-stream mode if the other
-    // peer sends a Commit with DH mode - ist this possible?
+    // TODO: enhance to compare according to rules defined in chapter 4.2
     int32_t len = 0;
     len = !multiStream ? SHA256_DIGEST_LENGTH : (4 * ZRTP_WORD_SIZE);
     return (memcmp(hvi, commit->getHvi(), len)); 

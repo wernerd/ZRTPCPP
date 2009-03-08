@@ -41,6 +41,8 @@ const char* ErrorMsg =    "Error   ";
 const char* ErrorAckMsg = "ErrorACK";
 const char* GoClearMsg =  "GoClear ";
 const char* ClearAckMsg = "ClearACK";
+const char* PingMsg =     "Ping    ";
+const char* PingAckMsg =  "PingACK ";
 
 /**
  *

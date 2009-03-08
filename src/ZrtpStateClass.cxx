@@ -88,7 +88,7 @@ void ZrtpStateClass::processEvent(Event_t *ev) {
     parent->synchEnter();
 
     if (event->type == ZrtpPacket) {
-	pkt = event->data.packet;
+	pkt = event->packet;
 	msg = (char *)pkt + 4;
 	first = tolower(*msg);
 	middle = tolower(*(msg+4));
@@ -109,6 +109,13 @@ void ZrtpStateClass::processEvent(Event_t *ev) {
             ZrtpPacketErrorAck* eapkt = parent->prepareErrorAck(&epkt);
             parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(eapkt));
             event->type = ErrorPkt;
+        }
+        else if (first == 'p' && middle == ' ' && last == ' ') {
+            ZrtpPacketPing ppkt(pkt);
+            ZrtpPacketPingAck* ppktAck = parent->preparePingAck(&ppkt);
+            parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(ppktAck));
+            parent->synchLeave();
+            return;
         }
     }
     /*
@@ -198,7 +205,7 @@ void ZrtpStateClass::evDetect(void) {
      * the real event.
      */
     if (event->type == ZrtpPacket) {
-        pkt = event->data.packet;
+        pkt = event->packet;
         msg = (char *)pkt + 4;
 
         first = tolower(*msg);
@@ -328,7 +335,7 @@ void ZrtpStateClass::evAckSent(void) {
      * the real event.
      */
     if (event->type == ZrtpPacket) {
-        pkt = event->data.packet;
+        pkt = event->packet;
 	msg = (char *)pkt + 4;
 
 	first = tolower(*msg);
@@ -483,7 +490,7 @@ void ZrtpStateClass::evAckDetected(void) {
     uint32_t errorCode = 0;
 
     if (event->type == ZrtpPacket) {
-        pkt = event->data.packet;
+        pkt = event->packet;
         msg = (char *)pkt + 4;
 
         first = tolower(*msg);
@@ -585,7 +592,7 @@ void ZrtpStateClass::evWaitCommit(void) {
     uint32_t errorCode = 0;
 
     if (event->type == ZrtpPacket) {
-        pkt = event->data.packet;
+        pkt = event->packet;
         msg = (char *)pkt + 4;
 
         first = tolower(*msg);
@@ -682,7 +689,7 @@ void ZrtpStateClass::evCommitSent(void) {
     uint32_t errorCode = 0;
 
     if (event->type == ZrtpPacket) {
-        pkt = event->data.packet;
+        pkt = event->packet;
         msg = (char *)pkt + 4;
 
         first = tolower(*msg);
@@ -873,7 +880,7 @@ void ZrtpStateClass::evWaitDHPart2(void) {
     uint32_t errorCode = 0;
 
     if (event->type == ZrtpPacket) {
-        pkt = event->data.packet;
+        pkt = event->packet;
         msg = (char *)pkt + 4;
 
         first = tolower(*msg);
@@ -951,7 +958,7 @@ void ZrtpStateClass::evWaitConfirm1(void) {
     uint32_t errorCode = 0;
 
     if (event->type == ZrtpPacket) {
-        pkt = event->data.packet;
+        pkt = event->packet;
         msg = (char *)pkt + 4;
 
         first = tolower(*msg);
@@ -986,7 +993,7 @@ void ZrtpStateClass::evWaitConfirm1(void) {
             if (startTimer(&T2) <= 0) {
                 timerFailed(SevereNoTimer);  // returns to state Initial
             }
-            // according to chap 5.6: after sending Confirm2 the Initiator must
+            // according to chap 5.8: after sending Confirm2 the Initiator must
             // be ready to receive SRTP data. SRTP sender will be enabled in WaitConfAck
             // state.
             if (!parent->srtpSecretsReady(ForReceiver)) {
@@ -1025,7 +1032,6 @@ void ZrtpStateClass::evWaitConfirm1(void) {
  * When entering this transition function
  * - Responder mode
  * - sentPacket contains Confirm1 packet, no timer active
- * - Security switched on
  *
  * Possible events in this state are:
  * - DHPart2: Our peer didn't receive our Confirm1 thus sends DHPart2 again.
@@ -1042,7 +1048,7 @@ void ZrtpStateClass::evWaitConfirm2(void) {
     uint32_t errorCode = 0;
 
     if (event->type == ZrtpPacket) {
-        pkt = event->data.packet;
+        pkt = event->packet;
         msg = (char *)pkt + 4;
 
         first = tolower(*msg);
@@ -1110,7 +1116,7 @@ void ZrtpStateClass::evWaitConfirm2(void) {
  * When entering this transition function
  * - Initiator mode
  * - sentPacket contains Confirm2 packet, Confirm2 timer active
- * - sender and receiver security switched on
+ * - receiver security switched on
  *
  * Possible events in this state are:
  * - timeout for sent Confirm2 packet: causes a resend check and repeat sending
@@ -1125,7 +1131,7 @@ void ZrtpStateClass::evWaitConfAck(void) {
     uint8_t *pkt;
 
     if (event->type == ZrtpPacket) {
-        pkt = event->data.packet;
+        pkt = event->packet;
         msg = (char *)pkt + 4;
 
         first = tolower(*msg);
@@ -1153,10 +1159,12 @@ void ZrtpStateClass::evWaitConfAck(void) {
     else if (event->type == Timer) {
         if (!parent->sendPacketZRTP(sentPacket)) {
             sendFailed();             // returns to state Initial
+            parent->srtpSecretsOff(ForReceiver);
             return;
         }
         if (nextTimer(&T2) <= 0) {
             timerFailed(SevereTooMuchRetries); // returns to state Initial
+            parent->srtpSecretsOff(ForReceiver);
         }
     }
     else {  // unknown Event type for this state (covers Error and ZrtpClose)
@@ -1165,6 +1173,7 @@ void ZrtpStateClass::evWaitConfAck(void) {
         }
         sentPacket = NULL;
         nextState(Initial);
+        parent->srtpSecretsOff(ForReceiver);
     }
 }
 
@@ -1180,7 +1189,7 @@ void ZrtpStateClass::evWaitClearAck(void) {
     uint8_t *pkt;
 
     if (event->type == ZrtpPacket) {
-	pkt = event->data.packet;
+	pkt = event->packet;
 	msg = (char *)pkt + 4;
 
 	first = tolower(*msg);
@@ -1242,7 +1251,7 @@ void ZrtpStateClass::evWaitErrorAck(void) {
     uint8_t *pkt;
 
     if (event->type == ZrtpPacket) {
-        pkt = event->data.packet;
+        pkt = event->packet;
         msg = (char *)pkt + 4;
 
         first = tolower(*msg);
@@ -1286,7 +1295,7 @@ void ZrtpStateClass::evSecureState(void) {
     uint8_t *pkt;
 
     if (event->type == ZrtpPacket) {
-        pkt = event->data.packet;
+        pkt = event->packet;
         msg = (char *)pkt + 4;
 
         first = tolower(*msg);

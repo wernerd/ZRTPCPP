@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006-2007 Werner Dittmann
+  Copyright (C) 2006-2009 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -30,6 +30,8 @@
 #include <libzrtpcpp/ZrtpPacketClearAck.h>
 #include <libzrtpcpp/ZrtpPacketError.h>
 #include <libzrtpcpp/ZrtpPacketErrorAck.h>
+#include <libzrtpcpp/ZrtpPacketPing.h>
+#include <libzrtpcpp/ZrtpPacketPingAck.h>
 #include <libzrtpcpp/ZrtpCallback.h>
 #include <libzrtpcpp/ZIDRecord.h>
 
@@ -117,10 +119,12 @@ class ZRtp {
      * @param extHeader
      *    A pointer to the first byte of the extension header. Refer to
      *    RFC3550.
+     * @param peerSSRC
+     *    The peer's SSRC.
      * @return
      *    Code indicating further packet handling, see description above.
      */
-    void processZrtpMessage(uint8_t *extHeader);
+    void processZrtpMessage(uint8_t *extHeader, uint32_t peerSSRC);
 
     /**
      * Process a timeout event.
@@ -564,6 +568,7 @@ private:
     ZrtpPacketCommit   zrtpCommit;
     ZrtpPacketConfirm  zrtpConfirm1;
     ZrtpPacketConfirm  zrtpConfirm2;
+    ZrtpPacketPingAck  zrtpPingAck;
 
     /**
      * Random IV data to encrypt the confirm data, 128 bit for AES
@@ -579,6 +584,7 @@ private:
     uint8_t* signatureData;       // will be allocated when needed
     int32_t  signatureLength;     // overall length in bytes
 
+    uint32_t peerSSRC;            // peer's SSRC, required to setup PingAck packet
     /**
      * Find the best Hash algorithm that is offered in Hello.
      *
@@ -874,6 +880,14 @@ private:
      *     otherwise.
      */
     ZrtpPacketClearAck* prepareClearAck(ZrtpPacketGoClear* gpkt);
+
+    /**
+     * Prepare the ErrorAck packet.
+     *
+     * This method prepares the ErrorAck packet. The input to this method is the
+     * Error packet received from the peer.
+     */
+    ZrtpPacketPingAck* preparePingAck(ZrtpPacketPing* ppkt);
 
     /**
      * Prepare a GoClearAck packet w/o HMAC

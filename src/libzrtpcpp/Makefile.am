@@ -1,4 +1,4 @@
-# Copyright (C) 2006 Werner Dittmann.
+# Copyright (C) 2006-2009 Werner Dittmann.
 #
 # This file is free software; as a special exception the author gives
 # unlimited permission to copy and/or distribute it, with or without
@@ -9,19 +9,19 @@
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 AUTOMAKE_OPTIONS = no-dependencies dist-shar
-ccxxincludedir=$(includedir)/libzrtpcpp
+zrtpincludedir=$(includedir)/libzrtpcpp
 
 if CCRTP_SUPPORT
 ccrtp_noinst = 
 ccrtp_inst = ZrtpQueue.h ZrtpUserCallback.h zrtpccrtp.h TimeoutProvider.h
 endif
 
-ccxxinclude_HEADERS = ZrtpCodes.h ZrtpCallback.h $(ccrtp_inst)
+zrtpinclude_HEADERS = ZrtpCodes.h ZrtpCallback.h $(ccrtp_inst)
 
 
 noinst_HEADERS =  Base32.h        ZrtpPacketBase.h      ZrtpPacketDHPart.h    ZrtpPacketHello.h \
 		  ZIDFile.h       ZrtpPacketClearAck.h  ZrtpStateClass.h      ZrtpCrc32.h \
 		  ZIDRecord.h     ZrtpPacketCommit.h    ZrtpPacketGoClear.h   ZrtpStates.h \
-		  ZrtpPacketConf2Ack.h  zrtpPacket.h          ZrtpTextData.h \
+		  ZrtpPacketConf2Ack.h  zrtpPacket.h    ZrtpTextData.h \
 		  ZRtp.h          ZrtpPacketConfirm.h   ZrtpPacketHelloAck.h  ZrtpPacketError.h \
-		  ZrtpPacketErrorAck.h  $(ccrtp_noinst)
+		  ZrtpPacketErrorAck.h  ZrtpPacketPingAck.h ZrtpPacketPing.h $(ccrtp_noinst)

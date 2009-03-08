@@ -66,10 +66,7 @@ enum EventDataType {
 
 typedef struct Event {
     EventDataType type;
-    union {
-	uint8_t* packet;
-	int32_t* timer;
-    } data;
+    uint8_t* packet;
 } Event_t;
 
 

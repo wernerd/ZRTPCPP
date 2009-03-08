@@ -45,6 +45,8 @@ extern char* ErrorMsg;
 extern char* ErrorAckMsg;
 extern char* GoClearMsg;
 extern char* ClearAckMsg;
+extern char* PingMsg;
+extern char* PingAckMsg;
 
 /**
  *

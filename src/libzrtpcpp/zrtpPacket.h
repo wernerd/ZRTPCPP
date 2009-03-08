@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006-2007 Werner Dittmann
+  Copyright (C) 2006-2009 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@
  * the fileds and their lengths.
  */
 
-// The ZRTP Message header, refer to chapter 6ff
+// The ZRTP Message header, refer to chapter 5ff
 typedef struct zrtpPacketHeader {
     uint16_t    zrtpId;
     uint16_t    length;
@@ -50,6 +50,9 @@ typedef struct Hello {
     uint32_t	flagLength;
 } Hello_t;
 
+// The Hello packet has variable length. The following struct
+// defines the fixed part only. The Hello class initializes the
+// variable part.
 typedef struct HelloPacket {
     zrtpPacketHeader_t hdr;
     Hello_t hello;
@@ -87,9 +90,12 @@ typedef struct DHPart {
     uint8_t pbxSecretId[2*ZRTP_WORD_SIZE];
 }  DHPart_t;
 
+// The DHPart packet has variable length. The following struct
+// defines the fixed part only. The DHPart class initializes the
+// variable part.
 typedef struct DHPartPacket {
     zrtpPacketHeader_t hdr;
-    DHPart_t dhPart;           // Since 0.4a
+    DHPart_t dhPart;
 } DHPartPacket_t;
 
 typedef struct Confirm {
@@ -102,6 +108,9 @@ typedef struct Confirm {
     uint32_t    expTime;
 } Confirm_t;
 
+// The Confirm packet has variable length. The following struct
+// defines the fixed part only. The Confirm class initializes the
+// variable part.
 typedef struct ConfirmPacket {
     zrtpPacketHeader_t hdr;
     Confirm_t confirm;
@@ -112,6 +121,8 @@ typedef struct Conf2AckPacket {
     uint8_t     crc[ZRTP_WORD_SIZE];
 } Conf2AckPacket_t;
 
+// The GoClear and ClearAck packet are currently not used in
+//GNU ZRTP C++ - not support for GoClear
 typedef struct GoClear {
     uint8_t clearHmac[2*ZRTP_WORD_SIZE];
 } GoClear_t;
@@ -141,6 +152,30 @@ typedef struct ErrorAckPacket {
     zrtpPacketHeader_t hdr;
     uint8_t crc[ZRTP_WORD_SIZE];
 } ErrorAckPacket_t;
+
+typedef struct Ping {
+    uint8_t version[ZRTP_WORD_SIZE];
+    uint8_t epHash[2*ZRTP_WORD_SIZE];
+} Ping_t;
+
+typedef struct PingPacket {
+    zrtpPacketHeader_t hdr;
+    Ping_t ping;
+    uint8_t crc[ZRTP_WORD_SIZE];
+} PingPacket_t;
+
+typedef struct PingAck {
+    uint8_t version[ZRTP_WORD_SIZE];
+    uint8_t localEpHash[2*ZRTP_WORD_SIZE];
+    uint8_t remoteEpHash[2*ZRTP_WORD_SIZE];
+    uint32_t ssrc;
+} PingAck_t;
+
+typedef struct PingAckPacket {
+    zrtpPacketHeader_t hdr;
+    PingAck_t pingAck;
+    uint8_t crc[ZRTP_WORD_SIZE];
+} PingAckPacket_t;
 
 #endif // ZRTPPACKET_H
 
