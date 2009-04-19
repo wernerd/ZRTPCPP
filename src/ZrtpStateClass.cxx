@@ -253,6 +253,7 @@ void ZrtpStateClass::evDetect(void) {
             if (startTimer(&T1) <= 0) {        // restart own Hello timer/counter
                 timerFailed(SevereNoTimer);    // returns to state Initial
             }
+            T1.maxResend = 60;                 // more retries to extend time, see chap. 6
         }
         return;      // unknown packet for this state - Just ignore it
     }
