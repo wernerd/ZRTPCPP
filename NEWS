@@ -1,3 +1,17 @@
+== GNU ZRTP 1.4.5 ==
+
+Modify the Hello repeat timer handling to accomodate slow connections and/or
+slow devices. 
+
+Fix a problem when the other party sends only ZRTP packets at the beginning
+of a RTP session.
+
+=== Interface changes in 1.4.5 ===
+
+No external interfaces were changed, external API and ABI remain stable.
+Internal interface modifications only to implement Ping/PingAck handling.
+
+
 == GNU ZRTP 1.4.4 ==
 
 Implement the Ping/PingAck packets and associated protocol extensions

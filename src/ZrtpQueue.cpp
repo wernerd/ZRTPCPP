@@ -178,10 +178,15 @@ ZrtpQueue::takeInDataPacket(void)
             delete packet;
             return 0;
         }
-        unsigned char* extHeader =
-                const_cast<unsigned char*>(packet->getHdrExtContent());
+        // cover the case if the other party sends _only_ ZRTP packets at the
+        // beginning of a session. Start ZRTP in this case as well.
+        if (!started) {
+            startZrtp();
+         }
         // this now points beyond the undefined and length field.
         // We need them, thus adjust
+        unsigned char* extHeader =
+                const_cast<unsigned char*>(packet->getHdrExtContent());
         extHeader -= 4;
 
         // store peer's SSRC, used when creating the CryptoContext
@@ -225,7 +230,7 @@ ZrtpQueue::rtpDataPacket(IncomingRTPPkt* packet, int32 rtn,
                 return 0;
             }
         }
-        if (!zrtpEngine->inState(SecureState)) {
+        if (started && zrtpEngine->inState(WaitConfAck)) {
             zrtpEngine->conf2AckSecure();
         }
     }
@@ -286,8 +291,8 @@ ZrtpQueue::rtpDataPacket(IncomingRTPPkt* packet, int32 rtn,
         return 0;
     }
     // Start the ZRTP engine after we got a at least one RTP packet and
-    // sent some as well
-    if (!started && enableZrtp && getSendPacketCount() >= 1) {
+    // sent some as well or we are in multi-stream mode.
+    if (!started && enableZrtp) {
         startZrtp();
     }
     return rtn;
