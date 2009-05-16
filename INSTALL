@@ -1,29 +1,5 @@
-== Installation of GNU ZRTP 1.1.0 ==
-GNU ZRTP 1.1.0 introduces a new and simpler header file structure for
-its development packet. GNU ZRTP 1.1.0 version greatly reduces the
-number of header files installed in the include directory. Only six
-header files are installed in GNU ZRTP's include directory
-''libzrtpcpp''.
 
-=== Mandatory first step: uninstall old version ===
-Before you install GNU ZRTP 1.1.0 uninstall previous version(s) of GNU
-ZRTP to remove all existing headers and existing libraries. The GNU
-ZRTP installation script by default uses the location
-''/usr/local/include/libzrtpcpp'' to store the header files and
-''/usr/local/lib'' to store the shared library. Older versions of GNU
-ZRTP implmented an older version of the ZRTP protocol that is not
-compatible with the new ZRTP specification.
-
-Depending how you installed the previous version it may be sufficient
-to use ''make uninstall'' from the base directory of the previous GNU
-ZRTP version or to remove the packet (RPM or APT packet) using the
-appropriate packet manager. Please make sure the header files and the
-libraries are really done. Check for a sub-directory name
-''libzrtpcpp'' in your usual include paths and for a library name
-''libzrtpcpp.*'' in your usual library paths if you use non-default
-paths during GNU ZRTP configuration and installation.
-
-=== Configure, build and install GNU ZRTP 1.1.0 ===
+=== Configure, build and install GNU ZRTP 1.4.x ===
 After uninstalling the prevoius version you can build and install the
 new version. Building and installation of the GNU ZRTP 1.1.0 uses the
 usual triplet of ''./configure; make; sudo make install''. By default
