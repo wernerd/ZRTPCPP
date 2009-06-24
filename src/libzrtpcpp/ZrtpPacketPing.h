@@ -39,7 +39,7 @@ class ZrtpPacketPing : public ZrtpPacketBase {
 
     void setVersion(uint8_t *text)     { memcpy(pingHeader->version, text,ZRTP_WORD_SIZE ); }
 
-    uint8_t* getEpHash()               { pingHeader->epHash; }
+    uint8_t* getEpHash()               { return pingHeader->epHash; }
 
  private:
      PingPacket_t data;
