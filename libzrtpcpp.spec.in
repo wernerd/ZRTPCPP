@@ -1,11 +1,18 @@
-%define _libname libzrtpcpp-@LIB_VERSION@-@LIB_MAJOR@
-%define _devname libzrtpcpp-devel
+# Copyright (c) 2008, 2009 David Sugar, Tycho Softworks.
+# This file is free software; as a special exception the author gives
+# unlimited permission to copy and/or distribute it, with or without
+# modifications, as long as this notice is preserved.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY, to the extent permitted by law; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.
 
-Summary: "libzrtpcpp" - a ccrtp extension for zrtp/Zfone support
+Summary: A ccrtp extension for zrtp/Zfone support
 Name: libzrtpcpp
 Version: @VERSION@
-Release: 0
-License: GPL
+Release: 0%{?dist}
+License: GPLv3+
 Group: Development/Libraries
 URL: http://www.gnu.org/software/commoncpp/commoncpp.html
 Source0: ftp://ftp.gnu.org/gnu/ccrtp/libzrtpcpp-%{PACKAGE_VERSION}.tar.gz
@@ -34,75 +41,76 @@ This release supports the basic ZRTP features, it does not support
 preshared specified in the draft. Also the specified Asterisk PBX mode
 is not supported. 
 
-%package -n %{_libname}
+%package
 Group: System/Libraries
 Summary: Runtime library for GNU ZRTP Stack
 Requires: ccrtp >= 1.5.0
 Requires: @PACKAGE_REQ@
-Provides: %{name} = %{version}-%{release}
 
-%package -n %{_devname}
+%package devel
 Group: Development/Libraries
 Summary: Headers and static link library for libzrtpcpp.
-Requires: %{name} = %{version}
+Requires: %{name} = %{version}-%{release}
 Requires: libccrtp-devel >= 1.5.0
 Requires: @BUILD_REQ@
-Provides: %{name}-devel = %{version}-%{release}
 
-%description -n %{_libname}
+%description 
 This package contains the runtime library needed by applications that use 
 the GNU ZRTP stack.
 
-%description -n %{_devname}
+%description devel
 This package provides the header files, link libraries, and
 documentation for building applications that use libzrtpcpp.
 
 %prep
-%setup
+%setup -q
 %build
-%configure
-%{__make} %{?_smp_mflags} CXXFLAGS="$RPM_OPT_FLAGS"
+
+%configure --disable-static
+%{__make} %{?_smp_mflags}
 
 %install
-
-%makeinstall
-%{__strip} %{buildroot}/%{_libdir}/lib*.so.*.*
+%{__rm} -rf %{buildroot}
+%{__make} DESTDIR=%{buildroot} INSTALL="install -p" install
+%{__rm} %{buildroot}%{_libdir}/*.la
 %{__rm} -rf %{buildroot}/%{_infodir} 
 
 %clean
 %{__rm} -rf %{buildroot}
 
-%files -n %{_libname}
-%defattr(-,root,root)
-%doc AUTHORS COPYING README NEWS INSTALL
+%files 
+%defattr(-,root,root,-)
+%doc AUTHORS COPYING README NEWS INSTALL ChangeLog
 %{_libdir}/*.so.*
 
-%files -n %{_devname}
-%defattr(-,root,root)
-%{_libdir}/*.a
+%files devel
+%defattr(-,root,root,-)
 %{_libdir}/*.so
-%{_libdir}/*.la
 %{_libdir}/pkgconfig/*.pc
-%{_includedir}/libzrtpcpp/*.h
+%{_includedir}/libzrtpcpp/
 
-%post -n %{_libname} -p /sbin/ldconfig
+%post -p /sbin/ldconfig
 
-%postun -n %{_devname} -p /sbin/ldconfig
+%postun -p /sbin/ldconfig
 
 %changelog
-* Fri Jan 26 2009 - werner.dittmann@t-online.de
+* Erd Jun 24 2009 - David Sugar <dyfet@gnutelephony.org>
+- Spec updated per current Fedora & CentOS policies.
+- Updated release 1.4.5 has all mandatory IETF interop requirements.
+
+* Fri Jan 26 2009 - Werner Dittmann <werner.dittmann@t-online.de>
 - Update to version 1.4.2 to support the latest ZRTP
   specification draft-zimmermann-avt-zrtp-12
 
-* Fri Aug 22 2008 - dyfet@gnutelephony.org
+* Fri Aug 22 2008 - David Sugar <dyfet@gnutelephony.org>
 - Adapted for newer library naming conventions.
 
-* Tue Dec 11 2007 - werner.dittmann@t-online.de
+* Tue Dec 11 2007 - Werner Dittmann <werner.dittmann@t-online.de>
 - this is the first spec file for version 1.x.x
 - remove the .la file in devel package
 - use default file atttribute instead of 755
 
-* Sat Apr 18 2007 - werner.dittmann@t-online.de
+* Sat Apr 18 2007 - Werner Dittmann <werner.dittmann@t-online.de>
 - set version to 1.1.0
 - GNU ZRTP is compatible with the latest Zfone Beta
   from April 2 2007
