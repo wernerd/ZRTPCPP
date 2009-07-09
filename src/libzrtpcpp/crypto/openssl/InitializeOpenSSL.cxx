@@ -31,6 +31,10 @@
 #include <pthread.h>
 #endif
 
+#ifdef	const
+#undef	const
+#endif
+
 static void threadLockSetup(void);
 static void threadLockCleanup(void);
 static void myLockingCallback(int, int, const char *, int);
@@ -53,6 +57,16 @@ int initializeOpenSSL ()
     }
     initialized = 1;
     threadLockSetup();
+    return 1;
+}
+
+int finalizeOpenSSL ()
+{
+    if(!initialized)
+        return 1;
+
+    initialized = 0;
+    threadLockCleanup();
     return 1;
 }
 
@@ -177,7 +191,7 @@ static void threadLockSetup(void) {
     }
 
     // CRYPTO_set_id_callback((unsigned long (*)())pthreads_thread_id);
-    CRYPTO_set_locking_callback((void (*)(int, int ,const char *, int))myLockingCallback);
+    CRYPTO_set_locking_callback((void (*)(int,int,const char *, int))myLockingCallback);
 }
 
 static void threadLockCleanup(void)
@@ -212,6 +226,7 @@ static void myLockingCallback(int mode, int type, const char *file,
     }
 }
 
+/*
 static unsigned long pthreads_thread_id(void)
 {
     unsigned long ret;
@@ -219,5 +234,6 @@ static unsigned long pthreads_thread_id(void)
     ret = (unsigned long)pthread_self();
     return(ret);
 }
+*/
 
 #endif /* LIBPTHREAD && !SOLARIS */
