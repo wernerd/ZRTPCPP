@@ -95,7 +95,10 @@ extern char* supportedCipher[];
 // Keep the PubKey identifers in supportedPubKey in the same order than the
 // following enum, starting with zero.
 enum SupportedPubKeys {
+    Dh2048,
+    // Ec256,
     Dh3072,
+    // Ec384,
     MultiStream,
     NumSupportedPubKeys
 };

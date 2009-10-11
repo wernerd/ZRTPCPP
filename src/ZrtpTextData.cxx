@@ -79,7 +79,10 @@ const char *supportedHashes[] =  {"S256"};
 const char *supportedCipher[] =  {"AES3",
                                   "AES1"};
 
-const char *supportedPubKey[] =  {"DH3k",
+const char *supportedPubKey[] =  {"DH2k",
+                                  // "EC25"
+                                  "DH3k",
+                                  // "EC38"
                                   "Mult"};
 
 const char *supportedSASType[] = {"B32 "};

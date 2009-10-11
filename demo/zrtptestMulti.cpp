@@ -498,7 +498,7 @@ int ZrtpRecvPacketTransmissionTestCB::doTest() {
                 return 1;
             }
         }
-        rx->startZrtp();
+//        rx->startZrtp();
 
         for ( int i = 0; i < 5000 ; i++ ) {
             const AppDataUnit* adu;

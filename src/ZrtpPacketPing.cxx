@@ -38,7 +38,6 @@ ZrtpPacketPing::ZrtpPacketPing(uint8_t *data) {
 
     zrtpHeader = (zrtpPacketHeader_t *)&((PingPacket_t*)data)->hdr;	// the standard header
     pingHeader = (Ping_t *)&((PingPacket_t *)data)->ping;
-
 }
 
 ZrtpPacketPing::~ZrtpPacketPing() {

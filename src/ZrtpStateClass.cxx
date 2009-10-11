@@ -506,7 +506,7 @@ void ZrtpStateClass::evAckDetected(void) {
          * - we are going to be in the Responder role
          */
 
-        if (first == 'h') {
+        if (first == 'h' && last ==' ') {
             // Parse Hello packet and build an own Commit packet even if the
             // Commit is not send to the peer. We need to do this to check the
             // Hello packet and prepare the shared secret stuff.
@@ -1154,6 +1154,7 @@ void ZrtpStateClass::evWaitConfAck(void) {
                 return;
             }
             nextState(SecureState);
+            // TODO: call parent to clear signature data at initiator
             parent->sendInfo(Info, InfoSecureStateOn);
         }
     }

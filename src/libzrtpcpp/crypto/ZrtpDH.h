@@ -23,7 +23,7 @@
 #define _ZRTPDH_H__
 
 #include <stdint.h>
-
+#include <libzrtpcpp/ZrtpTextData.h>
 
 /**
  * Generates a number of random bytes.
@@ -53,10 +53,10 @@ class ZrtpDH {
 
 private:
     void* ctx;
-    int32_t pkLength;
+    SupportedPubKeys pkType;
 
 public:
-    ZrtpDH(int32_t pl);
+    ZrtpDH(SupportedPubKeys type);
     ~ZrtpDH();
 
     /**
@@ -65,14 +65,14 @@ public:
      *
      * @return 1 on success, 0 on failure
      */
-    int32_t generateKey();
+    int32_t generatePublicKey();
 
     /**
-     * Returns the size in bytes of computed secret key.
+     * Returns the size in bytes of the DH parameter p.
      *
      * @return Size in bytes.
      */
-    int32_t getSecretSize() const;
+    int32_t getDhSize() const;
 
     /**
      * Returns the size in bytes of computed public key.
@@ -94,7 +94,7 @@ public:
     int32_t getPubKeyBytes(uint8_t *buf) const;
 
     /**
-     * Compute the secret key and return it to caller.
+     * Compute the secret key and returns it to caller.
      *
      * This method computes the secret key based on the DH parameters, the
      * private key and the peer's public key.
@@ -102,16 +102,13 @@ public:
      * @param pubKeyBytes
      *    Pointer to the peer's public key bytes. Must be in big endian order.
      *
-     * @param length
-     *    Length in bytes of the peer's public key.
-     *
      * @param secret
      *    Pointer to a buffer that receives the secret key. This buffer must
      *    have a length of at least <code>getSecretSize()</code> bytes.
      *
      * @return the size of the shared secret on success, -1 on error.
      */
-    int32_t computeKey(uint8_t *pubKeyBytes, int32_t length, uint8_t *secret);
+    int32_t computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret);
 
     /**
      * Check and validate the public key received from peer.
@@ -123,14 +120,11 @@ public:
      * @param pubKeyBytes
      *     Pointer to the peer's public key bytes. Must be in big endian order.
      *
-     * @param length
-     *    Length in bytes of the peer's public key.
-     *
      * @return 0 if check faild, 1 if public key value is ok.
      */
-    int32_t checkPubKey(uint8_t* pubKeyBytes, int32_t length) const;
+    int32_t checkPubKey(uint8_t* pubKeyBytes) const;
 
-    int32_t getDHlength() { return pkLength; }
+    SupportedPubKeys getDHtype() { return pkType; }
 };
 
 #endif // ZRTPDH_H

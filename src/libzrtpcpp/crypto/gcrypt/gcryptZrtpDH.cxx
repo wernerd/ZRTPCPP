@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006-2007 Werner Dittmann
+  Copyright (C) 2006, 2009 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/** Copyright (C) 2006
+/** Copyright (C) 2006, 2009
  *
  * @author  Werner Dittmann <Werner.Dittmann@t-online.de>
  */
@@ -27,16 +27,18 @@
 struct gcryptCtx {
     gcry_mpi_t privKey;
     gcry_mpi_t pubKey;
-    int32_t pLength;
+//    int32_t pLength;
 };
 
 extern void initializeGcrypt();
 
+static gcry_mpi_t bnP2048 = NULL;
 static gcry_mpi_t bnP3072 = NULL;
-static gcry_mpi_t bnP4096 = NULL;
+// static gcry_mpi_t bnP4096 = NULL;
 static gcry_mpi_t two = NULL;
+static gcry_mpi_t bnP2048MinusOne = NULL;
 static gcry_mpi_t bnP3072MinusOne = NULL;
-static gcry_mpi_t bnP4096MinusOne = NULL;
+// static gcry_mpi_t bnP4096MinusOne = NULL;
 
 static uint8_t dhinit = 0;
 
@@ -44,6 +46,32 @@ void randomZRTP(uint8_t *buf, int32_t length) {
     initializeGcrypt();
     gcry_randomize(buf, length, GCRY_STRONG_RANDOM);
 }
+
+static const uint8_t P2048[] =
+{
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xC9, 0x0F, 0xDA, 0xA2, 
+    0x21, 0x68, 0xC2, 0x34, 0xC4, 0xC6, 0x62, 0x8B, 0x80, 0xDC, 0x1C, 0xD1,
+    0x29, 0x02, 0x4E, 0x08, 0x8A, 0x67, 0xCC, 0x74, 0x02, 0x0B, 0xBE, 0xA6, 
+    0x3B, 0x13, 0x9B, 0x22, 0x51, 0x4A, 0x08, 0x79, 0x8E, 0x34, 0x04, 0xDD,
+    0xEF, 0x95, 0x19, 0xB3, 0xCD, 0x3A, 0x43, 0x1B, 0x30, 0x2B, 0x0A, 0x6D, 
+    0xF2, 0x5F, 0x14, 0x37, 0x4F, 0xE1, 0x35, 0x6D, 0x6D, 0x51, 0xC2, 0x45,
+    0xE4, 0x85, 0xB5, 0x76, 0x62, 0x5E, 0x7E, 0xC6, 0xF4, 0x4C, 0x42, 0xE9, 
+    0xA6, 0x37, 0xED, 0x6B, 0x0B, 0xFF, 0x5C, 0xB6, 0xF4, 0x06, 0xB7, 0xED,
+    0xEE, 0x38, 0x6B, 0xFB, 0x5A, 0x89, 0x9F, 0xA5, 0xAE, 0x9F, 0x24, 0x11, 
+    0x7C, 0x4B, 0x1F, 0xE6, 0x49, 0x28, 0x66, 0x51, 0xEC, 0xE4, 0x5B, 0x3D,
+    0xC2, 0x00, 0x7C, 0xB8, 0xA1, 0x63, 0xBF, 0x05, 0x98, 0xDA, 0x48, 0x36, 
+    0x1C, 0x55, 0xD3, 0x9A, 0x69, 0x16, 0x3F, 0xA8, 0xFD, 0x24, 0xCF, 0x5F,
+    0x83, 0x65, 0x5D, 0x23, 0xDC, 0xA3, 0xAD, 0x96, 0x1C, 0x62, 0xF3, 0x56, 
+    0x20, 0x85, 0x52, 0xBB, 0x9E, 0xD5, 0x29, 0x07, 0x70, 0x96, 0x96, 0x6D,
+    0x67, 0x0C, 0x35, 0x4E, 0x4A, 0xBC, 0x98, 0x04, 0xF1, 0x74, 0x6C, 0x08, 
+    0xCA, 0x18, 0x21, 0x7C, 0x32, 0x90, 0x5E, 0x46, 0x2E, 0x36, 0xCE, 0x3B,
+    0xE3, 0x9E, 0x77, 0x2C, 0x18, 0x0E, 0x86, 0x03, 0x9B, 0x27, 0x83, 0xA2,
+    0xEC, 0x07, 0xA2, 0x8F, 0xB5, 0xC5, 0x5D, 0xF0, 0x6F, 0x4C, 0x52, 0xC9,
+    0xDE, 0x2B, 0xCB, 0xF6, 0x95, 0x58, 0x17, 0x18, 0x39, 0x95, 0x49, 0x7C,
+    0xEA, 0x95, 0x6A, 0xE5, 0x15, 0xD2, 0x26, 0x18, 0x98, 0xFA, 0x05, 0x10,
+    0x15, 0x72, 0x8E, 0x5A, 0x8A, 0xAC, 0xAA, 0x68, 0xFF, 0xFF, 0xFF, 0xFF, 
+    0xFF, 0xFF, 0xFF, 0xFF
+};
 
 static const uint8_t P3072[] =
     {
@@ -81,6 +109,7 @@ static const uint8_t P3072[] =
 	0xA9, 0x3A, 0xD2, 0xCA, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
     };
 
+    /* *************
 static const uint8_t P4096[] =
 {
 	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xC9, 0x0F, 0xDA, 0xA2,
@@ -127,8 +156,9 @@ static const uint8_t P4096[] =
 	0x90, 0xA6, 0xC0, 0x8F, 0x4D, 0xF4, 0x35, 0xC9, 0x34, 0x06, 0x31, 0x99,
 	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
 };
+    *************** */
 
-ZrtpDH::ZrtpDH(int32_t pl): pkLength(pl) {
+ZrtpDH::ZrtpDH(SupportedPubKeys type): pkType(type) {
 
     ctx = static_cast<void*>(new gcryptCtx);
     gcryptCtx* tmpCtx = static_cast<gcryptCtx*>(ctx);
@@ -138,25 +168,34 @@ ZrtpDH::ZrtpDH(int32_t pl): pkLength(pl) {
     initializeGcrypt();
 
     if (!dhinit) {
+	gcry_mpi_scan(&bnP2048, GCRYMPI_FMT_USG, P2048, sizeof(P2048), NULL);
         gcry_mpi_scan(&bnP3072, GCRYMPI_FMT_USG, P3072, sizeof(P3072), NULL);
-        gcry_mpi_scan(&bnP4096, GCRYMPI_FMT_USG, P4096, sizeof(P4096), NULL);
+//        gcry_mpi_scan(&bnP4096, GCRYMPI_FMT_USG, P4096, sizeof(P4096), NULL);
         two = gcry_mpi_set_ui(NULL, 2);
+
+        bnP2048MinusOne = gcry_mpi_new(sizeof(P2048)*8);
+        gcry_mpi_sub_ui(bnP2048MinusOne, bnP2048, 1);
+
         bnP3072MinusOne = gcry_mpi_new(sizeof(P3072)*8);
         gcry_mpi_sub_ui(bnP3072MinusOne, bnP3072, 1);
-        bnP4096MinusOne = gcry_mpi_new(sizeof(P4096)*8);
-        gcry_mpi_sub_ui(bnP4096MinusOne, bnP4096, 1);
+
+//        bnP4096MinusOne = gcry_mpi_new(sizeof(P4096)*8);
+//        gcry_mpi_sub_ui(bnP4096MinusOne, bnP4096, 1);
         dhinit = 1;
     }
 
-    tmpCtx->pLength = pl;
-    if (pl == 3072) {
+    if (type == Dh2048) {
         tmpCtx->privKey = gcry_mpi_new(256);
         gcry_mpi_randomize(tmpCtx->privKey, 256, GCRY_STRONG_RANDOM);
     }
-    else {
-        tmpCtx->privKey = gcry_mpi_new(512);
-        gcry_mpi_randomize(tmpCtx->privKey, 512, GCRY_STRONG_RANDOM);
+    else if (type == Dh3072) {
+        tmpCtx->privKey = gcry_mpi_new(256);
+        gcry_mpi_randomize(tmpCtx->privKey, 256, GCRY_STRONG_RANDOM);
     }
+//    else {
+//        tmpCtx->privKey = gcry_mpi_new(512);
+//        gcry_mpi_randomize(tmpCtx->privKey, 512, GCRY_STRONG_RANDOM);
+//    }
 }
 
 ZrtpDH::~ZrtpDH() {
@@ -172,16 +211,25 @@ ZrtpDH::~ZrtpDH() {
     }
 }
 
-int32_t ZrtpDH::computeKey(uint8_t *pubKeyBytes,
-			   int32_t length, uint8_t *secret) {
+int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
 
+    int32_t length = getDhSize();
     gcryptCtx* tmpCtx = static_cast<gcryptCtx*>(ctx);
 
     gcry_mpi_t pubKeyOther;
-    gcry_mpi_scan(&pubKeyOther, GCRYMPI_FMT_USG, pubKeyBytes, length, NULL);
     gcry_mpi_t sec = gcry_mpi_new(0);
+    gcry_mpi_scan(&pubKeyOther, GCRYMPI_FMT_USG, pubKeyBytes, length, NULL);
 
-    gcry_mpi_powm(sec, pubKeyOther, tmpCtx->privKey, ((tmpCtx->pLength == 3072) ? bnP3072 : bnP4096));
+    if (pkType == Dh2048) {
+	gcry_mpi_powm(sec, pubKeyOther, tmpCtx->privKey, bnP2048);
+    }
+    else if (pkType == Dh3072) {
+	gcry_mpi_powm(sec, pubKeyOther, tmpCtx->privKey, bnP3072);
+    }
+    else {
+//	gcry_mpi_powm(sec, pubKeyOther, tmpCtx->privKey, bnP4096);
+	return 0;
+    }
     gcry_mpi_release(pubKeyOther);
 
     size_t result;
@@ -191,12 +239,21 @@ int32_t ZrtpDH::computeKey(uint8_t *pubKeyBytes,
     return result;
 }
 
-int32_t ZrtpDH::generateKey()
+int32_t ZrtpDH::generatePublicKey()
 {
     gcryptCtx* tmpCtx = static_cast<gcryptCtx*>(ctx);
 
     tmpCtx->pubKey = gcry_mpi_new(0);
-    gcry_mpi_powm(tmpCtx->pubKey, two, tmpCtx->privKey, ((tmpCtx->pLength == 3072) ? bnP3072 : bnP4096));
+    if (pkType == Dh2048) {
+	gcry_mpi_powm(tmpCtx->pubKey, two, tmpCtx->privKey, bnP2048);
+    }
+    else if (pkType == Dh3072) {
+	gcry_mpi_powm(tmpCtx->pubKey, two, tmpCtx->privKey, bnP3072);
+    }
+    else {
+//	gcry_mpi_powm(tmpCtx->pubKey, two, tmpCtx->privKey, bnP4096);
+        return 0;
+    }
     return 1;
 }
 
@@ -205,14 +262,26 @@ int32_t ZrtpDH::getPubKeyBytes(uint8_t *buf) const
     gcryptCtx* tmpCtx = static_cast<gcryptCtx*>(ctx);
     int32_t len = getPubKeySize();
 
+    // get length of Dh in bytes, prepend buffer with zeros if necessary
+    int32_t prepend = getDhSize() - getPubKeySize();
+    if (prepend > 0) {
+        memset(buf, 0, prepend);
+    }
     size_t i = 0;
-    gcry_mpi_print(GCRYMPI_FMT_USG, buf, len, &i, tmpCtx->pubKey);
+    gcry_mpi_print(GCRYMPI_FMT_USG, buf + prepend, len, &i, tmpCtx->pubKey);
     return i;
 }
 
-int32_t ZrtpDH::getSecretSize() const
+int32_t ZrtpDH::getDhSize() const
 {
-    return ((static_cast<gcryptCtx*>(ctx)->pLength + 7) / 8);
+    switch (pkType) {
+	case Dh2048:
+	    return 2048/8;
+	    break;
+	case Dh3072:
+	    return 3072/8;
+	    break;
+    }
 }
 
 int32_t ZrtpDH::getPubKeySize() const
@@ -220,25 +289,29 @@ int32_t ZrtpDH::getPubKeySize() const
     return ((gcry_mpi_get_nbits(static_cast<gcryptCtx*>(ctx)->pubKey) + 7) / 8);
 }
 
-int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes,
-                            int32_t length) const
+int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
 {
     gcryptCtx* tmpCtx = static_cast<gcryptCtx*>(ctx);
 
-    gcry_mpi_t pubKeyOther;
-    gcry_mpi_scan(&pubKeyOther, GCRYMPI_FMT_USG, pubKeyBytes, length, NULL);
+    gcry_mpi_t pubKeyOther = NULL;
+    gcry_mpi_scan(&pubKeyOther, GCRYMPI_FMT_USG, pubKeyBytes, getDhSize(), NULL);
 
-    if (gcry_mpi_cmp_ui(pubKeyOther, 1) == 0)
-        return 0;
-
-    if (tmpCtx->pLength == 3072) {
+    if (pkType == Dh2048) {
+        if (gcry_mpi_cmp(bnP2048MinusOne, pubKeyOther) == 0)
+            return 0;
+    }
+    else if (pkType == Dh3072) {
         if (gcry_mpi_cmp(bnP3072MinusOne, pubKeyOther) == 0)
             return 0;
     }
     else {
-        if (gcry_mpi_cmp(bnP4096MinusOne, pubKeyOther) == 0)
+//        if (gcry_mpi_cmp(bnP4096MinusOne, pubKeyOther) == 0)
             return 0;
     }
+    if (gcry_mpi_cmp_ui(pubKeyOther, 1) == 0) {
+        return 0;
+    }
+
     gcry_mpi_release(pubKeyOther);
     return 1;
 }

@@ -407,7 +407,7 @@ private:
     /**
      * My computed public key
      */
-    uint8_t pubKeyBytes[1024];
+    uint8_t pubKeyBytes[400];
     /**
      * Length off public key
      */
@@ -608,12 +608,14 @@ private:
      *
      * @param hello
      *    The Hello packet.
+     * @param pk
+     *    The id of the selected public key algorithm 
      * @return
      *    The Enum that identifies the best offered Cipher algortihm. Return
      *    <code>NumSupportedSymCiphers</code> to signal that no matching Cipher algorithm
      *    was found at all.
      */
-    SupportedSymCiphers findBestCipher(ZrtpPacketHello *hello);
+    SupportedSymCiphers findBestCipher(ZrtpPacketHello *hello,  SupportedPubKeys pk);
 
     /**
      * Find the best Public Key algorithm that is offered in Hello.

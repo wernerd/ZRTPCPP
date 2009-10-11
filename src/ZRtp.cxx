@@ -224,6 +224,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     sendInfo(Info, InfoHelloReceived);
 
     if (memcmp(hello->getVersion(), zrtpVersion, 4) != 0) {
+	fprintf(stderr, "version: %s\n", hello->getVersion());
         *errMsg = UnsuppZRTPVersion;
         return NULL;
     }
@@ -236,10 +237,10 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     memcpy(peerH3, hello->getH3(), SHA256_DIGEST_LENGTH);
 
     /*
-     * The Following section extracts the algorithm from the Hello
+     * The Following section extracts the algorithm from the peer's Hello
      * packet. Always the best possible (offered) algorithms are
      * used. If the received Hello does not contain algo specifiers
-     * or offers only unsupported (optional) alogos then replace
+     * or offers only unsupported (optional) algos then replace
      * these with mandatory algos and put them into the Commit packet.
      * Refer to the findBest*() functions.
      * If this is a MultiStream ZRTP object then do not get the cipher,
@@ -249,8 +250,8 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
 
     if (!multiStream) {
         authLength = findBestAuthLen(hello);
-        cipher = findBestCipher(hello);
         pubKey = findBestPubkey(hello);
+        cipher = findBestCipher(hello, pubKey);
         hash = findBestHash(hello);
     }
     else {
@@ -266,12 +267,11 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     }
     // Modify here when introducing new DH key agreement, for example
     // elliptic curves.
-//FIXME:    int32_t maxPubKeySize = 384; - unused for time being
-    dhContext = new ZrtpDH(3072);
-    dhContext->generateKey();
+    dhContext = new ZrtpDH(pubKey);
+    dhContext->generatePublicKey();
+
     pubKeyLen = dhContext->getPubKeySize();
     dhContext->getPubKeyBytes(pubKeyBytes);
-
     sendInfo(Info, InfoCommitDHGenerated);
 
     // Prepare IV data that we will use during confirm packet encryption. 
@@ -291,7 +291,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     computeSharedSecretSet(zidRec);
 
     // Construct a DHPart2 message (Initiator's DH message). This packet
-    //is required to compute the HVI (Hash Value Initiator), refer to 
+    // is required to compute the HVI (Hash Value Initiator), refer to 
     // chapter 5.4.1.1.
 
     // Fill the values in the DHPart2 packet
@@ -419,12 +419,12 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     uint32_t cp = *(uint32_t*)commit->getCipherType();
     for (i = 0; i < NumSupportedSymCiphers; i++) {
         if (cp == *(uint32_t*)supportedCipher[i]) {
-	    break;
-	}
+            break;
+        }
     }
     if (i >= NumSupportedSymCiphers) { // no match - something went wrong
         *errMsg = UnsuppCiphertype;
-	return NULL;
+        return NULL;
     }
     cipher = (SupportedSymCiphers)i;
 
@@ -445,12 +445,12 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     cp = *(uint32_t*)commit->getHashType();
     for (i = 0; i < NumSupportedHashes; i++) {
         if (cp == *(uint32_t*)supportedHashes[i]) {
-	    break;
-	}
+            break;
+        }
     }
     if (i >= NumSupportedHashes) { // no match - something went wrong
         *errMsg = UnsuppHashType;
-	return NULL;
+        return NULL;
     }
     hash = (SupportedHashes)i;
 
@@ -458,12 +458,12 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     cp = *(uint32_t*)commit->getPubKeysType();
     for (i = 0; i < NumSupportedPubKeys; i++) {
         if (cp == *(uint32_t*)supportedPubKey[i]) {
-	    break;
-	}
+            break;
+        }
     }
     if (i >= NumSupportedPubKeys) { // no match - something went wrong
         *errMsg = UnsuppPKExchange;
-	return NULL;
+        return NULL;
     }
     pubKey = (SupportedPubKeys)i;
 
@@ -471,27 +471,27 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     cp = *(uint32_t*)commit->getSasType();
     for (i = 0; i < NumSupportedSASTypes; i++) {
         if (cp == *(uint32_t*)supportedSASType[i]) {
-	    break;
-	}
+            break;
+        }
     }
     if (i >= NumSupportedSASTypes) { // no match - something went wrong
         *errMsg = UnsuppSASScheme;
-	return NULL;
+        return NULL;
     }
     sasType = (SupportedSASTypes)i;
 
-    // Modify here when introducing new DH key agreement, for
-    // example elliptic curves (new dh context, etc)
-    int32_t maxPubKeySize = 384;
-    dhContext->generateKey();
+    // dhContext cannot be NULL - always setup during prepareCommit()
+    // check if we can use the dhContext prepared by prepareCOmmit(),
+    // if not delete old DH context and generate new one
+    if (dhContext->getDHtype() != pubKey) {
+        delete dhContext;
+        dhContext = new ZrtpDH(pubKey);
+        dhContext->generatePublicKey();
+    }
     pubKeyLen = dhContext->getPubKeySize();
 
     sendInfo(Info, InfoDH1DHGenerated);
 
-    if (pubKeyLen > maxPubKeySize) {
-        *errMsg = CriticalSWError;
-        return NULL;
-    }
     dhContext->getPubKeyBytes(pubKeyBytes);
 
     // Setup a DHPart1 packet.
@@ -572,7 +572,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
     }
 
     // get memory to store DH result TODO: make it fixed memory
-    DHss = new uint8_t[dhContext->getSecretSize()];
+    DHss = new uint8_t[dhContext->getDhSize()];
     if (DHss == NULL) {
         *errMsg = CriticalSWError;
 	return NULL;
@@ -580,24 +580,14 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
 
     // get and check Responder's public value, see chap. 5.4.3 in the spec
     pvr = dhPart1->getPv();
-    if (pubKey == Dh3072) {
-        if (!dhContext->checkPubKey(pvr, 384)) {
-            *errMsg = DHErrorWrongPV;
-            return NULL;
-        }
-	dhContext->computeKey(pvr, 384, DHss);
+    if (!dhContext->checkPubKey(pvr)) {
+        *errMsg = DHErrorWrongPV;
+        return NULL;
     }
-    else {
-        if (!dhContext->checkPubKey(pvr, 512)) {
-            *errMsg = DHErrorWrongPV;
-            return NULL;
-        }
-        dhContext->computeKey(pvr, 512, DHss);
-    }
-
+    dhContext->computeSecretKey(pvr, DHss);
     myRole = Initiator;
 
-    // We are Inititaor: the Responder's Hello and the Initiator's (our) Commit
+    // We are Initiator: the Responder's Hello and the Initiator's (our) Commit
     // are already hashed in the context. Now hash the Responder's DH1 and then
     // the Initiator's (our) DH2 in that order.
     sha256Ctx(msgShaContext, (unsigned char*)dhPart1->getHeaderBase(), dhPart1->getLength() * ZRTP_WORD_SIZE);
@@ -620,6 +610,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
     delete dhContext;
     dhContext = NULL;
 
+    // TODO: at initiator we can call signSAS at this point, don't dealy until confirm1 reveived
     // store DHPart1 data temporarily until we can check HMAC after receiving Confirm1
     storeMsgTemp(dhPart1);
     return &zrtpDH2;
@@ -651,7 +642,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
         *errMsg = CriticalSWError;
         return NULL;
     }
-    DHss = new uint8_t[dhContext->getSecretSize()];
+    DHss = new uint8_t[dhContext->getDhSize()];
     if (DHss == NULL) {
         *errMsg = CriticalSWError;
         return NULL;
@@ -659,20 +650,11 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
 
     // Get and check the Initiator's public value, see chap. 5.4.2 of the spec
     pvi = dhPart2->getPv();
-    if (pubKey == Dh3072) {
-        if (!dhContext->checkPubKey(pvi, 384)) {
-            *errMsg = DHErrorWrongPV;
-            return NULL;
-        }
-        dhContext->computeKey(pvi, 384, DHss);
+    if (!dhContext->checkPubKey(pvi)) {
+        *errMsg = DHErrorWrongPV;
+        return NULL;
     }
-    else {
-        if (!dhContext->checkPubKey(pvi, 512)) {
-            *errMsg = DHErrorWrongPV;
-            return NULL;
-        }
-        dhContext->computeKey(pvi, 512, DHss);
-    }
+    dhContext->computeSecretKey(pvi, DHss);
 
     // Now we have the peer's pvi. Because we are responder re-compute my hvi
     // using my Hello packet and the Initiator's DHPart2 and compare with
@@ -711,6 +693,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
 
     // Fill in Confirm1 packet.
     zrtpConfirm1.setMessageType((uint8_t*)Confirm1Msg);
+    // TODO: at this point sas hash is ready, perform signSAS callback and fill in signature if available
     zrtpConfirm1.setSignatureLength(0);
 
     // Check if user verfied the SAS in a previous call and thus verfied
@@ -839,6 +822,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
 
     // Fill in Confirm1 packet.
     zrtpConfirm1.setMessageType((uint8_t*)Confirm1Msg);
+    // TODO: at this point sas hash is ready, perform signSAS callback and fill in signature if available
     zrtpConfirm1.setSignatureLength(0);
     zrtpConfirm1.setExpTime(0xFFFFFFFF);
     zrtpConfirm1.setIv(randomIV);
@@ -901,6 +885,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
         return NULL;
     }
 
+    // TODO: here we have a SAS signature from reponder, call checkSASsignature (save / compare in case of resend)
     /*
      * The Confirm1 is ok, handle the Retained secret stuff and inform
      * GUI about state.
@@ -935,6 +920,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
 
     // now generate my Confirm2 message
     zrtpConfirm2.setMessageType((uint8_t*)Confirm2Msg);
+    // TODO: set signature data if available
     zrtpConfirm2.setSignatureLength(0);
     zrtpConfirm2.setHashH0(H0); 
 
@@ -1008,6 +994,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2MultiStream(ZrtpPacketConfirm* confirm1,
         *errMsg = CriticalSWError;
         return NULL;
     }
+    // TODO: here we have a SAS signature from reponder, call checkSASsignature (save / compare in case of resend)
     std::string cs((cipher == Aes128) ? "AES-CM-128" : "AES-CM-256");
     // Inform GUI about security state, don't show SAS and its state
     std::string cs1("");
@@ -1015,6 +1002,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2MultiStream(ZrtpPacketConfirm* confirm1,
 
     // now generate my Confirm2 message
     zrtpConfirm2.setMessageType((uint8_t*)Confirm2Msg);
+    // TODO: set signature data if available
     zrtpConfirm2.setSignatureLength(0);
     zrtpConfirm2.setHashH0(H0); 
     zrtpConfirm2.setExpTime(0xFFFFFFFF);
@@ -1112,6 +1100,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
         // Inform GUI about security state, don't show SAS and its state
         callback->srtpSecretsOn(cs, cs1, true);
     }
+    // TODO: clear responders signature data in, prepare a call to do same for initiaor (called by state engine)
     return &zrtpConf2Ack;
 }
 
@@ -1185,21 +1174,27 @@ SupportedHashes ZRtp::findBestHash(ZrtpPacketHello *hello) {
     return Sha256;
 }
 
-SupportedSymCiphers ZRtp::findBestCipher(ZrtpPacketHello *hello) {
+SupportedSymCiphers ZRtp::findBestCipher(ZrtpPacketHello *hello, SupportedPubKeys pk) {
 
     int i;
     int ii;
+    bool matchingCiphers[NumSupportedSymCiphers];
     int num = hello->getNumCiphers();
 
-    if (num == 0) {
+    if (num == 0 || pk == Dh2048) {
         return Aes128;
     }
     for (i = 0; i < NumSupportedSymCiphers; i++) {
 	for (ii = 0; ii < num; ii++) {
 	    if (*(uint32_t*)hello->getCipherType(ii) == *(uint32_t*)supportedCipher[i]) {
-                return (SupportedSymCiphers)i;
+                matchingCiphers[i] = true;
+                break;
 	    }
+            matchingCiphers[i] = false;
 	}
+    }
+    if (matchingCiphers[Aes256]) {
+        return Aes256;
     }
     return Aes128;
 }
@@ -1456,7 +1451,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 
     // Next is the DH result itself
     data[pos] = DHss;
-    length[pos++] = dhContext->getSecretSize();
+    length[pos++] = dhContext->getDhSize();
 
     // Next the fixed string "ZRTP-HMAC-KDF"
     data[pos] = (unsigned char*)KDFString;
@@ -1505,7 +1500,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     sha256(data, length, s0);
 //  hexdump("S0 I", s0, SHA256_DIGEST_LENGTH);
 
-    memset(DHss, 0, dhContext->getSecretSize());
+    memset(DHss, 0, dhContext->getDhSize());
     delete DHss;
     DHss = NULL;
 
@@ -1599,7 +1594,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 
     // Next is the DH result itself
     data[pos] = DHss;
-    length[pos++] = dhContext->getSecretSize();
+    length[pos++] = dhContext->getDhSize();
 
     // Next the fixed string "ZRTP-HMAC-KDF"
     data[pos] = (unsigned char*)KDFString;
@@ -1648,7 +1643,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     sha256(data, length, s0);
 //  hexdump("S0 R", s0, SHA256_DIGEST_LENGTH);
 
-    memset(DHss, 0, dhContext->getSecretSize());
+    memset(DHss, 0, dhContext->getDhSize());
     delete DHss;
     DHss = NULL;
 

@@ -94,6 +94,13 @@ documentation for building applications that use libzrtpcpp.
 %postun -p /sbin/ldconfig
 
 %changelog
+* Sun Oct 11 2009 - Werner Dittmann <werner.dittmann@t-online.de>
+- Fix multistream problem
+- add DH2048 mode
+- update cipher selection to match latest draft (15x)
+- Test with zfone3 with Ping packet mode enabled
+- some code cleanup
+
 * Erd Jun 24 2009 - David Sugar <dyfet@gnutelephony.org>
 - Spec updated per current Fedora & CentOS policies.
 - Updated release 1.4.5 has all mandatory IETF interop requirements.
