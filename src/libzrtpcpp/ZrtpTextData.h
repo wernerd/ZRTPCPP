@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006-2007 Werner Dittmann
+  Copyright (C) 2006-2009 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -70,55 +70,12 @@ extern char* sasString;
 extern char* KDFString;
 extern char* zrtpSessionKey;
 extern char* zrtpMsk;
-/**
- *
- */
 
-// Keep the Hash identifers in supportedHashes in the same order than the
-// following enum, starting with zero.
-typedef enum  SupportedHashes {
-    Sha256,
-    NumSupportedHashes
-} supported_hashes_t;
 
 extern char* supportedHashes[];
-
-// Keep the Cipher identifers in supportedCipher in the same order than the
-// following enum, starting with zero.
-enum SupportedSymCiphers {
-    Aes256,
-    Aes128,
-    NumSupportedSymCiphers
-};
 extern char* supportedCipher[];
-
-// Keep the PubKey identifers in supportedPubKey in the same order than the
-// following enum, starting with zero.
-enum SupportedPubKeys {
-    Dh2048,
-    // Ec256,
-    Dh3072,
-    // Ec384,
-    MultiStream,
-    NumSupportedPubKeys
-};
 extern char* supportedPubKey[];
-
-// Keep the SAS identifers in supportedSASType in the same order than the
-// following enum, starting with zero.
-enum SupportedSASTypes {
-    Libase32,
-    NumSupportedSASTypes
-};
 extern char* supportedSASType[];
-
-// Keep the auth len identifers in supportedAuthLen in the same order than the
-// following enum, starting with zero.
-enum SupportedAuthLengths {
-    AuthLen32,
-    AuthLen80,
-    NumSupportedAuthLenghts
-};
 extern char *supportedAuthLen[];
 #endif     // _ZRTPTEXTDATA_H_
 

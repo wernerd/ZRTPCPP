@@ -82,7 +82,8 @@ class ZRtp {
      * Constructor intializes all relevant data but does not start the
      * engine.
      */
-    ZRtp(uint8_t* myZid, ZrtpCallback* cb, std::string id);
+    ZRtp(uint8_t* myZid, ZrtpCallback* cb, std::string id, 
+         ZrtpConfigure* config);
 
     /**
      * Destructor cleans up.
@@ -538,6 +539,56 @@ private:
     uint8_t zrtpKeyR[SHA256_DIGEST_LENGTH];
 
     /**
+     * Pointers to negotiated hash and HMAC functions
+     */
+    void (*hashFunction)(unsigned char *data,
+            unsigned int data_length,
+            unsigned char *digest);
+
+    void (*hashListFunction)(unsigned char *data[],
+            unsigned int data_length[],
+            unsigned char *digest);
+
+    void (*hmacFunction)(uint8_t* key, uint32_t key_length,
+                uint8_t* data, int32_t data_length,
+                uint8_t* mac, uint32_t* mac_length);
+
+    void (*hmacListFunction)( uint8_t* key, uint32_t key_length,
+                           uint8_t* data[], uint32_t data_length[],
+                           uint8_t* mac, uint32_t* mac_length );
+
+    void* (*createHashCtx)();
+
+    void (*closeHashCtx)(void* ctx, unsigned char* digest);
+
+    void (*hashCtxFunction)(void* ctx, unsigned char* data, 
+           unsigned int dataLength);
+
+    void (*hashCtxListFunction)(void* ctx, unsigned char* dataChunks[],
+           unsigned int dataChunkLength[]);
+
+    int32_t hashLength;
+
+    // Funtion pointers to implicit hash and hmac functions
+    void (*hashFunctionImpl)(unsigned char *data,
+            unsigned int data_length,
+            unsigned char *digest);
+
+    void (*hashListFunctionImpl)(unsigned char *data[],
+            unsigned int data_length[],
+            unsigned char *digest);
+
+    void (*hmacFunctionImpl)(uint8_t* key, uint32_t key_length,
+                uint8_t* data, int32_t data_length,
+                uint8_t* mac, uint32_t* mac_length);
+
+    void (*hmacListFunctionImpl)( uint8_t* key, uint32_t key_length,
+                           uint8_t* data[], uint32_t data_length[],
+                           uint8_t* mac, uint32_t* mac_length );
+
+    int32_t hashLengthImpl;
+    
+    /**
      * The ZRTP Session Key
      * Refer to chapter 5.4.1.4
      */
@@ -684,11 +735,16 @@ private:
 
     void computeSRTPKeys();
 
+    void KDF(uint8_t* key, uint32_t keyLength, uint8_t* label, int32_t labelLength,
+               uint8_t* context, int32_t contextLength, int32_t L, uint8_t* output);
+
     void generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec);
 
     void generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec);
 
     void generateKeysMultiStream();
+
+    void setNegotiatedHash(SupportedHashes hash);
 
     /*
      * The following methods are helper functions for ZrtpStateClass.

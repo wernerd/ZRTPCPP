@@ -72,12 +72,18 @@ ZrtpQueue::~ZrtpQueue() {
 }
 
 int32_t
-ZrtpQueue::initialize(const char *zidFilename, bool autoEnable)
+ZrtpQueue::initialize(const char *zidFilename, bool autoEnable,
+                     ZrtpConfigure* config)
 {
     int32_t ret = 1;
 
     synchEnter();
 
+    ZrtpConfigure* configOwn = NULL;
+    if (config == NULL) {
+        config = configOwn = new ZrtpConfigure();
+        config->setStandardConfig();
+    }
     enableZrtp = autoEnable;
 
     if (staticTimeoutProvider == NULL) {
@@ -101,7 +107,10 @@ ZrtpQueue::initialize(const char *zidFilename, bool autoEnable)
     }
     if (ret > 0) {
         const uint8_t* ownZid = zf->getZid();
-        zrtpEngine = new ZRtp((uint8_t*)ownZid, (ZrtpCallback*)this, clientIdString);
+        zrtpEngine = new ZRtp((uint8_t*)ownZid, (ZrtpCallback*)this, clientIdString, config);
+    }
+    if (configOwn != NULL) {
+        delete configOwn;
     }
     synchLeave();
     return ret;

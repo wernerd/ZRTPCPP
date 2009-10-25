@@ -20,6 +20,7 @@
 #include <map>
 #include <libzrtpcpp/zrtpccrtp.h>
 #include <libzrtpcpp/ZrtpUserCallback.h>
+#include <libzrtpcpp/ZrtpConfigure.h>
 
 #ifdef  CCXX_NAMESPACES
 using namespace ost;
@@ -383,11 +384,13 @@ class MyUserCallbackMulti: public MyUserCallback {
 
 int ZrtpSendPacketTransmissionTestCB::doTest() {
 
+    ZrtpConfigure config;
+
         MyUserCallback* mcb;
         if (!multiParams.empty()) {
             tx = new SymmetricZRTPSession(pattern.getDestinationAddress(),
                                     pattern.getDestinationPort()+2+10);
-            tx->initialize("test_t.zid");
+            tx->initialize("test_t.zid", true, &config);
             tx->setMultiStrParams(multiParams);
 
             prefix = "TX Multi: ";
@@ -397,7 +400,7 @@ int ZrtpSendPacketTransmissionTestCB::doTest() {
         else {
             tx = new SymmetricZRTPSession(pattern.getDestinationAddress(),
                                     pattern.getDestinationPort()+2);
-            tx->initialize("test_t.zid");
+            tx->initialize("test_t.zid", true, &config);
 
             prefix = "TX: ";
             mcb = new MyUserCallback(tx);
@@ -452,12 +455,14 @@ int ZrtpSendPacketTransmissionTestCB::doTest() {
 
 int ZrtpRecvPacketTransmissionTestCB::doTest() {
 
+        ZrtpConfigure config;
+
         MyUserCallback* mcb;
         if (!multiParams.empty()) {
             rx = new SymmetricZRTPSession(pattern.getDestinationAddress(),
                                 pattern.getDestinationPort()+10);
 
-            rx->initialize("test_r.zid");
+            rx->initialize("test_r.zid", true, &config);
             rx->setMultiStrParams(multiParams);
 
             prefix = "RX Multi: ";
@@ -468,7 +473,7 @@ int ZrtpRecvPacketTransmissionTestCB::doTest() {
             rx = new SymmetricZRTPSession(pattern.getDestinationAddress(),
                                     pattern.getDestinationPort());
 
-            rx->initialize("test_r.zid");
+            rx->initialize("test_r.zid", true, &config);
 
             prefix = "RX: ";
             mcb = new MyUserCallback(rx);

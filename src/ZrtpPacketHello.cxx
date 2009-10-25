@@ -24,13 +24,15 @@
 
 ZrtpPacketHello::ZrtpPacketHello() {
     DEBUGOUT((fprintf(stdout, "Creating Hello packet without data\n")));
+}
 
+void ZrtpPacketHello::configureHello(ZrtpConfigure* config) {
     // The NumSupported* data is in ZrtpTextData.h 
-    nHash = NumSupportedHashes;
-    nCipher = NumSupportedSymCiphers;
-    nPubkey = NumSupportedPubKeys;
-    nSas = NumSupportedSASTypes;
-    nAuth = NumSupportedAuthLenghts;
+    nHash = config->getNumConfiguredHashes();
+    nCipher = config->getNumConfiguredSymCiphers();
+    nPubkey = config->getNumConfiguredPubKeys();
+    nSas = config->getNumConfiguredSasTypes();
+    nAuth = config->getNumConfiguredAuthLengths();
 
     // length is fixed Header plus HMAC size (2*ZRTP_WORD_SIZE)
     int32_t length = sizeof(HelloPacket_t) + (2 * ZRTP_WORD_SIZE);
@@ -64,27 +66,32 @@ ZrtpPacketHello::ZrtpPacketHello() {
 
     uint32_t lenField = nHash << 16;
     for (int32_t i = 0; i < nHash; i++) {
-        setHashType(i, (int8_t*)supportedHashes[i]);
+        SupportedHashes hash = config->getHashAlgoAt(i);
+        setHashType(i, (int8_t*)supportedHashes[hash]);
     }
 
     lenField |= nCipher << 12;
     for (int32_t i = 0; i < nCipher; i++) {
-        setCipherType(i,  (int8_t*)supportedCipher[i]);
+        SupportedSymCiphers cipher = config->getSymCipherAlgoAt(i);
+        setCipherType(i,  (int8_t*)supportedCipher[cipher]);
     }
 
     lenField |= nAuth << 8;
     for (int32_t i = 0; i < nAuth; i++) {
-        setAuthLen(i,  (int8_t*)supportedAuthLen[i]);
+        SupportedAuthLengths length = config->getAuthLengthAt(i);
+        setAuthLen(i,  (int8_t*)supportedAuthLen[length]);
     }
 
     lenField |= nPubkey << 4;
     for (int32_t i = 0; i < nPubkey; i++) {
-        setPubKeyType(i,  (int8_t*)supportedPubKey[i]);
+        SupportedPubKeys pubKey = config->getPubKeyAlgoAt(i);
+        setPubKeyType(i,  (int8_t*)supportedPubKey[pubKey]);
     }
 
     lenField |= nSas;
     for (int32_t i = 0; i < nSas; i++) {
-        setSasType(i,  (int8_t*)supportedSASType[i]);
+        SupportedSASTypes sas = config->getSasTypeAlgoAt(i);
+        setSasType(i,  (int8_t*)supportedSASType[sas]);
     }
     helloHeader->flagLength = htonl(lenField);
 }

@@ -19,12 +19,13 @@
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 #include <stdint.h>
+#include <libzrtpcpp/ZrtpConfigure.h>
 /**
  *
  */
 //                                  1
 //                         1234567890123456
-const char *clientId =    "GNU ZRTP 1.4.3  "; // 16 chars
+const char *clientId =    "GNU ZRTP 1.5.0  "; // 16 chars
 const char *zrtpVersion = "1.10";	// must be 4 chars
 /**
  *
@@ -72,20 +73,20 @@ const char* zrtpMsk = "ZRTP MSK";
 /**
  * The arrays are sorted: the most secure / best algorithm is first in the
  * array. If we add an algorithm here then we need to adjust the corresponding
- * value in ZrtpTextData.h as well.
+ * value in ZrtpConfigure.h as well.
  */
-const char *supportedHashes[] =  {"S256"};
+const char* supportedHashes[] =  {"S256"};
 
-const char *supportedCipher[] =  {"AES3",
+const char* supportedCipher[] =  {"AES3",
                                   "AES1"};
 
-const char *supportedPubKey[] =  {"DH2k",
+const char* supportedPubKey[] =  {"DH2k",
                                   // "EC25"
                                   "DH3k",
                                   // "EC38"
                                   "Mult"};
 
-const char *supportedSASType[] = {"B32 "};
+const char* supportedSASType[] = {"B32 "};
 
-const char *supportedAuthLen[] = {"HS32",
+const char* supportedAuthLen[] = {"HS32",
                                   "HS80"};

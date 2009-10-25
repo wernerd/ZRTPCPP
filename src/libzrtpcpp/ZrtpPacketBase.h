@@ -30,6 +30,7 @@
 
 #include <libzrtpcpp/zrtpPacket.h>
 #include <libzrtpcpp/ZrtpTextData.h>
+#include <libzrtpcpp/ZrtpConfigure.h>
 #include <libzrtpcpp/ZrtpCrc32.h>
 
 // #define DEBUGOUT(deb)   deb

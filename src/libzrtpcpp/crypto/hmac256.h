@@ -54,8 +54,8 @@
  *    Point to an integer that receives the length of the computed HMAC.
  */
 void hmac_sha256( uint8_t* key, uint32_t key_length,
-			   uint8_t* data, int32_t data_length,
-			   uint8_t* mac, uint32_t* mac_length );
+    uint8_t* data, int32_t data_length,
+    uint8_t* mac, uint32_t* mac_length );
 
 /**
  * Compute SHA256 HMAC over several data cunks.

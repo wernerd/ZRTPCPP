@@ -47,6 +47,8 @@ class ZrtpPacketHello : public ZrtpPacketBase {
     ZrtpPacketHello(uint8_t *data); /* Creates a Hello packet from received data */
     virtual ~ZrtpPacketHello();
 
+    void configureHello(ZrtpConfigure* config);
+
     uint8_t* getVersion()  { return helloHeader->version; };
     uint8_t* getClientId() { return helloHeader->clientId; };
     uint8_t* getH3()       { return helloHeader->hashH3; };
