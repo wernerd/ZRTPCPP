@@ -24,10 +24,20 @@
 
 #include <stdio.h>
 
-#define	ZRTP_MAGIC		0x5a525450
+#define ZRTP_MAGIC       0x5a525450
 
-#define ZRTP_WORD_SIZE		4
-#define CRC_SIZE                4
+#define ZRTP_WORD_SIZE   4
+#define CRC_SIZE         4
+
+#define TYPE_SIZE        (2*ZRTP_WORD_SIZE)
+#define CLIENT_ID_SIZE   (4*ZRTP_WORD_SIZE)
+#define HASH_IMAGE_SIZE  (8*ZRTP_WORD_SIZE)
+#define ZID_SIZE         (3*ZRTP_WORD_SIZE)
+#define HVI_SIZE         (8*ZRTP_WORD_SIZE)
+#define HMAC_SIZE        (2*ZRTP_WORD_SIZE)
+#define ID_SIZE          (2*ZRTP_WORD_SIZE)
+#define IV_SIZE          (4*ZRTP_WORD_SIZE)
+#define PING_HASH_SIZE   (2*ZRTP_WORD_SIZE)
 
 /**
  * This include file defines the ZRTP message structures. Refer to chapter
@@ -39,14 +49,14 @@
 typedef struct zrtpPacketHeader {
     uint16_t    zrtpId;
     uint16_t    length;
-    uint8_t     messageType[2*ZRTP_WORD_SIZE];
+    uint8_t     messageType[TYPE_SIZE];
 } zrtpPacketHeader_t;
 
 typedef struct Hello {
     uint8_t	version[ZRTP_WORD_SIZE];
-    uint8_t	clientId[4*ZRTP_WORD_SIZE];
-    uint8_t     hashH3[8*ZRTP_WORD_SIZE];
-    uint8_t     zid[3*ZRTP_WORD_SIZE];
+    uint8_t	clientId[CLIENT_ID_SIZE];
+    uint8_t     hashH3[HASH_IMAGE_SIZE];
+    uint8_t     zid[ZID_SIZE];
     uint32_t	flagLength;
 } Hello_t;
 
@@ -65,15 +75,15 @@ typedef struct HelloAckPacket {
 } HelloAckPacket_t;
 
 typedef struct Commit {
-    uint8_t     hashH2[8*ZRTP_WORD_SIZE];
-    uint8_t	zid[3*ZRTP_WORD_SIZE];
+    uint8_t     hashH2[HASH_IMAGE_SIZE];
+    uint8_t	zid[ZID_SIZE];
     uint8_t     hash[ZRTP_WORD_SIZE];
     uint8_t     cipher[ZRTP_WORD_SIZE];
     uint8_t     authlengths[ZRTP_WORD_SIZE];
     uint8_t	pubkey[ZRTP_WORD_SIZE];
     uint8_t	sas[ZRTP_WORD_SIZE];
-    uint8_t	hvi[8*ZRTP_WORD_SIZE];
-    uint8_t	hmac[2*ZRTP_WORD_SIZE];
+    uint8_t	hvi[HVI_SIZE];
+    uint8_t	hmac[HMAC_SIZE];
 } Commit_t;
 
 typedef struct CommitPacket {
@@ -83,11 +93,11 @@ typedef struct CommitPacket {
 } CommitPacket_t;
 
 typedef struct DHPart {
-    uint8_t hashH1[8*ZRTP_WORD_SIZE];
-    uint8_t rs1Id[2*ZRTP_WORD_SIZE];
-    uint8_t rs2Id[2*ZRTP_WORD_SIZE];
-    uint8_t auxSecretId[2*ZRTP_WORD_SIZE];
-    uint8_t pbxSecretId[2*ZRTP_WORD_SIZE];
+    uint8_t hashH1[HASH_IMAGE_SIZE];
+    uint8_t rs1Id[ID_SIZE];
+    uint8_t rs2Id[ID_SIZE];
+    uint8_t auxSecretId[ID_SIZE];
+    uint8_t pbxSecretId[ID_SIZE];
 }  DHPart_t;
 
 // The DHPart packet has variable length. The following struct
@@ -99,9 +109,9 @@ typedef struct DHPartPacket {
 } DHPartPacket_t;
 
 typedef struct Confirm {
-    uint8_t	hmac[2*ZRTP_WORD_SIZE];
-    uint8_t     iv[4*ZRTP_WORD_SIZE];
-    uint8_t     hashH0[8*ZRTP_WORD_SIZE];
+    uint8_t	hmac[HMAC_SIZE];
+    uint8_t     iv[IV_SIZE];
+    uint8_t     hashH0[HASH_IMAGE_SIZE];
     uint8_t     filler[2];
     uint8_t     sigLength;
     uint8_t	flags;
@@ -124,7 +134,7 @@ typedef struct Conf2AckPacket {
 // The GoClear and ClearAck packet are currently not used in
 //GNU ZRTP C++ - not support for GoClear
 typedef struct GoClear {
-    uint8_t clearHmac[2*ZRTP_WORD_SIZE];
+    uint8_t clearHmac[HMAC_SIZE];
 } GoClear_t;
 
 typedef struct GoClearPacket {
@@ -155,7 +165,7 @@ typedef struct ErrorAckPacket {
 
 typedef struct Ping {
     uint8_t version[ZRTP_WORD_SIZE];
-    uint8_t epHash[2*ZRTP_WORD_SIZE];
+    uint8_t epHash[PING_HASH_SIZE];
 } Ping_t;
 
 typedef struct PingPacket {
@@ -166,8 +176,8 @@ typedef struct PingPacket {
 
 typedef struct PingAck {
     uint8_t version[ZRTP_WORD_SIZE];
-    uint8_t localEpHash[2*ZRTP_WORD_SIZE];
-    uint8_t remoteEpHash[2*ZRTP_WORD_SIZE];
+    uint8_t localEpHash[PING_HASH_SIZE];
+    uint8_t remoteEpHash[PING_HASH_SIZE];
     uint32_t ssrc;
 } PingAck_t;
 

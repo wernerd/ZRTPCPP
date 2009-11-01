@@ -218,6 +218,8 @@ class MyUserCallback: public ZrtpUserCallback {
         warningMap.insert(pair<int32, std::string*>(WarningCRCmismatch, new string("Internal ZRTP packet checksum mismatch - packet dropped")));
         warningMap.insert(pair<int32, std::string*>(WarningSRTPauthError, new string("Dropping packet because SRTP authentication failed!")));
         warningMap.insert(pair<int32, std::string*>(WarningSRTPreplayError, new string("Dropping packet because SRTP replay check failed!")));
+        warningMap.insert(pair<int32, std::string*>(WarningNoExpectedRSMatch, 
+                          new string("Valid retained shared secrets availabe but no matches found - must verify SAS")));
 
         severeMap.insert(pair<int32, std::string*>(SevereHelloHMACFailed, new string("Hash HMAC check of Hello failed!")));
         severeMap.insert(pair<int32, std::string*>(SevereCommitHMACFailed, new string("Hash HMAC check of Commit failed!")));
@@ -390,7 +392,8 @@ int ZrtpSendPacketTransmissionTestCB::doTest() {
         if (!multiParams.empty()) {
             tx = new SymmetricZRTPSession(pattern.getDestinationAddress(),
                                     pattern.getDestinationPort()+2+10);
-            tx->initialize("test_t.zid", true, &config);
+//            tx->initialize("test_t.zid", true, &config);
+            tx->initialize("test_t.zid", true);
             tx->setMultiStrParams(multiParams);
 
             prefix = "TX Multi: ";
@@ -400,7 +403,9 @@ int ZrtpSendPacketTransmissionTestCB::doTest() {
         else {
             tx = new SymmetricZRTPSession(pattern.getDestinationAddress(),
                                     pattern.getDestinationPort()+2);
-            tx->initialize("test_t.zid", true, &config);
+            config.addHashAlgo(Sha384);
+//            tx->initialize("test_t.zid", true, &config);
+            tx->initialize("test_t.zid", true);
 
             prefix = "TX: ";
             mcb = new MyUserCallback(tx);
@@ -462,7 +467,8 @@ int ZrtpRecvPacketTransmissionTestCB::doTest() {
             rx = new SymmetricZRTPSession(pattern.getDestinationAddress(),
                                 pattern.getDestinationPort()+10);
 
-            rx->initialize("test_r.zid", true, &config);
+//            rx->initialize("test_r.zid", true, &config);
+            rx->initialize("test_r.zid", true);
             rx->setMultiStrParams(multiParams);
 
             prefix = "RX Multi: ";
@@ -473,7 +479,8 @@ int ZrtpRecvPacketTransmissionTestCB::doTest() {
             rx = new SymmetricZRTPSession(pattern.getDestinationAddress(),
                                     pattern.getDestinationPort());
 
-            rx->initialize("test_r.zid", true, &config);
+//            rx->initialize("test_r.zid", true, &config);
+            rx->initialize("test_r.zid", true);
 
             prefix = "RX: ";
             mcb = new MyUserCallback(rx);

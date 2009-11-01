@@ -22,7 +22,7 @@
 
 #include <gcrypt.h>
 #include <libzrtpcpp/crypto/ZrtpDH.h>
-
+#include <sstream>
 
 struct gcryptCtx {
     gcry_mpi_t privKey;
@@ -160,6 +160,15 @@ static const uint8_t P4096[] =
 
 ZrtpDH::ZrtpDH(SupportedPubKeys type): pkType(type) {
 
+    switch (pkType) {
+    case Dh2048:
+    case Dh3072:
+        break;
+    default:
+        fprintf(stderr, "Unknown pubkey algo: %d\n", pkType);
+        exit(1);
+        break;
+    }
     ctx = static_cast<void*>(new gcryptCtx);
     gcryptCtx* tmpCtx = static_cast<gcryptCtx*>(ctx);
     tmpCtx->privKey = NULL;

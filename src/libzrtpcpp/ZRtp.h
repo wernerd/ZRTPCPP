@@ -39,6 +39,10 @@
 #define SHA256_DIGEST_LENGTH 32
 #endif
 
+// Prepare to support digest algorithms up to 512 bit (64 bytes)
+#define MAX_DIGEST_LENGTH       64
+#define IMPL_MAX_DIGEST_LENGTH  64
+
 class ZrtpStateClass;
 class ZrtpDH;
 
@@ -427,19 +431,19 @@ private:
      * The SAS hash for signaling and alike. Refer to chapters
      * 4.5 and 7 how sasHash, sasValue and the SAS string are derived.
      */
-    uint8_t sasHash[SHA256_DIGEST_LENGTH];
+    uint8_t sasHash[MAX_DIGEST_LENGTH];
     /**
      * The ids for the retained and other shared secrets
      */
-    uint8_t rs1IDr[SHA256_DIGEST_LENGTH];
-    uint8_t rs2IDr[SHA256_DIGEST_LENGTH];
-    uint8_t auxSecretIDr[SHA256_DIGEST_LENGTH];
-    uint8_t pbxSecretIDr[SHA256_DIGEST_LENGTH];
+    uint8_t rs1IDr[MAX_DIGEST_LENGTH];
+    uint8_t rs2IDr[MAX_DIGEST_LENGTH];
+    uint8_t auxSecretIDr[MAX_DIGEST_LENGTH];
+    uint8_t pbxSecretIDr[MAX_DIGEST_LENGTH];
 
-    uint8_t rs1IDi[SHA256_DIGEST_LENGTH];
-    uint8_t rs2IDi[SHA256_DIGEST_LENGTH];
-    uint8_t auxSecretIDi[SHA256_DIGEST_LENGTH];
-    uint8_t pbxSecretIDi[SHA256_DIGEST_LENGTH];
+    uint8_t rs1IDi[MAX_DIGEST_LENGTH];
+    uint8_t rs2IDi[MAX_DIGEST_LENGTH];
+    uint8_t auxSecretIDi[MAX_DIGEST_LENGTH];
+    uint8_t pbxSecretIDi[MAX_DIGEST_LENGTH];
 
     /**
      * pointers to aux secret storage and length of aux secret
@@ -456,12 +460,12 @@ private:
     /**
      * My hvi
      */
-    uint8_t hvi[SHA256_DIGEST_LENGTH];
+    uint8_t hvi[MAX_DIGEST_LENGTH];
 
     /**
      * The peer's hvi
      */
-    uint8_t peerHvi[SHA256_DIGEST_LENGTH];
+    uint8_t peerHvi[8*ZRTP_WORD_SIZE];
 
     /**
      * Context to compute the SHA256 hash of selected messages.
@@ -489,25 +493,26 @@ private:
      * not stored here). Need full SHA 256 lenght to store hash value but
      * only the leftmost 128 bits are used in computations and comparisons.
      */
-    uint8_t H0[SHA256_DIGEST_LENGTH];
-    uint8_t H1[SHA256_DIGEST_LENGTH];
-    uint8_t H2[SHA256_DIGEST_LENGTH];
-    uint8_t H3[SHA256_DIGEST_LENGTH];
-    uint8_t helloHash[SHA256_DIGEST_LENGTH];
+    uint8_t H0[IMPL_MAX_DIGEST_LENGTH];
+    uint8_t H1[IMPL_MAX_DIGEST_LENGTH];
+    uint8_t H2[IMPL_MAX_DIGEST_LENGTH];
+    uint8_t H3[IMPL_MAX_DIGEST_LENGTH];
+    uint8_t helloHash[IMPL_MAX_DIGEST_LENGTH];
 
-    uint8_t peerH0[SHA256_DIGEST_LENGTH];
-    uint8_t peerH1[SHA256_DIGEST_LENGTH];
-    uint8_t peerH2[SHA256_DIGEST_LENGTH];
-    uint8_t peerH3[SHA256_DIGEST_LENGTH];
+    // We get the peer's H? from the message where length is defined as 8 words
+    uint8_t peerH0[8*ZRTP_WORD_SIZE];
+    uint8_t peerH1[8*ZRTP_WORD_SIZE];
+    uint8_t peerH2[8*ZRTP_WORD_SIZE];
+    uint8_t peerH3[8*ZRTP_WORD_SIZE];
 
     /**
      * The SHA256 hash over selected messages
      */
-    uint8_t messageHash[SHA256_DIGEST_LENGTH];
+    uint8_t messageHash[MAX_DIGEST_LENGTH];
     /**
      * The s0
      */
-    uint8_t s0[SHA256_DIGEST_LENGTH];
+    uint8_t s0[MAX_DIGEST_LENGTH];
 
     /**
      * The new Retained Secret
@@ -517,26 +522,26 @@ private:
     /**
      * The GoClear HMAC keys and confirm HMAC key
      */
-    uint8_t hmacKeyI[SHA256_DIGEST_LENGTH];
-    uint8_t hmacKeyR[SHA256_DIGEST_LENGTH];
+    uint8_t hmacKeyI[MAX_DIGEST_LENGTH];
+    uint8_t hmacKeyR[MAX_DIGEST_LENGTH];
 
     /**
      * The Initiator's srtp key and salt
      */
-    uint8_t srtpKeyI[SHA256_DIGEST_LENGTH];
-    uint8_t srtpSaltI[SHA256_DIGEST_LENGTH];
+    uint8_t srtpKeyI[MAX_DIGEST_LENGTH];
+    uint8_t srtpSaltI[MAX_DIGEST_LENGTH];
 
     /**
      * The Responder's srtp key and salt
      */
-    uint8_t srtpKeyR[SHA256_DIGEST_LENGTH];
-    uint8_t srtpSaltR[SHA256_DIGEST_LENGTH];
+    uint8_t srtpKeyR[MAX_DIGEST_LENGTH];
+    uint8_t srtpSaltR[MAX_DIGEST_LENGTH];
 
     /**
      * The keys used to encrypt/decrypt the confirm message
      */
-    uint8_t zrtpKeyI[SHA256_DIGEST_LENGTH];
-    uint8_t zrtpKeyR[SHA256_DIGEST_LENGTH];
+    uint8_t zrtpKeyI[MAX_DIGEST_LENGTH];
+    uint8_t zrtpKeyR[MAX_DIGEST_LENGTH];
 
     /**
      * Pointers to negotiated hash and HMAC functions
@@ -592,7 +597,7 @@ private:
      * The ZRTP Session Key
      * Refer to chapter 5.4.1.4
      */
-    uint8_t zrtpSession[SHA256_DIGEST_LENGTH];
+    uint8_t zrtpSession[MAX_DIGEST_LENGTH];
 
     /**
      * True if this ZRTP instance uses multi-stream mode.
@@ -604,6 +609,10 @@ private:
      */
     bool PBXEnrollment;
 
+    /**
+     * Configuration data which algorithms to use.
+     */
+    ZrtpConfigure configureAlgos;
     /**
      * Pre-initialized packets.
      */

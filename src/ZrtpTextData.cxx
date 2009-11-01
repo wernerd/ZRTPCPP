@@ -25,8 +25,8 @@
  */
 //                                  1
 //                         1234567890123456
-const char *clientId =    "GNU ZRTP 1.5.0  "; // 16 chars
-const char *zrtpVersion = "1.10";	// must be 4 chars
+const char *clientId =    "GNU ZRTP 1.5.0  "; // 16 chars max.
+const char *zrtpVersion = "1.10";             // must be 4 chars
 /**
  *
  */
@@ -75,18 +75,25 @@ const char* zrtpMsk = "ZRTP MSK";
  * array. If we add an algorithm here then we need to adjust the corresponding
  * value in ZrtpConfigure.h as well.
  */
-const char* supportedHashes[] =  {"S256"};
+const char* supportedHashes[] =  {"S256",
+                                  "S384"};
+const char* mandatoryHash = "S256";
 
 const char* supportedCipher[] =  {"AES3",
                                   "AES1"};
+const char* mandatoryCipher = "AES1";
 
 const char* supportedPubKey[] =  {"DH2k",
                                   // "EC25"
                                   "DH3k",
                                   // "EC38"
                                   "Mult"};
+const char* mandatoryPubKey = "DH3k";
 
 const char* supportedSASType[] = {"B32 "};
+const char* mandatorySasType = "B32 ";
 
 const char* supportedAuthLen[] = {"HS32",
                                   "HS80"};
+const char* mandatoryAuthLen_1 = "HS32";
+const char* mandatoryAuthLen_2 = "HS80";

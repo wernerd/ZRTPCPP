@@ -22,53 +22,53 @@
  */
 
 #include <gcrypt.h>
-#include <libzrtpcpp/crypto/sha256.h>
+#include <libzrtpcpp/crypto/sha384.h>
 
-void sha256(unsigned char* data, unsigned int dataLength,
+void sha384(unsigned char* data, unsigned int dataLength,
             unsigned char* mac)
 {
-    gcry_md_hash_buffer(GCRY_MD_SHA256, mac, data, dataLength);
+    gcry_md_hash_buffer(GCRY_MD_SHA384, mac, data, dataLength);
 }
 
-void sha256(unsigned char* dataChunks[],
+void sha384(unsigned char* dataChunks[],
             unsigned int dataChunkLength[],
             unsigned char* mac)
 {
     gcry_md_hd_t hd;
     gcry_error_t err = 0;
 
-    err = gcry_md_open(&hd, GCRY_MD_SHA256, 0);
+    err = gcry_md_open(&hd, GCRY_MD_SHA384, 0);
     while (*dataChunks) {
         gcry_md_write (hd, *dataChunks, (uint32_t)(*dataChunkLength));
         dataChunks++;
         dataChunkLength++;
     }
-    uint8_t* p = gcry_md_read (hd, GCRY_MD_SHA256);
-    memcpy(mac, p, SHA256_DIGEST_LENGTH);
+    uint8_t* p = gcry_md_read (hd, GCRY_MD_SHA384);
+    memcpy(mac, p, SHA384_DIGEST_LENGTH);
     gcry_md_close (hd);
 }
 
-void* createSha256Context()
+void* createSha384Context()
 {
     gcry_error_t err = 0;
     gcry_md_hd_t hd;
 
-    err = gcry_md_open(&hd, GCRY_MD_SHA256, 0);
+    err = gcry_md_open(&hd, GCRY_MD_SHA384, 0);
     return (void*)hd;
 }
 
-void closeSha256Context(void* ctx, unsigned char* digest)
+void closeSha384Context(void* ctx, unsigned char* digest)
 {
     gcry_md_hd_t hd = (gcry_md_hd_t)ctx;
 
     if (digest != NULL) {
-        uint8_t* p = gcry_md_read (hd, GCRY_MD_SHA256);
-        memcpy(digest, p, SHA256_DIGEST_LENGTH);
+        uint8_t* p = gcry_md_read (hd, GCRY_MD_SHA384);
+        memcpy(digest, p, SHA384_DIGEST_LENGTH);
     }
     gcry_md_close (hd);
 }
 
-void sha256Ctx(void* ctx, unsigned char* data, 
+void sha384Ctx(void* ctx, unsigned char* data, 
                unsigned int dataLength)
 {
     gcry_md_hd_t hd = (gcry_md_hd_t)ctx;
@@ -76,7 +76,7 @@ void sha256Ctx(void* ctx, unsigned char* data,
     gcry_md_write (hd, data, dataLength);
 }
 
-void sha256Ctx(void* ctx, unsigned char* dataChunks[],
+void sha384Ctx(void* ctx, unsigned char* dataChunks[],
                unsigned int dataChunkLength[])
 {
     gcry_md_hd_t hd = (gcry_md_hd_t)ctx;

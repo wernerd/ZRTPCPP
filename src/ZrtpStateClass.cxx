@@ -791,6 +791,12 @@ void ZrtpStateClass::evCommitSent(void) {
                 if (errorCode != IgnorePacket) {
                     sendErrorPacket(errorCode);
                 }
+                else {
+                    if (startTimer(&T2) <= 0) {
+                        timerFailed(SevereNoTimer);       // switches to state Initial
+                    }
+                }
+
                 return;
             }
             sentPacket = static_cast<ZrtpPacketBase *>(dhPart2);

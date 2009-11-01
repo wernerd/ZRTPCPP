@@ -23,6 +23,8 @@
 #include <libzrtpcpp/crypto/ZrtpDH.h>
 #include <libzrtpcpp/crypto/hmac256.h>
 #include <libzrtpcpp/crypto/sha256.h>
+#include <libzrtpcpp/crypto/hmac384.h>
+#include <libzrtpcpp/crypto/sha384.h>
 #include <libzrtpcpp/crypto/aesCFB.h>
 
 #include <libzrtpcpp/ZRtp.h>
@@ -35,6 +37,7 @@ using namespace GnuZrtpCodes;
 
 /* disabled...but used in testing and debugging, probably should have a
    controlling #define...
+   *
 static void hexdump(const char* title, const unsigned char *s, int l) {
     int n=0;
 
@@ -68,23 +71,31 @@ int ZrtpAvailable()
 
 ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, 
     ZrtpConfigure* config):
-    callback(cb), dhContext(NULL), DHss(NULL), auxSecret(NULL), auxSecretLength(0),
-    rs1Valid(false), rs2Valid(false), multiStream(false),
-    PBXEnrollment(false) {
+    callback(cb), dhContext(NULL), DHss(NULL), auxSecret(NULL), 
+    auxSecretLength(0), rs1Valid(false), rs2Valid(false), multiStream(false),
+    msgShaContext(NULL), PBXEnrollment(false), configureAlgos(*config) {
+
+    // setup the implicit hash function pointers and length
+    hashLengthImpl = SHA256_DIGEST_LENGTH;
+    hashFunctionImpl = sha256;
+    hashListFunctionImpl = sha256;
+
+    hmacFunctionImpl = hmac_sha256;
+    hmacListFunctionImpl = hmac_sha256;
 
     /*
      * Generate H0 as a random number (256 bits, 32 bytes) and then
-     * the hash chain, refer to chapter 10
+     * the hash chain, refer to chapter 10. Use the implicit hash function.
      */
-    randomZRTP(H0, SHA256_DIGEST_LENGTH);
-    sha256(H0, SHA256_DIGEST_LENGTH, H1);        // hash H0 and generate H1
-    sha256(H1, SHA256_DIGEST_LENGTH, H2);        // H2
-    sha256(H2, SHA256_DIGEST_LENGTH, H3);        // H3
+    randomZRTP(H0, HASH_IMAGE_SIZE);
+    sha256(H0, HASH_IMAGE_SIZE, H1);        // hash H0 and generate H1
+    sha256(H1, HASH_IMAGE_SIZE, H2);        // H2
+    sha256(H2, HASH_IMAGE_SIZE, H3);        // H3
 
-    zrtpHello.configureHello(config);
+    zrtpHello.configureHello(&configureAlgos);
     zrtpHello.setH3(H3);             // set H3 in Hello, included in helloHash
 
-    memcpy(zid, myZid, 12);
+    memcpy(zid, myZid, ZID_SIZE);
     zrtpHello.setZid(zid);
     setClientId(id);                // set id, compute HMAC and final helloHash
 
@@ -93,7 +104,6 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id,
 
 ZRtp::~ZRtp() {
     stopZrtp();
-
     if (DHss != NULL) {
 	delete DHss;
         DHss = NULL;
@@ -115,23 +125,23 @@ ZRtp::~ZRtp() {
         auxSecret = NULL;
         auxSecretLength = 0;
     }
-    memset(hmacKeyI, 0, SHA256_DIGEST_LENGTH);
-    memset(hmacKeyR, 0, SHA256_DIGEST_LENGTH);
+    memset(hmacKeyI, 0, MAX_DIGEST_LENGTH);
+    memset(hmacKeyR, 0, MAX_DIGEST_LENGTH);
 
-    memset(zrtpKeyI, 0, SHA256_DIGEST_LENGTH);
-    memset(zrtpKeyR, 0, SHA256_DIGEST_LENGTH);
+    memset(zrtpKeyI, 0, MAX_DIGEST_LENGTH);
+    memset(zrtpKeyR, 0, MAX_DIGEST_LENGTH);
     /*
      * Clear the Initiator's srtp key and salt
      */
-    memset(srtpKeyI, 0, SHA256_DIGEST_LENGTH);
-    memset(srtpSaltI, 0,  SHA256_DIGEST_LENGTH);
+    memset(srtpKeyI, 0, MAX_DIGEST_LENGTH);
+    memset(srtpSaltI, 0,  MAX_DIGEST_LENGTH);
     /*
      * Clear he Responder's srtp key and salt
      */
-    memset(srtpKeyR, 0, SHA256_DIGEST_LENGTH);
-    memset(srtpSaltR, 0, SHA256_DIGEST_LENGTH);
+    memset(srtpKeyR, 0, MAX_DIGEST_LENGTH);
+    memset(srtpSaltR, 0, MAX_DIGEST_LENGTH);
 
-    memset(zrtpSession, 0, SHA256_DIGEST_LENGTH);
+    memset(zrtpSession, 0, MAX_DIGEST_LENGTH);
 }
 
 void ZRtp::processZrtpMessage(uint8_t *message, uint32_t pSSRC) {
@@ -223,24 +233,23 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
 
     sendInfo(Info, InfoHelloReceived);
 
-    if (memcmp(hello->getVersion(), zrtpVersion, 4) != 0) {
-	fprintf(stderr, "version: %s\n", hello->getVersion());
+    if (memcmp(hello->getVersion(), zrtpVersion, ZRTP_WORD_SIZE) != 0) {
         *errMsg = UnsuppZRTPVersion;
         return NULL;
     }
     // Save our peer's (presumably the Responder) ZRTP id
-    memcpy(peerZid, hello->getZid(), 12);
-    if (memcmp(peerZid, zid, 12) == 0) {       // peers have same ZID????
+    memcpy(peerZid, hello->getZid(), ZID_SIZE);
+    if (memcmp(peerZid, zid, ZID_SIZE) == 0) {       // peers have same ZID????
         *errMsg = EqualZIDHello;
         return NULL;
     }
-    memcpy(peerH3, hello->getH3(), SHA256_DIGEST_LENGTH);
+    memcpy(peerH3, hello->getH3(), HASH_IMAGE_SIZE);
 
     /*
      * The Following section extracts the algorithm from the peer's Hello
-     * packet. Always the best possible (offered) algorithms are
+     * packet. Always the preferend offered algorithms are
      * used. If the received Hello does not contain algo specifiers
-     * or offers only unsupported (optional) algos then replace
+     * or offers only unsupported optional algos then replace
      * these with mandatory algos and put them into the Commit packet.
      * Refer to the findBest*() functions.
      * If this is a MultiStream ZRTP object then do not get the cipher,
@@ -308,12 +317,13 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
 
     int32_t len = zrtpDH2.getLength() * ZRTP_WORD_SIZE;
 
-    // Compute HMAC over DH2, excluding the HMAC field (2*ZTP_WORD_SIZE)
-    // and store in DH2. Must use implicit HMAC functions.
-    uint8_t hmac[SHA256_DIGEST_LENGTH];
+    // Compute HMAC over DH2, excluding the HMAC field (HMAC_SIZE)
+    // and store in DH2. Key to HMAC is H0, use HASH_IMAGE_SIZE bytes only.
+    // Must use implicit HMAC functions.
+    uint8_t hmac[IMPL_MAX_DIGEST_LENGTH];
     uint32_t macLen;
-    hmac_sha256(H0, SHA256_DIGEST_LENGTH, (uint8_t*)zrtpDH2.getHeaderBase(), 
-                len-(2*ZRTP_WORD_SIZE), hmac, &macLen);
+    hmacFunctionImpl(H0, HASH_IMAGE_SIZE, (uint8_t*)zrtpDH2.getHeaderBase(), 
+                len-(HMAC_SIZE), hmac, &macLen);
     zrtpDH2.setHMAC(hmac);
 
     // Compute the HVI, refer to chapter 5.4.1.1 of the specification
@@ -330,17 +340,18 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
 
     len = zrtpCommit.getLength() * ZRTP_WORD_SIZE;
 
-    // Compute HMAC over Commit, excluding the HMAC field (2*ZTP_WORD_SIZE)
-    // and store in Hello. 
+    // Compute HMAC over Commit, excluding the HMAC field (HMAC_SIZE)
+    // and store in Hello. Key to HMAC is H1, use HASH_IMAGE_SIZE bytes only.
     // Must use implicit HMAC functions.
-    hmac_sha256(H1, SHA256_DIGEST_LENGTH, (uint8_t*)zrtpCommit.getHeaderBase(), 
-                len-(2*ZRTP_WORD_SIZE), hmac, &macLen);
+    hmacFunctionImpl(H1, HASH_IMAGE_SIZE, (uint8_t*)zrtpCommit.getHeaderBase(),
+                len-(HMAC_SIZE), hmac, &macLen);
     zrtpCommit.setHMAC(hmac);
 
     // hash first messages to produce overall message hash
     // First the Responder's Hello message, second the Commit 
     // (always Initator's). 
     // Must use negotiated hash.
+    msgShaContext = createHashCtx();
     hashCtxFunction(msgShaContext, (unsigned char*)hello->getHeaderBase(), hello->getLength() * ZRTP_WORD_SIZE);
     hashCtxFunction(msgShaContext, (unsigned char*)zrtpCommit.getHeaderBase(), len);
 
@@ -352,7 +363,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
 
 ZrtpPacketCommit* ZRtp::prepareCommitMultiStream(ZrtpPacketHello *hello) {
 
-    randomZRTP(hvi, ZRTP_WORD_SIZE*4);
+    randomZRTP(hvi, ZRTP_WORD_SIZE*4);  // This is the Multi-Stream NONCE size
 
     zrtpCommit.setZid(zid);
     zrtpCommit.setHashType((uint8_t*)supportedHashes[hash]);
@@ -365,21 +376,22 @@ ZrtpPacketCommit* ZRtp::prepareCommitMultiStream(ZrtpPacketHello *hello) {
 
     int32_t len = zrtpCommit.getLength() * ZRTP_WORD_SIZE;
 
-    // Compute HMAC over Commit, excluding the HMAC field (2*ZTP_WORD_SIZE)
-    // and store in Hello. 
+    // Compute HMAC over Commit, excluding the HMAC field (HMAC_SIZE)
+    // and store in Hello. Key to HMAC is H1, use HASH_IMAGE_SIZE bytes only.
     // Must use the implicit HMAC function.
-    uint8_t hmac[SHA256_DIGEST_LENGTH];
+    uint8_t hmac[IMPL_MAX_DIGEST_LENGTH];
     uint32_t macLen;
-    hmac_sha256(H1, SHA256_DIGEST_LENGTH, (uint8_t*)zrtpCommit.getHeaderBase(), 
-                len-(2*ZRTP_WORD_SIZE), hmac, &macLen);
+    hmacFunctionImpl(H1, HASH_IMAGE_SIZE, (uint8_t*)zrtpCommit.getHeaderBase(), 
+                len-(HMAC_SIZE), hmac, &macLen);
     zrtpCommit.setHMACMulti(hmac);
 
-    setNegotiatedHash(hash);
 
     // hash first messages to produce overall message hash
     // First the Responder's Hello message, second the Commit 
     // (always Initator's). 
     // Must use the negotiated hash.
+    msgShaContext = createHashCtx();
+
     hashCtxFunction(msgShaContext, (unsigned char*)hello->getHeaderBase(), hello->getLength() * ZRTP_WORD_SIZE);
     hashCtxFunction(msgShaContext, (unsigned char*)zrtpCommit.getHeaderBase(), len);
 
@@ -405,13 +417,13 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     sendInfo(Info, InfoRespCommitReceived);
 
     // The following code check the hash chain according chapter 10 to detect
-    // false ZRTP packets. 
+    // false ZRTP packets.
     // Must use the implicit hash function.
-    uint8_t tmpH3[SHA256_DIGEST_LENGTH];
-    memcpy(peerH2, commit->getH2(), SHA256_DIGEST_LENGTH);
-    sha256(peerH2, SHA256_DIGEST_LENGTH, tmpH3);
+    uint8_t tmpH3[IMPL_MAX_DIGEST_LENGTH];
+    memcpy(peerH2, commit->getH2(), HASH_IMAGE_SIZE);
+    hashFunctionImpl(peerH2, HASH_IMAGE_SIZE, tmpH3);
 
-    if (memcmp(tmpH3, peerH3, SHA256_DIGEST_LENGTH) != 0) {
+    if (memcmp(tmpH3, peerH3, HASH_IMAGE_SIZE) != 0) {
         *errMsg = IgnorePacket;
         return NULL;
     }
@@ -421,6 +433,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     // Commit packet. Refer to chapter 9.1.
     if (!checkMsgHmac(peerH2)) {
         sendInfo(Severe, SevereHelloHMACFailed);
+        *errMsg = CriticalSWError;
         return NULL;
     }
 
@@ -461,7 +474,21 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
         *errMsg = UnsuppHashType;
         return NULL;
     }
-    hash = (SupportedHashes)i;
+    // check if the peer's commited hash is the same that we used when
+    // preparing our commit packet. If not do the necessary resets and
+    // recompute some data.
+    if (hash != (SupportedHashes)i) {
+        hash = (SupportedHashes)i;
+        setNegotiatedHash(hash);
+
+        ZIDRecord zidRec(peerZid);
+        ZIDFile *zidFile = ZIDFile::getInstance();
+        zidFile->getRecord(&zidRec);
+
+        // Compute the Initator's and Responder's retained secret ids
+        // with the committed hash.
+        computeSharedSecretSet(zidRec);
+    }
 
     // check if we support the commited pub key type
     cp = *(uint32_t*)commit->getPubKeysType();
@@ -515,24 +542,25 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
 
     int32_t len = zrtpDH1.getLength() * ZRTP_WORD_SIZE;
 
-    // Compute HMAC over DHPart1, excluding the HMAC field (2*ZTP_WORD_SIZE)
-    // and store in DHPart1
-    uint8_t hmac[SHA256_DIGEST_LENGTH];
+    // Compute HMAC over DHPart1, excluding the HMAC field (HMAC_SIZE)
+    // and store in DHPart1.
+    // Use implicit Hash function
+    uint8_t hmac[IMPL_MAX_DIGEST_LENGTH];
     uint32_t macLen;
-    hmac_sha256(H0, SHA256_DIGEST_LENGTH, (uint8_t*)zrtpDH1.getHeaderBase(), 
-                len-(2*ZRTP_WORD_SIZE), hmac, &macLen);
+    hmacFunctionImpl(H0, HASH_IMAGE_SIZE, (uint8_t*)zrtpDH1.getHeaderBase(), 
+                len-(HMAC_SIZE), hmac, &macLen);
     zrtpDH1.setHMAC(hmac);
 
     // We are definitly responder. Save the peer's hvi for later compare.
     myRole = Responder;
-    memcpy(peerHvi, commit->getHvi(), SHA256_DIGEST_LENGTH);
+    memcpy(peerHvi, commit->getHvi(), HVI_SIZE);
 
     // We are responder. Release a possibly pre-computed SHA256 context
     // because this was prepared for Initiator. Then create a new one.
     if (msgShaContext != NULL) {
         closeHashCtx(msgShaContext, NULL);
     }
-    setNegotiatedHash(hash);
+    msgShaContext = createHashCtx();
 
     // Hash messages to produce overall message hash:
     // First the Responder's (my) Hello message, second the Commit 
@@ -565,11 +593,12 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
     // thus could not store a peer's H2. A two step SHA256 is required to 
     // re-compute H3. Then compare with peer's H3 from peer's Hello packet.
     // Must use implicit hash function.
-    uint8_t tmpHash[SHA256_DIGEST_LENGTH];
-    sha256(dhPart1->getH1(), SHA256_DIGEST_LENGTH, peerH2); // Compute peer's H2
-    sha256(peerH2, SHA256_DIGEST_LENGTH, tmpHash);          // Compute peer's H3 (tmpHash)
+    uint8_t tmpHash[IMPL_MAX_DIGEST_LENGTH];
+    hashFunctionImpl(dhPart1->getH1(), HASH_IMAGE_SIZE, tmpHash); // Compute peer's H2
+    memcpy(peerH2, tmpHash, HASH_IMAGE_SIZE);
+    hashFunctionImpl(peerH2, HASH_IMAGE_SIZE, tmpHash);          // Compute peer's H3 (tmpHash)
 
-    if (memcmp(tmpHash, peerH3, SHA256_DIGEST_LENGTH) != 0) {
+    if (memcmp(tmpHash, peerH3, HASH_IMAGE_SIZE) != 0) {
         *errMsg = IgnorePacket;
         return NULL;
     }
@@ -579,6 +608,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
     // Refer to chapter 9.1 and chapter 10.
     if (!checkMsgHmac(peerH2)) {
         sendInfo(Severe, SevereHelloHMACFailed);
+        *errMsg = CriticalSWError;
         return NULL;
     }
 
@@ -586,7 +616,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
     DHss = new uint8_t[dhContext->getDhSize()];
     if (DHss == NULL) {
         *errMsg = CriticalSWError;
-	return NULL;
+        return NULL;
     }
 
     // get and check Responder's public value, see chap. 5.4.3 in the spec
@@ -637,12 +667,12 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
 
     sendInfo(Info, InfoRespDH2Received);
 
-    // Because we are responder we received a Commit and stored its H2. 
+    // Because we are responder we received a Commit and stored its H2.
     // Now re-compute H2 from received H1 and compare with stored peer's H2.
     // Use implicit hash function
-    uint8_t tmpHash[SHA256_DIGEST_LENGTH];
-    sha256(dhPart2->getH1(), SHA256_DIGEST_LENGTH, tmpHash);
-    if (memcmp(tmpHash, peerH2, SHA256_DIGEST_LENGTH) != 0) {
+    uint8_t tmpHash[IMPL_MAX_DIGEST_LENGTH];
+    hashFunctionImpl(dhPart2->getH1(), HASH_IMAGE_SIZE, tmpHash);
+    if (memcmp(tmpHash, peerH2, HASH_IMAGE_SIZE) != 0) {
         *errMsg = IgnorePacket;
         return NULL;
     }
@@ -675,12 +705,13 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     // may have occured.
     // TODO: can we check the HVI at some earlier point?
     computeHvi(dhPart2, &zrtpHello);
-    if (memcmp(hvi, peerHvi, SHA256_DIGEST_LENGTH) != 0) {
+    if (memcmp(hvi, peerHvi, HVI_SIZE) != 0) {
         *errMsg = DHErrorWrongHVI;
         return NULL;
     }
     // Hash the Initiator's DH2 into the message Hash (other messages already
     // prepared, see method prepareDHPart1().
+    // Use neotiated hash function
     hashCtxFunction(msgShaContext, (unsigned char*)dhPart2->getHeaderBase(),
               dhPart2->getLength() * ZRTP_WORD_SIZE);
 
@@ -718,7 +749,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     zrtpConfirm1.setIv(randomIV);
     zrtpConfirm1.setHashH0(H0);
 
-    uint8_t confMac[SHA256_DIGEST_LENGTH];
+    uint8_t confMac[MAX_DIGEST_LENGTH];
     uint32_t macLen;
 
     // Encrypt and HMAC with Responder's key - we are Respondere here
@@ -727,8 +758,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
 
     aesCfbEncrypt(zrtpKeyR, keylen, randomIV,
                   (unsigned char*)zrtpConfirm1.getHashH0(), hmlen);
-    // TODO: variable digest length
-    hmacFunction(hmacKeyR, SHA256_DIGEST_LENGTH,
+    hmacFunction(hmacKeyR, hashLength,
                 (unsigned char*)zrtpConfirm1.getHashH0(),
                 hmlen, confMac, &macLen);
 
@@ -749,11 +779,11 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
     // The following code checks the hash chain according chapter 10 to detect
     // false ZRTP packets.
     // Use implicit hash function
-    uint8_t tmpH3[SHA256_DIGEST_LENGTH];
-    memcpy(peerH2, commit->getH2(), SHA256_DIGEST_LENGTH);
-    sha256(peerH2, SHA256_DIGEST_LENGTH, tmpH3);
+    uint8_t tmpH3[IMPL_MAX_DIGEST_LENGTH];
+    memcpy(peerH2, commit->getH2(), HASH_IMAGE_SIZE);
+    hashFunctionImpl(peerH2, HASH_IMAGE_SIZE, tmpH3);
 
-    if (memcmp(tmpH3, peerH3, SHA256_DIGEST_LENGTH) != 0) {
+    if (memcmp(tmpH3, peerH3, HASH_IMAGE_SIZE) != 0) {
         *errMsg = IgnorePacket;
         return NULL;
     }
@@ -812,8 +842,13 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
         *errMsg = UnsuppHashType;
         return NULL;
     }
-    hash = (SupportedHashes)i;
-
+    // check if the peer's commited hash is the same that we used when
+    // preparing our commit packet. If no do the necessary resets and
+    // recompute some data.
+    if (hash != (SupportedHashes)i) {
+        hash = (SupportedHashes)i;
+        setNegotiatedHash(hash);
+    }
     myRole = Responder;
 
     // We are responder. Release a possibly pre-computed SHA256 context
@@ -821,7 +856,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
     if (msgShaContext != NULL) {
         closeHashCtx(msgShaContext, NULL);
     }
-    setNegotiatedHash(hash);
+    msgShaContext = createHashCtx();
 
     // Hash messages to produce overall message hash:
     // First the Responder's (my) Hello message, second the Commit 
@@ -845,7 +880,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
     zrtpConfirm1.setIv(randomIV);
     zrtpConfirm1.setHashH0(H0);
 
-    uint8_t confMac[SHA256_DIGEST_LENGTH];
+    uint8_t confMac[MAX_DIGEST_LENGTH];
     uint32_t macLen;
 
     // Encrypt and HMAC with Responder's key - we are Respondere here
@@ -855,8 +890,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
     aesCfbEncrypt(zrtpKeyR, keylen, randomIV,
                   (unsigned char*)zrtpConfirm1.getHashH0(), hmlen);
     // Use negotiated HMAC (hash)
-    // TODO: variable digest length
-    hmacFunction(hmacKeyR, SHA256_DIGEST_LENGTH,
+    hmacFunction(hmacKeyR, hashLength,
                 (unsigned char*)zrtpConfirm1.getHashH0(),
                 hmlen, confMac, &macLen);
 
@@ -875,7 +909,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
 
     sendInfo(Info, InfoInitConf1Received);
 
-    uint8_t confMac[SHA256_DIGEST_LENGTH];
+    uint8_t confMac[MAX_DIGEST_LENGTH];
     uint32_t macLen;
 
     // Use the Responder's keys here because we are Initiator here and
@@ -884,12 +918,11 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
     int keylen = (cipher == Aes128) ? 16 : 32;
 
     // Use negotiated HMAC (hash)
-    // TODO: variable digest length
-    hmacFunction(hmacKeyR, SHA256_DIGEST_LENGTH,
+    hmacFunction(hmacKeyR, hashLength,
                 (unsigned char*)confirm1->getHashH0(),
                 hmlen, confMac, &macLen);
 
-    if (memcmp(confMac, confirm1->getHmac(), 2*ZRTP_WORD_SIZE) != 0) {
+    if (memcmp(confMac, confirm1->getHmac(), HMAC_SIZE) != 0) {
         *errMsg = ConfirmHMACWrong;
         return NULL;
     }
@@ -956,8 +989,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
     aesCfbEncrypt(zrtpKeyI, keylen, randomIV,
                   (unsigned char*)zrtpConfirm2.getHashH0(), hmlen); 
     // Use negotiated HMAC (hash)
-    // TODO: variable digest length
-    hmacFunction(hmacKeyI, SHA256_DIGEST_LENGTH,
+    hmacFunction(hmacKeyI, hashLength,
                 (unsigned char*)zrtpConfirm2.getHashH0(),
                 hmlen, confMac, &macLen);
 
@@ -975,7 +1007,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2MultiStream(ZrtpPacketConfirm* confirm1,
     // don't update SAS, RS
     sendInfo(Info, InfoInitConf1Received);
 
-    uint8_t confMac[SHA256_DIGEST_LENGTH];
+    uint8_t confMac[MAX_DIGEST_LENGTH];
     uint32_t macLen;
 
     closeHashCtx(msgShaContext, messageHash);
@@ -991,7 +1023,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2MultiStream(ZrtpPacketConfirm* confirm1,
 
     // Use negotiated HMAC (hash)
     // TODO: variable digest length
-    hmacFunction(hmacKeyR, SHA256_DIGEST_LENGTH,
+    hmacFunction(hmacKeyR, hashLength,
                 (unsigned char*)confirm1->getHashH0(),
                 hmlen, confMac, &macLen);
 
@@ -1005,12 +1037,13 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2MultiStream(ZrtpPacketConfirm* confirm1,
 
     // Because we are initiator the protocol engine didn't receive Commit and
     // because we are using multi-stream mode here we also did not receive a DHPart1 and
-    // thus could not store a responder's H2 or H1. A three step SHA256 is required to 
-    // re-compute H1, H2, and H3. Then compare with peer's H3 from peer's Hello packet.
+    // thus could not store a responder's H2 or H1. A two step hash is required to
+    // re-compute H1, H2.
     // USe implicit hash function.
-    uint8_t tmpHash[SHA256_DIGEST_LENGTH];
-    sha256(confirm1->getHashH0(), SHA256_DIGEST_LENGTH, tmpHash); // Compute peer's H1 in tmpHash
-    sha256(tmpHash, SHA256_DIGEST_LENGTH, peerH2);            // Compute peer's H2
+    uint8_t tmpHash[IMPL_MAX_DIGEST_LENGTH];
+    hashFunctionImpl(confirm1->getHashH0(), HASH_IMAGE_SIZE, tmpHash); // Compute peer's H1 in tmpHash
+    hashFunctionImpl(tmpHash, HASH_IMAGE_SIZE, tmpHash);            // Compute peer's in tmpHash
+    memcpy(peerH2, tmpHash, HASH_IMAGE_SIZE);                        // copy and truncate to peerH2
 
     // Check HMAC of previous Hello packet stored in temporary buffer. The
     // HMAC key of the Hello packet is peer's H2 that was computed above.
@@ -1039,8 +1072,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2MultiStream(ZrtpPacketConfirm* confirm1,
     aesCfbEncrypt(zrtpKeyI, keylen, randomIV,
                   (unsigned char*)zrtpConfirm2.getHashH0(), hmlen); 
     // Use negotiated HMAC (hash)
-    // TODO: variable digest length
-    hmacFunction(hmacKeyI, SHA256_DIGEST_LENGTH,
+    hmacFunction(hmacKeyI, hashLength,
                 (unsigned char*)zrtpConfirm2.getHashH0(),
                 hmlen, confMac, &macLen);
 
@@ -1055,7 +1087,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
 
     sendInfo(Info, InfoRespConf2Received);
 
-    uint8_t confMac[SHA256_DIGEST_LENGTH];
+    uint8_t confMac[MAX_DIGEST_LENGTH];
     uint32_t macLen;
 
     // Use the Initiator's keys here because we are Responder here and
@@ -1064,8 +1096,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
     int keylen = (cipher == Aes128) ? 16 : 32;
 
     // Use negotiated HMAC (hash)
-    // TODO: variable digest length
-    hmacFunction(hmacKeyI, SHA256_DIGEST_LENGTH,
+    hmacFunction(hmacKeyI, hashLength,
                 (unsigned char*)confirm2->getHashH0(),
                 hmlen, confMac, &macLen);
 
@@ -1118,8 +1149,8 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
         // Check HMAC of Commit packet stored in temporary buffer. The
         // HMAC key of the Commit packet is initiator's H1
         // use implicit hash function.
-        uint8_t tmpHash[SHA256_DIGEST_LENGTH];
-        sha256(confirm2->getHashH0(), SHA256_DIGEST_LENGTH, tmpHash); // Compute initiator's H1 in tmpHash
+        uint8_t tmpHash[IMPL_MAX_DIGEST_LENGTH];
+        hashFunctionImpl(confirm2->getHashH0(), HASH_IMAGE_SIZE, tmpHash); // Compute initiator's H1 in tmpHash
 
         if (!checkMsgHmac(tmpHash)) {
             sendInfo(Severe, SevereCommitHMACFailed);
@@ -1171,13 +1202,19 @@ ZrtpPacketGoClear* ZRtp::prepareGoClear(uint32_t errMsg) {
 /*
  * The next functions look up and return a prefered algorithm. These
  * functions work as follows:
- * - If the Hello packet does not contain an algorithm (number of algorithms is
- *   zero) then return our prefered algorithm. This prefered algorithm must be
- *   one of the mandatory algorithms specified in chapter 6.1.x.
- * - If the functions find a match return the found algorithm.
- * - If the functions do not find a match return a prefered, mandatory
- *   algorithm.
- * This guarantees that we always return a supported alogrithm.
+ * - If the Hello packet does not contain an algorithm (number of algorithms 
+*    is zero) then return the mandatory algorithm.
+ * - Build a list of algorithm names and ids from configuration data. If
+ *   the configuration data does not contain a mandatory algorithm append
+ *   the mandatory algorithm to the list and ids.
+ * - Build a list of algorithm names from the Hello message. If
+ *   the Hello message does not contain a mandatory algorithm append
+ *   the mandatory algorithm to the list.
+ * - Lookup a matching algorithm. The list built from Hello takes
+ *   precedence in the lookup (indexed by the outermost loop).
+ *
+ * This guarantees that we always return a supported alogrithm respecting
+ * the order of algorithms in the Hello message
  *
  * The mandatory algorithms are: (internal enums are our prefered algoritms)
  * Hash:                S256 (SHA 256)             (internal enum Sha256)
@@ -1190,15 +1227,53 @@ SupportedHashes ZRtp::findBestHash(ZrtpPacketHello *hello) {
 
     int i;
     int ii;
-    int num = hello->getNumHashes();
+    int numAlgosOffered;
+    uint32_t* algosOffered[MAX_NO_OF_ALGOS+1];
 
+    int numAlgosConf;
+    uint32_t* algosConf[MAX_NO_OF_ALGOS+1];
+    SupportedHashes ids[MAX_NO_OF_ALGOS+1];
+
+    bool mandatoryFound = false;
+
+    // If Hello does not contain any hash names return Sha256, its mandatory
+    int num = hello->getNumHashes();
     if (num == 0) {
         return Sha256;
     }
-    for (i = 0; i < EndSupportedHashes; i++) {
-	for (ii = 0; ii < num; ii++) {
-	    if (*(uint32_t*)hello->getHashType(ii) == *(uint32_t*)supportedHashes[i]) {
-                return (SupportedHashes)i;
+    // Build list of configured hash algorithm names, append mandatory algos
+    // if necessary. Fill algo ids array parallel to algorithm names
+    numAlgosConf = configureAlgos.getNumConfiguredHashes();
+    for (i = 0; i < numAlgosConf; i++) {
+        ids[i] = configureAlgos.getHashAlgoAt(i);
+        algosConf[i] = (uint32_t*)supportedHashes[ids[i]];
+        if (*algosConf[i] == *(uint32_t*)mandatoryHash) {
+            mandatoryFound = true;
+        }
+    }
+    if (!mandatoryFound) {
+        ids[numAlgosConf] = mandatoryHashId;
+        algosConf[numAlgosConf++] = (uint32_t*)mandatoryHash;
+    }
+
+    // Build list of offered algos in Hello, append mandatory algos if necessary
+    mandatoryFound = false;
+    for (numAlgosOffered = 0; numAlgosOffered < num; numAlgosOffered++) {
+        algosOffered[numAlgosOffered] = (uint32_t*)hello->getHashType(numAlgosOffered);
+        if (*algosOffered[numAlgosOffered] == *(uint32_t*)mandatoryHash) {
+            mandatoryFound = true;
+        }
+    }
+    if (!mandatoryFound) {
+        algosOffered[numAlgosOffered++] = (uint32_t*)mandatoryHash;
+    }
+
+    // Lookup offered algos in configured algos. Because of appended
+    // mandatory algorithms at least one match will happen
+    for (i = 0; i < numAlgosOffered; i++) {
+	for (ii = 0; ii < numAlgosConf; ii++) {
+	    if (*algosOffered[i] == *algosConf[ii]) {
+                return ids[ii];
 	    }
 	}
     }
@@ -1209,19 +1284,60 @@ SupportedSymCiphers ZRtp::findBestCipher(ZrtpPacketHello *hello, SupportedPubKey
 
     int i;
     int ii;
-    bool matchingCiphers[EndSupportedSymCiphers];
-    int num = hello->getNumCiphers();
+    int numAlgosOffered;
+    uint32_t* algosOffered[MAX_NO_OF_ALGOS+1];
 
+    int numAlgosConf;
+    uint32_t* algosConf[MAX_NO_OF_ALGOS+1];
+    SupportedSymCiphers ids[MAX_NO_OF_ALGOS+1];
+
+    bool mandatoryFound = false;
+
+    bool matchingCiphers[EndSupportedSymCiphers];
+
+    int num = hello->getNumCiphers();
     if (num == 0 || pk == Dh2048) {
         return Aes128;
     }
-    for (i = 0; i < EndSupportedSymCiphers; i++) {
-	for (ii = 0; ii < num; ii++) {
-	    if (*(uint32_t*)hello->getCipherType(ii) == *(uint32_t*)supportedCipher[i]) {
-                matchingCiphers[i] = true;
+
+    // Build list of configured cipher algorithm names, append mandatory algos
+    // if necessary. Fill algo ids array parallel to algorithm names
+    numAlgosConf = configureAlgos.getNumConfiguredSymCiphers();
+    for (i = 0; i < numAlgosConf; i++) {
+        ids[i] = configureAlgos.getSymCipherAlgoAt(i);
+        algosConf[i] = (uint32_t*)supportedCipher[ids[i]];
+        if (*algosConf[i] == *(uint32_t*)mandatoryCipher) {
+            mandatoryFound = true;
+        }
+    }
+    if (!mandatoryFound) {
+        ids[numAlgosConf] = mandatoryCipherId;
+        algosConf[numAlgosConf++] = (uint32_t*)mandatoryCipher;
+    }
+
+    // Build list of offered algos names in Hello, append mandatory algos if
+    // necessary
+    mandatoryFound = false;
+    for (numAlgosOffered = 0; numAlgosOffered < num; numAlgosOffered++) {
+        algosOffered[numAlgosOffered] = (uint32_t*)hello->getCipherType(numAlgosOffered);
+        if (*algosOffered[numAlgosOffered] == *(uint32_t*)mandatoryCipher) {
+            mandatoryFound = true;
+        }
+    }
+    if (!mandatoryFound) {
+        algosOffered[numAlgosOffered++] = (uint32_t*)mandatoryCipher;
+    }
+
+    // Lookup offered algos in configured algos. Because of appended
+    // mandatory algorithms at least one match will happen
+    bool found = false;
+    for (i = 0; i < numAlgosOffered && !found; i++) {
+	for (ii = 0; ii < numAlgosConf; ii++) {
+	    if (*algosOffered[i] == *algosConf[ii]) {
+                matchingCiphers[ids[ii]] = found = true;
                 break;
 	    }
-            matchingCiphers[i] = false;
+            matchingCiphers[ids[ii]] = false;
 	}
     }
     if (matchingCiphers[Aes256]) {
@@ -1234,15 +1350,57 @@ SupportedPubKeys ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
 
     int i;
     int ii;
-    int num = hello->getNumPubKeys();
+    int numAlgosOffered;
+    uint32_t* algosOffered[MAX_NO_OF_ALGOS+1];
 
+    int numAlgosConf;
+    uint32_t* algosConf[MAX_NO_OF_ALGOS+1];
+    SupportedPubKeys ids[MAX_NO_OF_ALGOS+1];
+
+    bool mandatoryFound = false;
+
+    int num = hello->getNumPubKeys();
     if (num == 0) {
         return Dh3072;
     }
-    for (i = 0; i < EndSupportedPubKeys; i++) {
-	for (ii = 0; ii < num; ii++) {
-	    if (*(uint32_t*)hello->getPubKeyType(ii) ==  *(uint32_t*)supportedPubKey[i]) {
-                return (SupportedPubKeys)i;
+    // Build list of configured pubkey algorithm names, append mandatory algos
+    // if necessary. Fill algo ids array parallel to algorithm names.
+    // The list must include real public key algorithms only, so skip
+    // mult-stream mode, preshared and alike.
+    numAlgosConf = configureAlgos.getNumConfiguredPubKeys();
+    for (i = 0, ii = 0; i < numAlgosConf; i++) {
+        ids[ii] = configureAlgos.getPubKeyAlgoAt(i);
+        if (ids[ii] == MultiStream) {                // skip multi-stream mode
+            continue;
+        }
+        algosConf[ii] = (uint32_t*)supportedPubKey[ids[ii]];
+        if (*algosConf[ii++] == *(uint32_t*)mandatoryPubKey) {
+            mandatoryFound = true;
+        }
+    }
+    numAlgosConf = ii;                              // number of algos in list
+    if (!mandatoryFound) {
+        ids[numAlgosConf] = mandatoryPubKeyId;
+        algosConf[numAlgosConf++] = (uint32_t*)mandatoryPubKey;
+    }
+
+    // Build list of offered algos in Hello, append mandatory algos if necessary
+    mandatoryFound = false;
+    for (numAlgosOffered = 0; numAlgosOffered < num; numAlgosOffered++) {
+        algosOffered[numAlgosOffered] = (uint32_t*)hello->getPubKeyType(numAlgosOffered);
+        if (*algosOffered[numAlgosOffered] == *(uint32_t*)mandatoryPubKey) {
+            mandatoryFound = true;
+        }
+    }
+    if (!mandatoryFound) {
+        algosOffered[numAlgosOffered++] = (uint32_t*)mandatoryPubKey;
+    }
+    // Lookup offered algos in configured algos. Because of appended
+    // mandatory algorithms at least one match will happen
+    for (i = 0; i < numAlgosOffered; i++) {
+	for (ii = 0; ii < numAlgosConf; ii++) {
+	    if (*algosOffered[i] == *algosConf[ii]) {
+                return ids[ii];
 	    }
 	}
     }
@@ -1253,15 +1411,51 @@ SupportedSASTypes ZRtp::findBestSASType(ZrtpPacketHello *hello) {
 
     int  i;
     int ii;
-    int num = hello->getNumSas();
+    int numAlgosOffered;
+    uint32_t* algosOffered[MAX_NO_OF_ALGOS+1];
 
+    int numAlgosConf;
+    uint32_t* algosConf[MAX_NO_OF_ALGOS+1];
+    SupportedSASTypes ids[MAX_NO_OF_ALGOS+1];
+
+    bool mandatoryFound = false;
+
+    int num = hello->getNumSas();
     if (num == 0) {
         return Libase32;
     }
-    for (i = 0; i < EndSupportedSASTypes ; i++) {
-	for (ii = 0; ii < num; ii++) {
-	    if (*(uint32_t*)hello->getSasType(ii) == *(uint32_t*)supportedSASType[i]) {
-                return (SupportedSASTypes)i;
+    // Buildlist of configured SAS algorithm names, append mandatory algos
+    // if necessary. Fill algo ids array parallel to algorithm names
+    numAlgosConf = configureAlgos.getNumConfiguredSasTypes();
+    for (i = 0; i < numAlgosConf; i++) {
+        ids[i] = configureAlgos.getSasTypeAlgoAt(i);
+        algosConf[i] = (uint32_t*)supportedSASType[ids[i]];
+        if (*algosConf[i] == *(uint32_t*)mandatorySasType) {
+            mandatoryFound = true;
+        }
+    }
+    if (!mandatoryFound) {
+        ids[numAlgosConf] = mandatorySasTypeId;
+        algosConf[numAlgosConf++] = (uint32_t*)mandatorySasType;
+    }
+
+    // Build list of offered algos in Hello, append mandatory algos if necessary
+    mandatoryFound = false;
+    for (numAlgosOffered = 0; numAlgosOffered < num; numAlgosOffered++) {
+        algosOffered[numAlgosOffered] = (uint32_t*)hello->getSasType(numAlgosOffered);
+        if (*algosOffered[numAlgosOffered] == *(uint32_t*)mandatorySasType) {
+            mandatoryFound = true;
+        }
+    }
+    if (!mandatoryFound) {
+        algosOffered[numAlgosOffered++] = (uint32_t*)mandatorySasType;
+    }
+    // Lookup offered algos in configured algos. Because of appended
+    // mandatory algorithms at least one match will happen
+    for (i = 0; i < numAlgosOffered; i++) {
+	for (ii = 0; ii < numAlgosConf; ii++) {
+	    if (*algosOffered[i] == *algosConf[ii]) {
+                return ids[ii];
 	    }
 	}
     }
@@ -1272,17 +1466,67 @@ SupportedAuthLengths ZRtp::findBestAuthLen(ZrtpPacketHello *hello) {
 
     int  i;
     int ii;
-    int num = hello->getNumAuth();
+    int numAlgosOffered;
+    uint32_t* algosOffered[MAX_NO_OF_ALGOS+2];
 
+    int numAlgosConf;
+    uint32_t* algosConf[MAX_NO_OF_ALGOS+2];
+    SupportedAuthLengths ids[MAX_NO_OF_ALGOS+2];
+
+    bool mandatoryFound_1 = false;
+    bool mandatoryFound_2 = false;
+
+    int num = hello->getNumAuth();
     if (num == 0) {
         return AuthLen32;
     }
-    for (i = 0; i < EndSupportedAuthLenghts ; i++) {
-        for (ii = 0; ii < num; ii++) {
-            if (*(uint32_t*)hello->getAuthLen(ii) == *(uint32_t*)supportedAuthLen[i]) {
-                return (SupportedAuthLengths)i;
-            }
+    // Build list of configured SAS algorithm names, append mandatory algos
+    // if necessary. Fill algo ids array parallel to algorithm names
+    numAlgosConf = configureAlgos.getNumConfiguredAuthLengths();
+    for (i = 0; i < numAlgosConf; i++) {
+        ids[i] = configureAlgos.getAuthLengthAt(i);
+        algosConf[i] = (uint32_t*)supportedAuthLen[ids[i]];
+        if (*algosConf[i] == *(uint32_t*)mandatoryAuthLen_1) {
+            mandatoryFound_1 = true;
         }
+        if (*algosConf[i] == *(uint32_t*)mandatoryAuthLen_2) {
+            mandatoryFound_2 = true;
+        }
+    }
+    if (!mandatoryFound_1) {
+        ids[numAlgosConf] = mandatoryAuthLenId_1;
+        algosConf[numAlgosConf++] = (uint32_t*)mandatoryAuthLen_1;
+    }
+    if (!mandatoryFound_2) {
+        ids[numAlgosConf] = mandatoryAuthLenId_2;
+        algosConf[numAlgosConf++] = (uint32_t*)mandatoryAuthLen_2;
+    }
+
+    // Build list of offered algos in Hello, append mandatory algos if necessary
+    mandatoryFound_1 = mandatoryFound_2 = false;
+    for (numAlgosOffered = 0; numAlgosOffered < num; numAlgosOffered++) {
+        algosOffered[numAlgosOffered] = (uint32_t*)hello->getAuthLen(numAlgosOffered);
+        if (*algosOffered[numAlgosOffered] == *(uint32_t*)mandatoryAuthLen_1) {
+            mandatoryFound_1 = true;
+        }
+        if (*algosOffered[numAlgosOffered] == *(uint32_t*)mandatoryAuthLen_2) {
+            mandatoryFound_2 = true;
+        }
+    }
+    if (!mandatoryFound_1) {
+        algosOffered[numAlgosOffered++] = (uint32_t*)mandatoryAuthLen_1;
+    }
+    if (!mandatoryFound_2) {
+        algosOffered[numAlgosOffered++] = (uint32_t*)mandatoryAuthLen_2;
+    }
+    // Lookup offered algos in configured algos. Because of appended
+    // mandatory algorithms at least one match will happen
+    for (i = 0; i < numAlgosOffered; i++) {
+	for (ii = 0; ii < numAlgosConf; ii++) {
+	    if (*algosOffered[i] == *algosConf[ii]) {
+                return ids[ii];
+	    }
+	}
     }
     return AuthLen32;
 }
@@ -1305,10 +1549,10 @@ bool ZRtp::checkMultiStream(ZrtpPacketHello *hello) {
 }
 
 bool ZRtp::verifyH2(ZrtpPacketCommit *commit) {
-    uint8_t tmpH3[SHA256_DIGEST_LENGTH];
+    uint8_t tmpH3[IMPL_MAX_DIGEST_LENGTH];
 
-    sha256(commit->getH2(), SHA256_DIGEST_LENGTH, tmpH3);
-    if (memcmp(tmpH3, peerH3, SHA256_DIGEST_LENGTH) != 0) {
+    sha256(commit->getH2(), HASH_IMAGE_SIZE, tmpH3);
+    if (memcmp(tmpH3, peerH3, HASH_IMAGE_SIZE) != 0) {
         return false;
     }
     return true;
@@ -1329,7 +1573,7 @@ void ZRtp::computeHvi(ZrtpPacketDHPart* dh, ZrtpPacketHello *hello) {
     length[1] = hello->getLength() * ZRTP_WORD_SIZE;
 
     data[2] = NULL;            // terminate data chunks
-    sha256(data, length, hvi);
+    hashListFunction(data, length, hvi);
     return;
 }
 
@@ -1338,7 +1582,6 @@ void ZRtp:: computeSharedSecretSet(ZIDRecord &zidRec) {
    /*
     * Compute the Initiator's and Reponder's retained shared secret Ids.
     * Use negotiated HMAC.
-    * TODO: Variable digest length
     */
     uint8_t randBuf[RS_LENGTH];
     uint32_t macLen;
@@ -1457,8 +1700,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
      * The formular to compute S0 (Refer to ZRTP specification 5.4.4):
      *
       s0 = hash( counter | DHResult | "ZRTP-HMAC-KDF" | ZIDi | ZIDr | \
-      total_hash | len(s1) | s1 | len(s2) | s2 | len(s3) | s3 | len(s4) | \
-      s4)
+      total_hash | len(s1) | s1 | len(s2) | s2 | len(s3) | s3)
      *
      * Note: in this function we are Initiator, thus ZIDi is our zid 
      * (zid), ZIDr is the peer's zid (peerZid).
@@ -1493,26 +1735,26 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     // Next is Initiator's id (ZIDi), in this case as Initiator 
     // it is zid 
     data[pos] = zid;
-    length[pos++] = 3*ZRTP_WORD_SIZE;
+    length[pos++] = ZID_SIZE;
 
     // Next is Responder's id (ZIDr), in this case our peer's id 
     data[pos] = peerZid;
-    length[pos++] = 3*ZRTP_WORD_SIZE;
+    length[pos++] = ZID_SIZE;
 
     // Next ist total hash (messageHash) itself 
     data[pos] = messageHash;
-    length[pos++] = SHA256_DIGEST_LENGTH;
+    length[pos++] = hashLength;
 
     /*
      * For each matching shared secret hash the length of 
      * the shared secret as 32 bit big-endian number followd by the 
      * shared secret itself. The length of a shared seceret is 
-     * currently fixed to SHA256_DIGEST_LENGTH. If a shared 
+     * currently fixed to RS_LENGTH. If a shared 
      * secret is not used _only_ its length is hased as zero 
-     * length. 
+     * length. NOTE: if implementing auxSecret and/or pbxSecret -> check
+     * this length stuff again.
      */
-    // TODO: variable hash length
-    int secretHashLen = SHA256_DIGEST_LENGTH;
+    int secretHashLen = RS_LENGTH;
     secretHashLen = htonl(secretHashLen);        // prepare 32 bit big-endian number 
 
     for (int32_t i = 0; i < 3; i++) {
@@ -1521,7 +1763,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
             data[pos] = (unsigned char*)&sLen[i];
             length[pos++] = sizeof(uint32_t);
             data[pos] = (unsigned char*)setD[i];
-            length[pos++] = SHA256_DIGEST_LENGTH;
+            length[pos++] = RS_LENGTH;
         }
         else {                           // no machting secret, set length 0, skip secret
             sLen[i] = 0;
@@ -1539,7 +1781,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     DHss = NULL;
 
     computeSRTPKeys();
-    memset(s0, 0, SHA256_DIGEST_LENGTH);
+    memset(s0, 0, MAX_DIGEST_LENGTH);
 }
 /*
  * The DH packet for this function is DHPart2 and contains the Initiator's
@@ -1637,15 +1879,15 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     // Next is Initiator's id (ZIDi), in this case as Responder 
     // it is peerZid 
     data[pos] = peerZid;
-    length[pos++] = 3*ZRTP_WORD_SIZE;
+    length[pos++] = ZID_SIZE;
 
     // Next is Responder's id (ZIDr), in this case our own zid 
     data[pos] = zid;
-    length[pos++] = 3*ZRTP_WORD_SIZE;
+    length[pos++] = ZID_SIZE;
 
     // Next ist total hash (messageHash) itself 
     data[pos] = messageHash;
-    length[pos++] = SHA256_DIGEST_LENGTH;
+    length[pos++] = hashLength;
 
     /*
      * For each matching shared secret hash the length of 
@@ -1653,10 +1895,10 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
      * shared secret itself. The length of a shared seceret is 
      * currently fixed to SHA256_DIGEST_LENGTH. If a shared 
      * secret is not used _only_ its length is hased as zero 
-     * length. 
-     * TODO: variable hash length
+     * length. NOTE: if implementing auxSecret and/or pbxSecret -> check
+     * this length stuff again.
      */
-    int secretHashLen = SHA256_DIGEST_LENGTH;
+    int secretHashLen = RS_LENGTH;
     secretHashLen = htonl(secretHashLen);        // prepare 32 bit big-endian number 
 
     for (int32_t i = 0; i < 3; i++) {
@@ -1665,7 +1907,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
             data[pos] = (unsigned char*)&sLen[i];
             length[pos++] = sizeof(uint32_t);
             data[pos] = (unsigned char*)setD[i];
-            length[pos++] = SHA256_DIGEST_LENGTH;
+            length[pos++] = RS_LENGTH;
         }
         else {                           // no machting secret, set length 0, skip secret
             sLen[i] = 0;
@@ -1683,7 +1925,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
     DHss = NULL;
 
     computeSRTPKeys();
-    memset(s0, 0, SHA256_DIGEST_LENGTH);
+    memset(s0, 0, MAX_DIGEST_LENGTH);
 }
 
 
@@ -1721,9 +1963,12 @@ void ZRtp::KDF(uint8_t* key, uint32_t keyLength, uint8_t* label, int32_t labelLe
     hmacListFunction(key, keyLength, data, length, output, &maclen);
 }
 
+// Compute the Multi Stream mode s0
 void ZRtp::generateKeysMultiStream() {
-    // Compute the Multi Stream mode s0
+
+    // allocate the maximum size, compute real size to use
     uint8_t KDFcontext[sizeof(peerZid)+sizeof(zid)+sizeof(messageHash)];
+    int32_t kdfSize = sizeof(peerZid)+sizeof(zid)+hashLength;
 
     if (myRole == Responder) {
         memcpy(KDFcontext, peerZid, sizeof(peerZid));
@@ -1733,10 +1978,10 @@ void ZRtp::generateKeysMultiStream() {
         memcpy(KDFcontext, zid, sizeof(zid));
         memcpy(KDFcontext+sizeof(zid), peerZid, sizeof(peerZid));
     }
-    memcpy(KDFcontext+sizeof(zid)+sizeof(peerZid), messageHash, sizeof(messageHash));
+    memcpy(KDFcontext+sizeof(zid)+sizeof(peerZid), messageHash, hashLength);
 
-    KDF(zrtpSession, SHA256_DIGEST_LENGTH, (unsigned char*)zrtpMsk, strlen(zrtpMsk)+1,
-        KDFcontext, sizeof(KDFcontext), SHA256_DIGEST_LENGTH*8, s0);
+    KDF(zrtpSession, hashLength, (unsigned char*)zrtpMsk, strlen(zrtpMsk)+1,
+        KDFcontext, kdfSize, hashLength*8, s0);
 
     memset(KDFcontext, 0, sizeof(KDFcontext));
 
@@ -1745,7 +1990,9 @@ void ZRtp::generateKeysMultiStream() {
 
 void ZRtp::computeSRTPKeys() {
 
+    // allocate the maximum size, compute real size to use
     uint8_t KDFcontext[sizeof(peerZid)+sizeof(zid)+sizeof(messageHash)];
+    int32_t kdfSize = sizeof(peerZid)+sizeof(zid)+hashLength;
 
     uint32_t keyLen = (cipher == Aes128) ? 128 :256;
 
@@ -1757,47 +2004,47 @@ void ZRtp::computeSRTPKeys() {
         memcpy(KDFcontext, zid, sizeof(zid));
         memcpy(KDFcontext+sizeof(zid), peerZid, sizeof(peerZid));
     }
-    memcpy(KDFcontext+sizeof(zid)+sizeof(peerZid), messageHash, sizeof(messageHash));
+    memcpy(KDFcontext+sizeof(zid)+sizeof(peerZid), messageHash, hashLength);
 
     // Inititiator key and salt
-    KDF(s0, SHA256_DIGEST_LENGTH, (unsigned char*)iniMasterKey, strlen(iniMasterKey)+1,
-        KDFcontext, sizeof(KDFcontext), keyLen, srtpKeyI);
-    KDF(s0, SHA256_DIGEST_LENGTH, (unsigned char*)iniMasterSalt, strlen(iniMasterSalt)+1,
-        KDFcontext, sizeof(KDFcontext), 112, srtpSaltI);
+    KDF(s0, hashLength, (unsigned char*)iniMasterKey, strlen(iniMasterKey)+1,
+        KDFcontext, kdfSize, keyLen, srtpKeyI);
+    KDF(s0, hashLength, (unsigned char*)iniMasterSalt, strlen(iniMasterSalt)+1,
+        KDFcontext, kdfSize, 112, srtpSaltI);
 
     // Responder key and salt
-    KDF(s0, SHA256_DIGEST_LENGTH, (unsigned char*)respMasterKey, strlen(respMasterKey)+1,
-        KDFcontext, sizeof(KDFcontext), keyLen, srtpKeyR);
-    KDF(s0, SHA256_DIGEST_LENGTH, (unsigned char*)respMasterSalt, strlen(respMasterSalt)+1,
-        KDFcontext, sizeof(KDFcontext), 112, srtpSaltR);
+    KDF(s0, hashLength, (unsigned char*)respMasterKey, strlen(respMasterKey)+1,
+        KDFcontext, kdfSize, keyLen, srtpKeyR);
+    KDF(s0, hashLength, (unsigned char*)respMasterSalt, strlen(respMasterSalt)+1,
+        KDFcontext, kdfSize, 112, srtpSaltR);
 
     // The HMAC keys for GoClear
-    KDF(s0, SHA256_DIGEST_LENGTH, (unsigned char*)iniHmacKey, strlen(iniHmacKey)+1,
-        KDFcontext, sizeof(KDFcontext), SHA256_DIGEST_LENGTH*8, hmacKeyI);
-    KDF(s0, SHA256_DIGEST_LENGTH, (unsigned char*)respHmacKey, strlen(respHmacKey)+1,
-        KDFcontext, sizeof(KDFcontext), SHA256_DIGEST_LENGTH*8, hmacKeyR);
+    KDF(s0, hashLength, (unsigned char*)iniHmacKey, strlen(iniHmacKey)+1,
+        KDFcontext, kdfSize, hashLength*8, hmacKeyI);
+    KDF(s0, hashLength, (unsigned char*)respHmacKey, strlen(respHmacKey)+1,
+        KDFcontext, kdfSize, hashLength*8, hmacKeyR);
 
     // The keys for Confirm messages
-    KDF(s0, SHA256_DIGEST_LENGTH, (unsigned char*)iniZrtpKey, strlen(iniZrtpKey)+1,
-        KDFcontext, sizeof(KDFcontext), keyLen, zrtpKeyI);
-    KDF(s0, SHA256_DIGEST_LENGTH, (unsigned char*)respZrtpKey, strlen(respZrtpKey)+1,
-        KDFcontext, sizeof(KDFcontext), keyLen, zrtpKeyR);
+    KDF(s0, hashLength, (unsigned char*)iniZrtpKey, strlen(iniZrtpKey)+1,
+        KDFcontext, kdfSize, keyLen, zrtpKeyI);
+    KDF(s0, hashLength, (unsigned char*)respZrtpKey, strlen(respZrtpKey)+1,
+        KDFcontext, kdfSize, keyLen, zrtpKeyR);
 
     if (!multiStream) {
         // Compute the new Retained Secret
-        KDF(s0, SHA256_DIGEST_LENGTH, (unsigned char*)retainedSec, strlen(retainedSec)+1,
-            KDFcontext, sizeof(KDFcontext), SHA256_DIGEST_LENGTH*8, newRs1);
+        KDF(s0, hashLength, (unsigned char*)retainedSec, strlen(retainedSec)+1,
+            KDFcontext, kdfSize, hashLength*8, newRs1);
 
         // Compute the ZRTP Session Key
-        KDF(s0, SHA256_DIGEST_LENGTH, (unsigned char*)zrtpSessionKey, strlen(zrtpSessionKey)+1,
-            KDFcontext, sizeof(KDFcontext), SHA256_DIGEST_LENGTH*8, zrtpSession);
+        KDF(s0, hashLength, (unsigned char*)zrtpSessionKey, strlen(zrtpSessionKey)+1,
+            KDFcontext, kdfSize, hashLength*8, zrtpSession);
 
         // perform SAS generation according to chapter 5.5 and 8.
         // we don't need a speciai sasValue filed. sasValue are the first 
         // (leftmost) 32 bits (4 bytes) of sasHash
         uint8_t sasBytes[4];
-        KDF(s0, SHA256_DIGEST_LENGTH, (unsigned char*)sasString, strlen(sasString)+1,
-            KDFcontext, sizeof(KDFcontext), SHA256_DIGEST_LENGTH*8, sasHash);
+        KDF(s0, hashLength, (unsigned char*)sasString, strlen(sasString)+1,
+            KDFcontext, kdfSize, hashLength*8, sasHash);
 
         // according to chapter 8 only the leftmost 20 bits of sasValue (aka
         //  sasHash) are used to create the character SAS string of type SAS 
@@ -1832,7 +2079,8 @@ bool ZRtp::srtpSecretsReady(EnableSecurity part) {
 
 
 void ZRtp::setNegotiatedHash(SupportedHashes hash) {
-    if (hash == Sha256) {
+    switch (hash) {
+    case Sha256:
         hashLength = SHA256_DIGEST_LENGTH;
         hashFunction = sha256;
         hashListFunction = sha256;
@@ -1844,8 +2092,22 @@ void ZRtp::setNegotiatedHash(SupportedHashes hash) {
         closeHashCtx = closeSha256Context;
         hashCtxFunction = sha256Ctx;
         hashCtxListFunction = sha256Ctx;
+        break;
+
+    case Sha384:
+        hashLength = SHA384_DIGEST_LENGTH;
+        hashFunction = sha384;
+        hashListFunction = sha384;
+
+        hmacFunction = hmac_sha384;
+        hmacListFunction = hmac_sha384;
+
+        createHashCtx = createSha384Context;
+        closeHashCtx = closeSha384Context;
+        hashCtxFunction = sha384Ctx;
+        hashCtxListFunction = sha384Ctx;
+        break;
     }
-    msgShaContext = createHashCtx();
 }
 
 
@@ -1924,7 +2186,7 @@ void ZRtp::setPbxSecret(uint8_t* data, int32_t length) {
 void ZRtp::setClientId(std::string id) {
     const char* tmp = "            ";
 
-    if (id.size() < 3*ZRTP_WORD_SIZE) {
+    if (id.size() < ZID_SIZE) {
         zrtpHello.setClientId((unsigned char*)tmp);
     }
     zrtpHello.setClientId((unsigned char*)id.c_str());
@@ -1933,15 +2195,15 @@ void ZRtp::setClientId(std::string id) {
     // Hello packet is ready now, compute its HMAC
     // (excluding the HMAC field (2*ZTP_WORD_SIZE)) and store in Hello
     // use the implicit hash function
-    uint8_t hmac[SHA256_DIGEST_LENGTH];
+    uint8_t hmac[IMPL_MAX_DIGEST_LENGTH];
     uint32_t macLen;
-    hmac_sha256(H2, SHA256_DIGEST_LENGTH, (uint8_t*)zrtpHello.getHeaderBase(), 
+    hmacFunctionImpl(H2, HASH_IMAGE_SIZE, (uint8_t*)zrtpHello.getHeaderBase(), 
                 len-(2*ZRTP_WORD_SIZE), hmac, &macLen);
     zrtpHello.setHMAC(hmac);
 
     // calculate hash over the final Hello packet, refer to chap 9.1 how to
-    // use this hash in SIP/SDP
-    sha256((uint8_t*)zrtpHello.getHeaderBase(), len, helloHash);
+    // use this hash in SIP/SDP.
+    hashFunctionImpl((uint8_t*)zrtpHello.getHeaderBase(), len, helloHash);
 }
 
 void ZRtp::storeMsgTemp(ZrtpPacketBase* pkt) {
@@ -1952,13 +2214,13 @@ void ZRtp::storeMsgTemp(ZrtpPacketBase* pkt) {
 }
 
 bool ZRtp::checkMsgHmac(uint8_t* key) {
-    uint8_t hmac[SHA256_DIGEST_LENGTH];
+    uint8_t hmac[IMPL_MAX_DIGEST_LENGTH];
     uint32_t macLen;
-    int32_t len = lengthOfMsgData-(2*ZRTP_WORD_SIZE);  // compute HMAC, but exlude the stored HMAC :-)
+    int32_t len = lengthOfMsgData-(HMAC_SIZE);  // compute HMAC, but exlude the stored HMAC :-)
 
     // Use the implicit hash function
-    hmac_sha256(key, SHA256_DIGEST_LENGTH, tempMsgBuffer, len, hmac, &macLen);
-    return (memcmp(hmac, tempMsgBuffer+len, (2*ZRTP_WORD_SIZE)) == 0 ? true : false);
+    hmacFunctionImpl(key, HASH_IMAGE_SIZE, tempMsgBuffer, len, hmac, &macLen);
+    return (memcmp(hmac, tempMsgBuffer+len, (HMAC_SIZE)) == 0 ? true : false);
 }
 
 
@@ -1971,41 +2233,45 @@ std::string ZRtp::getHelloHash() {
     stm << " ";
     stm.fill('0');
     stm << hex;
-    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+    for (int i = 0; i < hashLengthImpl; i++) {
         stm.width(2);
         stm << static_cast<uint32_t>(*hp++);
     }
     return stm.str();
 }
 
+// TODO: Variable size of ZrtpSession for multisteam data exchange
 std::string ZRtp::getMultiStrParams() {
 
     // the string will hold binary data - it's opaque to the application
     std::string str("");
-    char tmp[SHA256_DIGEST_LENGTH + 1 + 1 + 1]; // digest length + cipher + authLength + hash
+    char* tmp  = new char[hashLength + 1 + 1 + 1]; // hash length + cipher + authLength + hash
 
     if (inState(SecureState) && !multiStream) {
         // construct array that holds zrtpSession, cipher type, auth-length, and hash type
-        memcpy(tmp, zrtpSession, SHA256_DIGEST_LENGTH);
-        tmp[SHA256_DIGEST_LENGTH] = cipher;          //cipher is enumeration (int)
-        tmp[SHA256_DIGEST_LENGTH + 1] = authLength;  //authLength is enumeration (int)
-        tmp[SHA256_DIGEST_LENGTH + 2] = hash;        //hash is enumeration (int)
-        str.assign(tmp, SHA256_DIGEST_LENGTH + 1 + 1 + 1); // set chars (bytes) to the string
+        tmp[0] = hash;          //hash is enumeration (int)
+        tmp[1] = authLength;    //authLength is enumeration (int)
+        tmp[2] = cipher;        //cipher is enumeration (int)
+        memcpy(tmp+3, zrtpSession, hashLength);
+        str.assign(tmp, hashLength + 1 + 1 + 1); // set chars (bytes) to the string
     }
     return str;
 }
 
 void ZRtp::setMultiStrParams(std::string parameters) {
 
-    char tmp[SHA256_DIGEST_LENGTH + 1 + 1 + 1]; // digest length + cipher + authLength + hash
+    // First get negotiated hash from parameters, set algorithms and length
+    hash = static_cast<SupportedHashes>(parameters.at(0));
+    setNegotiatedHash(hash);
+
+    char* tmp  = new char[hashLength + 1 + 1 + 1]; // hash length + cipher + authLength + hash
 
     // use string.copy(buffer, num, start=0) to retrieve chars (bytes) from the string
-    parameters.copy(tmp, SHA256_DIGEST_LENGTH + 1 + 1 + 1, 0);
+    parameters.copy(tmp, hashLength + 1 + 1 + 1, 0);
 
-    memcpy(zrtpSession, tmp, SHA256_DIGEST_LENGTH);
-    cipher = static_cast<SupportedSymCiphers>(tmp[SHA256_DIGEST_LENGTH]&0xff);
-    authLength = static_cast<SupportedAuthLengths>(tmp[SHA256_DIGEST_LENGTH + 1]&0xff);
-    hash = static_cast<SupportedHashes>(tmp[SHA256_DIGEST_LENGTH + 1 + 1]&0xff);
+    authLength = static_cast<SupportedAuthLengths>(tmp[1] & 0xff);
+    cipher = static_cast<SupportedSymCiphers>(tmp[2] & 0xff);
+    memcpy(zrtpSession, tmp+3, hashLength);
 
     // after setting zrtpSession, cipher, and auth-length set multi-stream to true
     multiStream = true;
@@ -2047,7 +2313,7 @@ int32_t ZRtp::getSignatureLength() {
 int32_t ZRtp::compareCommit(ZrtpPacketCommit *commit) {
     // TODO: enhance to compare according to rules defined in chapter 4.2
     int32_t len = 0;
-    len = !multiStream ? SHA256_DIGEST_LENGTH : (4 * ZRTP_WORD_SIZE);
+    len = !multiStream ? HVI_SIZE : (4 * ZRTP_WORD_SIZE);
     return (memcmp(hvi, commit->getHvi(), len)); 
 }
 

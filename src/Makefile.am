@@ -14,6 +14,8 @@ if ZRTP_OPENSSL
 zrtp_src_o =    libzrtpcpp/crypto/openssl/ZrtpDH.cxx \
 		libzrtpcpp/crypto/openssl/hmac256.cxx \
 		libzrtpcpp/crypto/openssl/sha256.cxx \
+		libzrtpcpp/crypto/openssl/hmac384.cxx \
+		libzrtpcpp/crypto/openssl/sha384.cxx \
 		libzrtpcpp/crypto/openssl/AesCFB.cpp \
 		libzrtpcpp/crypto/openssl/InitializeOpenSSL.cxx
 endif
@@ -22,6 +24,8 @@ if ZRTP_GCRYPT
 zrtp_src_g =	libzrtpcpp/crypto/gcrypt/gcryptZrtpDH.cxx \
 		libzrtpcpp/crypto/gcrypt/gcrypthmac256.cxx \
 		libzrtpcpp/crypto/gcrypt/gcryptsha256.cxx \
+		libzrtpcpp/crypto/gcrypt/gcrypthmac384.cxx \
+		libzrtpcpp/crypto/gcrypt/gcryptsha384.cxx \
 		libzrtpcpp/crypto/gcrypt/gcryptAesCFB.cpp \
 		libzrtpcpp/crypto/gcrypt/InitializeGcrypt.cxx
 endif

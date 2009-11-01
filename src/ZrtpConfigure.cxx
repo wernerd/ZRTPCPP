@@ -40,12 +40,12 @@ void ZrtpConfigure::setStandardConfig() {
     hashes.algos[0] = Sha256;
 
     symCiphers.numConfiguredAlgos = 2;
-    symCiphers.algos[0] = Aes128;
-    symCiphers.algos[1] = Aes256;
+    symCiphers.algos[0] = Aes256;
+    symCiphers.algos[1] = Aes128;
 
     publicKeyAlgos.numConfiguredAlgos = 3;
-    publicKeyAlgos.algos[0] = Dh2048;
-    publicKeyAlgos.algos[1] = Dh3072;
+    publicKeyAlgos.algos[0] = Dh3072;
+    publicKeyAlgos.algos[1] = Dh2048;
     publicKeyAlgos.algos[2] = MultiStream;
 
     sasTypes.numConfiguredAlgos = 1;

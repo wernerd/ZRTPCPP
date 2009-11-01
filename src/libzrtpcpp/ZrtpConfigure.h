@@ -34,6 +34,7 @@
  */
 enum SupportedHashes {
     Sha256,    //!< SHA256 - this is a mandatory hash algorithm
+    Sha384,
     EndSupportedHashes
 };
 
@@ -58,11 +59,11 @@ enum SupportedSymCiphers {
  * Applications can use the enum values to configure ZRTP.
  */
 enum SupportedPubKeys {
-    Dh2048,      //<! DH 2048 - this is an optional PK algorithm
+    Dh2048,      //!< DH 2048 - this is an optional PK algorithm
     // Ec256,
-    Dh3072,      //<! DH 3072 - this is a mandatory PK algorithm
+    Dh3072,      //!< DH 3072 - this is a mandatory PK algorithm
     // Ec384,
-    MultiStream, //<! Multi stream mode is an optional mode, in some cases mandatory
+    MultiStream, //!< Multi stream mode is an optional mode, in some cases mandatory
     EndSupportedPubKeys
 };
 
@@ -105,8 +106,13 @@ typedef struct algorithms {
  * This class contains data and functions to set ZRTP configuration data.
  * An application may use this class to set configuration information for
  * ZRTP. ZRTP uses this configuration information to announce various
- * algorithms via its Hell message. An application may use this class to
+ * algorithms via its Hello message. An application may use this class to
  * restrict or allow use of algorithms.
+ *
+ * The constructor does not set any algorithms, thus it is an empty
+ * configuration. An application may use this empty configuration and
+ * hand it over to ZRTP. In this case ZRTP does not announce any algorithms
+ * in its Hello message and uses mandatory algorithms only.
  *
  * An application can configure implemented algorithms only.
  */
