@@ -15,7 +15,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*
+/*F
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 #include <sstream>
@@ -73,7 +73,8 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id,
     ZrtpConfigure* config):
     callback(cb), dhContext(NULL), DHss(NULL), auxSecret(NULL), 
     auxSecretLength(0), rs1Valid(false), rs2Valid(false), multiStream(false),
-    msgShaContext(NULL), PBXEnrollment(false), configureAlgos(*config) {
+    msgShaContext(NULL), PBXEnrollment(false), multiStreamAvailable(false),
+    configureAlgos(*config) {
 
     // setup the implicit hash function pointers and length
     hashLengthImpl = SHA256_DIGEST_LENGTH;
@@ -253,7 +254,10 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
      * these with mandatory algos and put them into the Commit packet.
      * Refer to the findBest*() functions.
      * If this is a MultiStream ZRTP object then do not get the cipher,
-     * authentication from hello packet but use the pre-initialized values.
+     * authentication from hello packet but use the pre-initialized values
+     * as proposed by the standard. If we switch to responder mode the
+     * commit packet may contain other algos - see function
+     * prepareConfirm2MultiStream(...).
      */
     sasType = findBestSASType(hello);
 
@@ -262,6 +266,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
         pubKey = findBestPubkey(hello);
         cipher = findBestCipher(hello, pubKey);
         hash = findBestHash(hello);
+        multiStreamAvailable = checkMultiStream(hello);
     }
     else {
         if (checkMultiStream(hello)) {
@@ -994,6 +999,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
                 hmlen, confMac, &macLen);
 
     zrtpConfirm2.setHmac(confMac);
+
     return &zrtpConfirm2;
 }
 
@@ -1100,7 +1106,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
                 (unsigned char*)confirm2->getHashH0(),
                 hmlen, confMac, &macLen);
 
-    if (memcmp(confMac, confirm2->getHmac(), 2*ZRTP_WORD_SIZE) != 0) {
+    if (memcmp(confMac, confirm2->getHmac(), HMAC_SIZE) != 0) {
         *errMsg = ConfirmHMACWrong;
         return NULL;
     }
@@ -1598,6 +1604,7 @@ void ZRtp:: computeSharedSecretSet(ZIDRecord &zidRec) {
 	hmacFunction((unsigned char*)zidRec.getRs1(), RS_LENGTH,
 		     (unsigned char*)initiator, strlen(initiator),
 		     rs1IDi, &macLen);
+
 	hmacFunction((unsigned char*)zidRec.getRs1(), RS_LENGTH,
 		     (unsigned char*)responder, strlen(responder),
 		     rs1IDr, &macLen);
@@ -1774,7 +1781,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 
     data[pos] = NULL;
     hashListFunction(data, length, s0);
-//  hexdump("S0 I", s0, SHA256_DIGEST_LENGTH);
+//  hexdump("S0 I", s0, hashLength);
 
     memset(DHss, 0, dhContext->getDhSize());
     delete DHss;
@@ -1918,7 +1925,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 
     data[pos] = NULL;
     hashListFunction(data, length, s0);
-//  hexdump("S0 R", s0, SHA256_DIGEST_LENGTH);
+//  hexdump("S0 R", s0, hashLength);
 
     memset(DHss, 0, dhContext->getDhSize());
     delete DHss;
@@ -2021,6 +2028,7 @@ void ZRtp::computeSRTPKeys() {
     // The HMAC keys for GoClear
     KDF(s0, hashLength, (unsigned char*)iniHmacKey, strlen(iniHmacKey)+1,
         KDFcontext, kdfSize, hashLength*8, hmacKeyI);
+
     KDF(s0, hashLength, (unsigned char*)respHmacKey, strlen(respHmacKey)+1,
         KDFcontext, kdfSize, hashLength*8, hmacKeyR);
 
@@ -2245,7 +2253,7 @@ std::string ZRtp::getMultiStrParams() {
 
     // the string will hold binary data - it's opaque to the application
     std::string str("");
-    char* tmp  = new char[hashLength + 1 + 1 + 1]; // hash length + cipher + authLength + hash
+    char tmp[MAX_DIGEST_LENGTH + 1 + 1 + 1]; // hash length + cipher + authLength + hash
 
     if (inState(SecureState) && !multiStream) {
         // construct array that holds zrtpSession, cipher type, auth-length, and hash type
@@ -2260,11 +2268,11 @@ std::string ZRtp::getMultiStrParams() {
 
 void ZRtp::setMultiStrParams(std::string parameters) {
 
+    char tmp[MAX_DIGEST_LENGTH + 1 + 1 + 1]; // max. hash length + cipher + authLength + hash
+
     // First get negotiated hash from parameters, set algorithms and length
     hash = static_cast<SupportedHashes>(parameters.at(0));
     setNegotiatedHash(hash);
-
-    char* tmp  = new char[hashLength + 1 + 1 + 1]; // hash length + cipher + authLength + hash
 
     // use string.copy(buffer, num, start=0) to retrieve chars (bytes) from the string
     parameters.copy(tmp, hashLength + 1 + 1 + 1, 0);
@@ -2280,6 +2288,10 @@ void ZRtp::setMultiStrParams(std::string parameters) {
 
 bool ZRtp::isMultiStream() {
     return multiStream;
+}
+
+bool ZRtp::isMultiStreamAvailable() {
+    return multiStreamAvailable;
 }
 
 void ZRtp::acceptEnrollment(bool accepted) {

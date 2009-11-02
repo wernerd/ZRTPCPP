@@ -404,8 +404,8 @@ int ZrtpSendPacketTransmissionTestCB::doTest() {
             tx = new SymmetricZRTPSession(pattern.getDestinationAddress(),
                                     pattern.getDestinationPort()+2);
             config.addHashAlgo(Sha384);
-//            tx->initialize("test_t.zid", true, &config);
-            tx->initialize("test_t.zid", true);
+            tx->initialize("test_t.zid", true, &config);
+//            tx->initialize("test_t.zid", true);
 
             prefix = "TX: ";
             mcb = new MyUserCallback(tx);
@@ -478,9 +478,9 @@ int ZrtpRecvPacketTransmissionTestCB::doTest() {
         else {
             rx = new SymmetricZRTPSession(pattern.getDestinationAddress(),
                                     pattern.getDestinationPort());
-
-//            rx->initialize("test_r.zid", true, &config);
-            rx->initialize("test_r.zid", true);
+            config.addHashAlgo(Sha384);
+            rx->initialize("test_r.zid", true, &config);
+//            rx->initialize("test_r.zid", true);
 
             prefix = "RX: ";
             mcb = new MyUserCallback(rx);

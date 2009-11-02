@@ -161,7 +161,7 @@ class ZRtp {
      * specification, chapter 4.3 ff
      *
      * @param data
-     *     Points to the srtps secret data.
+     *     Points to the secret data.
      * @param length
      *     Length of the auxilliary secrect in bytes
      */
@@ -174,7 +174,7 @@ class ZRtp {
      * specification, chapter 4.3 ff and 7.3
      *
      * @param data
-     *     Points to the other secret data.
+     *     Points to the other PBX data.
      * @param length
      *     The length in bytes of the data.
      */
@@ -255,7 +255,7 @@ class ZRtp {
     void setMultiStrParams(std::string parameters);
 
     /**
-     * Check if this ZRTP use Multi-stream.
+     * Check if this ZRTP session is a Multi-stream session.
      *
      * Use this method to check if this ZRTP instance uses multi-stream. 
      * Refer to chapters 4.2 and 4.4.2 in the ZRTP.
@@ -264,6 +264,17 @@ class ZRtp {
      *     True if multi-stream is used, false otherwise.
      */
     bool isMultiStream();
+
+    /**
+     * Check if the other ZRTP client supports Multi-stream.
+     *
+     * Use this method to check if the other ZRTP client supports
+     * Multi-stream mode.
+     *
+     * @return
+     *     True if multi-stream is available, false otherwise.
+     */
+    bool isMultiStreamAvailable();
 
     /**
      * Accept a PBX enrollment request.
@@ -517,7 +528,7 @@ private:
     /**
      * The new Retained Secret
      */
-    uint8_t newRs1[RS_LENGTH];
+    uint8_t newRs1[MAX_DIGEST_LENGTH];
 
     /**
      * The GoClear HMAC keys and confirm HMAC key
@@ -592,7 +603,7 @@ private:
                            uint8_t* mac, uint32_t* mac_length );
 
     int32_t hashLengthImpl;
-    
+
     /**
      * The ZRTP Session Key
      * Refer to chapter 5.4.1.4
@@ -603,6 +614,11 @@ private:
      * True if this ZRTP instance uses multi-stream mode.
      */
     bool multiStream;
+
+        /**
+     * True if the other ZRTP client supports multi-stream mode.
+     */
+    bool multiStreamAvailable;
 
     /**
      * True if PBX enrollment is enabled.

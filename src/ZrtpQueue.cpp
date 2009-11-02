@@ -653,6 +653,12 @@ bool ZrtpQueue::isMultiStream()  {
     return false;
 }
 
+bool ZrtpQueue::isMultiStreamAvailable()  {
+    if (zrtpEngine != NULL)
+        return zrtpEngine->isMultiStreamAvailable();
+    return false;
+}
+
 void ZrtpQueue::acceptEnrollment(bool accepted) {
     if (zrtpEngine != NULL)
         zrtpEngine->acceptEnrollment(accepted);

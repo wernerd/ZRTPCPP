@@ -452,6 +452,17 @@ namespace ost {
         bool isMultiStream();
 
         /**
+         * Check if the other ZRTP client supports Multi-stream.
+         *
+         * Use this method to check if the other ZRTP client supports
+         * Multi-stream mode.
+         *
+         * @return
+         *     True if multi-stream is available, false otherwise.
+         */
+        bool isMultiStreamAvailable();
+
+        /**
          * Accept a PBX enrollment request.
          *
          * If a PBX service asks to enroll the MiTM key and the user accepts this
