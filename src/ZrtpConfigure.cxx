@@ -1,276 +1,396 @@
-/*
-  Copyright (C) 2006-2008 Werner Dittmann
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
-/*
- * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
- */
-
-#include <stdio.h>
-
 #include <libzrtpcpp/ZrtpConfigure.h>
 
-ZrtpConfigure::ZrtpConfigure() {
-    hashes.endSupportedAlgos = EndSupportedHashes;
-    symCiphers.endSupportedAlgos = EndSupportedSymCiphers;
-    publicKeyAlgos.endSupportedAlgos = EndSupportedPubKeys;
-    sasTypes.endSupportedAlgos = EndSupportedSASTypes;
-    authLengths.endSupportedAlgos = EndSupportedAuthLenghts;
 
-    clear();
+AlgorithmEnum::AlgorithmEnum(const int type, const char* name):
+    algoType(type), algoName(name) {
 }
+
+const char* AlgorithmEnum::getName() {
+    return algoName; 
+}
+
+int AlgorithmEnum::getAlgoType() { 
+    return algoType; 
+}
+
+bool AlgorithmEnum::isValid() {
+    return (algoName != NULL); 
+}
+
+static AlgorithmEnum invalidAlgo(0, NULL);
+
+
+EnumBase::EnumBase(AlgoTypes a) : algoType(a) {
+}
+
+void EnumBase::insert(const char* name) {
+    AlgorithmEnum* e = new AlgorithmEnum(algoType, name);
+    algos.push_back(e);
+}
+
+int EnumBase::getSize() {
+    return algos.size(); 
+}
+
+AlgoTypes EnumBase::getAlgoType() {
+    return algoType;
+}
+
+AlgorithmEnum& EnumBase::getByName(const char* name) {
+    std::vector<AlgorithmEnum* >::iterator b = algos.begin();
+    std::vector<AlgorithmEnum* >::iterator e = algos.end();
+
+    for (; b != e; b++) {
+        if (strncmp((*b)->getName(), name, 4) == 0) {
+            return *(*b);
+        }
+    }
+    return invalidAlgo;
+}
+
+AlgorithmEnum& EnumBase::getByOrdinal(int ord) {
+    std::vector<AlgorithmEnum* >::iterator b = algos.begin();
+    std::vector<AlgorithmEnum* >::iterator e = algos.end();
+
+    for (int i = 0; b != e; ++b) {
+        if (i == ord) {
+            return *(*b);
+        }
+        i++;
+    }
+    return invalidAlgo;
+}
+
+int EnumBase::getOrdinal(AlgorithmEnum& algo) {
+    std::vector<AlgorithmEnum* >::iterator b = algos.begin();
+    std::vector<AlgorithmEnum* >::iterator e = algos.end();
+
+    for (int i = 0; b != e; ++b) {
+        if (strncmp((*b)->getName(), algo.getName(), 4) == 0) {
+            return i;
+        }
+        i++;
+    }
+    return -1;
+}
+
+std::list<std::string>* EnumBase::getAllNames() {
+    std::vector<AlgorithmEnum* >::iterator b = algos.begin();
+    std::vector<AlgorithmEnum* >::iterator e = algos.end();
+
+    std::list<std::string>* strg = new std::list<std::string>();
+
+    for (; b != e; b++) {
+        std::string s((*b)->getName());
+        strg->push_back(s);
+    }
+    return strg;
+}
+
+
+/**
+ * Set up the enumeration list for available hash algorithms
+ */
+HashEnum::HashEnum() : EnumBase(HashAlgorithm) {
+    insert("S256");
+    insert("S384");
+}
+
+/**
+ * Set up the enumeration list for available symmetric cipher algorithms
+ */
+SymCipherEnum::SymCipherEnum() : EnumBase(CipherAlgorithm) {
+    insert("AES3");
+    insert("AES1");
+}
+
+/**
+ * Set up the enumeration list for available public key algorithms
+ */
+PubKeyEnum::PubKeyEnum() : EnumBase(PubKeyAlgorithm) {
+    insert("DH2k");
+    insert("DH3k");
+    insert("Mult");
+}
+
+/**
+ * Set up the enumeration list for available SAS algorithms
+ */
+SasTypeEnum::SasTypeEnum() : EnumBase(SasType) {
+    insert("B32 ");
+}
+
+/**
+ * Set up the enumeration list for available SRTP authnticaion lengths
+ */
+AuthLengthEnum::AuthLengthEnum() : EnumBase(AuthLength) {
+    insert("HS32");
+    insert("HS80");
+}
+
+/*
+ * Here the global accessible enumerations for all implemented algorithms.
+ */
+HashEnum zrtpHashes;
+SymCipherEnum zrtpSymCiphers;
+PubKeyEnum zrtpPubKeys;
+SasTypeEnum zrtpSasTypes;
+AuthLengthEnum zrtpAuthLengths;
+
+/*
+ * The public methods are mainly a facade to the private methods.
+ */
+ZrtpConfigure::ZrtpConfigure() {}
+
+ZrtpConfigure::~ZrtpConfigure() {}
 
 void ZrtpConfigure::setStandardConfig() {
     clear();
 
-    hashes.numConfiguredAlgos = 1;
-    hashes.algos[0] = Sha256;
+    addAlgo(HashAlgorithm, zrtpHashes.getByName("S256"));
+    addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
 
-    symCiphers.numConfiguredAlgos = 2;
-    symCiphers.algos[0] = Aes256;
-    symCiphers.algos[1] = Aes128;
+    addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES3"));
+    addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES1"));
 
-    publicKeyAlgos.numConfiguredAlgos = 3;
-    publicKeyAlgos.algos[0] = Dh3072;
-    publicKeyAlgos.algos[1] = Dh2048;
-    publicKeyAlgos.algos[2] = MultiStream;
+    addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));
+    addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));
+    addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("Mult"));
 
-    sasTypes.numConfiguredAlgos = 1;
-    sasTypes.algos[0] = Libase32;
+    addAlgo(SasType, zrtpSasTypes.getByName("B32 "));
 
-    authLengths.numConfiguredAlgos = 2;
-    authLengths.algos[0] = AuthLen32;
-    authLengths.algos[1] = AuthLen80;
+    addAlgo(AuthLength, zrtpAuthLengths.getByName("HS32"));
+    addAlgo(AuthLength, zrtpAuthLengths.getByName("HS80"));
 }
 
 void ZrtpConfigure::setMandatoryOnly() {
     clear();
 
-    hashes.numConfiguredAlgos = 1;
-    hashes.algos[0] = Sha256;
+    addAlgo(HashAlgorithm, zrtpHashes.getByName("S256"));
 
-    symCiphers.numConfiguredAlgos = 1;
-    symCiphers.algos[0] = Aes128;
+    addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES1"));
 
-    publicKeyAlgos.numConfiguredAlgos = 2;
-    publicKeyAlgos.algos[0] = Dh3072;
-    publicKeyAlgos.algos[1] = MultiStream;
+    addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));
+    addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("Mult"));
 
-    sasTypes.numConfiguredAlgos = 1;
-    sasTypes.algos[0] = Libase32;
+    addAlgo(SasType, zrtpSasTypes.getByName("B32 "));
 
-    authLengths.numConfiguredAlgos = 2;
-    authLengths.algos[0] = AuthLen32;
-    authLengths.algos[1] = AuthLen80;
+    addAlgo(AuthLength, zrtpAuthLengths.getByName("HS32"));
+    addAlgo(AuthLength, zrtpAuthLengths.getByName("HS80"));
+
 }
 
 void ZrtpConfigure::clear() {
-    for (int i = 0; i < MAX_NO_OF_ALGOS; i++) {
-	hashes.algos[i] = hashes.endSupportedAlgos;
-    }
-    hashes.numConfiguredAlgos = 0;
-
-    for (int i = 0; i < MAX_NO_OF_ALGOS; i++) {
-	symCiphers.algos[i] = symCiphers.endSupportedAlgos;
-    }
-    symCiphers.numConfiguredAlgos = 0;
-
-    for (int i = 0; i < MAX_NO_OF_ALGOS; i++) {
-	publicKeyAlgos.algos[i] = publicKeyAlgos.endSupportedAlgos;
-    }
-    publicKeyAlgos.numConfiguredAlgos = 0;
-
-    for (int i = 0; i < MAX_NO_OF_ALGOS; i++) {
-	sasTypes.algos[i] = sasTypes.endSupportedAlgos;
-    }
-    sasTypes.numConfiguredAlgos = 0;
-
-    for (int i = 0; i < MAX_NO_OF_ALGOS; i++) {
-	authLengths.algos[i] = authLengths.endSupportedAlgos;
-    }
-    authLengths.numConfiguredAlgos = 0;
+    hashes.clear();
+    symCiphers.clear();
+    publicKeyAlgos.clear();
+    sasTypes.clear();
+    authLengths.clear();
 }
 
-ZrtpConfigure::~ZrtpConfigure() {
+int32_t ZrtpConfigure::addAlgo(AlgoTypes algoType, AlgorithmEnum& algo) {
+
+    return addAlgo(getEnum(algoType), algo);
 }
 
-/*
- * Hash functions
- */
-int32_t ZrtpConfigure::addHashAlgo(SupportedHashes algo) {
-    return addAlgo(&hashes, algo);
+int32_t ZrtpConfigure::addAlgoAt(AlgoTypes algoType, AlgorithmEnum& algo, int32_t index) {
+
+    return addAlgoAt(getEnum(algoType), algo, index);
 }
 
-int32_t ZrtpConfigure::removeHashAlgo(SupportedHashes algo) {
-    return removeAlgo(&hashes, algo);
+AlgorithmEnum& ZrtpConfigure::getAlgoAt(AlgoTypes algoType, int32_t index) {
+
+    return getAlgoAt(getEnum(algoType), index);
 }
 
-int32_t ZrtpConfigure::getNumConfiguredHashes() {
-    return getNumConfiguredAlgos(&hashes);
+int32_t ZrtpConfigure::removeAlgo(AlgoTypes algoType, AlgorithmEnum& algo) {
+
+    return removeAlgo(getEnum(algoType), algo);
 }
 
-SupportedHashes ZrtpConfigure::getHashAlgoAt(int32_t index) {
-    return (SupportedHashes)getAlgoAt(&hashes, index);
+int32_t ZrtpConfigure::getNumConfiguredAlgos(AlgoTypes algoType) {
+
+    return getNumConfiguredAlgos(getEnum(algoType));
 }
 
-/* ***
-void ZrtpConfigure::dumpHash() {
-    dumpAlgorithms(&hashes);
-}
-*** */
-/*
- * SymCipher configuration functions
- */
-int32_t ZrtpConfigure::addSymCipherAlgo(SupportedSymCiphers algo) {
-    return addAlgo(&symCiphers, algo);
+bool ZrtpConfigure::containsAlgo(AlgoTypes algoType, AlgorithmEnum& algo) {
+
+    return containsAlgo(getEnum(algoType), algo);
 }
 
-int32_t ZrtpConfigure::removeSymCipherAlgo(SupportedSymCiphers algo) {
-    return removeAlgo(&symCiphers, algo);
-}
+void ZrtpConfigure::printConfiguredAlgos(AlgoTypes algoType) {
 
-int32_t ZrtpConfigure::getNumConfiguredSymCiphers() {
-    return getNumConfiguredAlgos(&symCiphers);
-}
-
-SupportedSymCiphers ZrtpConfigure::getSymCipherAlgoAt(int32_t index) {
-    return (SupportedSymCiphers)getAlgoAt(&symCiphers, index);
+    return printConfiguredAlgos(getEnum(algoType));
 }
 
 /*
- * Public key configuration functions
+ * The next methods are the private methods that implement the real
+ * details.
  */
-int32_t ZrtpConfigure::addPubKeyAlgo(SupportedPubKeys algo) {
-    return addAlgo(&publicKeyAlgos, algo);
+AlgorithmEnum& ZrtpConfigure::getAlgoAt(std::vector<AlgorithmEnum* >& a, int32_t index) {
+
+    if (index >= (int)a.size())
+        return invalidAlgo;
+
+    std::vector<AlgorithmEnum* >::iterator b = a.begin();
+    std::vector<AlgorithmEnum* >::iterator e = a.end();
+
+    for (int i = 0; b != e; ++b) {
+        if (i == index) {
+            return *(*b);
+        }
+        i++;
+    }
+    return invalidAlgo;
 }
 
-int32_t ZrtpConfigure::removePubKeyAlgo(SupportedPubKeys algo) {
-    return removeAlgo(&publicKeyAlgos, algo);
+int32_t ZrtpConfigure::addAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo) {
+    int size = (int)a.size();
+    if (size >= maxNoOfAlgos)
+        return 0;
+
+    if (!algo.isValid() || containsAlgo(a, algo))
+        return (maxNoOfAlgos - size);
+
+    a.push_back(&algo);
+    return (maxNoOfAlgos - (int)a.size());
 }
 
-int32_t ZrtpConfigure::getNumConfiguredPubKeys() {
-    return getNumConfiguredAlgos(&publicKeyAlgos);
+int32_t ZrtpConfigure::addAlgoAt(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo, int32_t index) {
+    if (index >= maxNoOfAlgos)
+        return 0;
+
+    int size = (int)a.size();
+    if (size >= maxNoOfAlgos)
+        return 0;
+
+    if (!algo.isValid() || containsAlgo(a, algo))
+        return (maxNoOfAlgos - size);
+
+//    a[index] = &algo;
+
+    if (index >= size) {
+        a.push_back(&algo);
+        return maxNoOfAlgos - (int)a.size();
+    }
+    std::vector<AlgorithmEnum* >::iterator b = a.begin();
+    std::vector<AlgorithmEnum* >::iterator e = a.end();
+
+    for (int i = 0; b != e; ++b) {
+        if (i == index) {
+            a.insert(b, &algo);
+            break;
+        }
+        i++;
+    }
+    return (maxNoOfAlgos - (int)a.size());
 }
 
-SupportedPubKeys ZrtpConfigure::getPubKeyAlgoAt(int32_t index) {
-    return (SupportedPubKeys)getAlgoAt(&publicKeyAlgos, index);
+int32_t ZrtpConfigure::removeAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo) {
+
+    if ((int)a.size() == 0 || !algo.isValid())
+        return maxNoOfAlgos;
+
+    std::vector<AlgorithmEnum* >::iterator b = a.begin();
+    std::vector<AlgorithmEnum* >::iterator e = a.end();
+
+    for (; b != e; ++b) {
+        if (strcmp((*b)->getName(), algo.getName()) == 0) {
+            a.erase(b);
+            break;
+        }
+    }
+    return (maxNoOfAlgos - (int)a.size());
 }
 
-/*
- * SAS type configuration functions
- */
-int32_t ZrtpConfigure::addSasTypeAlgo(SupportedSASTypes algo) {
-    return addAlgo(&sasTypes, algo);
+int32_t ZrtpConfigure::getNumConfiguredAlgos(std::vector<AlgorithmEnum* >& a) {
+    return (int32_t)a.size();
 }
 
-int32_t ZrtpConfigure::removeSasTypeAlgo(SupportedSASTypes algo) {
-    return removeAlgo(&sasTypes, algo);
+bool ZrtpConfigure::containsAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo) {
+
+    if ((int)a.size() == 0 || !algo.isValid())
+        return false;
+
+    std::vector<AlgorithmEnum* >::iterator b = a.begin();
+    std::vector<AlgorithmEnum* >::iterator e = a.end();
+
+    for (; b != e; ++b) {
+        if (strcmp((*b)->getName(), algo.getName()) == 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
-int32_t ZrtpConfigure::getNumConfiguredSasTypes() {
-    return getNumConfiguredAlgos(&sasTypes);
-}
+void ZrtpConfigure::printConfiguredAlgos(std::vector<AlgorithmEnum* >& a) {
 
-SupportedSASTypes ZrtpConfigure::getSasTypeAlgoAt(int32_t index) {
-    return (SupportedSASTypes)getAlgoAt(&sasTypes, index);
-}
+    std::vector<AlgorithmEnum* >::iterator b = a.begin();
+    std::vector<AlgorithmEnum* >::iterator e = a.end();
 
-/*
- * Authentication length configuration functions
- */
-int32_t ZrtpConfigure::addAuthLength(SupportedAuthLengths algo) {
-    return addAlgo(&authLengths, algo);
-}
-
-int32_t ZrtpConfigure::removeAuthLength(SupportedAuthLengths algo) {
-    return removeAlgo(&authLengths, algo);
-}
-
-int32_t ZrtpConfigure::getNumConfiguredAuthLengths() {
-    return getNumConfiguredAlgos(&authLengths);
-}
-
-SupportedAuthLengths ZrtpConfigure::getAuthLengthAt(int32_t index) {
-    return (SupportedAuthLengths)getAlgoAt(&authLengths, index);
-}
-
-
-/* ****
-// private functions
-void ZrtpConfigure::dumpAlgorithms(algorithms_t* a) {
-    fprintf(stderr, "numConfiguredAlgos: %d\n", a->numConfiguredAlgos);
-    fprintf(stderr, "endSupportedAlgos: %d\n", a->endSupportedAlgos);
-    for (int i = 0; i < MAX_NO_OF_ALGOS; i++) {
-	fprintf(stderr, "algo %d: %d\n", i, a->algos[i]);
+    for (; b != e; ++b) {
+        printf("print configured: name: %s\n", (*b)->getName());
     }
 }
 
-**** */
+std::vector<AlgorithmEnum* >& ZrtpConfigure::getEnum(AlgoTypes algoType) {
 
-int32_t ZrtpConfigure::addAlgo(algorithms_t* a, int32_t algo) {
+    switch(algoType) {
+        case HashAlgorithm:
+            return hashes;
+            break;
 
-    // Check if algo is already configured, silently ignore
-    for (int i = 0; i < a->numConfiguredAlgos; i++) {
-	if (a->algos[i] == algo) 
-	    return MAX_NO_OF_ALGOS - a->numConfiguredAlgos;
+        case CipherAlgorithm:
+            return symCiphers;
+            break;
+
+        case PubKeyAlgorithm:
+            return publicKeyAlgos;
+            break;
+
+        case SasType:
+            return sasTypes;
+            break;
+
+        case AuthLength:
+            return authLengths;
+            break;
+
+        default:
+            break;
     }
-    if (a->numConfiguredAlgos < MAX_NO_OF_ALGOS) {
-	a->algos[hashes.numConfiguredAlgos++] = algo;
-    }
-    return MAX_NO_OF_ALGOS - a->numConfiguredAlgos;
+    return hashes;
 }
 
-int32_t ZrtpConfigure::removeAlgo(algorithms_t* a, int32_t algo) {
-    int index = 0;
+#if 0
+ZrtpConfigure config;
 
-    // locate the algo to remove
-    for (; index < a->numConfiguredAlgos; index++) {
-	if (a->algos[index] == algo) 
-	    break;
-    }
-    // check if the algo to remove was found.
-    if (index == a->numConfiguredAlgos)
-	return MAX_NO_OF_ALGOS - a->numConfiguredAlgos;
+main() {
+    printf("size: %d\n", zrtpHashes.getSize());
+    AlgorithmEnum e = zrtpHashes.getByName("S256");
+    printf("algo name: %s\n", e.getName());
+    printf("algo type: %d\n", e.getAlgoType());
 
-    // check if index points to last algo entry, just overwrite and return
-    if (index == MAX_NO_OF_ALGOS-1) {
-	a->algos[MAX_NO_OF_ALGOS-1] = a->endSupportedAlgos;
-	a->numConfiguredAlgos--;
-	return MAX_NO_OF_ALGOS - a->numConfiguredAlgos;
-    }
-    // shuffle forward rest of algos
-    for (; index < a->numConfiguredAlgos; index++) {
-	a->algos[index] = a->algos[index+1] ;
-    }
-    a->algos[a->numConfiguredAlgos] = a->endSupportedAlgos;
-    a->numConfiguredAlgos--;
+    std::list<std::string>* names = zrtpHashes.getAllNames();
+    printf("size of name list: %d\n", names->size());
+    printf("first name: %s\n", names->front().c_str());
+    printf("last name: %s\n", names->back().c_str());
 
-    return MAX_NO_OF_ALGOS - a->numConfiguredAlgos;
+    printf("free slots: %d (expected 6)\n", config.addAlgo(HashAlgorithm, e));
+
+    AlgorithmEnum e1(HashAlgorithm, "SHA384");
+    printf("free slots: %d (expected 5)\n", config.addAlgoAt(HashAlgorithm, e1, 0));
+    AlgorithmEnum e2 = config.getAlgoAt(HashAlgorithm, 0);
+    printf("algo name: %s (expected SHA384)\n", e2.getName());
+    printf("Num of configured algos: %d (expected 2)\n", config.getNumConfiguredAlgos(HashAlgorithm));
+    config.printConfiguredAlgos(HashAlgorithm);
+    printf("free slots: %d (expected 6)\n", config.removeAlgo(HashAlgorithm, e2));
+    e2 = config.getAlgoAt(HashAlgorithm, 0);
+    printf("algo name: %s (expected SHA256)\n", e2.getName());
+
 }
 
-int32_t ZrtpConfigure::getNumConfiguredAlgos(algorithms_t* a) {
-    return a->numConfiguredAlgos;
-}
-
-int32_t ZrtpConfigure::getAlgoAt(algorithms_t* a, int32_t index) {
-    if (index < a->numConfiguredAlgos)
-	return a->algos[index];
-    else
-	return a->endSupportedAlgos;
-}
+#endif
 /** EMACS **
  * Local variables:
  * mode: c++

@@ -486,18 +486,18 @@ private:
     /**
      * Commited Hash, Cipher, and public key algorithms
      */
-    SupportedHashes hash;
-    SupportedSymCiphers cipher;
-    SupportedPubKeys pubKey;
+    AlgorithmEnum* hash;
+    AlgorithmEnum* cipher;
+    AlgorithmEnum* pubKey;
     /**
      * The selected SAS type.
      */
-    SupportedSASTypes sasType;
+    AlgorithmEnum* sasType;
 
     /**
      * The selected SAS type.
      */
-    SupportedAuthLengths authLength;
+    AlgorithmEnum* authLength;
 
     /**
      * The Hash images as defined in chapter 5.1.1 (H0 is a random value,
@@ -674,7 +674,7 @@ private:
      *    <code>NumSupportedHashes</code> to signal that no matching Hash algorithm
      *     was found at all.
     */
-    SupportedHashes findBestHash(ZrtpPacketHello *hello);
+    AlgorithmEnum* findBestHash(ZrtpPacketHello *hello);
 
     /**
      * Find the best symmetric cipher algorithm that is offered in Hello.
@@ -691,7 +691,7 @@ private:
      *    <code>NumSupportedSymCiphers</code> to signal that no matching Cipher algorithm
      *    was found at all.
      */
-    SupportedSymCiphers findBestCipher(ZrtpPacketHello *hello,  SupportedPubKeys pk);
+    AlgorithmEnum* findBestCipher(ZrtpPacketHello *hello,  AlgorithmEnum* pk);
 
     /**
      * Find the best Public Key algorithm that is offered in Hello.
@@ -706,7 +706,7 @@ private:
      *    <code>NumSupportedPubKeys</code> to signal that no matching Public Key algorithm
      *    was found at all.
      */
-    SupportedPubKeys findBestPubkey(ZrtpPacketHello *hello);
+    AlgorithmEnum* findBestPubkey(ZrtpPacketHello *hello);
 
     /**
      * Find the best SAS algorithm that is offered in Hello.
@@ -721,7 +721,7 @@ private:
      *    <code>NumSupportedSASTypes</code> to signal that no matching SAS algorithm
      *    was found at all.
      */
-    SupportedSASTypes findBestSASType(ZrtpPacketHello* hello);
+    AlgorithmEnum* findBestSASType(ZrtpPacketHello* hello);
 
     /**
      * Find the best authentication length that is offered in Hello.
@@ -736,7 +736,7 @@ private:
      *    <code>NumSupportedAuthLenghts</code> to signal that no matching length
      *    was found at all.
      */
-    SupportedAuthLengths findBestAuthLen(ZrtpPacketHello* hello);
+    AlgorithmEnum* findBestAuthLen(ZrtpPacketHello* hello);
 
     /**
      * Check if MultiStream mode is offered in Hello.
@@ -769,7 +769,7 @@ private:
 
     void generateKeysMultiStream();
 
-    void setNegotiatedHash(SupportedHashes hash);
+    void setNegotiatedHash(AlgorithmEnum* hash);
 
     /*
      * The following methods are helper functions for ZrtpStateClass.

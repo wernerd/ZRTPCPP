@@ -23,82 +23,94 @@
 #define _ZRTPCONFIGURE_H_
 
 #include <stdint.h>
-
-// Keep the Hash identifers in supportedHashes in the same order than the
-// following enum, starting with zero.
+#include <list>
+#include <string>
+#include <vector>
+#include <string.h>
 
 /**
- * This enum lists the implemented hashes that ZRTP can use.
- *
- * Applications can use the enum values to configure ZRTP.
+ * This enumerations list all configurable algorithm types.
  */
-enum SupportedHashes {
-    Sha256,    //!< SHA256 - this is a mandatory hash algorithm
-    Sha384,
-    EndSupportedHashes
+
+enum AlgoTypes {
+    HashAlgorithm = 1, CipherAlgorithm, PubKeyAlgorithm, SasType, AuthLength
 };
 
-// Keep the Cipher identifers in supportedCipher in the same order than the
-// following enum, starting with zero.
 /**
- * This enum lists the implemented symmetric ciphers that ZRTP can use.
+ * The algorithm enumration class.
  *
- * Applications can use the enum values to configure ZRTP.
+ * This simple class is just a container of an algorithm's name and
+ * its associated algorithm type. We use this class together with the
+ * EnumBase class to implement a Java-like enum class functionality
+ * (not fully, but OK for our use case at hand).
  */
-enum SupportedSymCiphers {
-    Aes256,    //!< AES 256 - this is an optional symmetric cipher
-    Aes128,    //!< AES 128 - this is a mandatory symmetric cipher
-    EndSupportedSymCiphers
+class AlgorithmEnum {
+public:
+    AlgorithmEnum(const int type, const char* name);
+    const char* getName();
+    int getAlgoType();
+    bool isValid();
+
+private:
+    int algoType;
+    const char* algoName;
 };
 
-// Keep the PubKey identifers in supportedPubKey in the same order than the
-// following enum, starting with zero.
 /**
- * This enum lists the implemented public key algorithms that ZRTP can use.
- *
- * Applications can use the enum values to configure ZRTP.
+ * EnumBase provides methods to access the algorithm enumerations.
  */
-enum SupportedPubKeys {
-    Dh2048,      //!< DH 2048 - this is an optional PK algorithm
-    // Ec256,
-    Dh3072,      //!< DH 3072 - this is a mandatory PK algorithm
-    // Ec384,
-    MultiStream, //!< Multi stream mode is an optional mode, in some cases mandatory
-    EndSupportedPubKeys
+class EnumBase {
+public:
+    AlgorithmEnum& getByName(const char* name);
+    std::list<std::string>* getAllNames();
+    int getSize();
+    AlgoTypes getAlgoType();
+    AlgorithmEnum& getByOrdinal(int ord);
+    int getOrdinal(AlgorithmEnum& algo);
+
+protected:
+    EnumBase(AlgoTypes algo);
+    void insert(const char* name);
+
+private:
+    AlgoTypes algoType;
+    std::vector <AlgorithmEnum* > algos;
 };
 
-// Keep the SAS identifers in supportedSASType in the same order than the
-// following enum, starting with zero.
 /**
- * This enum lists the implemented SAS type algorithms that ZRTP can use.
- *
- * Applications can use the enum values to configure ZRTP.
+ * The enumaration subclasses that contain the supported algorithm enumerations.
  */
-enum SupportedSASTypes {
-    Libase32,    //!< SAS base 32 - this is a mandatory SAS type
-    EndSupportedSASTypes
+
+class HashEnum : public EnumBase {
+public:
+    HashEnum();
 };
 
-// Keep the auth len identifers in supportedAuthLen in the same order than the
-// following enum, starting with zero.
-/**
- * This enum lists the implemented SRTP authentication lengths that ZRTP can use.
- *
- * Application can use the enum values to configure ZRTP.
- */
-enum SupportedAuthLengths {
-    AuthLen32,    //!< Length 32 - this is a mandatory SRTP authentication length
-    AuthLen80,    //!< Length 80 - this is a mandatory SRTP authentication length
-    EndSupportedAuthLenghts
+class SymCipherEnum : public EnumBase {
+public:
+    SymCipherEnum();
 };
 
-#define MAX_NO_OF_ALGOS   7
+class PubKeyEnum : public EnumBase {
+public:
+    PubKeyEnum();
+};
 
-typedef struct algorithms {
-    int32_t numConfiguredAlgos;
-    int32_t endSupportedAlgos;
-    int32_t algos[MAX_NO_OF_ALGOS];
-} algorithms_t;
+class SasTypeEnum : public EnumBase {
+public:
+    SasTypeEnum();
+};
+
+class AuthLengthEnum : public EnumBase {
+public:
+    AuthLengthEnum();
+};
+
+extern HashEnum zrtpHashes;
+extern SymCipherEnum zrtpSymCiphers;
+extern PubKeyEnum zrtpPubKeys;
+extern SasTypeEnum zrtpSasTypes;
+extern AuthLengthEnum zrtpAuthLengths;
 
 /**
  * ZRTP configuration data.
@@ -116,28 +128,17 @@ typedef struct algorithms {
  *
  * An application can configure implemented algorithms only.
  */
+
 class ZrtpConfigure {
-
-  private:
-    algorithms_t  hashes;
-    algorithms_t  symCiphers;
-    algorithms_t  publicKeyAlgos;
-    algorithms_t  sasTypes;
-    algorithms_t  authLengths;
-
-    int32_t getAlgoAt(algorithms_t* a, int32_t index);
-    int32_t addAlgo(algorithms_t* a, int32_t algo);
-    int32_t removeAlgo(algorithms_t* a, int32_t algo);
-    int32_t getNumConfiguredAlgos(algorithms_t* a);
-
-//    void dumpAlgorithms(algorithms_t* a);
-
-  protected:
-
-  public:
+public:
     ZrtpConfigure();		 /* Creates Configuration data */
     ~ZrtpConfigure();
 
+    /**
+     * Set the maximum number of algorithms per algorithm type that an application can
+     * configure.
+     */
+    static const int maxNoOfAlgos = 7;
     /**
      * Convenience function that sets a pre-defined standard configuration.
      *
@@ -172,275 +173,130 @@ class ZrtpConfigure {
      * The functions clears all configuration data.
      */
     void clear();
-/*
- * Hash configuration functions
- */
+
     /**
      * Add a hash algorithm to configuration data.
      *
-     * Adds the specified hash algorithm to the configuration data.
+     * Adds the specified algorithm to the configuration data.
+     * If no free configuration data slot is available the
+     * function does not add the algorithm and return zero. The
+     * methods appends the algorithm to the existing algorithms.
+     *
+     * @param algoType
+     *    Specifies which algorithm type to select
+     * @param algo
+     *    The enumeration of the algorithm to add.
+     * @return
+     *    Number of free configuration data slots.
+     */
+    int32_t addAlgo(AlgoTypes algoType, AlgorithmEnum& algo);
+
+    /**
+     * Add a algorithm to configuration data.
+     *
+     * Adds the specified algorithm to the configuration data.
      * If no free configuration data slot is available the
      * function does not add the algorithm and return zero.
      *
+     * @param algoType
+     *    Specifies which algorithm type to select
      * @param algo
-     *    The identifier of the hash algorithm to add.
+     *    The enumeration of the algorithm to add.
+     * @param index
+     *    The index where to add the algorihm
      * @return
-     *    Number of free hash configuration data slots.
+     *    Number of free configuration data slots.
      */
-    int32_t addHashAlgo(SupportedHashes algo);
+    int32_t addAlgoAt(AlgoTypes algoType, AlgorithmEnum& algo, int32_t index);
 
     /**
-     * Remove a hash algorithm from configuration data.
+     * Remove a algorithm from configuration data.
      *
-     * Removes the specified algorithm from hash configuration data. If
+     * Removes the specified algorithm from configuration data. If
      * the algorithm was not configured previously the function does
-     * not modify the configuration data and return the number of
+     * not modify the configuration data and returns the number of
      * free configuration data slots.
      *
      * If an application removes all algorithms then ZRTP does not
      * include any algorithm into the hello message and falls back
-     * to a predefined mandatory algorithm. In this case SHA256.
+     * to a predefined mandatory algorithm.
      *
+     * @param algoType
+     *    Specifies which algorithm type to select
      * @param algo
-     *    The identifier of the hash algorithm to remove.
+     *    The enumeration of the algorithm to remove.
      * @return
-     *    Number of free hash configuration slots.
+     *    Number of free configuration slots.
      */
-    int32_t removeHashAlgo(SupportedHashes algo);
+    int32_t removeAlgo(AlgoTypes algoType, AlgorithmEnum& algo);
 
     /**
-     * Returns the number of configured hash algorithms.
+     * Returns the number of configured algorithms.
      *
+     * @param algoType
+     *    Specifies which algorithm type to select
      * @return
-     *    The number of configured hash algorithms (used configuration 
+     *    The number of configured algorithms (used configuration 
      *    data slots)
      */
-    int32_t getNumConfiguredHashes();
+    int32_t getNumConfiguredAlgos(AlgoTypes algoType);
 
     /**
-     * Returns the identifier of the hash algorithm at the 
-     * given index.
+     * Returns the identifier of the algorithm at index.
      *
-     * If the index does not point to a configured slot then the function
-     * returns the value <code>EndSupportedHashes</code>.
+     * @param algoType
+     *    Specifies which algorithm type to select
+     * @param index
+     *    The index in the list of the algorihm type
+     * @return
+     *    A pointer the the algorithm enumeration. If the index 
+     *    does not point to a configured slot then the function
+     *    returns NULL.
+     *
      */
-    SupportedHashes getHashAlgoAt(int32_t index);
+    AlgorithmEnum& getAlgoAt(AlgoTypes algoType, int32_t index);
 
-    //    void dumpHash();
-
-/*
- * SymCipher configuration functions
- */
     /**
-     * Add a symmetric cipher algorithm to configuration data.
+     * Checks if the configuration data of the algorihm type already contains
+     * a specific algorithms.
      *
-     * Adds the specified cipher algorithm to the configuration data.
-     * If no free configuration data slot is available the
-     * function does not add the algorithm and return zero.
-     *
+     * @param algoType
+     *    Specifies which algorithm type to select
      * @param algo
-     *    The identifier of the cipher algorithm to add.
+     *    The algorithm to check
      * @return
-     *    Number of free cipher configuration data slots.
+     *    True if the algorithm was found, false otherwise.
+     *
      */
-    int32_t addSymCipherAlgo(SupportedSymCiphers algo);
+    bool containsAlgo(AlgoTypes algoType, AlgorithmEnum& algo);
 
-    /**
-     * Remove a symmetric cipher algorithm from configuration data.
-     *
-     * Removes the specified algorithm from cipher configuration data. If
-     * the algorithm was not configured previously the function does
-     * not modify the configuration data and return the number of
-     * free configuration data slots.
-     *
-     * If an application removes all algorithms then ZRTP does not
-     * include any algorithm into the hello message and falls back
-     * to a predefined mandatory algorithm. In this case AES 128.
-     *
-     * @param algo
-     *    The identifier of the cipher algorithm to remove.
-     * @return
-     *    Number of free cipher configuration slots.
-     */
-    int32_t removeSymCipherAlgo(SupportedSymCiphers algo);
+    void printConfiguredAlgos(AlgoTypes algoTyp);
 
-    /**
-     * Returns the number of configured symmetric cipher algorithms.
-     *
-     * @return
-     *    The number of configured cipher algorithms (used configuration 
-     *    data slots)
-     */
-    int32_t getNumConfiguredSymCiphers();
+  private:
+    std::vector<AlgorithmEnum* > hashes;
+    std::vector<AlgorithmEnum* > symCiphers;
+    std::vector<AlgorithmEnum* > publicKeyAlgos;
+    std::vector<AlgorithmEnum* > sasTypes;
+    std::vector<AlgorithmEnum* > authLengths;
 
-    /**
-     * Returns the identifier of the symmetric cipher algorithm at 
-     * the given index.
-     *
-     * If the index does not point to a configured slot then the function
-     * returns the value <code>EndSupportedSymCiphers</code>.
-     */
-    SupportedSymCiphers getSymCipherAlgoAt(int32_t index);
+    AlgorithmEnum& getAlgoAt(std::vector<AlgorithmEnum* >& a, int32_t index);
+    int32_t addAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo);
+    int32_t addAlgoAt(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo, int32_t index);
+    int32_t removeAlgo(std::vector<AlgorithmEnum* >& a,  AlgorithmEnum& algo);
+    int32_t getNumConfiguredAlgos(std::vector<AlgorithmEnum* >& a);
+    bool containsAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo);
+    std::vector<AlgorithmEnum* >& getEnum(AlgoTypes algoType);
 
-/*
- * Public key configuration functions
- */
-    /**
-     * Add a public key algorithm to configuration data.
-     *
-     * Adds the specified public key algorithm to the configuration data.
-     * If no free configuration data slot is available the
-     * function does not add the algorithm and return zero.
-     *
-     * If an application removes all algorithms then ZRTP does not
-     * include any algorithm into the hello message and falls back
-     * to a predefined mandatory algorithm. In this case DH 3072.
-     *
-     * @param algo
-     *    The identifier of the public key algorithm to add.
-     * @return
-     *    Number of free public key configuration data slots.
-     */
-    int32_t addPubKeyAlgo(SupportedPubKeys algo);
+    void printConfiguredAlgos(std::vector<AlgorithmEnum* >& a);
 
-    /**
-     * Remove a public key algorithm from configuration data.
-     *
-     * Removes the specified algorithm from public key configuration data. If
-     * the algorithm was not configured previously the function does
-     * not modify the configuration data and return the number of
-     * free configuration data slots.
-     *
-     * @param algo
-     *    The identifier of the public key algorithm to remove.
-     * @return
-     *    Number of free public key configuration slots.
-     */
-    int32_t removePubKeyAlgo(SupportedPubKeys algo);
+  protected:
 
-    /**
-     * Returns the number of configured public key algorithms.
-     *
-     * @return
-     *    The number of configured public key algorithms (used configuration 
-     *    data slots)
-     */
-    int32_t getNumConfiguredPubKeys();
-
-    /**
-     * Returns the identifier of the public key algorithm at 
-     * the given index.
-     *
-     * If the index does not point to a configured slot then the function
-     * returns the value <code>EndSupportedPubKeys</code>.
-     */
-    SupportedPubKeys getPubKeyAlgoAt(int32_t index);
-
-/*
- * SAS type configuration functions
- */
-    /**
-     * Add a SAS type algorithm to configuration data.
-     *
-     * Adds the specified SAS type algorithm to the configuration data.
-     * If no free configuration data slot is available the
-     * function does not add the algorithm and return zero.
-     *
-     * @param algo
-     *    The identifier of the SAS type algorithm to add.
-     * @return
-     *    Number of free SAS type configuration data slots.
-     */
-    int32_t addSasTypeAlgo(SupportedSASTypes algo);
-
-    /**
-     * Remove a SAS type algorithm from configuration data.
-     *
-     * Removes the specified algorithm from SAS type configuration data. 
-     * If the algorithm was not configured previously the function does
-     * not modify the configuration data and return the number of
-     * free configuration data slots.
-     *
-     * If an application removes all algorithms then ZRTP does not
-     * include any algorithm into the hello message and falls back
-     * to a predefined mandatory algorithm. In this case base 32.
-     *
-     * @param algo
-     *    The identifier of the SAS type algorithm to remove.
-     * @return
-     *    Number of free SAS type configuration slots.
-     */
-    int32_t removeSasTypeAlgo(SupportedSASTypes algo);
-    /**
-     * Returns the number of configured SAS type algorithms.
-     *
-     * @return
-     *    The number of configured SAS type algorithms (used configuration 
-     *    data slots)
-     */
-    int32_t getNumConfiguredSasTypes();
-    /**
-     * Returns the identifier of the SAS type algorithm at the given index.
-     *
-     * If the index does not point to a configured slot then the function
-     * returns the value <code>EndSupportedSASTypes</code>.
-     */
-    SupportedSASTypes getSasTypeAlgoAt(int32_t index);
-
-/*
- * Authentication length configuration functions
- */
-    /**
-     * Add a SRTP authentication length to configuration data.
-     *
-     * Adds the specified SRTP authentication length to the 
-     * configuration data.
-     * If no free configuration data slot is available the
-     * function does not add the algorithm and return zero.
-     *
-     * @param algo
-     *    The identifier of the SRTP authentication length to add.
-     * @return
-     *    Number of free SRTP authentication length configuration data 
-     *    slots.
-     */
-    int32_t addAuthLength(SupportedAuthLengths algo);
-
-    /**
-     * Remove a SRTP authentication length from configuration data.
-     *
-     * Removes the specified algorithm from SRTP authentication length 
-     * configuration data. If the algorithm was not configured previously 
-     * the function does not modify the configuration data and retursn 
-     * the number of free configuration data slots.
-     *
-     * If an application removes all algorithms then ZRTP does not
-     * include any algorithm into the hello message and falls back
-     * to a predefined mandatory algorithm. In this case length 32.
-     *
-     * @param algo
-     *    The identifier of the SRTP authentication length to remove.
-     * @return
-     *    Number of free SRTP authentication length configuration slots.
-     */
-    int32_t removeAuthLength(SupportedAuthLengths algo);
-    /**
-     * Returns the number of configured SRTP authentication lengths.
-     *
-     * @return
-     *    The number of configured SRTP authentication lengths (used 
-     * configuration data slots)
-     */
-    int32_t getNumConfiguredAuthLengths();
-    /**
-     * Returns the identifier of the SRTP authentication length at the 
-     * given index.
-     *
-     * If the index does not point to a configured slot then the function
-     * returns the value <code>EndSupportedAuthLength</code>.
-     */
-    SupportedAuthLengths getAuthLengthAt(int32_t index);
+  public:
 };
+
+
+
+
 
 #endif
 

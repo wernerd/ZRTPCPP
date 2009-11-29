@@ -21,7 +21,11 @@
  * Converted to C++ by:
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
+#ifndef UNIT_TEST
 #include <libzrtpcpp/Base32.h>
+#else
+#include "libzrtpcpp/Base32.h"
+#endif
 
 int divceil(int a, int b) {
     int c;
@@ -238,9 +242,9 @@ void Base32::a2b_l(const string cs, size_t size, const size_t lengthinbits ) {
 #include <math.h>
 
 
-uint8* randz(const size_t len)
+static uint8_t *randz(const size_t len)
 {
-    uint8* result = (uint8*)malloc(len);
+    uint8_t* result = (uint8_t*)malloc(len);
     size_t i;
     for (i=0; i<len; i++) {
         result[i] = rand() % 256;
@@ -250,10 +254,20 @@ uint8* randz(const size_t len)
 
 int main(int argc, char *argv[]) {
 
-    int32 resLen;
+    int32_t resLen;
     string a;
-    const uint8* zrecovered;
-    uint8 ones[] = {1, 1, 1, 1, 1};
+    const uint8_t* zrecovered;
+    uint8_t ones[] = {1, 1, 1, 1, 1};
+    uint8_t zrtpVec01[] = {0x00, 0x00, 0x00, 0x00};
+    uint8_t zrtpVec02[] = {0x80, 0x00, 0x00, 0x00};
+    uint8_t zrtpVec03[] = {0x40, 0x00, 0x00, 0x00};
+    uint8_t zrtpVec04[] = {0xc0, 0x00, 0x00, 0x00};
+    uint8_t zrtpVec05[] = {0x00, 0x00, 0x00, 0x00};
+    uint8_t zrtpVec06[] = {0x80, 0x80, 0x00, 0x00};
+    uint8_t zrtpVec07[] = {0x8b, 0x88, 0x80, 0x00};
+    uint8_t zrtpVec08[] = {0xf0, 0xbf, 0xc7, 0x00};
+    uint8_t zrtpVec09[] = {0xd4, 0x7a, 0x04, 0x00};
+    uint8_t zrtpVec10[] = {0xf5, 0x57, 0xbb, 0x0c};
 
     // Encode all bits of the 5 one bytes (= 40 bits)
     a = Base32(ones, 5*8).getEncoded();
@@ -279,18 +293,42 @@ int main(int argc, char *argv[]) {
     printf("Decoded bytes: %x %x (should be 1 0)\n", zrecovered[0], zrecovered[1]);
     delete y;
 
+    // Encode 20 bits of the test vectors
+    a = Base32(zrtpVec01, 20).getEncoded();
+    cout << "Encoded ZRTP vector 01: '" << a << "', Expected: 'yyyy'" << endl;
+    a = Base32(zrtpVec02, 20).getEncoded();
+    cout << "Encoded ZRTP vector 02: '" << a << "', Expected: 'oyyy'" << endl;
+    a = Base32(zrtpVec03, 20).getEncoded();
+    cout << "Encoded ZRTP vector 02: '" << a << "', Expected: 'eyyy'" << endl;
+    a = Base32(zrtpVec04, 20).getEncoded();
+    cout << "Encoded ZRTP vector 04: '" << a << "', Expected: 'ayyy'" << endl;
+    a = Base32(zrtpVec05, 20).getEncoded();
+    cout << "Encoded ZRTP vector 05: '" << a << "', Expected: 'yyyy'" << endl;
+    a = Base32(zrtpVec06, 20).getEncoded();
+    cout << "Encoded ZRTP vector 06: '" << a << "', Expected: 'onyy'" << endl;
+    a = Base32(zrtpVec07, 20).getEncoded();
+    cout << "Encoded ZRTP vector 07: '" << a << "', Expected: 'tqre'" << endl;
+    a = Base32(zrtpVec08, 20).getEncoded();
+    cout << "Encoded ZRTP vector 08: '" << a << "', Expected: '6n9h'" << endl;
+    a = Base32(zrtpVec09, 20).getEncoded();
+    cout << "Encoded ZRTP vector 09: '" << a << "', Expected: '4t7y'" << endl;
+    a = Base32(zrtpVec10, 20).getEncoded();
+    cout << "Encoded ZRTP vector 10: '" << a << "', Expected: '6im5'" << endl;
+
+    // test the 30 bit output of same data as 20 bit
+    a = Base32(zrtpVec10, 30).getEncoded();
+    cout << "Encoded ZRTP vector 10 (30bit): '" << a << "', Expected: '6im5sd'" << endl;
+
     for (int i = 0; i < 2; i++) {
-        uint8* z = randz(16);
+        uint8_t* z = randz(16);
         a = Base32(z, 16*8).getEncoded();
 //        cout << "Result: " << a << endl;
         assert (a.size() == Base32::b2alen(16*8));
-        Base32 *x = new Base32(a);
-        zrecovered = x->getDecoded(resLen);
+        zrecovered = Base32(a).getDecoded(resLen);
         if (resLen != 16 && memcmp(z, zrecovered, 16)) {
             printf("Failed basic recovery test.\n");
             return -1;
         }
-        delete x;
         free((void*)z);
     }
 }

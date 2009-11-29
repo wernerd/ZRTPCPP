@@ -74,26 +74,26 @@ extern char* zrtpSessionKey;
 extern char* zrtpMsk;
 
 
-extern const char* supportedHashes[];
+// extern const char* supportedHashes[];
 extern const char* mandatoryHash;
-const SupportedHashes mandatoryHashId = Sha256;
+// const SupportedHashes mandatoryHashId = Sha256;
 
-extern const char* supportedCipher[];
+// extern const char* supportedCipher[];
 extern const char* mandatoryCipher;
-const SupportedSymCiphers mandatoryCipherId = Aes128;
+// const SupportedSymCiphers mandatoryCipherId = Aes128;
 
-extern char* supportedPubKey[];
+// extern char* supportedPubKey[];
 extern const char* mandatoryPubKey;
-const SupportedPubKeys mandatoryPubKeyId = Dh3072;
+// const SupportedPubKeys mandatoryPubKeyId = Dh3072;
 
-extern char* supportedSASType[];
+// extern char* supportedSASType[];
 extern const char* mandatorySasType;
-const SupportedSASTypes mandatorySasTypeId = Libase32;
+// const SupportedSASTypes mandatorySasTypeId = Libase32;
 
-extern char *supportedAuthLen[];
+// extern char *supportedAuthLen[];
 extern const char* mandatoryAuthLen_1;
 extern const char* mandatoryAuthLen_2;
-const SupportedAuthLengths mandatoryAuthLenId_1 = AuthLen32;
-const SupportedAuthLengths mandatoryAuthLenId_2 = AuthLen80;
+// const SupportedAuthLengths mandatoryAuthLenId_1 = AuthLen32;
+// const SupportedAuthLengths mandatoryAuthLenId_2 = AuthLen80;
 #endif     // _ZRTPTEXTDATA_H_
 

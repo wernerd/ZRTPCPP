@@ -157,12 +157,13 @@ static const uint8_t P4096[] =
 	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
 };
     *************** */
-
-ZrtpDH::ZrtpDH(SupportedPubKeys type): pkType(type) {
+#define DH3K 1
+#define DH2K 0
+ZrtpDH::ZrtpDH(int type): pkType(type) {
 
     switch (pkType) {
-    case Dh2048:
-    case Dh3072:
+    case DH3K:   // 0 = DH3K
+    case DH2K:   // 1 = DH2K
         break;
     default:
         fprintf(stderr, "Unknown pubkey algo: %d\n", pkType);
@@ -193,11 +194,11 @@ ZrtpDH::ZrtpDH(SupportedPubKeys type): pkType(type) {
         dhinit = 1;
     }
 
-    if (type == Dh2048) {
+    if (type == DH3K) {
         tmpCtx->privKey = gcry_mpi_new(256);
         gcry_mpi_randomize(tmpCtx->privKey, 256, GCRY_STRONG_RANDOM);
     }
-    else if (type == Dh3072) {
+    else if (type == DH2K) {
         tmpCtx->privKey = gcry_mpi_new(256);
         gcry_mpi_randomize(tmpCtx->privKey, 256, GCRY_STRONG_RANDOM);
     }
@@ -229,10 +230,10 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
     gcry_mpi_t sec = gcry_mpi_new(0);
     gcry_mpi_scan(&pubKeyOther, GCRYMPI_FMT_USG, pubKeyBytes, length, NULL);
 
-    if (pkType == Dh2048) {
+    if (pkType == DH2K) {
 	gcry_mpi_powm(sec, pubKeyOther, tmpCtx->privKey, bnP2048);
     }
-    else if (pkType == Dh3072) {
+    else if (pkType == DH3K) {
 	gcry_mpi_powm(sec, pubKeyOther, tmpCtx->privKey, bnP3072);
     }
     else {
@@ -253,10 +254,10 @@ int32_t ZrtpDH::generatePublicKey()
     gcryptCtx* tmpCtx = static_cast<gcryptCtx*>(ctx);
 
     tmpCtx->pubKey = gcry_mpi_new(0);
-    if (pkType == Dh2048) {
+    if (pkType == DH2K) {
 	gcry_mpi_powm(tmpCtx->pubKey, two, tmpCtx->privKey, bnP2048);
     }
-    else if (pkType == Dh3072) {
+    else if (pkType == DH3K) {
 	gcry_mpi_powm(tmpCtx->pubKey, two, tmpCtx->privKey, bnP3072);
     }
     else {
@@ -284,10 +285,10 @@ int32_t ZrtpDH::getPubKeyBytes(uint8_t *buf) const
 int32_t ZrtpDH::getDhSize() const
 {
     switch (pkType) {
-	case Dh2048:
+	case DH2K:
 	    return 2048/8;
 	    break;
-	case Dh3072:
+	case DH3K:
 	    return 3072/8;
 	    break;
     }
@@ -305,11 +306,11 @@ int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
     gcry_mpi_t pubKeyOther = NULL;
     gcry_mpi_scan(&pubKeyOther, GCRYMPI_FMT_USG, pubKeyBytes, getDhSize(), NULL);
 
-    if (pkType == Dh2048) {
+    if (pkType == DH2K) {
         if (gcry_mpi_cmp(bnP2048MinusOne, pubKeyOther) == 0)
             return 0;
     }
-    else if (pkType == Dh3072) {
+    else if (pkType == DH3K) {
         if (gcry_mpi_cmp(bnP3072MinusOne, pubKeyOther) == 0)
             return 0;
     }

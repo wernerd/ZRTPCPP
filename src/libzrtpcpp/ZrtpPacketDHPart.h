@@ -39,7 +39,7 @@ class ZrtpPacketDHPart : public ZrtpPacketBase {
 
  public:
     ZrtpPacketDHPart();	                        /* Creates a DHPart packet no data, must use setPubKeyType(...) */
-    ZrtpPacketDHPart(SupportedPubKeys pkt);	/* Creates a DHPart packet with default data */
+    ZrtpPacketDHPart(int pkt);                  /* Creates a DHPart packet with default data */
     ZrtpPacketDHPart(uint8_t* data);            /* Creates a DHPart packet from received data */
     virtual ~ZrtpPacketDHPart();
 
@@ -57,7 +57,7 @@ class ZrtpPacketDHPart : public ZrtpPacketBase {
     void setAuxSecretId(uint8_t* t)   { memcpy(DHPartHeader->auxSecretId, t, sizeof(DHPartHeader->auxSecretId)); };
     void setPbxSecretId(uint8_t* t)   { memcpy(DHPartHeader->pbxSecretId,t, sizeof(DHPartHeader->pbxSecretId)); };
     void setH1(uint8_t* t)            { memcpy(DHPartHeader->hashH1, t, sizeof(DHPartHeader->hashH1)); };
-    void setPubKeyType(SupportedPubKeys pkt);
+    void setPubKeyType(int pkt);
     void setHMAC(uint8_t* t) 	      { memcpy(pv+dhLength, t, 2*ZRTP_WORD_SIZE); };
 
  private:

@@ -28,11 +28,11 @@ ZrtpPacketHello::ZrtpPacketHello() {
 
 void ZrtpPacketHello::configureHello(ZrtpConfigure* config) {
     // The NumSupported* data is in ZrtpTextData.h 
-    nHash = config->getNumConfiguredHashes();
-    nCipher = config->getNumConfiguredSymCiphers();
-    nPubkey = config->getNumConfiguredPubKeys();
-    nSas = config->getNumConfiguredSasTypes();
-    nAuth = config->getNumConfiguredAuthLengths();
+    nHash = config->getNumConfiguredAlgos(HashAlgorithm);
+    nCipher = config->getNumConfiguredAlgos(CipherAlgorithm);
+    nPubkey = config->getNumConfiguredAlgos(PubKeyAlgorithm);
+    nSas = config->getNumConfiguredAlgos(SasType);
+    nAuth = config->getNumConfiguredAlgos(AuthLength);
 
     // length is fixed Header plus HMAC size (2*ZRTP_WORD_SIZE)
     int32_t length = sizeof(HelloPacket_t) + (2 * ZRTP_WORD_SIZE);
@@ -66,32 +66,32 @@ void ZrtpPacketHello::configureHello(ZrtpConfigure* config) {
 
     uint32_t lenField = nHash << 16;
     for (int32_t i = 0; i < nHash; i++) {
-        SupportedHashes hash = config->getHashAlgoAt(i);
-        setHashType(i, (int8_t*)supportedHashes[hash]);
+        AlgorithmEnum& hash = config->getAlgoAt(HashAlgorithm, i);
+        setHashType(i, (int8_t*)hash.getName());
     }
 
     lenField |= nCipher << 12;
     for (int32_t i = 0; i < nCipher; i++) {
-        SupportedSymCiphers cipher = config->getSymCipherAlgoAt(i);
-        setCipherType(i,  (int8_t*)supportedCipher[cipher]);
+        AlgorithmEnum& cipher = config->getAlgoAt(CipherAlgorithm, i);
+        setCipherType(i, (int8_t*)cipher.getName());
     }
 
     lenField |= nAuth << 8;
     for (int32_t i = 0; i < nAuth; i++) {
-        SupportedAuthLengths length = config->getAuthLengthAt(i);
-        setAuthLen(i,  (int8_t*)supportedAuthLen[length]);
+        AlgorithmEnum& length = config->getAlgoAt(AuthLength, i);
+        setAuthLen(i, (int8_t*)length.getName());
     }
 
     lenField |= nPubkey << 4;
     for (int32_t i = 0; i < nPubkey; i++) {
-        SupportedPubKeys pubKey = config->getPubKeyAlgoAt(i);
-        setPubKeyType(i,  (int8_t*)supportedPubKey[pubKey]);
+        AlgorithmEnum& pubKey = config->getAlgoAt(PubKeyAlgorithm, i);
+        setPubKeyType(i, (int8_t*)pubKey.getName());
     }
 
     lenField |= nSas;
     for (int32_t i = 0; i < nSas; i++) {
-        SupportedSASTypes sas = config->getSasTypeAlgoAt(i);
-        setSasType(i,  (int8_t*)supportedSASType[sas]);
+        AlgorithmEnum& sas = config->getAlgoAt(SasType, i);
+        setSasType(i, (int8_t*)sas.getName());
     }
     helloHeader->flagLength = htonl(lenField);
 }

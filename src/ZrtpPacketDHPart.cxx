@@ -21,12 +21,15 @@
 
 #include <libzrtpcpp/ZrtpPacketDHPart.h>
 
+#define DH3K 1
+#define DH2K 0
+
 ZrtpPacketDHPart::ZrtpPacketDHPart() {
     DEBUGOUT((fprintf(stdout, "Creating DHPart packet without data and pkt type\n")));
     initialize();
 }
 
-ZrtpPacketDHPart::ZrtpPacketDHPart(SupportedPubKeys pkt) {
+ZrtpPacketDHPart::ZrtpPacketDHPart(int pkt) {
     DEBUGOUT((fprintf(stdout, "Creating DHPart packet without data\n")));
     initialize();
     setPubKeyType(pkt);
@@ -44,12 +47,12 @@ void ZrtpPacketDHPart::initialize() {
     setZrtpId();
 }
 
-void ZrtpPacketDHPart::setPubKeyType(SupportedPubKeys pkt) {
+void ZrtpPacketDHPart::setPubKeyType(int pkt) {
     switch (pkt) {
-	case Dh2048:
+	case DH2K:
 	    dhLength = 256;
 	    break;
-	case Dh3072:
+	case DH3K:
 	    dhLength = 384;
 	    break;
     }
