@@ -29,71 +29,73 @@
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
-extern char* clientId;
-extern char* zrtpVersion;
+extern char clientId[];
+extern char zrtpVersion[];
 
 /**
  *
  */
-extern char* HelloMsg;
-extern char* HelloAckMsg;
-extern char* CommitMsg;
-extern char* DHPart1Msg;
-extern char* DHPart2Msg;
-extern char* Confirm1Msg;
-extern char* Confirm2Msg;
-extern char* Conf2AckMsg;
-extern char* ErrorMsg;
-extern char* ErrorAckMsg;
-extern char* GoClearMsg;
-extern char* ClearAckMsg;
-extern char* PingMsg;
-extern char* PingAckMsg;
+extern char HelloMsg[];
+extern char HelloAckMsg[];
+extern char CommitMsg[];
+extern char DHPart1Msg[];
+extern char DHPart2Msg[];
+extern char Confirm1Msg[];
+extern char Confirm2Msg[];
+extern char Conf2AckMsg[];
+extern char ErrorMsg[];
+extern char ErrorAckMsg[];
+extern char GoClearMsg[];
+extern char ClearAckMsg[];
+extern char PingMsg[];
+extern char PingAckMsg[];
 
 /**
  *
  */
-extern char* responder;
-extern char* initiator;
-extern char* iniMasterKey;
-extern char* iniMasterSalt;
-extern char* respMasterKey;
-extern char* respMasterSalt;
+extern char responder[];
+extern char initiator[];
+extern char iniMasterKey[];
+extern char iniMasterSalt[];
+extern char respMasterKey[];
+extern char respMasterSalt[];
 
-extern char* iniHmacKey;
-extern char* respHmacKey;
-extern char* retainedSec;
+extern char iniHmacKey[];
+extern char respHmacKey[];
+extern char retainedSec[];
 
-extern char* iniZrtpKey;
-extern char* respZrtpKey;
+extern char iniZrtpKey[];
+extern char respZrtpKey[];
 
-extern char* sasString;
+extern char sasString[];
 
-extern char* KDFString;
-extern char* zrtpSessionKey;
-extern char* zrtpMsk;
+extern char KDFString[];
+extern char zrtpSessionKey[];
+extern char zrtpMsk[];
 
 
-// extern const char* supportedHashes[];
+extern char s256[];
+extern char s384[];
 extern const char* mandatoryHash;
-// const SupportedHashes mandatoryHashId = Sha256;
 
-// extern const char* supportedCipher[];
+extern char aes3[];
+extern char aes1[];
 extern const char* mandatoryCipher;
-// const SupportedSymCiphers mandatoryCipherId = Aes128;
 
-// extern char* supportedPubKey[];
+extern char dh2k[];
+                                  // "EC25"
+extern char dh3k[];
+                                  // "EC38"
+extern char mult[];
+
 extern const char* mandatoryPubKey;
-// const SupportedPubKeys mandatoryPubKeyId = Dh3072;
 
-// extern char* supportedSASType[];
+extern char b32[];
 extern const char* mandatorySasType;
-// const SupportedSASTypes mandatorySasTypeId = Libase32;
 
-// extern char *supportedAuthLen[];
+extern char hs32[];
+extern char hs80[];
 extern const char* mandatoryAuthLen_1;
 extern const char* mandatoryAuthLen_2;
-// const SupportedAuthLengths mandatoryAuthLenId_1 = AuthLen32;
-// const SupportedAuthLengths mandatoryAuthLenId_2 = AuthLen80;
 #endif     // _ZRTPTEXTDATA_H_
 

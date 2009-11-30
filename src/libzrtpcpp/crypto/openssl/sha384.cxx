@@ -50,7 +50,7 @@ void sha384(unsigned char * data_chunks[],
 	    unsigned int data_chunck_length[],
 	    unsigned char *digest)
 {
-	SHA384_CTX ctx;
+	SHA512_CTX ctx;
 	SHA384_Init( &ctx);
 	while(*data_chunks) {
 		SHA384_Update(&ctx, *data_chunks, *data_chunck_length);
@@ -60,16 +60,16 @@ void sha384(unsigned char * data_chunks[],
 	SHA384_Final(digest, &ctx);
 }
 
-void* createSha256Context()
+void* createSha384Context()
 {
-    SHA384_CTX* ctx = (SHA384_CTX*)malloc(sizeof (SHA384_CTX));
+    SHA512_CTX* ctx = (SHA512_CTX*)malloc(sizeof (SHA512_CTX));
     SHA384_Init(ctx);
     return (void*)ctx;
 }
 
-void closeSha256Context(void* ctx, unsigned char* digest)
+void closeSha384Context(void* ctx, unsigned char* digest)
 {
-    SHA384_CTX* hd = (SHA384_CTX*)ctx;
+    SHA512_CTX* hd = (SHA512_CTX*)ctx;
 
     if (digest != NULL) {
         SHA384_Final(digest, hd);
@@ -80,14 +80,14 @@ void closeSha256Context(void* ctx, unsigned char* digest)
 void sha384Ctx(void* ctx, unsigned char* data, 
                unsigned int dataLength)
 {
-    SHA384_CTX* hd = (SHA384_CTX*)ctx;
+    SHA512_CTX* hd = (SHA512_CTX*)ctx;
     SHA384_Update(hd, data, dataLength);
 }
 
 void sha384Ctx(void* ctx, unsigned char* dataChunks[],
                unsigned int dataChunkLength[])
 {
-    SHA384_CTX* hd = (SHA384_CTX*)ctx;
+    SHA512_CTX* hd = (SHA512_CTX*)ctx;
 
     while (*dataChunks) {
         SHA384_Update (hd, *dataChunks, *dataChunkLength);

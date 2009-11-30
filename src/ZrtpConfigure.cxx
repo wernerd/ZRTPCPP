@@ -1,5 +1,5 @@
 #include <libzrtpcpp/ZrtpConfigure.h>
-
+#include <libzrtpcpp/ZrtpTextData.h>
 
 AlgorithmEnum::AlgorithmEnum(const int type, const char* name):
     algoType(type), algoName(name) {
@@ -92,40 +92,40 @@ std::list<std::string>* EnumBase::getAllNames() {
  * Set up the enumeration list for available hash algorithms
  */
 HashEnum::HashEnum() : EnumBase(HashAlgorithm) {
-    insert("S256");
-    insert("S384");
+    insert(s256);
+    insert(s384);
 }
 
 /**
  * Set up the enumeration list for available symmetric cipher algorithms
  */
 SymCipherEnum::SymCipherEnum() : EnumBase(CipherAlgorithm) {
-    insert("AES3");
-    insert("AES1");
+    insert(aes3);
+    insert(aes1);
 }
 
 /**
  * Set up the enumeration list for available public key algorithms
  */
 PubKeyEnum::PubKeyEnum() : EnumBase(PubKeyAlgorithm) {
-    insert("DH2k");
-    insert("DH3k");
-    insert("Mult");
+    insert(dh2k);
+    insert(dh3k);
+    insert(mult);
 }
 
 /**
  * Set up the enumeration list for available SAS algorithms
  */
 SasTypeEnum::SasTypeEnum() : EnumBase(SasType) {
-    insert("B32 ");
+    insert(b32);
 }
 
 /**
  * Set up the enumeration list for available SRTP authnticaion lengths
  */
 AuthLengthEnum::AuthLengthEnum() : EnumBase(AuthLength) {
-    insert("HS32");
-    insert("HS80");
+    insert(hs32);
+    insert(hs80);
 }
 
 /*
@@ -147,36 +147,36 @@ ZrtpConfigure::~ZrtpConfigure() {}
 void ZrtpConfigure::setStandardConfig() {
     clear();
 
-    addAlgo(HashAlgorithm, zrtpHashes.getByName("S256"));
-    addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
+    addAlgo(HashAlgorithm, zrtpHashes.getByName(s256));
+    addAlgo(HashAlgorithm, zrtpHashes.getByName(s384));
 
-    addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES3"));
-    addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES1"));
+    addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName(aes3));
+    addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName(aes1));
 
-    addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));
-    addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));
-    addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("Mult"));
+    addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName(dh3k));
+    addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName(dh2k));
+    addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName(mult));
 
-    addAlgo(SasType, zrtpSasTypes.getByName("B32 "));
+    addAlgo(SasType, zrtpSasTypes.getByName(b32));
 
-    addAlgo(AuthLength, zrtpAuthLengths.getByName("HS32"));
-    addAlgo(AuthLength, zrtpAuthLengths.getByName("HS80"));
+    addAlgo(AuthLength, zrtpAuthLengths.getByName(hs32));
+    addAlgo(AuthLength, zrtpAuthLengths.getByName(hs80));
 }
 
 void ZrtpConfigure::setMandatoryOnly() {
     clear();
 
-    addAlgo(HashAlgorithm, zrtpHashes.getByName("S256"));
+    addAlgo(HashAlgorithm, zrtpHashes.getByName(s256));
 
-    addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES1"));
+    addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName(aes1));
 
-    addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));
-    addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("Mult"));
+    addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName(dh3k));
+    addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName(mult));
 
-    addAlgo(SasType, zrtpSasTypes.getByName("B32 "));
+    addAlgo(SasType, zrtpSasTypes.getByName(b32));
 
-    addAlgo(AuthLength, zrtpAuthLengths.getByName("HS32"));
-    addAlgo(AuthLength, zrtpAuthLengths.getByName("HS80"));
+    addAlgo(AuthLength, zrtpAuthLengths.getByName(hs32));
+    addAlgo(AuthLength, zrtpAuthLengths.getByName(hs80));
 
 }
 

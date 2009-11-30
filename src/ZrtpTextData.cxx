@@ -25,75 +25,75 @@
  */
 //                                  1
 //                         1234567890123456
-const char *clientId =    "GNU ZRTP 1.5.0  "; // 16 chars max.
-const char *zrtpVersion = "1.10";             // must be 4 chars
+char clientId[] =    "GNU ZRTP 1.5.0  "; // 16 chars max.
+char zrtpVersion[] = "1.10";             // must be 4 chars
 /**
  *
  */
-const char* HelloMsg =    "Hello   ";
-const char* HelloAckMsg = "HelloACK";
-const char* CommitMsg =   "Commit  ";
-const char* DHPart1Msg =  "DHPart1 ";
-const char* DHPart2Msg =  "DHPart2 ";
-const char* Confirm1Msg = "Confirm1";
-const char* Confirm2Msg = "Confirm2";
-const char* Conf2AckMsg = "Conf2ACK";
-const char* ErrorMsg =    "Error   ";
-const char* ErrorAckMsg = "ErrorACK";
-const char* GoClearMsg =  "GoClear ";
-const char* ClearAckMsg = "ClearACK";
-const char* PingMsg =     "Ping    ";
-const char* PingAckMsg =  "PingACK ";
+char HelloMsg[] =    "Hello   ";
+char HelloAckMsg[] = "HelloACK";
+char CommitMsg[] =   "Commit  ";
+char DHPart1Msg[] =  "DHPart1 ";
+char DHPart2Msg[] =  "DHPart2 ";
+char Confirm1Msg[] = "Confirm1";
+char Confirm2Msg[] = "Confirm2";
+char Conf2AckMsg[] = "Conf2ACK";
+char ErrorMsg[] =    "Error   ";
+char ErrorAckMsg[] = "ErrorACK";
+char GoClearMsg[] =  "GoClear ";
+char ClearAckMsg[] = "ClearACK";
+char PingMsg[] =     "Ping    ";
+char PingAckMsg[] =  "PingACK ";
 
 /**
  *
  */
-const char* responder = "Responder";
-const char* initiator = "Initiator";
-const char* iniMasterKey = "Initiator SRTP master key";
-const char* iniMasterSalt = "Initiator SRTP master salt";
-const char* respMasterKey = "Responder SRTP master key";
-const char* respMasterSalt = "Responder SRTP master salt";
+char responder[] = "Responder";
+char initiator[] = "Initiator";
+char iniMasterKey[] = "Initiator SRTP master key";
+char iniMasterSalt[] = "Initiator SRTP master salt";
+char respMasterKey[] = "Responder SRTP master key";
+char respMasterSalt[] = "Responder SRTP master salt";
 
-const char* iniHmacKey = "Initiator HMAC key";
-const char* respHmacKey = "Responder HMAC key";
-const char* retainedSec = "retained secret";
+char iniHmacKey[] = "Initiator HMAC key";
+char respHmacKey[] = "Responder HMAC key";
+char retainedSec[] = "retained secret";
 
-const char* iniZrtpKey = "Initiator ZRTP key";
-const char* respZrtpKey = "Responder ZRTP key";
+char iniZrtpKey[] = "Initiator ZRTP key";
+char respZrtpKey[] = "Responder ZRTP key";
 
-const char* sasString = "SAS";
+char sasString[] = "SAS";
 
-const char* KDFString = "ZRTP-HMAC-KDF";
+char KDFString[] = "ZRTP-HMAC-KDF";
 
-const char* zrtpSessionKey = "ZRTP Session Key";
+char zrtpSessionKey[] = "ZRTP Session Key";
 
-const char* zrtpMsk = "ZRTP MSK";
+char zrtpMsk[] = "ZRTP MSK";
 
 /**
  * The arrays are sorted: the most secure / best algorithm is first in the
  * array. If we add an algorithm here then we need to adjust the corresponding
  * value in ZrtpConfigure.h as well.
  */
-const char* supportedHashes[] =  {"S256",
-                                  "S384"};
-const char* mandatoryHash = "S256";
+char s256[] =  "S256";
+char s384[] = "S384";
+const char* mandatoryHash = s256;
 
-const char* supportedCipher[] =  {"AES3",
-                                  "AES1"};
-const char* mandatoryCipher = "AES1";
+char aes3[] = "AES3";
+char aes1[] = "AES1";
+const char* mandatoryCipher = aes1;
 
-const char* supportedPubKey[] =  {"DH2k",
-                                  // "EC25"
-                                  "DH3k",
-                                  // "EC38"
-                                  "Mult"};
-const char* mandatoryPubKey = "DH3k";
+char dh2k[] =  "DH2k";
+              // "EC25"
+char dh3k[] = "DH3k";
+              // "EC38"
+char mult[] = "Mult";
+const char* mandatoryPubKey = dh3k;
 
-const char* supportedSASType[] = {"B32 "};
-const char* mandatorySasType = "B32 ";
+char b32[] = "B32 ";
+const char* mandatorySasType = b32;
 
-const char* supportedAuthLen[] = {"HS32",
-                                  "HS80"};
-const char* mandatoryAuthLen_1 = "HS32";
-const char* mandatoryAuthLen_2 = "HS80";
+char hs32[] = "HS32";
+char hs80[] = "HS80";
+const char* mandatoryAuthLen_1 = hs32;
+const char* mandatoryAuthLen_2 = hs80;

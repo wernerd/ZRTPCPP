@@ -23,7 +23,7 @@
 #define _ZRTPDH_H__
 
 #include <stdint.h>
-#include <libzrtpcpp/ZrtpTextData.h>
+#include <libzrtpcpp/ZrtpConfigure.h>
 
 /**
  * Generates a number of random bytes.
@@ -56,7 +56,7 @@ private:
     int pkType;
 
 public:
-    ZrtpDH(int type);
+    ZrtpDH(const char* type);
     ~ZrtpDH();
 
     /**
@@ -124,7 +124,7 @@ public:
      */
     int32_t checkPubKey(uint8_t* pubKeyBytes) const;
 
-    int getDHtype() { return pkType; }
+    const char* getDHtype();
 };
 
 #endif // ZRTPDH_H

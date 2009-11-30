@@ -283,7 +283,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
 
     // Modify here when introducing new DH key agreement, for example
     // elliptic curves.
-    dhContext = new ZrtpDH(zrtpPubKeys.getOrdinal(*pubKey));
+    dhContext = new ZrtpDH(pubKey->getName());
     dhContext->generatePublicKey();
 
     pubKeyLen = dhContext->getPubKeySize();
@@ -311,7 +311,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     // chapter 5.4.1.1.
 
     // Fill the values in the DHPart2 packet
-    zrtpDH2.setPubKeyType(zrtpPubKeys.getOrdinal(*pubKey));
+    zrtpDH2.setPubKeyType(pubKey->getName());
     zrtpDH2.setMessageType((uint8_t*)DHPart2Msg);
     zrtpDH2.setRs1Id(rs1IDi);
     zrtpDH2.setRs2Id(rs2IDi);
@@ -467,7 +467,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     // check if the peer's commited hash is the same that we used when
     // preparing our commit packet. If not do the necessary resets and
     // recompute some data.
-    if (strcmp(hash->getName(), cp->getName()) != 0) {
+    if (*(int32_t*)(hash->getName()) != *(int32_t*)(cp->getName())) {
         hash = cp;
         setNegotiatedHash(hash);
 
@@ -499,10 +499,10 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     // dhContext cannot be NULL - always setup during prepareCommit()
     // check if we can use the dhContext prepared by prepareCOmmit(),
     // if not delete old DH context and generate new one
-    printf("int pub: %x\n", *(int32_t*)(pubKey->getName()));
-    if (dhContext->getDHtype() != zrtpPubKeys.getOrdinal(*pubKey)) {
+    // The algorithm names are 4 chars only, thus we can cast to int32_t
+    if (*(int32_t*)(dhContext->getDHtype()) != *(int32_t*)(pubKey->getName())) {
         delete dhContext;
-        dhContext = new ZrtpDH(zrtpPubKeys.getOrdinal(*pubKey));
+        dhContext = new ZrtpDH(pubKey->getName());
         dhContext->generatePublicKey();
     }
     pubKeyLen = dhContext->getPubKeySize();
@@ -512,7 +512,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     dhContext->getPubKeyBytes(pubKeyBytes);
 
     // Setup a DHPart1 packet.
-    zrtpDH1.setPubKeyType(zrtpPubKeys.getOrdinal(*pubKey));
+    zrtpDH1.setPubKeyType(pubKey->getName());
     zrtpDH1.setMessageType((uint8_t*)DHPart1Msg);
     zrtpDH1.setRs1Id(rs1IDr);
     zrtpDH1.setRs2Id(rs2IDr);
@@ -555,7 +555,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     hashCtxFunction(msgShaContext, (unsigned char*)zrtpDH1.getHeaderBase(),
               zrtpDH1.getLength() * ZRTP_WORD_SIZE);
 
-    // store Commit data temporarily until we can check HMAC after receiving DHPart2
+    // store Commit data temporarily until we can check HMAC after we got DHPart2
     storeMsgTemp(commit);
 
     return &zrtpDH1;
@@ -735,7 +735,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
 
     // Encrypt and HMAC with Responder's key - we are Respondere here
     int16_t hmlen = (zrtpConfirm1.getLength() - 9) * ZRTP_WORD_SIZE;
-    int keylen = (strcmp(cipher->getName(), "AES1") == 0) ? 16 : 32;
+    int keylen = (*(int32_t*)(cipher->getName()) == *(int32_t*)aes1) ? 16 : 32;
 
     aesCfbEncrypt(zrtpKeyR, keylen, randomIV,
                   (unsigned char*)zrtpConfirm1.getHashH0(), hmlen);
@@ -781,7 +781,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
     // check if Commit contains "Mult" as pub key type
     int i;
     AlgorithmEnum* cp = &zrtpPubKeys.getByName((const char*)commit->getPubKeysType());
-    if (strcmp(cp->getName(), "Mult") != 0) {
+    if (!cp->isValid() || *(int32_t*)(cp->getName()) != *(int32_t*)mult) {
         *errMsg = UnsuppPKExchange;
         return NULL;
     }
@@ -811,7 +811,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
     // check if the peer's commited hash is the same that we used when
     // preparing our commit packet. If no do the necessary resets and
     // recompute some data.
-    if (strcmp(hash->getName(), cp->getName()) != 0) {
+    if (*(int32_t*)(hash->getName()) != *(int32_t*)(cp->getName())) {
         hash = cp;
         setNegotiatedHash(hash);
     }
@@ -851,7 +851,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
 
     // Encrypt and HMAC with Responder's key - we are Respondere here
     int16_t hmlen = (zrtpConfirm1.getLength() - 9) * ZRTP_WORD_SIZE;
-    int keylen = (strcmp(cipher->getName(), "AES1") == 0) ? 16 : 32;
+    int keylen = (*(int32_t*)(cipher->getName()) == *(int32_t*)aes1) ? 16 : 32;
 
     aesCfbEncrypt(zrtpKeyR, keylen, randomIV,
                   (unsigned char*)zrtpConfirm1.getHashH0(), hmlen);
@@ -881,7 +881,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
     // Use the Responder's keys here because we are Initiator here and
     // receive packets from Responder
     int16_t hmlen = (confirm1->getLength() - 9) * ZRTP_WORD_SIZE;
-    int keylen = (strcmp(cipher->getName(), "AES1") == 0) ? 16 : 32;
+    int keylen = (*(int32_t*)(cipher->getName()) == *(int32_t*)aes1) ? 16 : 32;
 
     // Use negotiated HMAC (hash)
     hmacFunction(hmacKeyR, hashLength,
@@ -930,7 +930,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
 
     // Inform GUI about security state and SAS state
     bool sasVerified = zidRec.isSasVerified();
-    std::string cs((strcmp(cipher->getName(), "AES1") == 0) ? "AES-CM-128" : "AES-CM-256");
+    std::string cs((*(int32_t*)(cipher->getName()) == *(int32_t*)aes1) ? "AES-CM-128" : "AES-CM-256");
     callback->srtpSecretsOn(cs, SAS, sasVerified);
 
     // now we are ready to save the new RS1 which inherits the verified
@@ -986,7 +986,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2MultiStream(ZrtpPacketConfirm* confirm1,
     // Use the Responder's keys here because we are Initiator here and
     // receive packets from Responder
     int16_t hmlen = (confirm1->getLength() - 9) * ZRTP_WORD_SIZE;
-    int keylen = (strcmp(cipher->getName(), "AES1") == 0) ? 16 : 32;
+    int keylen = (*(int32_t*)(cipher->getName()) == *(int32_t*)aes1) ? 16 : 32;
 
     // Use negotiated HMAC (hash)
     // TODO: variable digest length
@@ -1021,7 +1021,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2MultiStream(ZrtpPacketConfirm* confirm1,
         return NULL;
     }
     // TODO: here we have a SAS signature from reponder, call checkSASsignature (save / compare in case of resend)
-    std::string cs((strcmp(cipher->getName(), "AES1") == 0)  ? "AES-CM-128" : "AES-CM-256");
+    std::string cs((*(int32_t*)(cipher->getName()) == *(int32_t*)aes1)  ? "AES-CM-128" : "AES-CM-256");
     // Inform GUI about security state, don't show SAS and its state
     std::string cs1("");
     callback->srtpSecretsOn(cs, cs1, true);
@@ -1060,7 +1060,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
     // Use the Initiator's keys here because we are Responder here and
     // reveice packets from Initiator
     int16_t hmlen = (confirm2->getLength() - 9) * ZRTP_WORD_SIZE;
-    int keylen = (strcmp(cipher->getName(), "AES1") == 0) ? 16 : 32;
+    int keylen = (*(int32_t*)(cipher->getName()) == *(int32_t*)aes1) ? 16 : 32;
 
     // Use negotiated HMAC (hash)
     hmacFunction(hmacKeyI, hashLength,
@@ -1105,7 +1105,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
 
         // Inform GUI about security state and SAS state
         bool sasVerified = zidRec.isSasVerified();
-        std::string cs((strcmp(cipher->getName(), "AES1") == 0) ? "AES-CM-128" : "AES-CM-256");
+        std::string cs((*(int32_t*)(cipher->getName()) == *(int32_t*)aes1) ? "AES-CM-128" : "AES-CM-256");
         callback->srtpSecretsOn(cs, SAS, sasVerified);
 
         // save new RS1, this inherits the verified flag from old RS1
@@ -1124,7 +1124,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
             *errMsg = CriticalSWError;
             return NULL;
         }
-        std::string cs((strcmp(cipher->getName(), "AES1") == 0) ? "AES-CM-128" : "AES-CM-256");
+        std::string cs((*(int32_t*)(cipher->getName()) == *(int32_t*)aes1) ? "AES-CM-128" : "AES-CM-256");
         std::string cs1("");
         // Inform GUI about security state, don't show SAS and its state
         callback->srtpSecretsOn(cs, cs1, true);
@@ -1212,7 +1212,7 @@ AlgorithmEnum* ZRtp::findBestHash(ZrtpPacketHello *hello) {
     numAlgosConf = configureAlgos.getNumConfiguredAlgos(HashAlgorithm);
     for (i = 0; i < numAlgosConf; i++) {
         algosConf[i] = &configureAlgos.getAlgoAt(HashAlgorithm, i);
-        if (strcmp(algosConf[i]->getName(), mandatoryHash) == 0) {
+        if (*(int32_t*)(algosConf[i]->getName()) == *(int32_t*)mandatoryHash) {
             mandatoryFound = true;
         }
     }
@@ -1224,7 +1224,7 @@ AlgorithmEnum* ZRtp::findBestHash(ZrtpPacketHello *hello) {
     mandatoryFound = false;
     for (numAlgosOffered = 0; numAlgosOffered < num; numAlgosOffered++) {
         algosOffered[numAlgosOffered] = &zrtpHashes.getByName((const char*)hello->getHashType(numAlgosOffered));
-        if (strcmp(algosOffered[numAlgosOffered]->getName(), mandatoryHash) == 0) {
+        if (*(int32_t*)(algosOffered[numAlgosOffered]->getName()) == *(int32_t*)mandatoryHash) {
             mandatoryFound = true;
         }
     }
@@ -1235,11 +1235,11 @@ AlgorithmEnum* ZRtp::findBestHash(ZrtpPacketHello *hello) {
     // Lookup offered algos in configured algos. Because of appended
     // mandatory algorithms at least one match will happen
     for (i = 0; i < numAlgosOffered; i++) {
-	for (ii = 0; ii < numAlgosConf; ii++) {
-	    if (strcmp(algosOffered[i]->getName(), algosConf[ii]->getName()) == 0) {
+        for (ii = 0; ii < numAlgosConf; ii++) {
+            if (*(int32_t*)(algosOffered[i]->getName()) == *(int32_t*)(algosConf[ii]->getName())) {
                 return algosConf[ii];
-	    }
-	}
+            }
+        }
     }
     return &zrtpHashes.getByName(mandatoryHash);
 }
@@ -1257,8 +1257,8 @@ AlgorithmEnum* ZRtp::findBestCipher(ZrtpPacketHello *hello, AlgorithmEnum* pk) {
     bool mandatoryFound = false;
 
     int num = hello->getNumCiphers();
-    if (num == 0 || (strcmp(pk->getName(), "DH2k") == 0)) {
-        return &zrtpSymCiphers.getByName("AES1");
+    if (num == 0 || (*(int32_t*)(pk->getName()) == *(int32_t*)dh2k)) {
+        return &zrtpSymCiphers.getByName(aes1);
     }
 
     // Build list of configured cipher algorithm names, append mandatory algos
@@ -1266,7 +1266,7 @@ AlgorithmEnum* ZRtp::findBestCipher(ZrtpPacketHello *hello, AlgorithmEnum* pk) {
     numAlgosConf = configureAlgos.getNumConfiguredAlgos(CipherAlgorithm);
     for (i = 0; i < numAlgosConf; i++) {
         algosConf[i] = &configureAlgos.getAlgoAt(CipherAlgorithm, i);
-        if (strcmp(algosConf[i]->getName(), mandatoryCipher) == 0) {
+        if (*(int32_t*)(algosConf[i]->getName()) == *(int32_t*)mandatoryCipher) {
             mandatoryFound = true;
         }
     }
@@ -1279,7 +1279,7 @@ AlgorithmEnum* ZRtp::findBestCipher(ZrtpPacketHello *hello, AlgorithmEnum* pk) {
     mandatoryFound = false;
     for (numAlgosOffered = 0; numAlgosOffered < num; numAlgosOffered++) {
         algosOffered[numAlgosOffered] = &zrtpSymCiphers.getByName((const char*)hello->getCipherType(numAlgosOffered));
-        if (strcmp(algosOffered[numAlgosOffered]->getName(), mandatoryCipher) == 0) {
+        if (*(int32_t*)(algosOffered[numAlgosOffered]->getName()) == *(int32_t*)mandatoryCipher) {
             mandatoryFound = true;
         }
     }
@@ -1292,7 +1292,7 @@ AlgorithmEnum* ZRtp::findBestCipher(ZrtpPacketHello *hello, AlgorithmEnum* pk) {
     // mandatory algorithms at least one match will happen
     for (i = 0; i < numAlgosOffered; i++) {
         for (ii = 0; ii < numAlgosConf; ii++) {
-            if (strcmp(algosOffered[i]->getName(), algosConf[ii]->getName()) == 0) {
+            if (*(int32_t*)(algosOffered[i]->getName()) == *(int32_t*)(algosConf[ii]->getName())) {
                 return algosConf[ii];
             }
         }
@@ -1323,10 +1323,10 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
     numAlgosConf = configureAlgos.getNumConfiguredAlgos(PubKeyAlgorithm);
     for (i = 0, ii = 0; i < numAlgosConf; i++) {
         algosConf[ii] = &configureAlgos.getAlgoAt(PubKeyAlgorithm, ii);
-        if (strcmp(algosConf[ii]->getName(), "Mult") == 0) {
+        if (*(int32_t*)(algosConf[ii]->getName()) == *(int32_t*)mult) {
             continue;                               // skip multi-stream mode
         }
-        if (strcmp(algosConf[ii++]->getName(), mandatoryPubKey) == 0) {
+        if (*(int32_t*)(algosConf[ii++]->getName()) == *(int32_t*)mandatoryPubKey) {
             mandatoryFound = true;
         }
     }
@@ -1340,7 +1340,7 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
     mandatoryFound = false;
     for (numAlgosOffered = 0; numAlgosOffered < num; numAlgosOffered++) {
         algosOffered[numAlgosOffered] = &zrtpPubKeys.getByName((const char*)hello->getPubKeyType(numAlgosOffered));
-        if (strcmp(algosOffered[numAlgosOffered]->getName(), mandatoryPubKey) == 0) {
+        if (*(int32_t*)(algosOffered[numAlgosOffered]->getName()) == *(int32_t*)mandatoryPubKey) {
             mandatoryFound = true;
         }
     }
@@ -1353,7 +1353,7 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
     // mandatory algorithms at least one match will happen
     for (i = 0; i < numAlgosOffered; i++) {
         for (ii = 0; ii < numAlgosConf; ii++) {
-            if (strcmp(algosOffered[i]->getName(), algosConf[ii]->getName()) == 0) {
+            if (*(int32_t*)(algosOffered[i]->getName()) == *(int32_t*)(algosConf[ii]->getName())) {
                 return algosConf[ii];
             }
         }
@@ -1382,7 +1382,7 @@ AlgorithmEnum* ZRtp::findBestSASType(ZrtpPacketHello *hello) {
     numAlgosConf = configureAlgos.getNumConfiguredAlgos(SasType);
     for (i = 0; i < numAlgosConf; i++) {
         algosConf[i] = &configureAlgos.getAlgoAt(SasType, i);
-        if (strcmp(algosConf[i]->getName(), mandatorySasType) == 0) {
+        if (*(int32_t*)(algosConf[i]->getName()) == *(int32_t*)mandatorySasType) {
             mandatoryFound = true;
         }
     }
@@ -1394,7 +1394,7 @@ AlgorithmEnum* ZRtp::findBestSASType(ZrtpPacketHello *hello) {
     // Build list of offered algos in Hello, append mandatory algos if necessary
     for (numAlgosOffered = 0; numAlgosOffered < num; numAlgosOffered++) {
         algosOffered[numAlgosOffered] = &zrtpSasTypes.getByName((const char*)hello->getSasType(numAlgosOffered));
-        if (strcmp(algosOffered[numAlgosOffered]->getName(), mandatorySasType) == 0) {
+        if (*(int32_t*)(algosOffered[numAlgosOffered]->getName()) == *(int32_t*)mandatorySasType) {
             mandatoryFound = true;
         }
     }
@@ -1407,7 +1407,7 @@ AlgorithmEnum* ZRtp::findBestSASType(ZrtpPacketHello *hello) {
     // mandatory algorithms at least one match will happen
     for (i = 0; i < numAlgosOffered; i++) {
         for (ii = 0; ii < numAlgosConf; ii++) {
-            if (strcmp(algosOffered[i]->getName(), algosConf[ii]->getName()) == 0) {
+            if (*(int32_t*)(algosOffered[i]->getName()) == *(int32_t*)(algosConf[ii]->getName())) {
                 return algosConf[ii];
             }
         }
@@ -1432,16 +1432,16 @@ AlgorithmEnum* ZRtp::findBestAuthLen(ZrtpPacketHello *hello) {
     if (num == 0) {
         return &zrtpAuthLengths.getByName(mandatoryAuthLen_1);
     }
+
     // Build list of configured SAS algorithm names, append mandatory algos
     // if necessary.
-    
     numAlgosConf = configureAlgos.getNumConfiguredAlgos(AuthLength);
     for (i = 0; i < numAlgosConf; i++) {
         algosConf[i] = &configureAlgos.getAlgoAt(AuthLength, i);
-        if (strcmp(algosConf[i]->getName(), mandatoryAuthLen_1) == 0) {
+        if (*(int32_t*)(algosConf[i]->getName()) == *(int32_t*)mandatoryAuthLen_1) {
             mandatoryFound_1 = true;
         }
-        if (strcmp(algosConf[i]->getName(), mandatoryAuthLen_2) == 0) {
+        if (*(int32_t*)(algosConf[i]->getName()) == *(int32_t*)mandatoryAuthLen_2) {
             mandatoryFound_2 = true;
         }
     }
@@ -1457,10 +1457,10 @@ AlgorithmEnum* ZRtp::findBestAuthLen(ZrtpPacketHello *hello) {
     // Build list of offered algos in Hello, append mandatory algos if necessary
     for (numAlgosOffered = 0; numAlgosOffered < num; numAlgosOffered++) {
         algosOffered[numAlgosOffered] = &zrtpAuthLengths.getByName((const char*)hello->getAuthLen(numAlgosOffered));
-        if (strcmp(algosOffered[numAlgosOffered]->getName(), mandatoryAuthLen_1) == 0) {
+        if (*(int32_t*)(algosOffered[numAlgosOffered]->getName()) == *(int32_t*)mandatoryAuthLen_1) {
             mandatoryFound_1 = true;
         }
-        if (strcmp(algosOffered[numAlgosOffered]->getName(), mandatoryAuthLen_2) == 0) {
+        if (*(int32_t*)(algosOffered[numAlgosOffered]->getName()) == *(int32_t*)mandatoryAuthLen_2) {
             mandatoryFound_2 = true;
         }
     }
@@ -1474,7 +1474,7 @@ AlgorithmEnum* ZRtp::findBestAuthLen(ZrtpPacketHello *hello) {
     // mandatory algorithms at least one match will happen
     for (i = 0; i < numAlgosOffered; i++) {
         for (ii = 0; ii < numAlgosConf; ii++) {
-            if (strcmp(algosOffered[i]->getName(), algosConf[ii]->getName()) == 0) {
+            if (*(int32_t*)(algosOffered[i]->getName()) == *(int32_t*)(algosConf[ii]->getName())) {
                 return algosConf[ii];
             }
         }
@@ -1492,7 +1492,7 @@ bool ZRtp::checkMultiStream(ZrtpPacketHello *hello) {
         return true;
     }
     for (i = 0; i < num; i++) {
-        if (strncmp((const char*)hello->getPubKeyType(i), "Mult", 4) == 0) {
+        if (*(int32_t*)(hello->getPubKeyType(i)) == *(int32_t*)mult) {
             return true;
         }
     }
@@ -1885,7 +1885,7 @@ void ZRtp::KDF(uint8_t* key, uint32_t keyLength, uint8_t* label, int32_t labelLe
                uint8_t* context, int32_t contextLength, int32_t L, uint8_t* output) {
 
     unsigned char* data[6];
-    unsigned int   length[6];
+    uint32_t length[6];
     uint32_t pos = 0;                  // index into the array
     uint32_t maclen = 0;
 
@@ -1946,7 +1946,7 @@ void ZRtp::computeSRTPKeys() {
     uint8_t KDFcontext[sizeof(peerZid)+sizeof(zid)+sizeof(messageHash)];
     int32_t kdfSize = sizeof(peerZid)+sizeof(zid)+hashLength;
 
-    uint32_t keyLen = (strcmp(cipher->getName(), "AES1") == 0) ? 128 :256;
+    uint32_t keyLen = (*(int32_t*)(cipher->getName()) == *(int32_t*)aes1) ? 128 :256;
 
     if (myRole == Responder) {
         memcpy(KDFcontext, peerZid, sizeof(peerZid));
@@ -2016,14 +2016,14 @@ bool ZRtp::srtpSecretsReady(EnableSecurity part) {
     SrtpSecret_t sec;
 
     sec.keyInitiator = srtpKeyI;
-    sec.initKeyLen = (strcmp(cipher->getName(), "AES1") == 0) ? 128 :256;
+    sec.initKeyLen = (*(int32_t*)(cipher->getName()) == *(int32_t*)aes1) ? 128 :256;
     sec.saltInitiator = srtpSaltI;
     sec.initSaltLen = 112;
     sec.keyResponder = srtpKeyR;
-    sec.respKeyLen = (strcmp(cipher->getName(), "AES1") == 0) ? 128 :256;
+    sec.respKeyLen = (*(int32_t*)(cipher->getName()) == *(int32_t*)aes1) ? 128 :256;
     sec.saltResponder = srtpSaltR;
     sec.respSaltLen = 112;
-    sec.srtpAuthTagLen = (strcmp(authLength->getName(), "HS32") == 0) ? 32 : 80;
+    sec.srtpAuthTagLen = (*(int32_t*)(authLength->getName()) == *(int32_t*)hs32) ? 32 : 80;
     sec.sas = SAS;
     sec.role = myRole;
 
@@ -2202,9 +2202,9 @@ std::string ZRtp::getMultiStrParams() {
 
     if (inState(SecureState) && !multiStream) {
         // construct array that holds zrtpSession, cipher type, auth-length, and hash type
-        tmp[0] = zrtpHashes.getOrdinal(*hash);              //hash is enumeration (int)
-        tmp[1] = zrtpAuthLengths.getOrdinal(*authLength);   //authLength is enumeration (int)
-        tmp[2] = zrtpSymCiphers.getOrdinal(*cipher);        //cipher is enumeration (int)
+        tmp[0] = zrtpHashes.getOrdinal(*hash);
+        tmp[1] = zrtpAuthLengths.getOrdinal(*authLength);
+        tmp[2] = zrtpSymCiphers.getOrdinal(*cipher);
         memcpy(tmp+3, zrtpSession, hashLength);
         str.assign(tmp, hashLength + 1 + 1 + 1); // set chars (bytes) to the string
     }
@@ -2216,9 +2216,9 @@ void ZRtp::setMultiStrParams(std::string parameters) {
     char tmp[MAX_DIGEST_LENGTH + 1 + 1 + 1]; // max. hash length + cipher + authLength + hash
 
     // First get negotiated hash from parameters, set algorithms and length
-    int i = parameters.at(0) &0xff;
+    int i = parameters.at(0) & 0xff;
     hash = &zrtpHashes.getByOrdinal(i);
-    setNegotiatedHash(hash);
+    setNegotiatedHash(hash);           // sets hashlength
 
     // use string.copy(buffer, num, start=0) to retrieve chars (bytes) from the string
     parameters.copy(tmp, hashLength + 1 + 1 + 1, 0);

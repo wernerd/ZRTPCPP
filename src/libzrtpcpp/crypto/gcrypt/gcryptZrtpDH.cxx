@@ -22,6 +22,7 @@
 
 #include <gcrypt.h>
 #include <libzrtpcpp/crypto/ZrtpDH.h>
+#include <libzrtpcpp/ZrtpTextData.h>
 #include <sstream>
 
 struct gcryptCtx {
@@ -159,16 +160,18 @@ static const uint8_t P4096[] =
     *************** */
 #define DH3K 1
 #define DH2K 0
-ZrtpDH::ZrtpDH(int type): pkType(type) {
+ZrtpDH::ZrtpDH(const char* type){
 
-    switch (pkType) {
-    case DH3K:   // 0 = DH3K
-    case DH2K:   // 1 = DH2K
-        break;
-    default:
+    // Well - the algo type is only 4 char thus cast to int32 and compare
+    if (*(int32_t*)type == *(int32_t*)dh2k) {
+        pkType = DH2K;
+    }
+    else if (*(int32_t*)type == *(int32_t*)dh3k) {
+        pkType = DH3K;
+    }
+    else {
         fprintf(stderr, "Unknown pubkey algo: %d\n", pkType);
         exit(1);
-        break;
     }
     ctx = static_cast<void*>(new gcryptCtx);
     gcryptCtx* tmpCtx = static_cast<gcryptCtx*>(ctx);
@@ -194,11 +197,11 @@ ZrtpDH::ZrtpDH(int type): pkType(type) {
         dhinit = 1;
     }
 
-    if (type == DH3K) {
+    if (pkType == DH3K) {
         tmpCtx->privKey = gcry_mpi_new(256);
         gcry_mpi_randomize(tmpCtx->privKey, 256, GCRY_STRONG_RANDOM);
     }
-    else if (type == DH2K) {
+    else if (pkType == DH2K) {
         tmpCtx->privKey = gcry_mpi_new(256);
         gcry_mpi_randomize(tmpCtx->privKey, 256, GCRY_STRONG_RANDOM);
     }
@@ -325,6 +328,20 @@ int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
     gcry_mpi_release(pubKeyOther);
     return 1;
 }
+
+const char* ZrtpDH::getDHtype()
+{
+    switch (pkType) {
+	case DH2K:
+	    return dh2k;
+	    break;
+	case DH3K:
+	    return dh3k;
+	    break;
+    }
+
+}
+
 /** EMACS **
  * Local variables:
  * mode: c++
