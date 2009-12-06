@@ -22,6 +22,7 @@
 #ifndef _ZRTPCONFIGURE_H_
 #define _ZRTPCONFIGURE_H_
 
+#include <stdio.h>
 #include <stdint.h>
 #include <list>
 #include <string>
@@ -270,6 +271,44 @@ public:
      */
     bool containsAlgo(AlgoTypes algoType, AlgorithmEnum& algo);
 
+    /**
+     * Enables or disables trusted MitM processing.
+     *
+     * For further details of trusted MitM processing refer to ZRTP
+     * specification, chapter 7.3
+     * 
+     * @param yesNo
+     *    If set to true then trusted MitM processing is enabled.
+     */
+    void setTrustedMitM(bool yesNo);
+    
+    /**
+     * Check status of trusted MitM processing.
+     * 
+     * @return
+     *    Returns true if trusted MitM processing is enabled.
+     */
+    bool isTrustedMitM();
+    
+    /**
+     * Enables or disables SAS signature processing.
+     * 
+     * For further details of trusted MitM processing refer to ZRTP
+     * specification, chapter 7.2
+     *
+     * @param yesNo
+     *    If set to true then certificate processing is enabled.
+     */
+    void setSasSignature(bool yesNo);
+    
+    /**
+     * Check status of SAS signature processing.
+     * 
+     * @return
+     *    Returns true if certificate processing is enabled.
+     */
+    bool isSasSignature();
+    
     void printConfiguredAlgos(AlgoTypes algoTyp);
 
   private:
@@ -278,6 +317,9 @@ public:
     std::vector<AlgorithmEnum* > publicKeyAlgos;
     std::vector<AlgorithmEnum* > sasTypes;
     std::vector<AlgorithmEnum* > authLengths;
+    
+    bool enableTrustedMitM;
+    bool enableSasSignature;
 
     AlgorithmEnum& getAlgoAt(std::vector<AlgorithmEnum* >& a, int32_t index);
     int32_t addAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo);

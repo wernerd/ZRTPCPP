@@ -362,6 +362,22 @@ std::vector<AlgorithmEnum* >& ZrtpConfigure::getEnum(AlgoTypes algoType) {
     return hashes;
 }
 
+void ZrtpConfigure::setTrustedMitM(bool yesNo) {
+    enableTrustedMitM = yesNo;
+}
+    
+bool ZrtpConfigure::isTrustedMitM() {
+    return enableTrustedMitM;
+}
+    
+void ZrtpConfigure::setSasSignature(bool yesNo) {
+    enableSasSignature = yesNo;
+}
+
+bool ZrtpConfigure::isSasSignature() {
+    return enableSasSignature;
+}
+
 #if 0
 ZrtpConfigure config;
 
