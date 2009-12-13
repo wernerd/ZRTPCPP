@@ -295,6 +295,7 @@ int32_t ZrtpDH::getDhSize() const
 	    return 3072/8;
 	    break;
     }
+    return 0;
 }
 
 int32_t ZrtpDH::getPubKeySize() const
@@ -304,8 +305,6 @@ int32_t ZrtpDH::getPubKeySize() const
 
 int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
 {
-    gcryptCtx* tmpCtx = static_cast<gcryptCtx*>(ctx);
-
     gcry_mpi_t pubKeyOther = NULL;
     gcry_mpi_scan(&pubKeyOther, GCRYMPI_FMT_USG, pubKeyBytes, getDhSize(), NULL);
 
@@ -339,7 +338,7 @@ const char* ZrtpDH::getDHtype()
 	    return dh3k;
 	    break;
     }
-
+    return NULL;
 }
 
 /** EMACS **

@@ -206,29 +206,29 @@ void Base32::a2b_l(const string cs, size_t size, const size_t lengthinbits ) {
     switch (csp % 8) {
 	case 0:
 	    do {
-		x = revchars[cs[--csp]]; /* 5 bits... */
+		x = revchars[cs[--csp]&0xff]; /* 5 bits... */
 		case 7:
-		    x |= revchars[cs[--csp]] << 5; /* 10 bits... */
+		    x |= revchars[cs[--csp]&0xff] << 5; /* 10 bits... */
 		    *--resp = x % 256;
 		    x /= 256; /* 2 bits... */
 		case 6:
-		    x |= revchars[cs[--csp]] << 2; /* 7 bits... */
+		    x |= revchars[cs[--csp]&0xff] << 2; /* 7 bits... */
 		case 5:
-		    x |= revchars[cs[--csp]] << 7; /* 12 bits... */
+		    x |= revchars[cs[--csp]&0xff] << 7; /* 12 bits... */
 		    *--resp = x % 256;
 		    x /= 256; /* 4 bits... */
 		case 4:
-		    x |= revchars[cs[--csp]] << 4; /* 9 bits... */
+		    x |= revchars[cs[--csp]&0xff] << 4; /* 9 bits... */
 		    *--resp = x % 256;
 		    x /= 256; /* 1 bit... */
 		case 3:
-		    x |= revchars[cs[--csp]] << 1; /* 6 bits... */
+		    x |= revchars[cs[--csp]&0xff] << 1; /* 6 bits... */
 		case 2:
-		    x |= revchars[cs[--csp]] << 6; /* 11 bits... */
+		    x |= revchars[cs[--csp]&0xff] << 6; /* 11 bits... */
 		    *--resp = x % 256;
 		    x /= 256; /* 3 bits... */
 		case 1:
-		    x |= revchars[cs[--csp]] << 3; /* 8 bits... */
+		    x |= revchars[cs[--csp]&0xff] << 3; /* 8 bits... */
 		    *--resp = x % 256;
 	    } while (csp);
     } /* switch ((csp - cs.buf) % 8) */

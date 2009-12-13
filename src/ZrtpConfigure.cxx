@@ -147,8 +147,8 @@ ZrtpConfigure::~ZrtpConfigure() {}
 void ZrtpConfigure::setStandardConfig() {
     clear();
 
-    addAlgo(HashAlgorithm, zrtpHashes.getByName(s256));
     addAlgo(HashAlgorithm, zrtpHashes.getByName(s384));
+    addAlgo(HashAlgorithm, zrtpHashes.getByName(s256));
 
     addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName(aes3));
     addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName(aes1));

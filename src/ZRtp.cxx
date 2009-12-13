@@ -72,8 +72,8 @@ int ZrtpAvailable()
 ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, 
     ZrtpConfigure* config):
     callback(cb), dhContext(NULL), DHss(NULL), auxSecret(NULL), 
-    auxSecretLength(0), rs1Valid(false), rs2Valid(false), multiStream(false),
-    msgShaContext(NULL), PBXEnrollment(false), multiStreamAvailable(false),
+    auxSecretLength(0), rs1Valid(false), rs2Valid(false), msgShaContext(NULL),
+    multiStream(false), multiStreamAvailable(false), PBXEnrollment(false),
     configureAlgos(*config) {
 
     // setup the implicit hash function pointers and length
@@ -416,8 +416,6 @@ ZrtpPacketCommit* ZRtp::prepareCommitMultiStream(ZrtpPacketHello *hello) {
  * hash SHA context
  */
 ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMsg) {
-
-    int i;
 
     sendInfo(Info, InfoRespCommitReceived);
 
@@ -779,7 +777,6 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
     }
 
     // check if Commit contains "Mult" as pub key type
-    int i;
     AlgorithmEnum* cp = &zrtpPubKeys.getByName((const char*)commit->getPubKeysType());
     if (!cp->isValid() || *(int32_t*)(cp->getName()) != *(int32_t*)mult) {
         *errMsg = UnsuppPKExchange;
@@ -1220,11 +1217,13 @@ AlgorithmEnum* ZRtp::findBestHash(ZrtpPacketHello *hello) {
         algosConf[numAlgosConf++] = &zrtpHashes.getByName(mandatoryHash);
     }
 
-    // Build list of offered algos in Hello, append mandatory algos if necessary
+    // Build list of offered known algos in Hello, append mandatory algos if necessary
     mandatoryFound = false;
-    for (numAlgosOffered = 0; numAlgosOffered < num; numAlgosOffered++) {
-        algosOffered[numAlgosOffered] = &zrtpHashes.getByName((const char*)hello->getHashType(numAlgosOffered));
-        if (*(int32_t*)(algosOffered[numAlgosOffered]->getName()) == *(int32_t*)mandatoryHash) {
+    for (numAlgosOffered = 0, i = 0; i < num; i++) {
+        algosOffered[numAlgosOffered] = &zrtpHashes.getByName((const char*)hello->getHashType(i));
+        if(!algosOffered[numAlgosOffered]->isValid())
+            continue;
+        if (*(int32_t*)(algosOffered[numAlgosOffered++]->getName()) == *(int32_t*)mandatoryHash) {
             mandatoryFound = true;
         }
     }
@@ -1274,12 +1273,14 @@ AlgorithmEnum* ZRtp::findBestCipher(ZrtpPacketHello *hello, AlgorithmEnum* pk) {
         algosConf[numAlgosConf++] = &zrtpSymCiphers.getByName(mandatoryCipher);
     }
 
-    // Build list of offered algos names in Hello, append mandatory algos if
+    // Build list of offered known algos names in Hello, append mandatory algos if
     // necessary
     mandatoryFound = false;
-    for (numAlgosOffered = 0; numAlgosOffered < num; numAlgosOffered++) {
-        algosOffered[numAlgosOffered] = &zrtpSymCiphers.getByName((const char*)hello->getCipherType(numAlgosOffered));
-        if (*(int32_t*)(algosOffered[numAlgosOffered]->getName()) == *(int32_t*)mandatoryCipher) {
+    for (numAlgosOffered = 0, i = 0; i < num; i++) {
+        algosOffered[numAlgosOffered] = &zrtpSymCiphers.getByName((const char*)hello->getCipherType(i));
+        if(!algosOffered[numAlgosOffered]->isValid())
+            continue;
+        if (*(int32_t*)(algosOffered[numAlgosOffered++]->getName()) == *(int32_t*)mandatoryCipher) {
             mandatoryFound = true;
         }
     }
@@ -1331,16 +1332,18 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
         }
     }
 
-    // Build list of offered algos in Hello, append mandatory algos if necessary
     numAlgosConf = ii;
     if (!mandatoryFound) {
         algosConf[numAlgosConf++] = &zrtpPubKeys.getByName(mandatoryPubKey);
     }
 
+    // Build list of offered known algos in Hello, append mandatory algos if necessary
     mandatoryFound = false;
-    for (numAlgosOffered = 0; numAlgosOffered < num; numAlgosOffered++) {
-        algosOffered[numAlgosOffered] = &zrtpPubKeys.getByName((const char*)hello->getPubKeyType(numAlgosOffered));
-        if (*(int32_t*)(algosOffered[numAlgosOffered]->getName()) == *(int32_t*)mandatoryPubKey) {
+    for (numAlgosOffered = 0, i = 0; i < num; i++) {
+        algosOffered[numAlgosOffered] = &zrtpPubKeys.getByName((const char*)hello->getPubKeyType(i));
+        if(!algosOffered[numAlgosOffered]->isValid())
+            continue;
+        if (*(int32_t*)(algosOffered[numAlgosOffered++]->getName()) == *(int32_t*)mandatoryPubKey) {
             mandatoryFound = true;
         }
     }
@@ -1391,10 +1394,12 @@ AlgorithmEnum* ZRtp::findBestSASType(ZrtpPacketHello *hello) {
         algosConf[numAlgosConf++] = &zrtpSasTypes.getByName(mandatorySasType);
     }
 
-    // Build list of offered algos in Hello, append mandatory algos if necessary
-    for (numAlgosOffered = 0; numAlgosOffered < num; numAlgosOffered++) {
-        algosOffered[numAlgosOffered] = &zrtpSasTypes.getByName((const char*)hello->getSasType(numAlgosOffered));
-        if (*(int32_t*)(algosOffered[numAlgosOffered]->getName()) == *(int32_t*)mandatorySasType) {
+    // Build list of offered known algos in Hello, append mandatory algos if necessary
+    for (numAlgosOffered = 0, i = 0; i < num; i++) {
+        algosOffered[numAlgosOffered] = &zrtpSasTypes.getByName((const char*)hello->getSasType(i++));
+        if(!algosOffered[numAlgosOffered]->isValid())
+            continue;
+        if (*(int32_t*)(algosOffered[numAlgosOffered++]->getName()) == *(int32_t*)mandatorySasType) {
             mandatoryFound = true;
         }
     }
@@ -1454,13 +1459,15 @@ AlgorithmEnum* ZRtp::findBestAuthLen(ZrtpPacketHello *hello) {
         algosConf[numAlgosConf++] = &zrtpAuthLengths.getByName(mandatoryAuthLen_2);
     }
 
-    // Build list of offered algos in Hello, append mandatory algos if necessary
-    for (numAlgosOffered = 0; numAlgosOffered < num; numAlgosOffered++) {
-        algosOffered[numAlgosOffered] = &zrtpAuthLengths.getByName((const char*)hello->getAuthLen(numAlgosOffered));
+    // Build list of offered known algos in Hello, append mandatory algos if necessary
+    for (numAlgosOffered = 0, i = 0; i < num; i++) {
+        algosOffered[numAlgosOffered] = &zrtpAuthLengths.getByName((const char*)hello->getAuthLen(i));
+        if(!algosOffered[numAlgosOffered]->isValid())
+            continue;
         if (*(int32_t*)(algosOffered[numAlgosOffered]->getName()) == *(int32_t*)mandatoryAuthLen_1) {
             mandatoryFound_1 = true;
         }
-        if (*(int32_t*)(algosOffered[numAlgosOffered]->getName()) == *(int32_t*)mandatoryAuthLen_2) {
+        if (*(int32_t*)(algosOffered[numAlgosOffered++]->getName()) == *(int32_t*)mandatoryAuthLen_2) {
             mandatoryFound_2 = true;
         }
     }
