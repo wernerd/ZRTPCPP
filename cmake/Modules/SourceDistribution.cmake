@@ -153,10 +153,19 @@ endif()
 
 if(_src_dist_default)
   if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-    file(APPEND ${_src_dist_cmd_file_path} "
-FILE(INSTALL DESTINATION \"${SRC_DIST_DIR}\" TYPE DIRECTORY FILES 
-\"${CMAKE_CURRENT_SOURCE_DIR}/cmake\") 
-") 
+    set(_src_dist_list_tmp)
+    # Get all files names in cmake subdir
+    # Unfortunately CMake also globs all directories and files that start
+    # with . - that is not the same as shell behaviour
+    file(GLOB_RECURSE _src_dist_names_tmp RELATIVE 
+         ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/*)
+    #
+    # Remove all file names that contain a name that start with .
+    foreach(_nm ${_src_dist_names_tmp})
+      string(REGEX REPLACE .*/\\..* "" _nm ${_nm})
+      set(_src_dist_list_tmp ${_src_dist_list_tmp} ${_nm})
+    endforeach()
+    add_src_dist_files(${_src_dist_list_tmp})
   endif()
   if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt")
     file(APPEND ${_src_dist_cmd_file_path} "
