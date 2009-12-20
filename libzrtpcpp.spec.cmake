@@ -23,8 +23,6 @@ BuildRequires: libstdc++-devel
 BuildRequires: @BUILD_REQ@
 Requires: @PACKAGE_REQ@
 
-%define devname %{name}-devel
-
 %define srcdirname %{name}-%{version}
 
 %description
