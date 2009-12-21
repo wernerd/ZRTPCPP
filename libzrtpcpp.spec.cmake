@@ -8,6 +8,8 @@
 # even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE.
 
+%{!?release: %define release 0}
+
 Summary: A ccrtp extension for zrtp/Zfone support
 Name: libzrtpcpp
 Version: @VERSION@
@@ -16,6 +18,7 @@ License: GPLv3+
 Group: Development/Libraries
 URL: http://www.gnu.org/software/commoncpp/commoncpp.html
 Source0: ftp://ftp.gnu.org/gnu/ccrtp/libzrtpcpp-%{PACKAGE_VERSION}.tar.gz
+Provides: %{name} = %{version}-%{release}
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: libccrtp-devel >= 1.5.0
 BuildRequires: pkgconfig
