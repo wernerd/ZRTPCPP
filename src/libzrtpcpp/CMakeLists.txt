@@ -8,13 +8,11 @@ set(src_distribute
     ZrtpPacketErrorAck.h ZrtpPacketPingAck.h ZrtpPacketPing.h ZrtpUserCallback.h
     ZrtpQueue.h ZrtpCallback.h zrtpccrtp.h TimeoutProvider.h)
 
-set(ccrtp_inst
-    ZrtpQueue.h
-    ZrtpCallback.h
-    zrtpccrtp.h
-    TimeoutProvider.h)
+if(enable_ccrtp)
+  set(ccrtp_inst ZrtpQueue.h zrtpccrtp.h)
+endif()
 
-install(FILES ZrtpCodes.h ZrtpConfigure.h ZrtpUserCallback.h ${ccrtp_inst} DESTINATION include/libzrtpcpp)
+install(FILES ZrtpCodes.h ZrtpConfigure.h ZrtpUserCallback.h TimeoutProvider.h ZrtpCallback.h ${ccrtp_inst} DESTINATION include/libzrtpcpp)
 
 include(SourceDistribution)
 src_distribution_init()

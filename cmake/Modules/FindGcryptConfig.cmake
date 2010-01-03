@@ -1,43 +1,41 @@
 # - a gcrypt-config module for CMake
 #
 # Usage:
-#   gcrypt_check(<PREFIX> [REQUIRED] <MODULE> [ALGORITHM]*)
-#     checks if libgcrypt is vaialable and support specified algorithms
+#   gcrypt_check(<PREFIX> [REQUIRED] <MODULE>)
+#     checks if gcrypt is avialable
 #
 # When the 'REQUIRED' argument was set, macros will fail with an error
-# when module(s) could not be found
+# when gcrypt could not be found.
 #
 # It sets the following variables:
-#   GCRYPT_CONFIG_FOUND         ... true if pkg-config works on the system
-#   GCRYPT_CONFIG_EXECUTABLE    ... pathname of the pkg-config program
-#   <PREFIX>_FOUND              ... set to 1 if libgcrypt exist
+#   GCRYPT_CONFIG_FOUND       ... true if libgcrypt-config works on the system
+#   GCRYPT_CONFIG_EXECUTABLE  ... pathname of the libgcrypt-config program
+#   <PREFIX>_FOUND            ... set to 1 if libgcrypt exist
+#   <PREFIX>_LIBRARIES        ... the libraries
+#   <PREFIX>_CFLAGS           ... all required cflags
+#   <PREFIX>_ALGORITHMS       ... the algorithms that this libgcrypt supports
+#   <PREFIX>_VERSION          ... gcrypt's version
 #
-# For the following variables two sets of values exist; first one is the
-# common one and has the given PREFIX. 
-#
-#   <PREFIX>_LIBRARIES      ... only the libraries (w/o the '-l')
-#   <PREFIX>_LIBRARY_DIRS   ... the paths of the libraries (w/o the '-L')
-#   <PREFIX>_LDFLAGS        ... all required linker flags
-#   <PREFIX>_LDFLAGS_OTHER  ... all other linker flags
-#   <PREFIX>_INCLUDE_DIRS   ... the '-I' preprocessor flags (w/o the '-I')
-#   <PREFIX>_CFLAGS         ... all required cflags
-#   <PREFIX>_CFLAGS_OTHER   ... the other compiler flags
-#
-# A <MODULE> parameter can have the following formats:
-#   {MODNAME}            ... matches any version
-#   {MODNAME}>={VERSION} ... at least version <VERSION> is required
-#   {MODNAME}={VERSION}  ... exactly version <VERSION> is required
-#   {MODNAME}<={VERSION} ... modules must not be newer than <VERSION>
-#
-# Examples
+# Examples:
 #   gcrypt_check (GCRYPT gcrypt)
+#     Check if a version of gcrypt is available, issues a warning
+#     if not.
 #
-#   gcrypt_check (GCRYPT  gcrypt>=1.10)
-#     requires at least version 1.10 of gcrypt and defines e.g.
-#       GCRYPT_VERSION=1.4.1
+#   gcrypt_check (GCRYPT REQUIRED gcrypt)
+#     Check if a version of gcrypt is available and fails
+#     if not.
+#
+#   gcrypt_check (GCRYPT gcrypt>=1.4)
+#     requires at least version 1.4 of gcrypt and defines e.g.
+#     GCRYPT_VERSION=1.4.4. Issues a warning if a lower version
+#     is available only.
+#
+#   gcrypt_check (GCRYPT REQUIRED gcrypt>=1.4.4)
+#     requires at least version 1.4.4 of gcrypt and fails if
+#     only gcrypt 1.4.3 or lower is available only.
 #
 
-# Copyright (C) 2006 Enrico Scholz <enrico.scholz@informatik.tu-chemnitz.de>
+# Copyright (C) 2010 Werner Dittmann <werner.dittmann@t-online.de>
 #
 # Redistribution and use, with or without modification, are permitted
 # provided that the following conditions are met:
@@ -59,7 +57,11 @@
 # IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 # IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+#
+# This is a much edited and simplified variant of the original UsePkgConfig.cmake 
+# from Enrico Scholz
+# Copyright (C) 2006 Enrico Scholz <enrico.scholz@informatik.tu-chemnitz.de>
+# 
 
 ### Common stuff ####
 set(GCR_CONFIG_VERSION 1)
@@ -165,37 +167,52 @@ macro(_gcr_check_modules_internal _is_required _is_silent _prefix)
       set(_gcr_check_prefix "${_prefix}")
         
       _gcrconfig_invoke(${_gcr_check_modules_gcr_name} "${_gcr_check_prefix}" VERSION    ""   --version )
-      _gcrconfig_invoke(${_gcr_check_modules_gcr_name} "${_gcr_check_prefix}" PREFIX     ""   --prefix )
+#      _gcrconfig_invoke(${_gcr_check_modules_gcr_name} "${_gcr_check_prefix}" PREFIX     ""   --prefix )
       _gcrconfig_invoke(${_gcr_check_modules_gcr_name} "${_gcr_check_prefix}" LIBRARIES  ""   --libs )
       _gcrconfig_invoke(${_gcr_check_modules_gcr_name} "${_gcr_check_prefix}" CFLAGS     ""   --cflags )
       _gcrconfig_invoke(${_gcr_check_modules_gcr_name} "${_gcr_check_prefix}" ALGORITHMS ""   --algorithms )
 
-        message(STATUS "  found ${_gcr_check_modules_gcr}, version ${_gcrconfig_VERSION}")
+      message(STATUS "  found ${_gcr_check_modules_gcr}, version ${_gcrconfig_VERSION}")
       # handle the operands
+      set(_gcr_wrong_version 0)
       if (_gcr_check_modules_gcr_op STREQUAL ">=")
-        list(APPEND _gcr_check_modules_exist_query --atleast-version)
+	if((_gcr_check_modules_gcr_ver VERSION_EQUAL _gcrconfig_VERSION) OR
+	   (_gcrconfig_VERSION VERSION_LESS _gcr_check_modules_gcr_ver ))
+	  message(STATUS "  gcrypt wrong version: required: ${_gcr_check_modules_gcr_op}${_gcr_check_modules_gcr_ver}, found: ${_gcrconfig_VERSION}")
+	  set(_gcr_wrong_version 1)
+	endif()
       endif(_gcr_check_modules_gcr_op STREQUAL ">=")
 
       if (_gcr_check_modules_gcr_op STREQUAL "=")
-        list(APPEND _gcr_check_modules_exist_query --exact-version)
+	if(_gcr_check_modules_gcr_ver VERSION_EQUAL _gcrconfig_VERSION)
+	  message(STATUS "  gcrypt wrong version: required: ${_gcr_check_modules_gcr_op}${_gcr_check_modules_gcr_ver}, found: ${_gcrconfig_VERSION}")
+	  set(_gcr_wrong_version 1)
+	endif()
       endif(_gcr_check_modules_gcr_op STREQUAL "=")
       
       if (_gcr_check_modules_gcr_op STREQUAL "<=")
-        list(APPEND _gcr_check_modules_exist_query --max-version)
+	if((_gcr_check_modules_gcr_ver VERSION_EQUAL _gcrconfig_VERSION) OR
+	   (_gcrconfig_VERSION VERSION_GREATER _gcr_check_modules_gcr_ver))
+	  message(STATUS "  gcrypt wrong version: required: ${_gcr_check_modules_gcr_op}${_gcr_check_modules_gcr_ver}, found: ${_gcrconfig_VERSION}")
+	  set(_gcr_wrong_version 1)
+	endif()
       endif(_gcr_check_modules_gcr_op STREQUAL "<=")
+    if (${_is_required} AND _gcr_wrong_version)
+      message(FATAL_ERROR "")
+    endif()
 
     endforeach(_gcr_check_modules_gcr)
-    _pkgconfig_set(${_prefix}_FOUND 1)
+    _gcrconfig_set(${_prefix}_FOUND 1)
 
   else(GCR_CONFIG_EXECUTABLE)
     if (${_is_required})
-      message(SEND_ERROR "libgcrypt-config tool not found")
+      message(FATAL_ERROR "libgcrypt-config tool not found")
     endif (${_is_required})
   endif(GCR_CONFIG_EXECUTABLE)
 endmacro(_gcr_check_modules_internal)
 
 ###
-### User visible macros start here
+### User visible macro starts here
 ###
 
 ###

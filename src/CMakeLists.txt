@@ -31,7 +31,9 @@ if (OPENSSL_FOUND)
     set(crypto_src ${openssl_src})
 endif()
 
-set(ccrtp_src ZrtpQueue.cpp)
+if(enable_ccrtp)
+  set(ccrtp_src ZrtpQueue.cpp)
+endif()
 
 set(zrtp_src
     ZIDFile.cxx
@@ -59,7 +61,6 @@ set(zrtpcpp_src ${zrtp_src} ${ccrtp_src} ${crypto_src})
 
 add_library(zrtpcpp SHARED ${zrtpcpp_src})
 set_target_properties(zrtpcpp PROPERTIES VERSION 1.5.0 SOVERSION 1.5)
-message("src libraries: ${LIBS}")
 target_link_libraries(zrtpcpp ${LIBS})
 
 src_distribution_init()
@@ -68,25 +69,5 @@ add_src_dist_dirs(libzrtpcpp)
 
 add_subdirectory(libzrtpcpp)
 
-install(TARGETS zrtpcpp DESTINATION lib${LIB64})
+install(TARGETS zrtpcpp DESTINATION ${LIBDIRNAME})
 
-########### install files ###############
-
-#original Makefile.am contents follow:
-
-## Copyright (C) 2006 Werner Dittmann.
-#
-#LT_VERSION=@LT_CCXX_VERSION@
-#RELEASE = $(LT_VERSION) -release $(LT_RELEASE)
-##RELEASE = $(LT_VERSION)
-#lib_LTLIBRARIES = libzrtpcpp.la
-## libzrtpcpp_la_LIBADD = @LIBS@
-#
-#libzrtpcpp_la_LDFLAGS = $(RELEASE)
-#
-## http://www.gnu.org/software/libtool/manual.html
-#
-#if CCRTP_SUPPORT
-#ccrtp_src = ZrtpQueue.cpp
-#endif
-#

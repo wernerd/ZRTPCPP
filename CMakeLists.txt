@@ -20,36 +20,39 @@ set(CMAKE_VERBOSE_MAKEFILE FALSE)
 # find project specific modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
-# Set library postfix in case of 64 bit architecture
-if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
-  set(LIB64 64)
-endif() 
-
-# include all the fine stuff we need 
-include (FindGcryptConfig)
-include (FindPkgConfig)
+# include most of the fine stuff we need 
+include(FindGcryptConfig)
+include(FindPkgConfig)
 include(CheckLibraryExists)
 include(CheckIncludeFiles)
+include(FindArch)
+include(AutoArgs)
+
+# check the -Denable-ccrtp setting, defaults to true
+enable_arg(ccrtp true "Enable GNU ccRTP support for GNU ZRTP")
+args_help()
 
 # setup the Thread include and lib
 find_package(Threads)
-if (CMAKE_HAVE_PTHREAD_H)
-    set(HAVE_PTHREAD_H TRUE)
+if(CMAKE_HAVE_PTHREAD_H)
+  set(HAVE_PTHREAD_H TRUE)
 endif()
-set (LIBS ${LIBS}  ${CMAKE_THREAD_LIBS_INIT})
+set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})
 
-pkg_check_modules(CCRTP libccrtp1>=1.5.0)
-set (LIBS ${LIBS} ${CCRTP_LDFLAGS})
+if(enable_ccrtp)
+  pkg_check_modules(CCRTP libccrtp1>=1.5.0)
+  set (LIBS ${LIBS} ${CCRTP_LDFLAGS})
+endif()
 
 # now get info about crypto libraries
 gcr_check(GCRYPT gcrypt)
-if (GCRYPT_FOUND)
+if(GCRYPT_FOUND)
   check_include_files(gcrypt.h HAVE_GCRYPT_H)
   set(LIBS ${LIBS} ${GCRYPT_LIBRARIES})
   set(BUILD_REQ "libgcrypt-devel")
   set(CRYPTOBACKEND="")
   set(PACKAGE_REQ "libgcrypt")
-else ()
+else()
   pkg_check_modules(OPENSSL libcrypto>=0.9.8)
   if (OPENSSL_FOUND) 
     check_include_files(openssl/bn.h HAVE_OPENSSL_BN_H)
@@ -101,8 +104,7 @@ add_subdirectory(demo)
 add_src_dist_dirs(demo)
 
 ########### install files ###############
-# check for: CMAKE_INSTALL_PREFIX
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libzrtpcpp.pc DESTINATION lib${LIB64}/pkgconfig)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libzrtpcpp.pc DESTINATION ${LIBDIRNAME}/pkgconfig)
 
 ########### Add uninstall target ###############
 configure_file(
@@ -111,7 +113,6 @@ configure_file(
    IMMEDIATE @ONLY)
 add_custom_target(uninstall
   "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake") 
-
 
 ####### define target to build RPM 
 include(UseRPMTools)

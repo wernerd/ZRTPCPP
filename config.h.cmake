@@ -18,10 +18,10 @@
 #cmakedefine  HAVE_PTHREAD_H 1
 
 /* Name of package */
-#cmakedefine PACKAGE ${PROJECT_NAME}
+#define PACKAGE ${PROJECT_NAME}
 
 /* Version number of package */
-#cmakedefine  VERSION ${VERSION}
+#define  VERSION ${VERSION}
 
 /* Define to empty if `const' does not conform to ANSI C. */
 #undef const

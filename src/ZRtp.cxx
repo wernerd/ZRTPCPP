@@ -733,6 +733,8 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
 
     // Encrypt and HMAC with Responder's key - we are Respondere here
     int16_t hmlen = (zrtpConfirm1.getLength() - 9) * ZRTP_WORD_SIZE;
+    // The name is only 4 bytes, thus convert to int32 and compare
+    // Compilers may complain if checking rules strictly :-)
     int keylen = (*(int32_t*)(cipher->getName()) == *(int32_t*)aes1) ? 16 : 32;
 
     aesCfbEncrypt(zrtpKeyR, keylen, randomIV,
