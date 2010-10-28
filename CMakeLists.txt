@@ -11,7 +11,7 @@
 cmake_minimum_required(VERSION 2.6)
 
 PROJECT(libzrtpcpp)
-set (VERSION 1.5.0)
+set (VERSION 1.5.1)
 set (SOVERSION 1.5)
 
 # set to true for debug and trace during CMakeLists development
@@ -25,12 +25,17 @@ include(FindGcryptConfig)
 include(FindPkgConfig)
 include(CheckLibraryExists)
 include(CheckIncludeFiles)
-include(FindArch)
 include(AutoArgs)
 
 # check the -Denable-ccrtp setting, defaults to true
 enable_arg(ccrtp true "Enable GNU ccRTP support for GNU ZRTP")
 args_help()
+
+if ( "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64" )
+  set(LIBDIRNAME "lib64")
+else ()
+  set(LIBDIRNAME "lib")
+endif ()
 
 # setup the Thread include and lib
 find_package(Threads)

@@ -60,7 +60,7 @@ set(zrtp_src
 set(zrtpcpp_src ${zrtp_src} ${ccrtp_src} ${crypto_src})
 
 add_library(zrtpcpp SHARED ${zrtpcpp_src})
-set_target_properties(zrtpcpp PROPERTIES VERSION 1.5.0 SOVERSION 1.5)
+set_target_properties(zrtpcpp PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
 target_link_libraries(zrtpcpp ${LIBS})
 
 src_distribution_init()

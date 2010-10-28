@@ -17,7 +17,7 @@ Release: 0%{?dist}
 License: GPLv3+
 Group: Development/Libraries
 URL: http://www.gnu.org/software/commoncpp/commoncpp.html
-Source0: ftp://ftp.gnu.org/gnu/ccrtp/libzrtpcpp-%{PACKAGE_VERSION}.tar.gz
+Source0: ftp://ftp.gnu.org/gnu/ccrtp/%{name}-%{version}.tar.gz
 Provides: %{name} = %{version}-%{release}
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: libccrtp-devel >= 1.5.0
