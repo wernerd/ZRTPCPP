@@ -309,14 +309,69 @@ extern "C"
         void* userData;
     } zrtp_UserCallbacks;
 
+    /**
+     * Create the GNU ZRTP C wrapper.
+     *
+     * This wrapper implements the C interface to the C++ based GNU ZRTP.
+     *
+     * @param cb
+     *     The callback structure that holds the addresses of the callback
+     *     methods.
+     * @param id
+     *     A C string that holds the ZRTP client id, only the first 16 chars
+     *     are used.
+     * @param config
+     *     Pointer to ZRTP config data - TDB - defines which encryption 
+     *     algorithms to, which SHA etc.
+     * @param zidFilename
+     *     The name of the ZID file. This file holds some parameters and
+     *     other data like additional shared secrets.
+     * @param userData
+     *     A pointer to user data. The wrapper just stores this pointer in
+     *     the ZrtpContext and the application may use it for its purposes.
+     * @returns 
+    *      Pointer to the ZrtpContext
+     */
     ZrtpContext* zrtp_CreateWrapper (zrtp_Callbacks *cb, char* id,
                                      void* config, const char* zidFilename,
                                      void* userData );
 
     void zrtp_DestroyWrapper (ZrtpContext* zrtpContext );
 
-    int32_t zrtp_CheckCksum(uint8_t* buffer, uint16_t temp, uint32_t crc);
-    uint32_t zrtp_GenerateCksum(uint8_t* buffer, uint16_t temp);
+    /**
+     * Computes the ZRTP checksum over a received ZRTP packet buffer and 
+     * compares the result with received checksum.
+     *
+     * @param buffer
+     *    Pointer to ZRTP packet buffer
+     * @param length
+     *    Length of the packet buffer excluding received CRC data
+     * @param crc
+     *    The received CRC data.
+     * @returns
+     *    True if CRC matches, false otherwise.
+     */
+    int32_t zrtp_CheckCksum(uint8_t* buffer, uint16_t length, uint32_t crc);
+    
+    /**
+     * Computes the ZRTP checksum over a newly created  ZRTP packet buffer. 
+     *
+     * @param buffer
+     *    Pointer to the created ZRTP packet buffer
+     * @param length
+     *    Length of the packet buffer
+     * @returns
+     *    The computed CRC.
+     */
+    uint32_t zrtp_GenerateCksum(uint8_t* buffer, uint16_t length);
+    
+    /**
+     * Prepares the ZRTP checksum for appending to ZRTP packet. 
+     * @param crc
+     *    The computed CRC data.
+     * @returns
+     *    Prepared CRC data in host order
+     */
     uint32_t zrtp_EndCksum(uint32_t crc);
 
     /**
