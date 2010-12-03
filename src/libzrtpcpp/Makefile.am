@@ -16,7 +16,7 @@ ccrtp_noinst =
 ccrtp_inst = ZrtpQueue.h ZrtpUserCallback.h zrtpccrtp.h TimeoutProvider.h
 endif
 
-zrtpinclude_HEADERS = ZrtpCodes.h ZrtpCallback.h ZrtpConfigure.h $(ccrtp_inst)
+zrtpinclude_HEADERS = ZrtpCodes.h ZrtpCallback.h ZrtpUserCallback.h ZrtpConfigure.h ZrtpCWrapper.h $(ccrtp_inst)
 
 
 noinst_HEADERS =  Base32.h        ZrtpPacketBase.h      ZrtpPacketDHPart.h    ZrtpPacketHello.h \
@@ -24,4 +24,5 @@ noinst_HEADERS =  Base32.h        ZrtpPacketBase.h      ZrtpPacketDHPart.h    Zr
 		  ZIDRecord.h     ZrtpPacketCommit.h    ZrtpPacketGoClear.h   ZrtpStates.h \
 		  ZrtpPacketConf2Ack.h  zrtpPacket.h    ZrtpTextData.h \
 		  ZRtp.h          ZrtpPacketConfirm.h   ZrtpPacketHelloAck.h  ZrtpPacketError.h \
-		  ZrtpPacketErrorAck.h  ZrtpPacketPingAck.h ZrtpPacketPing.h $(ccrtp_noinst)
+		  ZrtpPacketErrorAck.h  ZrtpPacketPingAck.h ZrtpPacketPing.h  ZrtpCallbackWrapper.h \
+		  $(ccrtp_noinst)

@@ -174,7 +174,8 @@ ZrtpQueue::takeInDataPacket(void)
 
         if (!zrtpCheckCksum(buffer, temp, crc)) {
             delete buffer;
-            zrtpUserCallback->showMessage(Warning, WarningCRCmismatch);
+            if (zrtpUserCallback != NULL)
+                zrtpUserCallback->showMessage(Warning, WarningCRCmismatch);
             return 0;
         }
 

@@ -14,10 +14,13 @@ LT_VERSION=@LT_CCXX_VERSION@
 #$(LT_VERSION) -release $(LT_RELEASE)
 AM_CXXFLAGS = @WARN_FLAGS@ -I$(top_srcdir)/src
 
-noinst_PROGRAMS = zrtptest zrtptestMulti
+noinst_PROGRAMS = zrtptest zrtptestMulti wrappertest
 
 zrtptest_SOURCES = zrtptest.cpp
 zrtptest_LDFLAGS = ../src/libzrtpcpp.la
 
 zrtptestMulti_SOURCES = zrtptestMulti.cpp
 zrtptestMulti_LDFLAGS = ../src/libzrtpcpp.la
+
+wrappertest_SOURCES = wrappertest.c
+wrappertest_LDFLAGS = ../src/libzrtpcpp.la

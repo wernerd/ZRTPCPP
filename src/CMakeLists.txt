@@ -35,7 +35,8 @@ if(enable_ccrtp)
   set(ccrtp_src ZrtpQueue.cpp)
 endif()
 
-set(zrtp_src
+set(zrtp_src 
+    ZrtpCallbackWrapper.cpp
     ZIDFile.cxx
     ZIDRecord.cxx
     ZRtp.cxx
@@ -55,6 +56,7 @@ set(zrtp_src
     ZrtpStateClass.cxx
     ZrtpTextData.cxx
     ZrtpConfigure.cxx
+    ZrtpCWrapper.cpp
     Base32.cxx)
 
 set(zrtpcpp_src ${zrtp_src} ${ccrtp_src} ${crypto_src})

@@ -53,6 +53,8 @@ libzrtpcpp_la_SOURCES = ZIDFile.cxx \
 		ZrtpStateClass.cxx \
 		ZrtpTextData.cxx \
 		ZrtpConfigure.cxx \
+		ZrtpCWrapper.cpp \
+		ZrtpCallbackWrapper.cpp \
 		Base32.cxx $(ccrtp_src) $(zrtp_src_g) $(zrtp_src_o)
 
 SUBDIRS = libzrtpcpp libzrtpcpp/crypto

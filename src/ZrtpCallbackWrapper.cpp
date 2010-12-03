@@ -1,0 +1,169 @@
+/*
+    This class maps the ZRTP C++ callback methods to C callback methods.
+    Copyright (C) 2010  Werner Dittmann
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
+
+#include <libzrtpcpp/ZrtpCallbackWrapper.h>
+#include <cc++/config.h>
+
+ZrtpCallbackWrapper::ZrtpCallbackWrapper(C_Callbacks* cb) :
+        c_callbacks(cb)
+{
+    init();
+}
+
+void ZrtpCallbackWrapper::init()
+{
+}
+/*
+* The following methods implement the GNU ZRTP callback interface.
+* For detailed documentation refer to file ZrtpCallback.h
+*/
+int32_t ZrtpCallbackWrapper::sendDataZRTP ( const unsigned char* data, int32_t length )
+{
+    return c_callbacks->zrtp_sendDataZRTP(data, length);
+}
+
+int32_t ZrtpCallbackWrapper::activateTimer ( int32_t time )
+{
+    c_callbacks->zrtp_activateTimer(time);
+    return 1;
+}
+
+int32_t ZrtpCallbackWrapper::cancelTimer()
+{
+    c_callbacks->zrtp_cancelTimer();
+    return 0;
+}
+
+void ZrtpCallbackWrapper::sendInfo ( GnuZrtpCodes::MessageSeverity severity, int32_t subCode )
+{
+    c_callbacks->zrtp_sendInfo((int32_t)severity, subCode);
+}
+
+bool ZrtpCallbackWrapper::srtpSecretsReady ( SrtpSecret_t* secrets, EnableSecurity part )
+{
+    C_SrtpSecret_t* cs = new C_SrtpSecret_t;
+    cs->initKeyLen = secrets->initKeyLen;
+    cs->initSaltLen = secrets->initSaltLen;
+    cs->keyInitiator = secrets->keyInitiator;
+    cs->keyResponder = secrets->keyResponder;
+    cs->respKeyLen = secrets->respKeyLen;
+    cs->respSaltLen = secrets->respSaltLen;
+    cs->role = (int32_t)secrets->role;
+    cs->saltInitiator = secrets->saltInitiator;
+    cs->saltResponder = secrets->saltResponder;
+    cs->sas = new char [secrets->sas.size()+1];
+    strcpy(cs->sas, secrets->sas.c_str());
+    cs->srtpAuthTagLen = secrets->srtpAuthTagLen;
+
+    bool retval = (c_callbacks->zrtp_srtpSecretsReady (cs, (int32_t)part) == 0) ? false : true ;
+
+    delete cs->sas;
+    delete cs;
+
+    return retval;
+}
+
+void ZrtpCallbackWrapper::srtpSecretsOff ( EnableSecurity part )
+{
+    c_callbacks->zrtp_srtpSecretsOff((int32_t)part);
+}
+
+void ZrtpCallbackWrapper::srtpSecretsOn ( std::string c, std::string s, bool verified )
+{
+    char* cc = new char [c.size()+1];
+    char* cs = new char [s.size()+1];
+
+    strcpy(cc, c.c_str());
+    strcpy(cs, s.c_str());
+
+    c_callbacks->zrtp_rtpSecretsOn(cc, cs, verified?1:0);
+
+    delete[] cc;
+    delete[] cs;
+}
+
+void ZrtpCallbackWrapper::handleGoClear()
+{
+}
+
+void ZrtpCallbackWrapper::zrtpNegotiationFailed ( GnuZrtpCodes::MessageSeverity severity, int32_t subCode )
+{
+    c_callbacks->zrtp_zrtpNegotiationFailed((int32_t)severity, subCode);
+}
+
+void ZrtpCallbackWrapper::zrtpNotSuppOther()
+{
+    c_callbacks->zrtp_zrtpNotSuppOther();
+}
+
+void ZrtpCallbackWrapper::synchEnter()
+{
+    c_callbacks->zrtp_synchEnter();
+}
+
+
+void ZrtpCallbackWrapper::synchLeave()
+{
+    c_callbacks->zrtp_synchLeave();
+}
+
+void ZrtpCallbackWrapper::zrtpAskEnrollment ( std::string info )
+{
+    char* cc = new char [info.size()+1];
+
+    strcpy(cc, info.c_str());
+    c_callbacks->zrtp_zrtpAskEnrollment(cc);
+
+    delete[] cc;
+
+}
+
+void ZrtpCallbackWrapper::zrtpInformEnrollment ( std::string info )
+{
+    char* cc = new char [info.size()+1];
+
+    strcpy(cc, info.c_str());
+    c_callbacks->zrtp_zrtpInformEnrollment(cc);
+
+    delete[] cc;
+
+}
+
+void ZrtpCallbackWrapper::signSAS ( std::string sas )
+{
+    char* cc = new char [sas.size()+1];
+
+    strcpy(cc, sas.c_str());
+    c_callbacks->zrtp_signSAS(cc);
+
+    delete[] cc;
+
+}
+
+bool ZrtpCallbackWrapper::checkSASSignature ( std::string sas )
+{
+    char* cc = new char [sas.size()+1];
+
+    strcpy(cc, sas.c_str());
+    bool retval = (c_callbacks->zrtp_checkSASSignature == 0) ? false : true;
+
+    delete[] cc;
+
+    return retval;
+}
