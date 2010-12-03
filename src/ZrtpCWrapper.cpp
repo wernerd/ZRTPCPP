@@ -29,24 +29,6 @@ static int32_t initialized = 0;
 
 static int32_t zrtp_initZidFile(const char* zidFilename);
 
-/* disabled...but used in testing and debugging, probably should have a
-   controlling #define...
-   */
-static void hexdump(const char* title, const unsigned char *s, int l) {
-    int n=0;
-
-    if (s == NULL) return;
-
-    fprintf(stderr, "%s",title);
-    for( ; n < l ; ++n)
-    {
-        if((n%16) == 0)
-            fprintf(stderr, "\n%04x",n);
-        fprintf(stderr, " %02x",s[n]);
-    }
-    fprintf(stderr, "\n");
-}
-
 /* TODO: handle zrtp configure data */
 ZrtpContext* zrtp_CreateWrapper(zrtp_Callbacks *cb, char* id,
                                 void* config, const char* zidFilename,

@@ -6,22 +6,22 @@ cmake_minimum_required (VERSION 2.6)
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
 set(gcrypt_src
-    libzrtpcpp/crypto/gcrypt/gcryptZrtpDH.cxx 
-    libzrtpcpp/crypto/gcrypt/gcrypthmac256.cxx 
-    libzrtpcpp/crypto/gcrypt/gcryptsha256.cxx 
-    libzrtpcpp/crypto/gcrypt/gcrypthmac384.cxx 
-    libzrtpcpp/crypto/gcrypt/gcryptsha384.cxx 
+    libzrtpcpp/crypto/gcrypt/gcryptZrtpDH.cpp 
+    libzrtpcpp/crypto/gcrypt/gcrypthmac256.cpp 
+    libzrtpcpp/crypto/gcrypt/gcryptsha256.cpp 
+    libzrtpcpp/crypto/gcrypt/gcrypthmac384.cpp 
+    libzrtpcpp/crypto/gcrypt/gcryptsha384.cpp 
     libzrtpcpp/crypto/gcrypt/gcryptAesCFB.cpp 
-    libzrtpcpp/crypto/gcrypt/InitializeGcrypt.cxx)
+    libzrtpcpp/crypto/gcrypt/InitializeGcrypt.cpp)
 
 set(openssl_src 
-    libzrtpcpp/crypto/openssl/ZrtpDH.cxx
-    libzrtpcpp/crypto/openssl/hmac256.cxx
-    libzrtpcpp/crypto/openssl/sha256.cxx 
-    libzrtpcpp/crypto/openssl/hmac384.cxx
-    libzrtpcpp/crypto/openssl/sha384.cxx
+    libzrtpcpp/crypto/openssl/ZrtpDH.cpp
+    libzrtpcpp/crypto/openssl/hmac256.cpp
+    libzrtpcpp/crypto/openssl/sha256.cpp 
+    libzrtpcpp/crypto/openssl/hmac384.cpp
+    libzrtpcpp/crypto/openssl/sha384.cpp
     libzrtpcpp/crypto/openssl/AesCFB.cpp
-    libzrtpcpp/crypto/openssl/InitializeOpenSSL.cxx)
+    libzrtpcpp/crypto/openssl/InitializeOpenSSL.cpp)
 
 if (GCRYPT_FOUND)
     set(crypto_src ${gcrypt_src})
@@ -37,27 +37,27 @@ endif()
 
 set(zrtp_src 
     ZrtpCallbackWrapper.cpp
-    ZIDFile.cxx
-    ZIDRecord.cxx
-    ZRtp.cxx
-    ZrtpCrc32.cxx
-    ZrtpPacketCommit.cxx
-    ZrtpPacketConf2Ack.cxx
-    ZrtpPacketConfirm.cxx
-    ZrtpPacketDHPart.cxx
-    ZrtpPacketGoClear.cxx
-    ZrtpPacketClearAck.cxx
-    ZrtpPacketHelloAck.cxx
-    ZrtpPacketHello.cxx
-    ZrtpPacketError.cxx
+    ZIDFile.cpp
+    ZIDRecord.cpp
+    ZRtp.cpp
+    ZrtpCrc32.cpp
+    ZrtpPacketCommit.cpp
+    ZrtpPacketConf2Ack.cpp
+    ZrtpPacketConfirm.cpp
+    ZrtpPacketDHPart.cpp
+    ZrtpPacketGoClear.cpp
+    ZrtpPacketClearAck.cpp
+    ZrtpPacketHelloAck.cpp
+    ZrtpPacketHello.cpp
+    ZrtpPacketError.cpp
     ZrtpPacketErrorAck.cpp
-    ZrtpPacketPingAck.cxx
-    ZrtpPacketPing.cxx
-    ZrtpStateClass.cxx
-    ZrtpTextData.cxx
-    ZrtpConfigure.cxx
+    ZrtpPacketPingAck.cpp
+    ZrtpPacketPing.cpp
+    ZrtpStateClass.cpp
+    ZrtpTextData.cpp
+    ZrtpConfigure.cpp
     ZrtpCWrapper.cpp
-    Base32.cxx)
+    Base32.cpp)
 
 set(zrtpcpp_src ${zrtp_src} ${ccrtp_src} ${crypto_src})
 
