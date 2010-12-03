@@ -1,3 +1,25 @@
+== GNU ZRTP 1.5.2 ==
+
+Quite a lot of enhancements:
+- a CMake based build process was added
+- a C wrapper was added to enable C programs to use GNU ZRTP
+- some fixes in the code (race condition solved)
+- better support of multi-stream mode
+- change the old cxx file extension to cpp, some build system don't
+  like the old cxx (Android NDK for example)
+- and much more
+
+Because of API changes clients must be compiled and linked with the new 
+library.
+
+== GNU ZRTP 1.5.0 ==
+
+Adds a first version of a ZrtpConfigure class that provides applications
+to select which crypto and hash methods to use.
+
+Because of API changes clients must be compiled and linked with the new 
+library.
+
 == GNU ZRTP 1.4.5 ==
 
 Modify the Hello repeat timer handling to accomodate slow connections and/or
