@@ -23,6 +23,7 @@
 #include <libzrtpcpp/ZRtp.h>
 #include <libzrtpcpp/ZrtpCallbackWrapper.h>
 #include <libzrtpcpp/ZrtpCWrapper.h>
+#include <libzrtpcpp/ZrtpCrc32.h>
 
 static int32_t initialized = 0;
 
@@ -46,15 +47,17 @@ static void hexdump(const char* title, const unsigned char *s, int l) {
     fprintf(stderr, "\n");
 }
 
-
-// TODO: handle zrtp configure data
-ZrtpContext* zrtp_CreateWrapper(C_Callbacks *cb, char* id,
-                                void* config, char* zidFilename) {
+/* TODO: handle zrtp configure data */
+ZrtpContext* zrtp_CreateWrapper(zrtp_Callbacks *cb, char* id,
+                                void* config, const char* zidFilename,
+                                void* userData) 
+{
     ZrtpConfigure* configure;
 
     std::string clientIdString(id);
     ZrtpContext* zc = new ZrtpContext;
-    zc->zrtpCallback = new ZrtpCallbackWrapper(cb);
+    zc->zrtpCallback = new ZrtpCallbackWrapper(cb, zc);
+    zc->userData = userData;
 
     if (config == 0) {
         configure = new ZrtpConfigure();
@@ -74,14 +77,17 @@ ZrtpContext* zrtp_CreateWrapper(C_Callbacks *cb, char* id,
 }
 
 void zrtp_DestroyWrapper(ZrtpContext* zrtpContext) {
+    
+    if (zrtpContext == NULL)
+        return;
+    
+    delete zrtpContext->zrtpEngine;
+    zrtpContext->zrtpEngine = NULL;
+    
     delete zrtpContext->zrtpCallback;
     zrtpContext->zrtpCallback = NULL;
 
-    delete zrtpContext->zrtpEngine;
-    zrtpContext->zrtpEngine = NULL;
-
     delete zrtpContext;
-    zrtpContext = NULL;
 }
 
 static int32_t zrtp_initZidFile(const char* zidFilename) {
@@ -100,6 +106,22 @@ static int32_t zrtp_initZidFile(const char* zidFilename) {
     }
     return 0;
 }
+
+int32_t zrtp_CheckCksum(uint8_t* buffer, uint16_t temp, uint32_t crc) 
+{
+    return zrtpCheckCksum(buffer, temp, crc);
+}
+
+uint32_t zrtp_GenerateCksum(uint8_t* buffer, uint16_t temp)
+{
+    return zrtpGenerateCksum(buffer, temp);
+}
+
+uint32_t zrtp_EndCksum(uint32_t crc)
+{
+    return zrtpEndCksum(crc);
+}
+
 /*
  * Applications use the following methods to control ZRTP, for example
  * to enable ZRTP, set flags etc.
@@ -109,7 +131,7 @@ void zrtp_startZrtpEngine(ZrtpContext* zrtpContext) {
         zrtpContext->zrtpEngine->startZrtpEngine();
 }
 
-void zrtp_stopZrtp(ZrtpContext* zrtpContext) {
+void zrtp_stopZrtpEngine(ZrtpContext* zrtpContext) {
     if (initialized)
         zrtpContext->zrtpEngine->stopZrtp();
 }
