@@ -2202,7 +2202,6 @@ std::string ZRtp::getHelloHash() {
     return stm.str();
 }
 
-// TODO: Variable size of ZrtpSession for multisteam data exchange
 std::string ZRtp::getMultiStrParams() {
 
     // the string will hold binary data - it's opaque to the application
