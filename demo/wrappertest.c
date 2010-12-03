@@ -20,30 +20,34 @@
 #include <libzrtpcpp/ZrtpCWrapper.h>
 
 #include <stdio.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-static int32_t zrtp_sendDataZRTP ( const uint8_t* data, int32_t length ) ;
-static int32_t zrtp_activateTimer ( int32_t time ) ;
-static int32_t zrtp_cancelTimer() ;
-static void zrtp_sendInfo (int32_t severity, int32_t subCode ) ;
-static int32_t zrtp_srtpSecretsReady ( C_SrtpSecret_t* secrets, int32_t part ) ;
-static void zrtp_srtpSecretsOff (int32_t part ) ;
-static void zrtp_rtpSecretsOn ( char* c, char* s, int32_t verified ) ;
-static void zrtp_handleGoClear() ;
-static void zrtp_zrtpNegotiationFailed ( int32_t severity, int32_t subCode ) ;
-static void zrtp_zrtpNotSuppOther() ;
-static void zrtp_synchEnter() ;
-static void zrtp_synchLeave() ;
-static void zrtp_zrtpAskEnrollment ( char* info ) ;
-static void zrtp_zrtpInformEnrollment ( char* info ) ;
-static void zrtp_signSAS(char* sas) ;
-static int32_t zrtp_checkSASSignature ( char* sas ) ;
+/* Forward declaration of thethe ZRTP specific callback functions that this
+  adapter must implement */
+static int32_t zrtp_sendDataZRTP (ZrtpContext* ctx, const uint8_t* data, int32_t length ) ;
+static int32_t zrtp_activateTimer (ZrtpContext* ctx, int32_t time ) ;
+static int32_t zrtp_cancelTimer(ZrtpContext* ctx) ;
+static void zrtp_sendInfo (ZrtpContext* ctx, int32_t severity, int32_t subCode ) ;
+static int32_t zrtp_srtpSecretsReady (ZrtpContext* ctx, C_SrtpSecret_t* secrets, int32_t part ) ;
+static void zrtp_srtpSecretsOff (ZrtpContext* ctx, int32_t part ) ;
+static void zrtp_rtpSecretsOn (ZrtpContext* ctx, char* c, char* s, int32_t verified ) ;
+static void zrtp_handleGoClear(ZrtpContext* ctx) ;
+static void zrtp_zrtpNegotiationFailed(ZrtpContext* ctx, int32_t severity, int32_t subCode ) ;
+static void zrtp_zrtpNotSuppOther(ZrtpContext* ctx) ;
+static void zrtp_synchEnter(ZrtpContext* ctx) ;
+static void zrtp_synchLeave(ZrtpContext* ctx) ;
+static void zrtp_zrtpAskEnrollment (ZrtpContext* ctx, char* info ) ;
+static void zrtp_zrtpInformEnrollment(ZrtpContext* ctx, char* info ) ;
+static void zrtp_signSAS(ZrtpContext* ctx, char* sas) ;
+static int32_t zrtp_checkSASSignature (ZrtpContext* ctx, char* sas ) ;
 
-static C_Callbacks c_callbacks = {
+/* The callback function structure for ZRTP */
+static zrtp_Callbacks c_callbacks = {
     &zrtp_sendDataZRTP,
     &zrtp_activateTimer,
     &zrtp_cancelTimer,
@@ -62,71 +66,74 @@ static C_Callbacks c_callbacks = {
     &zrtp_checkSASSignature
 };
 
-static int32_t zrtp_sendDataZRTP ( const uint8_t* data, int32_t length )
+/*
+ * Here start with callback functions that support the ZRTP core
+ */
+static int32_t zrtp_sendDataZRTP (ZrtpContext* ctx, const uint8_t* data, int32_t length )
 {
     return 0;
 }
 
-static int32_t zrtp_activateTimer ( int32_t time )
+static int32_t zrtp_activateTimer (ZrtpContext* ctx, int32_t time)
 {
     return 0;
 }
 
-static int32_t zrtp_cancelTimer()
+static int32_t zrtp_cancelTimer(ZrtpContext* ctx)
 {
     return 0;
 }
 
-static void zrtp_sendInfo (int32_t severity, int32_t subCode )
+static void zrtp_sendInfo (ZrtpContext* ctx, int32_t severity, int32_t subCode )
 {
 }
 
-static int32_t zrtp_srtpSecretsReady ( C_SrtpSecret_t* secrets, int32_t part )
+static int32_t zrtp_srtpSecretsReady (ZrtpContext* ctx, C_SrtpSecret_t* secrets, int32_t part )
 {
     return 0;
 }
 
-static void zrtp_srtpSecretsOff (int32_t part )
+static void zrtp_srtpSecretsOff (ZrtpContext* ctx, int32_t part )
 {
 }
 
-static void zrtp_rtpSecretsOn ( char* c, char* s, int32_t verified )
+static void zrtp_rtpSecretsOn (ZrtpContext* ctx, char* c, char* s, int32_t verified )
 {
 }
 
-static void zrtp_handleGoClear()
+static void zrtp_handleGoClear(ZrtpContext* ctx)
 {
 }
 
-static void zrtp_zrtpNegotiationFailed ( int32_t severity, int32_t subCode )
+static void zrtp_zrtpNegotiationFailed (ZrtpContext* ctx, int32_t severity, int32_t subCode )
 {
 }
 
-static void zrtp_zrtpNotSuppOther()
+static void zrtp_zrtpNotSuppOther(ZrtpContext* ctx)
 {
 }
 
-static void zrtp_synchEnter()
+static void zrtp_synchEnter(ZrtpContext* ctx)
 {
 }
 
-static void zrtp_synchLeave()
+static void zrtp_synchLeave(ZrtpContext* ctx)
 {
 }
 
-static void zrtp_zrtpAskEnrollment ( char* info )
+static void zrtp_zrtpAskEnrollment(ZrtpContext* ctx, char* info )
 {
 
 }
-static void zrtp_zrtpInformEnrollment ( char* info )
+static void zrtp_zrtpInformEnrollment(ZrtpContext* ctx, char* info )
 {
 }
 
-static void zrtp_signSAS(char* sas)
+static void zrtp_signSAS(ZrtpContext* ctx, char* sas)
 {
 }
 
-static int32_t zrtp_checkSASSignature ( char* sas )
+static int32_t zrtp_checkSASSignature(ZrtpContext* ctx, char* sas )
 {
     return 0;
 }
@@ -136,7 +143,7 @@ int main(int argc, char *argv[])
     ZrtpContext* zrtpCtx;
     char* hh;
     
-    zrtpCtx = zrtp_CreateWrapper (&c_callbacks, "test", (void*)0, "test.zid");
+    zrtpCtx = zrtp_CreateWrapper (&c_callbacks, "test", (void*)0, "test.zid", NULL);
     
     hh = zrtp_getHelloHash(zrtpCtx);
     if (hh != 0) 

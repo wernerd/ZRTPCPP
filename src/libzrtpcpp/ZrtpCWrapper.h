@@ -1,6 +1,6 @@
 /*
-    <one line to give the program's name and a brief idea of what it does.>
-    Copyright (C) <year>  <name of author>
+    This file defines the GNU ZRTP C-to-C++ wrapper.
+    Copyright (C) 2010  Werner Dittmann
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -42,6 +42,150 @@
  */
 #define Responder 1
 #define Initiator 2
+
+#define CRC_SIZE  4             /*!< Size of CRC code of a ZRTP packet */
+#define ZRTP_MAGIC 0x5a525450   /*!< The magic code that identifies a ZRTP packet */
+#define MAX_ZRTP_SIZE 3072
+
+/*
+ * IMPORTANT: keep the following enums in synch with ZrtpCodes. We copy them here
+ * to avoid any C++ header includes and defines. The protocol states are located
+ * ZrtpStateClass.h .
+ */
+/**
+ * This enum defines the information message severity.
+ *
+ * The ZRTP implementation issues information messages to inform the user
+ * about ongoing processing, unusual behavior, or alerts in case of severe
+ * problems. Each main severity code a number of sub-codes exist that
+ * specify the exact nature of the problem.
+ *
+ * An application gets message severity codes and the associated sub-codes
+ * via the ZrtpUserCallback#showMessage method.
+ *
+ * The severity levels and their meaning are:
+ *
+ * <dl>
+ * <dt>Info</dt> <dd>keeps the user informed about ongoing processing and
+ *     security setup. The enumeration InfoCodes defines the subcodes.
+ * </dd>
+ * <dt>Warning</dt> <dd>is an information about some security issues, e.g. if
+ *     an AES 256 encryption is request but only DH 3072 as public key scheme
+ *     is supported. ZRTP will establish a secure session (SRTP). The
+ *     enumeration WarningCodes defines the sub-codes.
+ * </dd>
+ * <dt>Severe</dt> <dd>is used if an error occured during ZRTP protocol usage.
+ *     In case of <em>Severe</em> ZRTP will <b>not</b> establish a secure session.
+ *     The enumeration SevereCodes defines the sub-codes.
+ * </dd>
+ * <dt>Zrtp</dt> <dd>shows a ZRTP security problem. Refer to the enumeration
+ *     ZrtpErrorCodes for sub-codes. GNU ZRTP of course will <b>not</b>
+ *     establish a secure session.
+ * </dd>
+ * </dl>
+ *
+ */
+enum zrtp_MessageSeverity {
+    zrtp_Info = 1,
+    zrtp_Warning,
+    zrtp_Severe,
+    zrtp_ZrtpError
+};
+
+/**
+ * Sub-codes for Info
+ */
+enum zrtp_InfoCodes {
+    zrtp_InfoHelloReceived = 1,          /*!< Hello received, preparing a Commit */
+    zrtp_InfoCommitDHGenerated,          /*!< Commit: Generated a public DH key */
+    zrtp_InfoRespCommitReceived,         /*!< Responder: Commit received, preparing DHPart1 */
+    zrtp_InfoDH1DHGenerated,             /*!< DH1Part: Generated a public DH key */
+    zrtp_InfoInitDH1Received,            /*!< Initiator: DHPart1 received, preparing DHPart2 */
+    zrtp_InfoRespDH2Received,            /*!< Responder: DHPart2 received, preparing Confirm1 */
+    zrtp_InfoInitConf1Received,          /*!< Initiator: Confirm1 received, preparing Confirm2 */
+    zrtp_InfoRespConf2Received,          /*!< Responder: Confirm2 received, preparing Conf2Ack */
+    zrtp_InfoRSMatchFound,               /*!< At least one retained secrets matches - security OK */
+    zrtp_InfoSecureStateOn,              /*!< Entered secure state */
+    zrtp_InfoSecureStateOff              /*!< No more security for this session */
+};
+
+/**
+ * Sub-codes for Warning
+ */
+enum zrtp_WarningCodes {
+    zrtp_WarningDHAESmismatch = 1,       /*!< Commit contains an AES256 cipher but does not offer a Diffie-Helman 4096 */
+    zrtp_WarningGoClearReceived,         /*!< Received a GoClear message */
+    zrtp_WarningDHShort,                 /*!< Hello offers an AES256 cipher but does not offer a Diffie-Helman 4096 */
+    zrtp_WarningNoRSMatch,               /*!< No retained shared secrets available - must verify SAS */
+    zrtp_WarningCRCmismatch,             /*!< Internal ZRTP packet checksum mismatch - packet dropped */
+    zrtp_WarningSRTPauthError,           /*!< Dropping packet because SRTP authentication failed! */
+    zrtp_WarningSRTPreplayError,         /*!< Dropping packet because SRTP replay check failed! */
+    zrtp_WarningNoExpectedRSMatch        /*!< Valid retained shared secrets availabe but no matches found - must verify SAS */
+};
+
+/**
+ * Sub-codes for Severe
+ */
+enum zrtp_SevereCodes {
+    zrtp_SevereHelloHMACFailed = 1,      /*!< Hash HMAC check of Hello failed! */
+    zrtp_SevereCommitHMACFailed,         /*!< Hash HMAC check of Commit failed! */
+    zrtp_SevereDH1HMACFailed,            /*!< Hash HMAC check of DHPart1 failed! */
+    zrtp_SevereDH2HMACFailed,            /*!< Hash HMAC check of DHPart2 failed! */
+    zrtp_SevereCannotSend,               /*!< Cannot send data - connection or peer down? */
+    zrtp_SevereProtocolError,            /*!< Internal protocol error occured! */
+    zrtp_SevereNoTimer,                  /*!< Cannot start a timer - internal resources exhausted? */
+    zrtp_SevereTooMuchRetries            /*!< Too much retries during ZRTP negotiation - connection or peer down? */
+};
+
+/**
+  * Error codes according to the ZRTP specification chapter 6.9
+  *
+  * GNU ZRTP uses these error codes in two ways: to fill the appropriate
+  * field ing the ZRTP Error packet and as sub-code in
+  * ZrtpUserCallback#showMessage(). GNU ZRTP uses thes error codes also
+  * to report received Error packts, in this case the sub-codes are their
+  * negative values.
+  *
+  * The enumeration member comments are copied from the ZRTP specification.
+  */
+enum zrtp_ZrtpErrorCodes {
+    zrtp_MalformedPacket =   0x10,    /*!< Malformed packet (CRC OK, but wrong structure) */
+    zrtp_CriticalSWError =   0x20,    /*!< Critical software error */
+    zrtp_UnsuppZRTPVersion = 0x30,    /*!< Unsupported ZRTP version */
+    zrtp_HelloCompMismatch = 0x40,    /*!< Hello components mismatch */
+    zrtp_UnsuppHashType =    0x51,    /*!< Hash type not supported */
+    zrtp_UnsuppCiphertype =  0x52,    /*!< Cipher type not supported */
+    zrtp_UnsuppPKExchange =  0x53,    /*!< Public key exchange not supported */
+    zrtp_UnsuppSRTPAuthTag = 0x54,    /*!< SRTP auth. tag not supported */
+    zrtp_UnsuppSASScheme =   0x55,    /*!< SAS scheme not supported */
+    zrtp_NoSharedSecret =    0x56,    /*!< No shared secret available, DH mode required */
+    zrtp_DHErrorWrongPV =    0x61,    /*!< DH Error: bad pvi or pvr ( == 1, 0, or p-1) */
+    zrtp_DHErrorWrongHVI =   0x62,    /*!< DH Error: hvi != hashed data */
+    zrtp_SASuntrustedMiTM =  0x63,    /*!< Received relayed SAS from untrusted MiTM */
+    zrtp_ConfirmHMACWrong =  0x70,    /*!< Auth. Error: Bad Confirm pkt HMAC */
+    zrtp_NonceReused =       0x80,    /*!< Nonce reuse */
+    zrtp_EqualZIDHello =     0x90,    /*!< Equal ZIDs in Hello */
+    zrtp_GoCleatNotAllowed = 0x100,   /*!< GoClear packet received, but not allowed */
+    zrtp_IgnorePacket =      0x7fffffff /*!< Internal state, not reported */
+};
+
+/* The ZRTP protocol states */
+enum zrtpStates {
+    Initial,
+    Detect,
+    AckDetected,
+    AckSent,
+    WaitCommit,
+    CommitSent,
+    WaitDHPart2,
+    WaitConfirm1,
+    WaitConfirm2,
+    WaitConfAck,
+    WaitClearAck,
+    SecureState,
+    WaitErrorAck,
+    numberOfStates
+};
 
 /**
  * This structure contains pointers to the SRTP secrets and the role info.
@@ -85,6 +229,7 @@ extern "C"
     {
         ZRtp* zrtpEngine;
         ZrtpCallbackWrapper* zrtpCallback;
+        void* userData;
     } ZrtpContext;
 
     /**
@@ -101,30 +246,30 @@ extern "C"
     * @author Werner Dittmann <Werner.Dittmann@t-online.de>
     */
 
-    typedef struct C_Callbacks
+    typedef struct zrtp_Callbacks
     {
         /*
         * The following methods define the GNU ZRTP callback interface.
         * For detailed documentation refer to file ZrtpCallback.h, each C
         * method has "zrtp_" prepended to the C++ name.
         */
-        int32_t (*zrtp_sendDataZRTP) ( const uint8_t* data, int32_t length ) ;
-        int32_t (*zrtp_activateTimer) ( int32_t time ) ;
-        int32_t (*zrtp_cancelTimer)() ;
-        void (*zrtp_sendInfo) ( int32_t severity, int32_t subCode ) ;
-        int32_t (*zrtp_srtpSecretsReady) ( C_SrtpSecret_t* secrets, int32_t part ) ;
-        void (*zrtp_srtpSecretsOff) ( int32_t part ) ;
-        void (*zrtp_rtpSecretsOn) ( char* c, char* s, int32_t verified ) ;
-        void (*zrtp_handleGoClear)() ;
-        void (*zrtp_zrtpNegotiationFailed) ( int32_t severity, int32_t subCode ) ;
-        void (*zrtp_zrtpNotSuppOther)() ;
-        void (*zrtp_synchEnter)() ;
-        void (*zrtp_synchLeave)() ;
-        void (*zrtp_zrtpAskEnrollment) ( char* info ) ;
-        void (*zrtp_zrtpInformEnrollment) ( char* info ) ;
-        void (*zrtp_signSAS)(char* sas) ;
-        int32_t (*zrtp_checkSASSignature) ( char* sas ) ;
-    } C_Callbacks;
+        int32_t (*zrtp_sendDataZRTP) (ZrtpContext* ctx, const uint8_t* data, int32_t length ) ;
+        int32_t (*zrtp_activateTimer) (ZrtpContext* ctx, int32_t time ) ;
+        int32_t (*zrtp_cancelTimer)(ZrtpContext* ctx) ;
+        void (*zrtp_sendInfo) (ZrtpContext* ctx, int32_t severity, int32_t subCode ) ;
+        int32_t (*zrtp_srtpSecretsReady) (ZrtpContext* ctx, C_SrtpSecret_t* secrets, int32_t part ) ;
+        void (*zrtp_srtpSecretsOff) (ZrtpContext* ctx, int32_t part ) ;
+        void (*zrtp_rtpSecretsOn) (ZrtpContext* ctx, char* c, char* s, int32_t verified ) ;
+        void (*zrtp_handleGoClear)(ZrtpContext* ctx) ;
+        void (*zrtp_zrtpNegotiationFailed) (ZrtpContext* ctx, int32_t severity, int32_t subCode ) ;
+        void (*zrtp_zrtpNotSuppOther)(ZrtpContext* ctx) ;
+        void (*zrtp_synchEnter)(ZrtpContext* ctx) ;
+        void (*zrtp_synchLeave)(ZrtpContext* ctx) ;
+        void (*zrtp_zrtpAskEnrollment) (ZrtpContext* ctx, char* info ) ;
+        void (*zrtp_zrtpInformEnrollment) (ZrtpContext* ctx, char* info ) ;
+        void (*zrtp_signSAS)(ZrtpContext* ctx, char* sas) ;
+        int32_t (*zrtp_checkSASSignature) (ZrtpContext* ctx, char* sas ) ;
+    } zrtp_Callbacks;
 
     /**
      * Application callback methods.
@@ -142,36 +287,47 @@ extern "C"
      * @author Werner Dittmann <Werner.Dittmann@t-online.de>
      */
 
-    typedef struct C_UserCallbacks
+    typedef struct zrtp_UserCallbacks
     {
         /*
         * The following methods define the GNU ZRTP user callback interface.
         * For detailed documentation refer to file ZrtpUserCallback.h, each C
         * method has "zrtp_" prepended to the C++ name.
         */
-        void (*zrtp_secureOn)(char* cipher);
-        void (*zrtp_secureOff)();
-        void (*zrtp_showSAS)(char* sas, int32_t verified);
-        void (*zrtp_confirmGoClear)();
-        void (*zrtp_showMessage)(int32_t sev, int32_t subCode);
-        void (*zrtp_zrtpNegotiationFailed)(int32_t severity, int32_t subCode);
-        void (*zrtp_zrtpNotSuppOther)();
-        void (*zrtp_zrtpAskEnrollment)(char* info);
-        void (*zrtp_zrtpInformEnrollment)(char* info);
-        void (*zrtp_signSAS)(char* sas);
-        int32_t (*zrtp_checkSASSignature)(char* sas);
-    } C_UserCallbacks;
+        void (*zrtp_secureOn)(void* data, char* cipher);
+        void (*zrtp_secureOff)(void* data);
+        void (*zrtp_showSAS)(void* data, char* sas, int32_t verified);
+        void (*zrtp_confirmGoClear)(void* data);
+        void (*zrtp_showMessage)(void* data, int32_t sev, int32_t subCode);
+        void (*zrtp_zrtpNegotiationFailed)(void* data, int32_t severity, int32_t subCode);
+        void (*zrtp_zrtpNotSuppOther)(void* data);
+        void (*zrtp_zrtpAskEnrollment)(void* data, char* info);
+        void (*zrtp_zrtpInformEnrollment)(void* data, char* info);
+        void (*zrtp_signSAS)(void* data, char* sas);
+        int32_t (*zrtp_checkSASSignature)(void* data, char* sas);
+        
+        void* userData;
+    } zrtp_UserCallbacks;
 
-    ZrtpContext* zrtp_CreateWrapper (C_Callbacks *cb, char* id,
-                                      void* config, char* zidFilename );
-    void zrtp_DestroyWrapper ( ZrtpContext* zrtpContext );
-    
+    ZrtpContext* zrtp_CreateWrapper (zrtp_Callbacks *cb, char* id,
+                                     void* config, const char* zidFilename,
+                                     void* userData );
+
+    void zrtp_DestroyWrapper (ZrtpContext* zrtpContext );
+
+    int32_t zrtp_CheckCksum(uint8_t* buffer, uint16_t temp, uint32_t crc);
+    uint32_t zrtp_GenerateCksum(uint8_t* buffer, uint16_t temp);
+    uint32_t zrtp_EndCksum(uint32_t crc);
+
     /**
      * Kick off the ZRTP protocol engine.
      *
      * This method calls the ZrtpStateClass#evInitial() state of the state
      * engine. After this call we are able to process ZRTP packets
      * from our peer and to process them.
+     *
+     * <b>NOTE: application shall never call this method directly but use the
+     * appropriate method provided by the RTP implementation. </b>
      *
      * @param zrtpContext
      *    Pointer to the opaque ZrtpContext structure.
@@ -181,28 +337,27 @@ extern "C"
     /**
      * Stop ZRTP security.
      *
+     * <b>NOTE: application shall never call this method directly but use the
+     * appropriate method provided by the RTP implementation. </b>
+     *
      * @param zrtpContext
      *    Pointer to the opaque ZrtpContext structure.
      */
-    void zrtp_stopZrtp(ZrtpContext* zrtpContext);
+    void zrtp_stopZrtpEngine(ZrtpContext* zrtpContext);
 
     /**
      * Process RTP extension header.
      *
-     * This method expects to get a pointer to the extension header of
-     * a RTP packet. The method checks if this is really a ZRTP
-     * packet. If this check fails the method returns 0 (false) in
-     * case this is not a ZRTP packet. We return a 1 if we processed
-     * the ZRTP extension header and the caller may process RTP data
-     * after the extension header as usual.  The method return -1 the
-     * call shall dismiss the packet and shall not forward it to
-     * further RTP processing.
+     * This method expects to get a pointer to the message part of
+     * a ZRTP packet.
+     *
+     * <b>NOTE: application shall never call this method directly. Only
+     * the module that implements the RTP binding shall use this method</b>
      *
      * @param zrtpContext
      *    Pointer to the opaque ZrtpContext structure.
      * @param extHeader
-     *    A pointer to the first byte of the extension header. Refer to
-     *    RFC3550.
+     *    A pointer to the first byte of the ZRTP message part.
      * @param peerSSRC
      *    The peer's SSRC.
      * @return
@@ -215,6 +370,9 @@ extern "C"
      *
      * We got a timeout from the timeout provider. Forward it to the
      * protocol state engine.
+     *
+     * <b>NOTE: application shall never call this method directly. Only
+     * the module that implements the RTP binding shall use this method</b>
      *
      * @param zrtpContext
      *    Pointer to the opaque ZrtpContext structure.
@@ -236,7 +394,7 @@ extern "C"
      *    False if not a GoClear, true otherwise.
      *
     int32_t zrtp_handleGoClear(ZrtpContext* zrtpContext, uint8_t *extHeader);
-*/
+    */
     /**
      * Set the auxilliary secret.
      *
@@ -269,6 +427,9 @@ extern "C"
 
     /**
      * Check current state of the ZRTP state engine
+     *
+     * <b>NOTE: application usually don't call this method. Only
+     * the module that implements the RTP binding shall use this method</b>
      *
      * @param zrtpContext
      *    Pointer to the opaque ZrtpContext structure.
@@ -305,12 +466,16 @@ extern "C"
      * returns the data as a string containing the ZRTP protocol version and
      * hex-digits. Refer to ZRTP specification, chapter 8.
      *
+     * <b>NOTE: An application may call this method if it needs this information.
+     * Usually it is not necessary.</b>
+     *
      * @param zrtpContext
      *    Pointer to the opaque ZrtpContext structure.
      * @return
      *    a pointer to a C-string that contains the Hello hash value as
-     *    hex-digits. The hello hash is available immediately after class
-     *    instantiation. The call must use free() if it does not use the
+     *    hex-digits. The hello hash is available immediately after
+     *    @c zrtp_CreateWrapper .
+     *    The caller must @c free() if it does not use the
      *    hello hash C-string anymore.
      */
     char* zrtp_getHelloHash(ZrtpContext* zrtpContext);
@@ -484,6 +649,9 @@ extern "C"
      * the first valid SRTP packet that the Initiator receives must switch
      * on secure mode. Refer to chapter 4 in the specificaton
      *
+     * <b>NOTE: application shall never call this method directly. Only
+     * the module that implements the RTP binding shall use this method</b>
+     *
      * @param zrtpContext
      *    Pointer to the opaque ZrtpContext structure.
      */
@@ -507,7 +675,7 @@ extern "C"
      *    at least 12 bytes (96 bit) (ZRTP Identifier, see chap. 4.9)
      * @return
      *    Number of bytes copied into the data buffer - must be equivalent
-     *    to 96 bit, usually 12 bytes.
+     *    to 12 bytes.
      */
     int32_t zrtp_getZid(ZrtpContext* zrtpContext, uint8_t* data);
 

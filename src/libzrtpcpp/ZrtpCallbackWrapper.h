@@ -29,7 +29,7 @@
 class ZrtpCallbackWrapper : public ZrtpCallback
 {
 public:
-    ZrtpCallbackWrapper(C_Callbacks* cb);
+    ZrtpCallbackWrapper(zrtp_Callbacks* cb, ZrtpContext* ctx);
     /*
     * The following methods implement the GNU ZRTP callback interface.
     * For detailed documentation refer to file ZrtpCallback.h
@@ -68,7 +68,8 @@ public:
 
 private:
     void init();
-    C_Callbacks *c_callbacks;
+    zrtp_Callbacks *c_callbacks;
+    ZrtpContext* zrtpCtx;
 
 };
 

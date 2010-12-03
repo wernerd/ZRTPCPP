@@ -97,7 +97,7 @@ ZrtpQueue::initialize(const char *zidFilename, bool autoEnable,
             char *home = getenv("HOME");
             std::string baseDir = (home != NULL) ? (std::string(home) + std::string("/."))
                                                     : std::string(".");
-            fname = baseDir + std::string("GNUccRTP.zid");
+            fname = baseDir + std::string("GNUZRTP.zid");
             zidFilename = fname.c_str();
         }
         if (zf->open((char *)zidFilename) < 0) {
@@ -166,7 +166,7 @@ ZrtpQueue::takeInDataPacket(void)
     // We assume all other packets are ZRTP packets here. Process
     // if ZRTP processing is enabled. Because valid RTP packets are
     // already handled we delete any packets here after processing.
-    if (enableZrtp) {
+    if (enableZrtp && zrtpEngine != NULL) {
         // Get CRC value into crc (see above how to compute the offset)
         uint16_t temp = rtn - CRC_SIZE;
         uint32_t crc = *(uint32_t*)(buffer + temp);
