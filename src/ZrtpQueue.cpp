@@ -151,16 +151,7 @@ ZrtpQueue::takeInDataPacket(void)
     IncomingZRTPPkt* packet = NULL;
     // check if this could be a real RTP/SRTP packet.
     if ((*buffer & 0xf0) != 0x10) {
-
-        //  Could be real RTP, build a packet.
-        IncomingRTPPkt* pkt = new IncomingRTPPkt(buffer,rtn);
-
-        // Generic header validity check. If valid perform standard RTP handling
-        if (pkt->isHeaderValid()) {
-            return (rtpDataPacket(pkt, rtn, network_address, transport_port));
-        }
-        delete pkt;
-        return 0;
+        return (rtpDataPacket(buffer, rtn, network_address, transport_port));
     }
 
     // We assume all other packets are ZRTP packets here. Process
@@ -208,10 +199,29 @@ ZrtpQueue::takeInDataPacket(void)
 }
 
 size_t
-ZrtpQueue::rtpDataPacket(IncomingRTPPkt* packet, int32 rtn, 
+ZrtpQueue::rtpDataPacket(unsigned char* buffer, int32 rtn, 
                          InetHostAddress network_address, 
                          tpport_t transport_port)
 {
+     // Special handling of padding to take care of encrypted content.
+    // In case of SRTP the padding length field is also encrypted, thus
+    // it gives a wrong length. Check and clear padding bit before
+    // creating the RTPPacket. Will be set and re-computed after a possible
+    // SRTP decryption.
+    uint8 padSet = (*buffer & 0x20);
+    if (padSet) {
+        *buffer = *buffer & ~0x20;          // clear padding bit
+    }    
+    //  build a packet. It will link itself to its source
+    IncomingRTPPkt* packet =
+        new IncomingRTPPkt(buffer,rtn);
+
+    // Generic header validity check.
+    if ( !packet->isHeaderValid() ) {
+        delete packet;
+        return 0;
+    }
+
     // Look for a CryptoContext for this packet's SSRC
     CryptoContext* pcc = getInQueueCryptoContext(packet->getSSRC());
 
@@ -250,7 +260,9 @@ ZrtpQueue::rtpDataPacket(IncomingRTPPkt* packet, int32 rtn,
         delete packet;
         return 0;
     }
-
+    if (padSet) {
+        packet->reComputePayLength(true);
+    }
     // get time of arrival
     struct timeval recvtime;
     gettimeofday(&recvtime,NULL);

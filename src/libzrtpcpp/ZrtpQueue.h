@@ -720,7 +720,7 @@ namespace ost {
 
     private:
         void init();
-        size_t rtpDataPacket(IncomingRTPPkt* packet, int32 rtn, 
+        size_t rtpDataPacket(unsigned char* packet, int32 rtn, 
                              InetHostAddress network_address, 
                              tpport_t transport_port);
 
