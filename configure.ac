@@ -8,7 +8,7 @@
 # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-AC_INIT(src/ZRtp.cxx)
+AC_INIT(src/ZRtp.cpp)
 
 # LT_VERSION actually is meant to be in the form ABI-LINK_VER:ABI_PATCH_VER. 
 # This eventaully goes into libtool as "version-info" (via LT_CCXX_VERSION in
