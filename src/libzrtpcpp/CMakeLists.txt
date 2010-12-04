@@ -7,7 +7,7 @@ set(src_distribute
     ZRtp.h ZrtpPacketConfirm.h ZrtpPacketHelloAck.h ZrtpPacketError.h
     ZrtpPacketErrorAck.h ZrtpPacketPingAck.h ZrtpPacketPing.h ZrtpUserCallback.h
     ZrtpQueue.h ZrtpCallback.h zrtpccrtp.h TimeoutProvider.h ZrtpCWrapper.h
-    ZrtpCallbackWrapper)
+    ZrtpCallbackWrapper.h)
 
 if(enable_ccrtp)
   set(ccrtp_inst ZrtpQueue.h zrtpccrtp.h TimeoutProvider.h)
