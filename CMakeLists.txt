@@ -11,7 +11,7 @@
 cmake_minimum_required(VERSION 2.6)
 
 PROJECT(libzrtpcpp)
-set (VERSION 1.5.2)
+set (VERSION 1.5.3)
 set (SOVERSION 1.5)
 
 # set to true for debug and trace during CMakeLists development
