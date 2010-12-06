@@ -45,6 +45,7 @@
 #include <openssl/evp.h>
 
 #include <libzrtpcpp/crypto/ZrtpDH.h>
+#include <libzrtpcpp/ZrtpTextData.h>
 
 extern void initializeOpenSSL();
 
@@ -174,10 +175,23 @@ static const uint8_t P4096[] =
 	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
     };
     *************** */
-
-ZrtpDH::ZrtpDH(SupportedPubKeys type): pkType(type) {
+#define DH3K 1
+#define DH2K 0
+ZrtpDH::ZrtpDH(const char* type){
 
     uint8_t random[64];
+
+    // Well - the algo type is only 4 char thus cast to int32 and compare
+    if (*(int32_t*)type == *(int32_t*)dh2k) {
+        pkType = DH2K;
+    }
+    else if (*(int32_t*)type == *(int32_t*)dh3k) {
+        pkType = DH3K;
+    }
+    else {
+        fprintf(stderr, "Unknown pubkey algo: %d\n", pkType);
+        exit(1);
+    }
 
     initializeOpenSSL();
 
@@ -203,12 +217,12 @@ ZrtpDH::ZrtpDH(SupportedPubKeys type): pkType(type) {
 
     tmpCtx->g = BN_new();
     BN_set_word(tmpCtx->g, DH_GENERATOR_2);
-    if (pkType == Dh2048) {
+    if (pkType == DH2K) {
         tmpCtx->p = BN_dup(bnP2048);
 	RAND_bytes(random, 32);
         tmpCtx->priv_key = BN_bin2bn(random, 32, NULL);
     }
-    else if (pkType == Dh3072) {
+    else if (pkType == DH3K) {
         tmpCtx->p = BN_dup(bnP3072);
 	RAND_bytes(random, 32);
         tmpCtx->priv_key = BN_bin2bn(random, 32, NULL);
@@ -270,11 +284,11 @@ int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
 {
     BIGNUM* pubKeyOther = BN_bin2bn(pubKeyBytes, getDhSize(), NULL);
 
-    if (pkType == Dh2048) {
+    if (pkType == DH2K) {
         if (BN_cmp(bnP2048MinusOne, pubKeyOther) == 0)
             return 0;
     }
-    else if (pkType == Dh3072) {
+    else if (pkType == DH3K) {
         if (BN_cmp(bnP3072MinusOne, pubKeyOther) == 0)
             return 0;
     }
@@ -288,6 +302,19 @@ int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
 
     BN_free(pubKeyOther);
     return 1;
+}
+
+const char* ZrtpDH::getDHtype()
+{
+    switch (pkType) {
+	case DH2K:
+	    return dh2k;
+	    break;
+	case DH3K:
+	    return dh3k;
+	    break;
+    }
+    return NULL;
 }
 
 /** EMACS **
