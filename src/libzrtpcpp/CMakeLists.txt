@@ -13,7 +13,9 @@ if(enable_ccrtp)
   set(ccrtp_inst ZrtpQueue.h zrtpccrtp.h TimeoutProvider.h)
 endif()
 
-install(FILES ZrtpCodes.h ZrtpConfigure.h ZrtpUserCallback.h ZrtpCallback.h ZrtpCWrapper.h ${ccrtp_inst} DESTINATION include/libzrtpcpp)
+install(FILES 
+    ZrtpCodes.h ZrtpConfigure.h ZrtpUserCallback.h ZrtpCallback.h ZrtpCWrapper.h 
+    ZrtpConfigWrapper.h ${ccrtp_inst} DESTINATION include/libzrtpcpp)
 
 include(SourceDistribution)
 src_distribution_init()

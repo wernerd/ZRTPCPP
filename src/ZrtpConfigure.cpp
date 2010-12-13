@@ -2,11 +2,15 @@
 #include <libzrtpcpp/ZrtpTextData.h>
 
 AlgorithmEnum::AlgorithmEnum(const int type, const char* name):
-    algoType(type), algoName(name) {
+    algoType(type) , algoName(name) {
+}
+
+AlgorithmEnum::~AlgorithmEnum()
+{
 }
 
 const char* AlgorithmEnum::getName() {
-    return algoName; 
+    return algoName.c_str(); 
 }
 
 int AlgorithmEnum::getAlgoType() { 
@@ -14,16 +18,20 @@ int AlgorithmEnum::getAlgoType() {
 }
 
 bool AlgorithmEnum::isValid() {
-    return (algoName != NULL); 
+    return (!algoName.empty()); 
 }
 
-static AlgorithmEnum invalidAlgo(0, NULL);
+static AlgorithmEnum invalidAlgo(0, "");
 
 
 EnumBase::EnumBase(AlgoTypes a) : algoType(a) {
 }
 
+EnumBase::~EnumBase() {}
+
 void EnumBase::insert(const char* name) {
+    if (!name)
+        return;
     AlgorithmEnum* e = new AlgorithmEnum(algoType, name);
     algos.push_back(e);
 }
@@ -96,6 +104,8 @@ HashEnum::HashEnum() : EnumBase(HashAlgorithm) {
     insert(s384);
 }
 
+HashEnum::~HashEnum() {}
+
 /**
  * Set up the enumeration list for available symmetric cipher algorithms
  */
@@ -103,6 +113,8 @@ SymCipherEnum::SymCipherEnum() : EnumBase(CipherAlgorithm) {
     insert(aes3);
     insert(aes1);
 }
+
+SymCipherEnum::~SymCipherEnum() {}
 
 /**
  * Set up the enumeration list for available public key algorithms
@@ -113,12 +125,16 @@ PubKeyEnum::PubKeyEnum() : EnumBase(PubKeyAlgorithm) {
     insert(mult);
 }
 
+PubKeyEnum::~PubKeyEnum() {}
+
 /**
  * Set up the enumeration list for available SAS algorithms
  */
 SasTypeEnum::SasTypeEnum() : EnumBase(SasType) {
     insert(b32);
 }
+
+SasTypeEnum::~SasTypeEnum() {}
 
 /**
  * Set up the enumeration list for available SRTP authnticaion lengths
@@ -127,6 +143,8 @@ AuthLengthEnum::AuthLengthEnum() : EnumBase(AuthLength) {
     insert(hs32);
     insert(hs80);
 }
+
+AuthLengthEnum::~AuthLengthEnum() {}
 
 /*
  * Here the global accessible enumerations for all implemented algorithms.
@@ -247,9 +265,12 @@ AlgorithmEnum& ZrtpConfigure::getAlgoAt(std::vector<AlgorithmEnum* >& a, int32_t
 int32_t ZrtpConfigure::addAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo) {
     int size = (int)a.size();
     if (size >= maxNoOfAlgos)
-        return 0;
+        return -1;
 
-    if (!algo.isValid() || containsAlgo(a, algo))
+    if (!algo.isValid())
+        return -1;
+
+    if (containsAlgo(a, algo))
         return (maxNoOfAlgos - size);
 
     a.push_back(&algo);
@@ -258,14 +279,12 @@ int32_t ZrtpConfigure::addAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& a
 
 int32_t ZrtpConfigure::addAlgoAt(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo, int32_t index) {
     if (index >= maxNoOfAlgos)
-        return 0;
+        return -1;
 
     int size = (int)a.size();
-    if (size >= maxNoOfAlgos)
-        return 0;
 
-    if (!algo.isValid() || containsAlgo(a, algo))
-        return (maxNoOfAlgos - size);
+    if (!algo.isValid())
+        return -1;
 
 //    a[index] = &algo;
 
@@ -382,6 +401,7 @@ bool ZrtpConfigure::isSasSignature() {
 ZrtpConfigure config;
 
 main() {
+    printf("Start\n");
     printf("size: %d\n", zrtpHashes.getSize());
     AlgorithmEnum e = zrtpHashes.getByName("S256");
     printf("algo name: %s\n", e.getName());
@@ -403,6 +423,13 @@ main() {
     printf("free slots: %d (expected 6)\n", config.removeAlgo(HashAlgorithm, e2));
     e2 = config.getAlgoAt(HashAlgorithm, 0);
     printf("algo name: %s (expected SHA256)\n", e2.getName());
+    
+    printf("clearing config\n");
+    config.clear();
+    printf("size: %d\n", zrtpHashes.getSize());
+    e = zrtpHashes.getByName("S256");
+    printf("algo name: %s\n", e.getName());
+    printf("algo type: %d\n", e.getAlgoType());
 
 }
 

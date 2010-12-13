@@ -23,7 +23,7 @@
 #include <stdint.h>
 
 /**
- * This enum defines which role a ZRTP peer has.
+ * Defines to specify the role a ZRTP peer has.
  *
  * According to the ZRTP specification the role determines which keys to
  * use to encrypt or decrypt SRTP data.
@@ -224,11 +224,14 @@ extern "C"
 
     typedef struct ZRtp ZRtp;
     typedef struct ZrtpCallbackWrapper ZrtpCallbackWrapper;
+    typedef struct ZrtpConfigure ZrtpConfigure;
+
 
     typedef struct zrtpContext
     {
         ZRtp* zrtpEngine;
         ZrtpCallbackWrapper* zrtpCallback;
+        ZrtpConfigure* configure;
         void* userData;
     } ZrtpContext;
 
@@ -313,7 +316,25 @@ extern "C"
      * Create the GNU ZRTP C wrapper.
      *
      * This wrapper implements the C interface to the C++ based GNU ZRTP.
+     * @returns 
+     *      Pointer to the ZrtpContext
+     */
+    ZrtpContext* zrtp_CreateWrapper();
+
+    /**
+     * Initialize the ZRTP protocol engine.
      *
+     * This method initialized the GNU ZRTP protocol engine. An application
+     * call this method to actually create the ZRTP protocol engine and
+     * initialize its configuration data. This method does not start the
+     * protocol engine.
+     *
+     * If an application requires a specific algorithm configuration then it
+     * must set the algorithm configuration data before it initializes the
+     * ZRTP protocol engine.
+     *
+     * @param zrtpContext
+     *    Pointer to the opaque ZrtpContext structure.
      * @param cb
      *     The callback structure that holds the addresses of the callback
      *     methods.
@@ -330,13 +351,20 @@ extern "C"
      *     A pointer to user data. The wrapper just stores this pointer in
      *     the ZrtpContext and the application may use it for its purposes.
      * @returns 
-    *      Pointer to the ZrtpContext
+     *      Pointer to the ZrtpContext
+     *
+     * @see zrtp_InitializeConfig
      */
-    ZrtpContext* zrtp_CreateWrapper (zrtp_Callbacks *cb, char* id,
-                                     void* config, const char* zidFilename,
-                                     void* userData );
+    void zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext, 
+                                   zrtp_Callbacks *cb, 
+                                   char* id, 
+                                   const char* zidFilename, 
+                                   void* userData);
 
-    void zrtp_DestroyWrapper (ZrtpContext* zrtpContext );
+    /**
+     * Destroy the ZRTP wrapper and its underlying objects.
+     */
+    void zrtp_DestroyWrapper (ZrtpContext* zrtpContext);
 
     /**
      * Computes the ZRTP checksum over a received ZRTP packet buffer and 
@@ -733,6 +761,268 @@ extern "C"
      *    to 12 bytes.
      */
     int32_t zrtp_getZid(ZrtpContext* zrtpContext, uint8_t* data);
+
+    
+    /**
+     * This enumerations list all configurable algorithm types.
+     */
+
+    /* Keep in synch with enumeration in ZrtpConfigure.h */
+
+    typedef enum zrtp_AlgoTypes {
+        zrtp_HashAlgorithm = 1, zrtp_CipherAlgorithm, zrtp_PubKeyAlgorithm, zrtp_SasType, zrtp_AuthLength
+    } Zrtp_AlgoTypes;
+
+    /**
+     * Initialize the GNU ZRTP Configure data.
+     *
+     * Initializing and setting a ZRTP configuration is optional. GNU ZRTP
+     * uses a sensible default if an application does not define its own
+     * ZRTP configuration.
+     *
+     * If an application initialize th configure data it must set the
+     * configuration data.
+     *
+     * The ZRTP specification, chapters 5.1.2 through 5.1.6 defines the 
+     * algorithm names and their meaning.
+     *
+     * The current ZRTP implementation implements all mandatory algorithms 
+     * plus a set of the optional algorithms. An application shall use 
+     * @c zrtp_getAlgorithmNames to get the names of the available algorithms.
+     *
+     * @param userData
+     *     A pointer to user data. The wrapper just stores this pointer in
+     *     the ZrtpContext and the application may use it for its purposes.
+     * @returns 
+     *      Pointer to the ZrtpConfCtx
+     *
+     * @see zrtp_getAlgorithmNames
+     */
+    int32_t zrtp_InitializeConfig (ZrtpContext* zrtpContext);
+
+    /**
+     * Get names of all available algorithmes of a given algorithm type.
+     *
+     * The algorithm names are as specified in the ZRTP specification, chapters
+     * 5.1.2 through 5.1.6 . 
+     * 
+     * @param zrtpContext
+     *    Pointer to the opaque ZrtpContext structure.
+     * @param
+     *    The algorithm type.
+     * @returns
+     *    A NULL terminated array of character pointers.
+     */
+    char** zrtp_getAlgorithmNames(ZrtpContext* zrtpContext, Zrtp_AlgoTypes type);
+    
+    /**
+     * Free storage used to store the algorithm names.
+     *
+     * If an application does not longer require the algoritm names it should
+     * free the space.
+     *
+     * @param
+     *    The NULL terminated array of character pointers.
+     */
+    void zrtp_freeAlgorithmNames(char** names);
+
+        /**
+     * Convenience function that sets a pre-defined standard configuration.
+     *
+     * The standard configuration consists of the following algorithms:
+     * <ul>
+     * <li> Hash: SHA256 </li>
+     * <li> Symmetric Cipher: AES 128, AES 256 </li>
+     * <li> Public Key Algorithm: DH2048, DH3027, MultiStream </li>
+     * <li> SAS type: libase 32 </li>
+     * <li> SRTP Authentication lengths: 32, 80 </li>
+     *</ul>
+     *
+     * @param zrtpContext
+     *    Pointer to the opaque ZrtpContext structure.
+     */
+    void zrtp_setStandardConfig(ZrtpContext* zrtpContext);
+
+    /**
+     * Convenience function that sets the mandatory algorithms only.
+     *
+     * Mandatory algorithms are:
+     * <ul>
+     * <li> Hash: SHA256 </li>
+     * <li> Symmetric Cipher: AES 128 </li>
+     * <li> Public Key Algorithm: DH3027, MultiStream </li>
+     * <li> SAS type: libase 32 </li>
+     * <li> SRTP Authentication lengths: 32, 80 </li>
+     *</ul>
+     *
+     * @param zrtpContext
+     *    Pointer to the opaque ZrtpContext structure.
+     */
+    void zrtp_setMandatoryOnly(ZrtpContext* zrtpContext);
+
+    /**
+     * Clear all configuration data.
+     *
+     * The functions clears all configuration data.
+     *
+     * @param zrtpContext
+     *    Pointer to the opaque ZrtpContext structure.
+     */
+    void zrtp_confClear(ZrtpContext* zrtpContext);
+
+    /**
+     * Add an algorithm to configuration data.
+     *
+     * Adds the specified algorithm to the configuration data.
+     * If no free configuration data slot is available the
+     * function does not add the algorithm and returns -1. The
+     * methods appends the algorithm to the existing algorithms.
+     *
+     * @param zrtpContext
+     *    Pointer to the opaque ZrtpContext structure.
+     * @param algoType
+     *    Specifies which algorithm type to select
+     * @param algo
+     *    The name of the algorithm to add.
+     * @return
+     *    Number of free configuration data slots or -1 on error
+     */
+    int32_t zrtp_addAlgo(ZrtpContext* zrtpContext, Zrtp_AlgoTypes algoType, const char* algo);
+    
+    /**
+     * Add an algorithm to configuration data at given index
+     *
+     * Adds the specified algorithm to the configuration data vector
+     * at a given index. If the index is larger than the actual size
+     * of the configuration vector the method just appends the algorithm.
+     *
+     * @param zrtpContext
+     *    Pointer to the opaque ZrtpContext structure.
+     * @param algoType
+     *    Specifies which algorithm type to select
+     * @param algo
+     *    The name of the algorithm to add.
+     * @param index
+     *    The index where to add the algorihm
+     * @return
+     *    Number of free configuration data slots or -1 on error
+     */
+    int32_t zrtp_addAlgoAt(ZrtpContext* zrtpContext, Zrtp_AlgoTypes algoType, const char* algo, int32_t index);
+
+    /**
+     * Remove a algorithm from configuration data.
+     *
+     * Removes the specified algorithm from configuration data. If
+     * the algorithm was not configured previously the function does
+     * not modify the configuration data and returns the number of
+     * free configuration data slots.
+     *
+     * If an application removes all algorithms then ZRTP does not
+     * include any algorithm into the hello message and falls back
+     * to a predefined mandatory algorithm.
+     *
+     * @param zrtpContext
+     *    Pointer to the opaque ZrtpContext structure.
+     * @param algoType
+     *    Specifies which algorithm type to select
+     * @param algo
+     *    The name of the algorithm to remove.
+     * @return
+     *    Number of free configuration slots.
+     */
+    int32_t zrtp_removeAlgo(ZrtpContext* zrtpContext, Zrtp_AlgoTypes algoType, const char* algo);
+
+    /**
+     * Returns the number of configured algorithms.
+     *
+     * @param zrtpContext
+     *    Pointer to the opaque ZrtpContext structure.
+     * @param algoType
+     *    Specifies which algorithm type to select
+     * @return
+     *    The number of configured algorithms (used configuration 
+     *    data slots)
+     */
+    int32_t zrtp_getNumConfiguredAlgos(ZrtpContext* zrtpContext, Zrtp_AlgoTypes algoType);
+
+    /**
+     * Returns the identifier of the algorithm at index.
+     *
+     * @param zrtpContext
+     *    Pointer to the opaque ZrtpContext structure.
+     * @param algoType
+     *    Specifies which algorithm type to select
+     * @param index
+     *    The index in the list of the algorihm type
+     * @return
+     *    A pointer to the algorithm name. If the index 
+     *    does not point to a configured slot then the function
+     *    returns NULL.
+     *
+     */
+    const char* zrtp_getAlgoAt(ZrtpContext* zrtpContext, Zrtp_AlgoTypes algoType, int32_t index);
+
+    /**
+     * Checks if the configuration data of the algorihm type already contains
+     * a specific algorithms.
+     *
+     * @param zrtpContext
+     *    Pointer to the opaque ZrtpContext structure.
+     * @param algoType
+     *    Specifies which algorithm type to select
+     * @param algo
+     *    The name of the algorithm to check
+     * @return
+     *    True if the algorithm was found, false otherwise.
+     *
+     */
+    int32_t zrtp_containsAlgo(ZrtpContext* zrtpContext, Zrtp_AlgoTypes algoType, const char*  algo);
+
+    /**
+     * Enables or disables trusted MitM processing.
+     *
+     * For further details of trusted MitM processing refer to ZRTP
+     * specification, chapter 7.3
+     * 
+     * @param zrtpContext
+     *    Pointer to the opaque ZrtpContext structure.
+     * @param yesNo
+     *    If set to true then trusted MitM processing is enabled.
+     */
+    void zrtp_setTrustedMitM(ZrtpContext* zrtpContext, int32_t yesNo);
+    
+    /**
+     * Check status of trusted MitM processing.
+     * 
+     * @param zrtpContext
+     *    Pointer to the opaque ZrtpContext structure.
+     * @return
+     *    Returns true if trusted MitM processing is enabled.
+     */
+    int32_t zrtp_isTrustedMitM(ZrtpContext* zrtpContext);
+    
+    /**
+     * Enables or disables SAS signature processing.
+     * 
+     * For further details of trusted MitM processing refer to ZRTP
+     * specification, chapter 7.2
+     *
+     * @param zrtpContext
+     *    Pointer to the opaque ZrtpContext structure.
+     * @param yesNo
+     *    If true then certificate processing is enabled.
+     */
+    void zrtp_setSasSignature(ZrtpContext* zrtpContext, int32_t yesNo);
+    
+    /**
+     * Check status of SAS signature processing.
+     * 
+     * @param zrtpContext
+     *    Pointer to the opaque ZrtpContext structure.
+     * @return
+     *    Returns true if certificate processing is enabled.
+     */
+    int32_t zrtp_isSasSignature(ZrtpContext* zrtpContext);
 
 #ifdef __cplusplus
 }

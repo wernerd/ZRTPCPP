@@ -1,3 +1,13 @@
+== GNU ZRTP 1.5.4 ==
+
+The changes in this release affect the ZRTP Configure mechanism only.
+Some housekeeping stuff (desctructors) was added and the C Wrapper
+how support ZRTP configure as well.
+
+Because of some API changes (added destructors) clients must be compiled 
+and linked with the new library.
+
+
 == GNU ZRTP 1.5.2 ==
 
 Quite a lot of enhancements:

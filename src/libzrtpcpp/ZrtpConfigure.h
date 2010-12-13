@@ -48,13 +48,14 @@ enum AlgoTypes {
 class AlgorithmEnum {
 public:
     AlgorithmEnum(const int type, const char* name);
+    ~AlgorithmEnum();
     const char* getName();
     int getAlgoType();
     bool isValid();
 
 private:
     int algoType;
-    const char* algoName;
+    std::string algoName;
 };
 
 /**
@@ -71,6 +72,7 @@ public:
 
 protected:
     EnumBase(AlgoTypes algo);
+    ~EnumBase();
     void insert(const char* name);
 
 private:
@@ -85,26 +87,31 @@ private:
 class HashEnum : public EnumBase {
 public:
     HashEnum();
+    ~HashEnum();
 };
 
 class SymCipherEnum : public EnumBase {
 public:
     SymCipherEnum();
+    ~SymCipherEnum();
 };
 
 class PubKeyEnum : public EnumBase {
 public:
     PubKeyEnum();
+    ~PubKeyEnum();
 };
 
 class SasTypeEnum : public EnumBase {
 public:
     SasTypeEnum();
+    ~SasTypeEnum();
 };
 
 class AuthLengthEnum : public EnumBase {
 public:
     AuthLengthEnum();
+    ~AuthLengthEnum();
 };
 
 extern HashEnum zrtpHashes;
@@ -176,11 +183,11 @@ public:
     void clear();
 
     /**
-     * Add a hash algorithm to configuration data.
+     * Add an algorithm to configuration data.
      *
      * Adds the specified algorithm to the configuration data.
      * If no free configuration data slot is available the
-     * function does not add the algorithm and return zero. The
+     * function does not add the algorithm and returns -1. The
      * methods appends the algorithm to the existing algorithms.
      *
      * @param algoType
@@ -188,16 +195,16 @@ public:
      * @param algo
      *    The enumeration of the algorithm to add.
      * @return
-     *    Number of free configuration data slots.
+     *    Number of free configuration data slots or -1 on error
      */
     int32_t addAlgo(AlgoTypes algoType, AlgorithmEnum& algo);
 
     /**
-     * Add a algorithm to configuration data.
+     * Add an algorithm to configuration data at given index.
      *
-     * Adds the specified algorithm to the configuration data.
-     * If no free configuration data slot is available the
-     * function does not add the algorithm and return zero.
+     * Adds the specified algorithm to the configuration data vector
+     * at a given index. If the index is larger than the actual size
+     * of the configuration vector the method just appends the algorithm.
      *
      * @param algoType
      *    Specifies which algorithm type to select
@@ -206,7 +213,7 @@ public:
      * @param index
      *    The index where to add the algorihm
      * @return
-     *    Number of free configuration data slots.
+     *    Number of free configuration data slots or -1 on error
      */
     int32_t addAlgoAt(AlgoTypes algoType, AlgorithmEnum& algo, int32_t index);
 

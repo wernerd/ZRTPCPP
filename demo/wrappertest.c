@@ -142,8 +142,10 @@ int main(int argc, char *argv[])
 {
     ZrtpContext* zrtpCtx;
     char* hh;
+    char** names;
     
-    zrtpCtx = zrtp_CreateWrapper (&c_callbacks, "test", (void*)0, "test.zid", NULL);
+    zrtpCtx = zrtp_CreateWrapper ();
+    zrtp_initializeZrtpEngine(zrtpCtx, &c_callbacks, "test", "test.zid", NULL);
     
     hh = zrtp_getHelloHash(zrtpCtx);
     if (hh != 0) 
@@ -153,6 +155,13 @@ int main(int argc, char *argv[])
     else
         printf("no hh");
 
+    zrtp_InitializeConfig(zrtpCtx);
+    names = zrtp_getAlgorithmNames(zrtpCtx, zrtp_HashAlgorithm);
+    
+    for (; *names; names++) {
+        printf("name: %s\n", *names);
+    }
+    
     return 0;
 }
 #ifdef __cplusplus
