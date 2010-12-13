@@ -32,6 +32,7 @@ static int32_t zrtp_initZidFile(const char* zidFilename);
 ZrtpContext* zrtp_CreateWrapper() 
 {
     ZrtpContext* zc = new ZrtpContext;
+    zc->configure = 0;
 
     return zc;
 }
