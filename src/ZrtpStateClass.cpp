@@ -485,7 +485,6 @@ void ZrtpStateClass::evAckSent(void) {
 void ZrtpStateClass::evAckDetected(void) {
 
     DEBUGOUT((cout << "Checking for match in AckDetected.\n"));
-    cout << "Checking for match in AckDetected.\n";
 
     char *msg, first, last;
     uint8_t *pkt;
