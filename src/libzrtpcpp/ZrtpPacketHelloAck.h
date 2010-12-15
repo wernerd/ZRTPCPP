@@ -18,14 +18,21 @@
 #ifndef _ZRTPPACKETHELLOACK_H_
 #define _ZRTPPACKETHELLOACK_H_
 
+/**
+ * @file ZrtpPacketHelloAck.h
+ * @brief The ZRTP HelloAck message
+ *  
+ * @ingroup GNU_ZRTP
+ * @{
+ */
+
 #include <libzrtpcpp/ZrtpPacketBase.h>
 
 /**
  * Implement the HelloAck packet.
  *
  * The ZRTP simple message HelloAck. The implementation sends this
- * after receiving a Hello packet. Sending a HelloAck is optional, a
- * Commit can be sent instead.
+ * after receiving a Hello packet.
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
@@ -33,13 +40,20 @@
 class ZrtpPacketHelloAck : public ZrtpPacketBase {
 
  public:
-    ZrtpPacketHelloAck();		/* Creates a HelloAck packet with default data */
-    ZrtpPacketHelloAck(uint8_t* data);	/* Creates a HelloAck packet from received data */
+    /// Creates a HelloAck packet with default data
+    ZrtpPacketHelloAck();
+
+    /// Creates a HelloAck packet from received data
+    ZrtpPacketHelloAck(uint8_t* data);
+    
     virtual ~ZrtpPacketHelloAck();
 
  private:
      HelloAckPacket_t data;
 };
 
+/**
+ * @}
+ */
 #endif // ZRTPPACKETHELLOACK
 

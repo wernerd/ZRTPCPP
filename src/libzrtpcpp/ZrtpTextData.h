@@ -22,6 +22,14 @@
 #ifndef _ZRTPTEXTDATA_H_
 #define _ZRTPTEXTDATA_H_
 
+/**
+ * @file ZrtpTextData.h
+ * @brief The ZRTP ASCII texts - extern references
+ *  
+ * @ingroup GNU_ZRTP
+ * @{
+ */
+
 #include <libzrtpcpp/ZrtpConfigure.h>
 
 /**
@@ -97,5 +105,9 @@ extern char hs32[];
 extern char hs80[];
 extern const char* mandatoryAuthLen_1;
 extern const char* mandatoryAuthLen_2;
+
+/**
+ * @}
+ */
 #endif     // _ZRTPTEXTDATA_H_
 

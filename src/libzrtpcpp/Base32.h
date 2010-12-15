@@ -1,7 +1,7 @@
 #ifndef BASE32_H
 #define BASE32_H
 
-/**
+/*
  *
  * Copyright (c) 2002 Bryce "Zooko" Wilcox-O'Hearn Permission is hereby
  * granted, free of charge, to any person obtaining a copy of this software to
@@ -23,6 +23,17 @@
  *
  * Converted to C++ by:
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
+ */
+
+/**
+ * @file Base32.h
+ * @brief C++ implmentation of the Base32 encoding and decoding
+ * 
+ * ZRTP uses the base 32 encoding and decoding to generate the Short 
+ * Authentication String (SAS).
+ * 
+ * @ingroup GNU_ZRTP
+ * @{
  */
 
 #include <iostream>
@@ -210,4 +221,8 @@ class Base32 {
 
     unsigned char smallBuffer[128];
 };
+
+/**
+ * @}
+ */
 #endif

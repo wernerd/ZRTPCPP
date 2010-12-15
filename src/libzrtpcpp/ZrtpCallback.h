@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006-2008 Werner Dittmann
+  Copyright (C) 2006-2010 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,6 +17,13 @@
 
 #ifndef _ZRTPCALLBACK_H_
 #define _ZRTPCALLBACK_H_
+
+/**
+ * @file ZrtpCallback.h
+ * @brief Callback interface between ZRTP and the RTP stack implementation
+ * @ingroup GNU_ZRTP
+ * @{
+ */
 
 #include <string>
 #include <stdint.h>
@@ -38,8 +45,8 @@
  * </ul>
  */
 typedef enum  {
-    Responder = 1,
-    Initiator
+    Responder = 1,  ///< This client is in ZRTP Responder mode
+    Initiator       ///< This client is in ZRTP Initiator mode
 } Role;
 
 /**
@@ -52,22 +59,22 @@ typedef enum  {
  * of ZRtp clears the data.
  */
 typedef struct srtpSecrets {
-    const uint8_t* keyInitiator;
-    int32_t initKeyLen;
-    const uint8_t* saltInitiator;
-    int32_t initSaltLen;
-    const uint8_t* keyResponder;
-    int32_t respKeyLen;
-    const uint8_t* saltResponder;
-    int32_t respSaltLen;
-    int32_t srtpAuthTagLen;
-    std::string sas;
-    Role  role;
+    const uint8_t* keyInitiator;        ///< Initiator's key
+    int32_t initKeyLen;                 ///< Initiator's key length
+    const uint8_t* saltInitiator;       ///< Initiator's salt
+    int32_t initSaltLen;                ///< Initiator's salt length
+    const uint8_t* keyResponder;        ///< Responder's key
+    int32_t respKeyLen;                 ///< Responder's key length
+    const uint8_t* saltResponder;       ///< Responder's salt
+    int32_t respSaltLen;                ///< Responder's salt length
+    int32_t srtpAuthTagLen;             ///< SRTP authentication length
+    std::string sas;                    ///< The SAS string
+    Role  role;                         ///< ZRTP role of this client
 } SrtpSecret_t;
 
 enum EnableSecurity {
-    ForReceiver = 1,
-    ForSender   = 2
+    ForReceiver = 1,        ///< Enable security for SRTP receiver
+    ForSender   = 2         ///< Enable security for SRTP sender
 };
 
 /**
@@ -91,6 +98,7 @@ protected:
     friend class ZRtp;
 
     virtual ~ZrtpCallback() {};
+    
     /**
      * Send a ZRTP packet via RTP.
      *
@@ -323,6 +331,9 @@ protected:
 
 #endif // ZRTPCALLBACK
 
+/**
+ * @}
+ */
 /** EMACS **
  * Local variables:
  * mode: c++

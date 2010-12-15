@@ -18,6 +18,15 @@
 #ifndef _ZRTPPACKETGOCLEAR_H_
 #define _ZRTPPACKETGOCLEAR_H_
 
+/**
+ * @file ZrtpPacketGoClear.h
+ * @brief The ZRTP GoClear message
+ *  
+ * GNU ZRTP does not implement GoClear feature
+ * @ingroup GNU_ZRTP
+ * @{
+ */
+
 #include <libzrtpcpp/ZrtpPacketBase.h>
 
 /**
@@ -35,18 +44,29 @@ class ZrtpPacketGoClear : public ZrtpPacketBase {
     GoClear_t* clearHeader;
 
  public:
-    ZrtpPacketGoClear();		/* Creates a GoCLear packet with default data */
-    ZrtpPacketGoClear(uint8_t* data);	/* Creates a GoClear packet from received data */
+    /// Creates a GoCLear packet with default data
+    ZrtpPacketGoClear();
+
+    /// Creates a GoClear packet from received data
+    ZrtpPacketGoClear(uint8_t* data);
+    
     virtual ~ZrtpPacketGoClear();
 
+    /// Not used
     const uint8_t* getClearHmac() { return clearHeader->clearHmac; };
 
+    /// Not used
     void setClearHmac(uint8_t *text) { memcpy(clearHeader->clearHmac, text, 32); };
+
+    /// Not used
     void clrClearHmac()              { memset(clearHeader->clearHmac, 0, 32); };
 
  private:
      GoClearPacket_t data;
 };
 
+/**
+ * @}
+ */
 #endif // ZRTPPACKETGOCLEAR
 

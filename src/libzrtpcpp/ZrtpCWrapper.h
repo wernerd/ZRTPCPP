@@ -20,6 +20,21 @@
 #ifndef ZRTPCWRAPPER_H
 #define ZRTPCWRAPPER_H
 
+/**
+ *
+ * @file ZrtpCWrapper.h
+ * @brief The GNU ZRTP C-to-C++ wrapper.
+ *
+ * To avoid any include of C++ header files some structure, defines, and
+ * enumerations are repeated in this file. Refer to the inline comments if
+ * you modify the file.
+ *
+ * @ingroup GNU_ZRTP
+ * @{
+ *
+ * @see ZRtp
+ */
+
 #include <stdint.h>
 
 /**
@@ -40,12 +55,12 @@
 /*
  * Keep the following defines in sync with Role enumeration in ZrtpCallback.h
  */
-#define Responder 1
-#define Initiator 2
+#define Responder 1             /*!< This client is in ZRTP Responder mode */
+#define Initiator 2             /*!< This client is in ZRTP Initiator mode */
 
 #define CRC_SIZE  4             /*!< Size of CRC code of a ZRTP packet */
 #define ZRTP_MAGIC 0x5a525450   /*!< The magic code that identifies a ZRTP packet */
-#define MAX_ZRTP_SIZE 3072
+#define MAX_ZRTP_SIZE 3072      /*!< The biggest ZRTP packet ever possible */
 
 /*
  * IMPORTANT: keep the following enums in synch with ZrtpCodes. We copy them here
@@ -86,10 +101,10 @@
  *
  */
 enum zrtp_MessageSeverity {
-    zrtp_Info = 1,
-    zrtp_Warning,
-    zrtp_Severe,
-    zrtp_ZrtpError
+    zrtp_Info = 1,                      /*!< Just an info message */
+    zrtp_Warning,                       /*!< A Warning message - security can be established */
+    zrtp_Severe,                        /*!< Severe error, security will not be established */
+    zrtp_ZrtpError                      /*!< ZRTP error, security will not be established  */
 };
 
 /**
@@ -171,20 +186,20 @@ enum zrtp_ZrtpErrorCodes {
 
 /* The ZRTP protocol states */
 enum zrtpStates {
-    Initial,
-    Detect,
-    AckDetected,
-    AckSent,
-    WaitCommit,
-    CommitSent,
-    WaitDHPart2,
-    WaitConfirm1,
-    WaitConfirm2,
-    WaitConfAck,
-    WaitClearAck,
-    SecureState,
-    WaitErrorAck,
-    numberOfStates
+    Initial,            /*!< Initial state after starting the state engine */
+    Detect,             /*!< State sending Hello, try to detect answer message */
+    AckDetected,        /*!< HelloAck received */
+    AckSent,            /*!< HelloAck sent after Hello received */
+    WaitCommit,         /*!< Wait for a Commit message */
+    CommitSent,         /*!< Commit message sent */
+    WaitDHPart2,        /*!< Wait for a DHPart2 message */
+    WaitConfirm1,       /*!< Wait for a Confirm1 message */
+    WaitConfirm2,       /*!< Wait for a confirm2 message */
+    WaitConfAck,        /*!< Wait for Conf2Ack */
+    WaitClearAck,       /*!< Wait for clearAck - not used */
+    SecureState,        /*!< This is the secure state - SRTP active */
+    WaitErrorAck,       /*!< Wait for ErrorAck message */
+    numberOfStates      /*!< Gives total number of protocol states */
 };
 
 /**
@@ -193,29 +208,28 @@ enum zrtpStates {
  * About the role and what the meaning of the role is refer to the
  * of the enum Role. The pointers to the secrets are valid as long as
  * the ZRtp object is active. To use these data after the ZRtp object's
- * lifetime you may copy the data into a save place. The destructor
- * of ZRtp clears the data.
+ * lifetime you may copy the data into a save place.
  */
 typedef struct c_srtpSecrets
 {
-    const uint8_t* keyInitiator;
-    int32_t initKeyLen;
-    const uint8_t* saltInitiator;
-    int32_t initSaltLen;
-    const uint8_t* keyResponder;
-    int32_t respKeyLen;
-    const uint8_t* saltResponder;
-    int32_t respSaltLen;
-    int32_t srtpAuthTagLen;
-    char* sas;
-    int32_t  role;
+    const uint8_t* keyInitiator;        /*!< Initiator's key */
+    int32_t initKeyLen;                 /*!< Initiator's key length */
+    const uint8_t* saltInitiator;       /*!< Initiator's salt */
+    int32_t initSaltLen;                /*!< Initiator's salt length */
+    const uint8_t* keyResponder;        /*!< Responder's key */
+    int32_t respKeyLen;                 /*!< Responder's key length */
+    const uint8_t* saltResponder;       /*!< Responder's salt */
+    int32_t respSaltLen;                /*!< Responder's salt length */
+    int32_t srtpAuthTagLen;             /*!< SRTP authentication length */
+    char* sas;                          /*!< The SAS string */
+    int32_t  role;                      /*!< ZRTP role of this client */
 } C_SrtpSecret_t;
 
 /*
  * Keep the following defines in sync with enum EnableSecurity in ZrtpCallback.h
  */
-#define ForReceiver 1
-#define ForSender   2
+#define ForReceiver 1       /*!< Enable security for SRTP receiver */
+#define ForSender   2       /*!< Enable security for SRTP sender */
 
 #ifdef __cplusplus
 extern "C"
@@ -229,10 +243,10 @@ extern "C"
 
     typedef struct zrtpContext
     {
-        ZRtp* zrtpEngine;
-        ZrtpCallbackWrapper* zrtpCallback;
-        ZrtpConfigure* configure;
-        void* userData;
+        ZRtp* zrtpEngine;                   /*!< Holds the real ZRTP engine */
+        ZrtpCallbackWrapper* zrtpCallback;  /*!< Help class Callback wrapper */
+        ZrtpConfigure* configure;           /*!< Optional configuration data */
+        void* userData;                     /*!< User data, set by application */
     } ZrtpContext;
 
     /**
@@ -249,74 +263,284 @@ extern "C"
     * @author Werner Dittmann <Werner.Dittmann@t-online.de>
     */
 
+    /**
+     * The following methods define the GNU ZRTP callback interface.
+     * For detailed documentation refer to file ZrtpCallback.h, each C
+     * method has "zrtp_" prepended to the C++ name.
+     *
+     * @see ZrtpCallback
+     */
     typedef struct zrtp_Callbacks
     {
-        /*
-        * The following methods define the GNU ZRTP callback interface.
-        * For detailed documentation refer to file ZrtpCallback.h, each C
-        * method has "zrtp_" prepended to the C++ name.
+        /**
+        * Send a ZRTP packet via RTP.
+        *
+        * ZRTP calls this method to send a ZRTP packet via the RTP session.
+        *
+        * @param ctx
+        *    Pointer to the opaque ZrtpContext structure.
+        * @param data
+        *    Points to ZRTP packet to send.
+        * @param length
+        *    The length in bytes of the data
+        * @return
+        *    zero if sending failed, one if packet was send
         */
         int32_t (*zrtp_sendDataZRTP) (ZrtpContext* ctx, const uint8_t* data, int32_t length ) ;
+
+        /**
+        * Activate timer.
+        *
+        * @param ctx
+        *    Pointer to the opaque ZrtpContext structure.
+        * @param time
+        *    The time in ms for the timer
+        * @return
+        *    zero if activation failed, one if timer was activated
+        */
         int32_t (*zrtp_activateTimer) (ZrtpContext* ctx, int32_t time ) ;
+
+        /**
+        * Cancel the active timer.
+        *
+        * @param ctx
+        *    Pointer to the opaque ZrtpContext structure.
+        * @return
+        *    zero if cancel action failed, one if timer was canceled
+        */
         int32_t (*zrtp_cancelTimer)(ZrtpContext* ctx) ;
+
+        /**
+        * Send information messages to the hosting environment.
+        *
+        * The ZRTP implementation uses this method to send information
+        * messages to the host. Along with the message ZRTP provides a
+        * severity indicator that defines: Info, Warning, Error,
+        * Alert. Refer to the <code>MessageSeverity</code> enum above.
+        *
+        * @param ctx
+        *    Pointer to the opaque ZrtpContext structure.
+        * @param severity
+        *     This defines the message's severity
+        * @param subCode
+        *     The subcode identifying the reason.
+        * @see ZrtpCodes#MessageSeverity
+        */
         void (*zrtp_sendInfo) (ZrtpContext* ctx, int32_t severity, int32_t subCode ) ;
+
+        /**
+         * SRTP crypto data ready for the sender or receiver.
+         *
+         * The ZRTP implementation calls this method right after all SRTP
+         * secrets are computed and ready to be used. The parameter points
+         * to a structure that contains pointers to the SRTP secrets and a
+         * <code>enum Role</code>. The called method (the implementation
+         * of this abstract method) must either copy the pointers to the SRTP
+         * data or the SRTP data itself to a save place. The SrtpSecret_t
+         * structure is destroyed after the callback method returns to the
+         * ZRTP implementation.
+         *
+         * The SRTP data themselfs are ontained in the ZRtp object and are
+         * valid as long as the ZRtp object is active. TheZRtp's
+         * destructor clears the secrets. Thus the called method needs to
+         * save the pointers only, ZRtp takes care of the data.
+         *
+         * The implementing class may enable SRTP processing in this
+         * method or delay it to srtpSecertsOn().
+         *
+         * @param ctx
+         *    Pointer to the opaque ZrtpContext structure.
+         * @param secrets A pointer to a SrtpSecret_t structure that
+         *     contains all necessary data.
+         *
+         * @param part for which part (Sender or Receiver) this data is
+         *     valid.
+         *
+         * @return Returns false if something went wrong during
+         *    initialization of SRTP context, for example memory shortage.
+         */
         int32_t (*zrtp_srtpSecretsReady) (ZrtpContext* ctx, C_SrtpSecret_t* secrets, int32_t part ) ;
+
+        /**
+         * Switch off the security for the defined part.
+         *
+         * @param ctx
+         *    Pointer to the opaque ZrtpContext structure.
+         * @param part Defines for which part (sender or receiver) to
+         *    switch on security
+         */
         void (*zrtp_srtpSecretsOff) (ZrtpContext* ctx, int32_t part ) ;
+
+        /**
+         * Switch on the security.
+         *
+         * ZRTP calls this method after it has computed the SAS and check
+         * if it is verified or not. In addition ZRTP provides information
+         * about the cipher algorithm and key length for the SRTP session.
+         *
+         * This method must enable SRTP processing if it was not enabled
+         * during sertSecretsReady().
+         *
+         * @param ctx
+         *    Pointer to the opaque ZrtpContext structure.
+         * @param c The name of the used cipher algorithm and mode, or
+         *    NULL
+         *
+         * @param s The SAS string
+         *
+         * @param verified if <code>verified</code> is true then SAS was
+         *    verified by both parties during a previous call.
+         */
         void (*zrtp_rtpSecretsOn) (ZrtpContext* ctx, char* c, char* s, int32_t verified ) ;
+
+        /**
+         * This method handles GoClear requests.
+         *
+         * According to the ZRTP specification the user must be informed about
+         * a GoClear request because the ZRTP implementation switches off security
+         * if it could authenticate the GoClear packet.
+         *
+         * <b>Note:</b> GoClear is not yet implemented in GNU ZRTP.
+         *
+         * @param ctx
+         *    Pointer to the opaque ZrtpContext structure.
+         */
         void (*zrtp_handleGoClear)(ZrtpContext* ctx) ;
+
+        /**
+         * Handle ZRTP negotiation failed.
+         *
+         * ZRTP calls this method in case ZRTP negotiation failed. The
+         * parameters show the severity as well as the reason.
+         *
+         * @param ctx
+         *    Pointer to the opaque ZrtpContext structure.
+         * @param severity
+         *     This defines the message's severity
+         * @param subCode
+         *     The subcode identifying the reason.
+         * @see ZrtpCodes#MessageSeverity
+         */
         void (*zrtp_zrtpNegotiationFailed) (ZrtpContext* ctx, int32_t severity, int32_t subCode ) ;
+
+        /**
+         * ZRTP calls this method if the other side does not support ZRTP.
+         *
+         * @param ctx
+         *    Pointer to the opaque ZrtpContext structure.
+         * If the other side does not answer the ZRTP <em>Hello</em> packets then
+         * ZRTP calls this method,
+         *
+         */
         void (*zrtp_zrtpNotSuppOther)(ZrtpContext* ctx) ;
+
+        /**
+         * Enter synchronization mutex.
+         *
+         * GNU ZRTP requires one mutes to synchronize its
+         * processing. Because mutex implementations depend on the
+         * underlying infrastructure, for example operating system or
+         * thread implementation, GNU ZRTP delegates mutex handling to the
+         * spcific part of its implementation.
+         *
+         * @param ctx
+         *    Pointer to the opaque ZrtpContext structure.
+         */
         void (*zrtp_synchEnter)(ZrtpContext* ctx) ;
+
+        /**
+         * Leave synchronization mutex.
+         *
+         * @param ctx
+         *    Pointer to the opaque ZrtpContext structure.
+         */
         void (*zrtp_synchLeave)(ZrtpContext* ctx) ;
+
+        /**
+         * Inform about a PBX enrollment request.
+         *
+         * Please refer to chapter 8.3 ff to get more details about PBX
+         * enrollment and SAS relay.
+         *
+         * <b>Note:</b> PBX enrollement is not yet fully supported by GNU
+         * ZRTP.
+         *
+         * @param ctx
+         *    Pointer to the opaque ZrtpContext structure.
+         * @param info Give some information to the user about the PBX
+         *    requesting an enrollment.
+         */
         void (*zrtp_zrtpAskEnrollment) (ZrtpContext* ctx, char* info ) ;
+
+        /**
+         * Inform about PBX enrollment result.
+         *
+         * Informs the use about the acceptance or denial of an PBX enrollment
+         * request
+         *
+         * <b>Note:</b> PBX enrollement is not yet fully supported by GNU
+         * ZRTP.
+         *
+         * @param ctx
+         *    Pointer to the opaque ZrtpContext structure.
+         * @param info Give some information to the user about the result
+         *    of an enrollment.
+         */
         void (*zrtp_zrtpInformEnrollment) (ZrtpContext* ctx, char* info ) ;
+
+        /**
+         * Request a SAS signature.
+         *
+         * After ZRTP was able to compute the Short Authentication String
+         * (SAS) it calls this method. The client may now use an
+         * approriate method to sign the SAS. The client may use
+         * ZrtpQueue#setSignatureData() to store the signature data an
+         * enable signature transmission to the other peer. Refer to
+         * chapter 8.2 of ZRTP specification.
+         *
+         * <b>Note:</b> SAS signing is not yet fully supported by GNU
+         * ZRTP.
+         *
+         * @param ctx
+         *    Pointer to the opaque ZrtpContext structure.
+         * @param sas
+         *    The SAS string to sign.
+         *
+         */
         void (*zrtp_signSAS)(ZrtpContext* ctx, char* sas) ;
+
+        /**
+         * ZRTPQueue calls this method to request a SAS signature check.
+         *
+         * After ZRTP received a SAS signature in one of the Confirm packets it
+         * call this method. The client may use <code>getSignatureLength()</code>
+         * and <code>getSignatureData()</code>of ZrtpQueue to get the signature
+         * data and perform the signature check. Refer to chapter 8.2 of ZRTP
+         * specification.
+         *
+         * If the signature check fails the client may return false to ZRTP. In
+         * this case ZRTP signals an error to the other peer and terminates
+         * the ZRTP handshake.
+         *
+         * <b>Note:</b> SAS signing is not yet fully supported by GNU
+         * ZRTP.
+         *
+         * @param ctx
+         *    Pointer to the opaque ZrtpContext structure.
+         * @param sas
+         *    The SAS string that was signed by the other peer.
+         * @return
+         *    true if the signature was ok, false otherwise.
+         *
+         */
         int32_t (*zrtp_checkSASSignature) (ZrtpContext* ctx, char* sas ) ;
     } zrtp_Callbacks;
-
-    /**
-     * Application callback methods.
-     *
-     * The RTP stack specific part of GNU ZRTP uses these callback methods
-     * to report ZRTP events to the application. Thus the application that
-     * instantiates the RTP stack shall implement these methods and show these
-     * inforemation to the user.
-     *
-     * <b>CAVEAT</b><br/>
-     * All user callback methods run in the context of the RTP thread. Thus
-     * it is of paramount importance to keep the execution time of the methods
-     * as short as possible.
-     *
-     * @author Werner Dittmann <Werner.Dittmann@t-online.de>
-     */
-
-    typedef struct zrtp_UserCallbacks
-    {
-        /*
-        * The following methods define the GNU ZRTP user callback interface.
-        * For detailed documentation refer to file ZrtpUserCallback.h, each C
-        * method has "zrtp_" prepended to the C++ name.
-        */
-        void (*zrtp_secureOn)(void* data, char* cipher);
-        void (*zrtp_secureOff)(void* data);
-        void (*zrtp_showSAS)(void* data, char* sas, int32_t verified);
-        void (*zrtp_confirmGoClear)(void* data);
-        void (*zrtp_showMessage)(void* data, int32_t sev, int32_t subCode);
-        void (*zrtp_zrtpNegotiationFailed)(void* data, int32_t severity, int32_t subCode);
-        void (*zrtp_zrtpNotSuppOther)(void* data);
-        void (*zrtp_zrtpAskEnrollment)(void* data, char* info);
-        void (*zrtp_zrtpInformEnrollment)(void* data, char* info);
-        void (*zrtp_signSAS)(void* data, char* sas);
-        int32_t (*zrtp_checkSASSignature)(void* data, char* sas);
-        
-        void* userData;
-    } zrtp_UserCallbacks;
 
     /**
      * Create the GNU ZRTP C wrapper.
      *
      * This wrapper implements the C interface to the C++ based GNU ZRTP.
-     * @returns 
+     * @returns
      *      Pointer to the ZrtpContext
      */
     ZrtpContext* zrtp_CreateWrapper();
@@ -341,24 +565,21 @@ extern "C"
      * @param id
      *     A C string that holds the ZRTP client id, only the first 16 chars
      *     are used.
-     * @param config
-     *     Pointer to ZRTP config data - TDB - defines which encryption 
-     *     algorithms to, which SHA etc.
      * @param zidFilename
      *     The name of the ZID file. This file holds some parameters and
      *     other data like additional shared secrets.
      * @param userData
      *     A pointer to user data. The wrapper just stores this pointer in
      *     the ZrtpContext and the application may use it for its purposes.
-     * @returns 
+     * @returns
      *      Pointer to the ZrtpContext
      *
      * @see zrtp_InitializeConfig
      */
-    void zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext, 
-                                   zrtp_Callbacks *cb, 
-                                   char* id, 
-                                   const char* zidFilename, 
+    void zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext,
+                                   zrtp_Callbacks *cb,
+                                   char* id,
+                                   const char* zidFilename,
                                    void* userData);
 
     /**
@@ -367,7 +588,7 @@ extern "C"
     void zrtp_DestroyWrapper (ZrtpContext* zrtpContext);
 
     /**
-     * Computes the ZRTP checksum over a received ZRTP packet buffer and 
+     * Computes the ZRTP checksum over a received ZRTP packet buffer and
      * compares the result with received checksum.
      *
      * @param buffer
@@ -380,9 +601,9 @@ extern "C"
      *    True if CRC matches, false otherwise.
      */
     int32_t zrtp_CheckCksum(uint8_t* buffer, uint16_t length, uint32_t crc);
-    
+
     /**
-     * Computes the ZRTP checksum over a newly created  ZRTP packet buffer. 
+     * Computes the ZRTP checksum over a newly created  ZRTP packet buffer.
      *
      * @param buffer
      *    Pointer to the created ZRTP packet buffer
@@ -392,9 +613,9 @@ extern "C"
      *    The computed CRC.
      */
     uint32_t zrtp_GenerateCksum(uint8_t* buffer, uint16_t length);
-    
+
     /**
-     * Prepares the ZRTP checksum for appending to ZRTP packet. 
+     * Prepares the ZRTP checksum for appending to ZRTP packet.
      * @param crc
      *    The computed CRC data.
      * @returns
@@ -462,7 +683,7 @@ extern "C"
      */
     void zrtp_processTimeout(ZrtpContext* zrtpContext);
 
-    /**
+    /*
      * Check for and handle GoClear ZRTP packet header.
      *
      * This method checks if this is a GoClear packet. If not, just return
@@ -478,6 +699,7 @@ extern "C"
      *
     int32_t zrtp_handleGoClear(ZrtpContext* zrtpContext, uint8_t *extHeader);
     */
+    
     /**
      * Set the auxilliary secret.
      *
@@ -762,7 +984,7 @@ extern "C"
      */
     int32_t zrtp_getZid(ZrtpContext* zrtpContext, uint8_t* data);
 
-    
+
     /**
      * This enumerations list all configurable algorithm types.
      */
@@ -783,17 +1005,16 @@ extern "C"
      * If an application initialize th configure data it must set the
      * configuration data.
      *
-     * The ZRTP specification, chapters 5.1.2 through 5.1.6 defines the 
+     * The ZRTP specification, chapters 5.1.2 through 5.1.6 defines the
      * algorithm names and their meaning.
      *
-     * The current ZRTP implementation implements all mandatory algorithms 
-     * plus a set of the optional algorithms. An application shall use 
+     * The current ZRTP implementation implements all mandatory algorithms
+     * plus a set of the optional algorithms. An application shall use
      * @c zrtp_getAlgorithmNames to get the names of the available algorithms.
      *
-     * @param userData
-     *     A pointer to user data. The wrapper just stores this pointer in
-     *     the ZrtpContext and the application may use it for its purposes.
-     * @returns 
+     * @param zrtpContext
+     *    Pointer to the opaque ZrtpContext structure.
+     * @returns
      *      Pointer to the ZrtpConfCtx
      *
      * @see zrtp_getAlgorithmNames
@@ -804,43 +1025,43 @@ extern "C"
      * Get names of all available algorithmes of a given algorithm type.
      *
      * The algorithm names are as specified in the ZRTP specification, chapters
-     * 5.1.2 through 5.1.6 . 
-     * 
+     * 5.1.2 through 5.1.6 .
+     *
      * @param zrtpContext
      *    Pointer to the opaque ZrtpContext structure.
-     * @param
+     * @param type
      *    The algorithm type.
      * @returns
      *    A NULL terminated array of character pointers.
      */
     char** zrtp_getAlgorithmNames(ZrtpContext* zrtpContext, Zrtp_AlgoTypes type);
-    
+
     /**
      * Free storage used to store the algorithm names.
      *
      * If an application does not longer require the algoritm names it should
      * free the space.
      *
-     * @param
+     * @param names
      *    The NULL terminated array of character pointers.
      */
     void zrtp_freeAlgorithmNames(char** names);
 
-        /**
-     * Convenience function that sets a pre-defined standard configuration.
-     *
-     * The standard configuration consists of the following algorithms:
-     * <ul>
-     * <li> Hash: SHA256 </li>
-     * <li> Symmetric Cipher: AES 128, AES 256 </li>
-     * <li> Public Key Algorithm: DH2048, DH3027, MultiStream </li>
-     * <li> SAS type: libase 32 </li>
-     * <li> SRTP Authentication lengths: 32, 80 </li>
-     *</ul>
-     *
-     * @param zrtpContext
-     *    Pointer to the opaque ZrtpContext structure.
-     */
+    /**
+    * Convenience function that sets a pre-defined standard configuration.
+    *
+    * The standard configuration consists of the following algorithms:
+    * <ul>
+    * <li> Hash: SHA256 </li>
+    * <li> Symmetric Cipher: AES 128, AES 256 </li>
+    * <li> Public Key Algorithm: DH2048, DH3027, MultiStream </li>
+    * <li> SAS type: libase 32 </li>
+    * <li> SRTP Authentication lengths: 32, 80 </li>
+    *</ul>
+    *
+    * @param zrtpContext
+    *    Pointer to the opaque ZrtpContext structure.
+    */
     void zrtp_setStandardConfig(ZrtpContext* zrtpContext);
 
     /**
@@ -888,7 +1109,7 @@ extern "C"
      *    Number of free configuration data slots or -1 on error
      */
     int32_t zrtp_addAlgo(ZrtpContext* zrtpContext, Zrtp_AlgoTypes algoType, const char* algo);
-    
+
     /**
      * Add an algorithm to configuration data at given index
      *
@@ -940,7 +1161,7 @@ extern "C"
      * @param algoType
      *    Specifies which algorithm type to select
      * @return
-     *    The number of configured algorithms (used configuration 
+     *    The number of configured algorithms (used configuration
      *    data slots)
      */
     int32_t zrtp_getNumConfiguredAlgos(ZrtpContext* zrtpContext, Zrtp_AlgoTypes algoType);
@@ -955,7 +1176,7 @@ extern "C"
      * @param index
      *    The index in the list of the algorihm type
      * @return
-     *    A pointer to the algorithm name. If the index 
+     *    A pointer to the algorithm name. If the index
      *    does not point to a configured slot then the function
      *    returns NULL.
      *
@@ -983,27 +1204,27 @@ extern "C"
      *
      * For further details of trusted MitM processing refer to ZRTP
      * specification, chapter 7.3
-     * 
+     *
      * @param zrtpContext
      *    Pointer to the opaque ZrtpContext structure.
      * @param yesNo
      *    If set to true then trusted MitM processing is enabled.
      */
     void zrtp_setTrustedMitM(ZrtpContext* zrtpContext, int32_t yesNo);
-    
+
     /**
      * Check status of trusted MitM processing.
-     * 
+     *
      * @param zrtpContext
      *    Pointer to the opaque ZrtpContext structure.
      * @return
      *    Returns true if trusted MitM processing is enabled.
      */
     int32_t zrtp_isTrustedMitM(ZrtpContext* zrtpContext);
-    
+
     /**
      * Enables or disables SAS signature processing.
-     * 
+     *
      * For further details of trusted MitM processing refer to ZRTP
      * specification, chapter 7.2
      *
@@ -1013,10 +1234,10 @@ extern "C"
      *    If true then certificate processing is enabled.
      */
     void zrtp_setSasSignature(ZrtpContext* zrtpContext, int32_t yesNo);
-    
+
     /**
      * Check status of SAS signature processing.
-     * 
+     *
      * @param zrtpContext
      *    Pointer to the opaque ZrtpContext structure.
      * @return
@@ -1028,4 +1249,7 @@ extern "C"
 }
 #endif
 
+/**
+ * @}
+ */
 #endif

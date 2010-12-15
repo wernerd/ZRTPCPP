@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2007 Werner Dittmann
+  Copyright (C) 2007 - 2010 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -18,6 +18,14 @@
 #ifndef _ZRTPPACKETERRORACK_H_
 #define _ZRTPPACKETERRORACK_H_
 
+/**
+ * @file ZrtpPacketErrorAck.h
+ * @brief The ZRTP ErrorAck message
+ *  
+ * @ingroup GNU_ZRTP
+ * @{
+ */
+
 #include <libzrtpcpp/ZrtpPacketBase.h>
 
 /**
@@ -28,17 +36,21 @@
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
-
-
 class ZrtpPacketErrorAck : public ZrtpPacketBase {
 
  public:
-    ZrtpPacketErrorAck();		/* Creates a ErrorAck packet with default data */
-    ZrtpPacketErrorAck(uint8_t* data);	/* Creates a ErrorAck packet from received data */
+    /// Creates a ErrorAck packet with default data
+    ZrtpPacketErrorAck();
+
+    /// Creates a ErrorAck packet from received data
+    ZrtpPacketErrorAck(uint8_t* data);
     virtual ~ZrtpPacketErrorAck();
 
  private:
      ErrorAckPacket_t data;
 };
 
+/**
+ * @}
+ */
 #endif  // _ZRTPPACKETERRORACK_H_

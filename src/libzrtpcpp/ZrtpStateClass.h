@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006-2007 Werner Dittmann
+  Copyright (C) 2006-2010 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -18,55 +18,57 @@
 #ifndef _ZRTPSTATECLASS_H_
 #define _ZRTPSTATECLASS_H_
 
+/**
+ * @file ZrtpStateClass.h
+ * @brief The ZRTP state handling class
+ *  
+ * @ingroup GNU_ZRTP
+ * @{
+ */
+
 #include <libzrtpcpp/ZrtpStates.h>
 #include <libzrtpcpp/ZrtpPacketBase.h>
 
 /**
- * This class is the ZRTP protocol state engine.
- *
- * This class is responsible to handle the ZRTP protocol. It does not
- * handle the ZRTP HMAC, DH, and other data management. This is done in
- * class ZRtp which is the parent of this class.
- *
- * The methods of this class implement the ZRTP state actions.
- *
- * @author Werner Dittmann <Werner.Dittmann@t-online.de>
+ * The ZRTP states
+ * 
+ * Depending on the role of this state engine and the actual protocl flow
+ * not all states are processed during a ZRTP handshake.
  */
-
-// The ZRTP states
 enum zrtpStates {
-    Initial,
-    Detect,
-    AckDetected,
-    AckSent,
-    WaitCommit,
-    CommitSent,
-    WaitDHPart2,
-    WaitConfirm1,
-    WaitConfirm2,
-    WaitConfAck,
-    WaitClearAck,
-    SecureState,
-    WaitErrorAck,
-    numberOfStates
+    Initial,            ///< Initial state after starting the state engine
+    Detect,             ///< State sending Hello, try to detect answer message
+    AckDetected,        ///< HelloAck received
+    AckSent,            ///< HelloAck sent after Hello received
+    WaitCommit,         ///< Wait for a Commit message
+    CommitSent,         ///< Commit message sent
+    WaitDHPart2,        ///< Wait for a DHPart2 message
+    WaitConfirm1,       ///< Wait for a Confirm1 message
+    WaitConfirm2,       ///< Wait for a confirm2 message
+    WaitConfAck,        ///< Wait for Conf2Ack
+    WaitClearAck,       ///< Wait for clearAck - not used
+    SecureState,        ///< This is the secure state - SRTP active
+    WaitErrorAck,       ///< Wait for ErrorAck message
+    numberOfStates      ///< Gives total number of protocol states
 };
 
 enum EventReturnCodes {
-    Fail = 0,			// ZRTP event processing failed.
-    Done = 1			// Event processing ok.
+    Fail = 0,			///< ZRTP event processing failed.
+    Done = 1			///< Event processing ok.
 };
 
 enum EventDataType {
-    ZrtpInitial = 1,
-    ZrtpClose,
-    ZrtpPacket,
-    Timer,
-    ErrorPkt
+    ZrtpInitial = 1,    ///< Initial event, enter Initial state
+    ZrtpClose,          ///< Close event, shut down state engine
+    ZrtpPacket,         ///< Normal ZRTP message event, process according to state
+    Timer,              ///< Timer event
+    ErrorPkt            ///< Error packet event
 };
 
+/// A ZRTP state event
 typedef struct Event {
-    EventDataType type;
-    uint8_t* packet;
+    EventDataType type; ///< Type of event
+    uint8_t* packet;    ///< Event data if availabe, usually a ZRTP message
 } Event_t;
 
 
@@ -81,23 +83,35 @@ typedef struct Event {
  * possible in ZRTP because it uses a simple timeout strategy.
  */
 typedef struct zrtpTimer {
-    int32_t time,
-	start,
-	increment,
-	capping,
-	counter,
-	maxResend;
+    int32_t time,       ///< Current timeout value
+	start,              ///< Start value for timeout
+	increment,          ///< increment timeout after each timeout event (not used anymore)
+	capping,            ///< Maximum timeout value
+	counter,            ///< Current number of timeouts
+	maxResend;          ///< Maximum number of timeout resends
 } zrtpTimer_t;
 
 
 class ZRtp;
 
+/**
+ * This class is the ZRTP protocol state engine.
+ *
+ * This class is responsible to handle the ZRTP protocol. It does not
+ * handle the ZRTP HMAC, DH, and other data management. This is done in
+ * class ZRtp, which is the parent of this class.
+ *
+ * The methods of this class implement the ZRTP state actions.
+ *
+ */
+
+
 class ZrtpStateClass {
 
 private:
-    ZRtp* parent;
-    ZrtpStates* engine;
-    Event_t* event;
+    ZRtp* parent;           ///< The ZRTP implmentation
+    ZrtpStates* engine;     ///< The state switching engine
+    Event_t* event;         ///< Current event to process
 
     /**
      * The last packet that was sent.
@@ -112,8 +126,8 @@ private:
      */
     ZrtpPacketCommit* commitPkt;
 
-    zrtpTimer_t T1;
-    zrtpTimer_t T2;
+    zrtpTimer_t T1;         ///< The Hello message timeout timer
+    zrtpTimer_t T2;         ///< Timeout timer for other messages
 
     /*
      * If this is set to true the protocol engine handle the multi-stream
@@ -122,11 +136,17 @@ private:
     bool multiStream;
 
 public:
+    /// Create a ZrtpStateClass
     ZrtpStateClass(ZRtp *p);
     ~ZrtpStateClass();
 
+    /// Check if in a specified state
     bool inState(const int32_t state) { return engine->inState(state); };
+    
+    /// Switch to the specified state
     void nextState(int32_t state)        { engine->nextState(state); };
+
+    /// Process an event, the main entry point into the state engine
     void processEvent(Event_t *ev);
 
     /**
@@ -134,18 +154,43 @@ public:
      *
      * Refer to the protocol state diagram for further documentation.
      */
+    /// Initial event state
     void evInitial();
+
+    /// Detect state
     void evDetect();
+
+    /// HelloAck detected state
     void evAckDetected();
+
+    /// HelloAck sent state
     void evAckSent();
+
+    /// Wait for Commit message
     void evWaitCommit();
+
+    /// Commit sent state
     void evCommitSent();
+
+    /// Wait for DHPart2 message
     void evWaitDHPart2();
+
+    /// Wait for Confirm2 message
     void evWaitConfirm1();
+
+    /// Wait for Confirm2 message
     void evWaitConfirm2();
+
+    /// Wait for ConfAck message
     void evWaitConfAck();
+
+    /// Wait for ClearAck message (not used)
     void evWaitClearAck();
+
+    /// Secure reached state
     void evSecureState();
+
+    /// Wait for ErrorAck message
     void evWaitErrorAck();
 
     /**
@@ -234,5 +279,8 @@ public:
     bool isMultiStream();
 };
 
+/**
+ * @}
+ */
 #endif // _ZRTPSTATECLASS_H_
 

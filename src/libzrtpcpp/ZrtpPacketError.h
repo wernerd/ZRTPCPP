@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006-2007 Werner Dittmann
+  Copyright (C) 2006-2010 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -18,6 +18,14 @@
 #ifndef _ZRTPPACKETERROR_H_
 #define _ZRTPPACKETERROR_H_
 
+/**
+ * @file ZrtpPacketError.h
+ * @brief The ZRTP Error message
+ *  
+ * @ingroup GNU_ZRTP
+ * @{
+ */
+
 #include <libzrtpcpp/ZrtpPacketBase.h>
 
 /**
@@ -32,20 +40,29 @@
 class ZrtpPacketError : public ZrtpPacketBase {
 
  protected:
-    Error_t* errorHeader;
+    Error_t* errorHeader;   ///< Points to Error message
 
  public:
-    ZrtpPacketError();		/* Creates a Error packet with default data */
-    ZrtpPacketError(uint8_t* data);	/* Creates a Error packet from received data */
+    /// Creates a Error packet with default data
+    ZrtpPacketError();
+
+    /// Creates a Error packet from received data
+    ZrtpPacketError(uint8_t* data);
+    
     virtual ~ZrtpPacketError();
 
+    /// Get the error code from Error message
     uint32_t getErrorCode() { return ntohl(errorHeader->errorCode); };
 
+    /// Set error code in Error message
     void setErrorCode(uint32_t code) {errorHeader->errorCode = htonl(code); };
 
  private:
      ErrorPacket_t data;
 };
 
+/**
+ * @}
+ */
 #endif // ZRTPPACKETERROR
 

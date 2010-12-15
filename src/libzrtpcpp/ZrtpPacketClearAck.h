@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006-2007 Werner Dittmann
+  Copyright (C) 2006-2010 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -18,10 +18,18 @@
 #ifndef _ZRTPPACKETCLEARACK_H_
 #define _ZRTPPACKETCLEARACK_H_
 
+/**
+ * @file ZrtpPacketClearAck.h
+ * @brief The ZRTP ClearAck message
+ *  
+ * @ingroup GNU_ZRTP
+ * @{
+ */
+
 #include <libzrtpcpp/ZrtpPacketBase.h>
 
 /**
- * Implement the ClearAck packet.
+ * Implement the ClearAck packet - Currently not used
  *
  * The ZRTP simple message ClearAck. The implementation sends this
  * after switching to clear mode (non-SRTP mode).
@@ -31,13 +39,16 @@
 class ZrtpPacketClearAck : public ZrtpPacketBase {
 
  public:
-    ZrtpPacketClearAck();		/* Creates a ClearAck packet with default data */
-    ZrtpPacketClearAck(uint8_t* data);	/* Creates a ClearAck packet from received data */
+    ZrtpPacketClearAck();		/// Creates a ClearAck packet with default data
+    ZrtpPacketClearAck(uint8_t* data);	/// Creates a ClearAck packet from received data
     virtual ~ZrtpPacketClearAck();
   
  private:
      ClearAckPacket_t data;
 };
 
+/**
+ * @}
+ */
 #endif // ZRTPPACKETCLEARACK
 

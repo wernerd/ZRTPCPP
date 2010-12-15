@@ -1,7 +1,7 @@
 /** @file ZrtpCodes.h
  */
 /*
-  Copyright (C) 2006-2008 Werner Dittmann
+  Copyright (C) 2006-2010 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -19,9 +19,17 @@
 
 #ifndef _ZRTPCODES_H_
 #define _ZRTPCODES_H_
+/**
+ * @file ZrtpCodes.h
+ * @brief The ZRTP info, warning, and error codes
+ * @ingroup GNU_ZRTP
+ * @{
+ */
 
 namespace GnuZrtpCodes {
 /**
+ * \namespace GnuZrtpCodes
+ * 
  * This enum defines the information message severity.
  *
  * The ZRTP implementation issues information messages to inform the user
@@ -138,4 +146,8 @@ enum ZrtpErrorCodes {
     IgnorePacket =      0x7fffffff
 };
 }
+
+/**
+ * @}
+ */
 #endif

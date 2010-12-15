@@ -18,10 +18,17 @@
 #ifndef _ZRTPUSERCALLBACK_H_
 #define _ZRTPUSERCALLBACK_H_
 
+/**
+ * @file ZrtpUserCallback.h
+ * @brief The ZRTP UserCallback class
+ *  
+ * @ingroup GNU_ZRTP
+ * @{
+ */
+
 #include <stdint.h>
 #include <string>
 
-// For message severity codes
 #include <libzrtpcpp/ZrtpCodes.h>
 
 /**
@@ -48,6 +55,7 @@ class ZrtpUserCallback {
 
     public:
 
+        /// Create the stadard user callback class.
         ZrtpUserCallback() {}
 
         virtual ~ZrtpUserCallback() {};

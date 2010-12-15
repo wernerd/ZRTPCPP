@@ -22,20 +22,18 @@
 #ifndef _ZRTPSTATES_H_
 #define _ZRTPSTATES_H_
 
+/**
+ * @file ZrtpStates.h
+ * @brief The ZRTP state switching class
+ *  
+ * @ingroup GNU_ZRTP
+ * @{
+ */
 
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include <stdint.h>
-
-/**
- * Implement a simple state handling.
- *
- * This class provides functions that manage the states and the event handler
- * functions. Its a very simple implementation.
- *
- * @author Werner Dittmann <Werner.Dittmann@t-online.de>
- */
 
 class ZrtpStateClass;
 /**
@@ -43,26 +41,38 @@ class ZrtpStateClass;
  * the functions that handles the various triggers that can occur in a state.
  */
 typedef struct  {
-    int32_t stateName;
-    void (ZrtpStateClass::* handler)(void);
+    int32_t stateName;                      ///< The state number
+    void (ZrtpStateClass::* handler)(void); ///< The state handler
 } state_t;
+
+/**
+ * Implement a simple state switching.
+ *
+ * This class provides functions that manage the states and the event handler
+ * functions. Its a very simple implementation.
+ *
+ * @author Werner Dittmann <Werner.Dittmann@t-online.de>
+ */
 
 class ZrtpStates {
  public:
 
+    /// Create an initialize state switching
     ZrtpStates(state_t* const zstates,
 	       const int32_t numStates,
 	       const int32_t initialState):
 	numStates(numStates), states(zstates), state(initialState) {}
 
+    /// Call a state handler 
     int32_t processEvent(ZrtpStateClass& zsc) {
-	// fprintf(stdout, "ZrtpStates::processEvent, state: %d\n", state);
-	(zsc.*states[state].handler)();
-	return 0;	// hmm...maybe we can do more??  but handlers are void...
+        (zsc.*states[state].handler)();
+        return 0;
     }
 
+    /// Check if in specified state
     bool inState(const int32_t s) { return ((s == state)); }
 
+    /// Set the next state
     void nextState(int32_t s)        { state = s; }
 
  private:
@@ -73,5 +83,8 @@ class ZrtpStates {
     ZrtpStates();
 };
 
+/**
+ * @}
+ */
 #endif	//ZRTPSTATES
 

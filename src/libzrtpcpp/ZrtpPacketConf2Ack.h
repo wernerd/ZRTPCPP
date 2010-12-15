@@ -18,6 +18,14 @@
 #ifndef _ZRTPPACKETCON2FACK_H_
 #define _ZRTPPACKETCON2FACK_H_
 
+/**
+ * @file ZrtpPacketConf2Ack.h
+ * @brief The ZRTP Conf2Ack message
+ *  
+ * @ingroup GNU_ZRTP
+ * @{
+ */
+
 #include <libzrtpcpp/ZrtpPacketBase.h>
 
 /**
@@ -32,13 +40,21 @@
 class ZrtpPacketConf2Ack : public ZrtpPacketBase {
 
  public:
-    ZrtpPacketConf2Ack();		/* Creates a Conf2Ack packet with default data */
-    ZrtpPacketConf2Ack(char* data);	/* Creates a Conf2Ack packet from received data */
+    /// Creates a Conf2Ack packet with default data
+    ZrtpPacketConf2Ack();
+
+    ///Creates a Conf2Ack packet from received data
+    ZrtpPacketConf2Ack(char* data);
+    
+    /// Normal destructor
     virtual ~ZrtpPacketConf2Ack();
 
  private:
      Conf2AckPacket_t data;
 };
 
+/**
+ * @}
+ */
 #endif // ZRTPPACKETCONF2ACK
 

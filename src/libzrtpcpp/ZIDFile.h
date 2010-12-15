@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006-2007 Werner Dittmann
+  Copyright (C) 2006-2010 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -21,6 +21,18 @@
 
 #ifndef _ZIDFILE_H_
 #define _ZIDFILE_H_
+
+/**
+ * @file ZIDFile.h
+ * @brief ZID file management
+ * 
+ * A ZID file stores (caches) some data that helps ZRTP to achives its
+ * key continuity feature. See @c ZIDRecord for further info which data
+ * the ZID file contains.
+ * 
+ * @ingroup GNU_ZRTP
+ * @{
+ */
 
 /**
  * This class implements a ZID (ZRTP Identifiers) file.
@@ -131,6 +143,10 @@ public:
      */
     const unsigned char* getZid() { return associatedZid; };
 };
+
+/**
+ * @}
+ */
 #endif
 
 /** EMACS **

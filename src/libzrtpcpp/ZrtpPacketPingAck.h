@@ -19,6 +19,13 @@
 #define _ZRTPPACKETPINGACK_H_
 
 #include <libzrtpcpp/ZrtpPacketBase.h>
+/**
+ * @file ZrtpPacketPingAck.h
+ * @brief The ZRTP PingAck message
+ *  
+ * @ingroup GNU_ZRTP
+ * @{
+ */
 
 /**
  * Implement the PingAck packet.
@@ -30,23 +37,38 @@
 class ZrtpPacketPingAck : public ZrtpPacketBase {
 
  protected:
-    PingAck_t* pingAckHeader;
+    PingAck_t* pingAckHeader;   ///< Points to PingAck message
 
  public:
+    /// Creates a PingAck message with default data
     ZrtpPacketPingAck();
+
+    /// Creates a PingAck message from received data
     ZrtpPacketPingAck(uint8_t* data);
+    
     virtual ~ZrtpPacketPingAck();
 
+    /// Get SSRC from PingAck message
     uint32_t getSSRC() { return ntohl(pingAckHeader->ssrc); };
 
+    /// Set ZRTP protocol version field, fixed ASCII character array
     void setVersion(uint8_t *text)      { memcpy(pingAckHeader->version, text, ZRTP_WORD_SIZE ); }
+    
+    /// Set SSRC in PingAck message
     void setSSRC(uint32_t data)         {pingAckHeader->ssrc = htonl(data); };
+    
+    /// Set remote endpoint hash, fixed byte array
     void setRemoteEpHash(uint8_t *hash) { memcpy(pingAckHeader->remoteEpHash, hash, sizeof(pingAckHeader->remoteEpHash)); }
+
+    /// Set local endpoint hash, fixed byte array
     void setLocalEpHash(uint8_t *hash)  { memcpy(pingAckHeader->localEpHash, hash, sizeof(pingAckHeader->localEpHash)); }
 
  private:
      PingAckPacket_t data;
 };
 
+/**
+ * @}
+ */
 #endif // ZRTPPACKETCLEARACK
 

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006-2007 Werner Dittmann
+  Copyright (C) 2006-2010 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -18,6 +18,19 @@
 #ifndef _ZIDRECORD_H_
 #define _ZIDRECORD_H_
 
+
+/**
+ * @file ZIDRecord.h
+ * @brief ZID record management
+ * 
+ * A ZID record stores (caches) ZID (ZRTP ID) specific data that helps ZRTP 
+ * to achives its key continuity feature. Please refer to the ZRTP 
+ * specification to get detailed information about the ZID.
+ * 
+ * @ingroup GNU_ZRTP
+ * @{
+ */
+
 #include <string.h>
 #include <stdint.h>
 
@@ -25,28 +38,34 @@
 #define RS_LENGTH       32
 #define TIME_LENGTH      8      // 64 bit, can hold time on 64 bit systems
 
+/**
+ * This is the recod structure of version 1 ZID records.
+ * 
+ * This is not longer in use - only during migration.
+ */
 typedef struct zidrecord1 {
-    char recValid,		// if 1 record is valid, if 0: invalid
-	ownZid,			// if >1 record contains own ZID, usually 1st record,
-                                // the numebr als represents the file format version
-	rs1Valid,		// if 1 RS1 contains valid data
-	rs2Valid;		// if 1 RS2 contains valid data
-    unsigned char identifier[IDENTIFIER_LEN]; // the peer's ZID or own ZID
-    unsigned char rs1Data[RS_LENGTH], rs2Data[RS_LENGTH]; // the peer's RS data
+    char recValid;  //!< if 1 record is valid, if 0: invalid
+	char ownZid;	//!< if >1 record contains own ZID, usually 1st record
+	char rs1Valid;  //!< if 1 RS1 contains valid data
+	char rs2Valid;  //!< if 1 RS2 contains valid data
+    unsigned char identifier[IDENTIFIER_LEN]; ///< the peer's ZID or own ZID
+    unsigned char rs1Data[RS_LENGTH], rs2Data[RS_LENGTH]; ///< the peer's RS data
 } zidrecord1_t;
 
+/**
+ * This is the recod structure of version 2 ZID records.
+ */
 typedef struct zidrecord2 {
-    char version,		// version number of file format, this is #2
-	flags,			// bit field holding various flags, see below
-                                // the numebr als represents the file format version
-	filler1,		// 
-	filler2;		// to round up to full 32 bit
-    unsigned char identifier[IDENTIFIER_LEN]; // the peer's ZID or own ZID
-    unsigned char rs1Interval[TIME_LENGTH];   // expiration time of RS1; -1 means undefinite
-    unsigned char rs1Data[RS_LENGTH];         // the peer's RS2 data
-    unsigned char rs2Interval[TIME_LENGTH];
-    unsigned char rs2Data[RS_LENGTH];         // the peer's RS2 data
-    unsigned char mitmKey[RS_LENGTH];         // MiTM key if available
+    char version;	///< version number of file format, this is #2
+	char flags;	    ///< bit field holding various flags, see below
+	char filler1;   ///< round up to next 32 bit 
+	char filler2;   ///< round up to next 32 bit
+    unsigned char identifier[IDENTIFIER_LEN]; ///< the peer's ZID or own ZID
+    unsigned char rs1Interval[TIME_LENGTH];   ///< expiration time of RS1; -1 means indefinite
+    unsigned char rs1Data[RS_LENGTH];         ///< the peer's RS2 data
+    unsigned char rs2Interval[TIME_LENGTH];   ///< expiration time of RS2; -1 means indefinite
+    unsigned char rs2Data[RS_LENGTH];         ///< the peer's RS2 data
+    unsigned char mitmKey[RS_LENGTH];         ///< MiTM key if available
 } zidrecord2_t;
 
 /**
@@ -98,32 +117,103 @@ private:
     void setValid()   { record.flags |= Valid; }
     
 public:
+    /**
+     * Create a ZID Record with given ZID data
+     * 
+     * The method creates a new ZID record and initializes its ZID
+     * data field. All other fields are set to null.
+     * 
+     * An application can use this pre-initialized record to look
+     * up the associated record in the ZID file. If the record is
+     * available, the ZID record fields are filled with the stored
+     * data.
+     * 
+     * @param idData
+     *     Pointer to the fixed length ZID data
+     * @see ZIDFile::getRecord
+     */
     ZIDRecord(const unsigned char *idData) {
 	memset(&record, 0, sizeof(zidrecord2_t));
 	memcpy(record.identifier, idData, IDENTIFIER_LEN);
 	record.version = 2;
     }
 
+    /**
+     * Set @c valid flag in RS1
+     */
     void setRs1Valid()   { record.flags |= RS1Valid; }
+    
+    /**
+     * reset @c valid flag in RS1
+     */
     void resetRs1Valid() { record.flags &= ~RS1Valid; }
+    
+    /**
+     * Check @c valid flag in RS1
+     */
     bool isRs1Valid()    { return ((record.flags & RS1Valid) == RS1Valid); }
 
+    /**
+     * Set @c valid flag in RS2
+     */
     void setRs2Valid()   { record.flags |= RS2Valid; }
+    
+    /**
+     * Reset @c valid flag in RS2
+     */
     void resetRs2Valid() { record.flags &= ~RS2Valid; }
+    
+    /**
+     * Check @c valid flag in RS2
+     */
     bool isRs2Valid()    { return ((record.flags & RS2Valid) == RS2Valid); }
 
+    /**
+     * Set MITM key available
+     */
     void setMITMKeyAvailable()    { record.flags |= MITMKeyAvailable; }
+    
+    /**
+     * Reset MITM key available
+     */
     void resetMITMKeyAvailable()  { record.flags &= ~MITMKeyAvailable; }
+    
+    /**
+     * Check MITM key available is set
+     */
     bool isMITMKeyAvailable()     { return ((record.flags & MITMKeyAvailable) == MITMKeyAvailable); }
 
+    /**
+     * Mark this as own ZID record
+     */
     void setOwnZIDRecord()  { record.flags = OwnZIDRecord; }
+    /**
+     * Reset own ZID record marker
+     */
     void resetOwnZIDRecord(){ record.flags = 0; }
+    
+    /**
+     * Check own ZID record marker
+     */
     bool isOwnZIDRecord()   { return (record.flags == OwnZIDRecord); }  // no other flag allowed if own ZID
 
+    /**
+     * Set SAS for this ZID as verified
+     */
     void setSasVerified()   { record.flags |= SASVerified; }
+    /**
+     * Reset SAS for this ZID as verified
+     */
     void resetSasVerified() { record.flags &= ~SASVerified; }
+    
+    /**
+     * Check if SAS for this ZID was verified
+     */
     bool isSasVerified()    { return ((record.flags & SASVerified) == SASVerified); }
 
+    /**
+     * Return the ZID for this record
+     */
     const uint8_t* getIdentifier() {return record.identifier; }
     
     /**

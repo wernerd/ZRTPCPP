@@ -18,6 +18,14 @@
 #ifndef _ZRTPPACKETPING_H_
 #define _ZRTPPACKETPING_H_
 
+/**
+ * @file ZrtpPacketPing.h
+ * @brief The ZRTP Ping message
+ *  
+ * @ingroup GNU_ZRTP
+ * @{
+ */
+
 #include <libzrtpcpp/ZrtpPacketBase.h>
 
 /**
@@ -30,20 +38,30 @@
 class ZrtpPacketPing : public ZrtpPacketBase {
 
  protected:
-    Ping_t* pingHeader;
+    Ping_t* pingHeader;     ///< Point the the Ping message
 
  public:
+    /// Creates a Ping message with default data
     ZrtpPacketPing();
+
+    /// Creates a Ping message from received data
     ZrtpPacketPing(uint8_t* data);
+    
     virtual ~ZrtpPacketPing();
 
+    /// Set ZRTP protocol version field, fixed ASCII character array
     void setVersion(uint8_t *text)     { memcpy(pingHeader->version, text,ZRTP_WORD_SIZE ); }
 
+    /// Get the endpoit hash, fixed byte array
     uint8_t* getEpHash()               { return pingHeader->epHash; }
 
  private:
      PingPacket_t data;
 };
+
+/**
+ * @}
+ */
 
 #endif // ZRTPPACKETCLEARACK
 

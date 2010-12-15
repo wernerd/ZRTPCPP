@@ -1,7 +1,7 @@
 #include <libzrtpcpp/ZrtpConfigure.h>
 #include <libzrtpcpp/ZrtpTextData.h>
 
-AlgorithmEnum::AlgorithmEnum(const int type, const char* name):
+AlgorithmEnum::AlgorithmEnum(const AlgoTypes type, const char* name):
     algoType(type) , algoName(name) {
 }
 
@@ -13,15 +13,15 @@ const char* AlgorithmEnum::getName() {
     return algoName.c_str(); 
 }
 
-int AlgorithmEnum::getAlgoType() { 
+AlgoTypes AlgorithmEnum::getAlgoType() { 
     return algoType; 
 }
 
 bool AlgorithmEnum::isValid() {
-    return (!algoName.empty()); 
+    return (algoType != Invalid); 
 }
 
-static AlgorithmEnum invalidAlgo(0, "");
+static AlgorithmEnum invalidAlgo(Invalid, "");
 
 
 EnumBase::EnumBase(AlgoTypes a) : algoType(a) {
