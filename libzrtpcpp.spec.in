@@ -17,7 +17,7 @@ Group: Development/Libraries
 URL: http://www.gnu.org/software/commoncpp/commoncpp.html
 Source0: ftp://ftp.gnu.org/gnu/ccrtp/libzrtpcpp-%{PACKAGE_VERSION}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-BuildRequires: libccrtp-devel >= 1.5.0
+BuildRequires: libccrtp-devel >= 1.8.0
 BuildRequires: pkgconfig
 BuildRequires: libstdc++-devel
 BuildRequires: @BUILD_REQ@
@@ -44,14 +44,14 @@ is not supported.
 %package
 Group: System/Libraries
 Summary: Runtime library for GNU ZRTP Stack
-Requires: ccrtp >= 1.5.0
+Requires: ccrtp >= 1.8.0
 Requires: @PACKAGE_REQ@
 
 %package devel
 Group: Development/Libraries
 Summary: Headers and static link library for libzrtpcpp.
 Requires: %{name} = %{version}-%{release}
-Requires: libccrtp-devel >= 1.5.0
+Requires: libccrtp-devel >= 1.8.0
 Requires: @BUILD_REQ@
 
 %description 
@@ -94,6 +94,11 @@ documentation for building applications that use libzrtpcpp.
 %postun -p /sbin/ldconfig
 
 %changelog
+* Mon Dec 27 2010 - Werner Dittmann <werner.dittmann@t-online.de>
+- Add Skein MAC authentication algorithm
+- lots of documentation added (doxygen ready)
+- some code cleanup
+
 * Sun Oct 11 2009 - Werner Dittmann <werner.dittmann@t-online.de>
 - Fix multistream problem
 - add DH2048 mode

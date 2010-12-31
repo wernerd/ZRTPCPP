@@ -11,8 +11,8 @@
 cmake_minimum_required(VERSION 2.6)
 
 PROJECT(libzrtpcpp)
-set (VERSION 1.5.4)
-set (SOVERSION 1.5)
+set (VERSION 1.6.0)
+set (SOVERSION 1.6)
 
 # set to true for debug and trace during CMakeLists development
 set(CMAKE_VERBOSE_MAKEFILE FALSE)
@@ -45,7 +45,7 @@ endif()
 set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})
 
 if(enable_ccrtp)
-  pkg_check_modules(CCRTP libccrtp1>=1.5.0)
+  pkg_check_modules(CCRTP libccrtp1>=1.8.0)
   set (LIBS ${LIBS} ${CCRTP_LDFLAGS})
 endif()
 

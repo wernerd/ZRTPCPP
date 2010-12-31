@@ -150,7 +150,7 @@ AC_ARG_WITH([ccrtp],
             [with_ccrtp=yes])
 
 if test "x$with_ccrtp" != xno; then
-    PKG_CHECK_MODULES(RTPSTACK, libccrtp1 >= 1.5.0, [
+    PKG_CHECK_MODULES(RTPSTACK, libccrtp1 >= 1.7.2, [
         RTPSTACK_LIBPATH=`pkg-config --variable=libdir libccrtp1`
         LIBS="-L$RTPSTACK_LIBPATH $RTPSTACK_LIBS $LIBS"
         CCXX_FLAGS="$CXXFLAGS $RTPSTACK_CFLAGS"
@@ -159,7 +159,7 @@ if test "x$with_ccrtp" != xno; then
     CXXFLAGS="$CXXFLAGS $COMMON_CFLAGS"
     COMMON_LIBPATH=`pkg-config --variable=libdir libccgnu2`
     LIBS="-L$COMMON_LIBPATH $COMMON_LIBS $LIBS"
-    CRYPTOBACKEND="$CRYPTOBACKEND libccrtp1 >= 1.5.0"
+    CRYPTOBACKEND="$CRYPTOBACKEND libccrtp1 >= 1.7.2"
 fi
 AM_CONDITIONAL(CCRTP_SUPPORT, test "${with_ccrtp}" = "yes")
 

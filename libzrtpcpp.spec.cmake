@@ -20,11 +20,12 @@ URL: http://www.gnu.org/software/commoncpp/commoncpp.html
 Source0: ftp://ftp.gnu.org/gnu/ccrtp/%{name}-%{version}.tar.gz
 Provides: %{name} = %{version}-%{release}
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-BuildRequires: libccrtp-devel >= 1.5.0
+BuildRequires: libccrtp-devel >= 1.8.0
 BuildRequires: pkgconfig
 BuildRequires: libstdc++-devel
 BuildRequires: @BUILD_REQ@
 Requires: @PACKAGE_REQ@
+Requires: ccrtp >= 1.8.0
 
 %define srcdirname %{name}-%{version}
 
@@ -51,7 +52,7 @@ is not supported.
 Group: Development/Libraries
 Summary: Headers for libzrtpcpp.
 Requires: %{name} = %{version}-%{release}
-Requires: libccrtp-devel >= 1.5.0
+Requires: libccrtp-devel >= 1.8.0
 Requires: @BUILD_REQ@
 
 %description devel
@@ -93,6 +94,11 @@ cd ../build_tree
 %postun -p /sbin/ldconfig
 
 %changelog
+* Mon Dec 27 2010 - Werner Dittmann <werner.dittmann@t-online.de>
+- Add Skein MAC authentication algorithm
+- lots of documentation added (doxygen ready)
+- some code cleanup
+
 * Sun Oct 11 2009 - Werner Dittmann <werner.dittmann@t-online.de>
 - Fix multistream problem
 - add DH2048 mode
