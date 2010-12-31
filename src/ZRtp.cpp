@@ -2025,14 +2025,72 @@ bool ZRtp::srtpSecretsReady(EnableSecurity part) {
     SrtpSecret_t sec;
 
     sec.keyInitiator = srtpKeyI;
-    sec.initKeyLen = (*(int32_t*)(cipher->getName()) == *(int32_t*)aes1) ? 128 :256;
+
+    if (*(int32_t*)(cipher->getName()) == *(int32_t*)aes1) {
+        sec.symEncAlgorithm = Aes;
+        sec.initKeyLen = 128;
+    }
+    if (*(int32_t*)(cipher->getName()) == *(int32_t*)aes2) {
+        sec.symEncAlgorithm = Aes;
+        sec.initKeyLen = 192;
+    }
+    if (*(int32_t*)(cipher->getName()) == *(int32_t*)aes3) {
+        sec.symEncAlgorithm = Aes;
+        sec.initKeyLen = 256;
+    }
+    if (*(int32_t*)(cipher->getName()) == *(int32_t*)two1) {
+        sec.symEncAlgorithm = TwoFish;
+        sec.initKeyLen = 128;
+    }
+    if (*(int32_t*)(cipher->getName()) == *(int32_t*)two2) {
+        sec.symEncAlgorithm = TwoFish;
+        sec.initKeyLen = 192;
+    }
+    if (*(int32_t*)(cipher->getName()) == *(int32_t*)two3) {
+        sec.symEncAlgorithm = TwoFish;
+        sec.initKeyLen = 256;
+    }
     sec.saltInitiator = srtpSaltI;
     sec.initSaltLen = 112;
     sec.keyResponder = srtpKeyR;
-    sec.respKeyLen = (*(int32_t*)(cipher->getName()) == *(int32_t*)aes1) ? 128 :256;
+    
+    if (*(int32_t*)(cipher->getName()) == *(int32_t*)aes1) {
+        sec.respKeyLen = 128;
+    }
+    if (*(int32_t*)(cipher->getName()) == *(int32_t*)aes2) {
+        sec.respKeyLen = 192;
+    }
+    if (*(int32_t*)(cipher->getName()) == *(int32_t*)aes3) {
+        sec.respKeyLen = 256;
+    }
+    if (*(int32_t*)(cipher->getName()) == *(int32_t*)two1) {
+        sec.respKeyLen = 128;
+    }
+    if (*(int32_t*)(cipher->getName()) == *(int32_t*)two1) {
+        sec.respKeyLen = 192;
+    }
+    if (*(int32_t*)(cipher->getName()) == *(int32_t*)two1) {
+        sec.respKeyLen = 256;
+    }
     sec.saltResponder = srtpSaltR;
     sec.respSaltLen = 112;
-    sec.srtpAuthTagLen = (*(int32_t*)(authLength->getName()) == *(int32_t*)hs32) ? 32 : 80;
+
+    if (*(int32_t*)(authLength->getName()) == *(int32_t*)hs32) {
+        sec.authAlgorithm = Sha1;
+        sec.srtpAuthTagLen = 32;
+    }
+    if (*(int32_t*)(authLength->getName()) == *(int32_t*)hs80) {
+        sec.authAlgorithm = Sha1;
+        sec.srtpAuthTagLen = 80;
+    }
+    if (*(int32_t*)(authLength->getName()) == *(int32_t*)sk32) {
+        sec.authAlgorithm = Skein;
+        sec.srtpAuthTagLen = 32;
+    }
+    if (*(int32_t*)(authLength->getName()) == *(int32_t*)sk64) {
+        sec.authAlgorithm = Skein;
+        sec.srtpAuthTagLen = 64;
+    }
     sec.sas = SAS;
     sec.role = myRole;
 

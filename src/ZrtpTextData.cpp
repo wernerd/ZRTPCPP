@@ -20,12 +20,9 @@
  */
 #include <stdint.h>
 #include <libzrtpcpp/ZrtpConfigure.h>
-/**
- *
- */
 //                                  1
 //                         1234567890123456
-char clientId[] =    "GNU ZRTP 1.5.0  "; // 16 chars max.
+char clientId[] =    "GNU ZRTP 1.5.4  "; // 16 chars max.
 char zrtpVersion[] = "1.10";             // must be 4 chars
 /**
  *
@@ -45,9 +42,6 @@ char ClearAckMsg[] = "ClearACK";
 char PingMsg[] =     "Ping    ";
 char PingAckMsg[] =  "PingACK ";
 
-/**
- *
- */
 char responder[] = "Responder";
 char initiator[] = "Initiator";
 char iniMasterKey[] = "Initiator SRTP master key";
@@ -70,17 +64,17 @@ char zrtpSessionKey[] = "ZRTP Session Key";
 
 char zrtpMsk[] = "ZRTP MSK";
 
-/**
- * The arrays are sorted: the most secure / best algorithm is first in the
- * array. If we add an algorithm here then we need to adjust the corresponding
- * value in ZrtpConfigure.h as well.
- */
 char s256[] =  "S256";
 char s384[] = "S384";
 const char* mandatoryHash = s256;
 
 char aes3[] = "AES3";
+char aes2[] = "AES2";
 char aes1[] = "AES1";
+char two3[] = "2FS3";
+char two2[] = "2FS2";
+char two1[] = "2FS1";
+
 const char* mandatoryCipher = aes1;
 
 char dh2k[] =  "DH2k";
@@ -95,5 +89,7 @@ const char* mandatorySasType = b32;
 
 char hs32[] = "HS32";
 char hs80[] = "HS80";
+char sk32[] = "SK32";
+char sk64[] = "SK64";
 const char* mandatoryAuthLen_1 = hs32;
 const char* mandatoryAuthLen_2 = hs80;

@@ -28,6 +28,14 @@
 #ifndef HMAC_SHA384_H
 #define HMAC_SHA384_H
 
+/**
+ * @file hmac384.h
+ * @brief Function that provide SHA384 HMAC support
+ * 
+ * @ingroup GNU_ZRTP
+ * @{
+ */
+
 #include <stdint.h>
 
 #ifndef SHA384_DIGEST_LENGTH
@@ -82,4 +90,7 @@ void hmac_sha384( uint8_t* key, uint32_t key_length,
 void hmac_sha384( uint8_t* key, uint32_t key_length,
                            uint8_t* data[], uint32_t data_length[],
                            uint8_t* mac, uint32_t* mac_length );
+/**
+ * @}
+ */
 #endif

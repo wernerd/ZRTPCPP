@@ -24,6 +24,14 @@
 #ifndef _SHA384_H
 #define _SHA384_H
 
+/**
+ * @file sha384.h
+ * @brief Function that provide SHA384 support
+ * 
+ * @ingroup GNU_ZRTP
+ * @{
+ */
+
 #include <stdint.h>
 
 #ifndef SHA384_DIGEST_LENGTH
@@ -129,5 +137,8 @@ void sha384Ctx(void* ctx, unsigned char* data,
 void sha384Ctx(void* ctx, unsigned char* dataChunks[],
                unsigned int dataChunkLength[]);
 
+/**
+ * @}
+ */
 #endif
 

@@ -28,6 +28,14 @@
 #ifndef HMAC_SHA256_H
 #define HMAC_SHA256_H
 
+/**
+ * @file hmac256.h
+ * @brief Function that provide SHA256 HMAC support
+ * 
+ * @ingroup GNU_ZRTP
+ * @{
+ */
+
 #include <stdint.h>
 
 #ifndef SHA256_DIGEST_LENGTH
@@ -82,4 +90,7 @@ void hmac_sha256( uint8_t* key, uint32_t key_length,
 void hmac_sha256( uint8_t* key, uint32_t key_length,
                            uint8_t* data[], uint32_t data_length[],
                            uint8_t* mac, uint32_t* mac_length );
+/**
+ * @}
+ */
 #endif

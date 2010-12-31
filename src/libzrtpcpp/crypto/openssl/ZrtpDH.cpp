@@ -47,7 +47,7 @@
 #include <libzrtpcpp/crypto/ZrtpDH.h>
 #include <libzrtpcpp/ZrtpTextData.h>
 
-extern void initializeOpenSSL();
+// extern void initializeOpenSSL();
 
 static BIGNUM* bnP2048 = NULL;
 static BIGNUM* bnP3072 = NULL;
@@ -61,7 +61,7 @@ static uint8_t dhinit = 0;
 
 void randomZRTP(uint8_t *buf, int32_t length)
 {
-    initializeOpenSSL();
+//    initializeOpenSSL();
     RAND_bytes(buf, length);
 }
 
@@ -193,7 +193,7 @@ ZrtpDH::ZrtpDH(const char* type){
         exit(1);
     }
 
-    initializeOpenSSL();
+//    initializeOpenSSL();
 
     if (!dhinit) {
 	bnP2048 = BN_bin2bn(P2048,sizeof(P2048),NULL);

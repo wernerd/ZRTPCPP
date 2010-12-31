@@ -40,7 +40,7 @@
 
 #include <libzrtpcpp/crypto/aesCFB.h>
 
-extern void initializeOpenSSL();
+// extern void initializeOpenSSL();
 
 
 void aesCfbEncrypt(unsigned char *key,
@@ -52,7 +52,7 @@ void aesCfbEncrypt(unsigned char *key,
     AES_KEY aesKey;
     int usedBytes = 0;
 
-    initializeOpenSSL();
+//    initializeOpenSSL();
 
     memset(&aesKey, 0, sizeof( AES_KEY ) );
     if (keyLength == 16) {
@@ -78,7 +78,7 @@ void aesCfbDecrypt(unsigned char *key,
     AES_KEY aesKey;
     int usedBytes = 0;
 
-    initializeOpenSSL();
+//    initializeOpenSSL();
 
     memset(&aesKey, 0, sizeof( AES_KEY ) );
     if (keyLength == 16) {

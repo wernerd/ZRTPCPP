@@ -18,7 +18,6 @@
 */
 
 #include <libzrtpcpp/ZrtpCallbackWrapper.h>
-#include <cc++/config.h>
 
 ZrtpCallbackWrapper::ZrtpCallbackWrapper(zrtp_Callbacks* cb, ZrtpContext* ctx) :
         c_callbacks(cb), zrtpCtx(ctx)
@@ -58,6 +57,7 @@ void ZrtpCallbackWrapper::sendInfo (GnuZrtpCodes::MessageSeverity severity, int3
 bool ZrtpCallbackWrapper::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
 {
     C_SrtpSecret_t* cs = new C_SrtpSecret_t;
+    cs->symEncAlgorithm = (zrtp_SrtpAlgorithms)secrets->symEncAlgorithm;
     cs->initKeyLen = secrets->initKeyLen;
     cs->initSaltLen = secrets->initSaltLen;
     cs->keyInitiator = secrets->keyInitiator;
@@ -69,6 +69,7 @@ bool ZrtpCallbackWrapper::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity
     cs->saltResponder = secrets->saltResponder;
     cs->sas = new char [secrets->sas.size()+1];
     strcpy(cs->sas, secrets->sas.c_str());
+    cs->authAlgorithm = (zrtp_SrtpAlgorithms)secrets->authAlgorithm;
     cs->srtpAuthTagLen = secrets->srtpAuthTagLen;
 
     bool retval = (c_callbacks->zrtp_srtpSecretsReady(zrtpCtx, cs, (int32_t)part) == 0) ? false : true ;

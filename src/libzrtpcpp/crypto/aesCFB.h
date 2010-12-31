@@ -22,6 +22,13 @@
 #ifndef _AESCFB_H__
 #define _AESCFB_H__
 
+/**
+ * @file aesCFB.h
+ * @brief Function that provide AES CFB mode support
+ * 
+ * @ingroup GNU_ZRTP
+ * @{
+ */
 
 #ifndef AES_BLOCK_SIZE
 #define AES_BLOCK_SIZE 16
@@ -78,4 +85,7 @@ void aesCfbDecrypt(unsigned char *key,
             unsigned char* IV,
             unsigned char *data,
             unsigned int dataLength);
+/**
+ * @}
+ */
 #endif

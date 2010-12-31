@@ -202,6 +202,14 @@ enum zrtpStates {
     numberOfStates      /*!< Gives total number of protocol states */
 };
 
+/*! The algorihms that we support in SRTP and that ZRTP can negotiate. */
+typedef enum {
+    zrtp_Aes = 1,        /*!< Use AES as symmetrical cipher algorithm */
+    zrtp_TwoFish,        /*!< Use TwoFish as symmetrical cipher algorithm */
+    zrtp_Sha1,           /*!< Use Sha1 as authentication algorithm */
+    zrtp_Skein           /*!< Use Skein as authentication algorithm */
+} zrtp_SrtpAlgorithms;
+
 /**
  * This structure contains pointers to the SRTP secrets and the role info.
  *
@@ -212,6 +220,7 @@ enum zrtpStates {
  */
 typedef struct c_srtpSecrets
 {
+    zrtp_SrtpAlgorithms symEncAlgorithm;/*!< symmetrical cipher algorithm */
     const uint8_t* keyInitiator;        /*!< Initiator's key */
     int32_t initKeyLen;                 /*!< Initiator's key length */
     const uint8_t* saltInitiator;       /*!< Initiator's salt */
@@ -220,6 +229,7 @@ typedef struct c_srtpSecrets
     int32_t respKeyLen;                 /*!< Responder's key length */
     const uint8_t* saltResponder;       /*!< Responder's salt */
     int32_t respSaltLen;                /*!< Responder's salt length */
+    zrtp_SrtpAlgorithms authAlgorithm;  /*!< SRTP authentication algorithm */
     int32_t srtpAuthTagLen;             /*!< SRTP authentication length */
     char* sas;                          /*!< The SAS string */
     int32_t  role;                      /*!< ZRTP role of this client */

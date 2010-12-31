@@ -384,6 +384,20 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
     CryptoContext* pcc;
     CryptoContext* recvCryptoContext;
     CryptoContext* senderCryptoContext;
+    int cipher;
+    int authn;
+
+    if (secrets->authAlgorithm == Sha1)
+        authn = SrtpAuthenticationSha1Hmac;
+    
+    if (secrets->authAlgorithm == Skein)
+        authn = SrtpAuthenticationSkeinHmac;
+
+    if (secrets->symEncAlgorithm == Aes)
+        cipher = SrtpEncryptionAESCM;
+    
+    if (secrets->symEncAlgorithm == TwoFish)
+        cipher = SrtpEncryptionTWOCM;
 
     if (part == ForSender) {
         // To encrypt packets: intiator uses initiator keys,
@@ -395,8 +409,8 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
                     0,
                     0,
                     0L,                                      // keyderivation << 48,
-                    SrtpEncryptionAESCM,                     // encryption algo
-                    SrtpAuthenticationSha1Hmac,              // authtentication algo
+                    cipher,                                  // encryption algo
+                    authn,                                   // authtentication algo
                     (unsigned char*)secrets->keyInitiator,   // Master Key
                     secrets->initKeyLen / 8,                 // Master Key length
                     (unsigned char*)secrets->saltInitiator,  // Master Salt
@@ -411,8 +425,8 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
                     0,
                     0,
                     0L,                                      // keyderivation << 48,
-                    SrtpEncryptionAESCM,                     // encryption algo
-                    SrtpAuthenticationSha1Hmac,              // authtentication algo
+                    cipher,                                  // encryption algo
+                    authn,                                   // authtentication algo
                     (unsigned char*)secrets->keyResponder,   // Master Key
                     secrets->respKeyLen / 8,                 // Master Key length
                     (unsigned char*)secrets->saltResponder,  // Master Salt
@@ -446,8 +460,8 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
                     0,
                     0,
                     0L,                                      // keyderivation << 48,
-                    SrtpEncryptionAESCM,                     // encryption algo
-                    SrtpAuthenticationSha1Hmac,              // authtication algo
+                    cipher,                                  // encryption algo
+                    authn,                                   // authtentication algo
                     (unsigned char*)secrets->keyResponder,   // Master Key
                     secrets->respKeyLen / 8,                 // Master Key length
                     (unsigned char*)secrets->saltResponder,  // Master Salt
@@ -462,8 +476,8 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
                     0,
                     0,
                     0L,                                      // keyderivation << 48,
-                    SrtpEncryptionAESCM,                     // encryption algo
-                    SrtpAuthenticationSha1Hmac,              // authtication algo
+                    cipher,                                  // encryption algo
+                    authn,                                   // authtentication algo
                     (unsigned char*)secrets->keyInitiator,   // Master Key
                     secrets->initKeyLen / 8,                 // Master Key length
                     (unsigned char*)secrets->saltInitiator,  // Master Salt

@@ -24,6 +24,14 @@
 #ifndef _SHA256_H
 #define _SHA256_H
 
+/**
+ * @file sha256.h
+ * @brief Function that provide SHA256 support
+ * 
+ * @ingroup GNU_ZRTP
+ * @{
+ */
+
 #include <stdint.h>
 
 #ifndef SHA256_DIGEST_LENGTH
@@ -129,5 +137,8 @@ void sha256Ctx(void* ctx, unsigned char* data,
 void sha256Ctx(void* ctx, unsigned char* dataChunks[],
                unsigned int dataChunkLength[]);
 
+/**
+ * @}
+ */
 #endif
 

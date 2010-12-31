@@ -49,6 +49,14 @@ typedef enum  {
     Initiator       ///< This client is in ZRTP Initiator mode
 } Role;
 
+/// The algorihms that we support in SRTP and that ZRTP can negotiate.
+typedef enum {
+    Aes = 1,        ///< Use AES as symmetrical cipher algorithm
+    TwoFish,        ///< Use TwoFish as symmetrical cipher algorithm
+    Sha1,           ///< Use Sha1 as authentication algorithm
+    Skein           ///< Use Skein as authentication algorithm
+} SrtpAlgorithms;
+    
 /**
  * This structure contains pointers to the SRTP secrets and the role info.
  *
@@ -59,6 +67,7 @@ typedef enum  {
  * of ZRtp clears the data.
  */
 typedef struct srtpSecrets {
+    SrtpAlgorithms symEncAlgorithm;     ///< symmetrical cipher algorithm
     const uint8_t* keyInitiator;        ///< Initiator's key
     int32_t initKeyLen;                 ///< Initiator's key length
     const uint8_t* saltInitiator;       ///< Initiator's salt
@@ -67,6 +76,7 @@ typedef struct srtpSecrets {
     int32_t respKeyLen;                 ///< Responder's key length
     const uint8_t* saltResponder;       ///< Responder's salt
     int32_t respSaltLen;                ///< Responder's salt length
+    SrtpAlgorithms authAlgorithm;       ///< SRTP authentication algorithm
     int32_t srtpAuthTagLen;             ///< SRTP authentication length
     std::string sas;                    ///< The SAS string
     Role  role;                         ///< ZRTP role of this client
