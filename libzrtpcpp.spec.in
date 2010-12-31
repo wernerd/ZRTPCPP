@@ -15,7 +15,7 @@ Release: 0%{?dist}
 License: GPLv3+
 Group: Development/Libraries
 URL: http://www.gnu.org/software/commoncpp/commoncpp.html
-Source0: ftp://ftp.gnu.org/gnu/ccrtp/libzrtpcpp-%{PACKAGE_VERSION}.tar.gz
+Source0: ftp://ftp.gnu.org/gnu/ccrtp/%{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: libccrtp-devel >= 1.8.0
 BuildRequires: pkgconfig
@@ -26,7 +26,7 @@ BuildRequires: @BUILD_REQ@
 This library is a GPL licensed extension to the GNU RTP Stack (GNU ccrtp).
 This extension offers a C++ implementation of Phil Zimmermann's ZRTP 
 specification. The current release is based on 
-draft-zimmermann-avt-zrtp-12.txt which is intended to become the
+draft-zimmermann-avt-zrtp-22 which is intended to become the
 RFC. Phil's Zfone site provides more 
 information, see http://zfoneproject.com/index.html
 
@@ -40,12 +40,6 @@ use this.
 This release supports the basic ZRTP features, it does not support
 preshared specified in the draft. Also the specified Asterisk PBX mode
 is not supported. 
-
-%package
-Group: System/Libraries
-Summary: Runtime library for GNU ZRTP Stack
-Requires: ccrtp >= 1.8.0
-Requires: @PACKAGE_REQ@
 
 %package devel
 Group: Development/Libraries
@@ -106,7 +100,7 @@ documentation for building applications that use libzrtpcpp.
 - Test with zfone3 with Ping packet mode enabled
 - some code cleanup
 
-* Erd Jun 24 2009 - David Sugar <dyfet@gnutelephony.org>
+* Wed Jun 24 2009 - David Sugar <dyfet@gnutelephony.org>
 - Spec updated per current Fedora & CentOS policies.
 - Updated release 1.4.5 has all mandatory IETF interop requirements.
 

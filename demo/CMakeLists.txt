@@ -19,4 +19,4 @@ target_link_libraries(wrappertest zrtpcpp)
 ########### source distribution ########
 include(SourceDistribution)
 src_distribution_init()
-add_src_dist_files(zrtptestMulti.cpp zrtptest.cpp)
+add_src_dist_files(zrtptestMulti.cpp zrtptest.cpp wrappertest.c)

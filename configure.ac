@@ -24,12 +24,12 @@ AC_INIT(src/ZRtp.cpp)
 # unchanged, or LT_VERSION=1:0 if binary linking is changed.
 # (see macros "OST_PROG_LIBVER" and "OST_PROG_LIBRARY" below)
 #
-VERSION="1.5.4"
+VERSION="1.6.0"
 # AC_INIT([libzrtpcpp], [1.0.0] )
 # AC_CONFIG_SRCDIR([configure.ac])
 
-LT_RELEASE="1.5"
-LT_VERSION="0:4"
+LT_RELEASE="1.6"
+LT_VERSION="0:0"
 
 REQUIRES="1.3.0"
 
@@ -150,7 +150,7 @@ AC_ARG_WITH([ccrtp],
             [with_ccrtp=yes])
 
 if test "x$with_ccrtp" != xno; then
-    PKG_CHECK_MODULES(RTPSTACK, libccrtp1 >= 1.7.2, [
+    PKG_CHECK_MODULES(RTPSTACK, libccrtp1 >= 1.8.0, [
         RTPSTACK_LIBPATH=`pkg-config --variable=libdir libccrtp1`
         LIBS="-L$RTPSTACK_LIBPATH $RTPSTACK_LIBS $LIBS"
         CCXX_FLAGS="$CXXFLAGS $RTPSTACK_CFLAGS"
@@ -159,7 +159,7 @@ if test "x$with_ccrtp" != xno; then
     CXXFLAGS="$CXXFLAGS $COMMON_CFLAGS"
     COMMON_LIBPATH=`pkg-config --variable=libdir libccgnu2`
     LIBS="-L$COMMON_LIBPATH $COMMON_LIBS $LIBS"
-    CRYPTOBACKEND="$CRYPTOBACKEND libccrtp1 >= 1.7.2"
+    CRYPTOBACKEND="$CRYPTOBACKEND libccrtp1 >= 1.8.0"
 fi
 AM_CONDITIONAL(CCRTP_SUPPORT, test "${with_ccrtp}" = "yes")
 

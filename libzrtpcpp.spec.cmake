@@ -18,7 +18,6 @@ License: GPLv3+
 Group: Development/Libraries
 URL: http://www.gnu.org/software/commoncpp/commoncpp.html
 Source0: ftp://ftp.gnu.org/gnu/ccrtp/%{name}-%{version}.tar.gz
-Provides: %{name} = %{version}-%{release}
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: libccrtp-devel >= 1.8.0
 BuildRequires: pkgconfig
@@ -33,7 +32,7 @@ Requires: ccrtp >= 1.8.0
 This library is a GPL licensed extension to the GNU RTP Stack (GNU ccrtp).
 This extension offers a C++ implementation of Phil Zimmermann's ZRTP 
 specification. The current release is based on 
-draft-zimmermann-avt-zrtp-16.txt which is intended to become the RFC. 
+draft-zimmermann-avt-zrtp-22 which is intended to become the RFC. 
 Phil's Zfone site provides more  information, see 
 http://zfoneproject.com/index.html
 
