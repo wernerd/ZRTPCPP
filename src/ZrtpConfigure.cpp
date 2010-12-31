@@ -142,6 +142,8 @@ SasTypeEnum::~SasTypeEnum() {}
 AuthLengthEnum::AuthLengthEnum() : EnumBase(AuthLength) {
     insert(hs32);
     insert(hs80);
+    insert(sk32);
+    insert(sk64);
 }
 
 AuthLengthEnum::~AuthLengthEnum() {}
@@ -177,6 +179,8 @@ void ZrtpConfigure::setStandardConfig() {
 
     addAlgo(SasType, zrtpSasTypes.getByName(b32));
 
+    addAlgo(AuthLength, zrtpAuthLengths.getByName(sk32));
+    addAlgo(AuthLength, zrtpAuthLengths.getByName(sk64));
     addAlgo(AuthLength, zrtpAuthLengths.getByName(hs32));
     addAlgo(AuthLength, zrtpAuthLengths.getByName(hs80));
 }

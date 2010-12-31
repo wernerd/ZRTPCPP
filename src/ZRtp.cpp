@@ -2066,10 +2066,10 @@ bool ZRtp::srtpSecretsReady(EnableSecurity part) {
     if (*(int32_t*)(cipher->getName()) == *(int32_t*)two1) {
         sec.respKeyLen = 128;
     }
-    if (*(int32_t*)(cipher->getName()) == *(int32_t*)two1) {
+    if (*(int32_t*)(cipher->getName()) == *(int32_t*)two2) {
         sec.respKeyLen = 192;
     }
-    if (*(int32_t*)(cipher->getName()) == *(int32_t*)two1) {
+    if (*(int32_t*)(cipher->getName()) == *(int32_t*)two3) {
         sec.respKeyLen = 256;
     }
     sec.saltResponder = srtpSaltR;

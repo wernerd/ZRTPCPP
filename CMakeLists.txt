@@ -96,7 +96,7 @@ include(SourceDistribution)
 src_distribution_init()
 add_src_dist_files(AUTHORS COPYING INSTALL NEWS README ChangeLog libzrtpcpp.pc.cmake config.h.cmake libzrtpcpp.spec.cmake)
 
-add_definitions(-g)
+add_definitions(-g -O2)
 if(CMAKE_COMPILER_IS_GNUCXX)
   add_definitions(-Wno-long-long -Wno-char-subscripts)
   add_definitions(-Wall -ansi -pedantic)

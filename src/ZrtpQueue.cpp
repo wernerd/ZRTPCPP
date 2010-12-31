@@ -386,12 +386,17 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
     CryptoContext* senderCryptoContext;
     int cipher;
     int authn;
+    int authKeyLen;
 
-    if (secrets->authAlgorithm == Sha1)
+    if (secrets->authAlgorithm == Sha1) {
         authn = SrtpAuthenticationSha1Hmac;
+        authKeyLen = 20;
+    }
     
-    if (secrets->authAlgorithm == Skein)
+    if (secrets->authAlgorithm == Skein) {
         authn = SrtpAuthenticationSkeinHmac;
+        authKeyLen = 32;
+    }
 
     if (secrets->symEncAlgorithm == Aes)
         cipher = SrtpEncryptionAESCM;
@@ -416,7 +421,7 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
                     (unsigned char*)secrets->saltInitiator,  // Master Salt
                     secrets->initSaltLen / 8,                // Master Salt length
                     secrets->initKeyLen / 8,                 // encryption keyl
-                    20,                                      // authentication key len
+                    authKeyLen,                              // authentication key len
                     secrets->initSaltLen / 8,                // session salt len
                     secrets->srtpAuthTagLen / 8);            // authentication tag lenA
         }
@@ -432,7 +437,7 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
                     (unsigned char*)secrets->saltResponder,  // Master Salt
                     secrets->respSaltLen / 8,                // Master Salt length
                     secrets->respKeyLen / 8,                 // encryption keyl
-                    20,                                      // authentication key len
+                    authKeyLen,                              // authentication key len
                     secrets->respSaltLen / 8,                // session salt len
                     secrets->srtpAuthTagLen / 8);            // authentication tag len
         }
@@ -467,7 +472,7 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
                     (unsigned char*)secrets->saltResponder,  // Master Salt
                     secrets->respSaltLen / 8,                // Master Salt length
                     secrets->respKeyLen / 8,                 // encryption keyl
-                    20,                                      // authentication key len
+                    authKeyLen,                              // authentication key len
                     secrets->respSaltLen / 8,                // session salt len
                     secrets->srtpAuthTagLen / 8);            // authentication tag len
         }
@@ -483,7 +488,7 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
                     (unsigned char*)secrets->saltInitiator,  // Master Salt
                     secrets->initSaltLen / 8,                // Master Salt length
                     secrets->initKeyLen / 8,                 // encryption keyl
-                    20,                                      // authentication key len
+                    authKeyLen,                              // authentication key len
                     secrets->initSaltLen / 8,                // session salt len
                     secrets->srtpAuthTagLen / 8);            // authentication tag len
         }

@@ -15,7 +15,7 @@ endif()
 
 install(FILES 
     ZrtpCodes.h ZrtpConfigure.h ZrtpUserCallback.h ZrtpCallback.h ZrtpCWrapper.h 
-    ZrtpConfigWrapper.h ${ccrtp_inst} DESTINATION include/libzrtpcpp)
+    ${ccrtp_inst} DESTINATION include/libzrtpcpp)
 
 include(SourceDistribution)
 src_distribution_init()
