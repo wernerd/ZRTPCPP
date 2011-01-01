@@ -2028,50 +2028,37 @@ bool ZRtp::srtpSecretsReady(EnableSecurity part) {
 
     if (*(int32_t*)(cipher->getName()) == *(int32_t*)aes1) {
         sec.symEncAlgorithm = Aes;
+        sec.respKeyLen = 128;
         sec.initKeyLen = 128;
     }
     if (*(int32_t*)(cipher->getName()) == *(int32_t*)aes2) {
         sec.symEncAlgorithm = Aes;
+        sec.respKeyLen = 192;
         sec.initKeyLen = 192;
     }
     if (*(int32_t*)(cipher->getName()) == *(int32_t*)aes3) {
         sec.symEncAlgorithm = Aes;
+        sec.respKeyLen = 256;
         sec.initKeyLen = 256;
     }
     if (*(int32_t*)(cipher->getName()) == *(int32_t*)two1) {
         sec.symEncAlgorithm = TwoFish;
+        sec.respKeyLen = 128;
         sec.initKeyLen = 128;
     }
     if (*(int32_t*)(cipher->getName()) == *(int32_t*)two2) {
         sec.symEncAlgorithm = TwoFish;
+        sec.respKeyLen = 192;
         sec.initKeyLen = 192;
     }
     if (*(int32_t*)(cipher->getName()) == *(int32_t*)two3) {
         sec.symEncAlgorithm = TwoFish;
+        sec.respKeyLen = 256;
         sec.initKeyLen = 256;
     }
     sec.saltInitiator = srtpSaltI;
     sec.initSaltLen = 112;
     sec.keyResponder = srtpKeyR;
-    
-    if (*(int32_t*)(cipher->getName()) == *(int32_t*)aes1) {
-        sec.respKeyLen = 128;
-    }
-    if (*(int32_t*)(cipher->getName()) == *(int32_t*)aes2) {
-        sec.respKeyLen = 192;
-    }
-    if (*(int32_t*)(cipher->getName()) == *(int32_t*)aes3) {
-        sec.respKeyLen = 256;
-    }
-    if (*(int32_t*)(cipher->getName()) == *(int32_t*)two1) {
-        sec.respKeyLen = 128;
-    }
-    if (*(int32_t*)(cipher->getName()) == *(int32_t*)two2) {
-        sec.respKeyLen = 192;
-    }
-    if (*(int32_t*)(cipher->getName()) == *(int32_t*)two3) {
-        sec.respKeyLen = 256;
-    }
     sec.saltResponder = srtpSaltR;
     sec.respSaltLen = 112;
 
