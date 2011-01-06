@@ -15,7 +15,7 @@ Name: libzrtpcpp
 Version: @VERSION@
 Release: 0%{?dist}
 License: GPLv3+
-Group: Development/Libraries
+Group: Development/Libraries/C and C++
 URL: http://www.gnu.org/software/commoncpp/commoncpp.html
 Source0: ftp://ftp.gnu.org/gnu/ccrtp/%{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -23,6 +23,7 @@ BuildRequires: libccrtp-devel >= 1.8.0
 BuildRequires: pkgconfig
 BuildRequires: libstdc++-devel
 BuildRequires: @BUILD_REQ@
+BuildRequires: gcc-c++
 Requires: @PACKAGE_REQ@
 Requires: ccrtp >= 1.8.0
 
@@ -48,7 +49,7 @@ is not supported.
 
 # The developement subpackage
 %package devel
-Group: Development/Libraries
+Group: Development/Libraries/C and C++
 Summary: Headers for libzrtpcpp.
 Requires: %{name} = %{version}-%{release}
 Requires: libccrtp-devel >= 1.8.0
@@ -56,7 +57,7 @@ Requires: @BUILD_REQ@
 
 %description devel
 This package provides the header files, link libraries, and
-documentation for building applications that use libzrtpcpp.
+documentation for building applications that use libzrtpcpp
 
 %prep
 %setup -q
