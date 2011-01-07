@@ -190,7 +190,6 @@ ZrtpDH::ZrtpDH(const char* type){
     }
     else {
         fprintf(stderr, "Unknown pubkey algo: %d\n", pkType);
-        exit(1);
     }
 
 //    initializeOpenSSL();

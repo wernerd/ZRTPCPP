@@ -1,97 +1,105 @@
-# Copyright (c) 2008, 2009 David Sugar, Tycho Softworks.
-# This file is free software; as a special exception the author gives
-# unlimited permission to copy and/or distribute it, with or without
-# modifications, as long as this notice is preserved.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY, to the extent permitted by law; without
-# even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-# PARTICULAR PURPOSE.
+# spec file for package libzrtpcpp (Version @VERSION@)
+#
+# Copyright (c) 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+#
+# All modifications and additions to the file contributed by third parties
+# remain the property of their copyright owners, unless otherwise agreed
+# upon. The license for this file, and modifications and additions to the
+# file, is the same license as for the pristine package itself (unless the
+# license for the pristine package is not an Open Source License, in which
+# case the license is the MIT License). An "Open Source License" is a
+# license that conforms to the Open Source Definition (Version 1.9)
+# published by the Open Source Initiative.
 
-%{!?release: %define release 0}
+# Please submit bugfixes or comments via http://bugs.opensuse.org/
+#
 
-Summary: A ccrtp extension for zrtp/Zfone support
-Name: libzrtpcpp
-Version: @VERSION@
-Release: 0%{?dist}
-License: GPLv3+
-Group: Development/Libraries/C and C++
-URL: http://www.gnu.org/software/commoncpp/commoncpp.html
-Source0: ftp://ftp.gnu.org/gnu/ccrtp/%{name}-%{version}.tar.gz
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-BuildRequires: libccrtp-devel >= 1.8.0
-BuildRequires: pkgconfig
-BuildRequires: libstdc++-devel
-BuildRequires: @BUILD_REQ@
-BuildRequires: gcc-c++
-Requires: @PACKAGE_REQ@
-Requires: ccrtp >= 1.8.0
-
-%define srcdirname %{name}-%{version}
+Name:           libzrtpcpp
+Summary:        A ccrtp extension for ZRTP support
+BuildRequires:  gcc-c++ @BUILD_REQ@ pkgconfig cmake
+BuildRequires:  libccrtp-devel >= 1.8.0 
+Version:        @VERSION@
+Release:        0
+License:        GPL v3 or later
+Group:          Development/Libraries/Other
+Url:            http://www.gnu.org/software/commoncpp/commoncpp.html
+Source0:        %{name}-%{version}.tar.bz2
+Source1:        rpmlintrc
+BuildRoot:      %{_tmppath}/%{name}-%{version}-build
+Provides:       %{name} = %{version}
+Obsoletes:      %{name} < %{version}
 
 %description
-This library is a GPL licensed extension to the GNU RTP Stack (GNU ccrtp).
-This extension offers a C++ implementation of Phil Zimmermann's ZRTP 
-specification. The current release is based on 
-draft-zimmermann-avt-zrtp-22 which is intended to become the RFC. 
-Phil's Zfone site provides more  information, see 
-http://zfoneproject.com/index.html
+This library is a GPL licensed extension to the GNU RTP Stack, ccrtp,
+that offers compatibility with Phil Zimmermann's zrtp/Zfone voice
+encryption, and which can be directly embedded into telephony
+applications.
 
-This implementation was tested to work with Phil's Zfone implementations. 
 
-Applications that use GNU ccrtp can use this library to use ZRTP and to
-encrypt any RTP (not RTCP) communication. See the demo programs how to
-use this.
+%description -n libzrtpcpp
+This library is a GPL licensed extension to the GNU RTP Stack, ccrtp,
+that offers compatibility with Phil Zimmermann's zrtp/Zfone voice
+encryption, and which can be directly embedded into telephony
+applications.
 
-This release supports the basic ZRTP features, it does not support
-preshared specified in the draft. Also the specified Asterisk PBX mode
-is not supported. 
 
-# The developement subpackage
+
 %package devel
-Group: Development/Libraries/C and C++
-Summary: Headers for libzrtpcpp.
-Requires: %{name} = %{version}-%{release}
-Requires: libccrtp-devel >= 1.8.0
-Requires: @BUILD_REQ@
+License:        GPL v3 or later
+Group:          Development/Libraries/Other
+Summary:        Headers and static link library for libzrtpcpp
+Requires:       libzrtpcpp = %{version} libccrtp-devel
 
 %description devel
 This package provides the header files, link libraries, and
-documentation for building applications that use libzrtpcpp
+documentation for building applications that use libzrtpcpp.
+
+
 
 %prep
 %setup -q
 
 %build
-cd ..
-%{__rm} -rf build_tree
-%{__mkdir} build_tree
-cd build_tree
-cmake -DCMAKE_INSTALL_PREFIX=%{buildroot}%{_prefix} ../%{srcdirname}
-%{__make}
+mkdir build
+cd build
 
-%install 
-cd ../build_tree
-%{__make} install
+cmake -DCMAKE_INSTALL_PREFIX=%{_prefix} \
+      -DSYSCONFDIR=%{_sysconfdir} \
+      -DMANDIR=%{_mandir} \
+      -DCMAKE_VERBOSE_MAKEFILE=TRUE \
+      -DCMAKE_C_FLAGS_RELEASE:STRING="$RPM_OPT_FLAGS" \
+      -DCMAKE_CXX_FLAGS_RELEASE:STRING="$RPM_OPT_FLAGS" \
+      ..  
+
+make %{?_smp_mflags}
+
+
+# check
+# make check
+
+%install
+cd build
+make install DESTDIR=$RPM_BUILD_ROOT
 
 %clean
-%{__rm} -rf %{buildroot}
-%{__rm} -rf build_tree
+rm -rf "$RPM_BUILD_ROOT"
 
-%files 
-%defattr(-,root,root,-)
-%doc AUTHORS COPYING README NEWS INSTALL ChangeLog
+%files -n libzrtpcpp
+%defattr(-,root,root,0755)
+%doc AUTHORS COPYING README
 %{_libdir}/*.so.*
 
 %files devel
-%defattr(-,root,root,-)
+%defattr(-,root,root,0755)
 %{_libdir}/*.so
 %{_libdir}/pkgconfig/*.pc
-%{_includedir}/libzrtpcpp/
+%{_includedir}/libzrtpcpp/*.h
+%dir %{_includedir}/libzrtpcpp
 
-%post -p /sbin/ldconfig
+%post -n libzrtpcpp -p /sbin/ldconfig
 
-%postun -p /sbin/ldconfig
+%postun -n libzrtpcpp -p /sbin/ldconfig
 
 %changelog
 * Mon Dec 27 2010 - Werner Dittmann <werner.dittmann@t-online.de>

@@ -65,10 +65,6 @@ add_library(zrtpcpp SHARED ${zrtpcpp_src})
 set_target_properties(zrtpcpp PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
 target_link_libraries(zrtpcpp ${LIBS})
 
-src_distribution_init()
-add_src_dist_files(${zrtp_src} ZrtpQueue.cpp ${gcrypt_src} ${openssl_src})
-add_src_dist_dirs(libzrtpcpp)
-
 add_subdirectory(libzrtpcpp)
 
 install(TARGETS zrtpcpp DESTINATION ${LIBDIRNAME})

@@ -130,7 +130,7 @@ file(REMOVE_RECURSE ${SRC_DIST_DIR})
 
 add_custom_target(src_dist 
   COMMAND ${CMAKE_COMMAND} -P ${_src_dist_cmd_file_path}
-  COMMAND ${CMAKE_COMMAND} -E tar cfz ${SRC_DIST_DIR}.tar.gz ${_src_dist_tardir}
+  COMMAND ${CMAKE_COMMAND} -E tar cfj ${SRC_DIST_DIR}.tar.bz2 ${_src_dist_tardir}
   COMMAND ${CMAKE_COMMAND} -E remove_directory ${SRC_DIST_DIR}
   )
 

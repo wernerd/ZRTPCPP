@@ -171,7 +171,6 @@ ZrtpDH::ZrtpDH(const char* type){
     }
     else {
         fprintf(stderr, "Unknown pubkey algo: %d\n", pkType);
-        exit(1);
     }
     ctx = static_cast<void*>(new gcryptCtx);
     gcryptCtx* tmpCtx = static_cast<gcryptCtx*>(ctx);

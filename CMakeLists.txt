@@ -11,8 +11,14 @@
 cmake_minimum_required(VERSION 2.6)
 
 PROJECT(libzrtpcpp)
+
+SET(CPACK_PACKAGE_VERSION_MAJOR 1)
+SET(CPACK_PACKAGE_VERSION_MINOR 6)
+SET(CPACK_PACKAGE_VERSION_PATCH 0)
+
 set (VERSION 1.6.0)
 set (SOVERSION 1.6)
+set (PACKAGE libzrtpcpp)
 
 # set to true for debug and trace during CMakeLists development
 set(CMAKE_VERBOSE_MAKEFILE FALSE)
@@ -26,6 +32,9 @@ include(FindPkgConfig)
 include(CheckLibraryExists)
 include(CheckIncludeFiles)
 include(AutoArgs)
+include(GeneratePackage)
+
+GENERATE_PACKAGING(${PACKAGE} ${VERSION})
 
 # check the -Denable-ccrtp setting, defaults to true
 enable_arg(ccrtp true "Enable GNU ccRTP support for GNU ZRTP")
@@ -92,10 +101,6 @@ configure_file(libzrtpcpp.spec.cmake ${CMAKE_CURRENT_BINARY_DIR}/libzrtpcpp.spec
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src)
 
-include(SourceDistribution)
-src_distribution_init()
-add_src_dist_files(AUTHORS COPYING INSTALL NEWS README ChangeLog libzrtpcpp.pc.cmake config.h.cmake libzrtpcpp.spec.cmake)
-
 add_definitions(-g -O2)
 if(CMAKE_COMPILER_IS_GNUCXX)
   add_definitions(-Wno-long-long -Wno-char-subscripts)
@@ -103,10 +108,12 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 add_subdirectory(src)
-add_src_dist_dirs(src)
-
 add_subdirectory(demo)
-add_src_dist_dirs(demo)
+
+if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/package/)
+    MESSAGE(STATUS "package dir not found")
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/package/)
+endif()
 
 ########### install files ###############
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libzrtpcpp.pc DESTINATION ${LIBDIRNAME}/pkgconfig)
@@ -118,9 +125,3 @@ configure_file(
    IMMEDIATE @ONLY)
 add_custom_target(uninstall
   "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake") 
-
-####### define target to build RPM 
-include(UseRPMTools)
-if(RPMTools_FOUND)
-  RPMTools_ADD_RPM_TARGETS(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/libzrtpcpp.spec.cmake)
-endif()
