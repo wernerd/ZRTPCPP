@@ -75,9 +75,6 @@ cmake -DCMAKE_INSTALL_PREFIX=%{_prefix} \
 make %{?_smp_mflags}
 
 
-# check
-# make check
-
 %install
 cd build
 make install DESTDIR=$RPM_BUILD_ROOT
