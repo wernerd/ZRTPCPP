@@ -27,7 +27,6 @@ Url:            http://www.gnu.org/software/commoncpp/commoncpp.html
 Source0:        %{name}-%{version}.tar.bz2
 Source1:        rpmlintrc
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-Provides:       %{name} = %{version}
 Obsoletes:      %{name} < %{version}
 
 %description
