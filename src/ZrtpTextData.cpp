@@ -20,9 +20,9 @@
  */
 #include <stdint.h>
 #include <libzrtpcpp/ZrtpConfigure.h>
-//                                  1
-//                         1234567890123456
-char clientId[] =    "GNU ZRTP 1.5.4  "; // 16 chars max.
+//                             1
+//                    1234567890123456
+char clientId[] =    "GNU ZRTP 1.6.0  "; // 16 chars max.
 char zrtpVersion[] = "1.10";             // must be 4 chars
 /**
  *
