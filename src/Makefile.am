@@ -55,6 +55,9 @@ libzrtpcpp_la_SOURCES = ZIDFile.cpp \
 		ZrtpConfigure.cpp \
 		ZrtpCWrapper.cpp \
 		ZrtpCallbackWrapper.cpp \
+		libzrtpcpp/crypto/twofish.c \
+		libzrtpcpp/crypto/twofish_cfb.c \
+		libzrtpcpp/crypto/ZwoCFB.cpp \
 		Base32.cpp $(ccrtp_src) $(zrtp_src_g) $(zrtp_src_o)
 
 SUBDIRS = libzrtpcpp libzrtpcpp/crypto

@@ -11,7 +11,8 @@
 AUTOMAKE_OPTIONS = no-dependencies dist-shar
 ccxxincludedir=$(includedir)/libzrtpcpp/crypto
 
-noinst_HEADERS = hmac256.h sha256.h ZrtpDH.h aesCFB.h hmac384.h sha384.h
+noinst_HEADERS = hmac256.h sha256.h ZrtpDH.h aesCFB.h hmac384.h sha384.h \
+		twofish.h twoCFB.h
 
 kdoc_headers = hmac256.h sha256.h ZrtpDH.h aesCFB.h hmac384.h sha384.h
 

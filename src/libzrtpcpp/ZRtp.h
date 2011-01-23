@@ -433,7 +433,7 @@ private:
     /**
      * Length off public key
      */
-    int32_t pubKeyLen;
+//    int32_t pubKeyLen;
     /**
      * My Role in the game
      */

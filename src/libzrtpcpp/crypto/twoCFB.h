@@ -19,8 +19,8 @@
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#ifndef _AESCFB_H__
-#define _AESCFB_H__
+#ifndef _TWOCFB_H__
+#define _TWOCFB_H__
 
 #include <stdint.h>
 
@@ -32,23 +32,23 @@
  * @{
  */
 
-#ifndef AES_BLOCK_SIZE
-#define AES_BLOCK_SIZE 16
+#ifndef TWO_BLOCK_SIZE
+#define TWO_BLOCK_SIZE 16
 #endif
 
 /**
- * Encrypt data with AES CFB mode, full block feedback size.
+ * Encrypt data with Twofish CFB mode, full block feedback size.
  *
  * This functions takes one data chunk and encrypts it with
- * AES CFB mode. The lenght of the data may be arbitrary and
- * it is not needed to be a multiple of AES blocksize.
+ * Twofish CFB mode. The lenght of the data may be arbitrary and
+ * it is not needed to be a multiple of Twofish blocksize.
  *
  * @param key
  *    Points to the key bytes.
  * @param keyLength
  *    Length of the key in bytes
  * @param IV
- *    The initialization vector which must be AES_BLOCKSIZE (16) bytes.
+ *    The initialization vector which must be TWO_BLOCKSIZE (16) bytes.
  * @param data
  *    Points to a buffer that contains and receives the computed
  *    the data (in-place encryption).
@@ -56,22 +56,22 @@
  *    Length of the data in bytes
  */
 
-void aesCfbEncrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data,
+void twoCfbEncrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data,
                    int32_t dataLength);
 
 /**
- * Decrypt data with AES CFB mode, full block feedback size.
+ * Decrypt data with Twofish CFB mode, full block feedback size.
  *
  * This functions takes one data chunk and decrypts it with
- * AES CFB mode. The lenght of the data may be arbitrary and
- * it is not needed to be a multiple of AES blocksize.
+ * Twofish CFB mode. The lenght of the data may be arbitrary and
+ * it is not needed to be a multiple of Twofish blocksize.
  *
  * @param key
  *    Points to the key bytes.
  * @param keyLength
  *    Length of the key in bytes
  * @param IV
- *    The initialization vector which must be AES_BLOCKSIZE (16) bytes.
+ *    The initialization vector which must be TWO_BLOCKSIZE (16) bytes.
  * @param data
  *    Points to a buffer that contains and receives the computed
  *    the data (in-place decryption).
@@ -79,7 +79,7 @@ void aesCfbEncrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data,
  *    Length of the data in bytes
  */
 
-void aesCfbDecrypt(uint8_t* key, int32_t keyLength, const uint8_t* IV, uint8_t *data,
+void twoCfbDecrypt(uint8_t* key, int32_t keyLength, const uint8_t* IV, uint8_t *data,
                    int32_t dataLength);
 /**
  * @}

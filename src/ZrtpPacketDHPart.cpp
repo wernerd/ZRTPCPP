@@ -21,9 +21,6 @@
 
 #include <libzrtpcpp/ZrtpPacketDHPart.h>
 
-#define DH3K 1
-#define DH2K 0
-
 ZrtpPacketDHPart::ZrtpPacketDHPart() {
     DEBUGOUT((fprintf(stdout, "Creating DHPart packet without data and pkt type\n")));
     initialize();
@@ -40,21 +37,31 @@ void ZrtpPacketDHPart::initialize() {
     void* allocated = &data;
     memset(allocated, 0, sizeof(data));
 
-    zrtpHeader = (zrtpPacketHeader_t *)&((DHPartPacket_t *)allocated)->hdr;	// the standard header
+    zrtpHeader = (zrtpPacketHeader_t *)&((DHPartPacket_t *)allocated)->hdr; // the standard header
     DHPartHeader = (DHPart_t *)&((DHPartPacket_t *)allocated)->dhPart;
     pv = ((uint8_t*)allocated) + sizeof(DHPartPacket_t);    // point to the public key value
 
     setZrtpId();
 }
 
+// The fixed numbers below are taken from ZRTP specification, chap 5.1.5
 void ZrtpPacketDHPart::setPubKeyType(const char* pkt) {
     // Well - the algo type is only 4 char thus cast to int32 and compare
     if (*(int32_t*)pkt == *(int32_t*)dh2k) {
         dhLength = 256;
     }
-    else {
+    else if (*(int32_t*)pkt == *(int32_t*)dh3k) {
         dhLength = 384;
     }
+    else if (*(int32_t*)pkt == *(int32_t*)ec25) {
+        dhLength = 64;
+    }
+    else if (*(int32_t*)pkt == *(int32_t*)ec38) {
+        dhLength = 96;
+    }
+    else
+        return;
+
     int length = sizeof(DHPartPacket_t) + dhLength + (2 * ZRTP_WORD_SIZE); // HMAC field is 2*ZRTP_WORD_SIZE
     setLength(length / ZRTP_WORD_SIZE);
 }
@@ -62,21 +69,26 @@ void ZrtpPacketDHPart::setPubKeyType(const char* pkt) {
 ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t *data) {
     DEBUGOUT((fprintf(stdout, "Creating DHPart packet from data\n")));
 
-    zrtpHeader = (zrtpPacketHeader_t *)&((DHPartPacket_t *)data)->hdr;	// the standard header
+    zrtpHeader = (zrtpPacketHeader_t *)&((DHPartPacket_t *)data)->hdr;  // the standard header
     DHPartHeader = (DHPart_t *)&((DHPartPacket_t *)data)->dhPart;
 
     int16_t len = getLength();
     DEBUGOUT((fprintf(stdout, "DHPart length: %d\n", len)));
     if (len == 85) {
-	dhLength = 256;
+        dhLength = 256;
     }
     else if (len == 117) {
-	dhLength = 384;
+        dhLength = 384;
+    }
+    else if (len == 37) {
+        dhLength = 64;
+    }
+    else if (len == 45) {
+        dhLength = 96;
     }
     else {
-	fprintf(stderr, "Wrong DHPart length: %d\n", len);
-	pv = NULL;
-	return;
+        pv = NULL;
+        return;
     }
     pv = data + sizeof(DHPartPacket_t);    // point to the public key value
 }

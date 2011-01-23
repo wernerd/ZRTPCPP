@@ -96,9 +96,10 @@ extern char two1[];
 extern const char* mandatoryCipher;
 
 extern char dh2k[];
-                                  // "EC25"
 extern char dh3k[];
-                                  // "EC38"
+extern char ec25[];
+extern char ec38[];
+
 extern char mult[];
 
 extern const char* mandatoryPubKey;

@@ -36,6 +36,8 @@
 #include <vector>
 #include <string.h>
 
+#include <libzrtpcpp/ZrtpCallback.h>
+
 /**
  * This enumerations list all configurable algorithm types.
  */
@@ -44,6 +46,9 @@ enum AlgoTypes {
     Invalid = 0, HashAlgorithm = 1, CipherAlgorithm, PubKeyAlgorithm, SasType, AuthLength
 };
 
+typedef void(*encrypt_t)(uint8_t*, int32_t, uint8_t*, uint8_t*, int32_t);
+typedef void(*decrypt_t)(uint8_t*, int32_t, const uint8_t*, uint8_t*, int32_t);
+            
 /**
  * The algorithm enumration class.
  *
@@ -67,7 +72,8 @@ public:
      * 
      * @see AlgoTypes
      */
-    AlgorithmEnum(const AlgoTypes type, const char* name);
+    AlgorithmEnum(const AlgoTypes type, const char* name, int32_t klen, 
+                  const char* ra, encrypt_t en, decrypt_t de, SrtpAlgorithms alId);
     
     /**
      * AlgorithmEnum destructor
@@ -83,6 +89,46 @@ public:
      */
     const char* getName();
     
+    /**
+     * Get the algorihm's readable name
+     * 
+     * @returns
+     *    Algorithm's readable name as null terminated C-string. The
+     *    application must not free this memory.
+     */
+    const char* getReadable();
+    
+    /**
+     * Get the algorihm's key length.
+     * 
+     * @returns
+     *    An integer definig the key length in bytes.
+     */
+    int getKeylen();
+    
+    /**
+     * Get the algorihm's integer id.
+     * 
+     * @returns
+     *    An integer that defines the algorithm.
+     */
+    SrtpAlgorithms getAlgoId();
+    /**
+     * Get the algorihm's key length.
+     * 
+     * @returns
+     *    An integer definig the key length in bytes.
+     */
+    encrypt_t getEncrypt();
+
+    /**
+     * Get the algorihm's key length.
+     * 
+     * @returns
+     *    An integer definig the key length in bytes.
+     */
+    decrypt_t getDecrypt();
+
     /**
      * Get the algorithm type of this AlgorithmEnum object.
      * 
@@ -104,6 +150,11 @@ public:
 private:
     AlgoTypes algoType;
     std::string algoName;
+    int32_t   keyLen;
+    std::string readable;
+    encrypt_t encrypt;
+    decrypt_t decrypt;
+    SrtpAlgorithms   algoId;
 };
 
 /**
@@ -184,6 +235,8 @@ protected:
     EnumBase(AlgoTypes algo);
     ~EnumBase();
     void insert(const char* name);
+    void insert(const char* name, int32_t klen, 
+                const char* ra, encrypt_t en, decrypt_t de, SrtpAlgorithms alId);
 
 private:
     AlgoTypes algoType;

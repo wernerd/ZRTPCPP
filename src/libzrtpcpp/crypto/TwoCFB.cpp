@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006, 2007 by Werner Dittmann
+  Copyright (C) 2011 by Werner Dittmann
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -29,61 +29,51 @@
  * files in the program, then also delete it here.
  */
 
-/** Copyright (C) 2006, 2007
+/** Copyright (C) 2011
  *
  * @author  Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <openssl/crypto.h>
-#include <openssl/aes.h>
 #include <string.h>
 
-#include <libzrtpcpp/crypto/aesCFB.h>
+#include <libzrtpcpp/crypto/twoCFB.h>
+#include <libzrtpcpp/crypto/twofish.h>
 
-// extern void initializeOpenSSL();
+static int initialized = 0;
 
-
-void aesCfbEncrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data,
+void twoCfbEncrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data,
                    int32_t dataLength)
 {
-    AES_KEY aesKey;
+    Twofish_key keyCtx;
     int usedBytes = 0;
 
-//    initializeOpenSSL();
+    if (!initialized) {
+        Twofish_initialise();
+        initialized = 1;
+    }
 
-    memset(&aesKey, 0, sizeof( AES_KEY ) );
-    if (keyLength == 16) {
-        AES_set_encrypt_key(key, 128, &aesKey);
-    }
-    else if (keyLength == 32) {
-        AES_set_encrypt_key(key, 256, &aesKey);
-    }
-    else {
-        return;
-    }
-    AES_cfb128_encrypt(data, data, dataLength, &aesKey,
-                       IV, &usedBytes, AES_ENCRYPT);
+    memset(&keyCtx, 0, sizeof(Twofish_key));
+    Twofish_prepare_key(key, keyLength, &keyCtx);
+
+    Twofish_cfb128_encrypt(&keyCtx, (Twofish_Byte*)data, (Twofish_Byte*)data,
+			   (size_t)dataLength, (Twofish_Byte*)IV, &usedBytes);
 }
 
 
-void aesCfbDecrypt(uint8_t* key, int32_t keyLength, const uint8_t* IV, uint8_t *data,
+void twoCfbDecrypt(uint8_t* key, int32_t keyLength, const uint8_t* IV, uint8_t *data,
                    int32_t dataLength)
 {
-    AES_KEY aesKey;
+    Twofish_key keyCtx;
     int usedBytes = 0;
 
-//    initializeOpenSSL();
+    if (!initialized) {
+        Twofish_initialise();
+        initialized = 1;
+    }
 
-    memset(&aesKey, 0, sizeof( AES_KEY ) );
-    if (keyLength == 16) {
-        AES_set_encrypt_key(key, 128, &aesKey);
-    }
-    else if (keyLength == 32) {
-        AES_set_encrypt_key(key, 256, &aesKey);
-    }
-    else {
-        return;
-    }
-    AES_cfb128_encrypt(data, data, dataLength, &aesKey,
-                       (unsigned char*)IV, &usedBytes, AES_DECRYPT);
+    memset(&keyCtx, 0, sizeof(Twofish_key));
+    Twofish_prepare_key(key, keyLength, &keyCtx);
+
+    Twofish_cfb128_decrypt(&keyCtx, (Twofish_Byte*)data, (Twofish_Byte*)data, 
+			   (size_t)dataLength, (Twofish_Byte*)IV, &usedBytes);
 }

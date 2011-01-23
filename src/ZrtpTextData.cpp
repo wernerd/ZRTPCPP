@@ -77,10 +77,10 @@ char two1[] = "2FS1";
 
 const char* mandatoryCipher = aes1;
 
-char dh2k[] =  "DH2k";
-              // "EC25"
+char dh2k[] = "DH2k";
+char ec25[] = "EC25";
 char dh3k[] = "DH3k";
-              // "EC38"
+char ec38[] = "EC38";
 char mult[] = "Mult";
 const char* mandatoryPubKey = dh3k;
 

@@ -1,8 +1,13 @@
+#include <libzrtpcpp/crypto/aesCFB.h>
+#include <libzrtpcpp/crypto/twoCFB.h>
 #include <libzrtpcpp/ZrtpConfigure.h>
 #include <libzrtpcpp/ZrtpTextData.h>
 
-AlgorithmEnum::AlgorithmEnum(const AlgoTypes type, const char* name):
-    algoType(type) , algoName(name) {
+AlgorithmEnum::AlgorithmEnum(const AlgoTypes type, const char* name, 
+                             int32_t klen, const char* ra, encrypt_t en, 
+                             decrypt_t de, SrtpAlgorithms alId):
+    algoType(type) , algoName(name), keyLen(klen), readable(ra), encrypt(en),
+    decrypt(de), algoId(alId) {
 }
 
 AlgorithmEnum::~AlgorithmEnum()
@@ -13,6 +18,26 @@ const char* AlgorithmEnum::getName() {
     return algoName.c_str(); 
 }
 
+const char* AlgorithmEnum::getReadable() {
+    return readable.c_str();
+}
+    
+int AlgorithmEnum::getKeylen() {
+    return keyLen;
+}
+
+SrtpAlgorithms AlgorithmEnum::getAlgoId() {
+    return algoId;
+}
+
+encrypt_t AlgorithmEnum::getEncrypt() {
+    return encrypt;
+}
+
+decrypt_t AlgorithmEnum::getDecrypt() {
+    return decrypt;
+}
+
 AlgoTypes AlgorithmEnum::getAlgoType() { 
     return algoType; 
 }
@@ -21,7 +46,7 @@ bool AlgorithmEnum::isValid() {
     return (algoType != Invalid); 
 }
 
-static AlgorithmEnum invalidAlgo(Invalid, "");
+static AlgorithmEnum invalidAlgo(Invalid, "", 0, "", NULL, NULL, None);
 
 
 EnumBase::EnumBase(AlgoTypes a) : algoType(a) {
@@ -32,7 +57,15 @@ EnumBase::~EnumBase() {}
 void EnumBase::insert(const char* name) {
     if (!name)
         return;
-    AlgorithmEnum* e = new AlgorithmEnum(algoType, name);
+    AlgorithmEnum* e = new AlgorithmEnum(algoType, name, 0, "", NULL, NULL, None);
+    algos.push_back(e);
+}
+
+void EnumBase::insert(const char* name, int32_t klen, const char* ra,
+                      encrypt_t enc, decrypt_t dec, SrtpAlgorithms alId) {
+    if (!name)
+        return;
+    AlgorithmEnum* e = new AlgorithmEnum(algoType, name, klen, ra, enc, dec, alId);
     algos.push_back(e);
 }
 
@@ -110,8 +143,10 @@ HashEnum::~HashEnum() {}
  * Set up the enumeration list for available symmetric cipher algorithms
  */
 SymCipherEnum::SymCipherEnum() : EnumBase(CipherAlgorithm) {
-    insert(aes3);
-    insert(aes1);
+    insert(aes3, 32, "AES-CM-256", aesCfbEncrypt, aesCfbDecrypt, Aes);
+    insert(aes1, 16, "AES-CM-128", aesCfbEncrypt, aesCfbDecrypt, Aes);
+    insert(two3, 32, "TWO-CM-256", twoCfbEncrypt, twoCfbDecrypt, TwoFish);
+    insert(two1, 16, "TWO-CM-128", twoCfbEncrypt, twoCfbDecrypt, TwoFish);
 }
 
 SymCipherEnum::~SymCipherEnum() {}
@@ -123,6 +158,8 @@ PubKeyEnum::PubKeyEnum() : EnumBase(PubKeyAlgorithm) {
     insert(dh2k);
     insert(dh3k);
     insert(mult);
+    insert(ec25);
+    insert(ec38);
 }
 
 PubKeyEnum::~PubKeyEnum() {}
@@ -137,13 +174,13 @@ SasTypeEnum::SasTypeEnum() : EnumBase(SasType) {
 SasTypeEnum::~SasTypeEnum() {}
 
 /**
- * Set up the enumeration list for available SRTP authnticaion lengths
+ * Set up the enumeration list for available SRTP authentications
  */
 AuthLengthEnum::AuthLengthEnum() : EnumBase(AuthLength) {
-    insert(hs32);
-    insert(hs80);
-    insert(sk32);
-    insert(sk64);
+    insert(hs32, 32, "", NULL, NULL, Sha1);
+    insert(hs80, 80, "", NULL, NULL, Sha1);
+    insert(sk32, 32, "", NULL, NULL, Skein);
+    insert(sk64, 64, "", NULL, NULL, Skein);
 }
 
 AuthLengthEnum::~AuthLengthEnum() {}
@@ -173,7 +210,9 @@ void ZrtpConfigure::setStandardConfig() {
     addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName(aes3));
     addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName(aes1));
 
+    addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName(ec25));
     addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName(dh3k));
+    addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName(ec38));
     addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName(dh2k));
     addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName(mult));
 

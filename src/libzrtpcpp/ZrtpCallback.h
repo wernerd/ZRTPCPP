@@ -51,6 +51,7 @@ typedef enum  {
 
 /// The algorihms that we support in SRTP and that ZRTP can negotiate.
 typedef enum {
+    None,
     Aes = 1,        ///< Use AES as symmetrical cipher algorithm
     TwoFish,        ///< Use TwoFish as symmetrical cipher algorithm
     Sha1,           ///< Use Sha1 as authentication algorithm

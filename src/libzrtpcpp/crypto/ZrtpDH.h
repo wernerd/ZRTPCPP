@@ -45,6 +45,11 @@
  */
 void randomZRTP(uint8_t *buf, int32_t length);
 
+const int32_t DH2K = 0;
+const int32_t DH3K = 1;
+const int32_t EC25 = 2;
+const int32_t EC38 = 3;
+
 
 /**
  * Implementation of Diffie-Helman for ZRTP

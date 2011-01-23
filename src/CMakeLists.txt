@@ -35,6 +35,10 @@ if(enable_ccrtp)
   set(ccrtp_src ZrtpQueue.cpp)
 endif()
 
+set(twofish_srcs libzrtpcpp/crypto/twofish.c
+		 libzrtpcpp/crypto/twofish_cfb.c
+		 libzrtpcpp/crypto/TwoCFB.cpp)
+
 set(zrtp_src 
     ZrtpCallbackWrapper.cpp
     ZIDFile.cpp
@@ -59,7 +63,7 @@ set(zrtp_src
     ZrtpCWrapper.cpp
     Base32.cpp)
 
-set(zrtpcpp_src ${zrtp_src} ${ccrtp_src} ${crypto_src})
+set(zrtpcpp_src ${zrtp_src} ${ccrtp_src} ${crypto_src} ${twofish_srcs})
 
 add_library(zrtpcpp SHARED ${zrtpcpp_src})
 set_target_properties(zrtpcpp PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
