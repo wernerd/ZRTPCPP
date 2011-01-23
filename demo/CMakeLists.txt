@@ -10,8 +10,8 @@ target_link_libraries(zrtptestMulti zrtpcpp)
 
 ########### next target ###############
 
-add_executable(wrappertest wrappertest.c)
-target_link_libraries(wrappertest zrtpcpp)
+#add_executable(wrappertest wrappertest.c)
+#target_link_libraries(wrappertest zrtpcpp)
 
 ########### install files ###############
 # None

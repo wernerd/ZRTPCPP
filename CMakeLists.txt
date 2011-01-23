@@ -14,9 +14,9 @@ PROJECT(libzrtpcpp)
 
 SET(CPACK_PACKAGE_VERSION_MAJOR 1)
 SET(CPACK_PACKAGE_VERSION_MINOR 6)
-SET(CPACK_PACKAGE_VERSION_PATCH 0)
+SET(CPACK_PACKAGE_VERSION_PATCH 1)
 
-set (VERSION 1.6.0)
+set (VERSION 1.6.1)
 set (SOVERSION 1.6)
 set (PACKAGE libzrtpcpp)
 
@@ -103,7 +103,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src)
 
 add_definitions(-g -O2 -fno-strict-aliasing)
 if(CMAKE_COMPILER_IS_GNUCXX)
-  add_definitions(-Wno-long-long -Wno-char-subscripts)
+  add_definitions(-DCCXX_NAMESPACES -Wno-long-long -Wno-char-subscripts)
   add_definitions(-Wall -ansi -pedantic)
 endif()
 
