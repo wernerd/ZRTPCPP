@@ -26,7 +26,7 @@ set(CMAKE_VERBOSE_MAKEFILE FALSE)
 # find project specific modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
-# include most of the fine stuff we need 
+# include most of the fine stuff we need
 include(FindGcryptConfig)
 include(FindPkgConfig)
 include(CheckLibraryExists)
@@ -54,6 +54,13 @@ endif()
 set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})
 
 if(enable_ccrtp)
+    if (USES_UCOMMON_INCLUDE_DIRS)
+        message(STATUS "  Using local commoncpp dependency")
+    else()
+        find_package(PkgConfig)
+        pkg_check_modules(USES_CCRTP libccrtp>=2.0.0)
+endif()
+
   pkg_check_modules(CCRTP libccrtp1>=1.8.0)
   set (LIBS ${LIBS} ${CCRTP_LDFLAGS})
 endif()
@@ -68,7 +75,7 @@ gcr_check(GCRYPT gcrypt)
 #  set(PACKAGE_REQ "libgcrypt")
 #else()
   pkg_check_modules(OPENSSL libcrypto>=0.9.8)
-  if (OPENSSL_FOUND) 
+  if (OPENSSL_FOUND)
     check_include_files(openssl/bn.h HAVE_OPENSSL_BN_H)
     check_include_files(openssl/aes.h HAVE_OPENSSL_AES_H)
     check_include_files(openssl/sha.h HAVE_OPENSSL_SHA_H)
@@ -124,4 +131,4 @@ configure_file(
   "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
    IMMEDIATE @ONLY)
 add_custom_target(uninstall
-  "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake") 
+  "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
