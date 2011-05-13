@@ -109,7 +109,7 @@ configure_file(libzrtpcpp.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/libzrtpcpp.pc @ON
 
 configure_file(libzrtpcpp.spec.cmake ${CMAKE_CURRENT_BINARY_DIR}/libzrtpcpp.spec @ONLY)
 
-include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src)
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 add_definitions(-g -O2 -fno-strict-aliasing)
 if(CMAKE_COMPILER_IS_GNUCXX)

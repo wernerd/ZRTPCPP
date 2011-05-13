@@ -21,7 +21,7 @@
 /**
  * @file ZrtpPacketErrorAck.h
  * @brief The ZRTP ErrorAck message
- *  
+ *
  * @ingroup GNU_ZRTP
  * @{
  */
@@ -36,7 +36,7 @@
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
-class ZrtpPacketErrorAck : public ZrtpPacketBase {
+class __EXPORT ZrtpPacketErrorAck : public ZrtpPacketBase {
 
  public:
     /// Creates a ErrorAck packet with default data

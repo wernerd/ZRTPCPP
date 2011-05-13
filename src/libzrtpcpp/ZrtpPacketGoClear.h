@@ -21,7 +21,7 @@
 /**
  * @file ZrtpPacketGoClear.h
  * @brief The ZRTP GoClear message
- *  
+ *
  * GNU ZRTP does not implement GoClear feature
  * @ingroup GNU_ZRTP
  * @{
@@ -38,7 +38,7 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-class ZrtpPacketGoClear : public ZrtpPacketBase {
+class __EXPORT ZrtpPacketGoClear : public ZrtpPacketBase {
 
  protected:
     GoClear_t* clearHeader;
@@ -49,7 +49,7 @@ class ZrtpPacketGoClear : public ZrtpPacketBase {
 
     /// Creates a GoClear packet from received data
     ZrtpPacketGoClear(uint8_t* data);
-    
+
     virtual ~ZrtpPacketGoClear();
 
     /// Not used

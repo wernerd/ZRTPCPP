@@ -21,7 +21,7 @@
 /**
  * @file ZrtpPacketClearAck.h
  * @brief The ZRTP ClearAck message
- *  
+ *
  * @ingroup GNU_ZRTP
  * @{
  */
@@ -36,13 +36,13 @@
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
-class ZrtpPacketClearAck : public ZrtpPacketBase {
+class __EXPORT ZrtpPacketClearAck : public ZrtpPacketBase {
 
  public:
-    ZrtpPacketClearAck();		/// Creates a ClearAck packet with default data
-    ZrtpPacketClearAck(uint8_t* data);	/// Creates a ClearAck packet from received data
+    ZrtpPacketClearAck();       /// Creates a ClearAck packet with default data
+    ZrtpPacketClearAck(uint8_t* data);  /// Creates a ClearAck packet from received data
     virtual ~ZrtpPacketClearAck();
-  
+
  private:
      ClearAckPacket_t data;
 };

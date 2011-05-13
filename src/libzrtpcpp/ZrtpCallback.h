@@ -27,6 +27,7 @@
 
 #include <string>
 #include <stdint.h>
+#include <commoncpp/config.h>
 #include <libzrtpcpp/ZrtpCodes.h>
 
 /**
@@ -57,7 +58,7 @@ typedef enum {
     Sha1,           ///< Use Sha1 as authentication algorithm
     Skein           ///< Use Skein as authentication algorithm
 } SrtpAlgorithms;
-    
+
 /**
  * This structure contains pointers to the SRTP secrets and the role info.
  *
@@ -103,13 +104,13 @@ enum EnableSecurity {
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-class ZrtpCallback {
+class __EXPORT ZrtpCallback {
 
 protected:
     friend class ZRtp;
 
     virtual ~ZrtpCallback() {};
-    
+
     /**
      * Send a ZRTP packet via RTP.
      *
@@ -321,7 +322,7 @@ protected:
      * After ZRTP received a SAS signature in one of the Confirm packets it
      * call this method. The client may use <code>getSignatureLength()</code>
      * and <code>getSignatureData()</code>of ZrtpQueue to get the signature
-     * data and perform the signature check. Refer to chapter 8.2 of ZRTP 
+     * data and perform the signature check. Refer to chapter 8.2 of ZRTP
      * specification.
      *
      * If the signature check fails the client may return false to ZRTP. In

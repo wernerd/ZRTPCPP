@@ -22,7 +22,7 @@
 /**
  * @file ZrtpPacketPingAck.h
  * @brief The ZRTP PingAck message
- *  
+ *
  * @ingroup GNU_ZRTP
  * @{
  */
@@ -34,7 +34,7 @@
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
-class ZrtpPacketPingAck : public ZrtpPacketBase {
+class __EXPORT ZrtpPacketPingAck : public ZrtpPacketBase {
 
  protected:
     PingAck_t* pingAckHeader;   ///< Points to PingAck message
@@ -45,7 +45,7 @@ class ZrtpPacketPingAck : public ZrtpPacketBase {
 
     /// Creates a PingAck message from received data
     ZrtpPacketPingAck(uint8_t* data);
-    
+
     virtual ~ZrtpPacketPingAck();
 
     /// Get SSRC from PingAck message
@@ -53,10 +53,10 @@ class ZrtpPacketPingAck : public ZrtpPacketBase {
 
     /// Set ZRTP protocol version field, fixed ASCII character array
     void setVersion(uint8_t *text)      { memcpy(pingAckHeader->version, text, ZRTP_WORD_SIZE ); }
-    
+
     /// Set SSRC in PingAck message
     void setSSRC(uint32_t data)         {pingAckHeader->ssrc = htonl(data); };
-    
+
     /// Set remote endpoint hash, fixed byte array
     void setRemoteEpHash(uint8_t *hash) { memcpy(pingAckHeader->remoteEpHash, hash, sizeof(pingAckHeader->remoteEpHash)); }
 

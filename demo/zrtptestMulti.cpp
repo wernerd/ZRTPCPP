@@ -22,11 +22,9 @@
 #include <libzrtpcpp/ZrtpUserCallback.h>
 #include <libzrtpcpp/ZrtpConfigure.h>
 
-#ifdef  CCXX_NAMESPACES
 using namespace ost;
 using namespace std;
 using namespace GnuZrtpCodes;
-#endif
 
 /* maybe should be by special define...
 static void hexdump(const char* title, const unsigned char *s, int l) {
@@ -107,9 +105,9 @@ static ZrtpSendPacketTransmissionTestCB* ztxcbMulti = NULL;
  *
  * The next two classes show how to use <code>SymmetricZRTPSession</code>
  * using the standard ZRTP handshake an switching to encrypted (SRTP) mode.
- * The application enables this by calling <code>initialize(...)</code>. 
+ * The application enables this by calling <code>initialize(...)</code>.
  * In addition the application sets a callback class (see above). ZRTP calls
- * the methods of the callback class and the application may implement 
+ * the methods of the callback class and the application may implement
  * appropriate methods to deal with these triggers.
  */
 
@@ -173,7 +171,7 @@ public:
  * Simple User Callback class
  *
  * This class overwrite some methods from ZrtpUserCallback to get information
- * about ZRTP processing and information about ZRTP results. The standard 
+ * about ZRTP processing and information about ZRTP results. The standard
  * implementation of this class just perform return, thus effectively
  * supressing any callback or trigger.
  */
@@ -218,7 +216,7 @@ class MyUserCallback: public ZrtpUserCallback {
         warningMap.insert(pair<int32, std::string*>(WarningCRCmismatch, new string("Internal ZRTP packet checksum mismatch - packet dropped")));
         warningMap.insert(pair<int32, std::string*>(WarningSRTPauthError, new string("Dropping packet because SRTP authentication failed!")));
         warningMap.insert(pair<int32, std::string*>(WarningSRTPreplayError, new string("Dropping packet because SRTP replay check failed!")));
-        warningMap.insert(pair<int32, std::string*>(WarningNoExpectedRSMatch, 
+        warningMap.insert(pair<int32, std::string*>(WarningNoExpectedRSMatch,
                           new string("Valid retained shared secrets availabe but no matches found - must verify SAS")));
 
         severeMap.insert(pair<int32, std::string*>(SevereHelloHMACFailed, new string("Hash HMAC check of Hello failed!")));

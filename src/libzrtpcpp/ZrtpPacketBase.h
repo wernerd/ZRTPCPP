@@ -25,10 +25,10 @@
 /**
  * @file ZrtpPacketBase.h
  * @brief The ZRTP message header class
- * 
+ *
  * This class defines the ZRTP message header and provides access and
  * check methods.
- * 
+ *
  * @ingroup GNU_ZRTP
  * @{
  */
@@ -57,7 +57,7 @@ const uint16_t zrtpId = 0x505a;
  *
  * All other ZRTP packet classes inherit from this class. It does not have
  * an implementation of its own.
- * 
+ *
  * The standard constructors of the subclasses usually initialize the @c allocate
  * field with their fixed data array which is large enough to hold all message
  * data. If an implementation needs to change this to use dynamic memory
@@ -67,7 +67,7 @@ const uint16_t zrtpId = 0x505a;
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-class ZrtpPacketBase {
+class __EXPORT ZrtpPacketBase {
 
   private:
 
@@ -83,31 +83,31 @@ class ZrtpPacketBase {
 
     /**
      * Get pointer to ZRTP header
-     * 
+     *
      * @return
      *     Pointer to ZRTP header structure.
      */
     const uint8_t* getHeaderBase() { return (const uint8_t*)zrtpHeader; };
-    
+
     /**
      * Check is this is a ZRTP message
-     * 
+     *
      * @return
      *     @c true if check was ok
      */
     bool isZrtpPacket()            { return (ntohs(zrtpHeader->zrtpId) == zrtpId); };
-    
+
     /**
      * Get the length in words of the ZRTP message
-     * 
+     *
      * @return
      *     The length in words
      */
     uint16_t getLength()           { return ntohs(zrtpHeader->length); };
-    
+
     /**
      * Return pointer to fixed length message type ASCII data
-     * 
+     *
      * @return
      *     Pointer to ASCII character array
      */
@@ -115,21 +115,21 @@ class ZrtpPacketBase {
 
     /**
      * Set the lenght field in the ZRTP header
-     * 
+     *
      * @param len
      *     The length of the ZRTP message in words, host order
      */
     void setLength(uint16_t len)  { zrtpHeader->length = htons(len); };
-    
+
     /**
      * Copy the message type ASCII data to ZRTP message type field
-     * 
+     *
      * @param msg
      *     Pointer to message type ASCII character array
      */
-    void setMessageType(uint8_t *msg) 
+    void setMessageType(uint8_t *msg)
         { memcpy(zrtpHeader->messageType, msg, sizeof(zrtpHeader->messageType)); };
-        
+
     /**
      * Initializes the ZRTP Id field
      */

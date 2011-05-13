@@ -30,9 +30,8 @@
 
 static TimeoutProvider<std::string, ost::ZrtpQueue*>* staticTimeoutProvider = NULL;
 
-using namespace GnuZrtpCodes;
-
 NAMESPACE_COMMONCPP
+using namespace GnuZrtpCodes;
 
 ZrtpQueue::ZrtpQueue(uint32 size, RTPApplication& app) :
         AVPQueue(size,app)

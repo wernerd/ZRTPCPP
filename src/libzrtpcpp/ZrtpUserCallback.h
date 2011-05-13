@@ -21,7 +21,7 @@
 /**
  * @file ZrtpUserCallback.h
  * @brief The ZRTP UserCallback class
- *  
+ *
  * @ingroup GNU_ZRTP
  * @{
  */
@@ -51,7 +51,7 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-class ZrtpUserCallback {
+class __EXPORT ZrtpUserCallback {
 
     public:
 
@@ -193,7 +193,7 @@ class ZrtpUserCallback {
          *
          * After ZRTP core was able to compute the Short Authentication String
          * (SAS) it calls this method. The client may now use an approriate
-         * method to sign the SAS. The client may use 
+         * method to sign the SAS. The client may use
          * setSignatureData() of ZrtpQueue to store the signature
          * data an enable signature transmission to the other peer. Refer
          * to chapter 8.2 of ZRTP specification.
@@ -213,7 +213,7 @@ class ZrtpUserCallback {
          * After ZRTP received a SAS signature in one of the Confirm packets it
          * call this method. The client may use <code>getSignatureLength()</code>
          * and <code>getSignatureData()</code>of ZrtpQueue to get the signature
-         * data and perform the signature check. Refer to chapter 8.2 of ZRTP 
+         * data and perform the signature check. Refer to chapter 8.2 of ZRTP
          * specification.
          *
          * If the signature check fails the client may return false to ZRTP. In

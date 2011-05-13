@@ -21,7 +21,7 @@
 /**
  * @file ZrtpPacketHelloAck.h
  * @brief The ZRTP HelloAck message
- *  
+ *
  * @ingroup GNU_ZRTP
  * @{
  */
@@ -37,7 +37,7 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-class ZrtpPacketHelloAck : public ZrtpPacketBase {
+class __EXPORT ZrtpPacketHelloAck : public ZrtpPacketBase {
 
  public:
     /// Creates a HelloAck packet with default data
@@ -45,7 +45,7 @@ class ZrtpPacketHelloAck : public ZrtpPacketBase {
 
     /// Creates a HelloAck packet from received data
     ZrtpPacketHelloAck(uint8_t* data);
-    
+
     virtual ~ZrtpPacketHelloAck();
 
  private:

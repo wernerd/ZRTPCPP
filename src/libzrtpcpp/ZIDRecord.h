@@ -22,17 +22,18 @@
 /**
  * @file ZIDRecord.h
  * @brief ZID record management
- * 
- * A ZID record stores (caches) ZID (ZRTP ID) specific data that helps ZRTP 
- * to achives its key continuity feature. Please refer to the ZRTP 
+ *
+ * A ZID record stores (caches) ZID (ZRTP ID) specific data that helps ZRTP
+ * to achives its key continuity feature. Please refer to the ZRTP
  * specification to get detailed information about the ZID.
- * 
+ *
  * @ingroup GNU_ZRTP
  * @{
  */
 
 #include <string.h>
 #include <stdint.h>
+#include <commoncpp/config.h>
 
 #define IDENTIFIER_LEN  12
 #define RS_LENGTH       32
@@ -40,14 +41,14 @@
 
 /**
  * This is the recod structure of version 1 ZID records.
- * 
+ *
  * This is not longer in use - only during migration.
  */
 typedef struct zidrecord1 {
     char recValid;  //!< if 1 record is valid, if 0: invalid
-	char ownZid;	//!< if >1 record contains own ZID, usually 1st record
-	char rs1Valid;  //!< if 1 RS1 contains valid data
-	char rs2Valid;  //!< if 1 RS2 contains valid data
+    char ownZid;    //!< if >1 record contains own ZID, usually 1st record
+    char rs1Valid;  //!< if 1 RS1 contains valid data
+    char rs2Valid;  //!< if 1 RS2 contains valid data
     unsigned char identifier[IDENTIFIER_LEN]; ///< the peer's ZID or own ZID
     unsigned char rs1Data[RS_LENGTH], rs2Data[RS_LENGTH]; ///< the peer's RS data
 } zidrecord1_t;
@@ -56,10 +57,10 @@ typedef struct zidrecord1 {
  * This is the recod structure of version 2 ZID records.
  */
 typedef struct zidrecord2 {
-    char version;	///< version number of file format, this is #2
-	char flags;	    ///< bit field holding various flags, see below
-	char filler1;   ///< round up to next 32 bit 
-	char filler2;   ///< round up to next 32 bit
+    char version;   ///< version number of file format, this is #2
+    char flags;     ///< bit field holding various flags, see below
+    char filler1;   ///< round up to next 32 bit
+    char filler2;   ///< round up to next 32 bit
     unsigned char identifier[IDENTIFIER_LEN]; ///< the peer's ZID or own ZID
     unsigned char rs1Interval[TIME_LENGTH];   ///< expiration time of RS1; -1 means indefinite
     unsigned char rs1Data[RS_LENGTH];         ///< the peer's RS2 data
@@ -76,7 +77,7 @@ typedef struct zidrecord2 {
  * to construct shared secrets.
  * <p/>
  * NOTE: ZIDRecord has ZIDFile as friend. ZIDFile knows about the private
- *	 data of ZIDRecord - please keep both classes synchronized.
+ *   data of ZIDRecord - please keep both classes synchronized.
  *
  * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
@@ -88,7 +89,7 @@ static const int RS2Valid         = 0x8;
 static const int MITMKeyAvailable = 0x10;
 static const int OwnZIDRecord     = 0x20;
 
-class ZIDRecord {
+class __EXPORT ZIDRecord {
     friend class ZIDFile;
 
 private:
@@ -98,8 +99,8 @@ private:
     /*
      * The default constructor is private
      */
-    ZIDRecord() {	
-	record.version = 2;
+    ZIDRecord() {
+    record.version = 2;
     }
 
     /**
@@ -115,39 +116,39 @@ private:
 
     bool isValid()    { return ((record.flags & Valid) == Valid); }
     void setValid()   { record.flags |= Valid; }
-    
+
 public:
     /**
      * Create a ZID Record with given ZID data
-     * 
+     *
      * The method creates a new ZID record and initializes its ZID
      * data field. All other fields are set to null.
-     * 
+     *
      * An application can use this pre-initialized record to look
      * up the associated record in the ZID file. If the record is
      * available, the ZID record fields are filled with the stored
      * data.
-     * 
+     *
      * @param idData
      *     Pointer to the fixed length ZID data
      * @see ZIDFile::getRecord
      */
     ZIDRecord(const unsigned char *idData) {
-	memset(&record, 0, sizeof(zidrecord2_t));
-	memcpy(record.identifier, idData, IDENTIFIER_LEN);
-	record.version = 2;
+    memset(&record, 0, sizeof(zidrecord2_t));
+    memcpy(record.identifier, idData, IDENTIFIER_LEN);
+    record.version = 2;
     }
 
     /**
      * Set @c valid flag in RS1
      */
     void setRs1Valid()   { record.flags |= RS1Valid; }
-    
+
     /**
      * reset @c valid flag in RS1
      */
     void resetRs1Valid() { record.flags &= ~RS1Valid; }
-    
+
     /**
      * Check @c valid flag in RS1
      */
@@ -157,12 +158,12 @@ public:
      * Set @c valid flag in RS2
      */
     void setRs2Valid()   { record.flags |= RS2Valid; }
-    
+
     /**
      * Reset @c valid flag in RS2
      */
     void resetRs2Valid() { record.flags &= ~RS2Valid; }
-    
+
     /**
      * Check @c valid flag in RS2
      */
@@ -172,12 +173,12 @@ public:
      * Set MITM key available
      */
     void setMITMKeyAvailable()    { record.flags |= MITMKeyAvailable; }
-    
+
     /**
      * Reset MITM key available
      */
     void resetMITMKeyAvailable()  { record.flags &= ~MITMKeyAvailable; }
-    
+
     /**
      * Check MITM key available is set
      */
@@ -191,7 +192,7 @@ public:
      * Reset own ZID record marker
      */
     void resetOwnZIDRecord(){ record.flags = 0; }
-    
+
     /**
      * Check own ZID record marker
      */
@@ -205,7 +206,7 @@ public:
      * Reset SAS for this ZID as verified
      */
     void resetSasVerified() { record.flags &= ~SASVerified; }
-    
+
     /**
      * Check if SAS for this ZID was verified
      */
@@ -215,14 +216,14 @@ public:
      * Return the ZID for this record
      */
     const uint8_t* getIdentifier() {return record.identifier; }
-    
+
     /**
      * Check if RS1 is still valid
      *
      * Returns true if RS1 is still valid, false otherwise.
      *
      * @return
-     *    Returns true is RS1 is not expired (valid), false otherwise. 
+     *    Returns true is RS1 is not expired (valid), false otherwise.
      */
     const bool isRs1NotExpired();
 
@@ -237,7 +238,7 @@ public:
      * Returns true if RS2 is still valid, false otherwise.
      *
      * @return
-     *    Returns true is RS2 is not expired (valid), false otherwise. 
+     *    Returns true is RS2 is not expired (valid), false otherwise.
      */
     const bool isRs2NotExpired();
 
@@ -255,8 +256,8 @@ public:
      * the expiration time of the and stores the result together with
      * the new RS1.
      *
-     * If the expiration value is -1 then this RS will never expire. 
-     * 
+     * If the expiration value is -1 then this RS will never expire.
+     *
      * If the expiration value is 0 then the expiration value of a
      * stored RS1 is cleared and no new RS1 value is stored. Also RS2
      * is left unchanged.

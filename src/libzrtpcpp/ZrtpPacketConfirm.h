@@ -21,7 +21,7 @@
 /**
  * @file ZrtpPacketConfirm.h
  * @brief The ZRTP Confirm message
- *  
+ *
  * @ingroup GNU_ZRTP
  * @{
  */
@@ -39,7 +39,7 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-class ZrtpPacketConfirm : public ZrtpPacketBase {
+class __EXPORT ZrtpPacketConfirm : public ZrtpPacketBase {
 
     private:
         Confirm_t* confirmHeader;   ///< Point to the Confirm message part
@@ -47,7 +47,7 @@ class ZrtpPacketConfirm : public ZrtpPacketBase {
     public:
         /// Creates a Confirm packet with default data
         ZrtpPacketConfirm();
-        
+
         /// Creates a Confirm packet with default data and a given signature length
         ZrtpPacketConfirm(uint32_t sl);
 
@@ -80,13 +80,13 @@ class ZrtpPacketConfirm : public ZrtpPacketBase {
 
         /// set SAS verified flag
         void setSASFlag()            { confirmHeader->flags |= 0x4; }
-        
+
         /// Set MAC data, fixed length byte array
         void setHmac(uint8_t* text)  { memcpy(confirmHeader->hmac, text, sizeof(confirmHeader->hmac)); }
 
         /// Set IV data, fixed length byte array
         void setIv(uint8_t* text)    { memcpy(confirmHeader->iv, text, sizeof(confirmHeader->iv)); }
-        
+
         /// Set expiration time data
         void setExpTime(uint32_t t)  { confirmHeader->expTime = htonl(t); }
 
@@ -99,8 +99,8 @@ class ZrtpPacketConfirm : public ZrtpPacketBase {
     private:
         void initialize();
      // Confirm packet is of variable length. It maximum size is 524 words:
-     // - 11 words fixed size 
-     // - up to 513 words variable part, depending if signature is present and its length. 
+     // - 11 words fixed size
+     // - up to 513 words variable part, depending if signature is present and its length.
      // This leads to a maximum of 4*524=2096 bytes.
         uint8_t data[2100];       // large enough to hold a full blown Confirm packet
 

@@ -21,11 +21,9 @@
 #include <libzrtpcpp/zrtpccrtp.h>
 #include <libzrtpcpp/ZrtpUserCallback.h>
 
-#ifdef  CCXX_NAMESPACES
 using namespace ost;
 using namespace std;
 using namespace GnuZrtpCodes;
-#endif
 
 class PacketsPattern
 {
@@ -165,7 +163,7 @@ public:
  *
  * The next two classes show how to use <code>SymmetricZRTPSession</code>
  * using the standard ZRTP handshake an switching to encrypted (SRTP) mode.
- * The application enables this by calling <code>initialize(...)</code>. 
+ * The application enables this by calling <code>initialize(...)</code>.
  * Some embedded logging informs about the ZRTP processing.
  */
 
@@ -258,7 +256,7 @@ public:
  * Simple User Callback class
  *
  * This class overwrite some methods from ZrtpUserCallback to get information
- * about ZRTP processing and information about ZRTP results. The standard 
+ * about ZRTP processing and information about ZRTP results. The standard
  * implementation of this class just perform return, thus effectively
  * supressing any callback or trigger.
  */
@@ -409,9 +407,9 @@ bool MyUserCallback::initialized = false;
  *
  * The next two classes show how to use <code>SymmetricZRTPSession</code>
  * using the standard ZRTP handshake an switching to encrypted (SRTP) mode.
- * The application enables this by calling <code>initialize(...)</code>. 
+ * The application enables this by calling <code>initialize(...)</code>.
  * In addition the application sets a callback class (see above). ZRTP calls
- * the methods of the callback class and the application may implement 
+ * the methods of the callback class and the application may implement
  * appropriate methods to deal with these triggers.
  */
 

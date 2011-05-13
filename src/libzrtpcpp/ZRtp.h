@@ -49,7 +49,7 @@
 #define MAX_DIGEST_LENGTH       64
 #define IMPL_MAX_DIGEST_LENGTH  64
 
-class ZrtpStateClass;
+class __EXPORT ZrtpStateClass;
 class ZrtpDH;
 
 /**
@@ -74,7 +74,7 @@ class ZrtpDH;
  * This class does not directly handle the protocol states, timers,
  * and packet resend. The protocol state engine is responsible for
  * these actions.
- * 
+ *
  * Example how to use ZRtp:
  *<pre>
  *    zrtpEngine = new ZRtp((uint8_t*)ownZid, (ZrtpCallback*)this, idString);
@@ -84,7 +84,7 @@ class ZrtpDH;
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
-class ZRtp {
+class __EXPORT ZRtp {
 
     public:
 
@@ -92,7 +92,7 @@ class ZRtp {
      * Constructor intializes all relevant data but does not start the
      * engine.
      */
-    ZRtp(uint8_t* myZid, ZrtpCallback* cb, std::string id, 
+    ZRtp(uint8_t* myZid, ZrtpCallback* cb, std::string id,
          ZrtpConfigure* config);
 
     /**
@@ -213,7 +213,7 @@ class ZRtp {
    /**
     * Get the ZRTP Hello Hash data.
     *
-    * Use this method to get the ZRTP Hello Hash data. The method 
+    * Use this method to get the ZRTP Hello Hash data. The method
     * returns the data as a string containing the ZRTP protocol version and
     * hex-digits. Refer to ZRTP specification, chapter 8.
     *
@@ -255,7 +255,7 @@ class ZRtp {
      *
      * @param parameters
      *     A string that contains the multi-stream parameters that this
-     *     new ZrtpQueue instanace shall use. See also 
+     *     new ZrtpQueue instanace shall use. See also
      *     <code>getMultiStrParams()</code>
      */
     void setMultiStrParams(std::string parameters);
@@ -263,7 +263,7 @@ class ZRtp {
     /**
      * Check if this ZRTP session is a Multi-stream session.
      *
-     * Use this method to check if this ZRTP instance uses multi-stream. 
+     * Use this method to check if this ZRTP instance uses multi-stream.
      * Refer to chapters 4.2 and 4.4.2 in the ZRTP.
      *
      * @return
@@ -285,10 +285,10 @@ class ZRtp {
     /**
      * Accept a PBX enrollment request.
      *
-     * If a PBX service asks to enroll the PBX trusted MitM key and the user 
+     * If a PBX service asks to enroll the PBX trusted MitM key and the user
      * accepts this request, for example by pressing an OK button, the client
-     * application shall call this method and set the parameter 
-     * <code>accepted</code> to true. If the user does not accept the request 
+     * application shall call this method and set the parameter
+     * <code>accepted</code> to true. If the user does not accept the request
      * set the parameter to false.
      *
      * @param accepted
@@ -315,7 +315,7 @@ class ZRtp {
      * Set signature data
      *
      * This functions stores signature data and transmitts it during ZRTP
-     * processing to the other party as part of the Confirm packets. Refer to 
+     * processing to the other party as part of the Confirm packets. Refer to
      * chapters 5.7 and 7.2.
      *
      * The signature data must be set before ZRTP the application calls
@@ -353,7 +353,7 @@ class ZRtp {
     /**
      * Get length of signature data
      *
-     * This functions returns the length of signature data that was receivied 
+     * This functions returns the length of signature data that was receivied
      * during ZRTP processing. Refer to chapters 5.7 and 7.2.
      *
      * @return
@@ -366,7 +366,7 @@ class ZRtp {
      * Emulate a Conf2Ack packet.
      *
      * This method emulates a Conf2Ack packet. According to ZRTP specification
-     * the first valid SRTP packet that the Initiator receives must switch 
+     * the first valid SRTP packet that the Initiator receives must switch
      * on secure mode. Refer to chapter 4 in the specificaton
      *
      */
@@ -375,8 +375,8 @@ class ZRtp {
      /**
       * Get other party's ZID (ZRTP Identifier) data
       *
-      * This functions returns the other party's ZID that was receivied 
-      * during ZRTP processing. 
+      * This functions returns the other party's ZID that was receivied
+      * during ZRTP processing.
       *
       * The ZID data can be retrieved after ZRTP receive the first Hello
       * packet from the other party. The application may call this method
@@ -469,7 +469,7 @@ private:
     int32_t auxSecretLength;
 
     /**
-     * Record if valid rs1 and/or rs1 were found in the 
+     * Record if valid rs1 and/or rs1 were found in the
      * retaind secret cache.
      */
     bool rs1Valid;
@@ -583,7 +583,7 @@ private:
 
     void (*closeHashCtx)(void* ctx, unsigned char* digest);
 
-    void (*hashCtxFunction)(void* ctx, unsigned char* data, 
+    void (*hashCtxFunction)(void* ctx, unsigned char* data,
            unsigned int dataLength);
 
     void (*hashCtxListFunction)(void* ctx, unsigned char* dataChunks[],
@@ -691,7 +691,7 @@ private:
      * @param hello
      *    The Hello packet.
      * @param pk
-     *    The id of the selected public key algorithm 
+     *    The id of the selected public key algorithm
      * @return
      *    The Enum that identifies the best offered Cipher algortihm. Return
      *    <code>NumSupportedSymCiphers</code> to signal that no matching Cipher algorithm
@@ -903,8 +903,8 @@ private:
     /**
      * Prepare the Confirm1 packet in multi stream mode.
      *
-     * This method prepares the Confirm1 packet. The state engine call this method 
-     * if multi stream mode is selected and a Commit packet was received. The input to 
+     * This method prepares the Confirm1 packet. The state engine call this method
+     * if multi stream mode is selected and a Commit packet was received. The input to
      * this method is the Commit.
      * Here we are in the role of the Responder
      *
@@ -924,9 +924,9 @@ private:
      * Prepare the Confirm2 packet in multi stream mode.
      *
      * This method prepares the Confirm2 packet. The state engine call this method if
-     * multi stream mode is active and in state CommitSent. The input to this method is 
+     * multi stream mode is active and in state CommitSent. The input to this method is
      * the Confirm1 packet received from our peer. The peer sends the Confirm1 packet
-     * as response of our Commit packet in multi stream mode. 
+     * as response of our Commit packet in multi stream mode.
      * Here we are in the role of the Initiator
      */
     ZrtpPacketConfirm* prepareConfirm2MultiStream(ZrtpPacketConfirm* confirm1, uint32_t* errMsg);
@@ -1085,7 +1085,7 @@ private:
     void srtpSecretsOff(EnableSecurity part);
 
     /**
-     * ZRTP state engine calls these methods to enter or leave its 
+     * ZRTP state engine calls these methods to enter or leave its
      * synchronization mutex.
      */
     void synchEnter();
@@ -1130,7 +1130,7 @@ private:
       *
       * The identifier is set in the Hello packet of ZRTP. Thus only after
       * setting the identifier ZRTP can compute the HMAC and the final
-      * helloHash. 
+      * helloHash.
       *
       * @param id
       *     The client's id

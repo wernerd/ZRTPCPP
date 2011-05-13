@@ -24,8 +24,8 @@
 #include <libzrtpcpp/TimeoutProvider.h>
 #include <libzrtpcpp/ZrtpConfigure.h>
 
-class ZrtpUserCallback;
-class ZRtp;
+class __EXPORT ZrtpUserCallback;
+class __EXPORT ZRtp;
 
 NAMESPACE_COMMONCPP
 
@@ -184,7 +184,7 @@ NAMESPACE_COMMONCPP
      * @author Werner Dittmann <Werner.Dittmann@t-online.de>
      */
 
-    class ZrtpQueue : public AVPQueue, ZrtpCallback {
+    class __EXPORT ZrtpQueue : public AVPQueue, ZrtpCallback {
 
     public:
 

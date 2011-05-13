@@ -21,7 +21,7 @@
 /**
  * @file ZrtpStateClass.h
  * @brief The ZRTP state handling class
- *  
+ *
  * @ingroup GNU_ZRTP
  * @{
  */
@@ -31,7 +31,7 @@
 
 /**
  * The ZRTP states
- * 
+ *
  * Depending on the role of this state engine and the actual protocl flow
  * not all states are processed during a ZRTP handshake.
  */
@@ -53,8 +53,8 @@ enum zrtpStates {
 };
 
 enum EventReturnCodes {
-    Fail = 0,			///< ZRTP event processing failed.
-    Done = 1			///< Event processing ok.
+    Fail = 0,           ///< ZRTP event processing failed.
+    Done = 1            ///< Event processing ok.
 };
 
 enum EventDataType {
@@ -84,11 +84,11 @@ typedef struct Event {
  */
 typedef struct zrtpTimer {
     int32_t time,       ///< Current timeout value
-	start,              ///< Start value for timeout
-	increment,          ///< increment timeout after each timeout event (not used anymore)
-	capping,            ///< Maximum timeout value
-	counter,            ///< Current number of timeouts
-	maxResend;          ///< Maximum number of timeout resends
+    start,              ///< Start value for timeout
+    increment,          ///< increment timeout after each timeout event (not used anymore)
+    capping,            ///< Maximum timeout value
+    counter,            ///< Current number of timeouts
+    maxResend;          ///< Maximum number of timeout resends
 } zrtpTimer_t;
 
 
@@ -106,7 +106,7 @@ class ZRtp;
  */
 
 
-class ZrtpStateClass {
+class __EXPORT ZrtpStateClass {
 
 private:
     ZRtp* parent;           ///< The ZRTP implmentation
@@ -142,7 +142,7 @@ public:
 
     /// Check if in a specified state
     bool inState(const int32_t state) { return engine->inState(state); };
-    
+
     /// Switch to the specified state
     void nextState(int32_t state)        { engine->nextState(state); };
 
@@ -274,7 +274,7 @@ public:
      * This functions returns the value of the multi-stream mode flag.
      *
      * @return
-     *    Value of the multi-stream mode flag. 
+     *    Value of the multi-stream mode flag.
      */
     bool isMultiStream();
 };

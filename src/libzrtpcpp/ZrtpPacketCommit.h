@@ -24,7 +24,7 @@
 /**
  * @file ZrtpPacketCommit.h
  * @brief The ZRTP Commit message
- *  
+ *
  * @ingroup GNU_ZRTP
  * @{
  */
@@ -42,7 +42,7 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-class ZrtpPacketCommit : public ZrtpPacketBase {
+class __EXPORT ZrtpPacketCommit : public ZrtpPacketBase {
 
  protected:
     Commit_t* commitHeader;     ///< Points to Commit message part
@@ -53,7 +53,7 @@ class ZrtpPacketCommit : public ZrtpPacketBase {
 
     /// Creates a Commit packet from received data
     ZrtpPacketCommit(uint8_t* data);
-    
+
     /// Normal destructor
     virtual ~ZrtpPacketCommit();
 
@@ -62,7 +62,7 @@ class ZrtpPacketCommit : public ZrtpPacketBase {
 
     /// Get pointer to cipher algorithm type field, a fixed length character array
     uint8_t* getCipherType()  { return commitHeader->cipher; };
-    
+
     /// Get pointer to SRTP authentication algorithm type field, a fixed length character array
     uint8_t* getAuthLen()     { return commitHeader->authlengths; };
 
@@ -71,7 +71,7 @@ class ZrtpPacketCommit : public ZrtpPacketBase {
 
     /// Get pointer to SAS algorithm type field, a fixed length character array
     uint8_t* getSasType()     { return commitHeader->sas; };
-    
+
     /// Get pointer to ZID field, a fixed length byte array
     uint8_t* getZid()         { return commitHeader->zid; };
 
@@ -86,7 +86,7 @@ class ZrtpPacketCommit : public ZrtpPacketBase {
 
     /// Get pointer to MAC field, a fixed length byte array
     uint8_t* getHMAC()        { return commitHeader->hmac; };
-    
+
     /// Get pointer to MAC field during multi-stream mode, a fixed length byte array
     uint8_t* getHMACMulti()   { return commitHeader->hmac-4*ZRTP_WORD_SIZE; };
 
@@ -99,7 +99,7 @@ class ZrtpPacketCommit : public ZrtpPacketBase {
     /// Set SRTP authentication algorithm algorithm type field, fixed length character field
     void setAuthLen(uint8_t* text)     { memcpy(commitHeader->authlengths, text, ZRTP_WORD_SIZE); };
 
-    /// Set key agreement algorithm type field, fixed length character field    
+    /// Set key agreement algorithm type field, fixed length character field
     void setPubKeyType(uint8_t* text)  { memcpy(commitHeader->pubkey, text, ZRTP_WORD_SIZE); };
 
     /// Set SAS algorithm type field, fixed length character field
@@ -110,7 +110,7 @@ class ZrtpPacketCommit : public ZrtpPacketBase {
 
     /// Set HVI field, a fixed length byte array
     void setHvi(uint8_t* text)         { memcpy(commitHeader->hvi, text, sizeof(commitHeader->hvi)); };
-    
+
     /// Set conce field, a fixed length byte array, overlapping HVI field
     void setNonce(uint8_t* text);
 

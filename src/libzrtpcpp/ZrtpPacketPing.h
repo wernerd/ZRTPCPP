@@ -21,7 +21,7 @@
 /**
  * @file ZrtpPacketPing.h
  * @brief The ZRTP Ping message
- *  
+ *
  * @ingroup GNU_ZRTP
  * @{
  */
@@ -35,7 +35,7 @@
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
-class ZrtpPacketPing : public ZrtpPacketBase {
+class __EXPORT ZrtpPacketPing : public ZrtpPacketBase {
 
  protected:
     Ping_t* pingHeader;     ///< Point the the Ping message
@@ -46,7 +46,7 @@ class ZrtpPacketPing : public ZrtpPacketBase {
 
     /// Creates a Ping message from received data
     ZrtpPacketPing(uint8_t* data);
-    
+
     virtual ~ZrtpPacketPing();
 
     /// Set ZRTP protocol version field, fixed ASCII character array

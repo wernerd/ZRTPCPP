@@ -21,7 +21,7 @@
 /**
  * @file ZrtpPacketConf2Ack.h
  * @brief The ZRTP Conf2Ack message
- *  
+ *
  * @ingroup GNU_ZRTP
  * @{
  */
@@ -37,7 +37,7 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-class ZrtpPacketConf2Ack : public ZrtpPacketBase {
+class __EXPORT ZrtpPacketConf2Ack : public ZrtpPacketBase {
 
  public:
     /// Creates a Conf2Ack packet with default data
@@ -45,7 +45,7 @@ class ZrtpPacketConf2Ack : public ZrtpPacketBase {
 
     ///Creates a Conf2Ack packet from received data
     ZrtpPacketConf2Ack(char* data);
-    
+
     /// Normal destructor
     virtual ~ZrtpPacketConf2Ack();
 

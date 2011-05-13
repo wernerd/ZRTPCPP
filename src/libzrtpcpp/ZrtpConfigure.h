@@ -48,7 +48,7 @@ enum AlgoTypes {
 
 typedef void(*encrypt_t)(uint8_t*, int32_t, uint8_t*, uint8_t*, int32_t);
 typedef void(*decrypt_t)(uint8_t*, int32_t, const uint8_t*, uint8_t*, int32_t);
-            
+
 /**
  * The algorithm enumration class.
  *
@@ -56,66 +56,66 @@ typedef void(*decrypt_t)(uint8_t*, int32_t, const uint8_t*, uint8_t*, int32_t);
  * its associated algorithm type. We use this class together with the
  * EnumBase class to implement a Java-like enum class functionality
  * (not fully, but OK for our use case).
- * 
+ *
  * An application shall use the get / check methods to retrieve information.
  */
 class AlgorithmEnum {
 public:
     /**
      * Create an AlgorithmEnum object.
-     * 
+     *
      * @param type
-     *    Defines the algorithm type 
+     *    Defines the algorithm type
      * @param name
      *    Set the names of the algorithm. The name is copied
      *    and the call may reuse the space.
-     * 
+     *
      * @see AlgoTypes
      */
-    AlgorithmEnum(const AlgoTypes type, const char* name, int32_t klen, 
+    AlgorithmEnum(const AlgoTypes type, const char* name, int32_t klen,
                   const char* ra, encrypt_t en, decrypt_t de, SrtpAlgorithms alId);
-    
+
     /**
      * AlgorithmEnum destructor
      */
     ~AlgorithmEnum();
-    
+
     /**
      * Get the algorihm's name
-     * 
+     *
      * @returns
      *    Algorithm's name as null terminated C-string. The
      *    application must not free this memory.
      */
     const char* getName();
-    
+
     /**
      * Get the algorihm's readable name
-     * 
+     *
      * @returns
      *    Algorithm's readable name as null terminated C-string. The
      *    application must not free this memory.
      */
     const char* getReadable();
-    
+
     /**
      * Get the algorihm's key length.
-     * 
+     *
      * @returns
      *    An integer definig the key length in bytes.
      */
     int getKeylen();
-    
+
     /**
      * Get the algorihm's integer id.
-     * 
+     *
      * @returns
      *    An integer that defines the algorithm.
      */
     SrtpAlgorithms getAlgoId();
     /**
      * Get the algorihm's key length.
-     * 
+     *
      * @returns
      *    An integer definig the key length in bytes.
      */
@@ -123,7 +123,7 @@ public:
 
     /**
      * Get the algorihm's key length.
-     * 
+     *
      * @returns
      *    An integer definig the key length in bytes.
      */
@@ -131,17 +131,17 @@ public:
 
     /**
      * Get the algorithm type of this AlgorithmEnum object.
-     * 
+     *
      * @returns
      *     The algorithm type.
-     * 
+     *
      * @see AlgoTypes
      */
     AlgoTypes getAlgoType();
-    
+
     /**
      * Check if this AlgorithmEnum object is valid
-     * 
+     *
      * @returns
      *    @c true if the object is valid, @c false otherwise
      */
@@ -160,7 +160,7 @@ private:
 /**
  * EnumBase provides methods to store and access algorithm enumerations of
  * a specific algorithm type.
- * 
+ *
  * An application shall use the get / check methods to retrieve information
  * from the preset Algorithm Enumerations.
  *
@@ -175,7 +175,7 @@ class EnumBase {
 public:
     /**
      * Get an AlgorithmEnum by its name
-     * 
+     *
      * @param name
      *    The name of the AlgorithmEnum to search.
      * @returns
@@ -183,48 +183,48 @@ public:
      *    was not found
      */
     AlgorithmEnum& getByName(const char* name);
-    
+
     /**
      * Return all names of all currently stored AlgorithmEnums
-     * 
+     *
      * @return
      *    A C++ std::list of C++ std::strings that contain the names.
      */
     std::list<std::string>* getAllNames();
-    
+
     /**
      * Get the number of currently stored AlgorithmEnums
-     * 
+     *
      * @return
      *    The number of currently stored AlgorithmEnums
      */
     int getSize();
-    
+
     /**
      * Get the AlgoTypes to which this EnumBase belongs.
-     * 
+     *
      * @return
      *     The AlgoTypes of this EnumBase.
      * @see AlgoTypes.
      */
     AlgoTypes getAlgoType();
-    
+
     /**
      * Return the AlgorithmEnum by its ordinal number
-     * 
+     *
      * @param ord
      *     The ordinal number of the AlgorithmEnum.
      * @return
      *     The AlgorithmEnum if found, an invalid Algorithm otherwise.
      */
     AlgorithmEnum& getByOrdinal(int ord);
-    
+
     /**
      * Get the ordinal number of an AlgorithmEnum
-     * 
+     *
      * @param algo
      *     Return toe ordinal numer of this AlgorithmEnum.
-     * 
+     *
      * @return
      *    Return the ordinal number of this AlgorithmEnum if found,
      *    -1 otherwise.
@@ -235,7 +235,7 @@ protected:
     EnumBase(AlgoTypes algo);
     ~EnumBase();
     void insert(const char* name);
-    void insert(const char* name, int32_t klen, 
+    void insert(const char* name, int32_t klen,
                 const char* ra, encrypt_t en, decrypt_t de, SrtpAlgorithms alId);
 
 private:
@@ -300,9 +300,9 @@ extern AuthLengthEnum zrtpAuthLengths;
  * An application can configure implemented algorithms only.
  */
 
-class ZrtpConfigure {
+class __EXPORT ZrtpConfigure {
 public:
-    ZrtpConfigure();		 /* Creates Configuration data */
+    ZrtpConfigure();         /* Creates Configuration data */
     ~ZrtpConfigure();
 
     /**
@@ -407,7 +407,7 @@ public:
      * @param algoType
      *    Specifies which algorithm type to select
      * @return
-     *    The number of configured algorithms (used configuration 
+     *    The number of configured algorithms (used configuration
      *    data slots)
      */
     int32_t getNumConfiguredAlgos(AlgoTypes algoType);
@@ -420,7 +420,7 @@ public:
      * @param index
      *    The index in the list of the algorihm type
      * @return
-     *    A pointer the the algorithm enumeration. If the index 
+     *    A pointer the the algorithm enumeration. If the index
      *    does not point to a configured slot then the function
      *    returns NULL.
      *
@@ -446,23 +446,23 @@ public:
      *
      * For further details of trusted MitM processing refer to ZRTP
      * specification, chapter 7.3
-     * 
+     *
      * @param yesNo
      *    If set to true then trusted MitM processing is enabled.
      */
     void setTrustedMitM(bool yesNo);
-    
+
     /**
      * Check status of trusted MitM processing.
-     * 
+     *
      * @return
      *    Returns true if trusted MitM processing is enabled.
      */
     bool isTrustedMitM();
-    
+
     /**
      * Enables or disables SAS signature processing.
-     * 
+     *
      * For further details of trusted MitM processing refer to ZRTP
      * specification, chapter 7.2
      *
@@ -470,15 +470,15 @@ public:
      *    If set to true then certificate processing is enabled.
      */
     void setSasSignature(bool yesNo);
-    
+
     /**
      * Check status of SAS signature processing.
-     * 
+     *
      * @return
      *    Returns true if certificate processing is enabled.
      */
     bool isSasSignature();
-    
+
     /// Helper function to print some internal data
     void printConfiguredAlgos(AlgoTypes algoTyp);
 
@@ -488,7 +488,7 @@ public:
     std::vector<AlgorithmEnum* > publicKeyAlgos;
     std::vector<AlgorithmEnum* > sasTypes;
     std::vector<AlgorithmEnum* > authLengths;
-    
+
     bool enableTrustedMitM;
     bool enableSasSignature;
 

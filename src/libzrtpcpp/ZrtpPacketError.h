@@ -21,7 +21,7 @@
 /**
  * @file ZrtpPacketError.h
  * @brief The ZRTP Error message
- *  
+ *
  * @ingroup GNU_ZRTP
  * @{
  */
@@ -37,7 +37,7 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-class ZrtpPacketError : public ZrtpPacketBase {
+class __EXPORT ZrtpPacketError : public ZrtpPacketBase {
 
  protected:
     Error_t* errorHeader;   ///< Points to Error message
@@ -48,7 +48,7 @@ class ZrtpPacketError : public ZrtpPacketBase {
 
     /// Creates a Error packet from received data
     ZrtpPacketError(uint8_t* data);
-    
+
     virtual ~ZrtpPacketError();
 
     /// Get the error code from Error message

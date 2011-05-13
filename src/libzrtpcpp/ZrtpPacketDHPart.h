@@ -21,7 +21,7 @@
 /**
  * @file ZrtpPacketDHPart.h
  * @brief The ZRTP DHPart message
- *  
+ *
  * @ingroup GNU_ZRTP
  * @{
  */
@@ -38,7 +38,7 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-class ZrtpPacketDHPart : public ZrtpPacketBase {
+class __EXPORT ZrtpPacketDHPart : public ZrtpPacketBase {
 
  protected:
     uint8_t *pv;                ///< points to public key value inside DH message
@@ -54,7 +54,7 @@ class ZrtpPacketDHPart : public ZrtpPacketBase {
 
     /// Creates a DHPart packet from received data
     ZrtpPacketDHPart(uint8_t* data);
-    
+
     /// Standard destructor
     virtual ~ZrtpPacketDHPart();
 
@@ -80,7 +80,7 @@ class ZrtpPacketDHPart : public ZrtpPacketBase {
     uint8_t* getHMAC()           { return pv+dhLength; };
 
     /// Setpublic key value, variable length byte array
-    void setPv(uint8_t* text) 	      { memcpy(pv, text, dhLength); };
+    void setPv(uint8_t* text)         { memcpy(pv, text, dhLength); };
 
     /// Set first retained secretd id, fixed length byte array
     void setRs1Id(uint8_t* text)      { memcpy(DHPartHeader->rs1Id, text, sizeof(DHPartHeader->rs1Id)); };
@@ -101,14 +101,14 @@ class ZrtpPacketDHPart : public ZrtpPacketBase {
     void setPubKeyType(const char* pkt);
 
     /// Set first MAC, fixed length byte array
-    void setHMAC(uint8_t* t) 	      { memcpy(pv+dhLength, t, 2*ZRTP_WORD_SIZE); };
+    void setHMAC(uint8_t* t)          { memcpy(pv+dhLength, t, 2*ZRTP_WORD_SIZE); };
 
  private:
     void initialize();
     // SupportedPubKeys pktype;
      // DHPart packet is of variable length. It maximum size is 141 words:
-     // - 13 words fixed sizze 
-     // - up to 128 words variable part, depending on DH algorithm 
+     // - 13 words fixed sizze
+     // - up to 128 words variable part, depending on DH algorithm
      //   leads to a maximum of 4*141=564 bytes.
      uint8_t data[768];       // large enough to hold a full blown DHPart packet
 };

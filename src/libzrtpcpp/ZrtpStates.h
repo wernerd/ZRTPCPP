@@ -25,7 +25,7 @@
 /**
  * @file ZrtpStates.h
  * @brief The ZRTP state switching class
- *  
+ *
  * @ingroup GNU_ZRTP
  * @{
  */
@@ -35,7 +35,7 @@
 #include <assert.h>
 #include <stdint.h>
 
-class ZrtpStateClass;
+class __EXPORT ZrtpStateClass;
 /**
  * This structure hold the state name as enum (int) number and the pointer to
  * the functions that handles the various triggers that can occur in a state.
@@ -54,16 +54,16 @@ typedef struct  {
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-class ZrtpStates {
+class __EXPORT ZrtpStates {
  public:
 
     /// Create an initialize state switching
     ZrtpStates(state_t* const zstates,
-	       const int32_t numStates,
-	       const int32_t initialState):
-	numStates(numStates), states(zstates), state(initialState) {}
+           const int32_t numStates,
+           const int32_t initialState):
+    numStates(numStates), states(zstates), state(initialState) {}
 
-    /// Call a state handler 
+    /// Call a state handler
     int32_t processEvent(ZrtpStateClass& zsc) {
         (zsc.*states[state].handler)();
         return 0;
@@ -86,5 +86,5 @@ class ZrtpStates {
 /**
  * @}
  */
-#endif	//ZRTPSTATES
+#endif  //ZRTPSTATES
 

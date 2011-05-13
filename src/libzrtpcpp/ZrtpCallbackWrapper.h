@@ -30,28 +30,28 @@
  *
  * @file ZrtpCallbackWrapper.h
  * @brief C-Wrapper helper
- * 
- * This is a helper class for for the C wrapper and implements 
- * the GNU ZRTP callback interface.For detailed documentation about 
+ *
+ * This is a helper class for for the C wrapper and implements
+ * the GNU ZRTP callback interface.For detailed documentation about
  * the callback method refer to file ZrtpCallback
  * @ingroup GNU_ZRTP
  * @{
- * 
+ *
  * @see ZrtpCallback
  */
-class ZrtpCallbackWrapper : public ZrtpCallback
+class __EXPORT ZrtpCallbackWrapper : public ZrtpCallback
 {
 public:
     /**
      * Construct a class that implements ZrtpCallback and uses a C structure
      * the call C functions that implement the callbacks.
-     * 
+     *
      * @param cb
      *    The C callback structure that hold the addresses of the C methods
      *    that implement the actual callback functions.
      */
     ZrtpCallbackWrapper(zrtp_Callbacks* cb, ZrtpContext* ctx);
-    
+
     int32_t sendDataZRTP ( const unsigned char* data, int32_t length );
 
     int32_t activateTimer ( int32_t time );
