@@ -35,8 +35,8 @@
 #include <list>
 #include <sys/time.h>
 
-#include <cc++/config.h>
-#include <cc++/thread.h>
+#include <commoncpp/config.h>
+#include <commoncpp/thread.h>
 
 /**
  * Represents a request of a "timeout" (delivery of a command to a
@@ -55,14 +55,14 @@ class TPRequest
 public:
 
     TPRequest( TOSubscriber tsi, int timeoutMs, const TOCommand &command):
-	subscriber(tsi)
+    subscriber(tsi)
     {
         struct timeval tv;
         gettimeofday(&tv, NULL );
 
         when_ms = ((uint64)tv.tv_sec) * (uint64)1000 + ((uint64)tv.tv_usec) / (uint64)1000;
-	when_ms += timeoutMs;
-	this->command = command;
+    when_ms += timeoutMs;
+    this->command = command;
     }
 
     /**
@@ -70,18 +70,18 @@ public:
      */
     bool happensBefore(uint64 t)
     {
-	if (when_ms < t) {
-	    return true;
-	}
-	if (when_ms > t) {
-	    return false;
-	}
-	return false; // if equal it does not "happens_before"
+    if (when_ms < t) {
+        return true;
+    }
+    if (when_ms > t) {
+        return false;
+    }
+    return false; // if equal it does not "happens_before"
 
     }
 
     bool happensBefore(const TPRequest *req){
-	return happensBefore(req->when_ms);
+    return happensBefore(req->when_ms);
     }
 
     /**
@@ -95,22 +95,22 @@ public:
 
         uint64 now = ((uint64)tv.tv_sec) * (uint64)1000 + ((uint64)tv.tv_usec) / (uint64)1000;
 
-	if (happensBefore(now)) {
-	    return 0;
-	}
-	else {
-	    return (int)(when_ms - now);
-	}
+    if (happensBefore(now)) {
+        return 0;
+    }
+    else {
+        return (int)(when_ms - now);
+    }
     }
 
     TOCommand getCommand()
     {
-	return command;
+    return command;
     }
 
     TOSubscriber getSubscriber()
     {
-	return subscriber;
+    return subscriber;
     }
 
     /**
@@ -121,7 +121,7 @@ public:
      */
     bool operator==(const TPRequest<TOCommand, TOSubscriber> &req)
     {
-	if (req.subscriber == subscriber &&
+    if (req.subscriber == subscriber &&
                req.command == command &&
                req.when_ms == when_ms) {
             return true;
@@ -131,11 +131,11 @@ public:
 
 private:
     TOSubscriber subscriber;
-    uint64 when_ms;		// Time since Epoch in ms when the timeout
-				// will happen
+    uint64 when_ms;     // Time since Epoch in ms when the timeout
+                // will happen
 
-    TOCommand command;		// Command that will be delivered to the
-				// receiver (subscriber) of the timeout.
+    TOCommand command;      // Command that will be delivered to the
+                // receiver (subscriber) of the timeout.
 };
 
 /**
@@ -158,27 +158,27 @@ public:
      * Destructor also terminates the Timeout thread.
      */
     ~TimeoutProvider() {
-	terminate();
+    terminate();
     }
 
     /**
      * Terminates the Timeout provider thread.
      */
     void stopThread(){
-	stop = true;
-	signal();		// signal event to waiting thread
+    stop = true;
+    signal();       // signal event to waiting thread
     }
 
     /**
      * Request a timeout trigger.
      *
-     * @param time_ms	Number of milli-seconds until the timeout is
-     * 			wanted. Note that a small additional period of time is
-     * 			added that depends on execution speed.
+     * @param time_ms   Number of milli-seconds until the timeout is
+     *          wanted. Note that a small additional period of time is
+     *          added that depends on execution speed.
      * @param subscriber The receiver of the callback when the command has timed
-     * 			out. This argument must not be NULL.
-     * @param command	Specifies the String command to be passed back in the
-     * 			callback.
+     *          out. This argument must not be NULL.
+     * @param command   Specifies the String command to be passed back in the
+     *          callback.
      */
     void requestTimeout(int32_t time_ms, TOSubscriber subscriber, const TOCommand &command)
     {
@@ -187,24 +187,24 @@ public:
 
         synchLock.enter();
 
-	if (requests.size()==0) {
-	    requests.push_front(request);
-	    signal();
-	    synchLock.leave();
-	    return;
-	}
+    if (requests.size()==0) {
+        requests.push_front(request);
+        signal();
+        synchLock.leave();
+        return;
+    }
         if (request->happensBefore(requests.front())) {
-	    requests.push_front(request);
-	    signal();
+        requests.push_front(request);
+        signal();
             synchLock.leave();
-	    return;
-	}
+        return;
+    }
         if (requests.back()->happensBefore(request)){
-	    requests.push_back(request);
-	    signal();
+        requests.push_back(request);
+        signal();
             synchLock.leave();
-	    return;
-	}
+        return;
+    }
 
         typename std::list<TPRequest<TOCommand, TOSubscriber>* >::iterator i;
         for(i = requests.begin(); i != requests.end(); i++ ) {
@@ -213,8 +213,8 @@ public:
                 break;
             }
         }
-	signal();
-	synchLock.leave();
+    signal();
+    synchLock.leave();
     }
 
     /**
@@ -234,48 +234,48 @@ public:
             }
             i++;
         }
-	synchLock.leave();
+    synchLock.leave();
     }
 
 protected:
 
     void run()
     {
-	do {
-	    synchLock.enter();
-	    int32_t time = 3600000;
-	    int32_t size = 0;
-	    if ((size = requests.size()) > 0) {
+    do {
+        synchLock.enter();
+        int32_t time = 3600000;
+        int32_t size = 0;
+        if ((size = requests.size()) > 0) {
                 time = requests.front()->getMsToTimeout();
             }
-	    if (time == 0 && size > 0) {
-		if (stop){	// This must be checked so that we will
-				// stop even if we have timeouts to deliver.
+        if (time == 0 && size > 0) {
+        if (stop){  // This must be checked so that we will
+                // stop even if we have timeouts to deliver.
                     synchLock.leave();
-		    return;
-		}
+            return;
+        }
                 TPRequest<TOCommand, TOSubscriber>* req = requests.front();
-		TOSubscriber subs = req->getSubscriber();
-		TOCommand command = req->getCommand();
+        TOSubscriber subs = req->getSubscriber();
+        TOCommand command = req->getCommand();
 
                 requests.pop_front();
 
-		synchLock.leave(); // call the command with free Mutex
-		subs->handleTimeout(command);
-		continue;
-	    }
-	    synchLock.leave();
-	    if (stop) {		// If we were told to stop while delivering
+        synchLock.leave(); // call the command with free Mutex
+        subs->handleTimeout(command);
+        continue;
+        }
+        synchLock.leave();
+        if (stop) {     // If we were told to stop while delivering
                                 // a timeout we will exit here
-		return;
-	    }
-	    reset();		// ready to receive triggers again
+        return;
+        }
+        reset();        // ready to receive triggers again
             wait(time);
-	    if (stop) {		// If we are told to exit while waiting we
+        if (stop) {     // If we are told to exit while waiting we
                                 // will exit
-		return;
-	    }
-	} while(true);
+        return;
+        }
+    } while(true);
     }
 
 private:
@@ -284,9 +284,9 @@ private:
     // will expire. Nearest in future is first in list.
     std::list<TPRequest<TOCommand, TOSubscriber> *> requests;
 
-    ost::Mutex synchLock;	// Protects the internal data structures
+    ost::Mutex synchLock;   // Protects the internal data structures
 
-    bool stop;		// Flag to tell the worker thread
+    bool stop;      // Flag to tell the worker thread
                         // to terminate. Set to true and
                         // wake the worker thread to
                         // terminate it.

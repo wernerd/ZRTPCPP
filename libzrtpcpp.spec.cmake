@@ -18,7 +18,7 @@
 Name:           libzrtpcpp
 Summary:        A ccrtp extension for ZRTP support
 BuildRequires:  gcc-c++ @BUILD_REQ@ pkgconfig cmake
-BuildRequires:  libccrtp-devel >= 1.8.0 
+BuildRequires:  libccrtp-devel >= 2.0.0
 Version:        @VERSION@
 Release:        0
 License:        GPL v3 or later
@@ -68,7 +68,7 @@ cmake -DCMAKE_INSTALL_PREFIX=%{_prefix} \
       -DCMAKE_VERBOSE_MAKEFILE=TRUE \
       -DCMAKE_C_FLAGS_RELEASE:STRING="$RPM_OPT_FLAGS" \
       -DCMAKE_CXX_FLAGS_RELEASE:STRING="$RPM_OPT_FLAGS" \
-      ..  
+      ..
 
 make %{?_smp_mflags}
 

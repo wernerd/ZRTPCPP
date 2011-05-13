@@ -6,18 +6,18 @@ cmake_minimum_required (VERSION 2.6)
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
 set(gcrypt_src
-    libzrtpcpp/crypto/gcrypt/gcryptZrtpDH.cpp 
-    libzrtpcpp/crypto/gcrypt/gcrypthmac256.cpp 
-    libzrtpcpp/crypto/gcrypt/gcryptsha256.cpp 
-    libzrtpcpp/crypto/gcrypt/gcrypthmac384.cpp 
-    libzrtpcpp/crypto/gcrypt/gcryptsha384.cpp 
-    libzrtpcpp/crypto/gcrypt/gcryptAesCFB.cpp 
+    libzrtpcpp/crypto/gcrypt/gcryptZrtpDH.cpp
+    libzrtpcpp/crypto/gcrypt/gcrypthmac256.cpp
+    libzrtpcpp/crypto/gcrypt/gcryptsha256.cpp
+    libzrtpcpp/crypto/gcrypt/gcrypthmac384.cpp
+    libzrtpcpp/crypto/gcrypt/gcryptsha384.cpp
+    libzrtpcpp/crypto/gcrypt/gcryptAesCFB.cpp
     libzrtpcpp/crypto/gcrypt/InitializeGcrypt.cpp)
 
-set(openssl_src 
+set(openssl_src
     libzrtpcpp/crypto/openssl/ZrtpDH.cpp
     libzrtpcpp/crypto/openssl/hmac256.cpp
-    libzrtpcpp/crypto/openssl/sha256.cpp 
+    libzrtpcpp/crypto/openssl/sha256.cpp
     libzrtpcpp/crypto/openssl/hmac384.cpp
     libzrtpcpp/crypto/openssl/sha384.cpp
     libzrtpcpp/crypto/openssl/AesCFB.cpp
@@ -36,10 +36,10 @@ if(enable_ccrtp)
 endif()
 
 set(twofish_srcs libzrtpcpp/crypto/twofish.c
-		 libzrtpcpp/crypto/twofish_cfb.c
-		 libzrtpcpp/crypto/TwoCFB.cpp)
+         libzrtpcpp/crypto/twofish_cfb.c
+         libzrtpcpp/crypto/TwoCFB.cpp)
 
-set(zrtp_src 
+set(zrtp_src
     ZrtpCallbackWrapper.cpp
     ZIDFile.cpp
     ZIDRecord.cpp
@@ -68,6 +68,7 @@ set(zrtpcpp_src ${zrtp_src} ${ccrtp_src} ${crypto_src} ${twofish_srcs})
 add_library(zrtpcpp SHARED ${zrtpcpp_src})
 set_target_properties(zrtpcpp PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
 target_link_libraries(zrtpcpp ${LIBS})
+add_dependencies(zrtpcpp ccrtp)
 
 add_subdirectory(libzrtpcpp)
 

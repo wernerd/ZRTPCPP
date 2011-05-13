@@ -20,19 +20,19 @@
 #include <openssl/evp.h>
 #include <config.h>
 
-#ifdef OPENSSL_SYS_WIN32
+#ifdef _MSWINDOWS_
 #include <windows.h>
 #endif
 #if defined SOLARIS && !defined HAVE_PTHREAD_H
 #include <synch.h>
 #include <thread.h>
 #endif
-#if defined HAVE_PTHREAD_H && !defined SOLARIS
+#if !defined _MSWINDOWS_ && !defined SOLARIS
 #include <pthread.h>
 #endif
 
-#ifdef	const
-#undef	const
+#ifdef  const
+#undef  const
 #endif
 
 static void threadLockSetup(void);
@@ -53,7 +53,7 @@ int initializeOpenSSL ()
 {
 
     if (initialized) {
-	return 1;
+    return 1;
     }
     initialized = 1;
     threadLockSetup();
@@ -70,7 +70,7 @@ int finalizeOpenSSL ()
     return 1;
 }
 
-#ifdef OPENSSL_SYS_WIN32
+#ifdef _MSWINDOWS_
 
 static HANDLE *lock_cs;
 
@@ -79,7 +79,7 @@ static void threadLockSetup(void) {
 
     lock_cs=(HANDLE*)OPENSSL_malloc(CRYPTO_num_locks() * sizeof(HANDLE));
     for (i = 0; i < CRYPTO_num_locks(); i++) {
-	lock_cs[i] = CreateMutex(NULL,FALSE,NULL);
+    lock_cs[i] = CreateMutex(NULL,FALSE,NULL);
     }
 
     CRYPTO_set_locking_callback((void (*)(int,int,const char *,int))myLockingCallback);
@@ -91,17 +91,17 @@ static void threadLockCleanup(void) {
 
     CRYPTO_set_locking_callback(NULL);
     for (i = 0; i < CRYPTO_num_locks(); i++) {
-	CloseHandle(lock_cs[i]);
+    CloseHandle(lock_cs[i]);
     }
     OPENSSL_free(lock_cs);
 }
 
 static void myLockingCallback(int mode, int type, const char *file, int line) {
     if (mode & CRYPTO_LOCK) {
-	WaitForSingleObject(lock_cs[type], INFINITE);
+    WaitForSingleObject(lock_cs[type], INFINITE);
     }
     else {
-	ReleaseMutex(lock_cs[type]);
+    ReleaseMutex(lock_cs[type]);
     }
 }
 
@@ -119,9 +119,9 @@ static void threadLockSetup(void) {
     lock_cs = OPENSSL_malloc(CRYPTO_num_locks() * sizeof(mutex_t));
     lock_count = OPENSSL_malloc(CRYPTO_num_locks() * sizeof(long));
     for (i = 0; i < CRYPTO_num_locks(); i++) {
-	lock_count[i] = 0;
-	/* rwlock_init(&(lock_cs[i]),USYNC_THREAD,NULL); */
-	mutex_init(&(lock_cs[i]), USYNC_THREAD, NULL);
+    lock_count[i] = 0;
+    /* rwlock_init(&(lock_cs[i]),USYNC_THREAD,NULL); */
+    mutex_init(&(lock_cs[i]), USYNC_THREAD, NULL);
     }
     CRYPTO_set_locking_callback((void (*)(int, int ,const char *, int))myLockingCallback);
 }
@@ -134,9 +134,9 @@ static void threadLockCleanup(void) {
     fprintf(stderr,"cleanup\n");
 
     for (i = 0; i < CRYPTO_num_locks(); i++) {
-	/* rwlock_destroy(&(lock_cs[i])); */
-	mutex_destroy(&(lock_cs[i]));
-	fprintf(stderr,"%8ld:%s\n",lock_count[i],CRYPTO_get_lock_name(i));
+    /* rwlock_destroy(&(lock_cs[i])); */
+    mutex_destroy(&(lock_cs[i]));
+    fprintf(stderr,"%8ld:%s\n",lock_count[i],CRYPTO_get_lock_name(i));
     }
     OPENSSL_free(lock_cs);
     OPENSSL_free(lock_count);
@@ -146,9 +146,9 @@ static void myLockingCallback(int mode, int type, const char *file, int line)
 {
 #ifdef undef
     fprintf(stderr,"thread=%4d mode=%s lock=%s %s:%d\n",
-	    CRYPTO_thread_id(),
-	    (mode&CRYPTO_LOCK)?"l":"u",
-	    (type&CRYPTO_READ)?"r":"w",file,line);
+        CRYPTO_thread_id(),
+        (mode&CRYPTO_LOCK)?"l":"u",
+        (type&CRYPTO_READ)?"r":"w",file,line);
 #endif
 
     /*
@@ -158,11 +158,11 @@ static void myLockingCallback(int mode, int type, const char *file, int line)
       mode,file,line);
     */
     if (mode & CRYPTO_LOCK) {
-	mutex_lock(&(lock_cs[type]));
-	lock_count[type]++;
+    mutex_lock(&(lock_cs[type]));
+    lock_count[type]++;
     }
     else {
-	mutex_unlock(&(lock_cs[type]));
+    mutex_unlock(&(lock_cs[type]));
     }
 }
 
@@ -175,8 +175,6 @@ static unsigned long solaris_thread_id(void) {
 #endif /* SOLARIS */
 
 
-#if defined HAVE_PTHREAD_H && !defined SOLARIS && !defined WIN32
-
 static pthread_mutex_t* lock_cs;
 static long* lock_count;
 
@@ -186,8 +184,8 @@ static void threadLockSetup(void) {
     lock_cs = (pthread_mutex_t*)OPENSSL_malloc(CRYPTO_num_locks() * sizeof(pthread_mutex_t));
     lock_count = (long*)OPENSSL_malloc(CRYPTO_num_locks() * sizeof(long));
     for (i = 0; i < CRYPTO_num_locks(); i++) {
-	lock_count[i] = 0;
-	pthread_mutex_init(&(lock_cs[i]),NULL);
+    lock_count[i] = 0;
+    pthread_mutex_init(&(lock_cs[i]),NULL);
     }
 
     // CRYPTO_set_id_callback((unsigned long (*)())pthreads_thread_id);
@@ -201,28 +199,28 @@ static void threadLockCleanup(void)
     CRYPTO_set_locking_callback(NULL);
     fprintf(stderr,"cleanup\n");
     for (i = 0; i < CRYPTO_num_locks(); i++) {
-	pthread_mutex_destroy(&(lock_cs[i]));
-	fprintf(stderr,"%8ld:%s\n",lock_count[i],
-		CRYPTO_get_lock_name(i));
+    pthread_mutex_destroy(&(lock_cs[i]));
+    fprintf(stderr,"%8ld:%s\n",lock_count[i],
+        CRYPTO_get_lock_name(i));
     }
     OPENSSL_free(lock_cs);
     OPENSSL_free(lock_count);
 }
 
 static void myLockingCallback(int mode, int type, const char *file,
-			      int line) {
+                  int line) {
 #ifdef undef
     fprintf(stderr,"thread=%4d mode=%s lock=%s %s:%d\n",
-	    CRYPTO_thread_id(),
-	    (mode&CRYPTO_LOCK)?"l":"u",
-	    (type&CRYPTO_READ)?"r":"w",file,line);
+        CRYPTO_thread_id(),
+        (mode&CRYPTO_LOCK)?"l":"u",
+        (type&CRYPTO_READ)?"r":"w",file,line);
 #endif
     if (mode & CRYPTO_LOCK) {
-	pthread_mutex_lock(&(lock_cs[type]));
-	lock_count[type]++;
+    pthread_mutex_lock(&(lock_cs[type]));
+    lock_count[type]++;
     }
     else {
-	pthread_mutex_unlock(&(lock_cs[type]));
+    pthread_mutex_unlock(&(lock_cs[type]));
     }
 }
 
@@ -236,4 +234,3 @@ static unsigned long pthreads_thread_id(void)
 }
 */
 
-#endif /* LIBPTHREAD && !SOLARIS */

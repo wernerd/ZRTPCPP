@@ -32,9 +32,7 @@ static TimeoutProvider<std::string, ost::ZrtpQueue*>* staticTimeoutProvider = NU
 
 using namespace GnuZrtpCodes;
 
-#ifdef  CCXX_NAMESPACES
-namespace ost {
-#endif
+NAMESPACE_COMMONCPP
 
 ZrtpQueue::ZrtpQueue(uint32 size, RTPApplication& app) :
         AVPQueue(size,app)
@@ -199,8 +197,8 @@ ZrtpQueue::takeInDataPacket(void)
 }
 
 size_t
-ZrtpQueue::rtpDataPacket(unsigned char* buffer, int32 rtn, 
-                         InetHostAddress network_address, 
+ZrtpQueue::rtpDataPacket(unsigned char* buffer, int32 rtn,
+                         InetHostAddress network_address,
                          tpport_t transport_port)
 {
      // Special handling of padding to take care of encrypted content.
@@ -211,7 +209,7 @@ ZrtpQueue::rtpDataPacket(unsigned char* buffer, int32 rtn,
     uint8 padSet = (*buffer & 0x20);
     if (padSet) {
         *buffer = *buffer & ~0x20;          // clear padding bit
-    }    
+    }
     //  build a packet. It will link itself to its source
     IncomingRTPPkt* packet =
         new IncomingRTPPkt(buffer,rtn);
@@ -227,7 +225,7 @@ ZrtpQueue::rtpDataPacket(unsigned char* buffer, int32 rtn,
 
     // If no crypto context is available for this SSRC but we are already in
     // Secure state then create a CryptoContext for this SSRC.
-    // Assumption: every SSRC stream sent via this connection is secured 
+    // Assumption: every SSRC stream sent via this connection is secured
     // _and_ uses the same crypto parameters.
     if (pcc == NULL) {
         pcc = getInQueueCryptoContext(0);
@@ -392,7 +390,7 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
         authn = SrtpAuthenticationSha1Hmac;
         authKeyLen = 20;
     }
-    
+
     if (secrets->authAlgorithm == Skein) {
         authn = SrtpAuthenticationSkeinHmac;
         authKeyLen = 32;
@@ -400,7 +398,7 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
 
     if (secrets->symEncAlgorithm == Aes)
         cipher = SrtpEncryptionAESCM;
-    
+
     if (secrets->symEncAlgorithm == TwoFish)
         cipher = SrtpEncryptionTWOCM;
 
@@ -444,10 +442,10 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
         if (senderCryptoContext == NULL) {
             return false;
         }
-        // Create a SRTP crypto context for real SSRC sender stream. 
+        // Create a SRTP crypto context for real SSRC sender stream.
         // Note: key derivation can be done at this time only if the
-        // key derivation rate is 0 (disabled). For ZRTP this is the 
-        // case: the key derivation is defined as 2^48 
+        // key derivation rate is 0 (disabled). For ZRTP this is the
+        // case: the key derivation is defined as 2^48
         // which is effectively 0.
         pcc = senderCryptoContext->newCryptoContextForSSRC(getLocalSSRC(), 0, 0L);
         if (pcc == NULL) {
@@ -501,8 +499,8 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
         // crypto context will be created.
         //
         // Note: key derivation can be done at this time only if the
-        // key derivation rate is 0 (disabled). For ZRTP this is the 
-        // case: the key derivation is defined as 2^48 
+        // key derivation rate is 0 (disabled). For ZRTP this is the
+        // case: the key derivation is defined as 2^48
         // which is effectively 0.
         if (peerSSRC != 0) {
             pcc = recvCryptoContext->newCryptoContextForSSRC(peerSSRC, 0, 0L);
@@ -697,26 +695,26 @@ void ZrtpQueue::acceptEnrollment(bool accepted) {
 }
 
 bool ZrtpQueue::setSignatureData(uint8* data, int32 length) {
-    if (zrtpEngine != NULL) 
+    if (zrtpEngine != NULL)
         return zrtpEngine->setSignatureData(data, length);
     return 0;
 }
 
 int32 ZrtpQueue::getSignatureData(uint8* data) {
-    if (zrtpEngine != NULL) 
+    if (zrtpEngine != NULL)
         return zrtpEngine->getSignatureData(data);
     return 0;
 }
 
 int32 ZrtpQueue::getSignatureLength() {
-    if (zrtpEngine != NULL) 
+    if (zrtpEngine != NULL)
         return zrtpEngine->getSignatureLength();
     return 0;
 }
 
 void ZrtpQueue::setPBXEnrollment(bool yesNo) {
-    if (zrtpEngine != NULL) 
-	zrtpEngine->setPBXEnrollment(yesNo);
+    if (zrtpEngine != NULL)
+    zrtpEngine->setPBXEnrollment(yesNo);
 }
 
 
@@ -738,7 +736,7 @@ uint32 IncomingZRTPPkt::getZrtpMagic() const {
      return ntohl(getHeader()->timestamp);
 }
 
-uint32 IncomingZRTPPkt::getSSRC() const	{
+uint32 IncomingZRTPPkt::getSSRC() const {
      return ntohl(getHeader()->sources[0]);
 }
 
@@ -750,10 +748,7 @@ OutgoingZRTPPkt::OutgoingZRTPPkt(
     getHeader()->timestamp = htonl(ZRTP_MAGIC);
 }
 
-
-#ifdef  CCXX_NAMESPACES
-}
-#endif
+END_NAMESPACE
 
 /** EMACS **
  * Local variables:

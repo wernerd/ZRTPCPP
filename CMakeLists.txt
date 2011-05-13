@@ -12,29 +12,31 @@ cmake_minimum_required(VERSION 2.6)
 
 PROJECT(libzrtpcpp)
 
-SET(CPACK_PACKAGE_VERSION_MAJOR 1)
-SET(CPACK_PACKAGE_VERSION_MINOR 6)
-SET(CPACK_PACKAGE_VERSION_PATCH 1)
+SET(CPACK_PACKAGE_VERSION_MAJOR 2)
+SET(CPACK_PACKAGE_VERSION_MINOR 0)
+SET(CPACK_PACKAGE_VERSION_PATCH 0)
 
-set (VERSION 1.6.1)
-set (SOVERSION 1.6)
+set (VERSION 2.0.0)
+set (SOVERSION 2)
 set (PACKAGE libzrtpcpp)
 
 # set to true for debug and trace during CMakeLists development
 set(CMAKE_VERBOSE_MAKEFILE FALSE)
 
-# find project specific modules
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+MESSAGE( STATUS "Configuring GNU ${PROJECT_NAME} ${VERSION}...")
 
 # include most of the fine stuff we need
-include(FindGcryptConfig)
+include(cmake/Modules/FindGcryptConfig.cmake)
 include(FindPkgConfig)
 include(CheckLibraryExists)
 include(CheckIncludeFiles)
-include(AutoArgs)
-include(GeneratePackage)
+include(cmake/Modules/AutoArgs.cmake)
 
-GENERATE_PACKAGING(${PACKAGE} ${VERSION})
+if(EXISTS ".svn" AND (${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME}))
+    include(cmake/Modules/GeneratePackage.cmake)
+
+    GENERATE_PACKAGING(${PACKAGE} ${VERSION})
+endif()
 
 # check the -Denable-ccrtp setting, defaults to true
 enable_arg(ccrtp true "Enable GNU ccRTP support for GNU ZRTP")
@@ -54,15 +56,16 @@ endif()
 set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})
 
 if(enable_ccrtp)
-    if (USES_UCOMMON_INCLUDE_DIRS)
+    if (USES_CCRTP_INCLUDE_DIRS)
         message(STATUS "  Using local commoncpp dependency")
     else()
         find_package(PkgConfig)
         pkg_check_modules(USES_CCRTP libccrtp>=2.0.0)
-endif()
-
-  pkg_check_modules(CCRTP libccrtp1>=1.8.0)
-  set (LIBS ${LIBS} ${CCRTP_LDFLAGS})
+    endif()
+    include_directories(${USES_CCRTP_INCLUDE_DIRS})
+    link_directories(${USES_CRTP_LIBRARY_DIRS})
+    add_definitions(${USES_CCRTP_CFLAGS})
+    set (LIBS ${LIBS} ${USES_CCRTP_LDFLAGS} ${USES_CCRTP_LIBRARIES})
 endif()
 
 # now get info about crypto libraries
@@ -110,7 +113,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src)
 
 add_definitions(-g -O2 -fno-strict-aliasing)
 if(CMAKE_COMPILER_IS_GNUCXX)
-  add_definitions(-DCCXX_NAMESPACES -Wno-long-long -Wno-char-subscripts)
+  add_definitions(-Wno-long-long -Wno-char-subscripts)
   add_definitions(-Wall -ansi -pedantic)
 endif()
 
@@ -125,10 +128,14 @@ endif()
 ########### install files ###############
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libzrtpcpp.pc DESTINATION ${LIBDIRNAME}/pkgconfig)
 
-########### Add uninstall target ###############
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
-   IMMEDIATE @ONLY)
-add_custom_target(uninstall
-  "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+if(${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
+
+    ########### Add uninstall target ###############
+    configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+    IMMEDIATE @ONLY)
+    add_custom_target(uninstall
+    "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+
+endif()

@@ -21,9 +21,7 @@
 #include <ccrtp/rtp.h>
 #include <libzrtpcpp/ZrtpQueue.h>
 
-#ifdef  CCXX_NAMESPACES
-namespace ost {
-#endif
+NAMESPACE_COMMONCPP
 
 
 /**
@@ -58,13 +56,11 @@ typedef SingleThreadRTPSession<SymmetricRTPChannel,
  * @short Symmetric UDP/IPv6 RTP session scheduled by one thread of execution.
  **/
 typedef SingleThreadRTPSessionIPV6<SymmetricRTPChannelIPV6,
-				   SymmetricRTPChannelIPV6,
-				   ZrtpQueue> SymmetricZRTPSessionIPV6;
+                   SymmetricRTPChannelIPV6,
+                   ZrtpQueue> SymmetricZRTPSessionIPV6;
 #endif // CCXX_IPV6
 
-#ifdef   CCXX_NAMESPACES
-}
-#endif
+END_NAMESPACE
 
 #endif // _ZRTPCCRTP_H_
 

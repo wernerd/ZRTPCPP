@@ -27,11 +27,9 @@
 class ZrtpUserCallback;
 class ZRtp;
 
-#ifdef  CCXX_NAMESPACES
-namespace ost {
-#endif
+NAMESPACE_COMMONCPP
 
-    /** 
+    /**
      * GNU ccRTP extension to support GNU ZRTP.
      *
      * ZRTP was developed by Phil Zimmermann and provides functions to
@@ -40,7 +38,7 @@ namespace ost {
      * specification at his <a href="http://zfoneproject.com/">Zfone
      * project</a> site to get more detailed imformation about the
      * capabilities of ZRTP.
-     * 
+     *
      * <b>Short overview of the ZRTP implementation</b>
      *
      * ZRTP is a specific protocol to negotiate encryption algorithms
@@ -50,8 +48,8 @@ namespace ost {
      * A complete GNU ZRTP implementation consists of two parts, the
      * GNU ZRTP core and specific code that binds the GNU ZRTP core to
      * the underlying RTP/SRTP stack and the operating system:
-     * <ul> 
-     * <li> 
+     * <ul>
+     * <li>
      *      The GNU ZRTP core is independent of a specific RTP/SRTP
      *      stack and the operationg system and consists of the ZRTP
      *      protocol state engine, the ZRTP protocol messages, and the
@@ -92,7 +90,7 @@ namespace ost {
      * </li>
      * <li> implements the ZrtpCallback interface to provide ccRTP
      *      access and other specific services (timer, mutex) to GNU
-     *      ZRTP 
+     *      ZRTP
      * </li>
      * <li> provides ZRTP specific methods that applications may use
      *      to control and setup GNU ZRTP
@@ -155,7 +153,7 @@ namespace ost {
      * ...
      * #include <ccrtp/rtp.h>
      * ...
-     *     SymmetricRTPSession tx(pattern.getSsrc(), 
+     *     SymmetricRTPSession tx(pattern.getSsrc(),
      *                            InetHostAddress("localhost"));
      * ...
      *
@@ -166,7 +164,7 @@ namespace ost {
      * ...
      * #include <libzrtpcpp/zrtpccrtp.h>
      * ...
-     *     SymmetricZRTPSession tx(pattern.getSsrc(), 
+     *     SymmetricZRTPSession tx(pattern.getSsrc(),
      *                             InetHostAddress("localhost"));
      * ...
      *
@@ -219,7 +217,7 @@ namespace ost {
          * file then it enables ZRTP processing and returns.
          *
          * @param zidFilename
-         *     The name of the ZID file, can be a relative or absolut 
+         *     The name of the ZID file, can be a relative or absolut
          *     filename.
          *
          * @param autoEnable
@@ -229,13 +227,13 @@ namespace ost {
          * @param config
          *     this parameter points to ZRTP configuration data. If it is
          *     NULL then ZrtpQueue uses a default setting. Default is NULL.
-         * 
-         * @return 
+         *
+         * @return
          *     1 on success, ZRTP processing enabled, -1 on failure,
          *     ZRTP processing disabled.
          *
          */
-        int32_t initialize(const char *zidFilename, bool autoEnable = true, 
+        int32_t initialize(const char *zidFilename, bool autoEnable = true,
                            ZrtpConfigure* config = NULL);
 
         /*
@@ -386,13 +384,13 @@ namespace ost {
         /**
          * Get the ZRTP Hello Hash data.
          *
-         * Use this method to get the ZRTP Hello Hash data. The method 
-         * returns the data as a string containing hex-digits. Refer 
+         * Use this method to get the ZRTP Hello Hash data. The method
+         * returns the data as a string containing hex-digits. Refer
          * to ZRTP specification, chapter 9.1.
          *
          * @return
          *    a std:string containing the Hello hash value as hex-digits. The
-         *    hello hash is available immediatly after calling 
+         *    hello hash is available immediatly after calling
          *    ZrtpQueue#startZrtp. If ZRTP was not started the method returns
          *    an empty string.
          */
@@ -412,7 +410,7 @@ namespace ost {
          *    a string that contains the multi-stream parameters. The application
          *    must not modify the contents of this string, it is opaque data. The
          *    application may hand over this string to a new ZrtpQueue instance
-         *    to enable multi-stream processing for this ZrtpQueue. If ZRTP was 
+         *    to enable multi-stream processing for this ZrtpQueue. If ZRTP was
          *    not started or ZRTP is not yet in secure state the method returns an
          *    empty string.
          *
@@ -468,7 +466,7 @@ namespace ost {
          * If a PBX service asks to enroll the MiTM key and the user accepts this
          * requtes, for example by pressing an OK button, the client application
          * shall call this method and set the parameter <code>accepted</code> to
-         * true. If the user does not accept the request set the parameter to 
+         * true. If the user does not accept the request set the parameter to
          * false.
          *
          * @param accepted
@@ -480,7 +478,7 @@ namespace ost {
          * Set signature data
          *
          * This functions stores signature data and transmitts it during ZRTP
-         * processing to the other party as part of the Confirm packets. Refer to 
+         * processing to the other party as part of the Confirm packets. Refer to
          * chapters 6.7 and 8.2 in the ZRTP specification.
          *
          * @param data
@@ -515,7 +513,7 @@ namespace ost {
         /**
          * Get length of signature data
          *
-         * This functions returns the length of signature data that was receivied 
+         * This functions returns the length of signature data that was receivied
          * during ZRTP processing. Refer to chapters 6.7 and 8.2.
          *
          * @return
@@ -592,7 +590,7 @@ namespace ost {
          * If the application does not call this method but sucessfully initialized
          * the ZRTP engine using <code>initialize()</code> then ZRTP also starts
          * after the application sent and received RTP packets. An application can
-         * disable this automatic, delayed start of the ZRTP engine using 
+         * disable this automatic, delayed start of the ZRTP engine using
          * <code>setEnableZrtp(false)</code> before sending or receiving RTP
          * packets.
          *
@@ -611,8 +609,8 @@ namespace ost {
         /**
          * Get other party's ZID (ZRTP Identifier) data
          *
-         * This functions returns the other party's ZID that was receivied 
-         * during ZRTP processing. 
+         * This functions returns the other party's ZID that was receivied
+         * during ZRTP processing.
          *
          * The ZID data can be retrieved after ZRTP receive the first Hello
          * packet from the other party. The application may call this method
@@ -629,7 +627,7 @@ namespace ost {
         int32 getZid(uint8* data);
 
     protected:
-	friend class TimeoutProvider<std::string, ost::ZrtpQueue*>;
+    friend class TimeoutProvider<std::string, ost::ZrtpQueue*>;
 
         /**
          * A hook that gets called if the decoding of an incoming SRTP
@@ -720,8 +718,8 @@ namespace ost {
 
     private:
         void init();
-        size_t rtpDataPacket(unsigned char* packet, int32 rtn, 
-                             InetHostAddress network_address, 
+        size_t rtpDataPacket(unsigned char* packet, int32 rtn,
+                             InetHostAddress network_address,
                              tpport_t transport_port);
 
         ZRtp *zrtpEngine;
@@ -782,9 +780,7 @@ namespace ost {
             { }
     };
 
-#ifdef  CCXX_NAMESPACES
-}
-#endif
+END_NAMESPACE
 
 #endif
 
