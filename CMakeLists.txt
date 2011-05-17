@@ -20,6 +20,13 @@ set (VERSION 2.0.0)
 set (SOVERSION 2)
 set (PACKAGE libzrtpcpp)
 
+if(MSVC60)
+    set(BUILD_STATIC ON CACHE BOOL "static linking only" FORCE)
+    MARK_AS_ADVANCED(BUILD_STATIC)
+else()
+    option(BUILD_STATIC "Set to OFF to build shared libraries" OFF)
+endif()
+
 # set to true for debug and trace during CMakeLists development
 set(CMAKE_VERBOSE_MAKEFILE FALSE)
 
