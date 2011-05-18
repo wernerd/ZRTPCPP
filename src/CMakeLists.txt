@@ -75,13 +75,6 @@ add_library(zrtpcpp ${LIBRARY_BUILD_TYPE} ${zrtpcpp_src})
 set_target_properties(zrtpcpp PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
 target_link_libraries(zrtpcpp ${LIBS})
 add_dependencies(zrtpcpp ccrtp)
-
-if(WIN32 AND NOT BUILD_STATIC)
-    add_library(static-zrtpcpp STATIC ${zrtpcpp_src})
-    add_dependencies(static-zrtpcpp static-ccrtp)
-    install(TARGETS static-zrtpcpp DESTINATION ${LIBDIRNAME})
-endif()
-
 add_subdirectory(libzrtpcpp)
 
 install(TARGETS zrtpcpp DESTINATION ${LIBDIRNAME})
