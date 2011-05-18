@@ -39,7 +39,7 @@ include(CheckLibraryExists)
 include(CheckIncludeFiles)
 include(cmake/Modules/AutoArgs.cmake)
 
-if(EXISTS ".svn" AND (${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME}))
+if(${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
     include(cmake/Modules/GeneratePackage.cmake)
 
     GENERATE_PACKAGING(${PACKAGE} ${VERSION})
