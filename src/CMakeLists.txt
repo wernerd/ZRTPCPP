@@ -66,9 +66,9 @@ set(zrtp_src
 set(zrtpcpp_src ${zrtp_src} ${ccrtp_src} ${crypto_src} ${twofish_srcs})
 
 if(BUILD_STATIC AND NOT BUILD_SHARED)
-    set(BUILD_LIBRARY_TYPE STATIC)
+	set(LIBRARY_BUILD_TYPE STATIC)
 else()
-    set(BUILD_LIBRARY_TYPE SHARED)
+	set(LIBRARY_BUILD_TYPE SHARED)
 endif()
 
 add_library(zrtpcpp ${LIBRARY_BUILD_TYPE} ${zrtpcpp_src})
