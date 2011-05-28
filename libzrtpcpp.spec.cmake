@@ -35,19 +35,11 @@ encryption, and which can be directly embedded into telephony
 applications.
 
 
-%description -n libzrtpcpp
-This library is a GPL licensed extension to the GNU RTP Stack, ccrtp,
-that offers compatibility with Phil Zimmermann's zrtp/Zfone voice
-encryption, and which can be directly embedded into telephony
-applications.
-
-
-
 %package devel
 License:        GPL v3 or later
 Group:          Development/Libraries/Other
-Summary:        Headers and static link library for libzrtpcpp
-Requires:       libzrtpcpp = %{version} libccrtp-devel
+Summary:        Headers and link library for libzrtpcpp
+Requires:       libzrtpcpp = %{version} libccrtp-devel >= 2.0.0
 
 %description devel
 This package provides the header files, link libraries, and
@@ -59,7 +51,7 @@ documentation for building applications that use libzrtpcpp.
 %setup -q
 
 %build
-mkdir build
+%{__mkdir} build
 cd build
 
 cmake -DCMAKE_INSTALL_PREFIX=%{_prefix} \
@@ -70,15 +62,16 @@ cmake -DCMAKE_INSTALL_PREFIX=%{_prefix} \
       -DCMAKE_CXX_FLAGS_RELEASE:STRING="$RPM_OPT_FLAGS" \
       ..
 
-make %{?_smp_mflags}
+%{__make} %{?_smp_mflags}
 
 
 %install
 cd build
-make install DESTDIR=$RPM_BUILD_ROOT
+%{__rm} -rf %{buildroot}
+make install DESTDIR=%{buildroot}
 
 %clean
-rm -rf "$RPM_BUILD_ROOT"
+%{__rm} -rf %{buildroot}
 
 %files -n libzrtpcpp
 %defattr(-,root,root,0755)
@@ -92,9 +85,9 @@ rm -rf "$RPM_BUILD_ROOT"
 %{_includedir}/libzrtpcpp/*.h
 %dir %{_includedir}/libzrtpcpp
 
-%post -n libzrtpcpp -p /sbin/ldconfig
+%post -p /sbin/ldconfig
 
-%postun -n libzrtpcpp -p /sbin/ldconfig
+%postun -p /sbin/ldconfig
 
 %changelog
 * Mon Dec 27 2010 - Werner Dittmann <werner.dittmann@t-online.de>
