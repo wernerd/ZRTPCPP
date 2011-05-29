@@ -51,7 +51,7 @@ args_help()
 
 # this caused problems in debian where it has to always be lib....
 set(LIBDIRNAME "lib")
-if (EXISTS /usr/lib64)
+if (NOT EXISTS /etc/debian_version)
     if ( "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64" )
         set(LIBDIRNAME "lib64")
     endif()
