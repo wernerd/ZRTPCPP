@@ -24,7 +24,7 @@ Release:        0
 License:        GPL v3 or later
 Group:          Development/Libraries/Other
 Url:            http://www.gnu.org/software/commoncpp/commoncpp.html
-Source0:        %{name}-%{version}.tar.bz2
+Source0:        %{name}-%{version}.tar.gz
 Source1:        rpmlintrc
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
