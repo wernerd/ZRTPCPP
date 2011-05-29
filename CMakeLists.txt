@@ -49,11 +49,13 @@ endif()
 enable_arg(ccrtp true "Enable GNU ccRTP support for GNU ZRTP")
 args_help()
 
-if ( "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64" )
-  set(LIBDIRNAME "lib64")
-else ()
-  set(LIBDIRNAME "lib")
-endif ()
+# this caused problems in debian where it has to always be lib....
+set(LIBDIRNAME "lib")
+if (EXISTS /usr/lib64)
+    if ( "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64" )
+        set(LIBDIRNAME "lib64")
+    endif()
+endif()
 
 # setup the Thread include and lib
 find_package(Threads)
