@@ -39,13 +39,13 @@
 #
 # Redistribution and use, with or without modification, are permitted
 # provided that the following conditions are met:
-# 
+#
 #    1. Redistributions must retain the above copyright notice, this
 #       list of conditions and the following disclaimer.
 #    2. The name of the author may not be used to endorse or promote
 #       products derived from this software without specific prior
 #       written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
 # IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -58,10 +58,10 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 # IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# This is a much edited and simplified variant of the original UsePkgConfig.cmake 
+# This is a much edited and simplified variant of the original UsePkgConfig.cmake
 # from Enrico Scholz
 # Copyright (C) 2006 Enrico Scholz <enrico.scholz@informatik.tu-chemnitz.de>
-# 
+#
 
 ### Common stuff ####
 set(GCR_CONFIG_VERSION 1)
@@ -119,7 +119,7 @@ endmacro(_gcrconfig_invoke_dyn)
 # Splits given arguments into options and a package list
 macro(_gcrconfig_parse_options _result _is_req)
   set(${_is_req} 0)
-  
+
   foreach(_gcr ${ARGN})
     if (_gcr STREQUAL "REQUIRED")
       set(${_is_req} 1)
@@ -149,7 +149,7 @@ macro(_gcr_check_modules_internal _is_required _is_silent _prefix)
     if (NOT ${_is_silent})
         message(STATUS "checking for module '${_gcr_check_modules_list}'")
     endif(NOT ${_is_silent})
-    
+
     # iterate through module list and check whether they exist and match the required version
     foreach (_gcr_check_modules_gcr ${_gcr_check_modules_list})
 
@@ -165,7 +165,7 @@ macro(_gcr_check_modules_internal _is_required _is_silent _prefix)
       endif(_gcr_check_modules_gcr MATCHES ".*(>=|=|<=).*")
 
       set(_gcr_check_prefix "${_prefix}")
-        
+
       _gcrconfig_invoke(${_gcr_check_modules_gcr_name} "${_gcr_check_prefix}" VERSION    ""   --version )
 #      _gcrconfig_invoke(${_gcr_check_modules_gcr_name} "${_gcr_check_prefix}" PREFIX     ""   --prefix )
       _gcrconfig_invoke(${_gcr_check_modules_gcr_name} "${_gcr_check_prefix}" LIBRARIES  ""   --libs )
@@ -176,26 +176,34 @@ macro(_gcr_check_modules_internal _is_required _is_silent _prefix)
       # handle the operands
       set(_gcr_wrong_version 0)
       if (_gcr_check_modules_gcr_op STREQUAL ">=")
-	if((_gcr_check_modules_gcr_ver VERSION_EQUAL _gcrconfig_VERSION) OR
-	   (_gcrconfig_VERSION VERSION_LESS _gcr_check_modules_gcr_ver ))
-	  message(STATUS "  gcrypt wrong version: required: ${_gcr_check_modules_gcr_op}${_gcr_check_modules_gcr_ver}, found: ${_gcrconfig_VERSION}")
-	  set(_gcr_wrong_version 1)
-	endif()
+    if(_gcr_check_modules_gcr_ver VERSION_EQUAL _gcrconfig_VERSION)
+      message(STATUS "  gcrypt wrong version: required: ${_gcr_check_modules_gcr_op}${_gcr_check_modules_gcr_ver}, found: ${_gcrconfig_VERSION}")
+      set(_gcr_wrong_version 1)
+    endif()
+
+    if(_gcrconfig_VERSION VERSION_LESS _gcr_check_modules_gcr_ver )
+      message(STATUS "  gcrypt wrong version: required: ${_gcr_check_modules_gcr_op}${_gcr_check_modules_gcr_ver}, found: ${_gcrconfig_VERSION}")
+      set(_gcr_wrong_version 1)
+    endif()
       endif(_gcr_check_modules_gcr_op STREQUAL ">=")
 
       if (_gcr_check_modules_gcr_op STREQUAL "=")
-	if(_gcr_check_modules_gcr_ver VERSION_EQUAL _gcrconfig_VERSION)
-	  message(STATUS "  gcrypt wrong version: required: ${_gcr_check_modules_gcr_op}${_gcr_check_modules_gcr_ver}, found: ${_gcrconfig_VERSION}")
-	  set(_gcr_wrong_version 1)
-	endif()
+    if(_gcr_check_modules_gcr_ver VERSION_EQUAL _gcrconfig_VERSION)
+      message(STATUS "  gcrypt wrong version: required: ${_gcr_check_modules_gcr_op}${_gcr_check_modules_gcr_ver}, found: ${_gcrconfig_VERSION}")
+      set(_gcr_wrong_version 1)
+    endif()
       endif(_gcr_check_modules_gcr_op STREQUAL "=")
-      
+
       if (_gcr_check_modules_gcr_op STREQUAL "<=")
-	if((_gcr_check_modules_gcr_ver VERSION_EQUAL _gcrconfig_VERSION) OR
-	   (_gcrconfig_VERSION VERSION_GREATER _gcr_check_modules_gcr_ver))
-	  message(STATUS "  gcrypt wrong version: required: ${_gcr_check_modules_gcr_op}${_gcr_check_modules_gcr_ver}, found: ${_gcrconfig_VERSION}")
-	  set(_gcr_wrong_version 1)
-	endif()
+    if(_gcr_check_modules_gcr_ver VERSION_EQUAL _gcrconfig_VERSION)
+      message(STATUS "  gcrypt wrong version: required: ${_gcr_check_modules_gcr_op}${_gcr_check_modules_gcr_ver}, found: ${_gcrconfig_VERSION}")
+      set(_gcr_wrong_version 1)
+    endif()
+
+    if(_gcrconfig_VERSION VERSION_GREATER _gcr_check_modules_gcr_ver)
+      message(STATUS "  gcrypt wrong version: required: ${_gcr_check_modules_gcr_op}${_gcr_check_modules_gcr_ver}, found: ${_gcrconfig_VERSION}")
+      set(_gcr_wrong_version 1)
+    endif()
       endif(_gcr_check_modules_gcr_op STREQUAL "<=")
     if (${_is_required} AND _gcr_wrong_version)
       message(FATAL_ERROR "")
