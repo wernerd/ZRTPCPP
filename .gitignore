@@ -1,0 +1,17 @@
+build/
+autoconf/
+configure
+Makefile
+Makefile.in
+aclocal.m4
+*.o
+*.lo
+*.la
+*.authors
+*.kdev4
+*.deps
+*.libs
+*.pc
+*.spec
+*~
+
