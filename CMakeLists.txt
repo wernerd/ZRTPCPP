@@ -124,10 +124,14 @@ add_definitions(-g -O2 -fno-strict-aliasing)
 if(CMAKE_COMPILER_IS_GNUCXX)
   add_definitions(-Wno-long-long -Wno-char-subscripts)
   add_definitions(-Wall -ansi -pedantic)
+  add_definitions(-DNEW_STDCPP)
 endif()
 
 add_subdirectory(src)
-add_subdirectory(demo)
+
+if (enable_ccrtp)
+	add_subdirectory(demo)
+endif()
 
 if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/package/)
     MESSAGE(STATUS "package dir not found")

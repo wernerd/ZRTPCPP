@@ -21,7 +21,6 @@
 
 #ifndef _ZIDFILE_H_
 #define _ZIDFILE_H_
-
 /**
  * @file ZIDFile.h
  * @brief ZID file management

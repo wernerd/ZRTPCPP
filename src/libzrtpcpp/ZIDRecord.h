@@ -33,7 +33,6 @@
 
 #include <string.h>
 #include <stdint.h>
-#include <commoncpp/config.h>
 
 #define IDENTIFIER_LEN  12
 #define RS_LENGTH       32
@@ -81,6 +80,20 @@ typedef struct zidrecord2 {
  *
  * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
+
+#ifndef __EXPORT
+  #if defined _WIN32 || defined __CYGWIN__
+    #define __EXPORT    __declspec(dllimport)
+    #define __LOCAL
+  #endif
+  #if __GNUC__ >= 4
+    #define __EXPORT    __attribute__ ((visibility("default")))
+    #define __LOCAL     __attribute__ ((visibility("hidden")))
+  #else
+    #define __EXPORT
+    #define __LOCAL
+  #endif
+#endif
 
 static const int Valid            = 0x1;
 static const int SASVerified      = 0x2;

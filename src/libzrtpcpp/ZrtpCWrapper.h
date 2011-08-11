@@ -286,15 +286,16 @@ extern "C"
         * Send a ZRTP packet via RTP.
         *
         * ZRTP calls this method to send a ZRTP packet via the RTP session.
+        * The ZRTP packet will have to be created using the provided ZRTP message.
         *
         * @param ctx
         *    Pointer to the opaque ZrtpContext structure.
         * @param data
-        *    Points to ZRTP packet to send.
+        *    Points to ZRTP message to send.
         * @param length
         *    The length in bytes of the data
         * @return
-        *    zero if sending failed, one if packet was send
+        *    zero if sending failed, one if packet was sent
         */
         int32_t (*zrtp_sendDataZRTP) (ZrtpContext* ctx, const uint8_t* data, int32_t length ) ;
 
@@ -350,7 +351,7 @@ extern "C"
          * structure is destroyed after the callback method returns to the
          * ZRTP implementation.
          *
-         * The SRTP data themselfs are ontained in the ZRtp object and are
+         * The SRTP data themselves are obtained in the ZRtp object and are
          * valid as long as the ZRtp object is active. TheZRtp's
          * destructor clears the secrets. Thus the called method needs to
          * save the pointers only, ZRtp takes care of the data.
@@ -447,11 +448,11 @@ extern "C"
         /**
          * Enter synchronization mutex.
          *
-         * GNU ZRTP requires one mutes to synchronize its
+         * GNU ZRTP requires one mutex to synchronize its
          * processing. Because mutex implementations depend on the
          * underlying infrastructure, for example operating system or
          * thread implementation, GNU ZRTP delegates mutex handling to the
-         * spcific part of its implementation.
+         * specific part of its implementation.
          *
          * @param ctx
          *    Pointer to the opaque ZrtpContext structure.
@@ -504,7 +505,7 @@ extern "C"
          * After ZRTP was able to compute the Short Authentication String
          * (SAS) it calls this method. The client may now use an
          * approriate method to sign the SAS. The client may use
-         * ZrtpQueue#setSignatureData() to store the signature data an
+         * ZrtpQueue#setSignatureData() to store the signature data and
          * enable signature transmission to the other peer. Refer to
          * chapter 8.2 of ZRTP specification.
          *
@@ -559,7 +560,7 @@ extern "C"
      * Initialize the ZRTP protocol engine.
      *
      * This method initialized the GNU ZRTP protocol engine. An application
-     * call this method to actually create the ZRTP protocol engine and
+     * calls this method to actually create the ZRTP protocol engine and
      * initialize its configuration data. This method does not start the
      * protocol engine.
      *
@@ -588,7 +589,7 @@ extern "C"
      */
     void zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext,
                                    zrtp_Callbacks *cb,
-                                   char* id,
+                                   const char* id,
                                    const char* zidFilename,
                                    void* userData);
 
@@ -613,7 +614,7 @@ extern "C"
     int32_t zrtp_CheckCksum(uint8_t* buffer, uint16_t length, uint32_t crc);
 
     /**
-     * Computes the ZRTP checksum over a newly created  ZRTP packet buffer.
+     * Computes the ZRTP checksum over a newly created ZRTP packet buffer.
      *
      * @param buffer
      *    Pointer to the created ZRTP packet buffer
@@ -744,14 +745,14 @@ extern "C"
      * Check current state of the ZRTP state engine
      *
      * <b>NOTE: application usually don't call this method. Only
-     * the module that implements the RTP binding shall use this method</b>
+     * the m-odule that implements the RTP binding shall use this method</b>
      *
      * @param zrtpContext
      *    Pointer to the opaque ZrtpContext structure.
      * @param state
      *    The state to check.
      * @return
-     *    Returns true id ZRTP engine is in the given state, false otherwise.
+     *    Returns true if ZRTP engine is in the given state, false otherwise.
      */
     int32_t zrtp_inState(ZrtpContext* zrtpContext, int32_t state);
 
@@ -836,7 +837,7 @@ extern "C"
      *    The integer that contains the length of the char array
      * @param parameters
      *     A char array that contains the multi-stream parameters that this
-     *     new ZRTP instanace shall use. See also
+     *     new ZRTP instance shall use. See also
      *     <code>getMultiStrParams()</code>
      */
     void zrtp_setMultiStrParams(ZrtpContext* zrtpContext, char* parameters, int32_t length);

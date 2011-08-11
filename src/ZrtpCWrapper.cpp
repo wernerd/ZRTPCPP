@@ -38,7 +38,7 @@ ZrtpContext* zrtp_CreateWrapper()
 }
 
 void zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext, 
-                               zrtp_Callbacks *cb, char* id,
+                               zrtp_Callbacks *cb, const char* id,
                                const char* zidFilename,
                                void* userData)
 {
