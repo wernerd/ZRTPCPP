@@ -6,14 +6,14 @@ implementation that can be directly embedded into client and server
 applications.
 
 The GNU ZRTP implementation is compliant to the basic functions of
-ZRTP as described in ''draft-zimmermann-avt-zrtp-08x''. Currently GNU
-ZRTP supports the basic features and multi-stream mode , not the enhanced
-features like PBX SAS relay or preshared mode. The GNU ZRTP implementation
-already defines the necessary external interfaces and functions for
-these enhanced features but they are not yet implemented (stubs only).
+ZRTP as described in ''RFC6189''. Currently GNU ZRTP supports the basic
+features, multi-stream mode, various Diffie-Helman algorithms (standard
+and elliptic curve) and it supports optional symmetrical crypto algorithms
+(TwoFish) and Skein hash and Skein MAC algorithms.
 
-You may access the ZRTP specification at this URL:
-[http://zfoneproject.com/zrtp_ietf.html]
+Enhanced features like PBX SAS relay or preshared mode are not supported but
+the GNU ZRTP implementation defines the necessary external interfaces and 
+functions for these enhanced features (stubs only).
 
 The first application to demonstrate this capability was the 0.8.2 release 
 of the Twinkle softphone client. All following versions of Twinkle support

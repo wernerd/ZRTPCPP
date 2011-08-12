@@ -1,3 +1,28 @@
+== GNU ZRTP 2.0.0 ==
+
+Modify some files to use the new uCommon/commoncpp libraries instead
+of the GNU CC++ commoncpp2. This affects the ccRTP depended modules
+such as ZrtpQueue and the Timeout stuff.
+
+Updated to version 2.0.0 to be in synch with the ccRTP version number
+scheme.
+
+
+== GNU ZRTP 1.6.0 ==
+
+This version implements the Elliptic Curve Diffie-Helman (ECDH) 
+public-key algorithm. 
+
+ZRTP also supports new algorithms which are defined as optional
+in the ZRTP RFC. These are:
+- Skein Hash
+- Skein MAC for authentication
+- Twofish symmetric ciphers
+
+Twofish ciphers and Skein MAC are supported by GNU ccRTP SRTP 
+implmentation as well.
+
+
 == GNU ZRTP 1.5.4 ==
 
 The changes in this release affect the ZRTP Configure mechanism only.
