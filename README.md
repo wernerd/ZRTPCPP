@@ -40,9 +40,9 @@ The ZRTP4J implementation is a copycat of the original C++ code. I used the
 same overall class structure and copied a lot of C++ functionality to Java. Of
 course some Java adaptation were done, for example to overcome the problem of
 non-existing pointers :-), thus I use some non-obvious array handling. If you
-are interssted in the Java implementation of ZRTP that you may have a look
+are interessted in the Java implementation of ZRTP then you may have a look
 [here][javazrtp]. The Jitsi project uses the Java implementation. Jitsi is a
-powerfull comminication client and it's definitely worth a [look][jitsi].
+powerfull communication client and is definitely worth a [look][jitsi].
 
 To enable C based code to use ZRTP C++ I did a C wrapper that offers the same
 functionality to C based RTP implementations. The first use of the ZRTP C
