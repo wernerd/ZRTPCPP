@@ -93,7 +93,6 @@ void ZrtpPacketHello::configureHello(ZrtpConfigure* config) {
         AlgorithmEnum& sas = config->getAlgoAt(SasType, i);
         setSasType(i, (int8_t*)sas.getName());
     }
-//    helloHeader->flagLength = htonl(lenField);
     *((uint32_t*)&helloHeader->flags) = htonl(lenField);
 }
 
