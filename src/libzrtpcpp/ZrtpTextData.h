@@ -57,6 +57,8 @@ extern char GoClearMsg[];
 extern char ClearAckMsg[];
 extern char PingMsg[];
 extern char PingAckMsg[];
+extern char SasRelayMsg[];
+extern char RelayAckMsg[];
 
 /**
  *

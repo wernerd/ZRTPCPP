@@ -44,7 +44,6 @@ class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
 
  protected:
     Hello_t* helloHeader;   ///< Point to the Hello message part
-    bool passive;           ///< Set if the client shall be passive (not implemented)
 
     int32_t nHash,          ///< number of hash algorithms offered
     nCipher,                ///< number of cipher algorithms offered
@@ -106,7 +105,10 @@ class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
     void setZid(uint8_t *text)         { memcpy(helloHeader->zid, text, sizeof(helloHeader->zid)); }
 
     /// Check passive mode (mode not implemented)
-    bool isPassive()       { return passive; };
+    bool isPassive()       { return helloHeader->flags & 0x10; };
+
+    /// Check if MitM flag ise set
+    bool isMitmMode()       { return helloHeader->flags & 0x40; };
 
     /// Get hash algorithm name at position n, fixed ASCII character array
     uint8_t* getHashType(int32_t n)   { return ((uint8_t*)helloHeader)+oHash+(n*ZRTP_WORD_SIZE); }
@@ -164,6 +166,9 @@ class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
 
     /// Get number of offered SRTP authentication algorithms
     int32_t getNumAuth()     {return nAuth; }
+
+    /// set MitM flag
+    void setMitmMode()            { helloHeader->flags |= 0x40; }
 
 
  private:

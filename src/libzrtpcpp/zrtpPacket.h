@@ -80,7 +80,8 @@ typedef struct Hello {
     uint8_t	 clientId[CLIENT_ID_SIZE];  ///< An 4 word ASCII identifier of the ZRTP client
     uint8_t  hashH3[HASH_IMAGE_SIZE];   ///< The last hash of the hash chain (chap. 9)
     uint8_t  zid[ZID_SIZE];             ///< ZID - 3 word identifier for the ZRTP endpoint
-    uint32_t flagLength;                ///< flag bits (chap 7.2), number of algorithms present
+    uint8_t  flags;                     ///< flag bits (chap 7.2)
+    uint8_t  lengths[3];                ///< number of algorithms present
 } Hello_t;
 
 /**
@@ -286,6 +287,45 @@ typedef struct PingAckPacket {
     PingAck_t pingAck;              ///< PingAck message part
     uint8_t crc[ZRTP_WORD_SIZE];    ///< CRC of ZRTP message
 } PingAckPacket_t;
+
+/**
+ * SASrelay message
+ * 
+ * The SASrelay message has a variable length. The following struct
+ * defines the fixed part only. The SASrelay class initializes the
+ * variable part.
+ * 
+ * ZRTP encrypts a part of the SASrelay message, starting at @c hashH0 
+ * and includes the variable part.
+ */
+typedef struct SASrelay {
+    uint8_t  hmac[HMAC_SIZE];           ///< MAC over the encrypted part of Commit message 
+    uint8_t  iv[IV_SIZE];               ///< IV for CFB mode to encrypt part of Commit
+    uint8_t  filler[2];                 ///< Filler bytes
+    uint8_t  sigLength;                 ///< Length of an optional signature length (chap 7.2)
+    uint8_t  flags;                     ///< various flags to control behaviour
+    uint8_t  sas[ZRTP_WORD_SIZE];       ///< SAS algorithm to use
+    uint8_t  trustedSasHash[HASH_IMAGE_SIZE];  ///< New trusted SAS hash for enrolled client
+} SASrelay_t;
+
+/**
+ * The complete ZRTP SASrelay message.
+ */
+typedef struct SASrelayPacket {
+    zrtpPacketHeader_t hdr;         ///< ZRTP Header
+    SASrelay_t sasrelay;            ///< SASrelay message fixed part
+} SASrelayPacket_t;
+
+/**
+ * RelayAck message.
+ * 
+ * The complete RelayAck message consists of ZRTP message header and
+ * the CRC which is the only RelayAck specific data.
+ */
+typedef struct RelayAckPacket {
+    zrtpPacketHeader_t hdr;         ///< ZRTP Header
+    uint8_t crc[ZRTP_WORD_SIZE];    ///< CRC of ZRTP message
+} RelayAckPacket_t;
 
 #endif // ZRTPPACKET_H
 
