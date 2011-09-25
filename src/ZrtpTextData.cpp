@@ -22,38 +22,40 @@
 #include <libzrtpcpp/ZrtpConfigure.h>
 //                             1
 //                    1234567890123456
-char clientId[] =    "GNU ZRTP 1.6.0  "; // 16 chars max.
+char clientId[] =    "GNU ZRTP 2.1.0  "; // 16 chars max.
 char zrtpVersion[] = "1.10";             // must be 4 chars
 /**
  *
  */
-char HelloMsg[] =    "Hello   ";
+char HelloMsg[]    = "Hello   ";
 char HelloAckMsg[] = "HelloACK";
-char CommitMsg[] =   "Commit  ";
-char DHPart1Msg[] =  "DHPart1 ";
-char DHPart2Msg[] =  "DHPart2 ";
+char CommitMsg[]   = "Commit  ";
+char DHPart1Msg[]  = "DHPart1 ";
+char DHPart2Msg[]  = "DHPart2 ";
 char Confirm1Msg[] = "Confirm1";
 char Confirm2Msg[] = "Confirm2";
 char Conf2AckMsg[] = "Conf2ACK";
-char ErrorMsg[] =    "Error   ";
+char ErrorMsg[]    = "Error   ";
 char ErrorAckMsg[] = "ErrorACK";
-char GoClearMsg[] =  "GoClear ";
+char GoClearMsg[]  = "GoClear ";
 char ClearAckMsg[] = "ClearACK";
-char PingMsg[] =     "Ping    ";
-char PingAckMsg[] =  "PingACK ";
+char PingMsg[]     = "Ping    ";
+char PingAckMsg[]  = "PingACK ";
+char SasRelayMsg[] = "SASrelay";
+char RelayAckMsg[] = "RelayACK";
 
-char responder[] = "Responder";
-char initiator[] = "Initiator";
-char iniMasterKey[] = "Initiator SRTP master key";
-char iniMasterSalt[] = "Initiator SRTP master salt";
-char respMasterKey[] = "Responder SRTP master key";
+char responder[]      = "Responder";
+char initiator[]      = "Initiator";
+char iniMasterKey[]   = "Initiator SRTP master key";
+char iniMasterSalt[]  = "Initiator SRTP master salt";
+char respMasterKey[]  = "Responder SRTP master key";
 char respMasterSalt[] = "Responder SRTP master salt";
 
-char iniHmacKey[] = "Initiator HMAC key";
+char iniHmacKey[]  = "Initiator HMAC key";
 char respHmacKey[] = "Responder HMAC key";
 char retainedSec[] = "retained secret";
 
-char iniZrtpKey[] = "Initiator ZRTP key";
+char iniZrtpKey[]  = "Initiator ZRTP key";
 char respZrtpKey[] = "Responder ZRTP key";
 
 char sasString[] = "SAS";
@@ -64,7 +66,7 @@ char zrtpSessionKey[] = "ZRTP Session Key";
 
 char zrtpMsk[] = "ZRTP MSK";
 
-char s256[] =  "S256";
+char s256[] = "S256";
 char s384[] = "S384";
 const char* mandatoryHash = s256;
 
@@ -74,7 +76,6 @@ char aes1[] = "AES1";
 char two3[] = "2FS3";
 char two2[] = "2FS2";
 char two1[] = "2FS1";
-
 const char* mandatoryCipher = aes1;
 
 char dh2k[] = "DH2k";

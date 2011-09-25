@@ -57,6 +57,8 @@ set(zrtp_src
     ZrtpPacketErrorAck.cpp
     ZrtpPacketPingAck.cpp
     ZrtpPacketPing.cpp
+    ZrtpPacketSASrelay.cpp
+    ZrtpPacketRelayAck.cpp
     ZrtpStateClass.cpp
     ZrtpTextData.cpp
     ZrtpConfigure.cpp
