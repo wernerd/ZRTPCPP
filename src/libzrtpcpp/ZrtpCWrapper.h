@@ -491,7 +491,7 @@ extern "C"
          * @param info Give some information to the user about the PBX
          *    requesting an enrollment.
          */
-        void (*zrtp_zrtpAskEnrollment) (ZrtpContext* ctx, zrtp_InfoEnrollment info) ;
+        void (*zrtp_zrtpAskEnrollment) (ZrtpContext* ctx, int32_t info) ;
 
         /**
          * Inform about PBX enrollment result.
@@ -507,7 +507,7 @@ extern "C"
          * @param info Give some information to the user about the result
          *    of an enrollment.
          */
-        void (*zrtp_zrtpInformEnrollment) (ZrtpContext* ctx, zrtp_InfoEnrollment info ) ;
+        void (*zrtp_zrtpInformEnrollment) (ZrtpContext* ctx, int32_t info ) ;
 
         /**
          * Request a SAS signature.
