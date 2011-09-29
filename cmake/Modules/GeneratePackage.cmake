@@ -25,6 +25,7 @@ MACRO(GENERATE_PACKAGING PACKAGE VERSION)
   "/build/"
   "/autom4te\\\\.cache/"
   "/_build/"
+  "/doc/html/"
   "/\\\\.git/"
   # used before
   "/CVS/"
