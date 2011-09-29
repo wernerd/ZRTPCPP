@@ -294,7 +294,7 @@ protected:
      * @param info Give some information to the user about the PBX
      *    requesting an enrollment.
      */
-    virtual void zrtpAskEnrollment(std::string info) =0;
+    virtual void zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info) =0;
 
     /**
      * Inform about PBX enrollment result.
@@ -308,7 +308,7 @@ protected:
      * @param info Give some information to the user about the result
      *    of an enrollment.
      */
-    virtual void zrtpInformEnrollment(std::string info) =0;
+    virtual void zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment info) =0;
 
     /**
      * Request a SAS signature.

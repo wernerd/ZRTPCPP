@@ -48,6 +48,7 @@ state_t states[numberOfStates] = {
 
 ZrtpStateClass::ZrtpStateClass(ZRtp *p) {
     parent = p;
+    secSubstate = Normal;
     engine = new ZrtpStates(states, numberOfStates, Initial);
 
     commitPkt = NULL;
@@ -117,6 +118,15 @@ void ZrtpStateClass::processEvent(Event_t *ev) {
             parent->synchLeave();
             return;
         }
+        else if (first == 's' && last == 'y') {
+            uint32_t errorCode = 0;
+            ZrtpPacketSASrelay* srly = new ZrtpPacketSASrelay(pkt);
+            ZrtpPacketRelayAck* rapkt = parent->prepareRelayAck(srly, &errorCode);
+            parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(rapkt));
+            parent->synchLeave();
+            return;
+        }
+
     }
     /*
      * Shut down protocol state engine: cancel outstanding timer, further
@@ -995,7 +1005,7 @@ void ZrtpStateClass::evWaitConfirm1(void) {
                 return;
             }
             if (startTimer(&T2) <= 0) {
-                timerFailed(SevereNoTimer);  // returns to state Initial
+                timerFailed(SevereNoTimer);  // returns to state Initial TODO check for return following this line
             }
             // according to chap 5.8: after sending Confirm2 the Initiator must
             // be ready to receive SRTP data. SRTP sender will be enabled in WaitConfAck
@@ -1033,6 +1043,8 @@ void ZrtpStateClass::evWaitConfirm1(void) {
  * Conf2Ack to our peer. Switch to secure mode after sending Conf2Ack, our 
  * peer switches to secure mode after receiving Conf2Ack.
  *
+ * TODO - revise documentation comments
+ * 
  * When entering this transition function
  * - Responder mode
  * - sentPacket contains Confirm1 packet, no timer active
@@ -1298,6 +1310,14 @@ void ZrtpStateClass::evSecureState(void) {
     char *msg, first, last;
     uint8_t *pkt;
 
+    /*
+     * Handle a possible substate. If substate handling was ok just return.
+     */
+    if (secSubstate == WaitSasRelayAck) {
+        if (subEvWaitRelayAck())
+            return; 
+    }
+
     if (event->type == ZrtpPacket) {
         pkt = event->packet;
         msg = (char *)pkt + 4;
@@ -1345,6 +1365,48 @@ void ZrtpStateClass::evSecureState(void) {
     }
 }
 
+bool ZrtpStateClass::subEvWaitRelayAck() {
+    char *msg, first, last;
+    uint8_t* pkt;
+
+    /*
+     * First check the general event type, then discrimnate the real event.
+     */
+    if  (event->type == ZrtpPacket) {
+        pkt = event->packet;
+        msg = (char *)pkt + 4;
+
+        first = tolower(*msg);
+        last = tolower(*(msg+7));
+
+        /*
+         * SAS relayAck:
+         * - stop resending SASRelay,
+         * - switch to secure substate Normal
+         */
+        if (first == 'r' && last =='k') {
+            cancelTimer();
+            secSubstate = Normal;
+            sentPacket = NULL;
+        }
+        return true;
+    }
+    // Timer event triggered - this is Timer T2 to resend Error.
+    else if (event->type == Timer) {
+        if (!parent->sendPacketZRTP(sentPacket)) {
+            sendFailed(); // returns to state Initial
+            return false;
+        }
+        if (nextTimer(&T2) <= 0) {
+            // returns to state initial
+            // timerFailed(ZrtpCodes.SevereCodes.SevereTooMuchRetries);
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+
 int32_t ZrtpStateClass::startTimer(zrtpTimer_t *t) {
 
     t->time = t->start;
@@ -1372,6 +1434,15 @@ void ZrtpStateClass::sendErrorPacket(uint32_t errorCode) {
     sentPacket =  static_cast<ZrtpPacketBase *>(err);
     nextState(WaitErrorAck);
     if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(err)) || (startTimer(&T2) <= 0)) {
+        sendFailed();
+    }
+}
+
+void ZrtpStateClass::sendSASRelay(ZrtpPacketSASrelay* relay) {
+    cancelTimer();
+    sentPacket = static_cast<ZrtpPacketBase *>(relay);
+    secSubstate = WaitSasRelayAck;
+    if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(relay)) || (startTimer(&T2) <= 0)) {
         sendFailed();
     }
 }

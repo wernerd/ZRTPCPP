@@ -57,8 +57,11 @@ class __EXPORT ZrtpPacketConfirm : public ZrtpPacketBase {
         /// Normal destructor
         virtual ~ZrtpPacketConfirm();
 
-        /// Check is SAS verify flag is set
+        /// Check if SAS verify flag is set
         const bool isSASFlag()            { return confirmHeader->flags & 0x4; }
+
+        /// Check if PBXEnrollment flag is set
+        const bool isPBXEnrollment()      { return confirmHeader->flags & 0x8; }
 
         /// Get pointer to filler bytes (contains one bit of signature length)
         const uint8_t* getFiller()        { return confirmHeader->filler; }
@@ -80,6 +83,9 @@ class __EXPORT ZrtpPacketConfirm : public ZrtpPacketBase {
 
         /// set SAS verified flag
         void setSASFlag()            { confirmHeader->flags |= 0x4; }
+
+        /// set setPBXEnrollment flag
+        void setPBXEnrollment()      { confirmHeader->flags |= 0x8; }
 
         /// Set MAC data, fixed length byte array
         void setHmac(uint8_t* text)  { memcpy(confirmHeader->hmac, text, sizeof(confirmHeader->hmac)); }

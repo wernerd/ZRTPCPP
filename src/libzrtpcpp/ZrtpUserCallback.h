@@ -169,7 +169,7 @@ class __EXPORT ZrtpUserCallback {
          *    enrollment.
          *
          */
-        virtual void zrtpAskEnrollment(std::string info) {
+        virtual void zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info) {
             return;
         }
 
@@ -184,7 +184,7 @@ class __EXPORT ZrtpUserCallback {
          *    enrollment.
          *
          */
-        virtual void zrtpInformEnrollment(std::string info) {
+        virtual void zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment info) {
             return;
         }
 

@@ -108,7 +108,7 @@ class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
     bool isPassive()       { return helloHeader->flags & 0x10; };
 
     /// Check if MitM flag ise set
-    bool isMitmMode()       { return helloHeader->flags & 0x40; };
+    bool isMitmMode()       { return helloHeader->flags & 0x20; };
 
     /// Get hash algorithm name at position n, fixed ASCII character array
     uint8_t* getHashType(int32_t n)   { return ((uint8_t*)helloHeader)+oHash+(n*ZRTP_WORD_SIZE); }
@@ -168,7 +168,7 @@ class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
     int32_t getNumAuth()     {return nAuth; }
 
     /// set MitM flag
-    void setMitmMode()            { helloHeader->flags |= 0x40; }
+    void setMitmMode()            { helloHeader->flags |= 0x20; }
 
 
  private:

@@ -50,6 +50,7 @@ void ZrtpQueue::init()
     zrtpUserCallback = NULL;
     enableZrtp = false;
     started = false;
+    mitmMode = false;
     zrtpEngine = NULL;
     senderZrtpSeqNo = 1;
 
@@ -104,7 +105,7 @@ ZrtpQueue::initialize(const char *zidFilename, bool autoEnable,
     }
     if (ret > 0) {
         const uint8_t* ownZid = zf->getZid();
-        zrtpEngine = new ZRtp((uint8_t*)ownZid, (ZrtpCallback*)this, clientIdString, config);
+        zrtpEngine = new ZRtp((uint8_t*)ownZid, (ZrtpCallback*)this, clientIdString, config, mitmMode);
     }
     if (configOwn != NULL) {
         delete configOwn;
@@ -592,13 +593,13 @@ void ZrtpQueue::synchLeave() {
     synchLock.leave();
 }
 
-void ZrtpQueue::zrtpAskEnrollment(std::string info) {
+void ZrtpQueue::zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment  info) {
     if (zrtpUserCallback != NULL) {
         zrtpUserCallback->zrtpAskEnrollment(info);
     }
 }
 
-void ZrtpQueue::zrtpInformEnrollment(std::string info) {
+void ZrtpQueue::zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment  info) {
     if (zrtpUserCallback != NULL) {
         zrtpUserCallback->zrtpInformEnrollment(info);
     }
@@ -642,11 +643,6 @@ void ZrtpQueue::requestGoClear()  { }
 void ZrtpQueue::setAuxSecret(uint8* data, int32_t length)  {
     if (zrtpEngine != NULL)
         zrtpEngine->setAuxSecret(data, length);
-}
-
-void ZrtpQueue::setPbxSecret(uint8* data, int32 length)  {
-    if (zrtpEngine != NULL)
-        zrtpEngine->setPbxSecret(data, length);
 }
 
 void ZrtpQueue::setUserCallback(ZrtpUserCallback* ucb) {
@@ -693,6 +689,48 @@ void ZrtpQueue::acceptEnrollment(bool accepted) {
         zrtpEngine->acceptEnrollment(accepted);
 }
 
+std::string ZrtpQueue::getSasType() {
+    if (zrtpEngine != NULL)
+        return zrtpEngine->getSasType();
+    else
+        return NULL;
+}
+
+uint8_t* ZrtpQueue::getSasHash() {
+    if (zrtpEngine != NULL)
+        return zrtpEngine->getSasHash();
+    else
+        return NULL;
+}
+
+bool ZrtpQueue::sendSASRelayPacket(uint8_t* sh, std::string render) {
+
+    if (zrtpEngine != NULL)
+        return zrtpEngine->sendSASRelayPacket(sh, render);
+    else
+        return false;
+}
+
+bool ZrtpQueue::isMitmMode() {
+    return mitmMode;
+}
+
+void ZrtpQueue::setMitmMode(bool mitmMode) {
+    this->mitmMode = mitmMode;
+}
+
+bool ZrtpQueue::isEnrollmentMode() {
+    if (zrtpEngine != NULL)
+        return zrtpEngine->isEnrollmentMode();
+    else
+        return false;
+}
+
+void ZrtpQueue::setEnrollmentMode(bool enrollmentMode) {
+    if (zrtpEngine != NULL)
+        zrtpEngine->setEnrollmentMode(enrollmentMode);
+}
+
 bool ZrtpQueue::setSignatureData(uint8* data, int32 length) {
     if (zrtpEngine != NULL)
         return zrtpEngine->setSignatureData(data, length);
@@ -711,18 +749,12 @@ int32 ZrtpQueue::getSignatureLength() {
     return 0;
 }
 
-void ZrtpQueue::setPBXEnrollment(bool yesNo) {
-    if (zrtpEngine != NULL)
-    zrtpEngine->setPBXEnrollment(yesNo);
-}
-
-
-int32 ZrtpQueue::getZid(uint8* data) {
+int32 ZrtpQueue::getPeerZid(uint8* data) {
     if (data == NULL)
         return 0;
 
     if (zrtpEngine != NULL)
-        return zrtpEngine->getZid(data);
+        return zrtpEngine->getPeerZid(data);
 
     return 0;
 }

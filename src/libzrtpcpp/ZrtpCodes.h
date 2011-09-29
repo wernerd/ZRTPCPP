@@ -145,6 +145,17 @@ enum ZrtpErrorCodes {
     GoCleatNotAllowed = 0x100,   //!< GoClear packet received, but not allowed
     IgnorePacket =      0x7fffffff
 };
+
+/**
+ * Information codes for the Enrollment user callbacks.
+ */
+enum InfoEnrollment {
+    EnrollmentRequest,              //!< Aks user to confirm or deny an Enrollemnt request
+    EnrollmentCanceled,             //!< User did not confirm the PBX enrollement
+    EnrollmentFailed,               //!< Enrollment process failed, no PBX secret available
+    EnrollmentOk                    //!< Enrollment process for this PBX was ok
+};
+
 }
 
 /**

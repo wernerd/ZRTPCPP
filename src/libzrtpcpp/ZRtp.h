@@ -38,6 +38,8 @@
 #include <libzrtpcpp/ZrtpPacketErrorAck.h>
 #include <libzrtpcpp/ZrtpPacketPing.h>
 #include <libzrtpcpp/ZrtpPacketPingAck.h>
+#include <libzrtpcpp/ZrtpPacketSASrelay.h>
+#include <libzrtpcpp/ZrtpPacketRelayAck.h>
 #include <libzrtpcpp/ZrtpCallback.h>
 #include <libzrtpcpp/ZIDRecord.h>
 
@@ -93,7 +95,7 @@ class __EXPORT ZRtp {
      * engine.
      */
     ZRtp(uint8_t* myZid, ZrtpCallback* cb, std::string id,
-         ZrtpConfigure* config);
+         ZrtpConfigure* config, bool mitmm= false);
 
     /**
      * Destructor cleans up.
@@ -297,19 +299,55 @@ class __EXPORT ZRtp {
     void acceptEnrollment(bool accepted);
 
     /**
-     * Enable PBX enrollment
-     *
-     * The application calls this method to allow or disallow PBX enrollment.
-     * If the applications allows PBX enrollment then the ZRTP implementation
-     * honors the PBX enrollment flag in Confirm packets. Refer to chapter 7.3
-     * for further details of PBX enrollment.
-     *
-     * @param yesNo
-     *    If set to true then ZRTP honors the PBX enrollment flag in Commit
-     *    packets and calls the appropriate user callback methods. If
-     *    the parameter is set to false ZRTP ignores the PBX enrollment flags.
+     * Check the state of the enrollment mode.
+     * 
+     * If true then we will set the enrollment flag (E) in the confirm
+     * packets and performs the enrollment actions. A MitM (PBX) enrollment service 
+     * started this ZRTP session. Can be set to true only if mitmMode is also true.
+     * 
+     * @return status of the enrollmentMode flag.
      */
-    void setPBXEnrollment(bool yesNo);
+    bool isEnrollmentMode();
+
+    /**
+     * Check the state of the enrollment mode.
+     * 
+     * If true then we will set the enrollment flag (E) in the confirm
+     * packets and perform the enrollment actions. A MitM (PBX) enrollment 
+     * service must sets this mode to true. 
+     * 
+     * Can be set to true only if mitmMode is also true. 
+     * 
+     * @param enrollmentMode defines the new state of the enrollmentMode flag
+     */
+    void setEnrollmentMode(bool enrollmentMode);
+
+    /**
+     * Send the SAS relay packet.
+     * 
+     * The method creates and sends a SAS relay packet according to the ZRTP
+     * specifications. Usually only a MitM capable user agent (PBX) uses this
+     * function.
+     * 
+     * @param sh the full SAS hash value
+     * @param render the SAS rendering algorithm
+     */
+    bool sendSASRelayPacket(uint8_t* sh, std::string render);
+
+    /**
+     * Get the commited SAS rendering algorithm for this ZRTP session.
+     * 
+     * @return the commited SAS rendering algorithm
+     */
+    std::string getSasType();
+ 
+    /**
+     * Get the computed SAS hash for this ZRTP session.
+     * 
+     * @return a pointer to the byte array that contains the full 
+     *         SAS hash.
+     */
+    uint8_t* getSasHash();
 
     /**
      * Set signature data
@@ -390,7 +428,7 @@ class __EXPORT ZRtp {
       *    Number of bytes copied into the data buffer - must be equivalent
       *    to 96 bit, usually 12 bytes.
       */
-     int32_t getZid(uint8_t* data);
+     int32_t getPeerZid(uint8_t* data);
 
 private:
      friend class ZrtpStateClass;
@@ -526,6 +564,7 @@ private:
      * The SHA256 hash over selected messages
      */
     uint8_t messageHash[MAX_DIGEST_LENGTH];
+
     /**
      * The s0
      */
@@ -627,9 +666,41 @@ private:
     bool multiStreamAvailable;
 
     /**
-     * True if PBX enrollment is enabled.
+     * Enable MitM (PBX) enrollment
+     * 
+     * If set to true then ZRTP honors the PBX enrollment flag in
+     * Commit packets and calls the appropriate user callback
+     * methods. If the parameter is set to false ZRTP ignores the PBX
+     * enrollment flags.
      */
-    bool PBXEnrollment;
+    bool enableMitmEnrollment;
+    
+    /**
+     * True if the Hello packet was sent by a trusted PBX. This is true only
+     * if the Hello packet has the M-flag set and the according ZIDRecord contains
+     * a valid MitM key. 
+     */
+    bool trustedMitM;
+
+    /**
+     * Set to true if the Hello packet contained the M-flag (MitM flag).
+     * We use this later to check some stuff for SAS Relay processing
+     */
+    bool mitmSeen;
+    
+    /**
+     * Temporarily store computed pbxSecret, if user accepts enrollment then
+     * it will copied to our ZID record of the PBX (MitM)  
+     */
+    uint8_t* pbxSecretTmp;
+    uint8_t  pbxSecretTmpBuffer[MAX_DIGEST_LENGTH];
+     
+    /**
+     * If true then we will set the enrollment flag (E) in the confirm
+     * packets. Set to true if the PBX enrollment service started this ZRTP 
+     * session. Can be set to true only if mitmMode is also true. 
+     */
+    bool enrollmentMode;
 
     /**
      * Configuration data which algorithms to use.
@@ -651,6 +722,8 @@ private:
     ZrtpPacketConfirm  zrtpConfirm1;
     ZrtpPacketConfirm  zrtpConfirm2;
     ZrtpPacketPingAck  zrtpPingAck;
+    ZrtpPacketSASrelay zrtpSasRelay;
+    ZrtpPacketRelayAck zrtpRelayAck;
 
     /**
      * Random IV data to encrypt the confirm data, 128 bit for AES
@@ -758,6 +831,11 @@ private:
     bool checkMultiStream(ZrtpPacketHello* hello);
 
     /**
+     * Save the computed MitM secret to the ZID record of the peer
+     */
+    void writeEnrollmentPBX();
+
+    /**
      * Compute my hvi value according to ZRTP specification.
      */
     void computeHvi(ZrtpPacketDHPart* dh, ZrtpPacketHello *hello);
@@ -775,6 +853,8 @@ private:
 
     void generateKeysMultiStream();
 
+    void computePBXSecret();
+    
     void setNegotiatedHash(AlgorithmEnum* hash);
 
     /*
@@ -978,6 +1058,14 @@ private:
      */
     ZrtpPacketPingAck* preparePingAck(ZrtpPacketPing* ppkt);
 
+    /**
+     * Prepare the RelayAck packet.
+     *
+     * This method prepares the RelayAck packet. The input to this method is the
+     * SASrelay packet received from the peer.
+     */
+    ZrtpPacketRelayAck* prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* errMsg);
+    
     /**
      * Prepare a GoClearAck packet w/o HMAC
      *

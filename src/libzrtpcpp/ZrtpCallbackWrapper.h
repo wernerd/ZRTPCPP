@@ -44,7 +44,7 @@ class __EXPORT ZrtpCallbackWrapper : public ZrtpCallback
 public:
     /**
      * Construct a class that implements ZrtpCallback and uses a C structure
-     * the call C functions that implement the callbacks.
+     * to call C functions that implement the callbacks.
      *
      * @param cb
      *    The C callback structure that hold the addresses of the C methods
@@ -76,9 +76,9 @@ public:
 
     void synchLeave();
 
-    void zrtpAskEnrollment ( std::string info );
+    void zrtpAskEnrollment (GnuZrtpCodes::InfoEnrollment info );
 
-    void zrtpInformEnrollment ( std::string info );
+    void zrtpInformEnrollment (GnuZrtpCodes::InfoEnrollment info );
 
     void signSAS ( std::string sas );
 

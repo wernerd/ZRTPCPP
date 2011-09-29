@@ -127,25 +127,14 @@ void ZrtpCallbackWrapper::synchLeave()
     c_callbacks->zrtp_synchLeave(zrtpCtx);
 }
 
-void ZrtpCallbackWrapper::zrtpAskEnrollment(std::string info)
+void ZrtpCallbackWrapper::zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info)
 {
-    char* cc = new char [info.size()+1];
-
-    strcpy(cc, info.c_str());
-    c_callbacks->zrtp_zrtpAskEnrollment(zrtpCtx, cc);
-
-    delete[] cc;
-
+    c_callbacks->zrtp_zrtpAskEnrollment(zrtpCtx, (zrtp_InfoEnrollment)info);
 }
 
-void ZrtpCallbackWrapper::zrtpInformEnrollment(std::string info)
+void ZrtpCallbackWrapper::zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment info)
 {
-    char* cc = new char [info.size()+1];
-
-    strcpy(cc, info.c_str());
-    c_callbacks->zrtp_zrtpInformEnrollment(zrtpCtx, cc);
-
-    delete[] cc;
+    c_callbacks->zrtp_zrtpInformEnrollment(zrtpCtx, (zrtp_InfoEnrollment)info);
 
 }
 

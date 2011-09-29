@@ -53,7 +53,7 @@ static void hexdump(const char* title, const unsigned char *s, int l) {
     }
     fprintf(stderr, "\n");
 }
-*/
+ */
 
 /*
  * This method simplifies detection of libzrtpcpp inside Automake, configure
@@ -71,13 +71,15 @@ int ZrtpAvailable()
 #endif
 
 ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, 
-    ZrtpConfigure* config):
+    ZrtpConfigure* config, bool mitmm):
     callback(cb), dhContext(NULL), DHss(NULL), auxSecret(NULL), 
     auxSecretLength(0), rs1Valid(false), rs2Valid(false), msgShaContext(NULL),
-    multiStream(false), multiStreamAvailable(false), PBXEnrollment(false),
+    multiStream(false), multiStreamAvailable(false), pbxSecretTmp(NULL),
     configureAlgos(*config) {
 
-    // setup the implicit hash function pointers and length
+    enableMitmEnrollment = config->isTrustedMitM();
+
+   // setup the implicit hash function pointers and length
     hashLengthImpl = SHA256_DIGEST_LENGTH;
     hashFunctionImpl = sha256;
     hashListFunctionImpl = sha256;
@@ -99,6 +101,8 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id,
 
     memcpy(zid, myZid, ZID_SIZE);
     zrtpHello.setZid(zid);
+    if (mitmm)                   // this session acts for a trusted MitM (PBX)
+        zrtpHello.setMitmMode();
     setClientId(id);                // set id, compute HMAC and final helloHash
 
     stateEngine = new ZrtpStateClass(this);
@@ -307,6 +311,13 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     //Compute the Initator's and Responder's retained secret ids.
     computeSharedSecretSet(zidRec);
 
+    // Check for PBX and if we have a MitM Key available. This would
+    // qualify the PBX as trusted MitM and that this client enrolled to
+    // the trusted PBX
+    if (hello->isMitmMode()) {
+        mitmSeen = true;
+        trustedMitM = zidRec.isMITMKeyAvailable();
+    }
     // Construct a DHPart2 message (Initiator's DH message). This packet
     // is required to compute the HVI (Hash Value Initiator), refer to 
     // chapter 5.4.1.1.
@@ -727,6 +738,13 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     zrtpConfirm1.setIv(randomIV);
     zrtpConfirm1.setHashH0(H0);
 
+    // if this run at PBX user agent enrollment service then set flag in confirm
+    // packet and store the MitM key
+    if (enrollmentMode) {
+        computePBXSecret();
+        zrtpConfirm1.setPBXEnrollment();
+        writeEnrollmentPBX();
+    }
     uint8_t confMac[MAX_DIGEST_LENGTH];
     uint32_t macLen;
 
@@ -942,6 +960,19 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
     zrtpConfirm2.setExpTime(0xFFFFFFFF);
     zrtpConfirm2.setIv(randomIV);
 
+    // Compute PBX secret if we are in enrollemnt mode (PBX user agent)
+    // or enrollment was enabled at normal user agent and flag in confirm packet
+    if (enrollmentMode || (enableMitmEnrollment && confirm1->isPBXEnrollment())) {
+        computePBXSecret();
+         
+        // if this runs at PBX user agent enrollment service then set flag in confirm
+        // packet and store the MitM key. The PBX user agent service always stores
+        // its MitM key.
+        if (enrollmentMode) {
+            zrtpConfirm2.setPBXEnrollment();
+            writeEnrollmentPBX();
+        }
+    }
     // Encrypt and HMAC with Initiator's key - we are Initiator here
     hmlen = (zrtpConfirm2.getLength() - 9) * ZRTP_WORD_SIZE;
 	cipher->getEncrypt()(zrtpKeyI, cipher->getKeylen(), randomIV,
@@ -953,7 +984,30 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
 
     zrtpConfirm2.setHmac(confMac);
 
+    // Ask for enrollment only if enabled via configuration and the
+    // confirm1 packet contains the enrollment flag. The enrolling user
+    // agent stores the MitM key only if the user accepts the enrollment
+    // request.
+    if (enableMitmEnrollment && confirm1->isPBXEnrollment()) {
+        callback->zrtpAskEnrollment(EnrollmentRequest);
+    }
     return &zrtpConfirm2;
+}
+
+/**
+ * Save the computed MitM secret to the ZID record of the peer
+ */
+void ZRtp::writeEnrollmentPBX() {
+    // Initialize a ZID record to get peer's retained secrets
+    ZIDRecord zidRec(peerZid);
+
+    ZIDFile *zid = ZIDFile::getInstance();
+    zid->getRecord(&zidRec);
+
+    if (pbxSecretTmp != NULL) {
+        zidRec.setMiTMData(pbxSecretTmp);
+    }
+    zid->saveRecord(&zidRec);
 }
 
 /*
@@ -1102,6 +1156,15 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
         // save new RS1, this inherits the verified flag from old RS1
         zidRec.setNewRs1((const uint8_t*)newRs1);
         zid->saveRecord(&zidRec);
+            
+        // Ask for enrollment only if enabled via configuration and the
+        // confirm packet contains the enrollment flag. The enrolling user
+        // agent stores the MitM key only if the user accepts the enrollment
+        // request.
+        if (enableMitmEnrollment && confirm2->isPBXEnrollment()) {
+            computePBXSecret();
+            callback->zrtpAskEnrollment(EnrollmentRequest);
+        }
     }
     else {
         // Check HMAC of Commit packet stored in temporary buffer. The
@@ -1142,6 +1205,81 @@ ZrtpPacketPingAck* ZRtp::preparePingAck(ZrtpPacketPing* ppkt) {
     zrtpPingAck.setRemoteEpHash(ppkt->getEpHash());
     zrtpPingAck.setSSRC(peerSSRC);
     return &zrtpPingAck;
+}
+
+ZrtpPacketRelayAck* ZRtp::prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* errMsg) {
+    if (!mitmSeen)
+        return &zrtpRelayAck;
+
+    uint8_t* hkey, *ekey;
+    // If we are responder then the PBX used it's Initiator keys
+    if (myRole == Responder) {
+        hkey = hmacKeyI;
+        ekey = zrtpKeyI;
+    }
+    else {
+        hkey = hmacKeyR;
+        ekey = zrtpKeyR;
+    }
+
+    uint8_t confMac[MAX_DIGEST_LENGTH];
+    uint32_t macLen;
+
+    // Use the Initiator's keys here because we are Responder here and
+    // reveice packets from Initiator
+    int16_t hmlen = (srly->getLength() - 9) * ZRTP_WORD_SIZE;
+
+    // Use negotiated HMAC (hash)
+    hmacFunction(hkey, hashLength,
+                 (unsigned char*)srly->getFiller(),
+                 hmlen, confMac, &macLen);
+
+    if (memcmp(confMac, srly->getHmac(), HMAC_SIZE) != 0) {
+        *errMsg = ConfirmHMACWrong;
+        return NULL;                // TODO - check error handling
+    }
+    cipher->getDecrypt()(ekey, cipher->getKeylen(),
+                         srly->getIv(),
+                         (uint8_t*)srly->getFiller(), hmlen);
+
+    const uint8_t* render = srly->getSas();
+    const uint8_t* newSasHash = srly->getTrustedSas();
+
+    bool sasHashNull = true;
+    for (int i = 0; i < HASH_IMAGE_SIZE; i++) {
+        if (newSasHash[i] != 0) {
+            sasHashNull = false;
+            break;
+        }
+    }
+    // if the new SAS is not null then we need a trusted MitM. If this is not
+    // the case then don't render the new SAS - return.
+    if (!sasHashNull && !trustedMitM) {
+        return &zrtpRelayAck;
+    }
+    // If other SAS schemes required - check here and use others
+    AlgorithmEnum* renderAlgo = &zrtpSasTypes.getByName((const char*)render);
+    if (renderAlgo->isValid()) {
+        uint8_t sasBytes[4];;
+        if (!sasHashNull) {
+            sasBytes[0] = newSasHash[0];
+            sasBytes[1] = newSasHash[1];
+            sasBytes[2] = newSasHash[2] & 0xf0;
+            sasBytes[3] = 0;
+        }
+        else {
+            sasBytes[0] = sasHash[0];
+            sasBytes[1] = sasHash[1];
+            sasBytes[2] = sasHash[2] & 0xf0;
+            sasBytes[3] = 0;
+        }
+        SAS = Base32(sasBytes, 20).getEncoded();
+    }
+    std::string cs(cipher->getReadable());
+    cs.append("/M/").append(pubKey->getName());
+
+    callback->srtpSecretsOn(cs, SAS, false);
+    return &zrtpRelayAck;
 }
 
 // TODO Implement GoClear handling
@@ -1573,7 +1711,7 @@ void ZRtp:: computeSharedSecretSet(ZIDRecord &zidRec) {
     }
 
     /*
-    * For the time being we don't support these types of shared secrect. Could be
+    * For the time being we don't support this types of shared secrect. Could be
     * easily done: somebody sets some data into our ZRtp object, check it here
     * and use it. Otherwise use the random data.
     */
@@ -1583,11 +1721,20 @@ void ZRtp:: computeSharedSecretSet(ZIDRecord &zidRec) {
     hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder,
 		strlen(responder), auxSecretIDr, &macLen);
 
-    randomZRTP(randBuf, RS_LENGTH);
-    hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator,
-		strlen(initiator), pbxSecretIDi, &macLen);
-    hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder,
-		strlen(responder), pbxSecretIDr, &macLen);
+    
+    if (!zidRec.isMITMKeyAvailable()) {
+        randomZRTP(randBuf, RS_LENGTH);
+        hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator,
+                     strlen(initiator), pbxSecretIDi, &macLen);
+        hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder,
+                     strlen(responder), pbxSecretIDr, &macLen);
+    }
+    else {
+        hmacFunction((unsigned char*)zidRec.getMiTMData(), RS_LENGTH, (unsigned char*)initiator,
+                     strlen(initiator), pbxSecretIDi, &macLen);
+        hmacFunction((unsigned char*)zidRec.getMiTMData(), RS_LENGTH, (unsigned char*)responder,
+                     strlen(responder), pbxSecretIDr, &macLen);
+    }
 }
 
 /*
@@ -1629,11 +1776,11 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 	DEBUGOUT((fprintf(stdout, "%c: Match for aux secret found\n", zid[0])));
         setD[matchingSecrets++] = auxSecret;
     }
-    if (memcmp(pbxSecretIDr, dhPart->getPbxSecretId(), 8) == 0) {
-	DEBUGOUT((fprintf(stdout, "%c: Match for Other_secret found\n", zid[0])));
-        setD[matchingSecrets++] = ;
-    }
     */
+    if (memcmp(pbxSecretIDr, dhPart->getPbxSecretId(), 8) == 0) {
+        DEBUGOUT((fprintf(stdout, "%c: Match for Other_secret found\n", zid[0])));
+        setD[matchingSecrets++] = zidRec.getMiTMData();
+    }
     // Check if some retained secrets found
     if (rsFound == 0) {                        // no RS matches found
         if (rs1Valid || rs2Valid) {            // but valid RS records in cache
@@ -1771,11 +1918,11 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 	DEBUGOUT((fprintf(stdout, "%c: Match for aux secret found\n", zid[0])));
         setD[matchingSecrets++] = ;
     }
-    if (memcmp(pbxSecretIDi, dhPart->getPbxSecretId(), 8) == 0) {
-	DEBUGOUT((fprintf(stdout, "%c: Match for PBX secret found\n", zid[0])));
-        setD[matchingSecrets++] = ;
-    }
     */
+    if (memcmp(pbxSecretIDi, dhPart->getPbxSecretId(), 8) == 0) {
+        DEBUGOUT((fprintf(stdout, "%c: Match for PBX secret found\n", zid[0])));
+        setD[matchingSecrets++] = zidRec.getMiTMData();
+    }
     // Check if some retained secrets found
     if (rsFound == 0) {                        // no RS matches found
         if (rs1Valid || rs2Valid) {            // but valid RS records in cache
@@ -1939,6 +2086,28 @@ void ZRtp::generateKeysMultiStream() {
 
     computeSRTPKeys();
 }
+
+void ZRtp::computePBXSecret() {
+        // Construct the KDF context as per ZRTP specification chap 7.3.1:
+        // ZIDi || ZIDr
+    uint8_t KDFcontext[sizeof(peerZid)+sizeof(zid)];
+    int32_t kdfSize = sizeof(peerZid)+sizeof(zid);
+
+    if (myRole == Responder) {
+        memcpy(KDFcontext, peerZid, sizeof(peerZid));
+        memcpy(KDFcontext+sizeof(peerZid), zid, sizeof(zid));
+    }
+    else {
+        memcpy(KDFcontext, zid, sizeof(zid));
+        memcpy(KDFcontext+sizeof(zid), peerZid, sizeof(peerZid));
+    }
+    
+    KDF(zrtpSession, hashLength, (unsigned char*)zrtpTrustedMitm, strlen(zrtpTrustedMitm)+1,
+        KDFcontext, kdfSize, SHA256_DIGEST_LENGTH * 8, pbxSecretTmpBuffer);
+
+    pbxSecretTmp = pbxSecretTmpBuffer;  // set pointer to buffer, signal PBX secret was computed
+}
+    
 
 void ZRtp::computeSRTPKeys() {
 
@@ -2248,6 +2417,25 @@ bool ZRtp::isMultiStreamAvailable() {
 }
 
 void ZRtp::acceptEnrollment(bool accepted) {
+    if (!accepted) {
+        callback->zrtpInformEnrollment(EnrollmentCanceled);
+        return;
+    }
+    // Get peer's zid record to store the pbx (MitM) secret
+    // Initialize a ZID record to get peer's retained secrets
+    ZIDRecord zidRec(peerZid);
+    ZIDFile* zid = ZIDFile::getInstance();
+    zid->getRecord(&zidRec);
+
+    if (pbxSecretTmp != NULL) {
+        zidRec.setMiTMData(pbxSecretTmp);
+        callback->zrtpInformEnrollment(EnrollmentOk);
+    }
+    else {
+        callback->zrtpInformEnrollment(EnrollmentFailed);
+        return;
+    }
+    zid->saveRecord(&zidRec);
     return;
 }
 
@@ -2264,7 +2452,6 @@ void ZRtp::conf2AckSecure() {
     if (stateEngine != NULL) {
         stateEngine->processEvent(&ev);
     }
-
 }
 
 int32_t ZRtp::getSignatureData(uint8_t* data) {
@@ -2282,11 +2469,60 @@ int32_t ZRtp::compareCommit(ZrtpPacketCommit *commit) {
     return (memcmp(hvi, commit->getHvi(), len)); 
 }
 
-void ZRtp:: setPBXEnrollment(bool yesNo) {
-    PBXEnrollment = yesNo;
+bool ZRtp::isEnrollmentMode() {
+    return enrollmentMode;
 }
 
-int32_t ZRtp::getZid(uint8_t* data) {
+void ZRtp::setEnrollmentMode(bool enrollmentMode) {
+    this->enrollmentMode = enrollmentMode;
+}
+
+bool ZRtp::sendSASRelayPacket(uint8_t* sh, std::string render) {
+
+    uint8_t confMac[MAX_DIGEST_LENGTH];
+    uint32_t macLen;
+    uint8_t* hkey, *ekey;
+    
+    // If we are responder then the PBX used it's Initiator keys
+    if (myRole == Responder) {
+        hkey = hmacKeyR;
+        ekey = zrtpKeyR;
+    }
+    else {
+        hkey = hmacKeyI;
+        ekey = zrtpKeyI;
+    }
+    // Prepare IV data that we will use during confirm packet encryption.
+    randomZRTP(randomIV, sizeof(randomIV));
+    zrtpSasRelay.setIv(randomIV);
+    zrtpSasRelay.setTrustedSas(sh);
+    zrtpSasRelay.setSas((uint8_t*)render.c_str());
+
+    // Encrypt and HMAC with Initiator's key - we are Initiator here
+    int16_t hmlen = (zrtpSasRelay.getLength() - 9) * ZRTP_WORD_SIZE;
+    cipher->getEncrypt()(ekey, cipher->getKeylen(), randomIV,
+                         (uint8_t*)zrtpSasRelay.getFiller(), hmlen);
+    // Use negotiated HMAC (hash)
+    hmacFunction(hkey, hashLength,
+                 (unsigned char*)zrtpSasRelay.getFiller(),
+                 hmlen, confMac, &macLen);
+
+    zrtpSasRelay.setHmac(confMac);
+
+    stateEngine->sendSASRelay(&zrtpSasRelay);
+    return true;
+}
+
+std::string ZRtp::getSasType() {
+    std::string sasT(sasType->getName());
+    return sasT;
+}
+ 
+uint8_t* ZRtp::getSasHash() {
+    return sasHash;
+}
+
+int32_t ZRtp::getPeerZid(uint8_t* data) {
     memcpy(data, peerZid, IDENTIFIER_LEN);
     return IDENTIFIER_LEN;
 }

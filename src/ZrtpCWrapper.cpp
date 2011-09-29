@@ -40,7 +40,8 @@ ZrtpContext* zrtp_CreateWrapper()
 void zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext, 
                                zrtp_Callbacks *cb, const char* id,
                                const char* zidFilename,
-                               void* userData)
+                               void* userData,
+                               int32_t mitmMode)
 {
     std::string clientIdString(id);
 
@@ -58,7 +59,7 @@ void zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext,
     const unsigned char* myZid = zf->getZid();
 
     zrtpContext->zrtpEngine = new ZRtp((uint8_t*)myZid, zrtpContext->zrtpCallback,
-                              clientIdString, zrtpContext->configure);
+                              clientIdString, zrtpContext->configure, mitmMode == 0 ? false : true);
     initialized = 1;
 }
 
@@ -148,11 +149,6 @@ void zrtp_setAuxSecret(ZrtpContext* zrtpContext, uint8_t* data, int32_t length) 
         zrtpContext->zrtpEngine->setAuxSecret(data, length);
 }
 
-void zrtp_setPbxSecret(ZrtpContext* zrtpContext, uint8_t* data, int32_t length) {
-    if (initialized)
-        zrtpContext->zrtpEngine->setPbxSecret(data, length);
-}
-
 int32_t zrtp_inState(ZrtpContext* zrtpContext, int32_t state) {
     if (initialized)
         return zrtpContext->zrtpEngine->inState(state) ? 1 : 0;
@@ -235,11 +231,43 @@ void zrtp_acceptEnrollment(ZrtpContext* zrtpContext, int32_t accepted) {
         return zrtpContext->zrtpEngine->acceptEnrollment(accepted == 0 ? false : true);
 }
 
-void zrtp_setPBXEnrollment(ZrtpContext* zrtpContext, int32_t yesNo) {
+int32_t zrtp_isEnrollmentMode(ZrtpContext* zrtpContext) {
     if (initialized)
-        return zrtpContext->zrtpEngine->setPBXEnrollment(yesNo == 0 ? false : true);
+        return zrtpContext->zrtpEngine->isEnrollmentMode() ? 1 : 0;
+
+    return 0;
 }
 
+void zrtp_setEnrollmentMode(ZrtpContext* zrtpContext, int32_t enrollmentMode) {
+    if (initialized)
+        return zrtpContext->zrtpEngine->setEnrollmentMode(enrollmentMode == 0 ? false : true);
+}
+
+int32_t zrtp_sendSASRelayPacket(ZrtpContext* zrtpContext, uint8_t* sh, char* render) {
+    if (initialized) {
+        std::string rn(render);
+        return zrtpContext->zrtpEngine->sendSASRelayPacket(sh, rn) ? 1 : 0;
+    }
+    return 0;
+}
+
+
+const char* zrtp_getSasType(ZrtpContext* zrtpContext) {
+    if (initialized) {
+        std::string rn = zrtpContext->zrtpEngine->getSasType();
+        return rn.c_str();
+    }
+    return NULL;
+}
+
+
+uint8_t* zrtp_getSasHash(ZrtpContext* zrtpContext) {
+    if (initialized)
+        return zrtpContext->zrtpEngine->getSasHash();
+
+    return NULL;
+}
+    
 int32_t zrtp_setSignatureData(ZrtpContext* zrtpContext, uint8_t* data, int32_t length) {
     if (initialized)
         return zrtpContext->zrtpEngine->setSignatureData(data, length) ? 1 : 0;
@@ -266,12 +294,12 @@ void zrtp_conf2AckSecure(ZrtpContext* zrtpContext) {
         zrtpContext->zrtpEngine->conf2AckSecure();
 }
 
-int32_t zrtp_getZid(ZrtpContext* zrtpContext, uint8_t* data) {
+int32_t zrtp_getPeerZid(ZrtpContext* zrtpContext, uint8_t* data) {
     if (data == NULL)
         return 0;
 
     if (initialized)
-        return zrtpContext->zrtpEngine->getZid(data);
+        return zrtpContext->zrtpEngine->getPeerZid(data);
 
     return 0;
 }

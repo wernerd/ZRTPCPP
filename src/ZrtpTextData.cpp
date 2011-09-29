@@ -65,6 +65,7 @@ char KDFString[] = "ZRTP-HMAC-KDF";
 char zrtpSessionKey[] = "ZRTP Session Key";
 
 char zrtpMsk[] = "ZRTP MSK";
+char zrtpTrustedMitm[] = "Trusted MiTM key";
 
 char s256[] = "S256";
 char s384[] = "S384";
