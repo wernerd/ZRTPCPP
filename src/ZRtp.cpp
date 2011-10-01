@@ -1276,7 +1276,7 @@ ZrtpPacketRelayAck* ZRtp::prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* er
         SAS = Base32(sasBytes, 20).getEncoded();
     }
     std::string cs(cipher->getReadable());
-    cs.append("/M/").append(pubKey->getName());
+    cs.append("/").append(pubKey->getName()).append("/MitM");
 
     callback->srtpSecretsOn(cs, SAS, false);
     return &zrtpRelayAck;
