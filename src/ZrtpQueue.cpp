@@ -380,8 +380,12 @@ int32_t ZrtpQueue::sendDataZRTP(const unsigned char *data, int32_t length) {
 bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
 {
     CryptoContext* pcc;
+    CryptoContextCtrl* cpcc;
     CryptoContext* recvCryptoContext;
     CryptoContext* senderCryptoContext;
+    CryptoContextCtrl* recvCryptoContextCtrl;
+    CryptoContextCtrl* senderCryptoContextCtrl;
+    
     int cipher;
     int authn;
     int authKeyLen;
@@ -422,6 +426,17 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
                     authKeyLen,                              // authentication key len
                     secrets->initSaltLen / 8,                // session salt len
                     secrets->srtpAuthTagLen / 8);            // authentication tag lenA
+            senderCryptoContextCtrl = new CryptoContextCtrl(0,
+                  cipher,                                    // encryption algo
+                  authn,                                     // authtication algo
+                  (unsigned char*)secrets->keyInitiator,     // Master Key
+                  secrets->initKeyLen / 8,                   // Master Key length
+                  (unsigned char*)secrets->saltInitiator,    // Master Salt
+                  secrets->initSaltLen / 8,                  // Master Salt length
+                  secrets->initKeyLen / 8,                   // encryption keyl
+                  authKeyLen,                                // authentication key len
+                  secrets->initSaltLen / 8,                  // session salt len
+                  secrets->srtpAuthTagLen / 8);              // authentication tag len
         }
         else {
             senderCryptoContext = new CryptoContext(
@@ -438,21 +453,35 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
                     authKeyLen,                              // authentication key len
                     secrets->respSaltLen / 8,                // session salt len
                     secrets->srtpAuthTagLen / 8);            // authentication tag len
+            senderCryptoContextCtrl = new CryptoContextCtrl(0,
+                  cipher,                                    // encryption algo
+                  authn,                                     // authtication algo
+                  (unsigned char*)secrets->keyResponder,     // Master Key
+                  secrets->respKeyLen / 8,                   // Master Key length
+                  (unsigned char*)secrets->saltResponder,    // Master Salt
+                  secrets->respSaltLen / 8,                  // Master Salt length
+                  secrets->respKeyLen / 8,                   // encryption keyl
+                  authKeyLen,                                // authentication key len
+                  secrets->respSaltLen / 8,                  // session salt len
+                  secrets->srtpAuthTagLen / 8);              // authentication tag len
         }
         if (senderCryptoContext == NULL) {
             return false;
         }
-        // Create a SRTP crypto context for real SSRC sender stream.
+        // Create a SRTP and a SRTCP crypto context for real SSRC sender stream.
         // Note: key derivation can be done at this time only if the
         // key derivation rate is 0 (disabled). For ZRTP this is the
         // case: the key derivation is defined as 2^48
         // which is effectively 0.
         pcc = senderCryptoContext->newCryptoContextForSSRC(getLocalSSRC(), 0, 0L);
-        if (pcc == NULL) {
+        cpcc = senderCryptoContextCtrl->newCryptoContextForSSRC(getLocalSSRC());
+        if (pcc == NULL || cpcc == NULL) {
             return false;
         }
         pcc->deriveSrtpKeys(0L);
+        cpcc->deriveSrtcpKeys();
         setOutQueueCryptoContext(pcc);
+        setOutQueueCryptoContextCtrl(senderCryptoContextCtrl);
     }
     if (part == ForReceiver) {
         // To decrypt packets: intiator uses responder keys,
@@ -473,6 +502,18 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
                     authKeyLen,                              // authentication key len
                     secrets->respSaltLen / 8,                // session salt len
                     secrets->srtpAuthTagLen / 8);            // authentication tag len
+            recvCryptoContextCtrl = new CryptoContextCtrl(0,
+                  cipher,                                    // encryption algo
+                  authn,                                     // authtication algo
+                  (unsigned char*)secrets->keyResponder,     // Master Key
+                  secrets->respKeyLen / 8,                   // Master Key length
+                  (unsigned char*)secrets->saltResponder,    // Master Salt
+                  secrets->respSaltLen / 8,                  // Master Salt length
+                  secrets->respKeyLen / 8,                   // encryption keyl
+                  authKeyLen,                                // authentication key len
+                  secrets->respSaltLen / 8,                  // session salt len
+                  secrets->srtpAuthTagLen / 8);              // authentication tag len
+
         }
         else {
             recvCryptoContext = new CryptoContext(
@@ -489,29 +530,45 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
                     authKeyLen,                              // authentication key len
                     secrets->initSaltLen / 8,                // session salt len
                     secrets->srtpAuthTagLen / 8);            // authentication tag len
+            recvCryptoContextCtrl = new CryptoContextCtrl(0,
+                  cipher,                                    // encryption algo
+                  authn,                                     // authtication algo
+                  (unsigned char*)secrets->keyInitiator,     // Master Key
+                  secrets->initKeyLen / 8,                   // Master Key length
+                  (unsigned char*)secrets->saltInitiator,    // Master Salt
+                  secrets->initSaltLen / 8,                  // Master Salt length
+                  secrets->initKeyLen / 8,                   // encryption keyl
+                  authKeyLen,                                // authentication key len
+                  secrets->initSaltLen / 8,                  // session salt len
+                  secrets->srtpAuthTagLen / 8);              // authentication tag len
         }
         if (recvCryptoContext == NULL) {
             return false;
         }
-        // Create a SRTP crypto context for real SSRC input stream.
-        // If the sender didn't provide a SSRC just insert the template
-        // into the queue. After we received the first packet the real
+        // Create a SRTP and a SRTCP crypto context for real SSRC input stream.
+        // If the sender didn't provide a SSRC yet just insert the template
+        // into the queue. When we receive the first RTP or RTCP packet the real
         // crypto context will be created.
         //
         // Note: key derivation can be done at this time only if the
         // key derivation rate is 0 (disabled). For ZRTP this is the
         // case: the key derivation is defined as 2^48
         // which is effectively 0.
+        //
         if (peerSSRC != 0) {
             pcc = recvCryptoContext->newCryptoContextForSSRC(peerSSRC, 0, 0L);
-            if (pcc == NULL) {
+            cpcc = recvCryptoContextCtrl->newCryptoContextForSSRC(peerSSRC);
+            if (pcc == NULL || cpcc == NULL) {
                 return false;
             }
             pcc->deriveSrtpKeys(0L);
+            cpcc->deriveSrtcpKeys();
             setInQueueCryptoContext(pcc);
+            setInQueueCryptoContextCtrl(cpcc);
         }
         else {
             setInQueueCryptoContext(recvCryptoContext);
+            setInQueueCryptoContextCtrl(recvCryptoContextCtrl);
         }
     }
     return true;
