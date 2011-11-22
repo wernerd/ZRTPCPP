@@ -76,8 +76,8 @@ typedef struct zrtpPacketHeader {
  * part and a variable part. The Hello class initializes the variable part.
  */
 typedef struct Hello {
-    uint8_t	 version[ZRTP_WORD_SIZE];   ///< Announces the ZRTP protocol version 
-    uint8_t	 clientId[CLIENT_ID_SIZE];  ///< An 4 word ASCII identifier of the ZRTP client
+    uint8_t  version[ZRTP_WORD_SIZE];   ///< Announces the ZRTP protocol version 
+    uint8_t  clientId[CLIENT_ID_SIZE];  ///< A 4 word ASCII identifier of the ZRTP client
     uint8_t  hashH3[HASH_IMAGE_SIZE];   ///< The last hash of the hash chain (chap. 9)
     uint8_t  zid[ZID_SIZE];             ///< ZID - 3 word identifier for the ZRTP endpoint
     uint8_t  flags;                     ///< flag bits (chap 7.2)

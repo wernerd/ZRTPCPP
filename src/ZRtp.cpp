@@ -1876,7 +1876,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 //  hexdump("S0 I", s0, hashLength);
 
     memset(DHss, 0, dhContext->getDhSize());
-    delete DHss;
+    delete[] DHss;
     DHss = NULL;
 
     computeSRTPKeys();
@@ -2020,7 +2020,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec) {
 //  hexdump("S0 R", s0, hashLength);
 
     memset(DHss, 0, dhContext->getDhSize());
-    delete DHss;
+    delete[] DHss;
     DHss = NULL;
 
     computeSRTPKeys();
@@ -2312,12 +2312,15 @@ void ZRtp::setPbxSecret(uint8_t* data, int32_t length) {
 }
 
 void ZRtp::setClientId(std::string id) {
-    const char* tmp = "            ";
-
-    if (id.size() < ZID_SIZE) {
-        zrtpHello.setClientId((unsigned char*)tmp);
+    if (id.size() < CLIENT_ID_SIZE) {
+	unsigned char tmp[CLIENT_ID_SIZE +1] = {' '};
+	memcpy(tmp, id.c_str(), id.size());
+	tmp[CLIENT_ID_SIZE] = 0;
+        zrtpHello.setClientId(tmp);
+    } else {
+        zrtpHello.setClientId((unsigned char*)id.c_str());
     }
-    zrtpHello.setClientId((unsigned char*)id.c_str());
+
     int32_t len = zrtpHello.getLength() * ZRTP_WORD_SIZE;
 
     // Hello packet is ready now, compute its HMAC

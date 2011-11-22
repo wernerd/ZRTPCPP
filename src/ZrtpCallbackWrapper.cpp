@@ -74,7 +74,7 @@ bool ZrtpCallbackWrapper::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity
 
     bool retval = (c_callbacks->zrtp_srtpSecretsReady(zrtpCtx, cs, (int32_t)part) == 0) ? false : true ;
 
-    delete cs->sas;
+    delete[] cs->sas;
     delete cs;
 
     return retval;
