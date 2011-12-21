@@ -1,5 +1,6 @@
 build/
 autoconf/
+doc/html/
 configure
 Makefile
 Makefile.in

@@ -283,7 +283,7 @@ bool ZrtpConfigure::containsAlgo(AlgoTypes algoType, AlgorithmEnum& algo) {
 
 void ZrtpConfigure::printConfiguredAlgos(AlgoTypes algoType) {
 
-    return printConfiguredAlgos(getEnum(algoType));
+    printConfiguredAlgos(getEnum(algoType));
 }
 
 /*
