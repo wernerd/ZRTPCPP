@@ -111,7 +111,7 @@ configure_file(config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 # compatibility with autoconf stuff to generate the pc file
 set(prefix ${CMAKE_INSTALL_PREFIX})
 set(exec_prefix ${prefix}/bin)
-set(libdir ${prefix}/lib)
+set(libdir ${prefix}/${LIBDIRNAME})
 set(includedir ${prefix}/include)
 set(PACKAGE pkgconfig)
 configure_file(libzrtpcpp.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/libzrtpcpp.pc @ONLY)
