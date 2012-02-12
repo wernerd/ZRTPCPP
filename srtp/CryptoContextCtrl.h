@@ -280,7 +280,7 @@ class CryptoContextCtrl {
         uint32_t mkiLength;
         uint8_t* mki;
 
-        uint16_t s_l;
+        uint32_t s_l;
 
         /* bitmask for replay check */
         uint64_t replay_window;
