@@ -323,7 +323,7 @@ void CryptoContextCtrl::deriveSrtcpKeys()
     cipher->setNewKey(k_e, n_e);
 }
 
-bool CryptoContextCtrl::checkReplay( uint16_t index )
+bool CryptoContextCtrl::checkReplay( uint32_t index )
 {
     if ( aalg == SrtpAuthenticationNull && ealg == SrtpEncryptionNull ) {
         /* No security policy, don't use the replay protection */
@@ -354,7 +354,7 @@ bool CryptoContextCtrl::checkReplay( uint16_t index )
     }
 }
 
-void CryptoContextCtrl::update(uint16_t index)
+void CryptoContextCtrl::update(uint32_t index)
 {
     int64_t delta = index - s_l;
 
