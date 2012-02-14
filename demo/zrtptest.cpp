@@ -70,6 +70,51 @@ const unsigned char* PacketsPattern::data[] = {
 
 PacketsPattern pattern;
 
+class ExtZrtpSession : public SymmetricZRTPSession {
+//     ExtZrtpSession(InetMcastAddress& ima, tpport_t port) :
+//     RTPSession(ima,port) {}
+// 
+//     ExtZrtpSession(InetHostAddress& ia, tpport_t port) :
+//     RTPSession(ia,port) {}
+
+public:
+    ExtZrtpSession(uint32 ssrc, const InetHostAddress& ia) :
+        SingleThreadRTPSession(ssrc, ia){
+            cout << "Extended" << endl;
+        }
+
+    ExtZrtpSession(uint32 ssrc, const InetHostAddress& ia, tpport_t dataPort) :
+        SingleThreadRTPSession(ssrc, ia, dataPort) {
+            cout << "Extended" << endl;
+        }
+
+    ExtZrtpSession(const InetHostAddress& ia, tpport_t dataPort) :
+        SingleThreadRTPSession(ia, dataPort) {
+            cout << "Extended" << endl;
+        }
+
+    void onGotGoodbye(const SyncSource& source, const std::string& reason)
+    {
+        cout << "I got a Goodbye packet from "
+             << hex << (int)source.getID() << "@"
+             << dec
+             << source.getNetworkAddress() << ":"
+             << source.getControlTransportPort() << endl;
+        cout << "   Goodbye reason: \"" << reason << "\"" << endl;
+    }
+    // redefined from QueueRTCPManager
+    void onGotRR(SyncSource& source, RecvReport& RR, uint8 blocks)
+    {
+        SingleThreadRTPSession::onGotRR(source,RR,blocks);
+        cout << "I got an RR RTCP report from "
+             << hex << (int)source.getID() << "@"
+             << dec
+             << source.getNetworkAddress() << ":"
+             << source.getControlTransportPort() << endl;
+    }
+};
+
+
 /**
  * SymmetricZRTPSession in non-security mode (RTPSession compatible).
  *
@@ -87,7 +132,8 @@ public:
     int doTest() {
         // should be valid?
         //RTPSession tx();
-        SymmetricZRTPSession tx(pattern.getSsrc(), InetHostAddress("localhost"));
+        ExtZrtpSession tx(pattern.getSsrc(), InetHostAddress("localhost"));
+//        SymmetricZRTPSession tx(pattern.getSsrc(), InetHostAddress("localhost"));
         tx.setSchedulingTimeout(10000);
         tx.setExpireTimeout(1000000);
 
@@ -128,9 +174,11 @@ public:
 
     int
     doTest() {
-        SymmetricZRTPSession rx(pattern.getSsrc()+1, pattern.getDestinationAddress(),
+        ExtZrtpSession rx(pattern.getSsrc()+1, pattern.getDestinationAddress(),
                                 pattern.getDestinationPort());
 
+//         SymmetricZRTPSession rx(pattern.getSsrc()+1, pattern.getDestinationAddress(),
+//                                 pattern.getDestinationPort());
         rx.setSchedulingTimeout(10000);
         rx.setExpireTimeout(1000000);
 
@@ -177,7 +225,7 @@ public:
     int doTest() {
         // should be valid?
         //RTPSession tx();
-        SymmetricZRTPSession tx(pattern.getSsrc(), pattern.getDestinationAddress(),
+        ExtZrtpSession tx(pattern.getSsrc(), pattern.getDestinationAddress(),
                                 pattern.getDestinationPort()+2);
         tx.initialize("test_t.zid");
 
@@ -220,7 +268,7 @@ public:
 
     int
     doTest() {
-        SymmetricZRTPSession rx(pattern.getSsrc()+1, pattern.getDestinationAddress(),
+        ExtZrtpSession rx(pattern.getSsrc()+1, pattern.getDestinationAddress(),
                                 pattern.getDestinationPort());
 
         rx.initialize("test_r.zid");
@@ -427,7 +475,7 @@ public:
     {
         // should be valid?
         //RTPSession tx();
-        SymmetricZRTPSession tx(/*pattern.getSsrc(),*/ pattern.getDestinationAddress(),
+        ExtZrtpSession tx(/*pattern.getSsrc(),*/ pattern.getDestinationAddress(),
                                 pattern.getDestinationPort()+2);
         tx.initialize("test_t.zid");
         // At this point the Hello hash is available. See ZRTP specification
@@ -481,7 +529,7 @@ public:
 
     int
     doTest() {
-        SymmetricZRTPSession rx( /*pattern.getSsrc()+1,*/ pattern.getDestinationAddress(),
+        ExtZrtpSession rx( /*pattern.getSsrc()+1,*/ pattern.getDestinationAddress(),
                                 pattern.getDestinationPort());
 
         rx.initialize("test_r.zid");
@@ -515,7 +563,7 @@ public:
                 }
                 delete adu;
             }
-            Thread::sleep(70);
+            Thread::sleep(500);
         }
         return 0;
     }
