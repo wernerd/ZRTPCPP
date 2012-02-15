@@ -199,8 +199,10 @@ bool ZRtp::handleGoClear(uint8_t *message)
 void ZRtp::startZrtpEngine() {
     Event_t ev;
 
-    ev.type = ZrtpInitial;
-    stateEngine->processEvent(&ev);
+    if (stateEngine != NULL && stateEngine->inState(Initial)) {
+        ev.type = ZrtpInitial;
+        stateEngine->processEvent(&ev);
+    }
 }
 
 void ZRtp::stopZrtp() {
