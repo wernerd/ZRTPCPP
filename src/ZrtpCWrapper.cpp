@@ -25,14 +25,14 @@
 #include <libzrtpcpp/ZrtpCWrapper.h>
 #include <libzrtpcpp/ZrtpCrc32.h>
 
-static int32_t initialized = 0;
-
 static int32_t zrtp_initZidFile(const char* zidFilename);
 
 ZrtpContext* zrtp_CreateWrapper() 
 {
     ZrtpContext* zc = new ZrtpContext;
     zc->configure = 0;
+    zc->zrtpEngine = 0;
+    zc->zrtpCallback = 0;
 
     return zc;
 }
@@ -60,23 +60,22 @@ void zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext,
 
     zrtpContext->zrtpEngine = new ZRtp((uint8_t*)myZid, zrtpContext->zrtpCallback,
                               clientIdString, zrtpContext->configure, mitmMode == 0 ? false : true);
-    initialized = 1;
 }
 
 void zrtp_DestroyWrapper(ZrtpContext* zrtpContext) {
-    
+
     if (zrtpContext == NULL)
         return;
-    
+
     delete zrtpContext->zrtpEngine;
     zrtpContext->zrtpEngine = NULL;
-    
+
     delete zrtpContext->zrtpCallback;
     zrtpContext->zrtpCallback = NULL;
 
     delete zrtpContext->configure;
     zrtpContext->configure = NULL;
-    
+
     delete zrtpContext;
 }
 
@@ -117,58 +116,58 @@ uint32_t zrtp_EndCksum(uint32_t crc)
  * to enable ZRTP, set flags etc.
  */
 void zrtp_startZrtpEngine(ZrtpContext* zrtpContext) {
-    if (initialized)
+    if (zrtpContext->zrtpEngine)
         zrtpContext->zrtpEngine->startZrtpEngine();
 }
 
 void zrtp_stopZrtpEngine(ZrtpContext* zrtpContext) {
-    if (initialized)
+    if (zrtpContext->zrtpEngine)
         zrtpContext->zrtpEngine->stopZrtp();
 }
 
 void zrtp_processZrtpMessage(ZrtpContext* zrtpContext, uint8_t *extHeader, uint32_t peerSSRC) {
-    if (initialized)
+    if (zrtpContext->zrtpEngine)
         zrtpContext->zrtpEngine->processZrtpMessage(extHeader, peerSSRC);
 }
 
 void zrtp_processTimeout(ZrtpContext* zrtpContext) {
-    if (initialized)
+    if (zrtpContext->zrtpEngine)
         zrtpContext->zrtpEngine->processTimeout();
 }
 
 //int32_t zrtp_handleGoClear(ZrtpContext* zrtpContext, uint8_t *extHeader)
 //{
-//    if (initialized)
+//    if (zrtpContext->zrtpEngine)
 //        return zrtpContext->zrtpEngine->handleGoClear(extHeader) ? 1 : 0;
 //
 //    return 0;
 //}
 
 void zrtp_setAuxSecret(ZrtpContext* zrtpContext, uint8_t* data, int32_t length) {
-    if (initialized)
+    if (zrtpContext->zrtpEngine)
         zrtpContext->zrtpEngine->setAuxSecret(data, length);
 }
 
 int32_t zrtp_inState(ZrtpContext* zrtpContext, int32_t state) {
-    if (initialized)
+    if (zrtpContext->zrtpEngine)
         return zrtpContext->zrtpEngine->inState(state) ? 1 : 0;
 
     return 0;
 }
 
 void zrtp_SASVerified(ZrtpContext* zrtpContext) {
-    if (initialized)
+    if (zrtpContext->zrtpEngine)
         zrtpContext->zrtpEngine->SASVerified();
 }
 
 void zrtp_resetSASVerified(ZrtpContext* zrtpContext) {
-    if (initialized)
+    if (zrtpContext->zrtpEngine)
         zrtpContext->zrtpEngine->resetSASVerified();
 }
 
 char* zrtp_getHelloHash(ZrtpContext* zrtpContext) {
     std::string ret;
-    if (initialized)
+    if (zrtpContext->zrtpEngine)
         ret = zrtpContext->zrtpEngine->getHelloHash();
     else
         return NULL;
@@ -185,7 +184,7 @@ char* zrtp_getMultiStrParams(ZrtpContext* zrtpContext, int32_t *length) {
     std::string ret;
 
     *length = 0;
-    if (initialized)
+    if (zrtpContext->zrtpEngine)
         ret = zrtpContext->zrtpEngine->getMultiStrParams();
     else
         return NULL;
@@ -200,7 +199,7 @@ char* zrtp_getMultiStrParams(ZrtpContext* zrtpContext, int32_t *length) {
 }
 
 void zrtp_setMultiStrParams(ZrtpContext* zrtpContext, char* parameters, int32_t length) {
-    if (!initialized)
+    if (!zrtpContext->zrtpEngine)
         return;
 
     if (parameters == NULL)
@@ -213,38 +212,38 @@ void zrtp_setMultiStrParams(ZrtpContext* zrtpContext, char* parameters, int32_t 
 }
 
 int32_t zrtp_isMultiStream(ZrtpContext* zrtpContext) {
-    if (initialized)
+    if (zrtpContext->zrtpEngine)
         return zrtpContext->zrtpEngine->isMultiStream() ? 1 : 0;
 
     return 0;
 }
 
 int32_t zrtp_isMultiStreamAvailable(ZrtpContext* zrtpContext) {
-    if (initialized)
+    if (zrtpContext->zrtpEngine)
         return zrtpContext->zrtpEngine->isMultiStreamAvailable() ? 1 : 0;
 
     return 0;
 }
 
 void zrtp_acceptEnrollment(ZrtpContext* zrtpContext, int32_t accepted) {
-    if (initialized)
+    if (zrtpContext->zrtpEngine)
         return zrtpContext->zrtpEngine->acceptEnrollment(accepted == 0 ? false : true);
 }
 
 int32_t zrtp_isEnrollmentMode(ZrtpContext* zrtpContext) {
-    if (initialized)
+    if (zrtpContext->zrtpEngine)
         return zrtpContext->zrtpEngine->isEnrollmentMode() ? 1 : 0;
 
     return 0;
 }
 
 void zrtp_setEnrollmentMode(ZrtpContext* zrtpContext, int32_t enrollmentMode) {
-    if (initialized)
+    if (zrtpContext->zrtpEngine)
         return zrtpContext->zrtpEngine->setEnrollmentMode(enrollmentMode == 0 ? false : true);
 }
 
 int32_t zrtp_sendSASRelayPacket(ZrtpContext* zrtpContext, uint8_t* sh, char* render) {
-    if (initialized) {
+    if (zrtpContext->zrtpEngine) {
         std::string rn(render);
         return zrtpContext->zrtpEngine->sendSASRelayPacket(sh, rn) ? 1 : 0;
     }
@@ -253,7 +252,7 @@ int32_t zrtp_sendSASRelayPacket(ZrtpContext* zrtpContext, uint8_t* sh, char* ren
 
 
 const char* zrtp_getSasType(ZrtpContext* zrtpContext) {
-    if (initialized) {
+    if (zrtpContext->zrtpEngine) {
         std::string rn = zrtpContext->zrtpEngine->getSasType();
         return rn.c_str();
     }
@@ -262,35 +261,35 @@ const char* zrtp_getSasType(ZrtpContext* zrtpContext) {
 
 
 uint8_t* zrtp_getSasHash(ZrtpContext* zrtpContext) {
-    if (initialized)
+    if (zrtpContext->zrtpEngine)
         return zrtpContext->zrtpEngine->getSasHash();
 
     return NULL;
 }
     
 int32_t zrtp_setSignatureData(ZrtpContext* zrtpContext, uint8_t* data, int32_t length) {
-    if (initialized)
+    if (zrtpContext->zrtpEngine)
         return zrtpContext->zrtpEngine->setSignatureData(data, length) ? 1 : 0;
 
     return 0;
 }
 
 int32_t zrtp_getSignatureData(ZrtpContext* zrtpContext, uint8_t* data) {
-    if (initialized)
+    if (zrtpContext->zrtpEngine)
         return zrtpContext->zrtpEngine->getSignatureData(data);
 
     return 0;
 }
 
 int32_t zrtp_getSignatureLength(ZrtpContext* zrtpContext) {
-    if (initialized)
+    if (zrtpContext->zrtpEngine)
         return zrtpContext->zrtpEngine->getSignatureLength();
 
     return 0;
 }
 
 void zrtp_conf2AckSecure(ZrtpContext* zrtpContext) {
-    if (initialized)
+    if (zrtpContext->zrtpEngine)
         zrtpContext->zrtpEngine->conf2AckSecure();
 }
 
@@ -298,7 +297,7 @@ int32_t zrtp_getPeerZid(ZrtpContext* zrtpContext, uint8_t* data) {
     if (data == NULL)
         return 0;
 
-    if (initialized)
+    if (zrtpContext->zrtpEngine)
         return zrtpContext->zrtpEngine->getPeerZid(data);
 
     return 0;
