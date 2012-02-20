@@ -88,14 +88,16 @@ gcr_check(GCRYPT gcrypt)
 #else()
   pkg_check_modules(OPENSSL libcrypto>=0.9.8)
   if (OPENSSL_FOUND)
+    set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES} ${OPENSSL_INCLUDE_DIRS}) #update include files search directory
     check_include_files(openssl/bn.h HAVE_OPENSSL_BN_H)
     check_include_files(openssl/aes.h HAVE_OPENSSL_AES_H)
     check_include_files(openssl/sha.h HAVE_OPENSSL_SHA_H)
-    check_library_exists(crypto EVP_CipherInit_ex "" HAVE_SSL_CRYPT)
+    check_library_exists(crypto EVP_CipherInit_ex "${OPENSSL_LIBDIR}" HAVE_SSL_CRYPT) #use search lib directory from pkg-config
     set(LIBS ${LIBS} -lcrypto)
     set(CRYPTOBACKEND "libcrypto >= 0.9.8")
     set(BUILD_REQ "libopenssl-devel >= 0.9.8")
     set(PACKAGE_REQ "libopenssl >= 0.9.8")
+    include_directories(${OPENSSL_INCLUDE_DIRS}) #update includes directory from pkg-config
   else()
     message(FATAL_ERROR "No crypto library found")
   endif()
@@ -118,7 +120,8 @@ configure_file(libzrtpcpp.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/libzrtpcpp.pc @ON
 
 configure_file(libzrtpcpp.spec.cmake ${CMAKE_CURRENT_BINARY_DIR}/libzrtpcpp.spec @ONLY)
 
-include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/src)
+#to make sure includes are first taken from those directory
+include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 add_definitions(-g -O2 -fno-strict-aliasing)
 if(CMAKE_COMPILER_IS_GNUCXX)
@@ -152,3 +155,9 @@ if(${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
     "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
 
 endif()
+##very usefull for macosx, specially when using gtkosx bundler
+if(APPLE)
+    if (NOT CMAKE_INSTALL_NAME_DIR)
+        set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib" CACHE STRING "CMAKE_INSTALL_NAME_DIR set for macosx" )
+    endif (NOT CMAKE_INSTALL_NAME_DIR)
+endif(APPLE)
