@@ -23,7 +23,7 @@ Version:        @VERSION@
 Release:        0
 License:        GPL v3 or later
 Group:          Development/Libraries/Other
-Url:            http://www.gnu.org/software/commoncpp/commoncpp.html
+Url:            https://github.com/wernerd/ZRTPCPP
 Source0:        %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
