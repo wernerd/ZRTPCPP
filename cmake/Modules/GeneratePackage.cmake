@@ -19,6 +19,7 @@ MACRO(GENERATE_PACKAGING PACKAGE VERSION)
   "\\\\.settings/"
   "\\\\.kdev4/"
   "\\\\.kdev4$"
+  "\\\\.kdev4_include_paths$"
   # others
   "\\\\.#"
   "/#"
