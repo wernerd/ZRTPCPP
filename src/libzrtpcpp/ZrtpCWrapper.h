@@ -252,6 +252,7 @@ typedef struct c_srtpSecrets
 #define ForSender   2       /*!< Enable security for SRTP sender */
 
 #ifdef __cplusplus
+#pragma GCC visibility push(default)
 extern "C"
 {
 #endif
@@ -1301,6 +1302,7 @@ extern "C"
 
 #ifdef __cplusplus
 }
+#pragma GCC visibility pop
 #endif
 
 /**

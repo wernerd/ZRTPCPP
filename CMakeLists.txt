@@ -14,9 +14,9 @@ PROJECT(libzrtpcpp)
 
 SET(CPACK_PACKAGE_VERSION_MAJOR 2)
 SET(CPACK_PACKAGE_VERSION_MINOR 1)
-SET(CPACK_PACKAGE_VERSION_PATCH 1)
+SET(CPACK_PACKAGE_VERSION_PATCH 2)
 
-set (VERSION 2.1.1)
+set (VERSION 2.1.2)
 set (SOVERSION 2)
 set (PACKAGE libzrtpcpp)
 
@@ -49,12 +49,16 @@ endif()
 enable_arg(ccrtp true "Enable GNU ccRTP support for GNU ZRTP")
 args_help()
 
-# this caused problems in debian where it has to always be lib....
-set(LIBDIRNAME "lib")
-if (NOT EXISTS /etc/debian_version)
-    if ( "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64" )
-        set(LIBDIRNAME "lib64")
+if (NOT LIB_SUFFIX)
+    set(LIBDIRNAME "lib")
+    # this caused problems in debian where it has to always be lib....
+    if (NOT EXISTS /etc/debian_version)
+        if ( "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64" )
+            set(LIBDIRNAME "lib64")
+        endif()
     endif()
+else()
+    set(LIBDIRNAME "lib${LIB_SUFFIX}")
 endif()
 
 # setup the Thread include and lib
