@@ -42,7 +42,7 @@
 
 /**
  * @file hmac.h
- * @brief Function that provide SHA1 HMAC support
+ * @brief Functions that provide SHA1 HMAC support
  * 
  * @ingroup GNU_ZRTP
  * @{
@@ -105,8 +105,7 @@ void hmac_sha1( uint8_t* key, int32_t key_length,
 /**
  * Create and initialize a SHA1 HMAC context.
  *
- * An application uses this context to hash several data into one SHA1
- * digest. 
+ * An application uses this context to create several HMAC with the same key.
  *
  * @param key
  *    The MAC key.
@@ -119,7 +118,8 @@ void* createSha1HmacContext(uint8_t* key, int32_t key_length);
 /**
  * Compute SHA1 HMAC.
  *
- * This functions takes one data chunk and computes its SHA1 HMAC.
+ * This functions takes one data chunk and computes its SHA1 HMAC. On return
+ * the SHA1 MAC context is ready to compute a HMAC for another data chunk.
  *
  * @param ctx
  *     Pointer to initialized SHA1 HMAC context
@@ -133,14 +133,14 @@ void* createSha1HmacContext(uint8_t* key, int32_t key_length);
  * @param mac_length
  *    Point to an integer that receives the length of the computed HMAC.
  */
-
 void hmacSha1Ctx(void* ctx, const uint8_t* data, uint32_t data_length,
                 uint8_t* mac, int32_t* mac_length );
 
 /**
  * Compute SHA1 HMAC over several data cunks.
  *
- * This functions takes several data chunk and computes the SHA1 HAMAC.
+ * This functions takes several data chunks and computes the SHA1 HAMAC. On return
+ * the SHA1 MAC context is ready to compute a HMAC for another data chunk.
  *
  * @param ctx 
  *     Pointer to initialized SHA1 HMAC context

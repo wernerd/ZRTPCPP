@@ -23,9 +23,9 @@ void macSkein(uint8_t* key, int32_t key_length,
                uint8_t* mac, int32_t mac_length, SkeinSize_t skeinSize)
 {
     SkeinCtx_t ctx;
-    
+
     skeinCtxPrepare(&ctx, skeinSize);
-    
+
     skeinMacInit(&ctx, key, key_length, mac_length);
     skeinUpdate(&ctx, data, data_length);
     skeinFinal(&ctx, mac);
@@ -36,7 +36,7 @@ void macSkein(uint8_t* key, int32_t key_length,
                uint8_t* mac, int32_t mac_length, SkeinSize_t skeinSize)
 {
     SkeinCtx_t ctx;
-    
+
     skeinCtxPrepare(&ctx, skeinSize);
 
     skeinMacInit(&ctx, key, key_length, mac_length);
@@ -62,7 +62,7 @@ void macSkeinCtx(void* ctx, const uint8_t* data, uint32_t data_length,
                 uint8_t* mac)
 {
     SkeinCtx_t* pctx = (SkeinCtx_t*)ctx;
-    
+
     skeinUpdate(pctx, data, data_length);
     skeinFinal(pctx, mac);
     skeinReset(pctx);
@@ -72,7 +72,7 @@ void macSkeinCtx(void* ctx, const uint8_t* data[], uint32_t data_length[],
                 uint8_t* mac)
 {
     SkeinCtx_t* pctx = (SkeinCtx_t*)ctx;
-    
+
     while (*data) {
         skeinUpdate(pctx, *data, *data_length);
         data++;
