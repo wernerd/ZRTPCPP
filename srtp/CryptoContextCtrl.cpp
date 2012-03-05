@@ -73,25 +73,25 @@ replay_window(0), cipher(NULL), f8Cipher(NULL)
         break;
 
         case SrtpEncryptionTWOF8:
-        f8Cipher = new AesSrtp(SrtpEncryptionTWOCM);
+        f8Cipher = new SrtpSymCrypto(SrtpEncryptionTWOF8);
 
         case SrtpEncryptionTWOCM:
         n_e = ekeyl;
         k_e = new uint8_t[n_e];
         n_s = skeyl;
         k_s = new uint8_t[n_s];
-        cipher = new AesSrtp(SrtpEncryptionTWOCM);
+        cipher = new SrtpSymCrypto(SrtpEncryptionTWOCM);
         break;
 
         case SrtpEncryptionAESF8:
-        f8Cipher = new AesSrtp(SrtpEncryptionAESCM);
+        f8Cipher = new SrtpSymCrypto(SrtpEncryptionAESF8);
 
         case SrtpEncryptionAESCM:
         n_e = ekeyl;
         k_e = new uint8_t[n_e];
         n_s = skeyl;
         k_s = new uint8_t[n_s];
-        cipher = new AesSrtp(SrtpEncryptionAESCM);
+        cipher = new SrtpSymCrypto(SrtpEncryptionAESCM);
         break;
     }
 

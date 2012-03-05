@@ -43,9 +43,9 @@ const int SrtpEncryptionTWOF8 = 4;
 #ifndef CRYPTOCONTEXTCTRL_H
 
 #include <stdint.h>
-#include <crypto/AesSrtp.h>
+#include <crypto/SrtpSymCrypto.h>
 
-class AesSrtp;
+class SrtpSymCrypto;
 
 /**
  * The implementation for a SRTP cryptographic context.
@@ -396,9 +396,9 @@ private:
     bool  seqNumSet;
 
     void*   macCtx;
-    
-    AesSrtp* cipher;
-    AesSrtp* f8Cipher;
+
+    SrtpSymCrypto* cipher;
+    SrtpSymCrypto* f8Cipher;
 };
 
 #endif

@@ -31,11 +31,11 @@
 
 
 
-#ifndef AESSRTP_H
-#define AESSRTP_H
+#ifndef SRTPSYMCRYPTO_H
+#define SRTPSYMCRYPTO_H
 
 /**
- * @file AesSrtp.h
+ * @file SrtpSymCrypto.h
  * @brief Class which implements SRTP AES cryptographic functions
  * 
  * @ingroup GNU_ZRTP
@@ -74,9 +74,9 @@ typedef struct _f8_ctx {
  * @author Johan Bilien <jobi@via.ecp.fr>
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
-class AesSrtp {
+class SrtpSymCrypto {
 public:
-    AesSrtp(int algo = SrtpEncryptionAESCM);
+    SrtpSymCrypto(int algo = SrtpEncryptionAESCM);
 
     /**
      * Constructor that initializes key data
@@ -86,9 +86,9 @@ public:
      * @param key_length
      *     Number of key bytes.
      */
-    AesSrtp(uint8_t* key, int32_t key_length, int algo = SrtpEncryptionAESCM);
+    SrtpSymCrypto(uint8_t* key, int32_t key_length, int algo = SrtpEncryptionAESCM);
 
-    ~AesSrtp();
+    ~SrtpSymCrypto();
 
     /**
      * Encrypts the inpout to the output.
@@ -193,7 +193,7 @@ public:
      * @param saltLen
      *   length of master salt.
      */
-    void f8_deriveForIV(AesSrtp* f8Cipher, uint8_t* key, int32_t keyLen, uint8_t* salt, int32_t saltLen);
+    void f8_deriveForIV(SrtpSymCrypto* f8Cipher, uint8_t* key, int32_t keyLen, uint8_t* salt, int32_t saltLen);
 
     /**
      * AES F8 mode encryption, in place.
@@ -215,7 +215,7 @@ public:
      * @param f8Cipher
      *   An AES cipher context used to encrypt IV to IV'.
      */
-    void f8_encrypt(const uint8_t* data, uint32_t dataLen, uint8_t* iv, AesSrtp* f8Cipher);
+    void f8_encrypt(const uint8_t* data, uint32_t dataLen, uint8_t* iv, SrtpSymCrypto* f8Cipher);
 
     /**
      * AES F8 mode encryption.
@@ -240,7 +240,7 @@ public:
      * @param f8Cipher
      *   An AES cipher context used to encrypt IV to IV'.
      */
-    void f8_encrypt(const uint8_t* data, uint32_t dataLen, uint8_t* out, uint8_t* iv, AesSrtp* f8Cipher);
+    void f8_encrypt(const uint8_t* data, uint32_t dataLen, uint8_t* out, uint8_t* iv, SrtpSymCrypto* f8Cipher);
 
 private:
     int processBlock(F8_CIPHER_CTX* f8ctx, const uint8_t* in, int32_t length, uint8_t* out);

@@ -37,29 +37,29 @@
 
 #include <stdlib.h>
 #include <openssl/aes.h>                // the include of openSSL
-#include <crypto/AesSrtp.h>
+#include <crypto/SrtpSymCrypto.h>
 #include <libzrtpcpp/crypto/twofish.h>
 #include <string.h>
 #include <stdio.h>
 #include <arpa/inet.h>
 
-AesSrtp::AesSrtp(int algo):key(NULL), algorithm(algo) {
+SrtpSymCrypto::SrtpSymCrypto(int algo):key(NULL), algorithm(algo) {
 }
 
-AesSrtp::AesSrtp( uint8_t* k, int32_t keyLength, int algo ):
+SrtpSymCrypto::SrtpSymCrypto( uint8_t* k, int32_t keyLength, int algo ):
     key(NULL), algorithm(algo) {
 
     setNewKey(k, keyLength);
 }
 
-AesSrtp::~AesSrtp() {
+SrtpSymCrypto::~SrtpSymCrypto() {
     if (key != NULL)
         delete[] (uint8_t*)key;
 }
 
 static int twoFishInit = 0;
 
-bool AesSrtp::setNewKey(const uint8_t* k, int32_t keyLength) {
+bool SrtpSymCrypto::setNewKey(const uint8_t* k, int32_t keyLength) {
     // release an existing key before setting a new one
     if (key != NULL)
         delete[] (uint8_t*)key;
@@ -67,12 +67,12 @@ bool AesSrtp::setNewKey(const uint8_t* k, int32_t keyLength) {
     if (!(keyLength == 16 || keyLength == 32)) {
         return false;
     }
-    if (algorithm == SrtpEncryptionAESCM) {
+    if (algorithm == SrtpEncryptionAESCM || algorithm == SrtpEncryptionAESF8) {
         key = new uint8_t[sizeof(AES_KEY)];
         memset(key, 0, sizeof(AES_KEY) );
         AES_set_encrypt_key(k, keyLength*8, (AES_KEY *)key);
     }
-    else if (algorithm == SrtpEncryptionTWOCM) {
+    else if (algorithm == SrtpEncryptionTWOCM || algorithm == SrtpEncryptionTWOF8) {
         if (!twoFishInit) {
             Twofish_initialise();
             twoFishInit = 1;
@@ -88,7 +88,7 @@ bool AesSrtp::setNewKey(const uint8_t* k, int32_t keyLength) {
 }
 
 
-void AesSrtp::encrypt(const uint8_t* input, uint8_t* output ) {
+void SrtpSymCrypto::encrypt(const uint8_t* input, uint8_t* output ) {
     if (algorithm == SrtpEncryptionAESCM) {
         AES_encrypt(input, output, (AES_KEY *)key);
     }
@@ -98,7 +98,7 @@ void AesSrtp::encrypt(const uint8_t* input, uint8_t* output ) {
     }
 }
 
-void AesSrtp::get_ctr_cipher_stream(uint8_t* output, uint32_t length,
+void SrtpSymCrypto::get_ctr_cipher_stream(uint8_t* output, uint32_t length,
                                     uint8_t* iv ) {
     uint16_t ctr = 0;
     unsigned char temp[SRTP_BLOCK_SIZE];
@@ -120,7 +120,7 @@ void AesSrtp::get_ctr_cipher_stream(uint8_t* output, uint32_t length,
     }
 }
 
-void AesSrtp::ctr_encrypt(const uint8_t* input, uint32_t input_length,
+void SrtpSymCrypto::ctr_encrypt(const uint8_t* input, uint32_t input_length,
                            uint8_t* output, uint8_t* iv ) {
 
     if (key == NULL)
@@ -153,7 +153,7 @@ void AesSrtp::ctr_encrypt(const uint8_t* input, uint32_t input_length,
     }
 }
 
-void AesSrtp::ctr_encrypt( uint8_t* data, uint32_t data_length, uint8_t* iv ) {
+void SrtpSymCrypto::ctr_encrypt( uint8_t* data, uint32_t data_length, uint8_t* iv ) {
 
     if (key == NULL)
         return;
@@ -185,15 +185,15 @@ void AesSrtp::ctr_encrypt( uint8_t* data, uint32_t data_length, uint8_t* iv ) {
     }
 }
 
-void AesSrtp::f8_encrypt(const uint8_t* data, uint32_t data_length,
-                         uint8_t* iv, AesSrtp* f8Cipher ) {
+void SrtpSymCrypto::f8_encrypt(const uint8_t* data, uint32_t data_length,
+                         uint8_t* iv, SrtpSymCrypto* f8Cipher ) {
 
     f8_encrypt(data, data_length, const_cast<uint8_t*>(data), iv, f8Cipher);
 }
 
 #define MAX_KEYLEN 32
 
-void AesSrtp::f8_deriveForIV(AesSrtp* f8Cipher, uint8_t* key, int32_t keyLen,
+void SrtpSymCrypto::f8_deriveForIV(SrtpSymCrypto* f8Cipher, uint8_t* key, int32_t keyLen,
              uint8_t* salt, int32_t saltLen) {
 
     unsigned char *cp_in, *cp_in1, *cp_out;
@@ -229,8 +229,8 @@ void AesSrtp::f8_deriveForIV(AesSrtp* f8Cipher, uint8_t* key, int32_t keyLen,
     f8Cipher->setNewKey(maskedKey, keyLen);
 }
 
-void AesSrtp::f8_encrypt(const uint8_t* in, uint32_t in_length, uint8_t* out,
-                         uint8_t* iv, AesSrtp* f8Cipher ) {
+void SrtpSymCrypto::f8_encrypt(const uint8_t* in, uint32_t in_length, uint8_t* out,
+                         uint8_t* iv, SrtpSymCrypto* f8Cipher ) {
 
 
     int offset = 0;
@@ -266,7 +266,7 @@ void AesSrtp::f8_encrypt(const uint8_t* in, uint32_t in_length, uint8_t* out,
     }
 }
 
-int AesSrtp::processBlock(F8_CIPHER_CTX *f8ctx, const uint8_t* in, int32_t length, uint8_t* out) {
+int SrtpSymCrypto::processBlock(F8_CIPHER_CTX *f8ctx, const uint8_t* in, int32_t length, uint8_t* out) {
 
     int i;
     const uint8_t *cp_in;

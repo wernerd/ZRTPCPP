@@ -29,9 +29,9 @@
  * @{
  */
 
-#include <crypto/AesSrtp.h>
+#include <crypto/SrtpSymCrypto.h>
 
-class AesSrtp;
+class SrtpSymCrypto;
 
     /**
      * The implementation for a SRTCP cryptographic context.
@@ -307,8 +307,8 @@ class CryptoContextCtrl {
 
         void*   macCtx;
 
-        AesSrtp* cipher;
-        AesSrtp* f8Cipher;
+        SrtpSymCrypto* cipher;
+        SrtpSymCrypto* f8Cipher;
     };
 
 /**
