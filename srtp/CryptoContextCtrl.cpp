@@ -16,12 +16,12 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 */
 
-/* Copyright (C) 2004-2006
+/* Copyright (C) 2004-2012
  *
  * Authors: Israel Abad <i_abad@terra.es>
  *          Erik Eliasson <eliasson@it.kth.se>
  *          Johan Bilien <jobi@via.ecp.fr>
- *      Joachim Orrblad <joachim@orrblad.com>
+ *          Joachim Orrblad <joachim@orrblad.com>
  *          Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
@@ -212,7 +212,7 @@ void CryptoContextCtrl::srtcpEncrypt( uint8_t* rtp, int32_t len, uint64_t index,
         iv[1] = 0;
         iv[2] = 0;
         iv[3] = 0;
-      
+
         // Need the encryption flag
         index = index | 0x80000000;
 
@@ -225,7 +225,7 @@ void CryptoContextCtrl::srtcpEncrypt( uint8_t* rtp, int32_t len, uint64_t index,
         // The fixed header follows and fills the rest of the IV
         memcpy(iv+8, rtp, 8);
 
-        cipher->f8_encrypt(rtp, len, iv, k_e, n_e, k_s, n_s, f8Cipher);
+        cipher->f8_encrypt(rtp, len, iv, f8Cipher);
     }
 }
 
@@ -294,6 +294,7 @@ void CryptoContextCtrl::deriveSrtcpKeys()
 
     // prepare AES cipher to compute derived keys.
     cipher->setNewKey(master_key, master_key_length);
+    memset(master_key, 0, master_key_length);
 
     // compute the session encryption key
     uint8_t label = 3;
@@ -304,6 +305,7 @@ void CryptoContextCtrl::deriveSrtcpKeys()
     label = 4;
     computeIv(iv, label, master_salt);
     cipher->get_ctr_cipher_stream(k_a, n_a, iv);
+
     // Initialize MAC context with the derived key
     switch (aalg) {
     case SrtpAuthenticationSha1Hmac:
@@ -314,13 +316,19 @@ void CryptoContextCtrl::deriveSrtcpKeys()
         macCtx = createSkeinMacContext(k_a, n_a, tagLength*8, Skein512);
         break;
     }
+    memset(k_a, 0, n_a);
+
     // compute the session salt
     label = 5;
     computeIv(iv, label, master_salt);
     cipher->get_ctr_cipher_stream(k_s, n_s, iv);
+    memset(master_salt, 0, master_salt_length);
 
     // as last step prepare AES cipher with derived key.
     cipher->setNewKey(k_e, n_e);
+    if (f8Cipher != NULL)
+        cipher->f8_deriveForIV(f8Cipher, k_e, n_e, k_s, n_s);
+    memset(k_e, 0, n_e);
 }
 
 bool CryptoContextCtrl::checkReplay( uint32_t index )
@@ -329,8 +337,7 @@ bool CryptoContextCtrl::checkReplay( uint32_t index )
         /* No security policy, don't use the replay protection */
         return true;
     }
-    
-    
+
     int64_t delta = s_l - index;
     if (delta > 0) {
         /* Packet not yet received*/

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2005, 2004, 2010 Erik Eliasson, Johan Bilien, Werner Dittmann
+  Copyright (C) 2005, 2004, 2010, 2012 Erik Eliasson, Johan Bilien, Werner Dittmann
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -65,7 +65,7 @@ typedef struct _f8_ctx {
  * Both modes are desinged to encrypt/decrypt data of arbitrary length
  * (with a specified upper limit, refer to RFC 3711). These modes do
  * <em>not</em> require that the amount of data to encrypt is a multiple
- * of the AES blocksize (128byte), no padding is necessary.
+ * of the AES blocksize (16 bytes), no padding is necessary.
  *
  * The implementation uses the openSSL library as its cryptographic
  * backend.
@@ -77,7 +77,7 @@ typedef struct _f8_ctx {
 class AesSrtp {
 public:
     AesSrtp(int algo = SrtpEncryptionAESCM);
-    
+
     /**
      * Constructor that initializes key data
      * 
@@ -87,7 +87,7 @@ public:
      *     Number of key bytes.
      */
     AesSrtp(uint8_t* key, int32_t key_length, int algo = SrtpEncryptionAESCM);
-    
+
     ~AesSrtp();
 
     /**
@@ -153,9 +153,7 @@ public:
      *    The initialization vector as input to create the cipher stream.
      *    Refer to chapter 4.1.1 in RFC 3711.
      */
-    void ctr_encrypt( const uint8_t* input,
-		      uint32_t inputLen,
-		      uint8_t* output, uint8_t* iv );
+    void ctr_encrypt(const uint8_t* input, uint32_t inputLen, uint8_t* output, uint8_t* iv );
 
     /**
      * Counter-mode encryption, in place.
@@ -173,9 +171,29 @@ public:
      *    The initialization vector as input to create the cipher stream.
      *    Refer to chapter 4.1.1 in RFC 3711.
      */
-    void ctr_encrypt( uint8_t* data,
-		      uint32_t data_length,
-		      uint8_t* iv );
+    void ctr_encrypt(uint8_t* data, uint32_t data_length, uint8_t* iv );
+
+    /**
+     * Derive a AES context to compute the IV'.
+     *
+     * See chapter 4.1.2.1 in RFC 3711.
+     *
+     * @param f8Cipher
+     *    Pointer to the AES context that will be used to encrypt IV to IV'
+     *
+     * @param key
+     *    The master key
+     *
+     * @param keyLen
+     *    Length of the master key.
+     *
+     * @param salt
+     *   Master salt.
+     *
+     * @param saltLen
+     *   length of master salt.
+     */
+    void f8_deriveForIV(AesSrtp* f8Cipher, uint8_t* key, int32_t keyLen, uint8_t* salt, int32_t saltLen);
 
     /**
      * AES F8 mode encryption, in place.
@@ -194,29 +212,10 @@ public:
      *    The initialization vector as input to create the cipher stream.
      *    Refer to chapter 4.1.1 in RFC 3711.
      *
-     * @param key
-     *    Pointer to the computed SRTP session key.
-     *
-     * @param keyLen
-     *    The length in bytes of the computed SRTP session key.
-     *
-     * @param salt
-     *    pointer to the computed session salt.
-     *
-     * @param saltLen
-     *    The length in bytes of the computed SRTP session salt.
-     *
      * @param f8Cipher
-     *   An AES cipher context used for intermediate f8 AES encryption.
+     *   An AES cipher context used to encrypt IV to IV'.
      */
-    void f8_encrypt( const uint8_t* data,
-		     uint32_t dataLen,
-		     uint8_t* iv,
-		     uint8_t* key,
-		     int32_t  keyLen,
-		     uint8_t* salt,
-		     int32_t  saltLen,
-	AesSrtp* f8Cipher);
+    void f8_encrypt(const uint8_t* data, uint32_t dataLen, uint8_t* iv, AesSrtp* f8Cipher);
 
     /**
      * AES F8 mode encryption.
@@ -238,37 +237,13 @@ public:
      *    The initialization vector as input to create the cipher stream.
      *    Refer to chapter 4.1.1 in RFC 3711.
      *
-     * @param key
-     *    Pointer to the computed SRTP session key.
-     *
-     * @param keyLen
-     *    The length in bytes of the computed SRTP session key.
-     *
-     * @param salt
-     *    pointer to the computed session salt.
-     *
-     * @param saltLen
-     *    The length in bytes of the computed SRTP session salt.
-     * 
      * @param f8Cipher
-     *   An AES cipher context used for intermediate f8 AES encryption.
+     *   An AES cipher context used to encrypt IV to IV'.
      */
-    void f8_encrypt(const uint8_t* data,
-		    uint32_t dataLen,
-		    uint8_t* out,
-		    uint8_t* iv,
-		    uint8_t* key,
-		    int32_t  keyLen,
-		    uint8_t* salt,
-		    int32_t  saltLen,
-	AesSrtp* f8Cipher);
-
+    void f8_encrypt(const uint8_t* data, uint32_t dataLen, uint8_t* out, uint8_t* iv, AesSrtp* f8Cipher);
 
 private:
-    int processBlock(F8_CIPHER_CTX* f8ctx,
-		     const uint8_t* in,
-		     int32_t length,
-		     uint8_t* out);
+    int processBlock(F8_CIPHER_CTX* f8ctx, const uint8_t* in, int32_t length, uint8_t* out);
     void* key;
     int32_t algorithm;
 };

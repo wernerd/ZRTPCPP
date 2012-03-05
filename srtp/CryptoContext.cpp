@@ -14,7 +14,7 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 */
 
-/* Copyright (C) 2004-2010
+/* Copyright (C) 2004-2012
  *
  * Authors: Israel Abad <i_abad@terra.es>
  *          Erik Eliasson <eliasson@it.kth.se>
@@ -73,7 +73,7 @@ CryptoContext::CryptoContext( uint32_t ssrc,
         n_s = 0;
         k_s = NULL;
         break;
-        
+
     case SrtpEncryptionTWOF8:
         f8Cipher = new AesSrtp(SrtpEncryptionTWOCM);
 
@@ -179,14 +179,14 @@ void CryptoContext::srtpEncrypt(uint8_t* pkt, uint8_t* payload, uint32_t paylen,
          */
 
         unsigned char iv[16];
-        memcpy( iv, k_s, 4 );
+        memcpy(iv, k_s, 4);
 
         int i;
         for (i = 4; i < 8; i++ ) {
-            iv[i] = ( 0xFF & ( ssrc >> ((7-i)*8) ) ) ^ k_s[i];
+            iv[i] = (0xFF & (ssrc >> ((7-i)*8))) ^ k_s[i];
         }
         for (i = 8; i < 14; i++ ) {
-            iv[i] = ( 0xFF & (unsigned char)( index >> ((13-i)*8) ) ) ^ k_s[i];
+            iv[i] = (0xFF & (unsigned char)( index >> ((13-i)*8) ) ) ^ k_s[i];
         }
         iv[14] = iv[15] = 0;
 
@@ -212,8 +212,7 @@ void CryptoContext::srtpEncrypt(uint8_t* pkt, uint8_t* payload, uint32_t paylen,
         // set ROC in network order into IV
         ui32p[3] = htonl(roc);
 
-        cipher->f8_encrypt(payload, paylen,
-                              iv, k_e, n_e, k_s, n_s, f8Cipher);
+        cipher->f8_encrypt(payload, paylen, iv, f8Cipher);
     }
 }
 
@@ -301,6 +300,7 @@ void CryptoContext::deriveSrtpKeys(uint64_t index)
 
     // prepare AES cipher to compute derived keys.
     cipher->setNewKey(master_key, master_key_length);
+    memset(master_key, 0, master_key_length);
 
     // compute the session encryption key
     uint64_t label = 0;
@@ -311,6 +311,7 @@ void CryptoContext::deriveSrtpKeys(uint64_t index)
     label = 0x01;
     computeIv(iv, label, index, key_deriv_rate, master_salt);
     cipher->get_ctr_cipher_stream(k_a, n_a, iv);
+
     // Initialize MAC context with the derived key
     switch (aalg) {
     case SrtpAuthenticationSha1Hmac:
@@ -321,13 +322,19 @@ void CryptoContext::deriveSrtpKeys(uint64_t index)
         macCtx = createSkeinMacContext(k_a, n_a, tagLength*8, Skein512);
         break;
     }
+    memset(k_a, 0, n_a);
+
     // compute the session salt
     label = 0x02;
     computeIv(iv, label, index, key_deriv_rate, master_salt);
     cipher->get_ctr_cipher_stream(k_s, n_s, iv);
+    memset(master_salt, 0, master_salt_length);
 
     // as last step prepare AES cipher with derived key.
     cipher->setNewKey(k_e, n_e);
+    if (f8Cipher != NULL)
+        cipher->f8_deriveForIV(f8Cipher, k_e, n_e, k_s, n_s);
+    memset(k_e, 0, n_e);
 }
 
 /* Based on the algorithm provided in Appendix A - draft-ietf-srtp-05.txt */
