@@ -35,10 +35,12 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
+#define MAKE_F8_TEST
+
 #include <stdlib.h>
 #include <openssl/aes.h>                // the include of openSSL
 #include <crypto/SrtpSymCrypto.h>
-#include <libzrtpcpp/crypto/twofish.h>
+#include <crypto/twofish.h>
 #include <string.h>
 #include <stdio.h>
 #include <arpa/inet.h>

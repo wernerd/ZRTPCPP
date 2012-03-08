@@ -37,10 +37,12 @@
 
 extern void initializeGcrypt();
 
+#define MAKE_F8_TEST
+
 #include <gcrypt.h>            // the include of gcrypt
 #include <stdlib.h>
 #include <crypto/SrtpSymCrypto.h>
-#include <libzrtpcpp/crypto/twofish.h>
+#include <crypto/twofish.h>
 
 #include <stdio.h>
 
@@ -88,9 +90,9 @@ bool SrtpSymCrypto::setNewKey(const uint8_t* k, int32_t keyLength) {
             return false;
         }
         gcry_cipher_hd_t tmp;
-        int err = gcry_cipher_open(&tmp, algo, GCRY_CIPHER_MODE_ECB, 0);
+        gcry_cipher_open(&tmp, algo, GCRY_CIPHER_MODE_ECB, 0);
         key = tmp;
-        err = gcry_cipher_setkey(static_cast<gcry_cipher_hd_t>(key), k, keyLength);
+        gcry_cipher_setkey(static_cast<gcry_cipher_hd_t>(key), k, keyLength);
     }
     else if (algorithm == SrtpEncryptionTWOCM || algorithm == SrtpEncryptionTWOF8) {
         if (!twoFishInit) {

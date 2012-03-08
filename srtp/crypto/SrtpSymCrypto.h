@@ -248,6 +248,135 @@ private:
     int32_t algorithm;
 };
 
+#pragma GCC visibility push(default)
+int testF8();
+#pragma GCC visibility pop
+
+/* Only SrtpSymCrypto functions define the MAKE_F8_TEST */
+#ifdef MAKE_F8_TEST
+
+#include <cstring>
+#include <iostream>
+#include <cstdio>
+#include <arpa/inet.h>
+
+using namespace std;
+
+static void hexdump(const char* title, const unsigned char *s, int l)
+{
+    int n=0;
+
+    if (s == NULL) return;
+
+    fprintf(stderr, "%s",title);
+    for( ; n < l ; ++n) {
+        if((n%16) == 0)
+            fprintf(stderr, "\n%04x",n);
+        fprintf(stderr, " %02x",s[n]);
+    }
+    fprintf(stderr, "\n");
+}
+
+/*
+ * The F8 test vectors according to RFC3711
+ */
+static unsigned char salt[] = {0x32, 0xf2, 0x87, 0x0d};
+
+static unsigned char iv[] = {  0x00, 0x6e, 0x5c, 0xba, 0x50, 0x68, 0x1d, 0xe5,
+                        0x5c, 0x62, 0x15, 0x99, 0xd4, 0x62, 0x56, 0x4a};
+
+static unsigned char key[]= {  0x23, 0x48, 0x29, 0x00, 0x84, 0x67, 0xbe, 0x18,
+                        0x6c, 0x3d, 0xe1, 0x4a, 0xae, 0x72, 0xd6, 0x2c};
+
+static unsigned char payload[] = {
+                        0x70, 0x73, 0x65, 0x75, 0x64, 0x6f, 0x72, 0x61,
+                        0x6e, 0x64, 0x6f, 0x6d, 0x6e, 0x65, 0x73, 0x73,
+                        0x20, 0x69, 0x73, 0x20, 0x74, 0x68, 0x65, 0x20,
+                        0x6e, 0x65, 0x78, 0x74, 0x20, 0x62, 0x65, 0x73,
+                        0x74, 0x20, 0x74, 0x68, 0x69, 0x6e, 0x67};  // 39 bytes
+
+static unsigned char cipherText[] = {
+                        0x01, 0x9c, 0xe7, 0xa2, 0x6e, 0x78, 0x54, 0x01,
+                        0x4a, 0x63, 0x66, 0xaa, 0x95, 0xd4, 0xee, 0xfd,
+                        0x1a, 0xd4, 0x17, 0x2a, 0x14, 0xf9, 0xfa, 0xf4,
+                        0x55, 0xb7, 0xf1, 0xd4, 0xb6, 0x2b, 0xd0, 0x8f,
+                        0x56, 0x2c, 0x0e, 0xef, 0x7c, 0x48, 0x02}; // 39 bytes
+
+// static unsigned char rtpPacketHeader[] = {
+//                         0x80, 0x6e, 0x5c, 0xba, 0x50, 0x68, 0x1d, 0xe5,
+//                         0x5c, 0x62, 0x15, 0x99};
+
+static unsigned char rtpPacket[] = {
+                    0x80, 0x6e, 0x5c, 0xba, 0x50, 0x68, 0x1d, 0xe5,
+                    0x5c, 0x62, 0x15, 0x99,                        // header
+                    0x70, 0x73, 0x65, 0x75, 0x64, 0x6f, 0x72, 0x61, // payload
+                    0x6e, 0x64, 0x6f, 0x6d, 0x6e, 0x65, 0x73, 0x73,
+                    0x20, 0x69, 0x73, 0x20, 0x74, 0x68, 0x65, 0x20,
+                    0x6e, 0x65, 0x78, 0x74, 0x20, 0x62, 0x65, 0x73,
+                    0x74, 0x20, 0x74, 0x68, 0x69, 0x6e, 0x67};
+static uint32_t ROC = 0xd462564a;
+
+int testF8()
+{
+    SrtpSymCrypto* aesCipher = new SrtpSymCrypto();
+    SrtpSymCrypto* f8AesCipher = new SrtpSymCrypto();
+
+    aesCipher->setNewKey(key, sizeof(key));
+
+    /* Create the F8 IV (refer to chapter 4.1.2.2 in RFC 3711):
+     *
+     * IV = 0x00 || M || PT || SEQ  ||      TS    ||    SSRC   ||    ROC
+     *      8Bit  1bit  7bit  16bit       32bit        32bit        32bit
+     * ------------\     /--------------------------------------------------
+     *       XX       XX      XX XX   XX XX XX XX   XX XX XX XX  XX XX XX XX
+     */
+
+    unsigned char derivedIv[16];
+    uint32_t* ui32p = (uint32_t*)derivedIv;
+
+    memcpy(derivedIv, rtpPacket, 12);
+    derivedIv[0] = 0;
+
+    // set ROC in network order into IV
+    ui32p[3] = htonl(ROC);
+
+    int32_t pad = 0;
+
+    if (memcmp(iv, derivedIv, 16) != 0) {
+        cerr << "Wrong IV constructed" << endl;
+        hexdump("derivedIv", derivedIv, 16);
+        hexdump("test vector Iv", iv, 16);
+        return -1;
+    }
+
+    aesCipher->f8_deriveForIV(f8AesCipher, key, sizeof(key), salt, sizeof(salt));
+
+    // now encrypt the RTP payload data
+    aesCipher->f8_encrypt(rtpPacket + 12, sizeof(rtpPacket)-12+pad,
+        derivedIv, f8AesCipher);
+
+    // compare with test vector cipher data
+    if (memcmp(rtpPacket+12, cipherText, sizeof(rtpPacket)-12+pad) != 0) {
+        cerr << "cipher data mismatch" << endl;
+        hexdump("computed cipher data", rtpPacket+12, sizeof(rtpPacket)-12+pad);
+        hexdump("Test vcetor cipher data", cipherText, sizeof(cipherText));
+        return -1;
+    }
+
+    // Now decrypt the data to get the payload data again
+    aesCipher->f8_encrypt(rtpPacket+12, sizeof(rtpPacket)-12+pad, derivedIv, f8AesCipher);
+
+    // compare decrypted data with test vector payload data
+    if (memcmp(rtpPacket+12, payload, sizeof(rtpPacket)-12+pad) != 0) {
+        cerr << "payload data mismatch" << endl;
+        hexdump("computed payload data", rtpPacket+12, sizeof(rtpPacket)-12+pad);
+        hexdump("Test vector payload data", payload, sizeof(payload));
+        return -1;
+    }
+    return 0;
+}
+#endif
+
 /**
  * @}
  */

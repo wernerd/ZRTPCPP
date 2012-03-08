@@ -17,7 +17,7 @@
 
 #include <crypto/brg_types.h>                      /* get integer type definitions */
 
-//r3gis3r : android already has that defined in types
+/*r3gis3r : android already has that defined in types */
 #ifndef ANDROID
 typedef unsigned int    uint_t;             /* native unsigned integer */
 #endif
