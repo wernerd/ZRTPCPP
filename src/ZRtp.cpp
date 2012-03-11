@@ -2103,13 +2103,13 @@ void ZRtp::computePBXSecret() {
         memcpy(KDFcontext, zid, sizeof(zid));
         memcpy(KDFcontext+sizeof(zid), peerZid, sizeof(peerZid));
     }
-    
+
     KDF(zrtpSession, hashLength, (unsigned char*)zrtpTrustedMitm, strlen(zrtpTrustedMitm)+1,
         KDFcontext, kdfSize, SHA256_DIGEST_LENGTH * 8, pbxSecretTmpBuffer);
 
     pbxSecretTmp = pbxSecretTmpBuffer;  // set pointer to buffer, signal PBX secret was computed
 }
-    
+
 
 void ZRtp::computeSRTPKeys() {
 
@@ -2267,6 +2267,14 @@ void ZRtp::resetSASVerified() {
 
 
 void ZRtp::sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) {
+
+    // We've reached secure state: overwrite the SRTP master key and master salt.
+    if (severity == Info && subCode == InfoSecureStateOn) {
+        memset(srtpKeyI, 0, cipher->getKeylen());
+        memset(srtpSaltI, 0, 112/8);
+        memset(srtpKeyR, 0, cipher->getKeylen());
+        memset(srtpSaltR, 0, 112/8);
+    }
     callback->sendInfo(severity, subCode);
 }
 
