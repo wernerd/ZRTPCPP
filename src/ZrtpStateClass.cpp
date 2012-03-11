@@ -598,7 +598,7 @@ void ZrtpStateClass::evWaitCommit(void) {
 
     DEBUGOUT((cout << "Checking for match in WaitCommit.\n"));
 
-    char *msg, first, last;
+    char *msg, first;
     uint8_t *pkt;
     uint32_t errorCode = 0;
 
@@ -607,8 +607,6 @@ void ZrtpStateClass::evWaitCommit(void) {
         msg = (char *)pkt + 4;
 
         first = tolower(*msg);
-        last = tolower(*(msg+7));
-
         /*
          * Hello:
          * - resend HelloAck
@@ -841,6 +839,7 @@ void ZrtpStateClass::evCommitSent(void) {
             }
             if (startTimer(&T2) <= 0) {
                 timerFailed(SevereNoTimer);  // returns to state Initial
+                return;
             }
             // according to chap 5.6: after sending Confirm2 the Initiator must
             // be ready to receive SRTP data. SRTP sender will be enabled in WaitConfAck
@@ -890,7 +889,7 @@ void ZrtpStateClass::evWaitDHPart2(void) {
 
     DEBUGOUT((cout << "Checking for match in DHPart2.\n"));
 
-    char *msg, first, last;
+    char *msg, first;
     uint8_t *pkt;
     uint32_t errorCode = 0;
 
@@ -899,8 +898,6 @@ void ZrtpStateClass::evWaitDHPart2(void) {
         msg = (char *)pkt + 4;
 
         first = tolower(*msg);
-        last = tolower(*(msg+7));
-
         /*
          * Commit:
          * - resend DHPart1
@@ -1142,7 +1139,7 @@ void ZrtpStateClass::evWaitConfAck(void) {
 
     DEBUGOUT((cout << "Checking for match in WaitConfAck.\n"));
 
-    char *msg, first, last;
+    char *msg, first;
     uint8_t *pkt;
 
     if (event->type == ZrtpPacket) {
@@ -1150,8 +1147,6 @@ void ZrtpStateClass::evWaitConfAck(void) {
         msg = (char *)pkt + 4;
 
         first = tolower(*msg);
-        last = tolower(*(msg+7));
-
          /*
          * ConfAck:
          * - Switch off resending Confirm2
