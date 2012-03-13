@@ -379,13 +379,11 @@ int32_t ZrtpQueue::sendDataZRTP(const unsigned char *data, int32_t length) {
 
 bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
 {
-    CryptoContext* pcc;
-    CryptoContextCtrl* cpcc;
     CryptoContext* recvCryptoContext;
     CryptoContext* senderCryptoContext;
     CryptoContextCtrl* recvCryptoContextCtrl;
     CryptoContextCtrl* senderCryptoContextCtrl;
-    
+
     int cipher;
     int authn;
     int authKeyLen;
@@ -468,20 +466,13 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
         if (senderCryptoContext == NULL) {
             return false;
         }
-        // Create a SRTP and a SRTCP crypto context for real SSRC sender stream.
-        // Note: key derivation can be done at this time only if the
-        // key derivation rate is 0 (disabled). For ZRTP this is the
-        // case: the key derivation is defined as 2^48
-        // which is effectively 0.
-        pcc = senderCryptoContext->newCryptoContextForSSRC(getLocalSSRC(), 0, 0L);
-        cpcc = senderCryptoContextCtrl->newCryptoContextForSSRC(getLocalSSRC());
-        if (pcc == NULL || cpcc == NULL) {
-            return false;
-        }
-        pcc->deriveSrtpKeys(0L);
-        cpcc->deriveSrtcpKeys();
-        setOutQueueCryptoContext(pcc);
-        setOutQueueCryptoContextCtrl(senderCryptoContextCtrl);
+        // Insert the Crypto templates (SSRC == 0) into the queue. When we send
+        // the first RTP or RTCP packet the real crypto context will be created.
+        // Refer to putData(), sendImmediate() in ccrtp's outqueue.cpp and
+        // takeinControlPacket() in ccrtp's control.cpp.
+        //
+         setOutQueueCryptoContext(senderCryptoContext);
+         setOutQueueCryptoContextCtrl(senderCryptoContextCtrl);
     }
     if (part == ForReceiver) {
         // To decrypt packets: intiator uses responder keys,
@@ -545,31 +536,12 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
         if (recvCryptoContext == NULL) {
             return false;
         }
-        // Create a SRTP and a SRTCP crypto context for real SSRC input stream.
-        // If the sender didn't provide a SSRC yet just insert the template
-        // into the queue. When we receive the first RTP or RTCP packet the real
-        // crypto context will be created.
+        // Insert the Crypto templates (SSRC == 0) into the queue. When we receive
+        // the first RTP or RTCP packet the real crypto context will be created.
+        // Refer to rtpDataPacket() above and takeinControlPacket in ccrtp's control.cpp.
         //
-        // Note: key derivation can be done at this time only if the
-        // key derivation rate is 0 (disabled). For ZRTP this is the
-        // case: the key derivation is defined as 2^48
-        // which is effectively 0.
-        //
-        if (peerSSRC != 0) {
-            pcc = recvCryptoContext->newCryptoContextForSSRC(peerSSRC, 0, 0L);
-            cpcc = recvCryptoContextCtrl->newCryptoContextForSSRC(peerSSRC);
-            if (pcc == NULL || cpcc == NULL) {
-                return false;
-            }
-            pcc->deriveSrtpKeys(0L);
-            cpcc->deriveSrtcpKeys();
-            setInQueueCryptoContext(pcc);
-            setInQueueCryptoContextCtrl(cpcc);
-        }
-        else {
-            setInQueueCryptoContext(recvCryptoContext);
-            setInQueueCryptoContextCtrl(recvCryptoContextCtrl);
-        }
+        setInQueueCryptoContext(recvCryptoContext);
+        setInQueueCryptoContextCtrl(recvCryptoContextCtrl);
     }
     return true;
 }
