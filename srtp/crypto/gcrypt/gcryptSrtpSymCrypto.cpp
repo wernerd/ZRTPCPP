@@ -59,11 +59,12 @@ SrtpSymCrypto::SrtpSymCrypto( uint8_t* k, int32_t keyLength, int algo) :
 
 SrtpSymCrypto::~SrtpSymCrypto() {
     if (key) {
-        if (algorithm == SrtpEncryptionAESCM)
+        if (algorithm == SrtpEncryptionAESCM || algorithm == SrtpEncryptionAESF8)
             gcry_cipher_close(static_cast<gcry_cipher_hd_t>(key));
-        else if (algorithm == SrtpEncryptionTWOCM)
+        else if (algorithm == SrtpEncryptionTWOCM || algorithm == SrtpEncryptionTWOF8) {
+            memset(key, 0, sizeof(Twofish_key));
             delete[] (uint8_t*)key;
-
+        }
         key = NULL;
     }
 }
@@ -115,10 +116,10 @@ bool SrtpSymCrypto::setNewKey(const uint8_t* k, int32_t keyLength) {
 
 void SrtpSymCrypto::encrypt(const uint8_t* input, uint8_t* output) {
     if (key != NULL) {
-        if (algorithm == SrtpEncryptionAESCM)
+        if (algorithm == SrtpEncryptionAESCM || algorithm == SrtpEncryptionAESF8)
             gcry_cipher_encrypt (static_cast<gcry_cipher_hd_t>(key),
                                  output, SRTP_BLOCK_SIZE, input, SRTP_BLOCK_SIZE);
-        else if (algorithm == SrtpEncryptionTWOCM)
+        else if (algorithm == SrtpEncryptionTWOCM || algorithm == SrtpEncryptionTWOF8)
             Twofish_encrypt((Twofish_key*)key, (Twofish_Byte*)input,
                             (Twofish_Byte*)output);
         }

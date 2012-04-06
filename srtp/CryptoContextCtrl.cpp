@@ -47,7 +47,7 @@ CryptoContextCtrl::CryptoContextCtrl(uint32_t ssrc,
                                 int32_t akeyl,
                                 int32_t skeyl,
                                 int32_t tagLength):
-ssrc(ssrc),using_mki(false),mkiLength(0),mki(NULL),
+ssrcCtx(ssrc),using_mki(false),mkiLength(0),mki(NULL),
 replay_window(0), cipher(NULL), f8Cipher(NULL)
 {
     this->ealg = ealg;
@@ -64,79 +64,81 @@ replay_window(0), cipher(NULL), f8Cipher(NULL)
     this->master_salt = new uint8_t[master_salt_length];
     memcpy(this->master_salt, master_salt, master_salt_length);
 
-    switch( ealg ) {
+    switch (ealg) {
         case SrtpEncryptionNull:
-        n_e = 0;
-        k_e = NULL;
-        n_s = 0;
-        k_s = NULL;
-        break;
+            n_e = 0;
+            k_e = NULL;
+            n_s = 0;
+            k_s = NULL;
+            break;
 
         case SrtpEncryptionTWOF8:
-        f8Cipher = new SrtpSymCrypto(SrtpEncryptionTWOF8);
+            f8Cipher = new SrtpSymCrypto(SrtpEncryptionTWOF8);
 
         case SrtpEncryptionTWOCM:
-        n_e = ekeyl;
-        k_e = new uint8_t[n_e];
-        n_s = skeyl;
-        k_s = new uint8_t[n_s];
-        cipher = new SrtpSymCrypto(SrtpEncryptionTWOCM);
-        break;
+            n_e = ekeyl;
+            k_e = new uint8_t[n_e];
+            n_s = skeyl;
+            k_s = new uint8_t[n_s];
+            cipher = new SrtpSymCrypto(SrtpEncryptionTWOCM);
+            break;
 
         case SrtpEncryptionAESF8:
-        f8Cipher = new SrtpSymCrypto(SrtpEncryptionAESF8);
+            f8Cipher = new SrtpSymCrypto(SrtpEncryptionAESF8);
 
         case SrtpEncryptionAESCM:
-        n_e = ekeyl;
-        k_e = new uint8_t[n_e];
-        n_s = skeyl;
-        k_s = new uint8_t[n_s];
-        cipher = new SrtpSymCrypto(SrtpEncryptionAESCM);
-        break;
+            n_e = ekeyl;
+            k_e = new uint8_t[n_e];
+            n_s = skeyl;
+            k_s = new uint8_t[n_s];
+            cipher = new SrtpSymCrypto(SrtpEncryptionAESCM);
+            break;
     }
 
-    switch( aalg ) {
+    switch (aalg) {
         case SrtpAuthenticationNull:
-        n_a = 0;
-        k_a = NULL;
-        this->tagLength = 0;
-        break;
+            n_a = 0;
+            k_a = NULL;
+            this->tagLength = 0;
+            break;
 
         case SrtpAuthenticationSha1Hmac:
         case SrtpAuthenticationSkeinHmac:
-        n_a = akeyl;
-        k_a = new uint8_t[n_a];
-        this->tagLength = tagLength;
-        break;
+            n_a = akeyl;
+            k_a = new uint8_t[n_a];
+            this->tagLength = tagLength;
+            break;
     }
 }
 
 CryptoContextCtrl::~CryptoContextCtrl(){
 
-    ealg = SrtpEncryptionNull;
-    aalg = SrtpAuthenticationNull;
-
     if (mki)
         delete [] mki;
 
     if (master_key_length > 0) {
+        memset(master_key, 0, master_key_length);
         master_key_length = 0;
         delete [] master_key;
     }
     if (master_salt_length > 0) {
+        memset(master_sal, 0, master_salt_length);
         master_salt_length = 0;
         delete [] master_salt;
     }
     if (n_e > 0) {
+        memset(k_e, 0, n_e);
         n_e = 0;
         delete [] k_e;
     }
     if (n_s > 0) {
+        memset(k_s, 0, n_s);
         n_s = 0;
         delete [] k_s;
     }
     if (n_a > 0) {
         n_a = 0;
+        memset(k_a, 0, n_a);
         delete [] k_a;
     }
     if (cipher != NULL) {
@@ -158,6 +160,8 @@ CryptoContextCtrl::~CryptoContextCtrl(){
             break;
         }
     }
+    ealg = SrtpEncryptionNull;
+    aalg = SrtpAuthenticationNull;
 }
 
 void CryptoContextCtrl::srtcpEncrypt( uint8_t* rtp, int32_t len, uint64_t index, uint32_t ssrc )

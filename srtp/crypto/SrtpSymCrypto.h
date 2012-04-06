@@ -318,8 +318,8 @@ static uint32_t ROC = 0xd462564a;
 
 int testF8()
 {
-    SrtpSymCrypto* aesCipher = new SrtpSymCrypto();
-    SrtpSymCrypto* f8AesCipher = new SrtpSymCrypto();
+    SrtpSymCrypto* aesCipher = new SrtpSymCrypto(SrtpEncryptionAESF8);
+    SrtpSymCrypto* f8AesCipher = new SrtpSymCrypto(SrtpEncryptionAESF8);
 
     aesCipher->setNewKey(key, sizeof(key));
 

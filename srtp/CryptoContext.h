@@ -330,7 +330,7 @@ public:
     inline uint32_t
     getSsrc() const
     {
-        return ssrc;
+        return ssrcCtx;
     }
 
     /**
@@ -359,7 +359,7 @@ public:
 
 private:
 
-    uint32_t ssrc;
+    uint32_t ssrcCtx;
     bool   using_mki;
     uint32_t mkiLength;
     uint8_t* mki;

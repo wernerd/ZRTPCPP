@@ -248,7 +248,7 @@ class CryptoContextCtrl {
      */
     inline uint32_t
     getSsrc() const
-        {return ssrc;}
+        {return ssrcCtx;}
 
     /**
      * Derive a new Crypto Context for use with a new SSRC
@@ -275,7 +275,7 @@ class CryptoContextCtrl {
 
     private:
 
-        uint32_t ssrc;
+        uint32_t ssrcCtx;
         bool   using_mki;
         uint32_t mkiLength;
         uint8_t* mki;
