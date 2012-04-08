@@ -80,9 +80,9 @@ public:
 
     void zrtpInformEnrollment (GnuZrtpCodes::InfoEnrollment info );
 
-    void signSAS ( std::string sas );
+    void signSAS (uint8_t* sasHash );
 
-    bool checkSASSignature ( std::string sas );
+    bool checkSASSignature (uint8_t* sasHash );
 
 private:
     void init();

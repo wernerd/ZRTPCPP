@@ -471,6 +471,10 @@ public:
     /**
      * Get the computed SAS hash for this ZRTP session.
      *
+     * A PBX ZRTP back-to-Back function uses this function to get the SAS
+     * hash of an enrolled client to construct the SAS relay packet for
+     * the other client.
+     *
      * @return a refernce to the byte array that contains the full
      *         SAS hash.
      */
@@ -532,6 +536,16 @@ public:
     void setEnrollmentMode(bool enrollmentMode);
 
     /**
+     * Set the state of the SAS signature mode flag.
+     *
+     * If SAS signature mode is set to true this ZRTP session support SAS signature
+     * callbacks and signature transfer between clients.
+     *
+     * @param sasSignMode defines the new state of the sasSignMode flag
+     */
+    void setSignSas(bool sasSignMode);
+
+    /**
      * Set signature data
      *
      * This functions stores signature data and transmitts it during ZRTP
@@ -563,9 +577,9 @@ public:
      *    hold the signature data. Refer to <code>getSignatureLength()</code>
      *    to get the length of the received signature data.
      * @return
-     *    Number of bytes copied into the data buffer
+     *    Pointer to signature data.
      */
-    int32 getSignatureData(uint8* data);
+    const uint8* getSignatureData();
 
     /**
      * Get length of signature data
@@ -738,9 +752,9 @@ protected:
 
     void zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment  info);
 
-    void signSAS(std::string sas);
+    void signSAS(uint8_t* sasHash);
 
-    bool checkSASSignature(std::string sas);
+    bool checkSASSignature(uint8_t* sasHash);
 
     /*
      * End of ZrtpCallback functions.
@@ -773,13 +787,12 @@ private:
 
     int32 secureParts;
 
-//        CryptoContext* recvCryptoContext;
-//        CryptoContext* senderCryptoContext;
     int16 senderZrtpSeqNo;
     ost::Mutex synchLock;   // Mutex for ZRTP (used by ZrtpStateClass)
     uint32 peerSSRC;
     bool started;
     bool mitmMode;
+    bool signSas;
 
 };
 

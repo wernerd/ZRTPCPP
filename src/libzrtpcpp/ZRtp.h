@@ -95,7 +95,7 @@ class __EXPORT ZRtp {
      * engine.
      */
     ZRtp(uint8_t* myZid, ZrtpCallback* cb, std::string id,
-         ZrtpConfigure* config, bool mitmm= false);
+         ZrtpConfigure* config, bool mitmm= false, bool sasSignSupport= false);
 
     /**
      * Destructor cleans up.
@@ -343,14 +343,18 @@ class __EXPORT ZRtp {
  
     /**
      * Get the computed SAS hash for this ZRTP session.
-     * 
-     * @return a pointer to the byte array that contains the full 
+     *
+     * A PBX ZRTP back-to-Back function uses this function to get the SAS
+     * hash of an enrolled client to construct the SAS relay packet for
+     * the other client.
+     *
+     * @return a pointer to the byte array that contains the full
      *         SAS hash.
      */
     uint8_t* getSasHash();
 
     /**
-     * Set signature data
+     * Set signature data.
      *
      * This functions stores signature data and transmitts it during ZRTP
      * processing to the other party as part of the Confirm packets. Refer to
@@ -371,32 +375,32 @@ class __EXPORT ZRtp {
     bool setSignatureData(uint8_t* data, int32_t length);
 
     /**
-     * Get signature data
+     * Get signature data.
      *
-     * This functions returns signature data that was receivied during ZRTP
-     * processing. Refer to chapters 5.7 and 7.2.
+     * This functions returns a pointer to the signature data that was receivied
+     * during ZRTP processing. Refer to chapters 5.7 and 7.2.
+     *
+     * The returned pointer points to volatile data that is valid only during the
+     * <code>checkSASSignature()</code> callback funtion. The application must copy
+     * the signature data if it will be used after the callback function returns.
      *
      * The signature data can be retrieved after ZRTP enters secure state.
      * <code>start()</code>.
      *
-     * @param data
-     *    Pointer to a data buffer. This buffer must be large enough to
-     *    hold the signature data. Refer to <code>getSignatureLength()</code>
-     *    to get the length of the received signature data.
      * @return
-     *    Number of bytes copied into the data buffer
+     *    Pointer to signature data.
      */
-    int32_t getSignatureData(uint8_t* data);
+    const uint8_t* getSignatureData();
 
     /**
-     * Get length of signature data
+     * Get length of signature data in number of bytes.
      *
      * This functions returns the length of signature data that was receivied
      * during ZRTP processing. Refer to chapters 5.7 and 7.2.
      *
      * @return
      *    Length in bytes of the received signature data. The method returns
-     *    zero if no signature data avilable.
+     *    zero if no signature data is avilable.
      */
     int32_t getSignatureLength();
 
@@ -674,11 +678,9 @@ private:
      * enrollment flags.
      */
     bool enableMitmEnrollment;
-    
+
     /**
-     * True if the Hello packet was sent by a trusted PBX. This is true only
-     * if the Hello packet has the M-flag set and the according ZIDRecord contains
-     * a valid MitM key. 
+     * True if the Hello packet has M flag set and th client has a valid PBX key.
      */
     bool trustedMitM;
 
@@ -687,14 +689,14 @@ private:
      * We use this later to check some stuff for SAS Relay processing
      */
     bool mitmSeen;
-    
+
     /**
      * Temporarily store computed pbxSecret, if user accepts enrollment then
      * it will copied to our ZID record of the PBX (MitM)  
      */
     uint8_t* pbxSecretTmp;
     uint8_t  pbxSecretTmpBuffer[MAX_DIGEST_LENGTH];
-     
+
     /**
      * If true then we will set the enrollment flag (E) in the confirm
      * packets. Set to true if the PBX enrollment service started this ZRTP 
@@ -736,8 +738,13 @@ private:
     /**
      * Variables to store signature data. Includes the signature type block
      */
-    uint8_t* signatureData;       // will be allocated when needed
+    const uint8_t* signatureData;       // will be set when needed
     int32_t  signatureLength;     // overall length in bytes
+
+    /**
+     * Is true if the other peer signaled SAS signature support in its Hello packet.
+     */
+    bool signSasSeen;
 
     uint32_t peerSSRC;            // peer's SSRC, required to setup PingAck packet
     /**
@@ -854,7 +861,7 @@ private:
     void generateKeysMultiStream();
 
     void computePBXSecret();
-    
+
     void setNegotiatedHash(AlgorithmEnum* hash);
 
     /*

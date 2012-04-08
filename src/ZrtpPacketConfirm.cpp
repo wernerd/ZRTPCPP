@@ -43,18 +43,31 @@ void ZrtpPacketConfirm::initialize() {
     setZrtpId();
 }
 
-void ZrtpPacketConfirm::setSignatureLength(uint32_t sl) {
-    sl &= 0x1ff;                                                       // make sure it is max 9 bits
+bool ZrtpPacketConfirm::setSignatureLength(uint32_t sl) {
+    if (sl > 512)
+        return false;
+
     int32_t length = sizeof(ConfirmPacket_t) + (sl * ZRTP_WORD_SIZE);
     confirmHeader->sigLength = sl;                                     // sigLength is a uint byte
     if (sl & 0x100) {                                                  // check the 9th bit
         confirmHeader->filler[1] = 1;                                  // and set it if necessary
     }
     setLength(length / 4);
+    return true;
 }
 
-uint32_t ZrtpPacketConfirm::getSignatureLength() {
-    uint32_t sl = confirmHeader->sigLength;
+bool ZrtpPacketConfirm::setSignatureData(uint8_t* data, int32_t length) {
+    int32_t l = getSignatureLength() * 4;
+    if (length > l || (length % 4) != 0)
+        return false;
+
+    uint8_t* p = ((uint8_t*)&confirmHeader->expTime) + 4;              // point to signature block
+    memcpy(p, data, length);
+    return true;
+}
+
+int32_t ZrtpPacketConfirm::getSignatureLength() {
+    int32_t sl = confirmHeader->sigLength & 0xff;
     if (confirmHeader->filler[1] == 1) {                              // do we have a 9th bit
         sl |= 0x100;
     }

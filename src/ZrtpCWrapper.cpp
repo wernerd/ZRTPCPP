@@ -266,7 +266,7 @@ uint8_t* zrtp_getSasHash(ZrtpContext* zrtpContext) {
 
     return NULL;
 }
-    
+
 int32_t zrtp_setSignatureData(ZrtpContext* zrtpContext, uint8_t* data, int32_t length) {
     if (zrtpContext && zrtpContext->zrtpEngine)
         return zrtpContext->zrtpEngine->setSignatureData(data, length) ? 1 : 0;
@@ -274,9 +274,9 @@ int32_t zrtp_setSignatureData(ZrtpContext* zrtpContext, uint8_t* data, int32_t l
     return 0;
 }
 
-int32_t zrtp_getSignatureData(ZrtpContext* zrtpContext, uint8_t* data) {
+const uint8_t* zrtp_getSignatureData(ZrtpContext* zrtpContext) {
     if (zrtpContext && zrtpContext->zrtpEngine)
-        return zrtpContext->zrtpEngine->getSignatureData(data);
+        return zrtpContext->zrtpEngine->getSignatureData();
 
     return 0;
 }
@@ -302,7 +302,6 @@ int32_t zrtp_getPeerZid(ZrtpContext* zrtpContext, uint8_t* data) {
 
     return 0;
 }
-
 
 /*
  * The following methods wrap the ZRTP Configure functions

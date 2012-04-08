@@ -138,25 +138,14 @@ void ZrtpCallbackWrapper::zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment info
 
 }
 
-void ZrtpCallbackWrapper::signSAS(std::string sas)
+void ZrtpCallbackWrapper::signSAS(uint8_t* sasHash)
 {
-    char* cc = new char [sas.size()+1];
-
-    strcpy(cc, sas.c_str());
-    c_callbacks->zrtp_signSAS(zrtpCtx, cc);
-
-    delete[] cc;
-
+    c_callbacks->zrtp_signSAS(zrtpCtx, sasHash);
 }
 
-bool ZrtpCallbackWrapper::checkSASSignature(std::string sas )
+bool ZrtpCallbackWrapper::checkSASSignature(uint8_t* sasHash)
 {
-    char* cc = new char [sas.size()+1];
-
-    strcpy(cc, sas.c_str());
-    bool retval = (c_callbacks->zrtp_checkSASSignature(zrtpCtx, cc) == 0) ? false : true;
-
-    delete[] cc;
+    bool retval = (c_callbacks->zrtp_checkSASSignature(zrtpCtx, sasHash) == 0) ? false : true;
 
     return retval;
 }

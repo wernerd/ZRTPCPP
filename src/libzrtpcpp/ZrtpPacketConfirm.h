@@ -78,8 +78,11 @@ class __EXPORT ZrtpPacketConfirm : public ZrtpPacketBase {
         /// Get pointer to initial hash chain (H0) data, fixed byte array
         uint8_t* getHashH0()              { return confirmHeader->hashH0; }
 
+        /// Get pointer to signature data, variable length, refer to getSignatureLength()
+        const uint8_t* getSignatureData() { return ((uint8_t*)&confirmHeader->expTime) + 4; }
+
         /// get the signature length in words
-        uint32_t getSignatureLength();
+        int32_t getSignatureLength();
 
         /// set SAS verified flag
         void setSASFlag()            { confirmHeader->flags |= 0x4; }
@@ -99,8 +102,11 @@ class __EXPORT ZrtpPacketConfirm : public ZrtpPacketBase {
         /// Set initial hash chain (H0) data, fixed length byte array
         void setHashH0(uint8_t* t)   { memcpy(confirmHeader->hashH0, t, sizeof(confirmHeader->hashH0)); }
 
+        /// Set signature data, length of the signature data in bytes and must be a multiple of 4.
+        bool setSignatureData(uint8_t* data, int32_t length);
+
         /// Set signature length in words
-        void setSignatureLength(uint32_t sl);
+        bool setSignatureLength(uint32_t sl);
 
     private:
         void initialize();

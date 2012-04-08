@@ -116,6 +116,7 @@ static bool mitm = false;
 static bool untrusted = false;
 static bool sender = false;
 static bool recver = false;
+static bool signsas = false;
 
 
 /**
@@ -384,6 +385,44 @@ public:
 
     }
 
+
+    void signSAS(uint8_t* sasHash) {
+        cout << prefix << "SAS to sign" << endl;
+        uint8_t sign[12];
+        sign[0] = sasHash[0];
+        sign[1] = sasHash[1];
+        sign[2] = sasHash[2];
+        sign[3] = sasHash[3];
+        if (recver) {
+            sign[4] = 'R';
+            sign[5] = 'E';
+            sign[6] = 'C';
+            sign[7] = 'E';
+            sign[8] = 'I';
+            sign[9] = 'V';
+            sign[10] = 'E';
+            sign[11] = 'R';
+        }
+        else {
+            sign[4] = 'T';
+            sign[5] = 'R';
+            sign[6] = 'A';
+            sign[7] = 'N';
+            sign[8] = 'S';
+            sign[9] = 'M';
+            sign[10] = 'I';
+            sign[11] = 'T';
+        }
+        cout << prefix << "set signature data result: " << session->setSignatureData(sign, 12) << endl;
+    }
+
+    bool checkSASSignature(uint8_t* sasHash) {
+        cout << prefix << "check signature" << endl;
+        const uint8_t* sign = session->getSignatureData();
+        cout << prefix << "signature: " << sign << endl;
+        return true;
+    }
+
     void setPrefix(std::string p) {
         prefix = p;
     }
@@ -465,7 +504,8 @@ int ZrtpSendPacketTransmissionTestCB::doTest() {
         if (mitm) {                      // Act as trusted MitM - could be enrolled
             tx->setMitmMode(true);
         }
-        
+
+        tx->setSignSas(signsas);
         tx->initialize("test_t.zid", true);
 
         if (enroll)                     // act as PBX enrollement service
@@ -546,6 +586,8 @@ int ZrtpRecvPacketTransmissionTestCB::doTest() {
         if (enroll)
             config.setTrustedMitM(true);                // allow a trusted MitM to start enrollment process
 
+        rx->setSignSas(signsas);
+
         // config.addHashAlgo(Sha384);
         rx->initialize("test_r.zid", true, &config);
 //            rx->initialize("test_r.zid", true);
@@ -606,7 +648,7 @@ int main(int argc, char *argv[])
 
     /* check args */
     while (1) {
-        c = getopt(argc, argv, "rsmeu");
+        c = getopt(argc, argv, "rsSmeu");
         if (c == -1) {
             break;
         }
@@ -625,6 +667,9 @@ int main(int argc, char *argv[])
             break;
         case 'u':
             untrusted = true;
+            break;
+        case 'S':
+            signsas = true;
             break;
         default:
             cerr << "Wrong Arguments, only -s and -r are accepted" << endl;

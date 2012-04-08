@@ -198,12 +198,12 @@ class __EXPORT ZrtpUserCallback {
          * data an enable signature transmission to the other peer. Refer
          * to chapter 8.2 of ZRTP specification.
          *
-         * @param sas
-         *    The SAS string to sign.
+         * @param sasHash
+         *    Pointer to the 32 byte SAS hash to be signed.
          * @see ZrtpQueue#setSignatureData
          *
          */
-        virtual void signSAS(std::string sas) {
+        virtual void signSAS(uint8_t* sasHash) {
             return;
         }
 
@@ -220,13 +220,13 @@ class __EXPORT ZrtpUserCallback {
          * this case ZRTP signals an error to the other peer and terminates
          * the ZRTP handshake.
          *
-         * @param sas
-         *    The SAS string that was signed by the other peer.
+         * @param sasHash
+         *    Pointer to the 32 byte SAS hash that was signed by the other peer.
          * @return
          *    true if the signature was ok, false otherwise.
          *
          */
-        virtual bool checkSASSignature(std::string sas) {
+        virtual bool checkSASSignature(uint8_t* sasHash) {
             return true;
         }
 };

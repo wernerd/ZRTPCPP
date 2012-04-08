@@ -71,7 +71,7 @@ int ZrtpAvailable()
 #endif
 
 ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, 
-    ZrtpConfigure* config, bool mitmm):
+    ZrtpConfigure* config, bool mitmm, bool sasSignSupport):
     callback(cb), dhContext(NULL), DHss(NULL), auxSecret(NULL), 
     auxSecretLength(0), rs1Valid(false), rs2Valid(false), msgShaContext(NULL),
     multiStream(false), multiStreamAvailable(false), pbxSecretTmp(NULL),
@@ -89,7 +89,7 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id,
 
     /*
      * Generate H0 as a random number (256 bits, 32 bytes) and then
-     * the hash chain, refer to chapter 10. Use the implicit hash function.
+     * the hash chain, refer to chapter 9. Use the implicit hash function.
      */
     randomZRTP(H0, HASH_IMAGE_SIZE);
     sha256(H0, HASH_IMAGE_SIZE, H1);        // hash H0 and generate H1
@@ -97,13 +97,18 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id,
     sha256(H2, HASH_IMAGE_SIZE, H3);        // H3
 
     zrtpHello.configureHello(&configureAlgos);
-    zrtpHello.setH3(H3);             // set H3 in Hello, included in helloHash
+    zrtpHello.setH3(H3);                    // set H3 in Hello, included in helloHash
 
     memcpy(zid, myZid, ZID_SIZE);
     zrtpHello.setZid(zid);
-    if (mitmm)                   // this session acts for a trusted MitM (PBX)
+
+    if (mitmm)                              // this session acts for a trusted MitM (PBX)
         zrtpHello.setMitmMode();
-    setClientId(id);                // set id, compute HMAC and final helloHash
+
+    if (sasSignSupport)                     // the application supports SAS signing
+        zrtpHello.setSasSign();
+
+    setClientId(id);                        // set id, compute HMAC and final helloHash
 
     stateEngine = new ZrtpStateClass(this);
 }
@@ -320,6 +325,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
         mitmSeen = true;
         trustedMitM = zidRec.isMITMKeyAvailable();
     }
+    signSasSeen = hello->isSasSign();
     // Construct a DHPart2 message (Initiator's DH message). This packet
     // is required to compute the HVI (Hash Value Initiator), refer to 
     // chapter 5.4.1.1.
@@ -639,7 +645,8 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
     ZIDFile *zid = ZIDFile::getInstance();
     zid->getRecord(&zidRec);
 
-    // Now compute the S0, all dependend keys and the new RS1
+    // Now compute the S0, all dependend keys and the new RS1. The function
+    // also performs sign SAS callback if it's active.
     generateKeysInitiator(dhPart1, zidRec);
     zid->saveRecord(&zidRec);
 
@@ -718,7 +725,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     /*
      * The expected shared secret Ids were already computed when we built the
      * DHPart1 packet. Generate s0, all depended keys, and the new RS1 value
-     * for the ZID record.
+     * for the ZID record. The functions also performs sign SAS callback if it's active.
      */
     generateKeysResponder(dhPart2, zidRec);
     zid->saveRecord(&zidRec);
@@ -728,8 +735,6 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
 
     // Fill in Confirm1 packet.
     zrtpConfirm1.setMessageType((uint8_t*)Confirm1Msg);
-    // TODO: at this point sas hash is ready, perform signSAS callback and fill in signature if available
-    zrtpConfirm1.setSignatureLength(0);
 
     // Check if user verfied the SAS in a previous call and thus verfied
     // the retained secret.
@@ -752,7 +757,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
 
     // Encrypt and HMAC with Responder's key - we are Respondere here
     int hmlen = (zrtpConfirm1.getLength() - 9) * ZRTP_WORD_SIZE;
-	cipher->getEncrypt()(zrtpKeyR, cipher->getKeylen(), randomIV,
+    cipher->getEncrypt()(zrtpKeyR, cipher->getKeylen(), randomIV,
                          zrtpConfirm1.getHashH0(), hmlen);
     hmacFunction(hmacKeyR, hashLength,
                 (unsigned char*)zrtpConfirm1.getHashH0(),
@@ -804,7 +809,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
     cp = &zrtpSymCiphers.getByName((const char*)commit->getCipherType());
     if (!cp->isValid()) { // no match - something went wrong
         *errMsg = UnsuppCiphertype;
-	return NULL;
+    return NULL;
     }
     cipher = cp;
 
@@ -854,8 +859,6 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
 
     // Fill in Confirm1 packet.
     zrtpConfirm1.setMessageType((uint8_t*)Confirm1Msg);
-    // TODO: at this point sas hash is ready, perform signSAS callback and fill in signature if available
-    zrtpConfirm1.setSignatureLength(0);
     zrtpConfirm1.setExpTime(0xFFFFFFFF);
     zrtpConfirm1.setIv(randomIV);
     zrtpConfirm1.setHashH0(H0);
@@ -865,7 +868,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
 
     // Encrypt and HMAC with Responder's key - we are Respondere here
     int32_t hmlen = (zrtpConfirm1.getLength() - 9) * ZRTP_WORD_SIZE;
-	cipher->getEncrypt()(zrtpKeyR, cipher->getKeylen(), randomIV,
+    cipher->getEncrypt()(zrtpKeyR, cipher->getKeylen(), randomIV,
                          zrtpConfirm1.getHashH0(), hmlen);
     // Use negotiated HMAC (hash)
     hmacFunction(hmacKeyR, hashLength,
@@ -912,14 +915,18 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
 
     // Check HMAC of DHPart1 packet stored in temporary buffer. The
     // HMAC key of the DHPart1 packet is peer's H0 that is contained in
-    // Confirm1. Refer to chapter 9.1 and chapter 10.
+    // Confirm1. Refer to chapter 9.
     if (!checkMsgHmac(confirm1->getHashH0())) {
         sendInfo(Severe, SevereDH1HMACFailed);
         *errMsg = CriticalSWError;
         return NULL;
     }
-
-    // TODO: here we have a SAS signature from reponder, call checkSASsignature (save / compare in case of resend)
+    signatureLength = confirm1->getSignatureLength();
+    if (signSasSeen && signatureLength > 0) {
+        signatureData = confirm1->getSignatureData();
+        callback->checkSASSignature(sasHash);
+        // TODO: error handling if checkSASSignature returns false.
+    }
     /*
      * The Confirm1 is ok, handle the Retained secret stuff and inform
      * GUI about state.
@@ -952,8 +959,6 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
 
     // now generate my Confirm2 message
     zrtpConfirm2.setMessageType((uint8_t*)Confirm2Msg);
-    // TODO: set signature data if available
-    zrtpConfirm2.setSignatureLength(0);
     zrtpConfirm2.setHashH0(H0); 
 
     if (sasFlag) {
@@ -966,7 +971,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
     // or enrollment was enabled at normal user agent and flag in confirm packet
     if (enrollmentMode || (enableMitmEnrollment && confirm1->isPBXEnrollment())) {
         computePBXSecret();
-         
+
         // if this runs at PBX user agent enrollment service then set flag in confirm
         // packet and store the MitM key. The PBX user agent service always stores
         // its MitM key.
@@ -977,7 +982,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
     }
     // Encrypt and HMAC with Initiator's key - we are Initiator here
     hmlen = (zrtpConfirm2.getLength() - 9) * ZRTP_WORD_SIZE;
-	cipher->getEncrypt()(zrtpKeyI, cipher->getKeylen(), randomIV,
+    cipher->getEncrypt()(zrtpKeyI, cipher->getKeylen(), randomIV,
                          zrtpConfirm2.getHashH0(), hmlen); 
     // Use negotiated HMAC (hash)
     hmacFunction(hmacKeyI, hashLength,
@@ -1075,8 +1080,6 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2MultiStream(ZrtpPacketConfirm* confirm1,
 
     // now generate my Confirm2 message
     zrtpConfirm2.setMessageType((uint8_t*)Confirm2Msg);
-    // TODO: set signature data if available
-    zrtpConfirm2.setSignatureLength(0);
     zrtpConfirm2.setHashH0(H0); 
     zrtpConfirm2.setExpTime(0xFFFFFFFF);
     zrtpConfirm2.setIv(randomIV);
@@ -1120,7 +1123,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
     cipher->getDecrypt()(zrtpKeyI, cipher->getKeylen(),
                          confirm2->getIv(),
                          confirm2->getHashH0(), hmlen);
-    
+
     std::string cs(cipher->getReadable());
 
     if (!multiStream) {
@@ -1131,6 +1134,12 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
             sendInfo(Severe, SevereDH2HMACFailed);
             *errMsg = CriticalSWError;
             return NULL;
+        }
+        signatureLength = confirm2->getSignatureLength();
+        if (signSasSeen && signatureLength > 0) {
+            signatureData = confirm2->getSignatureData();
+            callback->checkSASSignature(sasHash);
+            // TODO: error handling if checkSASSignature returns false.
         }
         /*
         * The Confirm2 is ok, handle the Retained secret stuff and inform
@@ -1158,7 +1167,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
         // save new RS1, this inherits the verified flag from old RS1
         zidRec.setNewRs1((const uint8_t*)newRs1);
         zid->saveRecord(&zidRec);
-            
+
         // Ask for enrollment only if enabled via configuration and the
         // confirm packet contains the enrollment flag. The enrolling user
         // agent stores the MitM key only if the user accepts the enrollment
@@ -1678,38 +1687,25 @@ void ZRtp:: computeSharedSecretSet(ZIDRecord &zidRec) {
     uint32_t macLen;
 
     if (!zidRec.isRs1Valid()) {
-	randomZRTP(randBuf, RS_LENGTH);
-	hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator,
-		    strlen(initiator), rs1IDi, &macLen);
-	hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder,
-		    strlen(responder), rs1IDr, &macLen);
+        randomZRTP(randBuf, RS_LENGTH);
+        hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator, strlen(initiator), rs1IDi, &macLen);
+        hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder, strlen(responder), rs1IDr, &macLen);
     }
     else {
         rs1Valid = true;
-	hmacFunction((unsigned char*)zidRec.getRs1(), RS_LENGTH,
-		     (unsigned char*)initiator, strlen(initiator),
-		     rs1IDi, &macLen);
-
-	hmacFunction((unsigned char*)zidRec.getRs1(), RS_LENGTH,
-		     (unsigned char*)responder, strlen(responder),
-		     rs1IDr, &macLen);
+        hmacFunction((unsigned char*)zidRec.getRs1(), RS_LENGTH, (unsigned char*)initiator, strlen(initiator), rs1IDi, &macLen);
+        hmacFunction((unsigned char*)zidRec.getRs1(), RS_LENGTH, (unsigned char*)responder, strlen(responder), rs1IDr, &macLen);
     }
 
     if (!zidRec.isRs2Valid()) {
-	randomZRTP(randBuf, RS_LENGTH);
-	hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator,
-		    strlen(initiator), rs2IDi, &macLen);
-	hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder,
-		    strlen(responder), rs2IDr, &macLen);
+        randomZRTP(randBuf, RS_LENGTH);
+        hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator, strlen(initiator), rs2IDi, &macLen);
+        hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder, strlen(responder), rs2IDr, &macLen);
     }
     else {
         rs2Valid = true;
-	hmacFunction((unsigned char*)zidRec.getRs2(), RS_LENGTH,
-		     (unsigned char*)initiator, strlen(initiator),
-		     rs2IDi, &macLen);
-	hmacFunction((unsigned char*)zidRec.getRs2(), RS_LENGTH,
-		     (unsigned char*)responder, strlen(responder),
-		     rs2IDr, &macLen);
+        hmacFunction((unsigned char*)zidRec.getRs2(), RS_LENGTH, (unsigned char*)initiator, strlen(initiator), rs2IDi, &macLen);
+        hmacFunction((unsigned char*)zidRec.getRs2(), RS_LENGTH, (unsigned char*)responder, strlen(responder), rs2IDr, &macLen);
     }
 
     /*
@@ -1718,24 +1714,17 @@ void ZRtp:: computeSharedSecretSet(ZIDRecord &zidRec) {
     * and use it. Otherwise use the random data.
     */
     randomZRTP(randBuf, RS_LENGTH);
-    hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator,
-		strlen(initiator), auxSecretIDi, &macLen);
-    hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder,
-		strlen(responder), auxSecretIDr, &macLen);
+    hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator, strlen(initiator), auxSecretIDi, &macLen);
+    hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder, strlen(responder), auxSecretIDr, &macLen);
 
-    
     if (!zidRec.isMITMKeyAvailable()) {
         randomZRTP(randBuf, RS_LENGTH);
-        hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator,
-                     strlen(initiator), pbxSecretIDi, &macLen);
-        hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder,
-                     strlen(responder), pbxSecretIDr, &macLen);
+        hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator, strlen(initiator), pbxSecretIDi, &macLen);
+        hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder, strlen(responder), pbxSecretIDr, &macLen);
     }
     else {
-        hmacFunction((unsigned char*)zidRec.getMiTMData(), RS_LENGTH, (unsigned char*)initiator,
-                     strlen(initiator), pbxSecretIDi, &macLen);
-        hmacFunction((unsigned char*)zidRec.getMiTMData(), RS_LENGTH, (unsigned char*)responder,
-                     strlen(responder), pbxSecretIDr, &macLen);
+        hmacFunction((unsigned char*)zidRec.getMiTMData(), RS_LENGTH, (unsigned char*)initiator, strlen(initiator), pbxSecretIDi, &macLen);
+        hmacFunction((unsigned char*)zidRec.getMiTMData(), RS_LENGTH, (unsigned char*)responder, strlen(responder), pbxSecretIDr, &macLen);
     }
 }
 
@@ -2060,7 +2049,6 @@ void ZRtp::KDF(uint8_t* key, uint32_t keyLength, uint8_t* label, int32_t labelLe
     data[pos] = NULL;
 
     // Use negotiated hash.
-    // TODO: variable digest length
     hmacListFunction(key, keyLength, data, length, output, &maclen);
 }
 
@@ -2178,6 +2166,8 @@ void ZRtp::computeSRTPKeys() {
         sasBytes[2] = sasHash[2] & 0xf0;
         sasBytes[3] = 0;
         SAS = Base32(sasBytes, 20).getEncoded();
+        if (signSasSeen)
+            callback->signSAS(sasHash);
     }
     memset(KDFcontext, 0, sizeof(KDFcontext));
 }
@@ -2453,7 +2443,20 @@ void ZRtp::acceptEnrollment(bool accepted) {
 }
 
 bool ZRtp::setSignatureData(uint8_t* data, int32_t length) {
-    return false;
+    if ((length % 4) != 0)
+        return false;
+
+    ZrtpPacketConfirm* cfrm = (myRole == Responder) ? &zrtpConfirm1 : &zrtpConfirm2;
+    cfrm->setSignatureLength(length / 4);
+    return cfrm->setSignatureData(data, length);
+}
+
+const uint8_t* ZRtp::getSignatureData() {
+    return signatureData;
+}
+
+int32_t ZRtp::getSignatureLength() {
+    return signatureLength * ZRTP_WORD_SIZE;
 }
 
 void ZRtp::conf2AckSecure() {
@@ -2465,14 +2468,6 @@ void ZRtp::conf2AckSecure() {
     if (stateEngine != NULL) {
         stateEngine->processEvent(&ev);
     }
-}
-
-int32_t ZRtp::getSignatureData(uint8_t* data) {
-    return 0;
-}
-
-int32_t ZRtp::getSignatureLength() {
-    return 0;
 }
 
 int32_t ZRtp::compareCommit(ZrtpPacketCommit *commit) {
@@ -2495,15 +2490,17 @@ bool ZRtp::sendSASRelayPacket(uint8_t* sh, std::string render) {
     uint8_t confMac[MAX_DIGEST_LENGTH];
     uint32_t macLen;
     uint8_t* hkey, *ekey;
-    
+
     // If we are responder then the PBX used it's Initiator keys
     if (myRole == Responder) {
         hkey = hmacKeyR;
         ekey = zrtpKeyR;
+        // TODO: check signature length in zrtpConfirm1 and if not zero copy Signature data
     }
     else {
         hkey = hmacKeyI;
         ekey = zrtpKeyI;
+        // TODO: check signature length in zrtpConfirm2 and if not zero copy Signature data
     }
     // Prepare IV data that we will use during confirm packet encryption.
     randomZRTP(randomIV, sizeof(randomIV));
@@ -2530,7 +2527,7 @@ std::string ZRtp::getSasType() {
     std::string sasT(sasType->getName());
     return sasT;
 }
- 
+
 uint8_t* ZRtp::getSasHash() {
     return sasHash;
 }

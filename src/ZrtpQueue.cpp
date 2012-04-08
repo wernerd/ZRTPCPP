@@ -105,7 +105,7 @@ ZrtpQueue::initialize(const char *zidFilename, bool autoEnable,
     }
     if (ret > 0) {
         const uint8_t* ownZid = zf->getZid();
-        zrtpEngine = new ZRtp((uint8_t*)ownZid, (ZrtpCallback*)this, clientIdString, config, mitmMode);
+        zrtpEngine = new ZRtp((uint8_t*)ownZid, (ZrtpCallback*)this, clientIdString, config, mitmMode, signSas);
     }
     if (configOwn != NULL) {
         delete configOwn;
@@ -636,15 +636,15 @@ void ZrtpQueue::zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment  info) {
     }
 }
 
-void ZrtpQueue::signSAS(std::string sas) {
+void ZrtpQueue::signSAS(uint8_t* sasHash) {
     if (zrtpUserCallback != NULL) {
-        zrtpUserCallback->signSAS(sas);
+        zrtpUserCallback->signSAS(sasHash);
     }
 }
 
-bool ZrtpQueue::checkSASSignature(std::string sas) {
+bool ZrtpQueue::checkSASSignature(uint8_t* sasHash) {
     if (zrtpUserCallback != NULL) {
-        return zrtpUserCallback->checkSASSignature(sas);
+        return zrtpUserCallback->checkSASSignature(sasHash);
     }
     return false;
 }
@@ -762,15 +762,19 @@ void ZrtpQueue::setEnrollmentMode(bool enrollmentMode) {
         zrtpEngine->setEnrollmentMode(enrollmentMode);
 }
 
+void ZrtpQueue::setSignSas(bool sasSignMode) {
+    signSas = sasSignMode;
+}
+
 bool ZrtpQueue::setSignatureData(uint8* data, int32 length) {
     if (zrtpEngine != NULL)
         return zrtpEngine->setSignatureData(data, length);
     return 0;
 }
 
-int32 ZrtpQueue::getSignatureData(uint8* data) {
+const uint8* ZrtpQueue::getSignatureData() {
     if (zrtpEngine != NULL)
-        return zrtpEngine->getSignatureData(data);
+        return zrtpEngine->getSignatureData();
     return 0;
 }
 

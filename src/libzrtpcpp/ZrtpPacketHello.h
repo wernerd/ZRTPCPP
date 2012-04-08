@@ -107,8 +107,11 @@ class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
     /// Check passive mode (mode not implemented)
     bool isPassive()       { return helloHeader->flags & 0x10; };
 
-    /// Check if MitM flag ise set
+    /// Check if MitM flag is set
     bool isMitmMode()       { return helloHeader->flags & 0x20; };
+
+    /// Check if SAS sign flag is set
+    bool isSasSign()       { return helloHeader->flags & 0x40; };
 
     /// Get hash algorithm name at position n, fixed ASCII character array
     uint8_t* getHashType(int32_t n)   { return ((uint8_t*)helloHeader)+oHash+(n*ZRTP_WORD_SIZE); }
@@ -170,6 +173,8 @@ class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
     /// set MitM flag
     void setMitmMode()            { helloHeader->flags |= 0x20; }
 
+    /// set SAS sign flag
+    void setSasSign()            { helloHeader->flags |= 0x40; }
 
  private:
      // Hello packet is of variable length. It maximum size is 46 words:

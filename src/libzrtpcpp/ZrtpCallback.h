@@ -324,10 +324,10 @@ protected:
      * ZRTP.
      *
      * @param sas
-     *    The SAS string to sign.
+     *    The SAS hash to sign.
      *
      */
-    virtual void signSAS(std::string sas) =0;
+    virtual void signSAS(uint8_t* sasHash) =0;
 
     /**
      * ZRTPQueue calls this method to request a SAS signature check.
@@ -346,12 +346,12 @@ protected:
      * ZRTP.
      *
      * @param sas
-     *    The SAS string that was signed by the other peer.
+     *    The SAS hash that was signed by the other peer.
      * @return
      *    true if the signature was ok, false otherwise.
      *
      */
-    virtual bool checkSASSignature(std::string sas) =0;
+    virtual bool checkSASSignature(uint8_t* sasHash) =0;
 };
 
 #endif // ZRTPCALLBACK
