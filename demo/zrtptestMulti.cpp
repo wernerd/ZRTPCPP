@@ -378,13 +378,13 @@ public:
 
     void secureOn(std::string cipher) {
         cout << prefix << "Using cipher:" << cipher << endl;
+        cout << prefix << "peer hello hash: " << session->getPeerHelloHash() << endl;
     }
 
     void showSAS(std::string sas, bool verified) {
         cout << prefix << "SAS is: " << sas << endl;
 
     }
-
 
     void signSAS(uint8_t* sasHash) {
         cout << prefix << "SAS to sign" << endl;

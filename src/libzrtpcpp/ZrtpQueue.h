@@ -384,6 +384,23 @@ public:
     std::string getHelloHash();
 
     /**
+     * Get the peer's ZRTP Hello Hash data.
+     *
+     * Use this method to get the peer's ZRTP Hello Hash data. The method
+     * returns the data as a string containing the ZRTP protocol version and
+     * hex-digits.
+     *
+     * The peer's hello hash is available only after ZRTP received a hello. If
+     * no data is available the function returns an empty string.
+     *
+     * Refer to ZRTP specification, chapter 8.
+     *
+     * @return
+     *    a std:string containing the Hello version and the hello hash as hex digits.
+     */
+    std::string getPeerHelloHash();
+
+    /**
      * Get Multi-stream parameters.
      *
      * Use this method to get the Multi-stream that were computed during

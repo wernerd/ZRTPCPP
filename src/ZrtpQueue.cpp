@@ -691,6 +691,13 @@ std::string ZrtpQueue::getHelloHash()  {
         return std::string();
 }
 
+std::string ZrtpQueue::getPeerHelloHash()  {
+    if (zrtpEngine != NULL)
+        return zrtpEngine->getPeerHelloHash();
+    else
+        return std::string();
+}
+
 std::string ZrtpQueue::getMultiStrParams()  {
     if (zrtpEngine != NULL)
         return zrtpEngine->getMultiStrParams();

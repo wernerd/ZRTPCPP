@@ -212,18 +212,37 @@ class __EXPORT ZRtp {
      */
     void resetSASVerified();
 
-   /**
-    * Get the ZRTP Hello Hash data.
-    *
-    * Use this method to get the ZRTP Hello Hash data. The method
-    * returns the data as a string containing the ZRTP protocol version and
-    * hex-digits. Refer to ZRTP specification, chapter 8.
-    *
-    * @return
-    *    a std:string containing the Hello hash value as hex-digits. The
-    *    hello hash is available immediately after class instantiation.
-    */
-   std::string getHelloHash();
+    /**
+     * Get the ZRTP Hello Hash data.
+     *
+     * Use this method to get the ZRTP Hello Hash data. The method
+     * returns the data as a string containing the ZRTP protocol version and
+     * hex-digits.
+     *
+     * Refer to ZRTP specification, chapter 8.
+     *
+     * @return
+     *    a std:string containing the Hello hash value as hex-digits. The
+     *    hello hash is available immediately after class instantiation.
+     */
+    std::string getHelloHash();
+
+    /**
+     * Get the peer's ZRTP Hello Hash data.
+     *
+     * Use this method to get the peer's ZRTP Hello Hash data. The method
+     * returns the data as a string containing the ZRTP protocol version and
+     * hex-digits.
+     *
+     * The peer's hello hash is available only after ZRTP received a hello. If
+     * no data is available the function returns an empty string.
+     *
+     * Refer to ZRTP specification, chapter 8.
+     *
+     * @return
+     *    a std:string containing the Hello version and the hello hash as hex digits.
+     */
+    std::string getPeerHelloHash();
 
     /**
      * Get Multi-stream parameters.
@@ -557,6 +576,9 @@ private:
     uint8_t H2[IMPL_MAX_DIGEST_LENGTH];
     uint8_t H3[IMPL_MAX_DIGEST_LENGTH];
     uint8_t helloHash[IMPL_MAX_DIGEST_LENGTH];
+
+    uint8_t peerHelloHash[IMPL_MAX_DIGEST_LENGTH];
+    uint8_t peerHelloVersion[ZRTP_WORD_SIZE + 1];   // +1 for nul byte
 
     // We get the peer's H? from the message where length is defined as 8 words
     uint8_t peerH0[8*ZRTP_WORD_SIZE];

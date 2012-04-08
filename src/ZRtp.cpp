@@ -347,8 +347,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     // Must use implicit HMAC functions.
     uint8_t hmac[IMPL_MAX_DIGEST_LENGTH];
     uint32_t macLen;
-    hmacFunctionImpl(H0, HASH_IMAGE_SIZE, (uint8_t*)zrtpDH2.getHeaderBase(), 
-                len-(HMAC_SIZE), hmac, &macLen);
+    hmacFunctionImpl(H0, HASH_IMAGE_SIZE, (uint8_t*)zrtpDH2.getHeaderBase(), len-(HMAC_SIZE), hmac, &macLen);
     zrtpDH2.setHMAC(hmac);
 
     // Compute the HVI, refer to chapter 5.4.1.1 of the specification
@@ -368,13 +367,11 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     // Compute HMAC over Commit, excluding the HMAC field (HMAC_SIZE)
     // and store in Hello. Key to HMAC is H1, use HASH_IMAGE_SIZE bytes only.
     // Must use implicit HMAC functions.
-    hmacFunctionImpl(H1, HASH_IMAGE_SIZE, (uint8_t*)zrtpCommit.getHeaderBase(),
-                len-(HMAC_SIZE), hmac, &macLen);
+    hmacFunctionImpl(H1, HASH_IMAGE_SIZE, (uint8_t*)zrtpCommit.getHeaderBase(), len-(HMAC_SIZE), hmac, &macLen);
     zrtpCommit.setHMAC(hmac);
 
     // hash first messages to produce overall message hash
-    // First the Responder's Hello message, second the Commit 
-    // (always Initator's). 
+    // First the Responder's Hello message, second the Commit (always Initator's).
     // Must use negotiated hash.
     msgShaContext = createHashCtx();
     hashCtxFunction(msgShaContext, (unsigned char*)hello->getHeaderBase(), hello->getLength() * ZRTP_WORD_SIZE);
@@ -383,6 +380,14 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     // store Hello data temporarily until we can check HMAC after receiving Commit as
     // Responder or DHPart1 as Initiator 
     storeMsgTemp(hello);
+
+    // calculate hash over the received Hello packet - is peer's hello hash.
+    // Use implicit hash algorithm
+    int32_t helloLen = hello->getLength() * ZRTP_WORD_SIZE;
+    hashFunctionImpl((unsigned char*)hello->getHeaderBase(), helloLen, peerHelloHash);
+    memcpy(peerHelloVersion, hello->getVersion(), ZRTP_WORD_SIZE);
+    peerHelloVersion[ZRTP_WORD_SIZE] = 0;
+
     return &zrtpCommit;
 }
 
@@ -423,6 +428,14 @@ ZrtpPacketCommit* ZRtp::prepareCommitMultiStream(ZrtpPacketHello *hello) {
     // store Hello data temporarily until we can check HMAC after receiving Commit as
     // Responder or DHPart1 as Initiator 
     storeMsgTemp(hello);
+
+    // calculate hash over the received Hello packet - is peer's hello hash.
+    // Use implicit hash algorithm
+    int32_t helloLen = hello->getLength() * ZRTP_WORD_SIZE;
+    hashFunctionImpl((unsigned char*)hello->getHeaderBase(), helloLen, peerHelloHash);
+    memcpy(peerHelloVersion, hello->getVersion(), ZRTP_WORD_SIZE);
+    peerHelloVersion[ZRTP_WORD_SIZE] = 0;
+
     return &zrtpCommit;
 }
 
@@ -552,7 +565,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     myRole = Responder;
     memcpy(peerHvi, commit->getHvi(), HVI_SIZE);
 
-    // We are responder. Release a possibly pre-computed SHA256 context
+    // We are responder. Release a possibly pre-computed SHA context
     // because this was prepared for Initiator. Then create a new one.
     if (msgShaContext != NULL) {
         closeHashCtx(msgShaContext, NULL);
@@ -2354,13 +2367,32 @@ bool ZRtp::checkMsgHmac(uint8_t* key) {
     return (memcmp(hmac, tempMsgBuffer+len, (HMAC_SIZE)) == 0 ? true : false);
 }
 
-
+// TODO getPeerHelloHash
 std::string ZRtp::getHelloHash() {
     std::ostringstream stm;
 
     uint8_t* hp = helloHash;
 
     stm << zrtpVersion;
+    stm << " ";
+    stm.fill('0');
+    stm << hex;
+    for (int i = 0; i < hashLengthImpl; i++) {
+        stm.width(2);
+        stm << static_cast<uint32_t>(*hp++);
+    }
+    return stm.str();
+}
+
+std::string ZRtp::getPeerHelloHash() {
+    std::ostringstream stm;
+
+    if (peerHelloVersion[0] == 0)
+        return std::string();
+
+    uint8_t* hp = peerHelloHash;
+
+    stm << peerHelloVersion;
     stm << " ";
     stm.fill('0');
     stm << hex;
