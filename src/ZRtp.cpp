@@ -318,13 +318,13 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     //Compute the Initator's and Responder's retained secret ids.
     computeSharedSecretSet(zidRec);
 
-    // Check for PBX and if we have a MitM Key available. This would
-    // qualify the PBX as trusted MitM and that this client enrolled to
-    // the trusted PBX
+    // Check if a PBX application set the MitM flag.
     if (hello->isMitmMode()) {
         mitmSeen = true;
-        trustedMitM = zidRec.isMITMKeyAvailable();
     }
+    // Flag to record that fact that we have a MitM key of the other peer.
+    peerIsEnrolled = zidRec.isMITMKeyAvailable();
+
     signSasSeen = hello->isSasSign();
     // Construct a DHPart2 message (Initiator's DH message). This packet
     // is required to compute the HVI (Hash Value Initiator), refer to 
@@ -373,8 +373,9 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     // hash first messages to produce overall message hash
     // First the Responder's Hello message, second the Commit (always Initator's).
     // Must use negotiated hash.
+    int32_t helloLen = hello->getLength() * ZRTP_WORD_SIZE;
     msgShaContext = createHashCtx();
-    hashCtxFunction(msgShaContext, (unsigned char*)hello->getHeaderBase(), hello->getLength() * ZRTP_WORD_SIZE);
+    hashCtxFunction(msgShaContext, (unsigned char*)hello->getHeaderBase(), helloLen);
     hashCtxFunction(msgShaContext, (unsigned char*)zrtpCommit.getHeaderBase(), len);
 
     // store Hello data temporarily until we can check HMAC after receiving Commit as
@@ -383,7 +384,6 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
 
     // calculate hash over the received Hello packet - is peer's hello hash.
     // Use implicit hash algorithm
-    int32_t helloLen = hello->getLength() * ZRTP_WORD_SIZE;
     hashFunctionImpl((unsigned char*)hello->getHeaderBase(), helloLen, peerHelloHash);
     memcpy(peerHelloVersion, hello->getVersion(), ZRTP_WORD_SIZE);
     peerHelloVersion[ZRTP_WORD_SIZE] = 0;
@@ -422,7 +422,8 @@ ZrtpPacketCommit* ZRtp::prepareCommitMultiStream(ZrtpPacketHello *hello) {
     // Must use the negotiated hash.
     msgShaContext = createHashCtx();
 
-    hashCtxFunction(msgShaContext, (unsigned char*)hello->getHeaderBase(), hello->getLength() * ZRTP_WORD_SIZE);
+    int32_t helloLen = hello->getLength() * ZRTP_WORD_SIZE;
+    hashCtxFunction(msgShaContext, (unsigned char*)hello->getHeaderBase(), helloLen);
     hashCtxFunction(msgShaContext, (unsigned char*)zrtpCommit.getHeaderBase(), len);
 
     // store Hello data temporarily until we can check HMAC after receiving Commit as
@@ -431,7 +432,6 @@ ZrtpPacketCommit* ZRtp::prepareCommitMultiStream(ZrtpPacketHello *hello) {
 
     // calculate hash over the received Hello packet - is peer's hello hash.
     // Use implicit hash algorithm
-    int32_t helloLen = hello->getLength() * ZRTP_WORD_SIZE;
     hashFunctionImpl((unsigned char*)hello->getHeaderBase(), helloLen, peerHelloHash);
     memcpy(peerHelloVersion, hello->getVersion(), ZRTP_WORD_SIZE);
     peerHelloVersion[ZRTP_WORD_SIZE] = 0;
@@ -1276,29 +1276,23 @@ ZrtpPacketRelayAck* ZRtp::prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* er
             break;
         }
     }
-    // if the new SAS is not null then we need a trusted MitM. If this is not
-    // the case then don't render the new SAS - return.
-    if (!sasHashNull && !trustedMitM) {
-        return &zrtpRelayAck;
+    // Check if new SAS is null or a trusted MitM relationship doesn't exist.
+    // If this is the case then don't render and don't show the new SAS - use
+    // the computed SAS hash but we may use a different SAS rendering algorithm to
+    // render the computed SAS.
+    if (sasHashNull || !peerIsEnrolled) {
+        newSasHash = sasHash;
     }
     // If other SAS schemes required - check here and use others
     AlgorithmEnum* renderAlgo = &zrtpSasTypes.getByName((const char*)render);
+    uint8_t sasBytes[4];;
     if (renderAlgo->isValid()) {
-        uint8_t sasBytes[4];;
-        if (!sasHashNull) {
-            sasBytes[0] = newSasHash[0];
-            sasBytes[1] = newSasHash[1];
-            sasBytes[2] = newSasHash[2] & 0xf0;
-            sasBytes[3] = 0;
-        }
-        else {
-            sasBytes[0] = sasHash[0];
-            sasBytes[1] = sasHash[1];
-            sasBytes[2] = sasHash[2] & 0xf0;
-            sasBytes[3] = 0;
-        }
-        SAS = Base32(sasBytes, 20).getEncoded();
+        sasBytes[0] = newSasHash[0];
+        sasBytes[1] = newSasHash[1];
+        sasBytes[2] = newSasHash[2] & 0xf0;
+        sasBytes[3] = 0;
     }
+    SAS = Base32(sasBytes, 20).getEncoded();
     std::string cs(cipher->getReadable());
     cs.append("/").append(pubKey->getName()).append("/MitM");
 
@@ -2298,7 +2292,6 @@ void ZRtp::synchLeave() {
     callback->synchLeave();
 }
 
-
 int32_t ZRtp::sendPacketZRTP(ZrtpPacketBase *packet) {
     return ((packet == NULL) ? 0 :
             callback->sendDataZRTP(packet->getHeaderBase(), (packet->getLength() * 4) + 4));
@@ -2311,7 +2304,6 @@ int32_t ZRtp::activateTimer(int32_t tm) {
 int32_t ZRtp::cancelTimer() {
     return (callback->cancelTimer());
 }
-
 
 void ZRtp::setAuxSecret(uint8_t* data, int32_t length) {
     if (length > 0) {
@@ -2367,7 +2359,6 @@ bool ZRtp::checkMsgHmac(uint8_t* key) {
     return (memcmp(hmac, tempMsgBuffer+len, (HMAC_SIZE)) == 0 ? true : false);
 }
 
-// TODO getPeerHelloHash
 std::string ZRtp::getHelloHash() {
     std::ostringstream stm;
 
@@ -2515,6 +2506,10 @@ bool ZRtp::isEnrollmentMode() {
 
 void ZRtp::setEnrollmentMode(bool enrollmentMode) {
     this->enrollmentMode = enrollmentMode;
+}
+
+bool ZRtp::isPeerEnrolled() {
+    return peerIsEnrolled;
 }
 
 bool ZRtp::sendSASRelayPacket(uint8_t* sh, std::string render) {

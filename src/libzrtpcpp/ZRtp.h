@@ -321,7 +321,7 @@ class __EXPORT ZRtp {
      * Check the state of the enrollment mode.
      * 
      * If true then we will set the enrollment flag (E) in the confirm
-     * packets and performs the enrollment actions. A MitM (PBX) enrollment service 
+     * packets and perform the enrollment actions. A MitM (PBX) enrollment service
      * started this ZRTP session. Can be set to true only if mitmMode is also true.
      * 
      * @return status of the enrollmentMode flag.
@@ -329,7 +329,7 @@ class __EXPORT ZRtp {
     bool isEnrollmentMode();
 
     /**
-     * Check the state of the enrollment mode.
+     * Set the state of the enrollment mode.
      * 
      * If true then we will set the enrollment flag (E) in the confirm
      * packets and perform the enrollment actions. A MitM (PBX) enrollment 
@@ -340,6 +340,17 @@ class __EXPORT ZRtp {
      * @param enrollmentMode defines the new state of the enrollmentMode flag
      */
     void setEnrollmentMode(bool enrollmentMode);
+
+    /**
+     * Check if a peer's cache entry has a vaild MitM key.
+     *
+     * If true then the other peer ha a valid MtiM key, i.e. the peer has performed
+     * the enrollment procedure. A PBX ZRTP Back-2-Back application can use this function
+     * to check which of the peers is enrolled.
+     *
+     * @return True if the other peer has a valid Mitm key (is enrolled).
+     */
+    bool isPeerEnrolled();
 
     /**
      * Send the SAS relay packet.
@@ -702,9 +713,9 @@ private:
     bool enableMitmEnrollment;
 
     /**
-     * True if the Hello packet has M flag set and th client has a valid PBX key.
+     * True if a valid trusted MitM key of the other peer is available, i.e. enrolled.
      */
-    bool trustedMitM;
+    bool peerIsEnrolled;
 
     /**
      * Set to true if the Hello packet contained the M-flag (MitM flag).

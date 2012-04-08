@@ -769,6 +769,13 @@ void ZrtpQueue::setEnrollmentMode(bool enrollmentMode) {
         zrtpEngine->setEnrollmentMode(enrollmentMode);
 }
 
+bool ZrtpQueue::isPeerEnrolled() {
+    if (zrtpEngine != NULL)
+        return zrtpEngine->isPeerEnrolled();
+    else
+        return false;
+}
+
 void ZrtpQueue::setSignSas(bool sasSignMode) {
     signSas = sasSignMode;
 }

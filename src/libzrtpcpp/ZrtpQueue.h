@@ -553,6 +553,17 @@ public:
     void setEnrollmentMode(bool enrollmentMode);
 
     /**
+     * Check if a peer's cache entry has a vaild MitM key.
+     *
+     * If true then the other peer ha a valid MtiM key, i.e. the peer has performed
+     * the enrollment procedure. A PBX ZRTP Back-2-Back application can use this function
+     * to check which of the peers is enrolled.
+     *
+     * @return True if the other peer has a valid Mitm key (is enrolled).
+     */
+    bool isPeerEnrolled();
+
+    /**
      * Set the state of the SAS signature mode flag.
      *
      * If SAS signature mode is set to true this ZRTP session support SAS signature
