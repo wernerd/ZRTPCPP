@@ -197,9 +197,7 @@ ZrtpQueue::takeInDataPacket(void)
 }
 
 size_t
-ZrtpQueue::rtpDataPacket(unsigned char* buffer, int32 rtn,
-                         InetHostAddress network_address,
-                         tpport_t transport_port)
+ZrtpQueue::rtpDataPacket(unsigned char* buffer, int32 rtn, InetHostAddress network_address, tpport_t transport_port)
 {
      // Special handling of padding to take care of encrypted content.
     // In case of SRTP the padding length field is also encrypted, thus
@@ -296,12 +294,8 @@ ZrtpQueue::rtpDataPacket(unsigned char* buffer, int32 rtn,
         network_address, transport_port) &&
         recordReception(*sourceLink,*packet,recvtime) ) {
         // now the packet link is linked in the queues
-        IncomingRTPPktLink* packetLink =
-                new IncomingRTPPktLink(packet,
-                                       sourceLink,
-                                       recvtime,
-                                       packet->getTimestamp() -
-                                               sourceLink->getInitialDataTimestamp(),
+        IncomingRTPPktLink* packetLink = new IncomingRTPPktLink(packet, sourceLink, recvtime,
+                                       packet->getTimestamp() - sourceLink->getInitialDataTimestamp(),
                                        NULL,NULL,NULL,NULL);
         insertRecvPacket(packetLink);
     } else {
@@ -317,7 +311,6 @@ ZrtpQueue::rtpDataPacket(unsigned char* buffer, int32 rtn,
     }
     return rtn;
 }
-
 
 bool
 ZrtpQueue::onSRTPPacketError(IncomingRTPPkt& pkt, int32 errorCode)
