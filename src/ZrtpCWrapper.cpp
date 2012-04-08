@@ -180,6 +180,21 @@ char* zrtp_getHelloHash(ZrtpContext* zrtpContext) {
     return retval;
 }
 
+char* zrtp_getPeerHelloHash(ZrtpContext* zrtpContext) {
+    std::string ret;
+    if (zrtpContext && zrtpContext->zrtpEngine)
+        ret = zrtpContext->zrtpEngine->getPeerHelloHash();
+    else
+        return NULL;
+
+    if (ret.size() == 0)
+        return NULL;
+
+    char* retval = (char*)malloc(ret.size()+1);
+    strcpy(retval, ret.c_str());
+    return retval;
+}
+
 char* zrtp_getMultiStrParams(ZrtpContext* zrtpContext, int32_t *length) {
     std::string ret;
 
@@ -240,6 +255,13 @@ int32_t zrtp_isEnrollmentMode(ZrtpContext* zrtpContext) {
 void zrtp_setEnrollmentMode(ZrtpContext* zrtpContext, int32_t enrollmentMode) {
     if (zrtpContext && zrtpContext->zrtpEngine)
         return zrtpContext->zrtpEngine->setEnrollmentMode(enrollmentMode == 0 ? false : true);
+}
+
+int32_t isPeerEnrolled(ZrtpContext* zrtpContext) {
+    if (zrtpContext && zrtpContext->zrtpEngine)
+        return zrtpContext->zrtpEngine->isPeerEnrolled() ? 1 : 0;
+
+    return 0;
 }
 
 int32_t zrtp_sendSASRelayPacket(ZrtpContext* zrtpContext, uint8_t* sh, char* render) {
