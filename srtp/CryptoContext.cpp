@@ -30,8 +30,6 @@
 #include <CryptoContext.h>
 #include <crypto/hmac.h>
 #include <crypto/macSkein.h>
-#include <../ZRTP4PJ/zsrtp/zrtp/srtp/CryptoContext.h>
-
 
 CryptoContext::CryptoContext( uint32_t ssrc,
                               int32_t roc,

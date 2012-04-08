@@ -122,7 +122,7 @@ CryptoContextCtrl::~CryptoContextCtrl(){
         delete [] master_key;
     }
     if (master_salt_length > 0) {
-        memset(master_sal, 0, master_salt_length);
+        memset(master_salt, 0, master_salt_length);
         master_salt_length = 0;
         delete [] master_salt;
     }
