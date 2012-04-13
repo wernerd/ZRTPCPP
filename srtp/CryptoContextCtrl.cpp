@@ -48,7 +48,7 @@ CryptoContextCtrl::CryptoContextCtrl(uint32_t ssrc,
                                 int32_t skeyl,
                                 int32_t tagLength):
 ssrcCtx(ssrc),using_mki(false),mkiLength(0),mki(NULL),
-replay_window(0), cipher(NULL), f8Cipher(NULL)
+replay_window(0), macCtx(NULL), cipher(NULL), f8Cipher(NULL)
 {
     this->ealg = ealg;
     this->aalg = aalg;

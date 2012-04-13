@@ -49,7 +49,7 @@ CryptoContext::CryptoContext( uint32_t ssrc,
         roc(roc),guessed_roc(0),s_l(0),key_deriv_rate(key_deriv_rate),
         replay_window(0),
         master_key_srtp_use_nb(0), master_key_srtcp_use_nb(0), seqNumSet(false),
-        cipher(NULL), f8Cipher(NULL)
+        macCtx(NULL), cipher(NULL), f8Cipher(NULL)
 {
     this->ealg = ealg;
     this->aalg = aalg;
