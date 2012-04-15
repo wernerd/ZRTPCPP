@@ -635,15 +635,10 @@ public:
      * This functions returns signature data that was receivied during ZRTP
      * processing. Refer to chapters 6.7 and 8.2.
      *
-     * The signature data can be retrieved after ZRTP enters secure state.
-     * <code>start()</code>.
-     *
-     * @param data
-     *    Pointer to a data buffer. This buffer must be large enough to
-     *    hold the signature data. Refer to <code>getSignatureLength()</code>
-     *    to get the length of the received signature data.
      * @return
-     *    Pointer to signature data.
+     *    Pointer to signature data. This is a pointer to volatile data that is
+     *    only valid during the checkSASSignature() callback. The application
+     *    shall copy the data if necessary.
      */
     const uint8* getSignatureData();
 

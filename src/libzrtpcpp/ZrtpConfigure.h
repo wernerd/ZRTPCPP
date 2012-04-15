@@ -69,6 +69,17 @@ public:
      * @param name
      *    Set the names of the algorithm. The name is copied
      *    and the call may reuse the space.
+     * @param klen
+     *    The key length for this algorihm in byte, for example 16 or 32
+     * @param ra
+     *    A human readable short string that describes the algorihm.
+     * @param en
+     *    Pointer to the encryption function of this algorithn
+     * @param de
+     *    Pointer to the decryption funtions of this algorithm.
+     * @param alId
+     *    The algorithm id used by SRTP to identify an algorithm type, for
+     *    example Skein, Sha1, Aes, ...
      *
      * @see AlgoTypes
      */
@@ -246,7 +257,6 @@ private:
 /**
  * The enumaration subclasses that contain the supported algorithm enumerations.
  */
-
 class HashEnum : public EnumBase {
 public:
     HashEnum();
@@ -299,7 +309,6 @@ extern AuthLengthEnum zrtpAuthLengths;
  *
  * An application can configure implemented algorithms only.
  */
-
 class __EXPORT ZrtpConfigure {
 public:
     ZrtpConfigure();         /* Creates Configuration data */

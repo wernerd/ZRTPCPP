@@ -23,6 +23,9 @@
 
 NAMESPACE_COMMONCPP
 
+// Define a dummy variable only to overcome a doxygen problem.
+static int dummy __attribute__ ((unused)) = 0;
+
 
 /**
  * @typedef SymmetricZRTPSession
@@ -36,7 +39,6 @@ NAMESPACE_COMMONCPP
  *
  * @short Symmetric UDP/IPv4 RTP session scheduled by one thread of execution.
  **/
-
 typedef SingleThreadRTPSession<SymmetricRTPChannel,
                                SymmetricRTPChannel,
                                ZrtpQueue> SymmetricZRTPSession;

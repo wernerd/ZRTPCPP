@@ -68,18 +68,6 @@ typedef struct zidrecord2 {
     unsigned char mitmKey[RS_LENGTH];         ///< MiTM key if available
 } zidrecord2_t;
 
-/**
- * This class implements the ZID record.
- *
- * The ZID record holds data about a peer. According to ZRTP specification
- * we use a ZID to identify a peer. ZRTP uses the RS (Retained Secret) data
- * to construct shared secrets.
- * <p/>
- * NOTE: ZIDRecord has ZIDFile as friend. ZIDFile knows about the private
- *   data of ZIDRecord - please keep both classes synchronized.
- *
- * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
- */
 
 #ifndef __EXPORT
   #if defined _WIN32 || defined __CYGWIN__
@@ -102,6 +90,18 @@ static const int RS2Valid         = 0x8;
 static const int MITMKeyAvailable = 0x10;
 static const int OwnZIDRecord     = 0x20;
 
+/**
+ * This class implements the ZID record.
+ *
+ * The ZID record holds data about a peer. According to ZRTP specification
+ * we use a ZID to identify a peer. ZRTP uses the RS (Retained Secret) data
+ * to construct shared secrets.
+ * <p>
+ * NOTE: ZIDRecord has ZIDFile as friend. ZIDFile knows about the private
+ *   data of ZIDRecord - please keep both classes synchronized.
+ *
+ * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
+ */
 class __EXPORT ZIDRecord {
     friend class ZIDFile;
 

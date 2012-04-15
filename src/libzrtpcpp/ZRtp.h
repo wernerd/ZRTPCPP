@@ -346,7 +346,7 @@ class __EXPORT ZRtp {
      * specifications. Usually only a MitM capable user agent (PBX) uses this
      * function.
      * 
-     * @param sh the full SAS hash value
+     * @param sh the full SAS hash value, 32 bytes
      * @param render the SAS rendering algorithm
      */
     bool sendSASRelayPacket(uint8_t* sh, std::string render);

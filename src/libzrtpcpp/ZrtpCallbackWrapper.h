@@ -32,12 +32,13 @@
  * @brief C-Wrapper helper
  *
  * This is a helper class for for the C wrapper and implements
- * the GNU ZRTP callback interface.For detailed documentation about
- * the callback method refer to file ZrtpCallback
+ * the GNU ZRTP callback interface. For detailed documentation about
+ * the callback method refer to file <code>ZrtpCallback</code>
  * @ingroup GNU_ZRTP
  * @{
  *
  * @see ZrtpCallback
+ * @see ZrtpCWrapper
  */
 class __EXPORT ZrtpCallbackWrapper : public ZrtpCallback
 {
@@ -49,6 +50,8 @@ public:
      * @param cb
      *    The C callback structure that hold the addresses of the C methods
      *    that implement the actual callback functions.
+     * @param ctx
+     *    Pointer to the ZrtpContext
      */
     ZrtpCallbackWrapper(zrtp_Callbacks* cb, ZrtpContext* ctx);
 

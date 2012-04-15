@@ -306,12 +306,13 @@ public:
     /**
      * Send a SAS relay packet.
      *
-     * Get the SAS relay packet and send it. It stores the
-     * packet in the sentPacket variable to enable resending. The
-     * method switches to secure substate WaitSasRelayAck.
+     * the functions stores sends the SAS relay packet and stores the pointer in
+     * the sentPacket variable to enable resending.
+     *
+     * The method switches to secure substate WaitSasRelayAck.
      * 
-     * @param errorCode Is the sub error code of ZrtpError. The method sends
-     *   the value of this sub code to the peer.
+     * @param relay
+     *    Pointer to the SAS relay packet.
      */
     void sendSASRelay(ZrtpPacketSASrelay* relay);
 };

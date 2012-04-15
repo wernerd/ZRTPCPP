@@ -99,15 +99,15 @@ typedef unsigned int    Twofish_UInt32;
  * elements in it. I wish I could hide the inside of the structure, 
  * but C doesn't allow that. 
  */ 
-typedef  
-    struct  
-        { 
+typedef 
+    struct
+        {
         Twofish_UInt32 s[4][256];   /* pre-computed S-boxes */ 
         Twofish_UInt32 K[40];       /* Round key words */ 
-        } 
+        }
     Twofish_key; 
- 
- 
+
+
 /**
  * Initialise and test the Twofish implementation.  
  *  
@@ -159,17 +159,17 @@ extern int Twofish_initialise();
  * 
  * @param key      Array of key bytes 
  * @param key_len  Number of key bytes, must be in the range 0,1,...,32.  
- * @para xkey     Pointer to an Twofish_key structure that will be filled  
- *             with the internal form of the cipher key.
+ * @param xkey     Pointer to an Twofish_key structure that will be filled  
+ *                 with the internal form of the cipher key.
  * @returns a negative number if an error happend, +1 otherwise
  */ 
-extern int Twofish_prepare_key(  
-                                Twofish_Byte key[], 
-                                int key_len,  
-                                Twofish_key * xkey   
-                                ); 
- 
- 
+extern int Twofish_prepare_key(
+                                Twofish_Byte key[],
+                                int key_len,
+                                Twofish_key * xkey
+                                );
+
+
 /**
  * Encrypt a single block of data. 
  * 
@@ -186,13 +186,13 @@ extern int Twofish_prepare_key(
  * @param p        Plaintext to be encrypted 
  * @param c        Place to store the ciphertext 
  */ 
-extern void Twofish_encrypt(  
-                            Twofish_key * xkey, 
-                            Twofish_Byte p[16],  
-                            Twofish_Byte c[16] 
+extern void Twofish_encrypt(
+                            Twofish_key * xkey,
+                            Twofish_Byte p[16],
+                            Twofish_Byte c[16]
                             ); 
- 
- 
+
+
 /**
  * Decrypt a single block of data. 
  * 
@@ -209,10 +209,10 @@ extern void Twofish_encrypt(
  * @param c        Ciphertext to be decrypted 
  * @param p        Place to store the plaintext 
  */ 
-extern void Twofish_decrypt(  
-                            Twofish_key * xkey, 
-                            Twofish_Byte c[16],  
-                            Twofish_Byte p[16] 
+extern void Twofish_decrypt(
+                            Twofish_key * xkey,
+                            Twofish_Byte c[16],
+                            Twofish_Byte p[16]
                             ); 
 
 
@@ -229,11 +229,12 @@ extern void Twofish_decrypt(
  * @param in       Plaintext to be encrypted 
  * @param out      Place to store the ciphertext 
  * @param len      number of bytes to encrypt.
- * @param iv       initialization vector for this CFB mode encryption.
- */ 
-void Twofish_cfb128_encrypt(Twofish_key* keyCtx, Twofish_Byte* in, 
-			    Twofish_Byte* out, size_t len,
-			    Twofish_Byte* ivec, int *num);
+ * @param ivec     initialization vector for this CFB mode encryption.
+ * @param num      pointer to integer that holds number of available crypto bytes.
+ */
+void Twofish_cfb128_encrypt(Twofish_key* keyCtx, Twofish_Byte* in,
+                            Twofish_Byte* out, size_t len,
+                            Twofish_Byte* ivec, int *num);
 
 /**
  * Decrypt data in CFB mode. 
@@ -248,11 +249,12 @@ void Twofish_cfb128_encrypt(Twofish_key* keyCtx, Twofish_Byte* in,
  * @param in       Ciphertext to be decrypted 
  * @param out      Place to store the plaintext 
  * @param len      number of bytes to decrypt.
- * @param iv       initialization vector for this CFB mode encryption.
+ * @param ivec     initialization vector for this CFB mode encryption.
+ * @param num      pointer to integer that holds number of available crypto bytes.
  */ 
-void Twofish_cfb128_decrypt(Twofish_key* keyCtx, Twofish_Byte* in, 
-			    Twofish_Byte* out, size_t len,
-			    Twofish_Byte* ivec, int *num);
+void Twofish_cfb128_decrypt(Twofish_key* keyCtx, Twofish_Byte* in,
+                            Twofish_Byte* out, size_t len,
+                            Twofish_Byte* ivec, int *num);
 /**
  * @}
  */

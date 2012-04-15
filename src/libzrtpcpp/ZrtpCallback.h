@@ -305,7 +305,7 @@ protected:
      * <b>Note:</b> PBX enrollement is not yet fully supported by GNU
      * ZRTP.
      *
-     * @param info Give some information to the user about the result
+     * @param info information to the user about the result
      *    of an enrollment.
      */
     virtual void zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment info) =0;
@@ -323,7 +323,7 @@ protected:
      * <b>Note:</b> SAS signing is not yet fully supported by GNU
      * ZRTP.
      *
-     * @param sas
+     * @param sasHash
      *    The SAS hash to sign.
      *
      */
@@ -345,7 +345,7 @@ protected:
      * <b>Note:</b> SAS signing is not yet fully supported by GNU
      * ZRTP.
      *
-     * @param sas
+     * @param sasHash
      *    The SAS hash that was signed by the other peer.
      * @return
      *    true if the signature was ok, false otherwise.
