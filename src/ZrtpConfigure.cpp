@@ -197,7 +197,7 @@ AuthLengthEnum zrtpAuthLengths;
 /*
  * The public methods are mainly a facade to the private methods.
  */
-ZrtpConfigure::ZrtpConfigure() {}
+ZrtpConfigure::ZrtpConfigure() : enableTrustedMitM(false), enableSasSignature(false), enableParanoidMode(false) {}
 
 ZrtpConfigure::~ZrtpConfigure() {}
 
@@ -429,17 +429,25 @@ std::vector<AlgorithmEnum* >& ZrtpConfigure::getEnum(AlgoTypes algoType) {
 void ZrtpConfigure::setTrustedMitM(bool yesNo) {
     enableTrustedMitM = yesNo;
 }
-    
+
 bool ZrtpConfigure::isTrustedMitM() {
     return enableTrustedMitM;
 }
-    
+
 void ZrtpConfigure::setSasSignature(bool yesNo) {
     enableSasSignature = yesNo;
 }
 
 bool ZrtpConfigure::isSasSignature() {
     return enableSasSignature;
+}
+
+void ZrtpConfigure::setParanoidMode(bool yesNo) {
+    enableParanoidMode = yesNo;
+}
+
+bool ZrtpConfigure::isParanoidMode() {
+    return enableParanoidMode;
 }
 
 #if 0

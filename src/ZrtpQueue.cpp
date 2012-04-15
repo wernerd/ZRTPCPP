@@ -51,6 +51,7 @@ void ZrtpQueue::init()
     enableZrtp = false;
     started = false;
     mitmMode = false;
+    enableParanoidMode = false;
     zrtpEngine = NULL;
     senderZrtpSeqNo = 1;
 
@@ -70,8 +71,7 @@ ZrtpQueue::~ZrtpQueue() {
 }
 
 int32_t
-ZrtpQueue::initialize(const char *zidFilename, bool autoEnable,
-                     ZrtpConfigure* config)
+ZrtpQueue::initialize(const char *zidFilename, bool autoEnable, ZrtpConfigure* config)
 {
     int32_t ret = 1;
 
@@ -83,6 +83,8 @@ ZrtpQueue::initialize(const char *zidFilename, bool autoEnable,
         config->setStandardConfig();
     }
     enableZrtp = autoEnable;
+
+    config->setParanoidMode(enableParanoidMode);
 
     if (staticTimeoutProvider == NULL) {
         staticTimeoutProvider = new TimeoutProvider<std::string, ZrtpQueue*>();
@@ -760,6 +762,14 @@ bool ZrtpQueue::isEnrollmentMode() {
 void ZrtpQueue::setEnrollmentMode(bool enrollmentMode) {
     if (zrtpEngine != NULL)
         zrtpEngine->setEnrollmentMode(enrollmentMode);
+}
+
+void ZrtpQueue::setParanoidMode(bool yesNo) {
+        enableParanoidMode = yesNo;
+}
+
+bool ZrtpQueue::isParanoidMode() {
+        return enableParanoidMode;
 }
 
 bool ZrtpQueue::isPeerEnrolled() {

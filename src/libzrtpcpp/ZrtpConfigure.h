@@ -479,6 +479,25 @@ public:
      */
     bool isSasSignature();
 
+    /**
+     * Enables or disables paranoid mode.
+     *
+     * For further explanation of paranoid mode refer to the documentation
+     * of ZRtp class.
+     *
+     * @param yesNo
+     *    If set to true then paranoid mode is enabled.
+     */
+    void setParanoidMode(bool yesNo);
+
+    /**
+     * Check status of paranoid mode.
+     *
+     * @return
+     *    Returns true if paranoid mode is enabled.
+     */
+    bool isParanoidMode();
+
     /// Helper function to print some internal data
     void printConfiguredAlgos(AlgoTypes algoTyp);
 
@@ -491,6 +510,8 @@ public:
 
     bool enableTrustedMitM;
     bool enableSasSignature;
+    bool enableParanoidMode;
+
 
     AlgorithmEnum& getAlgoAt(std::vector<AlgorithmEnum* >& a, int32_t index);
     int32_t addAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo);

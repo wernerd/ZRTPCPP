@@ -76,6 +76,7 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* conf
         configureAlgos(*config) {
 
     enableMitmEnrollment = config->isTrustedMitM();
+    paranoidMode = config->isParanoidMode();
 
     // setup the implicit hash function pointers and length
     hashLengthImpl = SHA256_DIGEST_LENGTH;
@@ -739,8 +740,8 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     zrtpConfirm1.setMessageType((uint8_t*)Confirm1Msg);
 
     // Check if user verfied the SAS in a previous call and thus verfied
-    // the retained secret.
-    if (zidRec.isSasVerified()) {
+    // the retained secret. Don't set the verified flag if paranoidMode is true.
+    if (zidRec.isSasVerified() && !paranoidMode) {
         zrtpConfirm1.setSASFlag();
     }
     zrtpConfirm1.setExpTime(0xFFFFFFFF);
@@ -930,17 +931,15 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
     zid->getRecord(&zidRec);
 
     // Our peer did not confirm the SAS in last session, thus reset
-    // our SAS flag too.
-    if (!sasFlag) {
+    // our SAS flag too. Reset the flag also if paranoidMode is true.
+    if (!sasFlag || paranoidMode) {
         zidRec.resetSasVerified();
     }
     // get verified flag from current RS1 before set a new RS1. This
     // may not be set even if peer's flag is set in confirm1 message.
-    sasFlag = zidRec.isSasVerified() ? true : false;
+    sasFlag = zidRec.isSasVerified();
 
-    // Inform GUI about security state and SAS state
-    bool sasVerified = zidRec.isSasVerified();
-    callback->srtpSecretsOn(cs, SAS, sasVerified);
+    callback->srtpSecretsOn(cs, SAS, sasFlag);
 
     // now we are ready to save the new RS1 which inherits the verified
     // flag from old RS1
@@ -1134,15 +1133,17 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
         zid->getRecord(&zidRec);
 
         // Our peer did not confirm the SAS in last session, thus reset
-        // our SAS flag too.
-        if (!sasFlag) {
+        // our SAS flag too. Reset the flag also if paranoidMode is true.
+        if (!sasFlag || paranoidMode) {
             zidRec.resetSasVerified();
         }
 
-        // Inform GUI about security state and SAS state
-        bool sasVerified = zidRec.isSasVerified();
+        // Now get the resulting SAS verified flag from current RS1 before setting a new RS1.
+        // It's a combination of our SAS verfied flag and peer's verified flag. Only if both
+        // were set (true) then sasFlag becomes true.
+        sasFlag = zidRec.isSasVerified();
         cs.append("/").append(pubKey->getName());
-        callback->srtpSecretsOn(cs, SAS, sasVerified);
+        callback->srtpSecretsOn(cs, SAS, sasFlag);
 
         // save new RS1, this inherits the verified flag from old RS1
         zidRec.setNewRs1((const uint8_t*)newRs1);
@@ -1174,7 +1175,6 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
         // Inform GUI about security state, don't show SAS and its state
         callback->srtpSecretsOn(cs, cs1, true);
     }
-    // TODO: clear responders signature data in, prepare a call to do same for initiaor (called by state engine)
     return &zrtpConf2Ack;
 }
 
@@ -1200,7 +1200,9 @@ ZrtpPacketPingAck* ZRtp::preparePingAck(ZrtpPacketPing* ppkt) {
 }
 
 ZrtpPacketRelayAck* ZRtp::prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* errMsg) {
-    if (!mitmSeen)
+    // handle and render SAS relay data only if the peer announced that it is a trusted
+    // PBX. Don't handle SAS relay in paranoidMode.
+    if (!mitmSeen || paranoidMode)
         return &zrtpRelayAck;
 
     uint8_t* hkey, *ekey;
@@ -2195,6 +2197,9 @@ void ZRtp::srtpSecretsOff(EnableSecurity part) {
 }
 
 void ZRtp::SASVerified() {
+    if (paranoidMode)
+        return;
+
     // Initialize a ZID record to get peer's retained secrets
     ZIDRecord zidRec(peerZid);
     ZIDFile *zid = ZIDFile::getInstance();
@@ -2263,9 +2268,6 @@ void ZRtp::setAuxSecret(uint8_t* data, int32_t length) {
         auxSecretLength = length;
         memcpy(auxSecret, data, length);
     }
-}
-
-void ZRtp::setPbxSecret(uint8_t* data, int32_t length) {
 }
 
 void ZRtp::setClientId(std::string id) {

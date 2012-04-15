@@ -530,6 +530,44 @@ public:
     void setMitmMode(bool mitmMode);
 
     /**
+     * Enable or disable paranoid mode.
+     *
+     * The Paranoid mode controls the behaviour and handling of the SAS verify flag. If
+     * Panaoid mode is set to flase then ZRtp applies the normal handling. If Paranoid
+     * mode is set to true then the handling is:
+     *
+     * <ul>
+     * <li> always set the SAS verify flag to <code>false</code> at srtpSecretsOn() callback. The
+     *      user interface (UI) must show <b>SAS not verified</b>. See implementation note below.</li>
+     * <li> don't set the SAS verify flag in the <code>Confirm</code> packets, thus forcing the other
+     *      peer to report <b>SAS not verified</b>.</li>
+     * <li> ignore the <code>SASVerified()</code> function, thus do not set the SAS verified flag
+     *      in the ZRTP cache. </li>
+     * <li> Disable the <em>Trusted PBX MitM</em> feature. Just send the <code>SASRelay</code> packet
+     *      but do not process the relayed data. This protects the user from a malicious
+     *      "trusted PBX".</li>
+     * </ul>
+     * ZRtp performs alls other steps during the ZRTP negotiations as usual, in particular it
+     * computes, compares, uses, and stores the retained secrets. This avoids unnecessary warning
+     * messages. The user may enable or disable the Paranoid mode on a call-by-call basis without
+     * breaking the key continuity data.
+     *
+     * <b>Implementation note:</b><br/>
+     * An application shall <b>always display the SAS if the SAS verify flag is <code>false</code></b>.
+     * The application shall remind the user to compare the SAS code, for example using larger fonts,
+     * different colours and other display features.
+     */
+    void setParanoidMode(bool yesNo);
+
+    /**
+     * Check status of paranoid mode.
+     *
+     * @return
+     *    Returns true if paranoid mode is enabled.
+     */
+    bool isParanoidMode();
+
+    /**
      * Check the state of the enrollment mode.
      *
      * If true then we will set the enrollment flag (E) in the confirm
@@ -821,7 +859,7 @@ private:
     bool started;
     bool mitmMode;
     bool signSas;
-
+    bool enableParanoidMode;
 };
 
 class IncomingZRTPPkt : public IncomingRTPPkt {

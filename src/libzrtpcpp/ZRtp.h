@@ -176,19 +176,6 @@ class __EXPORT ZRtp {
     void setAuxSecret(uint8_t* data, int32_t length);
 
     /**
-     * Set the PBX secret.
-     *
-     * Use this method to set the PBX secret data. Refer to ZRTP
-     * specification, chapter 4.3 ff and 7.3
-     *
-     * @param data
-     *     Points to the other PBX data.
-     * @param length
-     *     The length in bytes of the data.
-     */
-    void setPbxSecret(uint8_t* data, int32_t length);
-
-    /**
      * Check current state of the ZRTP state engine
      *
      * @param state
@@ -780,6 +767,38 @@ private:
     bool signSasSeen;
 
     uint32_t peerSSRC;            // peer's SSRC, required to setup PingAck packet
+
+    /**
+     * Enable or disable paranoid mode.
+     *
+     * The Paranoid mode controls the behaviour and handling of the SAS verify flag. If
+     * Panaoid mode is set to flase then ZRtp applies the normal handling. If Paranoid
+     * mode is set to true then the handling is:
+     *
+     * <ul>
+     * <li> Force the SAS verify flag to be false at srtpSecretsOn() callback. This gives
+     *      the user interface (UI) the indication to handle the SAS as <b>not verified</b>.
+     *      See implementation note below.</li>
+     * <li> Don't set the SAS verify flag in the <code>Confirm</code> packets, thus the other
+     *      also must report the SAS as <b>not verified</b>.</li>
+     * <li> ignore the <code>SASVerified()</code> function, thus do not set the SAS to verified
+     *      in the ZRTP cache. </li>
+     * <li> Disable the <b>Trusted PBX MitM</b> feature. Just send the <code>SASRelay</code> packet
+     *      but do not process the relayed data. This protects the user from a malicious
+     *      "trusted PBX".</li>
+     * </ul>
+     * ZRtp performs alls other steps during the ZRTP negotiations as usual, in particular it
+     * computes, compares, uses, and stores the retained secrets. This avoids unnecessary warning
+     * messages. The user may enable or disable the Paranoid mode on a call-by-call basis without
+     * breaking the key continuity data.
+     *
+     * <b>Implementation note:</b></br>
+     * An application shall always display the SAS code if the SAS verify flag is <code>false</code>.
+     * The application shall also use mechanisms to remind the user to compare the SAS code, for
+     * example useing larger fonts, different colours and other display features.
+     */
+    bool paranoidMode;
+
     /**
      * Find the best Hash algorithm that is offered in Hello.
      *
