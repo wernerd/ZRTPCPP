@@ -13,10 +13,10 @@ cmake_minimum_required(VERSION 2.6)
 PROJECT(libzrtpcpp)
 
 SET(CPACK_PACKAGE_VERSION_MAJOR 2)
-SET(CPACK_PACKAGE_VERSION_MINOR 1)
-SET(CPACK_PACKAGE_VERSION_PATCH 2)
+SET(CPACK_PACKAGE_VERSION_MINOR 3)
+SET(CPACK_PACKAGE_VERSION_PATCH 0)
 
-set (VERSION 2.2.0)
+set (VERSION 2.3.0)
 set (SOVERSION 2)
 set (PACKAGE libzrtpcpp)
 
@@ -68,6 +68,8 @@ if(CMAKE_HAVE_PTHREAD_H)
 endif()
 set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})
 
+# define the name of the lib. zrtpcppcore does not include the ccRTP stuff.
+set(zrtplib zrtpcppcore)
 if(enable_ccrtp)
     if (USES_CCRTP_INCLUDE_DIRS)
         message(STATUS "  Using local commoncpp dependency")
@@ -79,6 +81,7 @@ if(enable_ccrtp)
     link_directories(${USES_CRTP_LIBRARY_DIRS})
     add_definitions(${USES_CCRTP_CFLAGS})
     set (LIBS ${LIBS} ${USES_CCRTP_LDFLAGS} ${USES_CCRTP_LIBRARIES})
+    set(zrtplib zrtpcpp)
 endif()
 
 # now get info about crypto libraries
@@ -120,7 +123,7 @@ set(exec_prefix ${prefix}/bin)
 set(libdir ${prefix}/${LIBDIRNAME})
 set(includedir ${prefix}/include)
 set(PACKAGE pkgconfig)
-configure_file(libzrtpcpp.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/libzrtpcpp.pc @ONLY)
+configure_file(libzrtpcpp.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/lib${zrtplib}.pc @ONLY)
 
 configure_file(libzrtpcpp.spec.cmake ${CMAKE_CURRENT_BINARY_DIR}/libzrtpcpp.spec @ONLY)
 
@@ -137,7 +140,7 @@ endif()
 add_subdirectory(src)
 
 if (enable_ccrtp)
-	add_subdirectory(demo)
+    add_subdirectory(demo)
 endif()
 
 if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/package/)
@@ -146,7 +149,7 @@ if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/package/)
 endif()
 
 ########### install files ###############
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libzrtpcpp.pc DESTINATION ${LIBDIRNAME}/pkgconfig)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib${zrtplib}.pc DESTINATION ${LIBDIRNAME}/pkgconfig)
 
 if(${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
 

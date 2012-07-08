@@ -68,16 +68,20 @@ set(zrtp_src
 set(zrtpcpp_src ${zrtp_src} ${ccrtp_src} ${crypto_src} ${twofish_srcs})
 
 if(BUILD_STATIC AND NOT BUILD_SHARED)
-	set(LIBRARY_BUILD_TYPE STATIC)
+    set(LIBRARY_BUILD_TYPE STATIC)
 else()
-	set(LIBRARY_BUILD_TYPE SHARED)
+    set(LIBRARY_BUILD_TYPE SHARED)
 endif()
 
-add_library(zrtpcpp ${LIBRARY_BUILD_TYPE} ${zrtpcpp_src})
-set_target_properties(zrtpcpp PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
-target_link_libraries(zrtpcpp ${LIBS})
-add_dependencies(zrtpcpp ccrtp)
+add_library(${zrtplib} ${LIBRARY_BUILD_TYPE} ${zrtpcpp_src})
+set_target_properties(${zrtplib} PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
+target_link_libraries(${zrtplib} ${LIBS})
+
+if(enable_ccrtp)
+    add_dependencies(${zrtplib} ccrtp)
+endif()
+
 add_subdirectory(libzrtpcpp)
 
-install(TARGETS zrtpcpp DESTINATION ${LIBDIRNAME})
+install(TARGETS ${zrtplib} DESTINATION ${LIBDIRNAME})
 
