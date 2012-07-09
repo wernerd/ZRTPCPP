@@ -46,7 +46,7 @@
 #include <openssl/ec.h>
 #include <openssl/ecdh.h>
 
-#include <libzrtpcpp/crypto/ZrtpDH.h>
+#include <crypto/zrtpDH.h>
 #include <libzrtpcpp/ZrtpTextData.h>
 
 // extern void initializeOpenSSL();

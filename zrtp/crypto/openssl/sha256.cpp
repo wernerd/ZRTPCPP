@@ -38,7 +38,7 @@
 #include <openssl/crypto.h>
 #include <openssl/sha.h>
 
-#include <libzrtpcpp/crypto/sha256.h>
+#include <crypto/sha256.h>
 
 void sha256(unsigned char *data, unsigned int data_length,
 	    unsigned char *digest )

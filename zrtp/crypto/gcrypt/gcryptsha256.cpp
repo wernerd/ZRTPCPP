@@ -22,7 +22,7 @@
  */
 
 #include <gcrypt.h>
-#include <libzrtpcpp/crypto/sha256.h>
+#include <crypto/sha256.h>
 
 void sha256(unsigned char* data, unsigned int dataLength,
             unsigned char* mac)

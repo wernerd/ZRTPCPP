@@ -1,5 +1,5 @@
-#include <libzrtpcpp/crypto/aesCFB.h>
-#include <libzrtpcpp/crypto/twoCFB.h>
+#include <crypto/aesCFB.h>
+#include <crypto/twoCFB.h>
 #include <libzrtpcpp/ZrtpConfigure.h>
 #include <libzrtpcpp/ZrtpTextData.h>
 

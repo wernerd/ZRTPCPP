@@ -21,7 +21,7 @@
  */
 
 #include <gcrypt.h>
-#include <libzrtpcpp/crypto/ZrtpDH.h>
+#include <crypto/ZrtpDH.h>
 #include <libzrtpcpp/ZrtpTextData.h>
 #include <sstream>
 

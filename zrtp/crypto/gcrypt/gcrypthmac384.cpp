@@ -21,7 +21,7 @@
  */
 
 #include <gcrypt.h>
-#include <libzrtpcpp/crypto/hmac384.h>
+#include <crypto/hmac384.h>
 
 void hmac_sha384(uint8_t* key, uint32_t keyLength,
 		uint8_t* data, int32_t dataLength,

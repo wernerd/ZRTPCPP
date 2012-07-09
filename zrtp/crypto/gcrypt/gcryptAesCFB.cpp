@@ -21,7 +21,7 @@
  */
 
 #include <gcrypt.h>
-#include <libzrtpcpp/crypto/aesCFB.h>
+#include <crypto/aesCFB.h>
 
 
 extern void initializeGcrypt();

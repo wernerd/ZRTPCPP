@@ -18,7 +18,7 @@
 
 #include <cstdlib>
 #include <map>
-#include <libzrtpcpp/zrtpccrtp.h>
+#include <zrtpccrtp.h>
 #include <libzrtpcpp/ZrtpUserCallback.h>
 
 using namespace ost;

@@ -28,7 +28,7 @@ else()
 endif()
 
 # set to true for debug and trace during CMakeLists development
-set(CMAKE_VERBOSE_MAKEFILE FALSE)
+set(CMAKE_VERBOSE_MAKEFILE TRUE)
 
 MESSAGE( STATUS "Configuring GNU ${PROJECT_NAME} ${VERSION}...")
 
@@ -38,12 +38,6 @@ include(FindPkgConfig)
 include(CheckLibraryExists)
 include(CheckIncludeFiles)
 include(cmake/Modules/AutoArgs.cmake)
-
-if(${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
-    include(cmake/Modules/GeneratePackage.cmake)
-
-    GENERATE_PACKAGING(${PACKAGE} ${VERSION})
-endif()
 
 # check the -Denable-ccrtp setting, defaults to true
 enable_arg(ccrtp true "Enable GNU ccRTP support for GNU ZRTP")
@@ -113,22 +107,8 @@ gcr_check(GCRYPT gcrypt)
 check_include_files(stdlib.h HAVE_STDLIB_H)
 check_include_files(string.h HAVE_STRING_H)
 
-# necessary and required modules checked, ready to generate config.h
-configure_file(config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
-
-# the following set(...) commands are only to have backward
-# compatibility with autoconf stuff to generate the pc file
-set(prefix ${CMAKE_INSTALL_PREFIX})
-set(exec_prefix ${prefix}/bin)
-set(libdir ${prefix}/${LIBDIRNAME})
-set(includedir ${prefix}/include)
-set(PACKAGE pkgconfig)
-configure_file(libzrtpcpp.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/lib${zrtplib}.pc @ONLY)
-
-configure_file(libzrtpcpp.spec.cmake ${CMAKE_CURRENT_BINARY_DIR}/libzrtpcpp.spec @ONLY)
-
-#to make sure includes are first taken from those directory
-include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/src)
+# necessary and required modules checked, ready to generate config.h in top-level build directory
+configure_file(config.h.cmake ${CMAKE_BINARY_DIR}/config.h)
 
 add_definitions(-g -O2 -fno-strict-aliasing)
 if(CMAKE_COMPILER_IS_GNUCXX)
@@ -137,31 +117,11 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   add_definitions(-DNEW_STDCPP)
 endif()
 
-add_subdirectory(src)
-
 if (enable_ccrtp)
+    add_subdirectory(clients/ccrtp)
     add_subdirectory(demo)
 endif()
 
-if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/package/)
-    MESSAGE(STATUS "package dir not found")
-    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/package/)
-endif()
-
-########### install files ###############
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib${zrtplib}.pc DESTINATION ${LIBDIRNAME}/pkgconfig)
-
-if(${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
-
-    ########### Add uninstall target ###############
-    configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
-    IMMEDIATE @ONLY)
-    add_custom_target(uninstall
-    "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
-
-endif()
 ##very usefull for macosx, specially when using gtkosx bundler
 if(APPLE)
     if (NOT CMAKE_INSTALL_NAME_DIR)

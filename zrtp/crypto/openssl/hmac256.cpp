@@ -36,7 +36,7 @@
  */
 
 #include <openssl/hmac.h>
-#include <libzrtpcpp/crypto/hmac256.h>
+#include <crypto/hmac256.h>
 
 void hmac_sha256(uint8_t* key, uint32_t key_length,
 		uint8_t* data, int32_t data_length,

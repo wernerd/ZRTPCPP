@@ -20,13 +20,13 @@
  */
 #include <sstream>
 
-#include <libzrtpcpp/crypto/ZrtpDH.h>
-#include <libzrtpcpp/crypto/hmac256.h>
-#include <libzrtpcpp/crypto/sha256.h>
-#include <libzrtpcpp/crypto/hmac384.h>
-#include <libzrtpcpp/crypto/sha384.h>
-#include <libzrtpcpp/crypto/aesCFB.h>
-#include <libzrtpcpp/crypto/twoCFB.h>
+#include <crypto/zrtpDH.h>
+#include <crypto/hmac256.h>
+#include <crypto/sha256.h>
+#include <crypto/hmac384.h>
+#include <crypto/sha384.h>
+#include <crypto/aesCFB.h>
+#include <crypto/twoCFB.h>
 
 #include <libzrtpcpp/ZRtp.h>
 #include <libzrtpcpp/ZrtpStateClass.h>

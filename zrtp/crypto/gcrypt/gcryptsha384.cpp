@@ -22,7 +22,7 @@
  */
 
 #include <gcrypt.h>
-#include <libzrtpcpp/crypto/sha384.h>
+#include <crypto/sha384.h>
 
 void sha384(unsigned char* data, unsigned int dataLength,
             unsigned char* mac)

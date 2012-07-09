@@ -19,7 +19,7 @@
 #define _ZRTPCCRTP_H_
 
 #include <ccrtp/rtp.h>
-#include <libzrtpcpp/ZrtpQueue.h>
+#include <ZrtpQueue.h>
 
 NAMESPACE_COMMONCPP
 

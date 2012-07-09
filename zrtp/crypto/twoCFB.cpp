@@ -36,8 +36,8 @@
 
 #include <string.h>
 
-#include <libzrtpcpp/crypto/twoCFB.h>
-#include <libzrtpcpp/crypto/twofish.h>
+#include <crypto/twoCFB.h>
+#include <cryptcommon/twofish.h>
 
 static int initialized = 0;
 

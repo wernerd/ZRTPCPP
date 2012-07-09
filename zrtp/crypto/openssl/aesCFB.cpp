@@ -38,7 +38,7 @@
 #include <openssl/aes.h>
 #include <string.h>
 
-#include <libzrtpcpp/crypto/aesCFB.h>
+#include <crypto/aesCFB.h>
 
 // extern void initializeOpenSSL();
 

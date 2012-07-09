@@ -22,7 +22,7 @@
 #include <string>
 #include <stdio.h>
 
-#include <libzrtpcpp/ZrtpQueue.h>
+#include <ZrtpQueue.h>
 #include <libzrtpcpp/ZIDFile.h>
 #include <libzrtpcpp/ZRtp.h>
 #include <libzrtpcpp/ZrtpStateClass.h>
