@@ -899,7 +899,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
         *errMsg = ConfirmHMACWrong;
         return NULL;
     }
-    cipher->getDecrypt()(zrtpKeyR, cipher->getKeylen(), confirm1->getIv(), confirm1->getHashH0(), hmlen);
+    cipher->getDecrypt()(zrtpKeyR, cipher->getKeylen(), (uint8_t*)confirm1->getIv(), confirm1->getHashH0(), hmlen);
 
     std::string cs(cipher->getReadable());
     cs.append("/").append(pubKey->getName());
@@ -1034,7 +1034,8 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2MultiStream(ZrtpPacketConfirm* confirm1,
         *errMsg = ConfirmHMACWrong;
         return NULL;
     }
-    cipher->getDecrypt()(zrtpKeyR, cipher->getKeylen(), confirm1->getIv(), confirm1->getHashH0(), hmlen);
+    // Cast away the const for the IV - the standalone AES CFB modifies IV on return
+    cipher->getDecrypt()(zrtpKeyR, cipher->getKeylen(), (uint8_t*)confirm1->getIv(), confirm1->getHashH0(), hmlen);
     std::string cs(cipher->getReadable());
 
     // Because we are initiator the protocol engine didn't receive Commit and
@@ -1101,7 +1102,8 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
         *errMsg = ConfirmHMACWrong;
         return NULL;
     }
-    cipher->getDecrypt()(zrtpKeyI, cipher->getKeylen(), confirm2->getIv(), confirm2->getHashH0(), hmlen);
+    // Cast away the const for the IV - the standalone AES CFB modifies IV on return
+    cipher->getDecrypt()(zrtpKeyI, cipher->getKeylen(), (uint8_t*)confirm2->getIv(), confirm2->getHashH0(), hmlen);
 
     std::string cs(cipher->getReadable());
 
@@ -1230,7 +1232,8 @@ ZrtpPacketRelayAck* ZRtp::prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* er
         *errMsg = ConfirmHMACWrong;
         return NULL;                // TODO - check error handling
     }
-    cipher->getDecrypt()(ekey, cipher->getKeylen(), srly->getIv(), (uint8_t*)srly->getFiller(), hmlen);
+    // Cast away the const for the IV - the standalone AES CFB modifies IV on return
+    cipher->getDecrypt()(ekey, cipher->getKeylen(), (uint8_t*)srly->getIv(), (uint8_t*)srly->getFiller(), hmlen);
 
     const uint8_t* render = srly->getSas();
     const uint8_t* newSasHash = srly->getTrustedSas();

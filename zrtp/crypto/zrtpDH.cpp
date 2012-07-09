@@ -35,36 +35,59 @@
  */
 
 #include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
-#include <openssl/crypto.h>
-#include <openssl/bio.h>
-#include <openssl/bn.h>
-#include <openssl/rand.h>
-#include <openssl/err.h>
-#include <openssl/dh.h>
-#include <openssl/evp.h>
-#include <openssl/ec.h>
-#include <openssl/ecdh.h>
-
+#include <bnlib/bn.h>
 #include <zrtp/crypto/zrtpDH.h>
 #include <zrtp/libzrtpcpp/ZrtpTextData.h>
+#include <cryptcommon/aes.h>
 
-// extern void initializeOpenSSL();
 
-static BIGNUM* bnP2048 = NULL;
-static BIGNUM* bnP3072 = NULL;
-// static BIGNUM* bnP4096 = NULL;
+static BigNum bnP2048 = {0};
+static BigNum bnP3072 = {0};
 
-static BIGNUM* bnP2048MinusOne = NULL;
-static BIGNUM* bnP3072MinusOne = NULL;
-// static BIGNUM* bnP4096MinusOne = NULL;
+static BigNum bnP2048MinusOne = {0};
+static BigNum bnP3072MinusOne = {0};
+
+static BigNum two = {0};
 
 static uint8_t dhinit = 0;
 
+typedef struct _dhCtx {
+    BigNum privKey;
+    BigNum pubKey;
+} dhCtx;
+
+
+static void hexdump(const char* title, const unsigned char *s, int l)
+{
+    int n=0;
+
+    if (s == NULL) return;
+
+    fprintf(stderr, "%s",title);
+    for( ; n < l ; ++n) {
+        if((n%16) == 0)
+            fprintf(stderr, "\n%04x",n);
+        fprintf(stderr, " %02x",s[n]);
+    }
+    fprintf(stderr, "\n");
+}
+
+
 void randomZRTP(uint8_t *buf, int32_t length)
 {
-//    initializeOpenSSL();
-    RAND_bytes(buf, length);
+    ssize_t num;
+    int rnd = open("/dev/urandom", O_RDONLY);
+    if (rnd >= 0) {
+        num = read(rnd, buf, length);
+        close(rnd);
+    }
+    else
+        fprintf(stderr, "cannot open /dev/random");
 }
 
 static const uint8_t P2048[] =
@@ -182,6 +205,9 @@ ZrtpDH::ZrtpDH(const char* type) {
 
     uint8_t random[64];
 
+    ctx = static_cast<void*>(new dhCtx);
+    dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
+
     // Well - the algo type is only 4 char thus cast to int32 and compare
     if (*(int32_t*)type == *(int32_t*)dh2k) {
         pkType = DH2K;
@@ -189,61 +215,55 @@ ZrtpDH::ZrtpDH(const char* type) {
     else if (*(int32_t*)type == *(int32_t*)dh3k) {
         pkType = DH3K;
     }
+#if 0
     else if (*(int32_t*)type == *(int32_t*)ec25) {
         pkType = EC25;
     }
     else if (*(int32_t*)type == *(int32_t*)ec38) {
         pkType = EC38;
     }
+#endif
     else {
         return;
     }
 
-//  initializeOpenSSL();
-
+    randomZRTP(random, sizeof(random));
+    hexdump("random", random, sizeof(random));
+    
     if (!dhinit) {
-        bnP2048 = BN_bin2bn(P2048,sizeof(P2048),NULL);
-        bnP3072 = BN_bin2bn(P3072,sizeof(P3072),NULL);
-//      bnP4096 = BN_bin2bn(P4096,sizeof(P4096),NULL);
+        bnBegin(&two);
+        bnSetQ(&two, 2);
 
-        bnP2048MinusOne = BN_dup(bnP2048);
-        BN_sub_word(bnP2048MinusOne, 1);
+        bnBegin(&bnP2048);
+        bnInsertBigBytes(&bnP2048, P2048, 0, sizeof(P2048));
+        bnBegin(&bnP3072);
+        bnInsertBigBytes(&bnP3072, P3072, 0, sizeof(P3072));
 
-        bnP3072MinusOne = BN_dup(bnP3072);
-        BN_sub_word(bnP3072MinusOne, 1);
+        bnBegin(&bnP2048MinusOne);
+        bnCopy(&bnP2048MinusOne, &bnP2048);
+        bnSubQ(&bnP2048MinusOne, 1);
 
-//      bnP4096MinusOne = BN_dup(bnP4096);
-//      BN_sub_word(bnP4096MinusOne, 1);
+        bnBegin(&bnP3072MinusOne);
+        bnCopy(&bnP3072MinusOne, &bnP3072);
+        bnSubQ(&bnP3072MinusOne, 1);
+
         dhinit = 1;
     }
 
-    DH* tmpCtx = NULL;
+    bnBegin(&tmpCtx->privKey);
     switch (pkType) {
     case DH2K:
     case DH3K:
-        ctx = static_cast<void*>(DH_new());
-        tmpCtx = static_cast<DH*>(ctx);
-        tmpCtx->g = BN_new();
-        BN_set_word(tmpCtx->g, DH_GENERATOR_2);
-
-        if (pkType == DH2K) {
-            tmpCtx->p = BN_dup(bnP2048);
-            RAND_bytes(random, 32);
-            tmpCtx->priv_key = BN_bin2bn(random, 32, NULL);
-        }
-        else if (pkType == DH3K) {
-            tmpCtx->p = BN_dup(bnP3072);
-            RAND_bytes(random, 64);
-            tmpCtx->priv_key = BN_bin2bn(random, 32, NULL);
-        }
+        bnInsertBigBytes(&tmpCtx->privKey, random, 0, 256/8);
         break;
-
+#if 0
     case EC25:
         ctx = static_cast<void*>(EC_KEY_new_by_curve_name(NID_X9_62_prime256v1));
         break;
     case EC38:
         ctx = static_cast<void*>(EC_KEY_new_by_curve_name(NID_secp384r1));
         break;
+#endif
     }
 }
 
@@ -251,30 +271,53 @@ ZrtpDH::~ZrtpDH() {
     if (ctx == NULL)
         return;
 
+    dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
+
     switch (pkType) {
     case DH2K:
     case DH3K:
-        DH_free(static_cast<DH*>(ctx));
+        bnEnd(&tmpCtx->privKey);
+        bnEnd(&tmpCtx->pubKey);
         break;
 
+#if 0
     case EC25:
     case EC38:
         EC_KEY_free(static_cast<EC_KEY*>(ctx));
         break;
+#endif
     }
 }
 
 int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
 
-    if (pkType == DH2K || pkType == DH3K) {
-        DH* tmpCtx = static_cast<DH*>(ctx);
+    dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
 
-        if (tmpCtx->pub_key != NULL) {
-            BN_free(tmpCtx->pub_key);
+    int32_t length = getDhSize();
+
+    if (pkType == DH2K || pkType == DH3K) {
+        BigNum pubKeyOther, sec;
+        bnBegin(&pubKeyOther);
+        bnBegin(&sec);
+
+        bnInsertBigBytes(&pubKeyOther, pubKeyBytes, 0, length);
+
+        if (pkType == DH2K) {
+            bnExpMod(&sec, &pubKeyOther, &tmpCtx->privKey, &bnP2048);
         }
-        tmpCtx->pub_key = BN_bin2bn(pubKeyBytes, getDhSize(), NULL);
-        return DH_compute_key(secret, tmpCtx->pub_key, tmpCtx);
+        else if (pkType == DH3K) {
+            bnExpMod(&sec, &pubKeyOther, &tmpCtx->privKey, &bnP3072);
+        }
+        else {
+            return 0;
+        }
+        bnEnd(&pubKeyOther);
+        bnExtractBigBytes(&sec, secret, 0, length);
+        bnEnd(&sec);
+
+        return length;
     }
+#if 0
     if (pkType == EC25 || pkType == EC38) {
         uint8_t buffer[100];
         int32_t ret;
@@ -282,7 +325,7 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
 
         buffer[0] = POINT_CONVERSION_UNCOMPRESSED;
         memcpy(buffer+1, pubKeyBytes, len);
-        
+
         EC_POINT* point = EC_POINT_new(EC_KEY_get0_group(static_cast<EC_KEY*>(ctx)));
         EC_POINT_oct2point(EC_KEY_get0_group(static_cast<EC_KEY*>(ctx)),
                                              point, buffer, len+1, NULL);
@@ -290,56 +333,85 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
         EC_POINT_free(point);
         return ret;
     }
+#endif
     return -1;
 }
 
 int32_t ZrtpDH::generatePublicKey()
 {
-    if (pkType == DH2K || pkType == DH3K)
-        return DH_generate_key(static_cast<DH*>(ctx));
+    dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
 
-    if (pkType == EC25 || pkType == EC38)
+    bnBegin(&tmpCtx->pubKey);
+    switch (pkType) {
+    case DH2K:
+        bnExpMod(&tmpCtx->pubKey, &two, &tmpCtx->privKey, &bnP2048);
+        break;
+
+    case DH3K:
+        bnExpMod(&tmpCtx->pubKey, &two, &tmpCtx->privKey, &bnP3072);
+        break;
+
+#if 0
+    case EC25:
+    case EC38:
+        if (pkType == EC25 || pkType == EC38)
         return EC_KEY_generate_key(static_cast<EC_KEY*>(ctx));
+#endif
+    }
     return 0;
 }
 
 int32_t ZrtpDH::getDhSize() const
 {
-    if (pkType == DH2K || pkType == DH3K)
-        return DH_size(static_cast<DH*>(ctx));
+    switch (pkType) {
+    case DH2K:
+        return 2048/8;
+        break;
+    case DH3K:
+        return 3072/8;
+        break;
 
-    if (pkType == EC25)
+    case EC25:
         return 32;
-    if (pkType == EC38)
+        break;
+    case EC38:
         return 48;
-
+        break;
+    }
     return 0;
 }
 
 int32_t ZrtpDH::getPubKeySize() const
 {
+    dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
     if (pkType == DH2K || pkType == DH3K)
-        return BN_num_bytes(static_cast<DH*>(ctx)->pub_key);
+        return bnBytes(&tmpCtx->pubKey);
 
+#if 0
     if (pkType == EC25 || pkType == EC38)
         return EC_POINT_point2oct(EC_KEY_get0_group(static_cast<EC_KEY*>(ctx)),
                                   EC_KEY_get0_public_key(static_cast<EC_KEY*>(ctx)),
                                   POINT_CONVERSION_UNCOMPRESSED, NULL, 0, NULL) - 1;
+#endif
     return 0;
 
 }
 
 int32_t ZrtpDH::getPubKeyBytes(uint8_t *buf) const
 {
+    dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
 
     if (pkType == DH2K || pkType == DH3K) {
         // get len of pub_key, prepend with zeros to DH size
-        int32_t prepend = getDhSize() - getPubKeySize();
+        int size = getPubKeySize();
+        int32_t prepend = getDhSize() - size;
         if (prepend > 0) {
             memset(buf, 0, prepend);
         }
-        return BN_bn2bin(static_cast<DH*>(ctx)->pub_key, buf + prepend);
+        bnExtractBigBytes(&tmpCtx->pubKey, buf + prepend, 0, size);
+        return size;
     }
+#if 0
     if (pkType == EC25 || pkType == EC38) {
         uint8_t buffer[100];
 
@@ -349,11 +421,13 @@ int32_t ZrtpDH::getPubKeyBytes(uint8_t *buf) const
         memcpy(buf, buffer+1, len-1);
         return len-1;
     }
+#endif
     return 0;
 }
 
 int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
 {
+#if 0
     if (pkType == EC25 || pkType == EC38) {
         uint8_t buffer[100];
         int32_t ret;
@@ -372,29 +446,33 @@ int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
 
         EC_POINT_free(point);
         EC_KEY_free(chkKey);
-        
+
         return ret;
     }
-
-    BIGNUM* pubKeyOther = BN_bin2bn(pubKeyBytes, getDhSize(), NULL);
+#endif
+    BigNum pubKeyOther;
+    bnBegin(&pubKeyOther);
+    bnInsertBigBytes(&pubKeyOther, pubKeyBytes, 0, getDhSize());
 
     if (pkType == DH2K) {
-        if (BN_cmp(bnP2048MinusOne, pubKeyOther) == 0)
+        if (bnCmp(&bnP2048MinusOne, &pubKeyOther) == 0) {
             return 0;
+        }
     }
     else if (pkType == DH3K) {
-        if (BN_cmp(bnP3072MinusOne, pubKeyOther) == 0)
+        if (bnCmp(&bnP3072MinusOne, &pubKeyOther) == 0) {
             return 0;
+
+        }
     }
     else {
-//        if (BN_cmp(bnP4096MinusOne, pubKeyOther) == 0)
         return 0;
     }
-    int one = BN_is_one(pubKeyOther);
-    if (one == 1)
+    if (bnCmpQ(&pubKeyOther, 1) == 0) {
         return 0;
+    }
 
-    BN_free(pubKeyOther);
+    bnEnd(&pubKeyOther);
     return 1;
 }
 

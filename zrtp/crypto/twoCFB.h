@@ -56,8 +56,7 @@
  *    Length of the data in bytes
  */
 
-void twoCfbEncrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data,
-                   int32_t dataLength);
+void twoCfbEncrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data, int32_t dataLength);
 
 /**
  * Decrypt data with Twofish CFB mode, full block feedback size.
@@ -79,8 +78,7 @@ void twoCfbEncrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data,
  *    Length of the data in bytes
  */
 
-void twoCfbDecrypt(uint8_t* key, int32_t keyLength, const uint8_t* IV, uint8_t *data,
-                   int32_t dataLength);
+void twoCfbDecrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data, int32_t dataLength);
 /**
  * @}
  */

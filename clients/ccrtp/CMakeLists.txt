@@ -1,5 +1,24 @@
 cmake_minimum_required (VERSION 2.6)
 
+# setup the Thread include and lib
+find_package(Threads)
+if(CMAKE_HAVE_PTHREAD_H)
+  set(HAVE_PTHREAD_H TRUE)
+endif()
+set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})
+
+if (USES_CCRTP_INCLUDE_DIRS)
+    message(STATUS "  Using local commoncpp dependency")
+else()
+    find_package(PkgConfig)
+    pkg_check_modules(USES_CCRTP libccrtp>=2.0.0)
+endif()
+include_directories(${USES_CCRTP_INCLUDE_DIRS})
+link_directories(${USES_CRTP_LIBRARY_DIRS})
+add_definitions(${USES_CCRTP_CFLAGS})
+set (LIBS ${LIBS} ${USES_CCRTP_LDFLAGS} ${USES_CCRTP_LIBRARIES})
+set(zrtplib zrtpcpp)
+
 #to make sure includes are first taken - it contains config.h
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
 include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/zrtp)
@@ -32,7 +51,7 @@ if (OPENSSL_FOUND)
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.cpp)
 endif()
 
-if (STANDALONE)
+if (CRYPTO_STANDALONE)
     set(crypto_src
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/zrtpDH.cpp
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/hmac256.cpp
@@ -40,12 +59,26 @@ if (STANDALONE)
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/hmac384.cpp
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha384.cpp
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/aesCFB.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.cpp)
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha2.c
+        ${CMAKE_SOURCE_DIR}/bnlib/bn00.c
+        ${CMAKE_SOURCE_DIR}/bnlib/lbn00.c
+        ${CMAKE_SOURCE_DIR}/bnlib/bn.c
+        ${CMAKE_SOURCE_DIR}/bnlib/lbnmem.c
+        ${CMAKE_SOURCE_DIR}/bnlib/sieve.c
+        ${CMAKE_SOURCE_DIR}/bnlib/prime.c
+        ${CMAKE_SOURCE_DIR}/bnlib/bnprint.c
+        ${CMAKE_SOURCE_DIR}/bnlib/jacobi.c
+        ${CMAKE_SOURCE_DIR}/bnlib/germain.c)
 endif()
 
 set(cryptcommon_srcs
     ${CMAKE_SOURCE_DIR}/cryptcommon/twofish.c
-    ${CMAKE_SOURCE_DIR}/cryptcommon/twofish_cfb.c)
+    ${CMAKE_SOURCE_DIR}/cryptcommon/twofish_cfb.c
+    ${CMAKE_SOURCE_DIR}/cryptcommon/aescrypt.c
+    ${CMAKE_SOURCE_DIR}/cryptcommon/aeskey.c
+    ${CMAKE_SOURCE_DIR}/cryptcommon/aestab.c
+    ${CMAKE_SOURCE_DIR}/cryptcommon/aes_modes.c)
 
 set(zrtp_src
     ${CMAKE_CURRENT_SOURCE_DIR}/ZrtpQueue.cpp

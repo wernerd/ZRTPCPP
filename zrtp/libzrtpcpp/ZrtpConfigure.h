@@ -47,7 +47,7 @@ enum AlgoTypes {
 };
 
 typedef void(*encrypt_t)(uint8_t*, int32_t, uint8_t*, uint8_t*, int32_t);
-typedef void(*decrypt_t)(uint8_t*, int32_t, const uint8_t*, uint8_t*, int32_t);
+typedef void(*decrypt_t)(uint8_t*, int32_t, uint8_t*, uint8_t*, int32_t);
 
 /**
  * The algorithm enumration class.

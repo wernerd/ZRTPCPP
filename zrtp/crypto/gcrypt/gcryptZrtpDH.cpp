@@ -21,8 +21,8 @@
  */
 
 #include <gcrypt.h>
-#include <crypto/ZrtpDH.h>
-#include <libzrtpcpp/ZrtpTextData.h>
+#include <zrtp/crypto/zrtpDH.h>
+#include <zrtp/libzrtpcpp/ZrtpTextData.h>
 #include <sstream>
 
 struct gcryptCtx {

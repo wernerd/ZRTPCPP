@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2005, 2004 Erik Eliasson, Johan Bilien
+  Copyright (C) 2012 by Werner Dittmann
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -13,7 +13,7 @@
 
   You should have received a copy of the GNU Lesser General Public
   License along with this library; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 
  * In addition, as a special exception, the copyright holders give
  * permission to link the code of portions of this program with the
@@ -27,39 +27,48 @@
  * do not wish to do so, delete this exception statement from your
  * version.  If you delete this exception statement from all source
  * files in the program, then also delete it here.
-
-*/
-
-/*
- * Authors: Erik Eliasson <eliasson@it.kth.se>
- *          Johan Bilien <jobi@via.ecp.fr>
  */
 
-#include <openssl/hmac.h>
-#include <zrtp/crypto/hmac256.h>
+/** Copyright (C) 2012
+ *
+ * @author  Werner Dittmann <Werner.Dittmann@t-online.de>
+ */
 
-void hmac_sha384(uint8_t* key, uint32_t key_length, uint8_t* data, int32_t data_length, uint8_t* mac, uint32_t* mac_length)
+#include <string.h>
+
+#include <zrtp/crypto/aesCFB.h>
+#include <cryptcommon/aescpp.h>
+
+void aesCfbEncrypt(uint8_t *key, int32_t keyLength, uint8_t* IV, uint8_t *data, int32_t dataLength)
 {
-    unsigned int tmp;
-    HMAC( EVP_sha384(), key, key_length, data, data_length, mac, &tmp );
-    *mac_length = tmp;
+    AESencrypt *saAes = new AESencrypt();
+
+    if (keyLength == 16)
+        saAes->key128(key);
+    else if (keyLength == 32)
+        saAes->key256(key);
+    else
+        return;
+
+    // Note: maybe copy IV to an internal array if we encounter strange things.
+    // the cfb encrypt modify the IV on return. Same for output data (inplace encryption)
+    saAes->cfb_encrypt(data, data, dataLength, IV);
+    delete saAes;
 }
 
-void hmac_sha384(uint8_t* key, uint32_t key_length,
-                 uint8_t* data_chunks[],
-                 uint32_t data_chunck_length[],
-                 uint8_t* mac, uint32_t* mac_length )
+
+void aesCfbDecrypt(uint8_t *key, int32_t keyLength, uint8_t* IV, uint8_t *data, int32_t dataLength)
 {
-    unsigned int tmp;
-    HMAC_CTX ctx;
-    HMAC_CTX_init( &ctx );
-    HMAC_Init_ex( &ctx, key, key_length, EVP_sha384(), NULL );
-    while( *data_chunks ){
-      HMAC_Update( &ctx, *data_chunks, *data_chunck_length );
-      data_chunks ++;
-      data_chunck_length ++;
-    }
-    HMAC_Final( &ctx, mac, &tmp);
-    *mac_length = tmp;
-    HMAC_CTX_cleanup( &ctx );
+    AESencrypt *saAes = new AESencrypt();
+    if (keyLength == 16)
+        saAes->key128(key);
+    else if (keyLength == 32)
+        saAes->key256(key);
+    else
+        return;
+
+    // Note: maybe copy IV to an internal array if we encounter strange things.
+    // the cfb encrypt modify the IV on return. Same for output data (inplace encryption)
+    saAes->cfb_decrypt(data, data, dataLength, IV);
+    delete saAes;
 }

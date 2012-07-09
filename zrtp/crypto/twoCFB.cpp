@@ -36,13 +36,12 @@
 
 #include <string.h>
 
-#include <crypto/twoCFB.h>
+#include <zrtp/crypto/twoCFB.h>
 #include <cryptcommon/twofish.h>
 
 static int initialized = 0;
 
-void twoCfbEncrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data,
-                   int32_t dataLength)
+void twoCfbEncrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data, int32_t dataLength)
 {
     Twofish_key keyCtx;
     int usedBytes = 0;
@@ -60,8 +59,7 @@ void twoCfbEncrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data,
 }
 
 
-void twoCfbDecrypt(uint8_t* key, int32_t keyLength, const uint8_t* IV, uint8_t *data,
-                   int32_t dataLength)
+void twoCfbDecrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data, int32_t dataLength)
 {
     Twofish_key keyCtx;
     int usedBytes = 0;

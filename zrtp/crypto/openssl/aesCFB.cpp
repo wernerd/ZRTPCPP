@@ -38,7 +38,7 @@
 #include <openssl/aes.h>
 #include <string.h>
 
-#include <crypto/aesCFB.h>
+#include <zrtp/crypto/aesCFB.h>
 
 // extern void initializeOpenSSL();
 
@@ -66,7 +66,7 @@ void aesCfbEncrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data,
 }
 
 
-void aesCfbDecrypt(uint8_t* key, int32_t keyLength, const uint8_t* IV, uint8_t *data,
+void aesCfbDecrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data,
                    int32_t dataLength)
 {
     AES_KEY aesKey;
@@ -85,5 +85,5 @@ void aesCfbDecrypt(uint8_t* key, int32_t keyLength, const uint8_t* IV, uint8_t *
         return;
     }
     AES_cfb128_encrypt(data, data, dataLength, &aesKey,
-                       (unsigned char*)IV, &usedBytes, AES_DECRYPT);
+                       IV, &usedBytes, AES_DECRYPT);
 }

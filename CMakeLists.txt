@@ -37,11 +37,17 @@ include(cmake/Modules/FindGcryptConfig.cmake)
 include(FindPkgConfig)
 include(CheckLibraryExists)
 include(CheckIncludeFiles)
+include(CheckFunctionExists)
 include(cmake/Modules/AutoArgs.cmake)
 
 # check the -Denable-ccrtp setting, defaults to true
 enable_arg(ccrtp true "Enable GNU ccRTP support for GNU ZRTP")
+enable_arg(crypto_standalone true)
 args_help()
+
+if (enable_crypto_standalone)
+    set(CRYPTO_STANDALONE TRUE)
+endif()
 
 if (NOT LIB_SUFFIX)
     set(LIBDIRNAME "lib")
@@ -55,54 +61,49 @@ else()
     set(LIBDIRNAME "lib${LIB_SUFFIX}")
 endif()
 
-# setup the Thread include and lib
-find_package(Threads)
-if(CMAKE_HAVE_PTHREAD_H)
-  set(HAVE_PTHREAD_H TRUE)
-endif()
-set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})
-
-# define the name of the lib. zrtpcppcore does not include the ccRTP stuff.
-set(zrtplib zrtpcppcore)
-if(enable_ccrtp)
-    if (USES_CCRTP_INCLUDE_DIRS)
-        message(STATUS "  Using local commoncpp dependency")
-    else()
-        find_package(PkgConfig)
-        pkg_check_modules(USES_CCRTP libccrtp>=2.0.0)
-    endif()
-    include_directories(${USES_CCRTP_INCLUDE_DIRS})
-    link_directories(${USES_CRTP_LIBRARY_DIRS})
-    add_definitions(${USES_CCRTP_CFLAGS})
-    set (LIBS ${LIBS} ${USES_CCRTP_LDFLAGS} ${USES_CCRTP_LIBRARIES})
-    set(zrtplib zrtpcpp)
-endif()
-
-# now get info about crypto libraries
-gcr_check(GCRYPT gcrypt)
-#if(GCRYPT_FOUND)
-#  check_include_files(gcrypt.h HAVE_GCRYPT_H)
-#  set(LIBS ${LIBS} ${GCRYPT_LIBRARIES})
-#  set(BUILD_REQ "libgcrypt-devel")
-#  set(CRYPTOBACKEND="")
-#  set(PACKAGE_REQ "libgcrypt")
-#else()
-  pkg_check_modules(OPENSSL libcrypto>=0.9.8)
-  if (OPENSSL_FOUND)
-    set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES} ${OPENSSL_INCLUDE_DIRS}) #update include files search directory
-    check_include_files(openssl/bn.h HAVE_OPENSSL_BN_H)
-    check_include_files(openssl/aes.h HAVE_OPENSSL_AES_H)
-    check_include_files(openssl/sha.h HAVE_OPENSSL_SHA_H)
-    check_library_exists(crypto EVP_CipherInit_ex "${OPENSSL_LIBDIR}" HAVE_SSL_CRYPT) #use search lib directory from pkg-config
-    set(LIBS ${LIBS} -lcrypto)
-    set(CRYPTOBACKEND "libcrypto >= 0.9.8")
-    set(BUILD_REQ "libopenssl-devel >= 0.9.8")
-    set(PACKAGE_REQ "libopenssl >= 0.9.8")
-    include_directories(${OPENSSL_INCLUDE_DIRS}) #update includes directory from pkg-config
+if (NOT enable_crypto_standalone)
+    pkg_check_modules(OPENSSL libcrypto>=0.9.8)
+    if (OPENSSL_FOUND)
+      set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES} ${OPENSSL_INCLUDE_DIRS}) #update include files search directory
+      check_include_files(openssl/bn.h HAVE_OPENSSL_BN_H)
+      check_include_files(openssl/aes.h HAVE_OPENSSL_AES_H)
+      check_include_files(openssl/sha.h HAVE_OPENSSL_SHA_H)
+      check_library_exists(crypto EVP_CipherInit_ex "${OPENSSL_LIBDIR}" HAVE_SSL_CRYPT) #use search lib directory from pkg-config
+      set(LIBS ${LIBS} -lcrypto)
+      set(CRYPTOBACKEND "libcrypto >= 0.9.8")
+      set(BUILD_REQ "libopenssl-devel >= 0.9.8")
+      set(PACKAGE_REQ "libopenssl >= 0.9.8")
+      include_directories(${OPENSSL_INCLUDE_DIRS}) #update includes directory from pkg-config
   else()
-    message(FATAL_ERROR "No crypto library found")
+      message(FATAL_ERROR "No crypto library found")
   endif()
-#endif()
+else()
+    # For crypto standalone mode we need to configure the bnlib. In a first step
+    # without the tests and demos.
+    check_include_files(stdint.h HAVE_STDINT_H)
+    check_include_files(stdint.h HAVE_ASSERT_H)
+    check_include_files(limits.h HAVE_LIMITS_H)
+    check_include_files(stdlib.h HAVE_STDLIB_H)
+    check_include_files(string.h HAVE_STRING_H)
+
+    check_function_exists(memmove HAVE_MEMMOVE)
+    check_function_exists(memcpy HAVE_MEMCPY)
+
+    # below only if we compile the tests
+    #
+    # check_function_exists(clock_gettime HAVE_CLOCK_GETTIME)
+    # check_function_exists(getrusage HAVE_GETRUSAGE)
+    # check_function_exists(clock HAVE_CLOCK)
+    # check_function_exists(time HAVE_TIME)
+
+    # Check if Solaris-style gethrvtime() is available
+    # check_function_exists(gethrvtime HAVE_GETHRVTIME)
+    #
+    # until here
+
+    # necessary and required modules checked, ready to generate config.h
+    configure_file(${CMAKE_SOURCE_DIR}/bnlib/bnconfig.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/bnconfig.h)
+endif()
 
 check_include_files(stdlib.h HAVE_STDLIB_H)
 check_include_files(string.h HAVE_STRING_H)

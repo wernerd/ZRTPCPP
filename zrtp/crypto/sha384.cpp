@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2005, 2004 Erik Eliasson, Johan Bilien
+  Copyright (C) 2012 Werner Dittmann
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -27,39 +27,68 @@
  * do not wish to do so, delete this exception statement from your
  * version.  If you delete this exception statement from all source
  * files in the program, then also delete it here.
-
-*/
-
-/*
- * Authors: Erik Eliasson <eliasson@it.kth.se>
- *          Johan Bilien <jobi@via.ecp.fr>
  */
 
-#include <openssl/hmac.h>
-#include <zrtp/crypto/hmac256.h>
+/**
+ * @author: Werner Dittmann
+ */
 
-void hmac_sha384(uint8_t* key, uint32_t key_length, uint8_t* data, int32_t data_length, uint8_t* mac, uint32_t* mac_length)
+#include <zrtp/crypto/sha2.h>
+#include <zrtp/crypto/sha384.h>
+
+void sha384(unsigned char *data, unsigned int dataLength, unsigned char *digest )
 {
-    unsigned int tmp;
-    HMAC( EVP_sha384(), key, key_length, data, data_length, mac, &tmp );
-    *mac_length = tmp;
+    sha384_ctx ctx;
+
+    sha384_begin(&ctx);
+    sha384_hash(data, dataLength, &ctx);
+    sha384_end(digest, &ctx);
 }
 
-void hmac_sha384(uint8_t* key, uint32_t key_length,
-                 uint8_t* data_chunks[],
-                 uint32_t data_chunck_length[],
-                 uint8_t* mac, uint32_t* mac_length )
+void sha384(unsigned char *dataChunks[], unsigned int dataChunckLength[], unsigned char *digest)
 {
-    unsigned int tmp;
-    HMAC_CTX ctx;
-    HMAC_CTX_init( &ctx );
-    HMAC_Init_ex( &ctx, key, key_length, EVP_sha384(), NULL );
-    while( *data_chunks ){
-      HMAC_Update( &ctx, *data_chunks, *data_chunck_length );
-      data_chunks ++;
-      data_chunck_length ++;
+    sha384_ctx ctx;
+
+    sha384_begin(&ctx);
+    while(*dataChunks) {
+        sha384_hash(*dataChunks, *dataChunckLength, &ctx);
+        dataChunks++;
+        dataChunckLength++;
     }
-    HMAC_Final( &ctx, mac, &tmp);
-    *mac_length = tmp;
-    HMAC_CTX_cleanup( &ctx );
+    sha384_end(digest, &ctx);
+}
+
+void* createSha384Context()
+{
+    sha384_ctx *ctx = reinterpret_cast<sha384_ctx*>(malloc(sizeof(sha384_ctx)));
+    sha384_begin(ctx);
+    return (void*)ctx;
+}
+
+void closeSha384Context(void* ctx, unsigned char* digest)
+{
+    sha384_ctx* hd = reinterpret_cast<sha384_ctx*>(ctx);
+
+    if (digest != NULL) {
+        sha384_end(digest, hd);
+    }
+    free(hd);
+}
+
+void sha384Ctx(void* ctx, unsigned char* data, unsigned int dataLength)
+{
+    sha384_ctx* hd = reinterpret_cast<sha384_ctx*>(ctx);
+
+    sha384_hash(data, dataLength, hd);
+}
+
+void sha384Ctx(void* ctx, unsigned char* dataChunks[], unsigned int dataChunkLength[])
+{
+    sha384_ctx* hd = reinterpret_cast<sha384_ctx*>(ctx);
+
+    while (*dataChunks) {
+        sha384_hash(*dataChunks, *dataChunkLength, hd);
+        dataChunks++;
+        dataChunkLength++;
+    }
 }
