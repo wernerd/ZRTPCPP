@@ -33,7 +33,7 @@
 #include <CryptoContext.h>
 
 #include <crypto/hmac.h>
-#include <crypto/macSkein.h>
+#include <cryptcommon/macSkein.h>
 
 
 CryptoContextCtrl::CryptoContextCtrl(uint32_t ssrc,

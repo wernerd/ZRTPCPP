@@ -1,7 +1,7 @@
 #ifndef _SKEIN_IV_H_
 #define _SKEIN_IV_H_
 
-#include <crypto/skein.h>    /* get Skein macros and types */
+#include <cryptcommon/skein.h>    /* get Skein macros and types */
 
 /*
 ***************** Pre-computed Skein IVs *******************

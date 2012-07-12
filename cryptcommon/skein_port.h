@@ -15,7 +15,7 @@
 ** 
 ********************************************************************/
 
-#include <crypto/brg_types.h>                      /* get integer type definitions */
+#include <cryptcommon/brg_types.h>                      /* get integer type definitions */
 
 /*r3gis3r : android already has that defined in types */
 #ifndef ANDROID
@@ -49,7 +49,7 @@ typedef uint_64t        u64b_t;             /* 64-bit unsigned integer */
  */
 #ifndef SKEIN_NEED_SWAP /* compile-time "override" for endianness? */
 
-#include <crypto/brg_endian.h>              /* get endianness selection */
+#include <cryptcommon/brg_endian.h>              /* get endianness selection */
 #if   PLATFORM_BYTE_ORDER == IS_BIG_ENDIAN
     /* here for big-endian CPUs */
 #define SKEIN_NEED_SWAP   (1)

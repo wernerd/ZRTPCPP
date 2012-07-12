@@ -32,12 +32,12 @@ OTHER DEALINGS IN THE SOFTWARE.
  * @brief A Skein API and its functions.
  * @{
  *
- * This API and the functions that implement this API simplify the usage
+ * This API and the functions that implement this API simplify usage
  * of Skein. The design and the way to use the functions follow the openSSL
  * design but at the same time take care of some Skein specific behaviour
  * and possibilities.
  * 
- * The functions enable applications to create a normal Skein hashes and
+ * The functions enable applications to create normal Skein hashes and
  * message authentication codes (MAC).
  * 
  * Using these functions is simple and straight forward:
@@ -52,9 +52,9 @@ OTHER DEALINGS IN THE SOFTWARE.
  * // prepare context, here for a Skein with a state size of 512 bits.
  * skeinCtxPrepare(&ctx, Skein512);
  * 
- * // Initialize the context to set the requested hash length in bits
- * // here request a output hash size of 31 bits (Skein supports variable
- * // output sizes even very strange sizes)
+ * // Initialize the context to set the requested hash length in bits:
+ * // request an output hash size of 31 bits (Skein supports variable
+ * // output sizes, even very strange sizes)
  * skeinInit(&ctx, 31);
  * 
  * // Now update Skein with any number of message bits. A function that
@@ -71,14 +71,14 @@ OTHER DEALINGS IN THE SOFTWARE.
  * An application may use @c skeinReset to reset a Skein context and use
  * it for creation of another hash with the same Skein state size and output
  * bit length. In this case the API implementation restores some internal
- * internal state data and saves a full Skein initialization round.
+ * state data and saves a full Skein initialization round.
  * 
  * To create a MAC the application just uses @c skeinMacInit instead of 
- * @c skeinInit. All other functions calls remain the same.
+ * @c skeinInit. All other function calls remain the same.
  * 
  */
 
-#include <crypto/skein.h>
+#include <cryptcommon/skein.h>
 
 #ifdef _MSC_VER
 typedef signed __int8 int8_t;

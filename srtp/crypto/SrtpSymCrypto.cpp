@@ -37,8 +37,8 @@
 
 #include <stdlib.h>
 #include <crypto/SrtpSymCrypto.h>
-#include <crypto/twofish.h>
-#include <crypto/aesopt.h>
+#include <cryptcommon/twofish.h>
+#include <cryptcommon/aesopt.h>
 #include <string.h>
 #include <stdio.h>
 #include <arpa/inet.h>

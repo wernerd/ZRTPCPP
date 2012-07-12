@@ -15,7 +15,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <crypto/macSkein.h>
+#include <cryptcommon/macSkein.h>
 #include <stdlib.h>
 
 void macSkein(uint8_t* key, int32_t key_length,

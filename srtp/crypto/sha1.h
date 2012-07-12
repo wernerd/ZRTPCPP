@@ -34,7 +34,7 @@
 #define _SHA1_H
 
 #include <stdlib.h>
-#include "brg_types.h"
+#include <cryptcommon/brg_types.h>
 
 #define SHA1_BLOCK_SIZE  64
 #define SHA1_DIGEST_SIZE 20
