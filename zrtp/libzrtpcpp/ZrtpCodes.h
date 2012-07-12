@@ -73,7 +73,7 @@ enum MessageSeverity {
  * Sub-codes for Info
  */
 enum InfoCodes {
-    InfoHelloReceived = 1,          //!< Hello received, preparing a Commit
+    InfoHelloReceived = 1,          //!< Hello received and prepared a Commit, ready to get peer's hello hash
     InfoCommitDHGenerated,          //!< Commit: Generated a public DH key
     InfoRespCommitReceived,         //!< Responder: Commit received, preparing DHPart1
     InfoDH1DHGenerated,             //!< DH1Part: Generated a public DH key

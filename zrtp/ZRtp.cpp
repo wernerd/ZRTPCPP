@@ -243,8 +243,6 @@ ZrtpPacketHelloAck* ZRtp::prepareHelloAck() {
  */
 ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) {
 
-    sendInfo(Info, InfoHelloReceived);
-
     if (memcmp(hello->getVersion(), zrtpVersion, ZRTP_WORD_SIZE-1) != 0) {
         *errMsg = UnsuppZRTPVersion;
         return NULL;
@@ -386,6 +384,8 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     memcpy(peerHelloVersion, hello->getVersion(), ZRTP_WORD_SIZE);
     peerHelloVersion[ZRTP_WORD_SIZE] = 0;
 
+    sendInfo(Info, InfoHelloReceived);
+
     return &zrtpCommit;
 }
 
@@ -432,6 +432,8 @@ ZrtpPacketCommit* ZRtp::prepareCommitMultiStream(ZrtpPacketHello *hello) {
     hashFunctionImpl((unsigned char*)hello->getHeaderBase(), helloLen, peerHelloHash);
     memcpy(peerHelloVersion, hello->getVersion(), ZRTP_WORD_SIZE);
     peerHelloVersion[ZRTP_WORD_SIZE] = 0;
+
+    sendInfo(Info, InfoHelloReceived);
 
     return &zrtpCommit;
 }
@@ -748,7 +750,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     zrtpConfirm1.setIv(randomIV);
     zrtpConfirm1.setHashH0(H0);
 
-    // if this run at PBX user agent enrollment service then set flag in confirm
+    // if this runs at PBX user agent enrollment service then set flag in confirm
     // packet and store the MitM key
     if (enrollmentMode) {
         computePBXSecret();
@@ -1221,8 +1223,6 @@ ZrtpPacketRelayAck* ZRtp::prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* er
     uint8_t confMac[MAX_DIGEST_LENGTH];
     uint32_t macLen;
 
-    // Use the Initiator's keys here because we are Responder here and
-    // reveice packets from Initiator
     int16_t hmlen = (srly->getLength() - 9) * ZRTP_WORD_SIZE;
 
     // Use negotiated HMAC (hash)
@@ -2414,6 +2414,7 @@ void ZRtp::acceptEnrollment(bool accepted) {
         callback->zrtpInformEnrollment(EnrollmentOk);
     }
     else {
+        zidRec.resetMITMKeyAvailable();
         callback->zrtpInformEnrollment(EnrollmentFailed);
         return;
     }
