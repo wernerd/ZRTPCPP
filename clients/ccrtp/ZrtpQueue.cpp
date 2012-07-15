@@ -23,7 +23,7 @@
 #include <stdio.h>
 
 #include <ZrtpQueue.h>
-#include <libzrtpcpp/ZIDFile.h>
+#include <libzrtpcpp/ZIDCache.h>
 #include <libzrtpcpp/ZRtp.h>
 #include <libzrtpcpp/ZrtpStateClass.h>
 #include <libzrtpcpp/ZrtpUserCallback.h>
@@ -90,7 +90,7 @@ ZrtpQueue::initialize(const char *zidFilename, bool autoEnable, ZrtpConfigure* c
         staticTimeoutProvider = new TimeoutProvider<std::string, ZrtpQueue*>();
         staticTimeoutProvider->start();
     }
-    ZIDFile* zf = ZIDFile::getInstance();
+    ZIDCache* zf = getZidCacheInstance();
     if (!zf->isOpen()) {
         std::string fname;
         if (zidFilename == NULL) {

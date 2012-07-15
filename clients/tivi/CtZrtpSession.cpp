@@ -5,7 +5,7 @@
 #include <string>
 #include <stdio.h>
 
-#include <libzrtpcpp/ZIDFile.h>
+#include <libzrtpcpp/ZIDCache.h>
 #include <libzrtpcpp/ZRtp.h>
 #include <libzrtpcpp/ZrtpStateClass.h>
 #include <srtp/CryptoContext.h>
@@ -16,13 +16,15 @@
 
 // using namespace GnuZrtpCodes;
 
-CtZrtpSession::CtZrtpSession() {
+CtZrtpSession::CtZrtpSession() : mitmMode(false), signSas(false), enableParanoidMode(false),
+    isReady(false)
+{
     streams[AudioStream] = new CtZrtpStream();
     streams[VideoStream] = new CtZrtpStream();
 }
 
 
-int32_t CtZrtpSession::init(const char *zidFilename, ZrtpConfigure* config)
+int CtZrtpSession::init(const char *zidFilename, ZrtpConfigure* config)
 {
     int32_t ret = 1;
 
@@ -35,7 +37,7 @@ int32_t CtZrtpSession::init(const char *zidFilename, ZrtpConfigure* config)
     }
     config->setParanoidMode(enableParanoidMode);
 
-    ZIDFile* zf = ZIDFile::getInstance();
+    ZIDCache* zf = getZidCacheInstance();
     if (!zf->isOpen()) {
         std::string fname;
         if (zidFilename == NULL) {
@@ -69,6 +71,7 @@ int32_t CtZrtpSession::init(const char *zidFilename, ZrtpConfigure* config)
         delete configOwn;
     }
     synchLeave();
+    isReady = true;
     return ret;
 }
 
@@ -143,11 +146,32 @@ void CtZrtpSession::stop(streamName streamNm) {
     if (!(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
         return;
 
+    streams[streamNm]->isStopped = true;
+}
+
+void CtZrtpSession::release(streamName streamNm) {
+    if (!(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return;
+
+    isReady = false;
     CtZrtpStream *stream = streams[streamNm];
 
     delete stream;                      // destroy the existing stuff
     stream = NULL;
 }
+
+void CtZrtpSession::setLastPeerName(const char *name, int iIsMitm) {
+    CtZrtpStream *stream = streams[AudioStream];
+
+    if (!isReady || stream->isStopped)
+        return;
+
+    uint8_t peerZid[IDENTIFIER_LEN];
+    std::string nm(name);
+    stream->zrtpEngine->getPeerZid(peerZid);
+    getZidCacheInstance()->putPeerName(peerZid, &nm);
+}
+
 
 #if 0
 bool CtZrtpSession::newStream(streamName streamNm, streamType type) {
@@ -185,6 +209,10 @@ bool CtZrtpSession::processOutoingRtp(uint8_t *buffer, size_t length, size_t *ne
         return false;
 
     CtZrtpStream *stream = streams[streamNm];
+
+    if (!isReady || stream->isStopped)
+        return false;
+
     return stream->processOutgoingRtp(buffer, length, newLength);
 }
 

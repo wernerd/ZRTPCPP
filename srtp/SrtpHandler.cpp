@@ -14,6 +14,7 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 */
 #include <netinet/in.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -42,7 +43,7 @@ bool SrtpHandler::decodeRtp(uint8_t* buffer, int32_t length, uint32_t *ssrc, uin
     uint16_t tmp16 = pus[1];                    // get seq number
     *seq = ntohs(tmp16);                        // and return in host oder
 
-    uint32_t tmp32 = pui[1];                    // get SSRC
+    uint32_t tmp32 = pui[2];                    // get SSRC
     *ssrc = ntohl(tmp32);                       // and return in host order
 
 
@@ -113,7 +114,9 @@ int32_t SrtpHandler::unprotect(CryptoContext* pcc, uint8_t* buffer, size_t lengt
         return 0;
     }
 
+//    fprintf(stderr, "decoding - buffer: %p\n", buffer);
     decodeRtp(buffer, length, &ssrc, &seqnum, &payload, &payloadlen);
+//    fprintf(stderr, "decoded - ssrc: %x, seq: %d, payload: %p, paylen: %d\n", ssrc, seqnum, payload, payloadlen);
 
     /*
      * This is the setting of the packet data when we come to this

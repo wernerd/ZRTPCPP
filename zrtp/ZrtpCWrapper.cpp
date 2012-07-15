@@ -19,7 +19,7 @@
 
 #include <libzrtpcpp/ZrtpCallback.h>
 #include <libzrtpcpp/ZrtpConfigure.h>
-#include <libzrtpcpp/ZIDFile.h>
+#include <libzrtpcpp/ZIDCache.h>
 #include <libzrtpcpp/ZRtp.h>
 #include <libzrtpcpp/ZrtpCallbackWrapper.h>
 #include <libzrtpcpp/ZrtpCWrapper.h>
@@ -55,8 +55,7 @@ void zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext,
 
     // Initialize ZID file (cache) and get my own ZID
     zrtp_initZidFile(zidFilename);
-    ZIDFile* zf = ZIDFile::getInstance();
-    const unsigned char* myZid = zf->getZid();
+    const unsigned char* myZid = getZidCacheInstance()->getZid();
 
     zrtpContext->zrtpEngine = new ZRtp((uint8_t*)myZid, zrtpContext->zrtpCallback,
                               clientIdString, zrtpContext->configure, mitmMode == 0 ? false : true);
@@ -80,7 +79,7 @@ void zrtp_DestroyWrapper(ZrtpContext* zrtpContext) {
 }
 
 static int32_t zrtp_initZidFile(const char* zidFilename) {
-    ZIDFile* zf = ZIDFile::getInstance();
+    ZIDCache* zf = getZidCacheInstance();
 
     if (!zf->isOpen()) {
         std::string fname;
