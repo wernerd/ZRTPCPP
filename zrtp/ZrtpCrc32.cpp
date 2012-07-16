@@ -1,46 +1,7 @@
-/* SCTP kernel reference Implementation
- * Copyright (c) 1999-2001 Motorola, Inc.
- * Copyright (c) 2001-2003 International Business Machines, Corp.
- *
- * SCTP Checksum functions
- *
- * The SCTP reference implementation is free software;
- * you can redistribute it and/or modify it under the terms of
- * the GNU General Public License as published by
- * the Free Software Foundation; either version 2, or (at your option)
- * any later version.
- *
- * The SCTP reference implementation is distributed in the hope that it
- * will be useful, but WITHOUT ANY WARRANTY; without even the implied
- *                 ************************
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with GNU CC; see the file COPYING.  If not, write to
- * the Free Software Foundation, 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
- *
- * Please send any bug reports or fixes you make to the
- * email address(es):
- *    lksctp developers <lksctp-developers@lists.sourceforge.net>
- *
- * Or submit a bug report through the following website:
- *    http://www.sf.net/projects/lksctp
- *
- * Written or modified by:
- *    Dinakaran Joseph
- *    Jon Grimm <jgrimm@us.ibm.com>
- *    Sridhar Samudrala <sri@us.ibm.com>
- *
- * Any bugs reported given to us we will try to fix... any fixes shared will
- * be incorporated into the next SCTP release.
- */
-
 /* The following code has been taken directly from
  * draft-ietf-tsvwg-sctpcsum-03.txt
  *
- * The code has now been modified by Werner.Dittmann@t-online.de for use 
+ * The code has now been modified by Werner.Dittmann@t-online.de for use
  * inside the ZRTP implementation.
  */
 
@@ -184,40 +145,10 @@ uint32_t zrtpEndCksum(uint32_t crc32)
     byte3 = (result>>24) & 0xff;
 
     crc32 = ((byte0 << 24) |
-	     (byte1 << 16) |
-	     (byte2 << 8)  |
-	     byte3);
+    (byte1 << 16) |
+    (byte2 << 8)  |
+    byte3);
     // fprintf(stderr, "Computed crc32: %x\n", crc32);
     return crc32;
 }
 
-#ifdef UNIT_TEST
-uint8_t test_data[48] = {
-    0x01, 0xC0, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00,
-    0x01, 0xFE, 0x60, 0xAC,
-    0x00, 0x00, 0x00, 0x08,
-    0x00, 0x00, 0x00, 0x04,
-    0x00, 0x00, 0x00, 0x09,
-    0x25, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00,
-};
-    
-int main( int argc, char * argv[] )
-{
-    crc32c =  sctp_update_cksum(test_data, 48);
-    printf("Hello World, expected result: 0x664f75eb\n");
-    printf("Result is: 0x%x\n", crc32c);
-}
-#endif
-/** EMACS **
- * Local variables:
- * mode: c++
- * c-default-style: ellemtel
- * c-basic-offset: 4
- * End:
- */
