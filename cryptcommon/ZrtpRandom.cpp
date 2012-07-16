@@ -47,6 +47,8 @@ int ZrtpRandom::getRandomData(uint8_t* buffer, uint32_t length) {
     uint8_t    rdata[AES_BLOCK_SIZE];
     uint32_t   generated = length;
 
+    initialize();
+
     lockRandom.Lock();
 
     /*
@@ -106,6 +108,8 @@ int ZrtpRandom::getRandomData(uint8_t* buffer, uint32_t length) {
 
 int ZrtpRandom::addEntropy(const uint8_t *buffer, uint32_t length)
 {
+    initialize();
+
     if (buffer && length) {
         sha512_hash(buffer, length, &mainCtx);
     }
@@ -129,6 +133,7 @@ void ZrtpRandom::initialize() {
         return;
     }
     sha512_begin(&mainCtx);
+    initialized = true;
     lockRandom.Unlock();
 }
 
