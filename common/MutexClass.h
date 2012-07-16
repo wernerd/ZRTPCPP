@@ -35,7 +35,7 @@
 #ifndef WINDOWS
 #include <pthread.h>
 #endif
-#include "Thread.h"
+#include <common/Thread.h>
 
 class CMutexClass
 {
