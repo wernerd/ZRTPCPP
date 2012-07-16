@@ -44,6 +44,7 @@
 #include <zrtp/crypto/zrtpDH.h>
 #include <zrtp/libzrtpcpp/ZrtpTextData.h>
 #include <cryptcommon/aes.h>
+#include <cryptcommon/ZrtpRandom.h>
 
 
 static BigNum bnP2048 = {0};
@@ -63,14 +64,7 @@ typedef struct _dhCtx {
 
 void randomZRTP(uint8_t *buf, int32_t length)
 {
-    ssize_t num;
-    int rnd = open("/dev/urandom", O_RDONLY);
-    if (rnd >= 0) {
-        num = read(rnd, buf, length);
-        close(rnd);
-    }
-    else
-        fprintf(stderr, "cannot open /dev/random");
+    ZrtpRandom::getRandomData(buf, length);
 }
 
 static const uint8_t P2048[] =
