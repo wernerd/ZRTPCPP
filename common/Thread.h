@@ -68,8 +68,8 @@ typedef DWORD ThreadId_t;
 #endif
 #endif
 
-#include "MutexClass.h"
-#include "EventClass.h"
+#include <common/MutexClass.h>
+#include <common/EventClass.h>
 
 #define QUEUE_SIZE 100
 #define DEFAULT_STACK_SIZE 0
