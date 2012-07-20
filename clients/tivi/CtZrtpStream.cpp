@@ -1,4 +1,7 @@
 #include <netinet/in.h>
+
+// #define __STDC_FORMAT_MACROS
+
 #include <libzrtpcpp/ZRtp.h>
 #include <libzrtpcpp/ZrtpStateClass.h>
 #include <libzrtpcpp/ZrtpCrc32.h>
@@ -22,12 +25,14 @@ static int initialized = 0;
 
 using namespace GnuZrtpCodes;
 
-CtZrtpStream::CtZrtpStream(): index(CtZrtpSession::AudioStream), type(CtZrtpSession::NoStream), zrtpEngine(NULL),
-    tiviState(CtZrtpSession::eLookingPeer), ownSSRC(0), enableZrtp(0),
-    started(0), isStopped(false), recvSrtp(NULL), recvSrtcp(NULL), sendSrtp(NULL), sendSrtcp(NULL),
-    zrtpUserCallback(NULL), session(NULL), senderZrtpSeqNo(0), peerSSRC(0),
-    protect(0), unprotect(0), unprotectFailed(0), srtcpIndex(0)
+CtZrtpStream::CtZrtpStream():
+    index(CtZrtpSession::AudioStream), type(CtZrtpSession::NoStream), zrtpEngine(NULL),
+    ownSSRC(0), enableZrtp(0), started(false), isStopped(false), session(NULL), tiviState(CtZrtpSession::eLookingPeer),
+    prevTiviState(CtZrtpSession::eLookingPeer), recvSrtp(NULL), recvSrtcp(NULL), sendSrtp(NULL), sendSrtcp(NULL),
+    zrtpUserCallback(NULL), senderZrtpSeqNo(0), peerSSRC(0), protect(0), unprotect(0), unprotectFailed(0), srtcpIndex(0),
+    zrtpHashMatch(false), sasVerified(false)
 {
+    // TODO: do we need mutex or can tivi do it
     if (staticTimeoutProvider == NULL) {
         staticTimeoutProvider = new TimeoutProvider<std::string, CtZrtpStream*>();
         staticTimeoutProvider->Event(&staticTimeoutProvider);  // Event argument is dummy, not used
@@ -45,16 +50,46 @@ void CtZrtpStream::setSendCallback(CtZrtpSendCb* scb) {
 }
 
 CtZrtpStream::~CtZrtpStream() {
-    stopZrtp();
+    stopStream();
 }
 
-void CtZrtpStream::stopZrtp() {
+void CtZrtpStream::stopStream() {
 
-    if (zrtpEngine != NULL) {
-        delete zrtpEngine;
-        zrtpEngine = NULL;
-        started = false;
-    }
+    index = CtZrtpSession::AudioStream;
+    type = CtZrtpSession::NoStream;
+    tiviState = CtZrtpSession::eLookingPeer;
+    prevTiviState = CtZrtpSession::eLookingPeer;
+    ownSSRC = 0;
+    enableZrtp = 0;
+    started = false;
+    isStopped = false;
+    peerSSRC = 0;
+    protect = 0;
+    senderZrtpSeqNo =  4711;     // TODO: get 15 bit random number
+    unprotect = 0;
+    unprotectFailed = 0;
+    srtcpIndex = 0;
+    zrtpHashMatch= false;
+    sasVerified = false;
+
+    delete zrtpEngine;
+    zrtpEngine = NULL;
+
+    delete recvSrtp;
+    recvSrtp = NULL;
+
+    delete recvSrtcp;
+    recvSrtcp = NULL;
+
+    delete sendSrtp;
+    sendSrtp = NULL;
+
+    delete sendSrtcp;
+    sendSrtcp = NULL;
+
+    // Don't delete the next two classes, we don't own them.
+    zrtpUserCallback = NULL;
+    session = NULL;
 }
 
 bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *newLength) {
@@ -132,11 +167,103 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, size_t length, size_t 
     return 0;
 }
 
-void CtZrtpStream::setSignalingHelloHash(const char *hHash) {
-    helloHash.assign(hHash);
+void CtZrtpStream::getSignalingHelloHash(char *hHash) {
+
+    if (hHash == NULL)
+        return;
+
+    std::string hash;
+    std::string hexString;
+    size_t hexStringStart;
+
+    // The Tivi client requires the 64 char hex string only, thus
+    // split the string that we get from ZRTP engine that contains
+    // the version info as well (which is the right way to do because
+    // the engine knows which version of the ZRTP protocol it uses.)
+    hash = zrtpEngine->getHelloHash();
+    hexStringStart = hash.find_last_of(' ');
+    hexString = hash.substr(hexStringStart+1);
+
+    // Copy the hex string and terminate with nul
+    int maxLen = hexString.length() > 64 ? 64 : hexString.length();
+    memcpy(hHash, hexString.c_str(), maxLen);
+    hHash[maxLen] = '\0';
 }
 
-/*
+
+void CtZrtpStream::setSignalingHelloHash(const char *hHash) {
+    peerHelloHash.assign(hHash);
+
+    std::string ph = zrtpEngine->getPeerHelloHash();
+    if (ph.empty()) {
+        return;
+    }
+    std::string hexString;
+    size_t hexStringStart;
+    hexStringStart = ph.find_last_of(' ');
+    hexString = ph.substr(hexStringStart+1);
+    if (hexString.compare(peerHelloHash) == 0) {
+        zrtpHashMatch = true;
+        return;
+    }
+    if (zrtpUserCallback != NULL)
+        zrtpUserCallback->onZrtpWarning(session, "ZRTP_EVENT_WRONG_SIGNALING_HASH", index);
+}
+
+int CtZrtpStream::isSecure() {
+    return tiviState == CtZrtpSession::eSecure || tiviState == CtZrtpSession::eSecureMitm;
+}
+
+int CtZrtpStream::getInfo(const char *key, char *p) {
+
+    if (!started || isStopped)
+        return 0;
+
+    const ZRtp::zrtpInfo *info = zrtpEngine->getDetailInfo();
+
+    int iLen=strlen(key);
+
+#define T_ZRTP_LB(_K,_V)                                \
+    if(iLen+1 == sizeof(_K) && strncmp(key, _K, iLen) == 0){  \
+        return sprintf(p,"%s", _V);}
+
+#define T_ZRTP_F(_K,_FV)                                                \
+    if(iLen+1 == sizeof(_K) && strncmp(key,_K,iLen) == 0){              \
+        return sprintf(p, "%d", (!!(info->secretsCached & _FV)) << (!!(info->secretsMatched & _FV)));}
+
+    T_ZRTP_F("rs1",ZRtp::Rs1);
+    T_ZRTP_F("rs2",ZRtp::Rs2);
+    T_ZRTP_F("aux",ZRtp::Aux);
+    T_ZRTP_F("pbx",ZRtp::Pbx);
+
+
+    T_ZRTP_LB("lbClient",      zrtpEngine->getPeerClientId().c_str());
+    T_ZRTP_LB("lbVersion",     zrtpEngine->getPeerProtcolVersion().c_str());
+    T_ZRTP_LB("lbChiper",      info->cipher);
+    T_ZRTP_LB("lbAuthTag",     info->authLength);
+    T_ZRTP_LB("lbHash",        info->hash);
+    T_ZRTP_LB("lbKeyExchange", info->pubKey);
+
+    const char *strng = NULL;
+    if (!zrtpHashMatch) {
+        strng = "Bad";
+    }
+    else if (!peerHelloHash.empty()){
+        strng = "Good";
+    }
+    else{
+        strng = "None";
+    }
+    T_ZRTP_LB("sdp_hash", strng);
+
+    if(iLen==1 && key[0] == 'v'){
+        return sprintf(p, "%d", sasVerified);
+    }
+
+    return 0;
+}
+
+/* *********************
  * Here the callback methods required by the ZRTP implementation
  */
 int32_t CtZrtpStream::sendDataZRTP(const unsigned char *data, int32_t length) {
@@ -361,16 +488,17 @@ void CtZrtpStream::srtpSecretsOn(std::string cipher, std::string sas, bool verif
     else
         tiviState = CtZrtpSession::eSecureMitm;
 
+    sasVerified = verified;
     if (zrtpUserCallback != NULL) {
-        uint8_t peerZid[IDENTIFIER_LEN];
-        zrtpEngine->getPeerZid(peerZid);
+        const char *strng = NULL;
 
-        const char *strng = getZidCacheInstance()->getPeerName(peerZid);
-        zrtpUserCallback->onPeer(session, (char*)strng, (int)verified, index);
-
-        // get the SAS string if it is not empty.
-        if (!sas.empty())
+        if (!sas.empty()) {                 // Multi-stream mode streams don't have SAS, no reporting
+            uint8_t peerZid[IDENTIFIER_LEN];
+            zrtpEngine->getPeerZid(peerZid);
+            strng = getZidCacheInstance()->getPeerName(peerZid);
+            zrtpUserCallback->onPeer(session, (char*)strng, (int)verified, index);
             strng = (char*)sas.c_str();
+        }
         zrtpUserCallback->onNewZrtpStatus(session, (char*)strng, index);
     }
 }
@@ -423,10 +551,25 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
         msg = infoMap[subCode];
 
         std::string peerHash;
+        std::string hexString;
+        size_t hexStringStart;
         switch (subCode) {
             case InfoHelloReceived:
+                // The Tivi client stores the 64 char hex string only, thus
+                // split the string that we get from ZRTP engine that contains
+                // the version info as well (which is the right way to do because
+                // the engine knows which version of the ZRTP protocol it uses.)
+                if (peerHelloHash.empty())
+                    break;
                 peerHash = zrtpEngine->getPeerHelloHash();
-                // TODO: compare hash codes: need format from Tivi client, signal if they don't match?
+                hexStringStart = peerHash.find_last_of(' ');
+                hexString = peerHash.substr(hexStringStart+1);
+                if (hexString.compare(peerHelloHash) == 0) {
+                    zrtpHashMatch = true;
+                    break;
+                }
+                if (zrtpUserCallback != NULL)
+                    zrtpUserCallback->onZrtpWarning(session, "ZRTP_EVENT_WRONG_SIGNALING_HASH", index);
                 break;
 
             case InfoSecureStateOn:
@@ -452,7 +595,8 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
     }
     if (severity == Warning) {
         msg = warningMap[subCode];
-        zrtpUserCallback->onZrtpWarning(session, (char*)msg->c_str(), index);
+        if (zrtpUserCallback != NULL)
+            zrtpUserCallback->onZrtpWarning(session, (char*)msg->c_str(), index);
         return;
     }
     zrtpNegotiationFailed(severity, subCode);

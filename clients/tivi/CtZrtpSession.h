@@ -4,17 +4,32 @@
 #ifndef _CTZRTPSESSION_H_
 #define _CTZRTPSESSION_H_
 
-#include <libzrtpcpp/ZrtpConfigure.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <string>
+#include <string.h>
+
 #include <common/Thread.h>
 
-void t_add_zrtp_random(void *p, int iLen);
-void *initZrtpG();
+#ifndef __EXPORT
+  #if defined _WIN32 || defined __CYGWIN__
+    #define __EXPORT    __declspec(dllimport)
+    #define __LOCAL
+  #endif
+  #if __GNUC__ >= 4
+    #define __EXPORT    __attribute__ ((visibility("default")))
+    #define __LOCAL     __attribute__ ((visibility("hidden")))
+  #else
+    #define __EXPORT
+    #define __LOCAL
+  #endif
+#endif
 
-int relZrtpG(void *pZrtpGlobals);
 
 class CtZrtpStream;
 class CtZrtpCb;
 class CtZrtpSendCb;
+class ZrtpConfigure;
 
 
 class __EXPORT CtZrtpSession {
@@ -69,6 +84,12 @@ public:
      * If the method could set up the timeout thread and open the ZID
      * file then it enables ZRTP processing and returns.
      *
+     * @param audio
+     *     set to @c true if audio stream shout be initialized
+     *
+     * @param video
+     *     set to @c true if video stream shoud be initialized.
+     * 
      * @param zidFilename
      *     The name of the ZID file, can be a relative or absolut
      *     filename.
@@ -82,7 +103,7 @@ public:
      *     ZRTP processing disabled.
      *
      */
-    int init(const char *zidFilename = NULL, ZrtpConfigure* config = NULL);
+    int init(bool audio, bool video, const char *zidFilename = NULL, ZrtpConfigure* config = NULL);
 
     /**
      * Set the application's callback class.
@@ -130,6 +151,15 @@ public:
      * @param streamNm which stream to stop.
      */
     void stop(streamName streamNm);
+
+    /**
+     * Release all streams in this session.
+     *
+     * All streams are reset to their initiali values. The application may call
+     * @c init to initialize stream(s) again. A stream can be started only if it
+     * was initialized.
+     */
+    void release();
 
     /**
      * Release all resources for the stream.
@@ -227,6 +257,20 @@ public:
     tiviStatus getPreviousState(streamName streamNm);
 
     /**
+     * @brief Get the ZRTP Hello hash to be used for signaling
+     *
+     * Refer to RFC 6189 chapter 8 to get the full documentation on the intercation
+     * between ZRTP and a signaling layer.
+     *
+     * @param helloHash points to a character buffer with a length of at least 65 characters.
+     *                  The method fills it with the hex string part of the ZRTP hello hash and
+     *                  terminates it with a @c nul byte.
+     *
+     * @param streamNm specifies which stream for this hello hash.
+     */
+    void getSignalingHelloHash(char *helloHash, streamName streamNm);
+
+    /**
      * Set the ZRTP Hello hash from signaling
      *
      * Refer to RFC 6189 chapter 8 to get the full documentation on the intercation
@@ -234,9 +278,42 @@ public:
      *
      * @param helloHash is the ZRTP hello hash string from the signaling layer
      *
-     * @param streamNm specifies which stream for this hello hash.
+     * @param streamNm specifies the stream
      */
     void setSignalingHelloHash(const char *helloHash, streamName streamNm);
+
+    /**
+     * Set verification flag.
+     *
+     * If the user verified the SAS he/she should press a @c verify button and
+     * this button calls this method to set the verified flag in the cache. This
+     * always uses the @c Master stream (AudioStream).
+     *
+     * @param iVerified if not zero it sets the verified flag, otherwise the flag
+     *                  is reset.
+     */
+    void setVerify(int iVerified);
+
+    /**
+     * Checks the security state of the stream.
+     *
+     *
+     * @param streamNm specifies which stream to check
+     *
+     * @return non null if either @c eSecure or @c eSecureMitm set.
+     */
+    int isSecure(streamName streamNm);
+
+    /**
+     * Return information to tivi client.
+     *
+     * @param key which information to return
+     *
+     * @param buffer points to buffer that gets the information
+     *
+     * @param streamNm stream, if not specified the default is @c AudioStream
+     */
+    int getInfo(const char *key, char *buffer, streamName streamNm =AudioStream);
 
 protected:
     friend class CtZrtpStream;

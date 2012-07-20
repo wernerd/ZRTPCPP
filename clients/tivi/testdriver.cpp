@@ -87,9 +87,15 @@ int main(int argc,char **argv) {
     TestCallbackAudio *callback = new TestCallbackAudio();
     TestSendCallbackAudio *sendCallback = new TestSendCallbackAudio();
 
-    session->init("testzid.dat");       // name of cache file
+    session->init(true, true, "testzid.dat");       // name of cache file
     session->setUserCallback(callback, CtZrtpSession::AudioStream);
     session->setSendCallback(sendCallback, CtZrtpSession::AudioStream);
+    session->getSignalingHelloHash((char*)buffer, CtZrtpSession::AudioStream);
+
+    fprintf(stderr, "Our Hello hash: %s\n", buffer);
+
+    // Set a bogous peer hello hash to force a warning
+    // session->setSignalingHelloHash("950ff29288587ca0115948f386a89aa98d41b56089f267e62d5cbd42c997aa7c", CtZrtpSession::AudioStream);
 
     s = socket(AF_INET,SOCK_DGRAM,0);
     if ( s == -1 ) {

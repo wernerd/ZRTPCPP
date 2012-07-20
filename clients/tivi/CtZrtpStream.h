@@ -36,10 +36,6 @@ class __EXPORT CtZrtpStream: public ZrtpCallback  {
 
 public:
 
-    bool isStarted() {return started;}
-
-    bool isEnabled() {return enableZrtp;}
-
     CtZrtpSession::tiviStatus getCurrentState() {return tiviState;}
 
     CtZrtpSession::tiviStatus  getPreviousState() {return prevTiviState;}
@@ -49,25 +45,17 @@ protected:
     CtZrtpSession::streamName  index;      //!< either audio or video. Index in stream array
     CtZrtpSession::streamType  type;       //!< Master or slave stream. Necessary to handle multi-stream
     ZRtp              *zrtpEngine;         //!< The ZRTP core class of this stream
-    CtZrtpSession::tiviStatus  tiviState;  //!< Status reported to Tivi client
-    CtZrtpSession::tiviStatus  prevTiviState;  //!< previous status reported to Tivi client
     uint32_t          ownSSRC;             //!< Our own SSRC, in host order
     bool              enableZrtp;          //!< Enable the streams ZRTP engine
     bool              started;             //!< This stream's ZRTP engine is started
     bool              isStopped;           //!< Stream stopped by Tivi
-    CryptoContext     *recvSrtp;           //!< The SRTP context for this stream
-    CryptoContextCtrl *recvSrtcp;          //!< The SRTCP context for this stream
-    CryptoContext     *sendSrtp;           //!< The SRTP context for this stream
-    CryptoContextCtrl *sendSrtcp;          //!< The SRTCP context for this stream
-    CtZrtpCb          *zrtpUserCallback;
-    CtZrtpSendCb      *zrtpSendCallback;
     CtZrtpSession     *session;
-    CMutexClass       synchLock;
 
+    CtZrtpStream();
     friend class CtZrtpSession;
     friend class TimeoutProvider<std::string, CtZrtpStream*>;
 
-    CtZrtpStream();
+
     virtual ~CtZrtpStream();
     /**
      * Handle timeout event forwarded by the TimeoutProvider.
@@ -94,10 +82,10 @@ protected:
     void setSendCallback(CtZrtpSendCb* scb);
 
     /**
-     * Stop this stream.
+     * Stop this stream and reset internal variables to initial state.
      *
      */
-    void stopZrtp();
+    void stopStream();
 
     /**
      * Process outgoing data.
@@ -147,7 +135,19 @@ protected:
     int32_t processIncomingRtp(uint8_t *buffer, size_t length, size_t *newLength);
 
     /**
-     * Set the ZRTP Hello hash from signaling
+     * @brief Get the ZRTP Hello hash to be used for signaling
+     *
+     * Refer to RFC 6189 chapter 8 to get the full documentation on the intercation
+     * between ZRTP and a signaling layer.
+     *
+     * @param helloHash points to a character buffer with a length of at least 65 characters.
+     *                  The method fills it with the hex string part of the ZRTP hello hash and
+     *                  terminates it with a @c nul byte.
+     */
+    void getSignalingHelloHash(char *helloHash);
+
+    /**
+     * @brief Set the ZRTP Hello hash from signaling
      *
      * Refer to RFC 6189 chapter 8 to get the full documentation on the intercation
      * between ZRTP and a signaling layer.
@@ -155,6 +155,26 @@ protected:
      * @param helloHash is the ZRTP hello hash string from the signaling layer
      */
     void setSignalingHelloHash(const char *helloHash);
+
+    /**
+     * Checks the security state of the stream.
+     *
+     * @return non null if either @c eSecure or @c eSecureMitm set.
+     */
+    int isSecure();
+
+    /**
+     * Return information to tivi client.
+     *
+     * @param key which information to return
+     *
+     * @param buffer points to buffer that gets the information
+     */
+    int getInfo(const char *key, char *buffer);
+
+    bool isStarted() {return started;}
+
+    bool isEnabled() {return enableZrtp;}
 
     /*
      * The following methods implement the GNU ZRTP callback interface.
@@ -196,6 +216,16 @@ protected:
      * End of ZrtpCallback functions.
      */
 private:
+    CtZrtpSession::tiviStatus  tiviState;  //!< Status reported to Tivi client
+    CtZrtpSession::tiviStatus  prevTiviState;  //!< previous status reported to Tivi client
+
+    CryptoContext     *recvSrtp;           //!< The SRTP context for this stream
+    CryptoContextCtrl *recvSrtcp;          //!< The SRTCP context for this stream
+    CryptoContext     *sendSrtp;           //!< The SRTP context for this stream
+    CryptoContextCtrl *sendSrtcp;          //!< The SRTCP context for this stream
+    CtZrtpCb          *zrtpUserCallback;
+    CtZrtpSendCb      *zrtpSendCallback;
+
     uint8_t zrtpBuffer[maxZrtpSize];
     uint8_t sendBuffer[maxRtpSize];
     uint8_t sendBufferCtrl[maxRtcpSize];
@@ -205,7 +235,10 @@ private:
     uint64_t unprotect;
     uint64_t unprotectFailed;
     uint32_t srtcpIndex;
-    std::string helloHash;
+    std::string peerHelloHash;
+    bool     zrtpHashMatch;
+    bool     sasVerified;
+    CMutexClass       synchLock;
 
     void initStrings();
 };

@@ -11,16 +11,15 @@
 #include <CtZrtpStream.h>
 #include <CtZrtpSession.h>
 
-// using namespace GnuZrtpCodes;
-
 CtZrtpSession::CtZrtpSession() : mitmMode(false), signSas(false), enableParanoidMode(false),
-    isReady(false)
-{
-    streams[AudioStream] = new CtZrtpStream();
-    streams[VideoStream] = new CtZrtpStream();
+    isReady(false) {
+
+    clientIdString = clientId;
+    streams[AudioStream] = NULL;
+    streams[VideoStream] = NULL;
 }
 
-int CtZrtpSession::init(const char *zidFilename, ZrtpConfigure* config)
+int CtZrtpSession::init(bool audio, bool video, const char *zidFilename, ZrtpConfigure* config )
 {
     int32_t ret = 1;
 
@@ -29,7 +28,7 @@ int CtZrtpSession::init(const char *zidFilename, ZrtpConfigure* config)
     ZrtpConfigure* configOwn = NULL;
     if (config == NULL) {
         config = configOwn = new ZrtpConfigure();
-        config->setMandatoryOnly();
+        config->setStandardConfig();
     }
     config->setParanoidMode(enableParanoidMode);
 
@@ -51,17 +50,26 @@ int CtZrtpSession::init(const char *zidFilename, ZrtpConfigure* config)
         const uint8_t* ownZid = zf->getZid();
         CtZrtpStream *stream;
 
-        stream = streams[AudioStream];
-        stream->zrtpEngine = new ZRtp((uint8_t*)ownZid, stream, clientIdString, config, mitmMode, signSas);
-        stream->type = Master;
-        stream->index = AudioStream;
-        stream->session = this;
-
-        stream = streams[VideoStream];
-        stream->zrtpEngine = new ZRtp((uint8_t*)ownZid, stream, clientIdString, config);
-        stream->type = Slave;
-        stream->index = VideoStream;
-        stream->session = this;
+        // Create CTZrtpStream object only once, they are availbe for the whole
+        // lifetime of the session.
+        if (audio) {
+            if (streams[AudioStream] == NULL)
+                streams[AudioStream] = new CtZrtpStream();
+            stream = streams[AudioStream];
+            stream->zrtpEngine = new ZRtp((uint8_t*)ownZid, stream, clientIdString, config, mitmMode, signSas);
+            stream->type = Master;
+            stream->index = AudioStream;
+            stream->session = this;
+        }
+        if (video) {
+            if (streams[VideoStream] == NULL)
+                streams[VideoStream] = new CtZrtpStream();
+            stream = streams[VideoStream];
+            stream->zrtpEngine = new ZRtp((uint8_t*)ownZid, stream, clientIdString, config);
+            stream->type = Slave;
+            stream->index = VideoStream;
+            stream->session = this;
+        }
     }
     if (configOwn != NULL) {
         delete configOwn;
@@ -73,8 +81,8 @@ int CtZrtpSession::init(const char *zidFilename, ZrtpConfigure* config)
 
 CtZrtpSession::~CtZrtpSession() {
 
-    stop(AudioStream);
-    stop(VideoStream);
+    delete streams[AudioStream];
+    delete streams[VideoStream];
 }
 
 void CtZrtpSession::setUserCallback(CtZrtpCb* ucb, streamName streamNm) {
@@ -104,7 +112,7 @@ void CtZrtpSession::setSendCallback(CtZrtpSendCb* scb, streamName streamNm) {
 
 void CtZrtpSession::masterStreamSecure(CtZrtpStream *stream) {
     // Here we know that the AudioStream is the master and VideoStream the slave.
-    // Otherwise weneed to loop and find the Master stream and the Slave streams.
+    // Otherwise we need to loop and find the Master stream and the Slave streams.
 
     multiStreamParameter = stream->zrtpEngine->getMultiStrParams();
     CtZrtpStream *strm = streams[VideoStream];
@@ -113,7 +121,6 @@ void CtZrtpSession::masterStreamSecure(CtZrtpStream *stream) {
         strm->zrtpEngine->startZrtpEngine();
         strm->started = true;
     }
-
 }
 
 void CtZrtpSession::start(unsigned int uiSSRC, CtZrtpSession::streamName streamNm) {
@@ -145,25 +152,24 @@ void CtZrtpSession::stop(streamName streamNm) {
     streams[streamNm]->isStopped = true;
 }
 
+void CtZrtpSession::release() {
+    release(AudioStream);
+    release(VideoStream);
+}
+
 void CtZrtpSession::release(streamName streamNm) {
     if (!(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
         return;
 
-    isReady = false;
-    mitmMode = false;
-    signSas = false;
-    enableParanoidMode = false;
-
     CtZrtpStream *stream = streams[streamNm];
 
-    delete stream;                      // destroy the existing stuff
-    stream = NULL;
+    stream->stopStream();                      // stop and reset stream
 }
 
 void CtZrtpSession::setLastPeerName(const char *name, int iIsMitm) {
     CtZrtpStream *stream = streams[AudioStream];
 
-    if (!isReady || stream->isStopped)
+    if (!isReady || !stream || stream->isStopped)
         return;
 
     uint8_t peerZid[IDENTIFIER_LEN];
@@ -172,37 +178,13 @@ void CtZrtpSession::setLastPeerName(const char *name, int iIsMitm) {
     getZidCacheInstance()->putPeerName(peerZid, &nm);
 }
 
-
-#if 0
-bool CtZrtpSession::newStream(streamName streamNm, streamType type) {
-    if (!(streamNm >= 0 && streamNm < AllStreams))
-        return false;
+int CtZrtpSession::isSecure(streamName streamNm) {
+    if (!(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return 0;
 
     CtZrtpStream *stream = streams[streamNm];
-    if (stream != NULL) {               // Do not replace an existing stream
-        return false;
-    }
-    if (stream->type == Master) {
-        // Here we do a fixed check: could search for Master in array. But we know
-        // Master is always AudioStream
-        if (streamNm != AudioStream)
-            return false;
-        streams[AudioStream] = new CtZrtpStream();
-        stream = streams[AudioStream];
-        stream->zrtpEngine = new ZRtp((uint8_t*)ownZid, stream, clientIdString, config, mitmMode, signSas);
-        stream->type = Master;
-        stream->index = AudioStream;
-        stream->session = this;
-        return true;
-    }
-    streams[VideoStream] = new CtZrtpStream();
-    stream = streams[VideoStream];
-    stream->zrtpEngine = new ZRtp((uint8_t*)ownZid, stream, clientIdString, config);
-    stream->type = Slave;
-    stream->index = VideoStream;
-    stream->session = this;
+    return stream->isSecure();
 }
-#endif
 
 bool CtZrtpSession::processOutoingRtp(uint8_t *buffer, size_t length, size_t *newLength, streamName streamNm) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
@@ -268,6 +250,17 @@ CtZrtpSession::tiviStatus CtZrtpSession::getPreviousState(streamName streamNm) {
     return stream->getPreviousState();
 }
 
+void CtZrtpSession::getSignalingHelloHash(char *helloHash, streamName streamNm) {
+    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return;
+
+    CtZrtpStream *stream = streams[streamNm];
+    if (stream->isStopped)
+        return;
+
+    stream->getSignalingHelloHash(helloHash);
+}
+
 void CtZrtpSession::setSignalingHelloHash(const char *helloHash, streamName streamNm) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
         return;
@@ -277,6 +270,26 @@ void CtZrtpSession::setSignalingHelloHash(const char *helloHash, streamName stre
         return;
 
     stream->setSignalingHelloHash(helloHash);
+}
+
+void CtZrtpSession::setVerify(int iVerified) {
+    CtZrtpStream *stream = streams[AudioStream];
+
+    if (!isReady || !stream || stream->isStopped)
+        return;
+
+    if (iVerified)
+        stream->zrtpEngine->SASVerified();
+    else
+        stream->zrtpEngine->resetSASVerified();
+}
+
+int CtZrtpSession::getInfo(const char *key, char *buffer, streamName streamNm) {
+    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return 0;
+
+    CtZrtpStream *stream = streams[streamNm];
+    return stream->getInfo(key, buffer);
 }
 
 void CtZrtpSession::synchEnter() {
