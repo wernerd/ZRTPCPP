@@ -96,6 +96,7 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* conf
 
     zrtpHello.configureHello(&configureAlgos);
     zrtpHello.setH3(H3);                    // set H3 in Hello, included in helloHash
+    peerHelloVersion[0] = 0;
 
     memcpy(ownZid, myZid, ZID_SIZE);
     zrtpHello.setZid(ownZid);
@@ -246,10 +247,16 @@ ZrtpPacketHelloAck* ZRtp::prepareHelloAck() {
  */
 ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) {
 
+    // Save data before detailed checks - may aid in analysing problems
+    peerClientId.assign((char*)hello->getClientId(), ZRTP_WORD_SIZE * 4);
+    memcpy(peerHelloVersion, hello->getVersion(), ZRTP_WORD_SIZE);
+    peerHelloVersion[ZRTP_WORD_SIZE] = 0;
+
     if (memcmp(hello->getVersion(), zrtpVersion, ZRTP_WORD_SIZE-1) != 0) {
         *errMsg = UnsuppZRTPVersion;
         return NULL;
     }
+
     // Save our peer's (presumably the Responder) ZRTP id
     memcpy(peerZid, hello->getZid(), ZID_SIZE);
     if (memcmp(peerZid, ownZid, ZID_SIZE) == 0) {       // peers have same ZID????
@@ -257,6 +264,14 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
         return NULL;
     }
     memcpy(peerH3, hello->getH3(), HASH_IMAGE_SIZE);
+
+    int32_t helloLen = hello->getLength() * ZRTP_WORD_SIZE;
+
+    // calculate hash over the received Hello packet - is peer's hello hash.
+    // Use implicit hash algorithm
+    hashFunctionImpl((unsigned char*)hello->getHeaderBase(), helloLen, peerHelloHash);
+
+    sendInfo(Info, InfoHelloReceived);
 
     /*
      * The Following section extracts the algorithm from the peer's Hello
@@ -370,7 +385,6 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     // hash first messages to produce overall message hash
     // First the Responder's Hello message, second the Commit (always Initator's).
     // Must use negotiated hash.
-    int32_t helloLen = hello->getLength() * ZRTP_WORD_SIZE;
     msgShaContext = createHashCtx();
     hashCtxFunction(msgShaContext, (unsigned char*)hello->getHeaderBase(), helloLen);
     hashCtxFunction(msgShaContext, (unsigned char*)zrtpCommit.getHeaderBase(), len);
@@ -378,14 +392,6 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     // store Hello data temporarily until we can check HMAC after receiving Commit as
     // Responder or DHPart1 as Initiator
     storeMsgTemp(hello);
-
-    // calculate hash over the received Hello packet - is peer's hello hash.
-    // Use implicit hash algorithm
-    hashFunctionImpl((unsigned char*)hello->getHeaderBase(), helloLen, peerHelloHash);
-    memcpy(peerHelloVersion, hello->getVersion(), ZRTP_WORD_SIZE);
-    peerHelloVersion[ZRTP_WORD_SIZE] = 0;
-
-    sendInfo(Info, InfoHelloReceived);
 
     return &zrtpCommit;
 }
@@ -427,14 +433,6 @@ ZrtpPacketCommit* ZRtp::prepareCommitMultiStream(ZrtpPacketHello *hello) {
     // store Hello data temporarily until we can check HMAC after receiving Commit as
     // Responder or DHPart1 as Initiator
     storeMsgTemp(hello);
-
-    // calculate hash over the received Hello packet - is peer's hello hash.
-    // Use implicit hash algorithm
-    hashFunctionImpl((unsigned char*)hello->getHeaderBase(), helloLen, peerHelloHash);
-    memcpy(peerHelloVersion, hello->getVersion(), ZRTP_WORD_SIZE);
-    peerHelloVersion[ZRTP_WORD_SIZE] = 0;
-
-    sendInfo(Info, InfoHelloReceived);
 
     return &zrtpCommit;
 }
@@ -1615,10 +1613,12 @@ void ZRtp:: computeSharedSecretSet(ZIDRecord *zidRec) {
     uint8_t randBuf[RS_LENGTH];
     uint32_t macLen;
 
+    detailInfo.secretsCached = 0;
     if (!zidRec->isRs1Valid()) {
         randomZRTP(randBuf, RS_LENGTH);
         hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator, strlen(initiator), rs1IDi, &macLen);
         hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder, strlen(responder), rs1IDr, &macLen);
+        detailInfo.secretsCached = Rs1;
     }
     else {
         rs1Valid = true;
@@ -1630,6 +1630,7 @@ void ZRtp:: computeSharedSecretSet(ZIDRecord *zidRec) {
         randomZRTP(randBuf, RS_LENGTH);
         hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator, strlen(initiator), rs2IDi, &macLen);
         hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder, strlen(responder), rs2IDr, &macLen);
+        detailInfo.secretsCached |= Rs2;
     }
     else {
         rs2Valid = true;
@@ -1638,7 +1639,7 @@ void ZRtp:: computeSharedSecretSet(ZIDRecord *zidRec) {
     }
 
     /*
-    * For the time being we don't support this types of shared secrect. Could be
+    * For the time being we don't support this type of shared secrect. Could be
     * easily done: somebody sets some data into our ZRtp object, check it here
     * and use it. Otherwise use the random data.
     */
@@ -1650,6 +1651,8 @@ void ZRtp:: computeSharedSecretSet(ZIDRecord *zidRec) {
         randomZRTP(randBuf, RS_LENGTH);
         hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator, strlen(initiator), pbxSecretIDi, &macLen);
         hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder, strlen(responder), pbxSecretIDr, &macLen);
+        detailInfo.secretsCached = Pbx;
+
     }
     else {
         hmacFunction((unsigned char*)zidRec->getMiTMData(), RS_LENGTH, (unsigned char*)initiator, strlen(initiator), pbxSecretIDi, &macLen);
@@ -1675,21 +1678,26 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
      * the initator's cached retained secrets.
      */
     int matchingSecrets = 0;
+    detailInfo.secretsMatched = 0;
     if (memcmp(rs1IDr, dhPart->getRs1Id(), HMAC_SIZE) == 0) {
         setD[matchingSecrets++] = zidRec->getRs1();
         rsFound = 0x1;
+        detailInfo.secretsMatched = Rs1;
     }
     else if (memcmp(rs1IDr, dhPart->getRs2Id(), HMAC_SIZE) == 0) {
         setD[matchingSecrets++] = zidRec->getRs1();
         rsFound = 0x2;
+        detailInfo.secretsMatched = Rs2;
     }
     else if (memcmp(rs2IDr, dhPart->getRs1Id(), HMAC_SIZE) == 0) {
         setD[matchingSecrets++] = zidRec->getRs2();
         rsFound = 0x4;
+        detailInfo.secretsMatched = Rs1;
     }
     else if (memcmp(rs2IDr, dhPart->getRs2Id(), HMAC_SIZE) == 0) {
         setD[matchingSecrets++] = zidRec->getRs2();
         rsFound = 0x8;
+        detailInfo.secretsMatched = Rs2;
     }
     /* *** Not yet supported
     if (memcmp(auxSecretIDr, dhPart->getAuxSecretId(), 8) == 0) {
@@ -1697,9 +1705,10 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
         setD[matchingSecrets++] = auxSecret;
     }
     */
-    if (memcmp(pbxSecretIDr, dhPart->getPbxSecretId(), 8) == 0) {
+    if (memcmp(pbxSecretIDr, dhPart->getPbxSecretId(), HMAC_SIZE) == 0) {
         DEBUGOUT((fprintf(stdout, "%c: Match for Other_secret found\n", zid[0])));
         setD[matchingSecrets++] = zidRec->getMiTMData();
+        detailInfo.secretsMatched |= Pbx;
     }
     // Check if some retained secrets found
     if (rsFound == 0) {                        // no RS matches found
@@ -2086,6 +2095,13 @@ void ZRtp::computeSRTPKeys() {
         if (signSasSeen)
             callback->signSAS(sasHash);
     }
+    // set algorithm names into detailInfo structure
+    detailInfo.authLength = authLength->getName();
+    detailInfo.cipher = cipher->getName();
+    detailInfo.hash = hash->getName();
+    detailInfo.pubKey = pubKey->getName();
+    detailInfo.sasType = sasType->getName();
+
     memset(KDFcontext, 0, sizeof(KDFcontext));
 }
 
@@ -2455,6 +2471,22 @@ uint8_t* ZRtp::getSasHash() {
 int32_t ZRtp::getPeerZid(uint8_t* data) {
     memcpy(data, peerZid, IDENTIFIER_LEN);
     return IDENTIFIER_LEN;
+}
+
+const ZRtp::zrtpInfo* ZRtp::getDetailInfo() {
+    return &detailInfo;
+}
+
+std::string ZRtp::getPeerClientId() {
+    if (peerClientId.empty())
+        return std::string();
+    return peerClientId;
+}
+
+std::string ZRtp::getPeerProtcolVersion() {
+    if (peerHelloVersion[0] == 0)
+        return std::string();
+    return std::string((char*)peerHelloVersion);
 }
 
 /** EMACS **
