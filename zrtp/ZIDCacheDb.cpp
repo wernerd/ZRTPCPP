@@ -29,8 +29,6 @@
 
 
 static ZIDCacheDb* instance;
-static int errors = 0;  // maybe we will use as member of ZIDCache later...
-
 
 /**
  * A poor man's factory.

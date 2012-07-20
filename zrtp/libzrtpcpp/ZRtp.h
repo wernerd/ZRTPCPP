@@ -90,6 +90,24 @@ class __EXPORT ZRtp {
 
     public:
 
+    typedef enum _secrets {
+        Rs1 = 1,
+        Rs2 = 2,
+        Pbx = 4,
+        Aux = 8
+    } secrets;
+
+    typedef struct _zrtpInfo {
+        int32_t secretsCached;
+        int32_t secretsMatched;
+        const char *hash;
+        const char *cipher;
+        const char *pubKey;
+        const char *sasType;
+        const char *authLength;
+    } zrtpInfo;
+
+
     /**
      * Constructor intializes all relevant data but does not start the
      * engine.
@@ -451,6 +469,28 @@ class __EXPORT ZRtp {
       */
      int32_t getPeerZid(uint8_t* data);
 
+     /**
+      * Returns a pointer to the gather detailed information structure.
+      *
+      * This structure contains some detailed information about the negotiated
+      * algorithms, the chached and matched shared secrets.
+      */
+     const zrtpInfo *getDetailInfo();
+
+     /**
+      * Get peer's client id.
+      *
+      * @return the peer's client id or an empty @c string if not set.
+      */
+     std::string getPeerClientId();
+
+     /**
+      * Get peer's protocl version string.
+      *
+      * @return the peer's protocol version or an empty @c string if not set.
+      */
+     std::string getPeerProtcolVersion();
+
 private:
      friend class ZrtpStateClass;
 
@@ -771,7 +811,11 @@ private:
      */
     bool signSasSeen;
 
-    uint32_t peerSSRC;            // peer's SSRC, required to setup PingAck packet
+    uint32_t peerSSRC;           // peer's SSRC, required to setup PingAck packet
+
+    zrtpInfo detailInfo;         // filled with some more detailded information if application would like to know
+
+    std::string peerClientId;    // store the peer's client Id
 
     /**
      * Enable or disable paranoid mode.
