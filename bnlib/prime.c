@@ -8,7 +8,7 @@
 #define HAVE_CONFIG_H 0
 #endif
 #if HAVE_CONFIG_H
-#include "config.h"
+#include <bnconfig.h>
 #endif
 
 /*

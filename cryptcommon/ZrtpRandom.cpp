@@ -157,3 +157,11 @@ ssize_t ZrtpRandom::getSystemSeed(uint8_t *seed, ssize_t length)
 
     return num;
 }
+
+int zrtp_AddEntropy(const uint8_t *buffer, uint32_t length) {
+    return ZrtpRandom::addEntropy(buffer, length);
+}
+
+int zrtp_getRandomData(uint8_t *buffer, uint32_t length) {
+    return ZrtpRandom::getRandomData(buffer, length);
+}

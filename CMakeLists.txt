@@ -87,6 +87,9 @@ else()
     set(LIBDIRNAME "lib${LIB_SUFFIX}")
 endif()
 
+check_include_files(stdlib.h HAVE_STDLIB_H)
+check_include_files(string.h HAVE_STRING_H)
+
 if (NOT enable_crypto_standalone)
     pkg_check_modules(OPENSSL libcrypto>=0.9.8)
     if (OPENSSL_FOUND)
@@ -109,8 +112,6 @@ else()
     check_include_files(stdint.h HAVE_STDINT_H)
     check_include_files(stdint.h HAVE_ASSERT_H)
     check_include_files(limits.h HAVE_LIMITS_H)
-    check_include_files(stdlib.h HAVE_STDLIB_H)
-    check_include_files(string.h HAVE_STRING_H)
 
     check_function_exists(memmove HAVE_MEMMOVE)
     check_function_exists(memcpy HAVE_MEMCPY)
@@ -141,9 +142,6 @@ if (enable_sqlite)
     endif()
 endif()
 
-check_include_files(stdlib.h HAVE_STDLIB_H)
-check_include_files(string.h HAVE_STRING_H)
-
 # necessary and required modules checked, ready to generate config.h in top-level build directory
 configure_file(config.h.cmake ${CMAKE_BINARY_DIR}/config.h)
 
@@ -152,6 +150,12 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   add_definitions(-Wno-long-long -Wno-char-subscripts)
   add_definitions(-Wall -ansi -pedantic)
   add_definitions(-DNEW_STDCPP)
+endif()
+
+include_directories(BEFORE ${CMAKE_BINARY_DIR})
+include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/zrtp)
+if(enable_standalone)
+    include_directories (${CMAKE_SOURCE_DIR}/bnlib)
 endif()
 
 # **** The following source files a common for all clients ****
@@ -189,7 +193,10 @@ set(bnlib_src
     ${CMAKE_SOURCE_DIR}/bnlib/prime.c
     ${CMAKE_SOURCE_DIR}/bnlib/bnprint.c
     ${CMAKE_SOURCE_DIR}/bnlib/jacobi.c
-    ${CMAKE_SOURCE_DIR}/bnlib/germain.c)
+    ${CMAKE_SOURCE_DIR}/bnlib/germain.c
+    ${CMAKE_SOURCE_DIR}/bnlib/ec/ec.c
+    ${CMAKE_SOURCE_DIR}/bnlib/ec/ecdh.c
+    ${CMAKE_SOURCE_DIR}/bnlib/bnprint.c)
 
 set(zrtp_crypto_src
     ${CMAKE_SOURCE_DIR}/zrtp/crypto/zrtpDH.cpp

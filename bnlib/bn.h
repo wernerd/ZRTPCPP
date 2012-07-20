@@ -19,16 +19,16 @@
 #ifndef BN_H
 #define BN_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 struct BigNum {
 	void *ptr;
 	unsigned size;	/* Note: in (variable-sized) words */
 	unsigned allocated;
 };
-#ifdef __cplusplus
-// #pragma GCC visibility push(default)
-extern "C"
-{
-#endif
 
 /*
  * User-supplied function: if non-NULL, this is called during long-running
@@ -58,10 +58,10 @@ void bnInit(void);
  * This initializes an empty struct BigNum to a zero value.
  * Do not use this on a BigNum which has had a value stored in it!
  */
-extern void bnBegin(struct BigNum *bn);
+void bnBegin(struct BigNum *bn);
 
 /* Swap two BigNums.  Cheap. */
-extern void bnSwap(struct BigNum *a, struct BigNum *b);
+void bnSwap(struct BigNum *a, struct BigNum *b);
 
 /* Reset an initialized bigNum to empty, pending deallocation. */
 extern void (*bnEnd)(struct BigNum *bn);
@@ -229,7 +229,6 @@ extern int (*bnDoubleBasePrecompExpMod)(struct BigNum *dest,
 
 #ifdef __cplusplus
 }
-// #pragma GCC visibility pop
 #endif
 
 #endif/* !BN_H */
