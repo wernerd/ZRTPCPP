@@ -5,7 +5,7 @@
  * For licensing and other legal details, see the file legal.c.
  */
 
-#include "bn.h"
+#include <bn.h>
 
 /* Functions */
 void

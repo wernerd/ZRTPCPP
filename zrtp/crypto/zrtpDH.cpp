@@ -40,7 +40,10 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include <bnlib/bn.h>
+#include <bn.h>
+#include <bnprint.h>
+#include <ec/ec.h>
+#include <ec/ecdh.h>
 #include <zrtp/crypto/zrtpDH.h>
 #include <zrtp/libzrtpcpp/ZrtpTextData.h>
 #include <cryptcommon/aes.h>
@@ -60,6 +63,8 @@ static uint8_t dhinit = 0;
 typedef struct _dhCtx {
     BigNum privKey;
     BigNum pubKey;
+    NistECpCurve curve;
+    EcPoint pubPoint;
 } dhCtx;
 
 void randomZRTP(uint8_t *buf, int32_t length)
@@ -192,14 +197,12 @@ ZrtpDH::ZrtpDH(const char* type) {
     else if (*(int32_t*)type == *(int32_t*)dh3k) {
         pkType = DH3K;
     }
-#if 0
     else if (*(int32_t*)type == *(int32_t*)ec25) {
         pkType = EC25;
     }
     else if (*(int32_t*)type == *(int32_t*)ec38) {
         pkType = EC38;
     }
-#endif
     else {
         return;
     }
@@ -227,19 +230,23 @@ ZrtpDH::ZrtpDH(const char* type) {
     }
 
     bnBegin(&tmpCtx->privKey);
+    INIT_EC_POINT(&tmpCtx->pubPoint);
+
     switch (pkType) {
     case DH2K:
     case DH3K:
         bnInsertBigBytes(&tmpCtx->privKey, random, 0, 256/8);
         break;
-#if 0
+
     case EC25:
-        ctx = static_cast<void*>(EC_KEY_new_by_curve_name(NID_X9_62_prime256v1));
+        ecGetCurveNistECp(NIST256P, &tmpCtx->curve);
+        ecGenerateRandomNumber(&tmpCtx->curve, &tmpCtx->privKey);
         break;
+
     case EC38:
-        ctx = static_cast<void*>(EC_KEY_new_by_curve_name(NID_secp384r1));
+        ecGetCurveNistECp(NIST384P, &tmpCtx->curve);
+        ecGenerateRandomNumber(&tmpCtx->curve, &tmpCtx->privKey);
         break;
-#endif
     }
 }
 
@@ -248,20 +255,19 @@ ZrtpDH::~ZrtpDH() {
         return;
 
     dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
+    FREE_EC_POINT(&tmpCtx->pubPoint);
+    bnEnd(&tmpCtx->privKey);
 
     switch (pkType) {
     case DH2K:
     case DH3K:
-        bnEnd(&tmpCtx->privKey);
         bnEnd(&tmpCtx->pubKey);
         break;
 
-#if 0
     case EC25:
     case EC38:
-        EC_KEY_free(static_cast<EC_KEY*>(ctx));
+        ecFreeCurveNistECp(&tmpCtx->curve);
         break;
-#endif
     }
 }
 
@@ -271,8 +277,9 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
 
     int32_t length = getDhSize();
 
+    BigNum sec;
     if (pkType == DH2K || pkType == DH3K) {
-        BigNum pubKeyOther, sec;
+        BigNum pubKeyOther;
         bnBegin(&pubKeyOther);
         bnBegin(&sec);
 
@@ -293,23 +300,26 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
 
         return length;
     }
-#if 0
+
     if (pkType == EC25 || pkType == EC38) {
-        uint8_t buffer[100];
-        int32_t ret;
-        int32_t len = getPubKeySize();
+        int32_t len = getPubKeySize() / 2;
+        EcPoint pub;
 
-        buffer[0] = POINT_CONVERSION_UNCOMPRESSED;
-        memcpy(buffer+1, pubKeyBytes, len);
+        bnBegin(&sec);
+        INIT_EC_POINT(&pub);
+        bnSetQ(pub.z, 1);               // initialze Z to one, these are affine coords
 
-        EC_POINT* point = EC_POINT_new(EC_KEY_get0_group(static_cast<EC_KEY*>(ctx)));
-        EC_POINT_oct2point(EC_KEY_get0_group(static_cast<EC_KEY*>(ctx)),
-                                             point, buffer, len+1, NULL);
-        ret = ECDH_compute_key(secret, getDhSize(), point, static_cast<EC_KEY*>(ctx), NULL);
-        EC_POINT_free(point);
-        return ret;
+        bnInsertBigBytes(pub.x, pubKeyBytes, 0, len);
+        bnInsertBigBytes(pub.y, pubKeyBytes+len, 0, len);
+
+        /* Generate agreement for responder: sec = pub * privKey */
+        ecdhComputeAgreement(&tmpCtx->curve, &sec, &pub, &tmpCtx->privKey);
+        bnExtractBigBytes(&sec, secret, 0, length);
+        bnEnd(&sec);
+        FREE_EC_POINT(&pub);
+
+        return length;
     }
-#endif
     return -1;
 }
 
@@ -327,12 +337,9 @@ int32_t ZrtpDH::generatePublicKey()
         bnExpMod(&tmpCtx->pubKey, &two, &tmpCtx->privKey, &bnP3072);
         break;
 
-#if 0
     case EC25:
     case EC38:
-        if (pkType == EC25 || pkType == EC38)
-        return EC_KEY_generate_key(static_cast<EC_KEY*>(ctx));
-#endif
+        return ecdhGeneratePublic(&tmpCtx->curve, &tmpCtx->pubPoint, &tmpCtx->privKey);
     }
     return 0;
 }
@@ -363,12 +370,9 @@ int32_t ZrtpDH::getPubKeySize() const
     if (pkType == DH2K || pkType == DH3K)
         return bnBytes(&tmpCtx->pubKey);
 
-#if 0
     if (pkType == EC25 || pkType == EC38)
-        return EC_POINT_point2oct(EC_KEY_get0_group(static_cast<EC_KEY*>(ctx)),
-                                  EC_KEY_get0_public_key(static_cast<EC_KEY*>(ctx)),
-                                  POINT_CONVERSION_UNCOMPRESSED, NULL, 0, NULL) - 1;
-#endif
+        return bnBytes(tmpCtx->curve.p) * 2;
+
     return 0;
 
 }
@@ -387,45 +391,65 @@ int32_t ZrtpDH::getPubKeyBytes(uint8_t *buf) const
         bnExtractBigBytes(&tmpCtx->pubKey, buf + prepend, 0, size);
         return size;
     }
-#if 0
-    if (pkType == EC25 || pkType == EC38) {
-        uint8_t buffer[100];
 
-        int len = EC_POINT_point2oct(EC_KEY_get0_group(static_cast<EC_KEY*>(ctx)),
-                                     EC_KEY_get0_public_key(static_cast<EC_KEY*>(ctx)),
-                                     POINT_CONVERSION_UNCOMPRESSED, buffer, 100, NULL);
-        memcpy(buf, buffer+1, len-1);
-        return len-1;
+    if (pkType == EC25 || pkType == EC38) {
+        int32_t len = getPubKeySize() / 2;
+
+        bnExtractBigBytes(tmpCtx->pubPoint.x, buf, 0, len);
+        bnExtractBigBytes(tmpCtx->pubPoint.y, buf+len, 0, len);
+        return len * 2;
     }
-#endif
     return 0;
 }
 
 int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
 {
-#if 0
+
     if (pkType == EC25 || pkType == EC38) {
-        uint8_t buffer[100];
-        int32_t ret;
-        int32_t len = getPubKeySize();
 
-        buffer[0] = POINT_CONVERSION_UNCOMPRESSED;
-        memcpy(buffer+1, pubKeyBytes, len);
+        struct BigNum t1, t2;
+        dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
+        EcPoint pub;
+        int ret = 0;
 
-        EC_POINT* point = EC_POINT_new(EC_KEY_get0_group(static_cast<EC_KEY*>(ctx)));
-        EC_POINT_oct2point(EC_KEY_get0_group(static_cast<EC_KEY*>(ctx)),
-                                             point, buffer, len+1, NULL);
-        EC_KEY* chkKey = EC_KEY_new();
-        EC_KEY_set_group(chkKey, EC_KEY_get0_group(static_cast<EC_KEY*>(ctx)));
-        EC_KEY_set_public_key(chkKey, point);
-        ret = EC_KEY_check_key(chkKey);
+        INIT_EC_POINT(&pub);
+        int32_t len = getPubKeySize() / 2;
 
-        EC_POINT_free(point);
-        EC_KEY_free(chkKey);
+        bnBegin(&t1);
+        bnBegin(&t2);
 
+        bnInsertBigBytes(pub.x, pubKeyBytes, 0, len);
+        bnInsertBigBytes(pub.y, pubKeyBytes+len, 0, len);
+
+        /* Represent point at infinity by (0, 0), make sure it's not that */
+        if (bnCmpQ(pub.x, 0) == 0 && bnCmpQ(pub.y, 0) == 0) {
+            goto fail;
+        }
+        /* Check coordinates within range */
+        if (bnCmpQ (pub.x, 0) < 0 || bnCmp(pub.x, tmpCtx->curve.p) >= 0) {
+            goto fail;
+        }
+        if (bnCmpQ(pub.y, 0) < 0 || bnCmp(pub.y, tmpCtx->curve.p) >= 0) {
+            goto fail;
+        }
+        /* Check that point satisfies EC equation y^2 = x^3 - 3x + b, mod P */
+        bnSquareMod_(&t1, pub.y, tmpCtx->curve.p);
+        bnSquareMod_(&t2, pub.x, tmpCtx->curve.p);
+        bnSubQMod_(&t2, 3, tmpCtx->curve.p);
+        bnMulMod_(&t2, &t2, pub.x, tmpCtx->curve.p);
+        bnAddMod_(&t2, tmpCtx->curve.b, tmpCtx->curve.p);
+        if (bnCmp (&t1, &t2) != 0) {
+            goto fail;
+        }
+        ret = 1;
+
+    fail:
+        FREE_EC_POINT(&pub);
+        bnEnd(&t1);
+        bnEnd(&t2);
         return ret;
     }
-#endif
+
     BigNum pubKeyOther;
     bnBegin(&pubKeyOther);
     bnInsertBigBytes(&pubKeyOther, pubKeyBytes, 0, getDhSize());

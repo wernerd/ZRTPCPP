@@ -30,6 +30,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+#ifdef __cplusplus
 class ZrtpRandom {
 public:
     /**
@@ -43,8 +44,8 @@ public:
      *
      * @param length length of entropy data in bytes
      *
-     * @return number of entropy bytes added on success, -1 on failure. Number of
-     *         bytes added bigger then @c length because of additional added system
+     * @return on success: number of entropy bytes added, on failure: -1. Number of
+     *         bytes added may be bigger then @c length because of added system
      *         entropy.
      */
     static int addEntropy(const uint8_t *buffer, uint32_t length);
@@ -65,5 +66,19 @@ private:
     static ssize_t getSystemSeed(uint8_t *seed, ssize_t length);
 
 };
+#endif
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+int zrtp_AddEntropy(const uint8_t *buffer, uint32_t length);
+
+int zrtp_getRandomData(uint8_t *buffer, uint32_t length);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ZRTPRANDOM */
