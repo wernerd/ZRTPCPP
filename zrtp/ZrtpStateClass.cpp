@@ -89,14 +89,28 @@ void ZrtpStateClass::processEvent(Event_t *ev) {
     parent->synchEnter();
 
     if (event->type == ZrtpPacket) {
-	pkt = event->packet;
-	msg = (char *)pkt + 4;
-	first = tolower(*msg);
-	middle = tolower(*(msg+4));
+        pkt = event->packet;
+        msg = (char *)pkt + 4;
+        first = tolower(*msg);
+        middle = tolower(*(msg+4));
         last = tolower(*(msg+7));
 
+        // Sanity check of packet size for all states except WaitErrorAck.
+        if (!inState(WaitErrorAck)) {
+            uint16_t totalLength = *(uint16_t*)(pkt+2);
+            totalLength = ntohs(totalLength) * ZRTP_WORD_SIZE;
+            totalLength += 12 + sizeof(uint32_t);           // !2 bytes is fixed header, uint32_t is CRC
+
+            if (totalLength != ev->length) {
+                fprintf(stderr, "Total length does not match received length: %d - %ld\n", totalLength, ev->length);
+                sendErrorPacket(MalformedPacket);
+                parent->synchLeave();
+                return;
+            }
+        }
+
         // Check if this is an Error packet.
-	if (first == 'e' && middle =='r' && last == ' ') {
+        if (first == 'e' && middle =='r' && last == ' ') {
             /*
              * Process a received Error packet.
              *
@@ -126,7 +140,6 @@ void ZrtpStateClass::processEvent(Event_t *ev) {
             parent->synchLeave();
             return;
         }
-
     }
     /*
      * Shut down protocol state engine: cancel outstanding timer, further

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006-2007 Werner Dittmann
+  Copyright (C) 2006-2012 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -27,6 +27,8 @@
  */
 
 #include <libzrtpcpp/ZrtpPacketBase.h>
+
+#define HELLO_FIXED_PART_LEN  22
 
 /**
  * Implement the Hello packet.
@@ -171,16 +173,20 @@ class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
     int32_t getNumAuth()     {return nAuth; }
 
     /// set MitM flag
-    void setMitmMode()            { helloHeader->flags |= 0x20; }
+    void setMitmMode()       {helloHeader->flags |= 0x20; }
 
     /// set SAS sign flag
-    void setSasSign()            { helloHeader->flags |= 0x40; }
+    void setSasSign()        {helloHeader->flags |= 0x40; }
+
+    /// Check if packet length matches
+    bool isLengthOk()        {return (computedLength == getLength());}
 
  private:
+     uint32_t computedLength;
      // Hello packet is of variable length. It maximum size is 46 words:
-     // - 11 words fixed sizze
+     // - 20 words fixed sizze
      // - up to 35 words variable part, depending on number of algorithms
-     // leads to a maximum of 4*46=184 bytes.
+     // leads to a maximum of 4*55=220 bytes.
      uint8_t data[256];       // large enough to hold a full blown Hello packet
 };
 

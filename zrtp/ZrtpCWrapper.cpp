@@ -124,9 +124,9 @@ void zrtp_stopZrtpEngine(ZrtpContext* zrtpContext) {
         zrtpContext->zrtpEngine->stopZrtp();
 }
 
-void zrtp_processZrtpMessage(ZrtpContext* zrtpContext, uint8_t *extHeader, uint32_t peerSSRC) {
+void zrtp_processZrtpMessage(ZrtpContext* zrtpContext, uint8_t *extHeader, uint32_t peerSSRC, size_t length) {
     if (zrtpContext && zrtpContext->zrtpEngine)
-        zrtpContext->zrtpEngine->processZrtpMessage(extHeader, peerSSRC);
+        zrtpContext->zrtpEngine->processZrtpMessage(extHeader, peerSSRC, length);
 }
 
 void zrtp_processTimeout(ZrtpContext* zrtpContext) {
