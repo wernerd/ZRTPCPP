@@ -36,10 +36,14 @@
 #define WINDOWS
 #endif
 #endif
+#ifdef __APPLE__
+#define VMS
+#endif
 
 #ifndef WINDOWS
 #include <stdio.h>
-#include <malloc.h>
+#include <string.h>
+//#include <malloc.h>
 #include <memory.h>
 #include <pthread.h>
 #include <stdlib.h>

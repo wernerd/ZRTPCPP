@@ -108,10 +108,15 @@
 #endif
 
 
+
 #ifndef WINDOWS
+
+#include <unistd.h>
+#include <pthread.h>
+
 extern "C"
 {
- int	usleep(useconds_t useconds);
+ //int	usleep(useconds_t useconds);
 #ifdef NANO_SECOND_SLEEP
  int 	nanosleep(const struct timespec *rqtp, struct timespec *rmtp);
 #endif
