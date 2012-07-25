@@ -156,10 +156,10 @@ SymCipherEnum::~SymCipherEnum() {}
  */
 PubKeyEnum::PubKeyEnum() : EnumBase(PubKeyAlgorithm) {
     insert(dh2k);
-    insert(dh3k);
-    insert(mult);
     insert(ec25);
+    insert(dh3k);
     insert(ec38);
+    insert(mult);
 }
 
 PubKeyEnum::~PubKeyEnum() {}

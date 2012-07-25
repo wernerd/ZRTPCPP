@@ -182,7 +182,7 @@ private:
  * @see zrtpSasTypes
  * @see zrtpAuthLengths
  */
-class EnumBase {
+class __EXPORT EnumBase {
 public:
     /**
      * Get an AlgorithmEnum by its name
@@ -257,41 +257,41 @@ private:
 /**
  * The enumaration subclasses that contain the supported algorithm enumerations.
  */
-class HashEnum : public EnumBase {
+class __EXPORT HashEnum : public EnumBase {
 public:
     HashEnum();
     ~HashEnum();
 };
 
-class SymCipherEnum : public EnumBase {
+class __EXPORT SymCipherEnum : public EnumBase {
 public:
     SymCipherEnum();
     ~SymCipherEnum();
 };
 
-class PubKeyEnum : public EnumBase {
+class __EXPORT PubKeyEnum : public EnumBase {
 public:
     PubKeyEnum();
     ~PubKeyEnum();
 };
 
-class SasTypeEnum : public EnumBase {
+class __EXPORT SasTypeEnum : public EnumBase {
 public:
     SasTypeEnum();
     ~SasTypeEnum();
 };
 
-class AuthLengthEnum : public EnumBase {
+class __EXPORT AuthLengthEnum : public EnumBase {
 public:
     AuthLengthEnum();
     ~AuthLengthEnum();
 };
 
-extern HashEnum zrtpHashes;
-extern SymCipherEnum zrtpSymCiphers;
-extern PubKeyEnum zrtpPubKeys;
-extern SasTypeEnum zrtpSasTypes;
-extern AuthLengthEnum zrtpAuthLengths;
+extern __EXPORT HashEnum zrtpHashes;
+extern __EXPORT SymCipherEnum zrtpSymCiphers;
+extern __EXPORT PubKeyEnum zrtpPubKeys;
+extern __EXPORT SasTypeEnum zrtpSasTypes;
+extern __EXPORT AuthLengthEnum zrtpAuthLengths;
 
 /**
  * ZRTP configuration data.
