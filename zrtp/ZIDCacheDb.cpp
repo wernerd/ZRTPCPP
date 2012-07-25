@@ -58,8 +58,10 @@ int ZIDCacheDb::open(char* name) {
     }
     if (cacheOps.openCache(name, &zidFile, errorBuffer) == 0)
         cacheOps.readLocalZid(zidFile, associatedZid, NULL, errorBuffer);
-    else
+    else {
+        cacheOps.closeCache(zidFile);
         zidFile = NULL;
+    }
 
     return ((zidFile == NULL) ? -1 : 1);
 }
@@ -95,25 +97,41 @@ unsigned int ZIDCacheDb::saveRecord(ZIDRecord *zidRec) {
     return 1;
 }
 
-const char* ZIDCacheDb::getPeerName(const uint8_t *peerZid) {
+int32_t ZIDCacheDb::getPeerName(const uint8_t *peerZid, std::string *name) {
     zidNameRecord_t nameRec;
+    char buffer[201] = {'\0'};
 
+    nameRec.name = buffer;
+    nameRec.nameLength = 200;
     cacheOps.readZidNameRecord(zidFile, peerZid, associatedZid, NULL, &nameRec, errorBuffer);
     if ((nameRec.flags & Valid) != Valid) {
-        return NULL;
+        return 0;
     }
-    return nameRec.name;
+    name->assign(buffer);
+    return name->length();
 }
 
-void ZIDCacheDb::putPeerName(const uint8_t *peerZid, const std::string *name) {
+void ZIDCacheDb::putPeerName(const uint8_t *peerZid, const std::string name) {
     zidNameRecord_t nameRec;
+    char buffer[201] = {'\0'};
 
+    nameRec.name = buffer;
+    nameRec.nameLength = 200;
     cacheOps.readZidNameRecord(zidFile, peerZid, associatedZid, NULL, &nameRec, errorBuffer);
-    nameRec.name = (char*)name->c_str();
-    if ((nameRec.flags & Valid) != Valid)
+
+    nameRec.name = (char*)name.c_str();
+    nameRec.nameLength = name.length();
+    nameRec.nameLength = nameRec.nameLength > 200 ? 200 : nameRec.nameLength;
+    if ((nameRec.flags & Valid) != Valid) {
+        nameRec.flags = Valid;
         cacheOps.insertZidNameRecord(zidFile, peerZid, associatedZid, NULL, &nameRec, errorBuffer);
+    }
     else
         cacheOps.updateZidNameRecord(zidFile, peerZid, associatedZid, NULL, &nameRec, errorBuffer);
 
     return;
+}
+
+void ZIDCacheDb::cleanup() {
+    cacheOps.cleanCache(zidFile, errorBuffer);
 }

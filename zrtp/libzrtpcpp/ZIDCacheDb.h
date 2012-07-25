@@ -79,9 +79,12 @@ public:
 
     const unsigned char* getZid() { return associatedZid; };
 
-    const char* getPeerName(const uint8_t *peerZid); 
+    int32_t getPeerName(const uint8_t *peerZid, std::string *name);
 
-    void putPeerName(const uint8_t *peerZid, const std::string *name);
+    void putPeerName(const uint8_t *peerZid, const std::string name);
+
+    void cleanup();
+
 };
 
 /**

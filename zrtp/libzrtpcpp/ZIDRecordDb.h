@@ -83,9 +83,9 @@ static const uint32_t inUse            = 0x20;
  * See comment on @c remoteZidRecord_t above.
  */
 typedef struct {
-    uint32_t flags;
-    char     *name;
-    int32_t  nameLength;
+    uint32_t   flags;
+    char       *name;
+    int32_t    nameLength;
 } zidNameRecord_t;
 
 #if defined(__cplusplus)

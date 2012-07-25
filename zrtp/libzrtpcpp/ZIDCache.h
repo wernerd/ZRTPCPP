@@ -136,10 +136,12 @@ public:
      *
      * @param peerZid the peer's ZID
      *
-     * @return a pointer to the peer's name of NULL if no such name was
-     *         stored of if the implementation does not support name handling.
+     * @param name string that will get the peer's name. The returned name will
+     *             be truncated to 200 bytes
+     *
+     * @return length og the name read or 0 if no name was previously stored.
      */
-    virtual const char* getPeerName(const uint8_t *peerZid) =0;
+    virtual int32_t getPeerName(const uint8_t *peerZid, std::string *name) =0;
 
     /**
      * @brief Write peer name to database
@@ -154,8 +156,17 @@ public:
      * @param name the name string
      *
      */
-    virtual void putPeerName(const uint8_t *peerZid, const std::string *name) =0;
+    virtual void putPeerName(const uint8_t *peerZid, const std::string name) =0;
 
+    /**
+     * @brief Clean the cache.
+     *
+     * This method cleans the cache and discards all information about remote peers.
+     * The method does not delete the local (own) ZID. To delete local ZID information
+     * the user must delete the database base.
+     *
+     */
+    virtual void cleanup() =0;
 };
 
 /**

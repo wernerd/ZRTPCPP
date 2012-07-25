@@ -53,7 +53,7 @@ typedef struct {
      * @param errString Pointer to a character buffer, see implementation
      *                  notes above.
      */
-    int (*openCache)(char* name, void **pdb, char *errString);
+    int (*openCache)(const char* name, void **pdb, char *errString);
 
     /**
      * Close the cache.
@@ -277,6 +277,21 @@ typedef struct {
     int (*insertZidNameRecord)(void *vdb, const uint8_t *remoteZid, const uint8_t *localZid,
                                const char *accountInfo, zidNameRecord_t *zidName, char* errString);
 
+
+    /**
+     * Clean the cache.
+     *
+     * This method cleans the cache and discards all information about remote peers.
+     * The method does not delete the local (own) ZID. To delete local ZID information
+     * the user must delete the database base.
+     *
+     * @param db Pointer to an internal structure that the database
+     *           implementation requires.
+     *
+     * @param errString Pointer to a character buffer, see implementation
+     *                  notes above.
+     */
+    int (*cleanCache)(void *db, char* errString);
 } dbCacheOps_t;
 
 void getDbCacheOps(dbCacheOps_t *ops);
