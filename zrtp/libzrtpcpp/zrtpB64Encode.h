@@ -10,6 +10,11 @@ For details, see http://sourceforge.net/projects/libb64
 
 #include <stdint.h>
 
+#if defined(__cplusplus)
+extern "C"
+{
+#endif
+
 typedef enum
 {
 	step_A, step_B, step_C
@@ -30,5 +35,8 @@ char base64_encode_value(const int8_t value_in);
 int base64_encode_block(const uint8_t *plaintext_in, int length_in, char* code_out, base64_encodestate* state_in);
 
 int base64_encode_blockend(char *code_out, base64_encodestate* state_in);
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* BASE64_CENCODE_H */
