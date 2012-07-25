@@ -74,6 +74,7 @@ enum SecureSubStates {
 /// A ZRTP state event
 typedef struct Event {
     EventDataType type; ///< Type of event
+    size_t   length;    ///< length of the message data
     uint8_t* packet;    ///< Event data if availabe, usually a ZRTP message
 } Event_t;
 

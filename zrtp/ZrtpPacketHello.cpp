@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006-2007 Werner Dittmann
+  Copyright (C) 2006-2012 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -110,6 +110,9 @@ ZrtpPacketHello::ZrtpPacketHello(uint8_t *data) {
     nAuth = (temp & (0xf << 8)) >> 8;
     nPubkey = (temp & (0xf << 4)) >> 4;
     nSas = temp & 0xf;
+
+    // +2 : the MAC at the end of the packet
+    computedLength = nHash + nCipher + nAuth + nPubkey + nSas + sizeof(HelloPacket_t)/ZRTP_WORD_SIZE + 2;
 
     oHash = sizeof(Hello_t);
     oCipher = oHash + (nHash * ZRTP_WORD_SIZE);

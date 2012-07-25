@@ -152,10 +152,12 @@ class __EXPORT ZRtp {
      *    RFC3550.
      * @param peerSSRC
      *    The peer's SSRC.
+     * @param length of the received data packet - used to do santity checks.
+     *
      * @return
      *    Code indicating further packet handling, see description above.
      */
-    void processZrtpMessage(uint8_t *extHeader, uint32_t peerSSRC);
+    void processZrtpMessage(uint8_t *extHeader, uint32_t peerSSRC, size_t length);
 
     /**
      * Process a timeout event.
@@ -849,21 +851,6 @@ private:
     bool paranoidMode;
 
     /**
-     * Find the best Hash algorithm that is offered in Hello.
-     *
-     * Find the best, that is the strongest, Hash algorithm that our peer
-     * offers in its Hello packet.
-     *
-     * @param hello
-     *    The Hello packet.
-     * @return
-     *    The Enum that identifies the best offered Hash algortihm. Return
-     *    <code>NumSupportedHashes</code> to signal that no matching Hash algorithm
-     *     was found at all.
-    */
-    AlgorithmEnum* findBestHash(ZrtpPacketHello *hello);
-
-    /**
      * Find the best symmetric cipher algorithm that is offered in Hello.
      *
      * Find the best, that is the strongest, cipher algorithm that our peer
@@ -874,9 +861,8 @@ private:
      * @param pk
      *    The id of the selected public key algorithm
      * @return
-     *    The Enum that identifies the best offered Cipher algortihm. Return
-     *    <code>NumSupportedSymCiphers</code> to signal that no matching Cipher algorithm
-     *    was found at all.
+     *    The Enum that identifies the best offered Cipher algorithm. Return
+     *    mandatory algorithm if no match was found.
      */
     AlgorithmEnum* findBestCipher(ZrtpPacketHello *hello,  AlgorithmEnum* pk);
 
@@ -889,9 +875,8 @@ private:
      * @param hello
      *    The Hello packet.
      * @return
-     *    The Enum that identifies the best offered Public Key algortihm. Return
-     *    <code>NumSupportedPubKeys</code> to signal that no matching Public Key algorithm
-     *    was found at all.
+     *    The Enum that identifies the best offered Public Key algorithm. Return
+     *    mandatory algorithm if no match was found.
      */
     AlgorithmEnum* findBestPubkey(ZrtpPacketHello *hello);
 
@@ -899,14 +884,18 @@ private:
      * Find the best SAS algorithm that is offered in Hello.
      *
      * Find the best, that is the strongest, SAS algorithm that our peer
-     * offers in its Hello packet.
+     * offers in its Hello packet. The method works as definied in RFC 6189,
+     * chapter 4.1.2.
+     *
+     * The list of own supported public key algorithms must follow the rules
+     * defined in RFC 6189, chapter 4.1.2, thus the order in the list must go
+     * from fastest to slowest.
      *
      * @param hello
      *    The Hello packet.
      * @return
-     *    The Enum that identifies the best offered SAS algortihm. Return
-     *    <code>NumSupportedSASTypes</code> to signal that no matching SAS algorithm
-     *    was found at all.
+     *    The Enum that identifies the best offered SAS algorithm. Return
+     *    mandatory algorithm if no match was found.
      */
     AlgorithmEnum* findBestSASType(ZrtpPacketHello* hello);
 
@@ -920,8 +909,7 @@ private:
      *    The Hello packet.
      * @return
      *    The Enum that identifies the best offered authentication length. Return
-     *    <code>NumSupportedAuthLenghts</code> to signal that no matching length
-     *    was found at all.
+     *    mandatory algorithm if no match was found.
      */
     AlgorithmEnum* findBestAuthLen(ZrtpPacketHello* hello);
 
@@ -937,6 +925,22 @@ private:
      *    True if multi stream mode is available, false otherwise.
      */
     bool checkMultiStream(ZrtpPacketHello* hello);
+
+    /**
+     * Checks if Hello packet contains a strong (384bit) hash and returns it.
+     *
+     * @return @c hash algorithm if found in Hello packet, @c NULL otherwise.
+     */
+    AlgorithmEnum* getStrongHashOffered(ZrtpPacketHello *hello);
+
+    /**
+     * Checks if Hello packet offers a strong (256bit) symmetric cipher.
+     *
+     * The method returns the first strong cipher offered in the Hello packet.
+     *
+     * @return @c cipher algorithm if found in Hello packet, @c NULL otherwise.
+     */
+    AlgorithmEnum* getStrongCipherOffered(ZrtpPacketHello *hello);
 
     /**
      * Save the computed MitM secret to the ZID record of the peer

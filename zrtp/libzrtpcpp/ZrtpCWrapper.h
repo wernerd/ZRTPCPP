@@ -690,10 +690,12 @@ extern "C"
      *    A pointer to the first byte of the ZRTP message part.
      * @param peerSSRC
      *    The peer's SSRC.
+     * @param length of the received data packet - used to do santity checks.
+     *
      * @return
      *    Code indicating further packet handling, see description above.
      */
-    void zrtp_processZrtpMessage(ZrtpContext* zrtpContext, uint8_t *extHeader, uint32_t peerSSRC);
+    void zrtp_processZrtpMessage(ZrtpContext* zrtpContext, uint8_t *extHeader, uint32_t peerSSRC, size_t length);
 
     /**
      * Process a timeout event.
