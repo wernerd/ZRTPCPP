@@ -17,7 +17,7 @@
 
 #include <stdio.h>
 
-#include <malloc.h>
+#include <string.h>
 #include <pthread.h>
 #include <errno.h>
 #include <gcrypt.h>
