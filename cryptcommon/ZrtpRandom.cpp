@@ -47,18 +47,13 @@ int ZrtpRandom::getRandomData(uint8_t* buffer, uint32_t length) {
     uint8_t    rdata[AES_BLOCK_SIZE];
     uint32_t   generated = length;
 
-    initialize();
-
-    lockRandom.Lock();
-
     /*
      * Add entropy from system state
      * We will include whatever happens to be in the buffer, it can't hurt
      */
-    if (ZrtpRandom::addEntropy(buffer, length) < 0) {
-        lockRandom.Unlock();
-        return -1;
-    }
+    ZrtpRandom::addEntropy(buffer, length);
+
+    lockRandom.Lock();
 
     /* Copy the mainCtx and finalize it into the md buffer */
     memcpy(&randCtx2, &mainCtx, sizeof(sha512_ctx));
@@ -108,18 +103,22 @@ int ZrtpRandom::getRandomData(uint8_t* buffer, uint32_t length) {
 
 int ZrtpRandom::addEntropy(const uint8_t *buffer, uint32_t length)
 {
+
+    uint8_t newSeed[64];
+    int len = getSystemSeed(newSeed, sizeof(newSeed));
+
+    lockRandom.Lock();
     initialize();
 
     if (buffer && length) {
         sha512_hash(buffer, length, &mainCtx);
     }
-    uint8_t newSeed[64];
-    int len = getSystemSeed(newSeed, sizeof(newSeed));
     if (len > 0) {
         sha512_hash(newSeed, len, &mainCtx);
-        return len + length;
+        length += len;
     }
-    return len;
+    lockRandom.Unlock();
+    return length;
 }
 
 
@@ -127,14 +126,8 @@ void ZrtpRandom::initialize() {
     if (initialized)
         return;
 
-    lockRandom.Lock();
-    if (initialized) {
-        lockRandom.Unlock();
-        return;
-    }
     sha512_begin(&mainCtx);
     initialized = true;
-    lockRandom.Unlock();
 }
 
 /*
