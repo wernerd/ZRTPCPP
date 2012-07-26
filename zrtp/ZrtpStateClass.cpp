@@ -82,12 +82,12 @@ ZrtpStateClass::~ZrtpStateClass(void) {
 
 void ZrtpStateClass::processEvent(Event_t *ev) {
 
-    event = ev;
     char *msg, first, middle, last;
     uint8_t *pkt;
 
     parent->synchEnter();
 
+    event = ev;
     if (event->type == ZrtpPacket) {
         pkt = event->packet;
         msg = (char *)pkt + 4;
@@ -317,7 +317,7 @@ void ZrtpStateClass::evDetect(void) {
  *
  * The protocol engine got a Hello packet from peer and answered with a
  * HelloAck response.  According to the protocol we must also send a 
- * Hello after HelloAck (refer to figure 1 in ZRTP RFC xxxx, message 
+ * Hello after HelloAck (refer to figure 1 in ZRTP RFC 6189, message
  * HelloACK (F2) must be followed by Hello (F3)). We use the timeout in 
  * this state to send the required Hello (F3).
  *
@@ -489,7 +489,7 @@ void ZrtpStateClass::evAckSent(void) {
  * AckDetected state.
  *
  * The protocol engine received a HelloAck in state Detect, thus the peer 
- * acknowledged our the Hello. According to ZRT RFC xxxx our peer must send
+ * acknowledged our the Hello. According to ZRT RFC 6189 our peer must send
  * its Hello until our protocol engine sees it (refer also to comment for
  * state AckSent). This protocol sequence gurantees that both peers got at
  * least one Hello. 
@@ -524,7 +524,7 @@ void ZrtpStateClass::evAckDetected(void) {
         /*
          * Implementation for choice 1)
          * Hello:
-         * - Acknowledge peers Hello, sending HelloACK (F4)
+         * - Acknowledge peer's Hello, sending HelloACK (F4)
          * - switch to state WaitCommit, wait for peer's Commit
          * - we are going to be in the Responder role
          */
@@ -555,7 +555,7 @@ void ZrtpStateClass::evAckDetected(void) {
         /*
          * Implementation for choice 2)
          * Hello:
-         * - Acknowledge peers Hello by sending Commit (F5)
+         * - Acknowledge peer's Hello by sending Commit (F5)
          *   instead of HelloAck (F4)
          * - switch to state CommitSent
          * - Initiator role, thus start timer T2 to monitor timeout for Commit
@@ -1112,8 +1112,7 @@ void ZrtpStateClass::evWaitConfirm2(void) {
                 sendFailed();             // returns to state Initial
                 return;
             }
-            if (!parent->srtpSecretsReady(ForSender) ||
-                !parent->srtpSecretsReady(ForReceiver)) {
+            if (!parent->srtpSecretsReady(ForReceiver) || !parent->srtpSecretsReady(ForSender))  {
                 parent->sendInfo(Severe, CriticalSWError);
                 sendErrorPacket(CriticalSWError);
                 return;
@@ -1361,7 +1360,11 @@ void ZrtpStateClass::evSecureState(void) {
         // TODO Timeout to resend clear ack until user user confirmation
         }
     }
-    else {  // unknown Event type for this state (covers Error and ZrtpClose)
+    else if (event->type == Timer) {
+        // Ignore stray timeout in this state
+        ;
+    }
+    else  {  // unknown Event type for this state (covers Error and ZrtpClose)
         sentPacket = NULL;
         parent->srtpSecretsOff(ForSender);
         parent->srtpSecretsOff(ForReceiver);
