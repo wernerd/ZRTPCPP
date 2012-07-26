@@ -109,11 +109,26 @@ static suiteParam knownSuites[] = {
 };
 
 ZrtpSdesStream::ZrtpSdesStream(const sdesSuites s) :
-    state(STREAM_INITALIZED), suite(s){
+    state(STREAM_INITALIZED), suite(s), recvSrtp(NULL), recvSrtcp(NULL), sendSrtp(NULL),
+    sendSrtcp(NULL), srtcpIndex(0) {
+}
+
+ZrtpSdesStream::~ZrtpSdesStream() {
+    close();
 }
 
 void ZrtpSdesStream::close() {
-    // free all resources that are still allocated (srtp, srtcp, etc)
+    delete sendSrtp;
+    sendSrtp = NULL;
+
+    delete recvSrtp;
+    recvSrtp = NULL;
+
+    delete sendSrtcp;
+    sendSrtp = NULL;
+
+    delete recvSrtcp;
+    recvSrtp = NULL;
 }
 
 bool ZrtpSdesStream::createSdes(char *cryptoString, size_t *maxLen, bool sipInvite) {
@@ -128,7 +143,7 @@ bool ZrtpSdesStream::createSdes(char *cryptoString, size_t *maxLen, bool sipInvi
             return false;
     }
 
-    bool s = createSdesProfile(cryptoString, maxLen, tag);
+    bool s = createSdesProfile(cryptoString, maxLen);
     if (!s)
         return s;
 
@@ -166,6 +181,7 @@ bool ZrtpSdesStream::parseSdes(char *cryptoString, size_t length, bool sipInvite
         state = SDES_SRTP_ACTIVE;
     }
     else {
+        // Answerer stores tag and suite and uses it in createSdesProfile
         suite = tmpSuite;
         tag = tmpTag;
         state = IN_PROFILE_READY;
@@ -217,6 +233,13 @@ int32_t SrtpHandler::unprotectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size
     return 0;
 }
 
+const char* ZrtpSdesStream::getCipher() {
+    return knownSuites[suite].cipher;
+}
+
+const char* ZrtpSdesStream::getAuthAlgo(){
+    return knownSuites[suite].tagLength;
+}
 
 #ifdef WEAKRANDOM
 /*
@@ -263,7 +286,7 @@ static int b64Decode(const char *b64Data, int32_t b64length, uint8_t *binData, i
     return codelength;
 }
 
-bool ZrtpSdesStream::createSdesProfile(char *cryptoString, size_t *maxLen, int64_t tag) {
+bool ZrtpSdesStream::createSdesProfile(char *cryptoString, size_t *maxLen) {
 
     uint8_t keySalt[((MAX_KEY_LEN + MAX_SALT_LEN + 3)/4)*4] = {0};  /* Some buffer for random data, multiple of 4 */
     char b64keySalt[(MAX_KEY_LEN + MAX_SALT_LEN) * 2] = {'\0'};
@@ -302,7 +325,7 @@ bool ZrtpSdesStream::createSdesProfile(char *cryptoString, size_t *maxLen, int64
                                  keyLenBytes,           // Master Key length
                                  &keySalt[keyLenBytes], // Master Salt
                                  saltLenBytes,          // Master Salt length
-                                 keyLenBytes,           // encryption keyl
+                                 keyLenBytes,           // encryption keylen
                                  authKeyLen,            // authentication key len (HMAC key lenght)
                                  saltLenBytes,          // session salt len
                                  tagLength);            // authentication tag len
@@ -340,10 +363,9 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
         length = strlen(cryptoStr);
 
     if (length > MAX_CRYPT_STRING_LEN) {
-        fprintf(stderr, "parseCreateSdesProfile() crypto string too long: %ld, maximum: %d\n", length, MAX_CRYPT_STRING_LEN);
+//        fprintf(stderr, "parseCreateSdesProfile() crypto string too long: %ld, maximum: %d\n", length, MAX_CRYPT_STRING_LEN);
         return false;
     }
-
     /* make own copy, null terminated */
     memcpy(cryptoString, cryptoStr, length);
 
@@ -352,7 +374,7 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
 
     /* Do we have enough elements in the string */
     if (elements < minElementsCrypto) {
-        fprintf(stderr, "parseCreateSdesProfile() to few elements in crypto string: %d, expected: %d\n", elements, minElementsCrypto);
+//        fprintf(stderr, "parseCreateSdesProfile() to few elements in crypto string: %d, expected: %d\n", elements, minElementsCrypto);
         return false;
     }
 
@@ -362,7 +384,7 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
             break;
     }
     if (sidx >= sizeof(knownSuites)/sizeof(struct _suite)) {
-        fprintf(stderr, "parseCreateSdesProfile() unsupported crypto suite: %s\n", suiteName);
+//        fprintf(stderr, "parseCreateSdesProfile() unsupported crypto suite: %s\n", suiteName);
         return false;
     }
     suiteParam *pSuite = &knownSuites[sidx];
@@ -373,8 +395,8 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
 
     /* Currently only one we only accept key||salt B64 string, no other parameters */
     if (elements != minElementsKeyParam) {
-        fprintf(stderr, "parseCreateSdesProfile() wrong number of parameters in key parameters: %d, expected: %d\n",
-                     elements, minElementsKeyParam);
+//         fprintf(stderr, "parseCreateSdesProfile() wrong number of parameters in key parameters: %d, expected: %d\n",
+//                      elements, minElementsKeyParam);
         return false;
     }
 
@@ -383,8 +405,8 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
 
     /* Check if key||salt B64 string hast the correct length */
     if (strlen(keySaltB64) != pSuite->b64length) {
-        fprintf(stderr, "parseCreateSdesProfile() B64 key||salt string length does not match: %ld, expected: %d\n",
-                    strlen(keySaltB64), pSuite->b64length);
+//         fprintf(stderr, "parseCreateSdesProfile() B64 key||salt string length does not match: %ld, expected: %d\n",
+//                     strlen(keySaltB64), pSuite->b64length);
         return false;
     }
 
@@ -392,8 +414,8 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
 
     /* Did the B64 decode deliver enough data for key||salt */
     if (i != (keyLenBytes + saltLenBytes)) {
-        fprintf(stderr, "parseCreateSdesProfile() B64 key||salt binary data length does not match: %d, expected: %d\n",
-                    i, keyLenBytes + saltLenBytes);
+//         fprintf(stderr, "parseCreateSdesProfile() B64 key||salt binary data length does not match: %d, expected: %d\n",
+//                     i, keyLenBytes + saltLenBytes);
         return false;
     }
 
@@ -415,7 +437,7 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
                                  keyLenBytes,           // Master Key length
                                  &keySalt[keyLenBytes], // Master Salt
                                  saltLenBytes,          // Master Salt length
-                                 keyLenBytes,           // encryption keyl
+                                 keyLenBytes,           // encryption keylen
                                  authKeyLen,            // authentication key len (HMAC key lenght)
                                  saltLenBytes,          // session salt len
                                  tagLength);            // authentication tag len
