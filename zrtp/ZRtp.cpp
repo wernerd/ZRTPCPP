@@ -882,9 +882,6 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
     }
     cipher->getDecrypt()(zrtpKeyR, cipher->getKeylen(), (uint8_t*)confirm1->getIv(), confirm1->getHashH0(), hmlen);
 
-    std::string cs(cipher->getReadable());
-    cs.append("/").append(pubKey->getName());
-
     // Check HMAC of DHPart1 packet stored in temporary buffer. The
     // HMAC key of the DHPart1 packet is peer's H0 that is contained in
     // Confirm1. Refer to chapter 9.
@@ -913,8 +910,6 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
     // get verified flag from current RS1 before set a new RS1. This
     // may not be set even if peer's flag is set in confirm1 message.
     sasFlag = zidRec->isSasVerified();
-
-    callback->srtpSecretsOn(cs, SAS, sasFlag);
 
     // now we are ready to save the new RS1 which inherits the verified
     // flag from old RS1
@@ -996,7 +991,6 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2MultiStream(ZrtpPacketConfirm* confirm1,
     }
     // Cast away the const for the IV - the standalone AES CFB modifies IV on return
     cipher->getDecrypt()(zrtpKeyR, cipher->getKeylen(), (uint8_t*)confirm1->getIv(), confirm1->getHashH0(), hmlen);
-    std::string cs(cipher->getReadable());
 
     // Because we are initiator the protocol engine didn't receive Commit and
     // because we are using multi-stream mode here we also did not receive a DHPart1 and
@@ -1016,12 +1010,6 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2MultiStream(ZrtpPacketConfirm* confirm1,
         *errMsg = CriticalSWError;
         return NULL;
     }
-    // TODO: here we have a SAS signature from reponder, call checkSASsignature (save / compare in case of resend)
-
-    // Inform GUI about security state, don't show SAS and its state
-    std::string cs1("");
-    callback->srtpSecretsOn(cs, cs1, true);
-
     // now generate my Confirm2 message
     zrtpConfirm2.setMessageType((uint8_t*)Confirm2Msg);
     zrtpConfirm2.setHashH0(H0);
@@ -1065,8 +1053,6 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
     // Cast away the const for the IV - the standalone AES CFB modifies IV on return
     cipher->getDecrypt()(zrtpKeyI, cipher->getKeylen(), (uint8_t*)confirm2->getIv(), confirm2->getHashH0(), hmlen);
 
-    std::string cs(cipher->getReadable());
-
     if (!multiStream) {
         // Check HMAC of DHPart2 packet stored in temporary buffer. The
         // HMAC key of the DHPart2 packet is peer's H0 that is contained in
@@ -1093,13 +1079,6 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
             zidRec->resetSasVerified();
         }
 
-        // Now get the resulting SAS verified flag from current RS1 before setting a new RS1.
-        // It's a combination of our SAS verfied flag and peer's verified flag. Only if both
-        // were set (true) then sasFlag becomes true.
-        sasFlag = zidRec->isSasVerified();
-        cs.append("/").append(pubKey->getName());
-        callback->srtpSecretsOn(cs, SAS, sasFlag);
-
         // save new RS1, this inherits the verified flag from old RS1
         zidRec->setNewRs1((const uint8_t*)newRs1);
         getZidCacheInstance()->saveRecord(zidRec);
@@ -1125,10 +1104,6 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
             *errMsg = CriticalSWError;
             return NULL;
         }
-        std::string cs1("");
-
-        // Inform GUI about security state, don't show SAS and its state
-        callback->srtpSecretsOn(cs, cs1, true);
     }
     return &zrtpConf2Ack;
 }
@@ -2041,7 +2016,21 @@ bool ZRtp::srtpSecretsReady(EnableSecurity part) {
     sec.sas = SAS;
     sec.role = myRole;
 
-    return callback->srtpSecretsReady(&sec, part);
+    bool rc = callback->srtpSecretsReady(&sec, part);
+
+    // The call state engine calls ForSender always after ForReceiver.
+    if (part == ForSender) {
+        std::string cs(cipher->getReadable());
+        cs.append("/").append(pubKey->getName());
+        if (!multiStream) {
+            callback->srtpSecretsOn(cs, SAS, zidRec->isSasVerified());
+        }
+        else {
+            std::string cs1("");
+            callback->srtpSecretsOn(cs, cs1, true);
+        }
+    }
+    return rc;
 }
 
 
