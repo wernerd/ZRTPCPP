@@ -103,7 +103,7 @@ class TestCallbackAudio: public CtZrtpCb {
 class TestSendCallbackAudio: public CtZrtpSendCb {
     void sendRtp(CtZrtpSession const *session, uint8_t* packet, unsigned int length, CtZrtpSession::streamName streamNm) {
 //        hexdump("ZRTP packet", packet, length);
-        fprintf(stderr, "ZRTP send packet, length: %d\n", length);
+        fprintf(stderr, "ZRTP send packet, length: %d, %.8s\n", length, packet+16);
         sendData(packet, length);
     }
 };

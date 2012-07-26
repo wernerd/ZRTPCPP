@@ -53,6 +53,7 @@ public:
         eSecure,
         eSecureMitm,
         eSecureMitmVia,
+        eSecureSdes,
         eWrongStream = -1
     } tiviStatus;
 
@@ -248,8 +249,12 @@ public:
      *
      * @param newLength returns the new length of the RTP data. When encrypting
      *                  @c newLength covers the additional SRTP authentication data.
-     * 
+     *
      * @param streamNm specifies which stream to use
+     *
+     * @return
+     *  - @c true application shall send packet to the recipient.
+     *  - @c false don't send the packet.
      */
     bool processOutoingRtp(uint8_t *buffer, size_t length, size_t *newLength, streamName streamNm);
 

@@ -25,16 +25,6 @@ class CtZrtpSession;
 class ZrtpSdesStream;
 class CMutexClass;
 
-
-typedef enum _tiviStatus {
-    eLookingPeer = 1,
-    eNoPeer,
-    eGoingSecure,
-    eSecure,
-    eError,
-    eSecureMitm
-} tiviStatus;
-
 class __EXPORT CtZrtpStream: public ZrtpCallback  {
 
 public:
@@ -91,7 +81,7 @@ protected:
     void stopStream();
 
     /**
-     * Process outgoing data.
+     * @brief Process outgoing data.
      *
      * Depending on the state of the buffer the functions either returns the buffer
      * umodified or encrypted.
@@ -109,6 +99,10 @@ protected:
      *
      * @param newLength returns the new length of the RTP data. When encrypting
      *                  @c newLength covers the additional SRTP authentication data.
+     *
+     * @return
+     *  - @c true application shall send packet to the recipient.
+     *  - @c false don't send the packet.
      */
     bool processOutgoingRtp(uint8_t *buffer, size_t length, size_t *newLength);
 

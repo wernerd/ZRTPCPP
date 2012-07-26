@@ -13,12 +13,7 @@
 
 #include <CtZrtpSession.h>
 #include <CtZrtpCallback.h>
-#include <ucommon/socket.h>
 
-struct sockaddr_in adr_inet;
-struct sockaddr_in adr_clnt;
-socklen_t lenClnt;          // length
-int s;                       // Socket
 
 static void hexdump(const char* title, const unsigned char *s, int l)
 {
@@ -34,6 +29,68 @@ static void hexdump(const char* title, const unsigned char *s, int l)
     }
     fprintf(stderr, "\n");
 }
+
+
+// This is the callback that we use for audio stream
+class TestCallbackAudio: public CtZrtpCb {
+    void onNewZrtpStatus(CtZrtpSession *session, char *p, CtZrtpSession::streamName streamNm) {
+        fprintf(stderr, "new status: %s\n", p == NULL ? "NULL" : p);
+        if (session->isSecure(streamNm)) {
+            char buffer[20];
+
+            session->getInfo("rs1", buffer, 9);
+            printf("RS1: %s ", buffer);
+
+            session->getInfo("rs2", buffer, 9);
+            printf("RS2: %s ", buffer);
+
+            session->getInfo("pbx", buffer, 9);
+            printf("PBX: %s ", buffer);
+
+            session->getInfo("aux", buffer, 9);
+            printf("AUX: %s\n", buffer);
+
+            session->getInfo("lbClient", buffer, 19);
+            printf("Client: %s ", buffer);
+
+            session->getInfo("lbVersion", buffer, 19);
+            printf("Version: %s ", buffer);
+
+            session->getInfo("lbChiper", buffer, 9);
+            printf("cipher: %s ", buffer);
+
+            session->getInfo("lbHash", buffer, 9);
+            printf("hash: %s ", buffer);
+
+            session->getInfo("lbAuthTag", buffer, 9);
+            printf("auth: %s ", buffer);
+
+            session->getInfo("lbKeyExchange", buffer, 9);
+            printf("KeyEx: %s\n", buffer);
+
+        }
+    }
+    
+    void onNeedEnroll(CtZrtpSession *session, CtZrtpSession::streamName streamNm) {
+        fprintf(stderr, "Need enroll\n");
+    }
+
+    void onPeer(CtZrtpSession *session, char *name, int iIsVerified, CtZrtpSession::streamName streamNm) {
+        fprintf(stderr, "onPeer: %s\n", name == NULL ? "NULL" : name);
+    }
+
+    void onZrtpWarning(CtZrtpSession *session, char *p, CtZrtpSession::streamName streamNm) {
+        fprintf(stderr, "Warning: %s\n", p == NULL ? "NULL" : p);
+    }
+
+};
+
+class TestSendCallbackAudio: public CtZrtpSendCb {
+    void sendRtp(CtZrtpSession const *session, uint8_t* packet, unsigned int length, CtZrtpSession::streamName streamNm) {
+//        hexdump("ZRTP packet", packet, length);
+        fprintf(stderr, "ZRTP send packet, length: %d\n", length);
+    }
+};
 
 //    V2 | PT  |   seqnum  |        timestamp      |          SSRC        |
 uint8_t inviterPacket[] = {
@@ -59,48 +116,60 @@ int main(int argc,char **argv) {
     char invBuffer[200];
     char answBuffer[200];
 
+    TestCallbackAudio *callback = new TestCallbackAudio();
+    TestSendCallbackAudio *sendCallback = new TestSendCallbackAudio();
+
     CtZrtpSession *inviter = new CtZrtpSession();
     inviter->init(true, true, "testzidSdes.dat");       // audio and video, name of cache file
-    inviter->getSignalingHelloHash((char*)buffer, CtZrtpSession::AudioStream);
-    fprintf(stderr, "Inviter Hello hash:  %s\n", buffer);
+    inviter->setUserCallback(callback, CtZrtpSession::AudioStream);
+    inviter->setSendCallback(sendCallback, CtZrtpSession::AudioStream);
+
 
     CtZrtpSession *answerer = new CtZrtpSession();
     answerer->init(true, true, "testzidSdes.dat");       // audio and video, name of cache file
-    answerer->getSignalingHelloHash((char*)buffer, CtZrtpSession::AudioStream);
-    fprintf(stderr, "Answerer Hello hash: %s\n", buffer);
+//    answerer->setSendCallback(sendCallback, CtZrtpSession::AudioStream);
 
     invLength = sizeof(invBuffer);
     inviter->createSdes(invBuffer, &invLength, CtZrtpSession::AudioStream);
-    printf("Inviter SDES security: length: %ld\n%s\n", invLength, invBuffer);
+//    printf("Inviter SDES security: length: %ld\n%s\n", invLength, invBuffer);
 
-    // Virtually send the Inviter SDES crypto string to the answerer via SIP INVITE ........
+    // Now send the Inviter SDES crypto string to the answerer via SIP INVITE ........
 
     answLength = sizeof(answBuffer);
-    // Set "sipInvite" parameter to false
+    // Answerer parses received string and gets its SDES crypto string, sets "sipInvite" parameter to false
     answerer->parseSdes(invBuffer, invLength, answBuffer, &answLength, false, CtZrtpSession::AudioStream);
-    printf("Answerer SDES security: length: %ld\n%s\n", answLength, answBuffer);
+//    printf("Answerer SDES security: length: %ld\n%s\n", answLength, answBuffer);
 
-    // Virtually send the answerer SDES crypto back to Inviter, via 200 OK probably
+    // Send the answerer SDES crypto back to Inviter, via 200 OK probably
 
-    // Set the "sipInvite" parameter to true
+    // Inviter parses answerer's string, sets the "sipInvite" parameter to true
     inviter->parseSdes(answBuffer, answLength, NULL, NULL, true, CtZrtpSession::AudioStream);
+    inviter->start(0xfeedbac, CtZrtpSession::AudioStream);
+
+
 
     invLength = 0;
     inviter->processOutoingRtp(inviterPacket, sizeof(inviterPacket), &invLength, CtZrtpSession::AudioStream);
-    hexdump("Inviter packet protected", inviterPacket, invLength);
+//    hexdump("Inviter packet protected", inviterPacket, invLength);
 
     answLength = 0;
     answerer->processIncomingRtp(inviterPacket, invLength, &answLength, CtZrtpSession::AudioStream);
-    hexdump("Inviter packet unprotected by answerer", inviterPacket, answLength);
-
+    if (memcmp(inviterPacket, inviterPacket_fixed, answLength) != 0) {
+        hexdump("Error - Inviter packet unprotected by answerer", inviterPacket, answLength);
+        return 1;
+    }
 
     answLength = 0;
     answerer->processOutoingRtp(answererPacket, sizeof(answererPacket), &answLength, CtZrtpSession::AudioStream);
-    hexdump("Answerer packet protected", answererPacket, answLength);
+//    hexdump("Answerer packet protected", answererPacket, answLength);
 
     invLength = 0;
     inviter->processIncomingRtp(answererPacket, answLength, &invLength, CtZrtpSession::AudioStream);
-    hexdump("Answerer packet unprotected by inviter", answererPacket, invLength);
+    if (memcmp(answererPacket, answererPacket_fixed, invLength) != 0) {
+        hexdump("Answerer packet unprotected by inviter", answererPacket, invLength);
+        return 1;
+    }
+    printf("PASSED\n");
     return 0;
 }
 

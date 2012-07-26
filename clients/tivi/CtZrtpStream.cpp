@@ -101,6 +101,8 @@ bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *ne
         if (sdes != NULL) {                 // SDES stream available, let SDES protect if necessary
             return sdes->outgoingRtp(buffer, length, newLength);
         }
+        // TODO: check if ZRTP engine is started and check states to determine if we should
+        // send RTP packet. Do not send in states: CommitSent, WaitDHPart2, WaitConfirm1, WaitConfirm2, WaitConfAck
         *newLength = length;
         return true;
     }
@@ -240,61 +242,80 @@ void CtZrtpStream::setSignalingHelloHash(const char *hHash) {
     }
     else {
         if (zrtpUserCallback != NULL)
-            zrtpUserCallback->onZrtpWarning(session, "ZRTP_EVENT_WRONG_SIGNALING_HASH", index);
+            zrtpUserCallback->onZrtpWarning(session, (char*)"ZRTP_EVENT_WRONG_SIGNALING_HASH", index);
     }
     synchLeave();
 }
 
 int CtZrtpStream::isSecure() {
     return tiviState == CtZrtpSession::eSecure || tiviState == CtZrtpSession::eSecureMitm ||
-           tiviState == CtZrtpSession::eSecureMitmVia;
+           tiviState == CtZrtpSession::eSecureMitmVia || tiviState == CtZrtpSession::eSecureSdes;
 }
+
+
+#define T_ZRTP_LB(_K,_V)                                \
+        if(iLen+1 == sizeof(_K) && strncmp(key, _K, iLen) == 0){  \
+            return snprintf(p, maxLen, "%s", _V);}
+
+#define T_ZRTP_F(_K,_FV)                                                \
+        if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0){              \
+            return snprintf(p, maxLen, "%d", (!!(info->secretsCached & _FV)) << (!!(info->secretsMatched & _FV)));}
+
 
 int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
 
-    if (!started || isStopped)
+    if ((sdes == NULL && !started) || isStopped || !isSecure())
         return 0;
 
-    const ZRtp::zrtpInfo *info = zrtpEngine->getDetailInfo();
+    const ZRtp::zrtpInfo *info = NULL;
+    ZRtp::zrtpInfo tmpInfo;
 
     int iLen=strlen(key);
 
-#define T_ZRTP_LB(_K,_V)                                \
-    if(iLen+1 == sizeof(_K) && strncmp(key, _K, iLen) == 0){  \
-        return snprintf(p, maxLen, "%s", _V);}
 
-#define T_ZRTP_F(_K,_FV)                                                \
-    if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0){              \
-        return snprintf(p, maxLen, "%d", (!!(info->secretsCached & _FV)) << (!!(info->secretsMatched & _FV)));}
+    if (recvSrtp != NULL || sendSrtp != NULL) {
+        info = zrtpEngine->getDetailInfo();
 
+        T_ZRTP_LB("lbClient",      zrtpEngine->getPeerClientId().c_str());
+        T_ZRTP_LB("lbVersion",     zrtpEngine->getPeerProtcolVersion().c_str());
+
+        const char *strng = NULL;
+        if (!zrtpHashMatch) {
+            strng = "Bad";
+        }
+        else if (!peerHelloHash.empty()){
+            strng = "Good";
+        }
+        else{
+            strng = "None";
+        }
+        T_ZRTP_LB("sdp_hash", strng);
+
+        if(iLen==1 && key[0] == 'v'){
+            return sprintf(p, "%d", sasVerified);
+        }
+    }
+    else if (sdes != NULL) {
+        T_ZRTP_LB("lbClient",      (const char*)"SDES");
+        T_ZRTP_LB("lbVersion",     (const char*)"");
+
+        tmpInfo.secretsMatched = 0;
+        tmpInfo.secretsCached = 0;
+        tmpInfo.hash = (const char*)"";
+        tmpInfo.pubKey = (const char*)"";
+        tmpInfo.cipher = sdes->getCipher();
+        tmpInfo.authLength = sdes->getAuthAlgo();
+        info = &tmpInfo;
+    }
     T_ZRTP_F("rs1",ZRtp::Rs1);
     T_ZRTP_F("rs2",ZRtp::Rs2);
     T_ZRTP_F("aux",ZRtp::Aux);
     T_ZRTP_F("pbx",ZRtp::Pbx);
 
-
-    T_ZRTP_LB("lbClient",      zrtpEngine->getPeerClientId().c_str());
-    T_ZRTP_LB("lbVersion",     zrtpEngine->getPeerProtcolVersion().c_str());
     T_ZRTP_LB("lbChiper",      info->cipher);
     T_ZRTP_LB("lbAuthTag",     info->authLength);
     T_ZRTP_LB("lbHash",        info->hash);
     T_ZRTP_LB("lbKeyExchange", info->pubKey);
-
-    const char *strng = NULL;
-    if (!zrtpHashMatch) {
-        strng = "Bad";
-    }
-    else if (!peerHelloHash.empty()){
-        strng = "Good";
-    }
-    else{
-        strng = "None";
-    }
-    T_ZRTP_LB("sdp_hash", strng);
-
-    if(iLen==1 && key[0] == 'v'){
-        return sprintf(p, "%d", sasVerified);
-    }
 
     return 0;
 }
@@ -326,7 +347,7 @@ bool CtZrtpStream::createSdes(char *cryptoString, size_t *maxLen, const ZrtpSdes
 }
 
 bool CtZrtpStream::parseSdes(char *recvCryptoStr, size_t recvLength, char *sendCryptoStr, size_t *sendLength, bool sipInvite) {
-    // The ZrtpSdesStream deermines its suite by parsing the crypto string.
+    // The ZrtpSdesStream determines its suite by parsing the crypto string.
     if (sdes == NULL)
         sdes = new ZrtpSdesStream();
 
@@ -335,6 +356,11 @@ bool CtZrtpStream::parseSdes(char *recvCryptoStr, size_t recvLength, char *sendC
     if (!sipInvite) {
         if (!sdes->createSdes(sendCryptoStr, sendLength, sipInvite))
             goto cleanup;
+    }
+    if (sdes->getState() == ZrtpSdesStream::SDES_SRTP_ACTIVE) {
+        tiviState = CtZrtpSession::eSecureSdes;
+        if (zrtpUserCallback != NULL)
+            zrtpUserCallback->onNewZrtpStatus(session, NULL, index);    // Inform client about new state
     }
     return true;
 
@@ -662,7 +688,7 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
                     break;
                 }
                 if (zrtpUserCallback != NULL)
-                    zrtpUserCallback->onZrtpWarning(session, "ZRTP_EVENT_WRONG_SIGNALING_HASH", index);
+                    zrtpUserCallback->onZrtpWarning(session, (char*)"ZRTP_EVENT_WRONG_SIGNALING_HASH", index);
                 break;
 
             case InfoSecureStateOn:

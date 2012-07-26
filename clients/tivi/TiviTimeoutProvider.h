@@ -266,17 +266,17 @@ public:
                 time = requests.front()->getMsToTimeout();
             }
             if (time == 0 && size > 0) {
-                if (stop) {  // This must be checked so that we will
-                    synchLock.Unlock();
-                    return FALSE;
-                }
                 TPRequest<TOCommand, TOSubscriber>* req = requests.front();
                 TOSubscriber subs = req->getSubscriber();
                 TOCommand command = req->getCommand();
 
                 requests.pop_front();
-
+                if (stop) {         // This must be checked so that we will
+                    synchLock.Unlock();
+                    return FALSE;
+                }
                 synchLock.Unlock(); // call the command with free Mutex
+
                 subs->handleTimeout(command);
                 continue;
             }
