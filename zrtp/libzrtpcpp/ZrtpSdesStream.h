@@ -20,6 +20,16 @@ public:
     } sdesSuites;
 
     /**
+     * SDES stream stated
+     */
+    typedef enum {
+        STREAM_INITALIZED = 1,
+        OUT_PROFILE_READY,
+        IN_PROFILE_READY,
+        SDES_SRTP_ACTIVE
+    } sdesZrtpStates;
+
+    /**
      * @brief Create and SDES/ZRTP stream.
      *
      * This method creates an SDES stream with capabilities to handle RTP,
@@ -32,6 +42,8 @@ public:
      *              @c AES_CM_128_HMAC_SHA1_80 or @c AES_CM_128_HMAC_SHA1_32.
      */
     ZrtpSdesStream(const sdesSuites suite =AES_CM_128_HMAC_SHA1_32);
+
+    ~ZrtpSdesStream();
 
     /**
      * @brief Close an SDES/ZRTP stream.
@@ -203,19 +215,34 @@ public:
      */
     int incomingSrtcp(uint8_t *packet, size_t length, size_t *newLength);
 
+    /**
+     * Return state of SDES stream.
+     *
+     * @return state of stream.
+     */
+    sdesZrtpStates getState() {return state;}
+
+    /**
+     * Return name of active cipher algorithm.
+     *
+     * @return point to name of cipher algorithm.
+     */
+    const char* getCipher();
+
+    /**
+     * Return name of active SRTP authentication algorithm.
+     *
+     * @return point to name of authentication algorithm.
+     */
+    const char* getAuthAlgo();
+
+
     /*
      * ******** Lower layer functions
      */
 private:
-    typedef enum {
-        STREAM_INITALIZED = 1,
-        OUT_PROFILE_READY,
-        IN_PROFILE_READY,
-        SDES_SRTP_ACTIVE
-    } sdesZrtpStates;
-
     /**
-     * @brief Create an SRTP profile and the according SDES crypto string.
+     * @brief Create an SRTP crypto context and the according SDES crypto string.
      *
      * This lower layer method creates an SRTP profile an the according SDES
      * crypto string. It selects a valid crypto suite, generates the key and salt
@@ -257,11 +284,10 @@ private:
      * @return @c true if data could be created, @c false
      *          otherwise.
      */
-    bool createSdesProfile(char *cryptoString, size_t *maxLen, int64_t tag);
-
+    bool createSdesProfile(char *cryptoString, size_t *maxLen);
 
     /**
-     * @brief Parse and check an offered SDES crypto string and create SRTP profile.
+     * @brief Parse and check an offered SDES crypto string and create SRTP crypto context.
      *
      * The method parses an offered SDES crypto string and checks if it is
      * valid. Next it checks if the string contains a supported crypto suite
@@ -277,23 +303,21 @@ private:
      * string the function return @c false.
      *
      * @param cryptoString points to the crypto sting in raw format,
-     *                     without any signaling prefix, for example @c
-     *                     a=crypto: in case of SDP signaling.
+     *        without any signaling prefix, for example @c a=crypto: in case of
+     *        SDP signaling.
      *
      * @param length length of the crypto string to parse. If the length is
-     *               @c zero then the function uses @c strlen to compute
-     *               the length.
+     *        @c zero then the function uses @c strlen to compute the length.
      *
      * @param parsedSuite the function sets this to the @c sdesSuites enumerator of
-     *              the parsed crypto suite. The answerer shall use this as
-     *              input to @c createSdesProfile to make sure that it creates
-     *              the same crypto suite. See RFC 4568, section 5.1.2
+     *        the parsed crypto suite. The answerer shall use this as input to
+     *        @c createSdesProfile to make sure that it creates the same crypto suite.
+     *        See RFC 4568, section 5.1.2
      *
-     * @param tag the function sets this to the @c tag value of
-     *            the parsed crypto string. The answerer must use this as
-     *            input to @c createSdesProfile to make sure that it creates
-     *            the correct tag in the crypto string. See RFC 4568,
-     *            section 5.1.2
+     * @param tag the function sets this to the @c tag value of the parsed crypto
+     *        string. The answerer must use this as input to @c createSdesProfile
+     *        to make sure that it creates the correct tag in the crypto string.
+     *        See RFC 4568, section 5.1.2
      *
      * @return @c true if checks were ok, @c false
      *          otherwise.
@@ -303,7 +327,6 @@ private:
     sdesZrtpStates state;
     sdesSuites     suite;
     int64_t        tag;
-    bool           sipInvite;
     CryptoContext     *recvSrtp;           //!< The SRTP context for this stream
     CryptoContextCtrl *recvSrtcp;          //!< The SRTCP context for this stream
     CryptoContext     *sendSrtp;           //!< The SRTP context for this stream
@@ -311,4 +334,3 @@ private:
     uint32_t srtcpIndex;                   //!< the local SRTCP index
 
 };
-     
