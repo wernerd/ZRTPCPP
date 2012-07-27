@@ -1007,6 +1007,14 @@ void ZrtpStateClass::evWaitConfirm1(void) {
                 sendErrorPacket(errorCode);
                 return;
             }
+            // according to chap 5.8: after sending Confirm2 the Initiator must
+            // be ready to receive SRTP data. SRTP sender will be enabled in WaitConfAck
+            // state.
+            if (!parent->srtpSecretsReady(ForReceiver)) {
+                parent->sendInfo(Severe, CriticalSWError);
+                sendErrorPacket(CriticalSWError);
+                return;
+            }
             nextState(WaitConfAck);
             sentPacket = static_cast<ZrtpPacketBase *>(confirm);
 
@@ -1016,14 +1024,6 @@ void ZrtpStateClass::evWaitConfirm1(void) {
             }
             if (startTimer(&T2) <= 0) {
                 timerFailed(SevereNoTimer);  // returns to state Initial TODO check for return following this line
-            }
-            // according to chap 5.8: after sending Confirm2 the Initiator must
-            // be ready to receive SRTP data. SRTP sender will be enabled in WaitConfAck
-            // state.
-            if (!parent->srtpSecretsReady(ForReceiver)) {
-                parent->sendInfo(Severe, CriticalSWError);
-                sendErrorPacket(CriticalSWError);
-                return;
             }
         }
     }
