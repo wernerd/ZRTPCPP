@@ -1023,7 +1023,7 @@ void ZrtpStateClass::evWaitConfirm1(void) {
                 return;
             }
             if (startTimer(&T2) <= 0) {
-                timerFailed(SevereNoTimer);  // returns to state Initial TODO check for return following this line
+                timerFailed(SevereNoTimer);  // returns to state Initial
             }
         }
     }
