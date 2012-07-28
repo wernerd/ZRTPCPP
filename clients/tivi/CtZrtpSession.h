@@ -118,9 +118,6 @@ public:
      * environment variable is set. If it is not set the current
      * directory is used.
      *
-     * If the method could set up the timeout thread and open the ZID
-     * file then it enables ZRTP processing and returns.
-     *
      * @param audio
      *     set to @c true if audio stream shout be initialized
      *
@@ -308,6 +305,43 @@ public:
     tiviStatus getCurrentState(streamName streamNm);
 
     tiviStatus getPreviousState(streamName streamNm);
+
+    /**
+     * Is ZRTP enabled for this session.
+     *
+     * @return @c true if ZRTP is enabled, @c false otherwise
+     */
+    bool isZrtpEnabled();
+
+    /**
+     * Is SDES enabled for this session.
+     *
+     * @return @c true if SDES is enabled, @c false otherwise
+     */
+    bool isSdesEnabled();
+
+    /**
+     * Enable or disable ZRTP processing for this session.
+     *
+     * If the application enabled ZRTP processing it should also call @c start
+     * to really start the ZRTP engines. An application can enable and start ZRTP
+     * processing any time during a RTP session.
+     *
+     * @param yesNo if @c true ZRTP processing is enabled.
+     */
+    void setZrtpEnabled(bool yesNo);
+
+    /**
+     * Enable or disable SDES processing for this session.
+     *
+     * If SDES processing is not enabled the functions @c createSdes and @c parseSdes
+     * always return false.
+     * 
+     * Enabling SDES processing after SIP signaling ended does not make sense.
+     *
+     * @param yesNo if @c true SDES processing is enabled.
+     */
+    void setSdesEnabled(bool yesNo);
 
     /**
      * @brief Get the ZRTP Hello hash to be used for signaling
@@ -498,6 +532,8 @@ private:
     bool signSas;
     bool enableParanoidMode;
     bool isReady;
+    bool zrtpEnabled;
+    bool sdesEnabled;
 };
 
 #endif /* _CTZRTPSESSION_H_ */

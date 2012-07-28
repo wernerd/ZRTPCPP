@@ -16,7 +16,8 @@
 
 static CMutexClass sessionLock;
 
-CtZrtpSession::CtZrtpSession() : mitmMode(false), signSas(false), enableParanoidMode(false), isReady(false) {
+CtZrtpSession::CtZrtpSession() : mitmMode(false), signSas(false), enableParanoidMode(false), isReady(false),
+    zrtpEnabled(true), sdesEnabled(true) {
 
     clientIdString = clientId;
     streams[AudioStream] = NULL;
@@ -189,16 +190,20 @@ void CtZrtpSession::setSendCallback(CtZrtpSendCb* scb, streamName streamNm) {
 
 }
 
-void CtZrtpSession::masterStreamSecure(CtZrtpStream *stream) {
+void CtZrtpSession::masterStreamSecure(CtZrtpStream *masterStream) {
     // Here we know that the AudioStream is the master and VideoStream the slave.
     // Otherwise we need to loop and find the Master stream and the Slave streams.
 
-    multiStreamParameter = stream->zrtpEngine->getMultiStrParams();
+    multiStreamParameter = masterStream->zrtpEngine->getMultiStrParams();
     CtZrtpStream *strm = streams[VideoStream];
     if (strm->enableZrtp) {
         strm->zrtpEngine->setMultiStrParams(multiStreamParameter);
         strm->zrtpEngine->startZrtpEngine();
         strm->started = true;
+        strm->tiviState = eLookingPeer;
+        if (strm->zrtpUserCallback != 0)
+            strm->zrtpUserCallback->onNewZrtpStatus(this, NULL, strm->index);
+
     }
 }
 
@@ -209,21 +214,19 @@ int CtZrtpSession::startIfNotStarted(unsigned int uiSSRC, int streamNm) {
     if ((streamNm == VideoStream && !isSecure(AudioStream)) || streams[streamNm]->started)
         return 0;
 
-    start(uiSSRC, streamNm == VideoStream ? CtZrtpSession::VideoStream: CtZrtpSession::AudioStream);
-//    streams[streamNm]->started = true;  // Not necessary - will be done in start if stream is started
-
+    start(uiSSRC, streamNm == VideoStream ? CtZrtpSession::VideoStream : CtZrtpSession::AudioStream);
     return 0;
 }
 
 void CtZrtpSession::start(unsigned int uiSSRC, CtZrtpSession::streamName streamNm) {
-    if (!(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+    if (!zrtpEnabled || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
         return;
 
     CtZrtpStream *stream = streams[streamNm];
 
     stream->ownSSRC = uiSSRC;
+    stream->enableZrtp = true;
     if (stream->type == Master) {
-        stream->enableZrtp = true;
         stream->zrtpEngine->startZrtpEngine();
         stream->started = true;
         stream->tiviState = eLookingPeer;
@@ -232,7 +235,6 @@ void CtZrtpSession::start(unsigned int uiSSRC, CtZrtpSession::streamName streamN
         return;
     }
     // Process a Slave stream.
-    stream->enableZrtp = true;
     if (!multiStreamParameter.empty()) {        // Multi-stream parameters available
         stream->zrtpEngine->setMultiStrParams(multiStreamParameter);
         stream->zrtpEngine->startZrtpEngine();
@@ -260,7 +262,6 @@ void CtZrtpSession::release(streamName streamNm) {
         return;
 
     CtZrtpStream *stream = streams[streamNm];
-
     stream->stopStream();                      // stop and reset stream
 }
 
@@ -290,7 +291,6 @@ bool CtZrtpSession::processOutoingRtp(uint8_t *buffer, size_t length, size_t *ne
         return false;
 
     CtZrtpStream *stream = streams[streamNm];
-
     if (stream->isStopped)
         return false;
 
@@ -302,7 +302,6 @@ int32_t CtZrtpSession::processIncomingRtp(uint8_t *buffer, size_t length, size_t
         return fail;
 
     CtZrtpStream *stream = streams[streamNm];
-
     if (stream->isStopped)
         return fail;
 
@@ -347,6 +346,22 @@ CtZrtpSession::tiviStatus CtZrtpSession::getPreviousState(streamName streamNm) {
         return eWrongStream;
 
     return stream->getPreviousState();
+}
+
+bool CtZrtpSession::isZrtpEnabled() {
+    return zrtpEnabled;
+}
+
+bool CtZrtpSession::isSdesEnabled() {
+    return sdesEnabled;
+}
+
+void CtZrtpSession::setZrtpEnabled(bool yesNo) {
+    zrtpEnabled = yesNo;
+}
+
+void CtZrtpSession::setSdesEnabled(bool yesNo) {
+    sdesEnabled = yesNo;
 }
 
 int CtZrtpSession::getSignalingHelloHash(char *helloHash, streamName streamNm) {
@@ -411,7 +426,7 @@ void CtZrtpSession::setClientId(std::string id) {
 
 bool CtZrtpSession::createSdes(char *cryptoString, size_t *maxLen, streamName streamNm, const sdesSuites suite) {
 
-    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+    if (!isReady || !sdesEnabled || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
         return fail;
 
     CtZrtpStream *stream = streams[streamNm];
@@ -421,7 +436,7 @@ bool CtZrtpSession::createSdes(char *cryptoString, size_t *maxLen, streamName st
 bool CtZrtpSession::parseSdes(char *recvCryptoStr, size_t recvLength, char *sendCryptoStr,
                               size_t *sendLength, bool sipInvite, streamName streamNm) {
 
-    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+    if (!isReady || !sdesEnabled || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
         return fail;
 
     CtZrtpStream *stream = streams[streamNm];
