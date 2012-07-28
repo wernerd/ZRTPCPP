@@ -1565,12 +1565,12 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
     else if (memcmp(rs1IDr, dhPart->getRs2Id(), HMAC_SIZE) == 0) {
         setD[matchingSecrets++] = zidRec->getRs1();
         rsFound = 0x2;
-        detailInfo.secretsMatched = Rs2;
+        detailInfo.secretsMatched = Rs1;
     }
     else if (memcmp(rs2IDr, dhPart->getRs1Id(), HMAC_SIZE) == 0) {
         setD[matchingSecrets++] = zidRec->getRs2();
         rsFound = 0x4;
-        detailInfo.secretsMatched = Rs1;
+        detailInfo.secretsMatched = Rs2;
     }
     else if (memcmp(rs2IDr, dhPart->getRs2Id(), HMAC_SIZE) == 0) {
         setD[matchingSecrets++] = zidRec->getRs2();
@@ -1711,18 +1711,18 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
         setD[matchingSecrets++] = zidRec->getRs1();
         rsFound = 0x1;
         detailInfo.secretsMatched = Rs1;
-   }
+    }
     else if (memcmp(rs1IDi, dhPart->getRs2Id(), HMAC_SIZE) == 0) {
         setD[matchingSecrets++] = zidRec->getRs1();
         rsFound = 0x2;
-        detailInfo.secretsMatched = Rs2;
-    }
-    else if (memcmp(rs2IDi, dhPart->getRs2Id(), HMAC_SIZE) == 0) {
-        setD[matchingSecrets++] = zidRec->getRs2();
-        rsFound |= 0x4;
         detailInfo.secretsMatched = Rs1;
     }
     else if (memcmp(rs2IDi, dhPart->getRs1Id(), HMAC_SIZE) == 0) {
+        setD[matchingSecrets++] = zidRec->getRs2();
+        rsFound |= 0x4;
+        detailInfo.secretsMatched = Rs2;
+    }
+    else if (memcmp(rs2IDi, dhPart->getRs2Id(), HMAC_SIZE) == 0) {
         setD[matchingSecrets++] = zidRec->getRs2();
         rsFound |= 0x8;
         detailInfo.secretsMatched = Rs2;
