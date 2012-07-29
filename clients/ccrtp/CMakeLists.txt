@@ -96,7 +96,7 @@ configure_file(${CMAKE_SOURCE_DIR}/libzrtpcpp.spec.cmake ${CMAKE_CURRENT_BINARY_
 set(ccrtp_inst
     ${CMAKE_CURRENT_SOURCE_DIR}/ZrtpQueue.h
     ${CMAKE_CURRENT_SOURCE_DIR}/zrtpccrtp.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/TimeoutProvider.h)
+    ${CMAKE_CURRENT_SOURCE_DIR}/CcrtpTimeoutProvider.h)
 
 install(FILES
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCodes.h
