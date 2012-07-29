@@ -36,7 +36,7 @@
 #include <sys/time.h>
 #include <stdint.h>
 
-#include "Thread.h"
+#include <common/Thread.h>
 
 /**
  * Represents a request of a "timeout" (delivery of a command to a

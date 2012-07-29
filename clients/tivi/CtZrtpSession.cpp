@@ -7,9 +7,6 @@
 
 #include <libzrtpcpp/ZIDCache.h>
 #include <libzrtpcpp/ZRtp.h>
-#include <libzrtpcpp/ZrtpStateClass.h>
-#include <srtp/CryptoContext.h>
-#include <srtp/CryptoContextCtrl.h>
 
 #include <CtZrtpStream.h>
 #include <CtZrtpSession.h>
@@ -22,7 +19,6 @@ CtZrtpSession::CtZrtpSession() : mitmMode(false), signSas(false), enableParanoid
     streams[AudioStream] = new CtZrtpStream();
     streams[VideoStream] = new CtZrtpStream();
 }
-
 
 int CtZrtpSession::init(const char *zidFilename, ZrtpConfigure* config)
 {
@@ -154,6 +150,10 @@ void CtZrtpSession::release(streamName streamNm) {
         return;
 
     isReady = false;
+    mitmMode = false;
+    signSas = false;
+    enableParanoidMode = false;
+
     CtZrtpStream *stream = streams[streamNm];
 
     delete stream;                      // destroy the existing stuff
@@ -205,51 +205,78 @@ bool CtZrtpSession::newStream(streamName streamNm, streamType type) {
 #endif
 
 bool CtZrtpSession::processOutoingRtp(uint8_t *buffer, size_t length, size_t *newLength, streamName streamNm) {
-    if (!(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
         return false;
 
     CtZrtpStream *stream = streams[streamNm];
 
-    if (!isReady || stream->isStopped)
+    if (stream->isStopped)
         return false;
 
     return stream->processOutgoingRtp(buffer, length, newLength);
 }
 
 int32_t CtZrtpSession::processIncomingRtp(uint8_t *buffer, size_t length, size_t *newLength, streamName streamNm) {
-    if (!(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
         return 0;
 
     CtZrtpStream *stream = streams[streamNm];
+
+    if (stream->isStopped)
+        return 0;
+
     return stream->processIncomingRtp(buffer, length, newLength);
 }
 
 bool CtZrtpSession::isStarted(streamName streamNm) {
-    if (!(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
         return false;
 
     return streams[streamNm]->isStarted();
 }
 
 bool CtZrtpSession::isEnabled(streamName streamNm) {
-    if (!(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
         return false;
 
-    return streams[streamNm]->isEnabled();
+    CtZrtpStream *stream = streams[streamNm];
+    if (stream->isStopped)
+        return false;
+
+    return stream->isEnabled();
 }
 
 CtZrtpSession::tiviStatus CtZrtpSession::getCurrentState(streamName streamNm) {
-    if (!(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
         return eWrongStream;
 
-    return streams[streamNm]->getCurrentState();
+    CtZrtpStream *stream = streams[streamNm];
+    if (stream->isStopped)
+        return eWrongStream;
+
+    return stream->getCurrentState();
 }
 
 CtZrtpSession::tiviStatus CtZrtpSession::getPreviousState(streamName streamNm) {
-    if (!(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
         return eWrongStream;
 
-    return streams[streamNm]->getPreviousState();
+    CtZrtpStream *stream = streams[streamNm];
+    if (stream->isStopped)
+        return eWrongStream;
+
+    return stream->getPreviousState();
+}
+
+void CtZrtpSession::setSignalingHelloHash(const char *helloHash, streamName streamNm) {
+    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return;
+
+    CtZrtpStream *stream = streams[streamNm];
+    if (stream->isStopped)
+        return;
+
+    stream->setSignalingHelloHash(helloHash);
 }
 
 void CtZrtpSession::synchEnter() {

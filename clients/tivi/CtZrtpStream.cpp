@@ -8,6 +8,7 @@
 
 #include <CtZrtpStream.h>
 #include <CtZrtpCallback.h>
+#include <TimeoutProvider.h>
 #include <cryptcommon/aes.h>
 
 static TimeoutProvider<std::string, CtZrtpStream*>* staticTimeoutProvider = NULL;
@@ -79,6 +80,11 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, size_t length, size_t 
             bool rc = SrtpHandler::unprotect(recvSrtp, buffer, length, newLength);
             if (rc == 1) {
                 unprotect++;
+                // Got a good SRTP, check state, WaitConfAck is a Responder state
+                // in this case simulate a conf2Ack, refer to RFC 6189, chapter 4.6, last paragraph
+                if (zrtpEngine->inState(WaitConfAck)) {
+                    zrtpEngine->conf2AckSecure();
+                }
             }
             else {
                 if (rc == -1) {
@@ -124,6 +130,10 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, size_t length, size_t 
         zrtpEngine->processZrtpMessage(zrtpMsg, peerSSRC);
     }
     return 0;
+}
+
+void CtZrtpStream::setSignalingHelloHash(const char *hHash) {
+    helloHash.assign(hHash);
 }
 
 /*
@@ -412,14 +422,18 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
     if (severity == Info) {
         msg = infoMap[subCode];
 
+        std::string peerHash;
         switch (subCode) {
+            case InfoHelloReceived:
+                peerHash = zrtpEngine->getPeerHelloHash();
+                // TODO: compare hash codes: need format from Tivi client, signal if they don't match?
+                break;
 
             case InfoSecureStateOn:
                 if (type == CtZrtpSession::Master) {               // Master stream entered secure mode (security done)
                     session->masterStreamSecure(this);
                 }
                 // Tivi client does not expect a status change information on this
-                // TODO: check for InfoHelloReceived subcode and handle zrtp hash checks
                 break;
 
                 // These two states correspond to going secure

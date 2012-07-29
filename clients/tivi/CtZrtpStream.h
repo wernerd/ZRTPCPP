@@ -146,6 +146,16 @@ protected:
      */
     int32_t processIncomingRtp(uint8_t *buffer, size_t length, size_t *newLength);
 
+    /**
+     * Set the ZRTP Hello hash from signaling
+     *
+     * Refer to RFC 6189 chapter 8 to get the full documentation on the intercation
+     * between ZRTP and a signaling layer.
+     *
+     * @param helloHash is the ZRTP hello hash string from the signaling layer
+     */
+    void setSignalingHelloHash(const char *helloHash);
+
     /*
      * The following methods implement the GNU ZRTP callback interface.
      * For detailed documentation refer to file ZrtpCallback.h
@@ -195,6 +205,7 @@ private:
     uint64_t unprotect;
     uint64_t unprotectFailed;
     uint32_t srtcpIndex;
+    std::string helloHash;
 
     void initStrings();
 };

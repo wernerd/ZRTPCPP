@@ -4,10 +4,8 @@
 #ifndef _CTZRTPSESSION_H_
 #define _CTZRTPSESSION_H_
 
-
-#include <libzrtpcpp/ZrtpCallback.h>
 #include <libzrtpcpp/ZrtpConfigure.h>
-#include <Thread.h>
+#include <common/Thread.h>
 
 void t_add_zrtp_random(void *p, int iLen);
 void *initZrtpG();
@@ -228,6 +226,18 @@ public:
 
     tiviStatus getPreviousState(streamName streamNm);
 
+    /**
+     * Set the ZRTP Hello hash from signaling
+     *
+     * Refer to RFC 6189 chapter 8 to get the full documentation on the intercation
+     * between ZRTP and a signaling layer.
+     *
+     * @param helloHash is the ZRTP hello hash string from the signaling layer
+     *
+     * @param streamNm specifies which stream for this hello hash.
+     */
+    void setSignalingHelloHash(const char *helloHash, streamName streamNm);
+
 protected:
     friend class CtZrtpStream;
 
@@ -252,8 +262,6 @@ private:
     std::string  clientIdString;
     std::string  multiStreamParameter;
     const uint8_t* ownZid;
-
-    int32_t secureParts;
 
     bool mitmMode;
     bool signSas;

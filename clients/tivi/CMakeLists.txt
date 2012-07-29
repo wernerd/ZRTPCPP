@@ -9,7 +9,8 @@ set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})
 
 #to make sure includes are first taken - it contains config.h
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
-include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/zrtp ${CMAKE_SOURCE_DIR}/srtp)
+include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/zrtp ${CMAKE_SOURCE_DIR}/srtp ${CMAKE_SOURCE_DIR}/common)
 
 set(cryptcommon_srcs
     ${CMAKE_SOURCE_DIR}/cryptcommon/twofish.c
@@ -21,14 +22,15 @@ set(cryptcommon_srcs
     ${CMAKE_SOURCE_DIR}/cryptcommon/macSkein.cpp
     ${CMAKE_SOURCE_DIR}/cryptcommon/skein.c
     ${CMAKE_SOURCE_DIR}/cryptcommon/skein_block.c
-    ${CMAKE_SOURCE_DIR}/cryptcommon/skeinApi.c)
+    ${CMAKE_SOURCE_DIR}/cryptcommon/skeinApi.c
+    ${CMAKE_SOURCE_DIR}/cryptcommon/ZrtpRandom.cpp)
 
 set(zrtp_tivi_src
     ${CMAKE_CURRENT_SOURCE_DIR}/CtZrtpSession.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/CtZrtpStream.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Thread.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/MutexClass.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/EventClass.cpp)
+    ${CMAKE_SOURCE_DIR}/common/Thread.cpp
+    ${CMAKE_SOURCE_DIR}/common/MutexClass.cpp
+    ${CMAKE_SOURCE_DIR}/common/EventClass.cpp)
 
 set(srtp_src
     ${CMAKE_SOURCE_DIR}/srtp/CryptoContext.cpp

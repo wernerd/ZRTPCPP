@@ -19,7 +19,6 @@ struct sockaddr_in adr_clnt;
 socklen_t lenClnt;          // length
 int s;                       // Socket
 
-
 static void hexdump(const char* title, const unsigned char *s, int l)
 {
     int n=0;
