@@ -59,6 +59,39 @@ class TestCallbackAudio: public CtZrtpCb {
 
     void onPeer(CtZrtpSession *session, char *name, int iIsVerified, CtZrtpSession::streamName streamNm) {
         fprintf(stderr, "onPeer: %s\n", name == NULL ? "NULL" : name);
+        char buffer[20];
+
+        session->getInfo("rs1", buffer, 9);
+        printf("RS1: %s ", buffer);
+
+        session->getInfo("rs2", buffer, 9);
+        printf("RS2: %s ", buffer);
+
+        session->getInfo("pbx", buffer, 9);
+        printf("PBX: %s ", buffer);
+
+        session->getInfo("aux", buffer, 9);
+        printf("AUX: %s\n", buffer);
+
+        session->getInfo("lbClient", buffer, 19);
+        printf("Client: %s ", buffer);
+
+        session->getInfo("lbVersion", buffer, 19);
+        printf("Version: %s ", buffer);
+
+        session->getInfo("lbChiper", buffer, 9);
+        printf("cipher: %s ", buffer);
+
+        session->getInfo("lbHash", buffer, 9);
+        printf("hash: %s ", buffer);
+
+        session->getInfo("lbAuthTag", buffer, 9);
+        printf("auth: %s ", buffer);
+
+        session->getInfo("lbKeyExchange", buffer, 9);
+        printf("KeyEx: %s\n", buffer);
+
+        session->setLastPeerNameVerify("TestName", 0);
     }
 
     void onZrtpWarning(CtZrtpSession *session, char *p, CtZrtpSession::streamName streamNm) {
@@ -83,11 +116,13 @@ int main(int argc,char **argv) {
     uint8_t buffer[1300];            // Recv buffer
     uint32_t uiSSRC = 0xfeedbacc;
 
+
     CtZrtpSession *session = new CtZrtpSession();
     TestCallbackAudio *callback = new TestCallbackAudio();
     TestSendCallbackAudio *sendCallback = new TestSendCallbackAudio();
 
     session->init(true, true, "testzid.dat");       // name of cache file
+
     session->setUserCallback(callback, CtZrtpSession::AudioStream);
     session->setSendCallback(sendCallback, CtZrtpSession::AudioStream);
     session->getSignalingHelloHash((char*)buffer, CtZrtpSession::AudioStream);

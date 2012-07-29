@@ -45,7 +45,7 @@ set(crypto_src_srtp
 set(zrtpcpp_src ${zrtp_src} ${zrtp_tivi_src} ${zrtp_crypto_src} ${bnlib_src} ${srtp_src} ${crypto_src_srtp} ${cryptcommon_srcs})
 
 # for the Thread classes etc.
-add_definitions(-DLINUX -DNANO_SECOND_SLEEP)
+add_definitions(-DLINUX -DNANO_SECOND_SLEEP -D_WITHOUT_TIVI_ENV)
 
 if(BUILD_STATIC AND NOT BUILD_SHARED)
     set(LIBRARY_BUILD_TYPE STATIC)
@@ -57,11 +57,15 @@ add_library(${zrtplibName} ${LIBRARY_BUILD_TYPE} ${zrtpcpp_src})
 set_target_properties(${zrtplibName} PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
 target_link_libraries(${zrtplibName} ${LIBS})
 
-# **** A small test program ****
+# **** Test programs ****
 #
 add_executable(testdriver testdriver.cpp)
 target_link_libraries(testdriver ${zrtplibName})
 add_dependencies(testdriver ${zrtplibName})
+
+add_executable(sdesTestdriver sdesTestdriver.cpp)
+target_link_libraries(sdesTestdriver ${zrtplibName})
+add_dependencies(sdesTestdriver ${zrtplibName})
 
 # **** Setup packing environment ****
 #

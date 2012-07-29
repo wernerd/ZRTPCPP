@@ -9,8 +9,6 @@
 #include <string>
 #include <string.h>
 
-#include <common/Thread.h>
-
 #ifndef __EXPORT
   #if defined _WIN32 || defined __CYGWIN__
     #define __EXPORT    __declspec(dllimport)
@@ -30,7 +28,7 @@ class CtZrtpStream;
 class CtZrtpCb;
 class CtZrtpSendCb;
 class ZrtpConfigure;
-
+class CMutexClass;
 
 class __EXPORT CtZrtpSession {
 
@@ -51,11 +49,49 @@ public:
         eLookingPeer,
         eNoPeer,
         eGoingSecure,
-        eSecure,
         eError,
+        eSecure,
         eSecureMitm,
+        eSecureMitmVia,
         eWrongStream = -1
     } tiviStatus;
+
+    /**
+     * Supported SDES crypto suites. Included here again to avoid #include of ZrtpSdesStream.h
+     * Keep in sync with same enum in ZrtpSdesStream.
+     */
+    typedef enum {
+        AES_CM_128_HMAC_SHA1_32 = 1,
+        AES_CM_128_HMAC_SHA1_80
+    } sdesSuites;
+
+
+    typedef enum _retCodes {
+        ok           = 0,       /** OK status */
+        fail         = 1       /** General, unspecified failure */
+#if 0
+        bad_param    = 2,       /** Wrong, unsupported parameter */
+        alloc_fail   = 3,       /** Fail allocate memory */
+        auth_fail    = 4,       /** SRTP authentication failure */
+        cipher_fail  = 5,       /** Cipher failure on RTP encrypt/decrypt */
+        algo_fail    = 6,       /** General Crypto Algorithm failure */
+        key_expired  = 7,       /** SRTP can't use key any longer */
+        buffer_size  = 8,       /** Input buffer too small */
+        drop         = 9,       /** Packet process DROP status */
+        open_fail    = 10,      /** Failed to open file/device */
+        read_fail    = 11,      /** Unable to read data from the file/stream */
+        write_fail   = 12,      /** Unable to write to the file/stream */
+        old_pkt          = 13,      /** SRTP packet is out of sliding window */
+        rp_fail              = 14,  /** RTP replay protection failed */
+        zrp_fail     = 15,  /** ZRTP replay protection failed */
+        crc_fail     = 16,  /** ZRTP packet CRC is wrong */
+        rng_fail     = 17,  /** Can't generate random value */
+        wrong_state  = 18,  /** Illegal operation in current state */
+        attack               = 19,  /** Attack detected */
+        notavailable = 20,  /** Function is not available in current configuration  */
+        count                = 21
+#endif
+    } returnCodes;
 
     CtZrtpSession();
 
@@ -106,6 +142,15 @@ public:
     int init(bool audio, bool video, const char *zidFilename = NULL, ZrtpConfigure* config = NULL);
 
     /**
+     * Fills a ZrtpConfiguration based on selected algorithms.
+     *
+     * The method looks up some global keys and enables or disables various
+     * algorithms. The method creates the configuration for the publik key
+     * algorithms in a way that follows RFC 6189, chapter 4.1.2
+     */
+    void setupConfiguration(ZrtpConfigure *conf);
+
+    /**
      * Set the application's callback class.
      *
      * @param ucb
@@ -121,6 +166,14 @@ public:
      *     Implementation of the application's send data callback class
      */
     void setSendCallback(CtZrtpSendCb* scb, streamName streamNm);
+
+    /**
+     * Start a stream if it is not already started.
+     *
+     * The method starts a stream if it is not already started and it starts
+     * a video stream (Slave) only if the audio stream (Master) is already secure.
+     */
+    int startIfNotStarted(unsigned int uiSSRC, int streamNm);
 
     /**
      * Start a stream.
@@ -174,15 +227,7 @@ public:
      * Setting the peer name will always use the AudioStream to determine
      * the ZID and set the name into the name cache.
      */
-    void setLastPeerName(const char *name, int iIsMitm);
-
-    /**
-     * Create a new stream.
-     *
-     * This functions create a new stream. If a stream at @c streamNm exist the
-     * function does @b not overwrite the existing stream.
-     */
-    bool newStream(streamName streamNm, streamType type);
+    void setLastPeerNameVerify(const char *name, int iIsMitm);
 
     /**
      * Process outgoing data.
@@ -230,8 +275,11 @@ public:
      *
      * @param streamNm specifies which stream to use
      * 
-     * @return 1: success, 0: not an error but drop packet, -1: SRTP authentication failed,
-     *            -2: SRTP replay check failed
+     * @return
+     *       - 1: success,
+     *       - 0: drop packet, not an error
+     *       - -1: SRTP authentication failed,
+     *       - -2: SRTP replay check failed
      */
     int32_t processIncomingRtp(uint8_t *buffer, size_t length, size_t *newLength, streamName streamNm);
 
@@ -267,8 +315,10 @@ public:
      *                  terminates it with a @c nul byte.
      *
      * @param streamNm specifies which stream for this hello hash.
+     *
+     * @return the number of characters in the @c helloHash buffer.
      */
-    void getSignalingHelloHash(char *helloHash, streamName streamNm);
+    int getSignalingHelloHash(char *helloHash, streamName streamNm);
 
     /**
      * Set the ZRTP Hello hash from signaling
@@ -311,9 +361,108 @@ public:
      *
      * @param buffer points to buffer that gets the information
      *
+     * @param maxLen length of the buffer
+     *
      * @param streamNm stream, if not specified the default is @c AudioStream
      */
-    int getInfo(const char *key, char *buffer, streamName streamNm =AudioStream);
+    int getInfo(const char *key, char *buffer, int maxLen, streamName streamNm =AudioStream);
+
+    /**
+     * Accept enrollment for the active peer.
+     *
+     * The method checks if a name is already set in the name cache. If no name
+     * is found then set the name for this peer in the name cache.
+     *
+     * The Stream is always the master stream.
+     *
+     * @param p this is the human readable name for this peer.
+     */
+    int enrollAccepted(char *p);
+
+    /**
+     * Set the client ID for ZRTP Hello message.
+     *
+     * The client may set its id to identify itself in the
+     * ZRTP Hello message. The maximum length is 16 characters. A
+     * shorter id string is possible, it will be filled with blanks. A
+     * longer id string will be truncated to 16 characters.
+     * 
+     * Setting the client's id must be done before calling
+     * CtZrtpSession#init().
+     *
+     * @param id
+     *     The client's id string
+     */
+    void setClientId(std::string id);
+
+    /**
+     * @brief Creates an SDES crypto string for the SDES/ZRTP stream.
+     *
+     * Creates and returns a SDES crypto string for the client that sends
+     * the SIP INVITE.
+     *
+     * @param cryptoString points to a char output buffer that receives the
+     *                     crypto  string in the raw format, without the any
+     *                     signaling prefix, for example @c a=crypto: in case
+     *                     of SDP signaling. The function terminates the
+     *                     crypto string with a @c nul byte
+     *
+     * @param maxLen length of the crypto string buffer. On return it contains the
+     *               actual length of the crypto string.
+     *
+     * @param streamNm stream identifier.
+     *
+     * @param suite defines which crypto suite to use for this stream. The values are
+     *              @c AES_CM_128_HMAC_SHA1_80 or @c AES_CM_128_HMAC_SHA1_32. Default
+     *              if @c AES_CM_128_HMAC_SHA1_32.
+     *
+     * @return @c true if data could be created, @c false otherwise.
+     */
+    bool createSdes(char *cryptoString, size_t *maxLen, streamName streamNm, const sdesSuites suite =AES_CM_128_HMAC_SHA1_32);
+
+    /**
+     * @brief Parses an SDES crypto string for the SDES/ZRTP stream.
+     *
+     * Parses a received crypto string that the application received in a SIP INVITE
+     * or SIP 200 OK.
+     *
+     * An INVITE-ing application shall call this function right after it received
+     * the 200 OK from the answering application and must call this function with the
+     * @c sipInvite parameter set to @c true. This usually at the same point when
+     * it gets the  @c zrtp-hash from the SDP parameters. This application's SRTP
+     * environment is now ready. The method ignores the @c sendCryptoStr parameter
+     * and its length if @c sipInvite is true.
+     *
+     * The answering application calls this function after it received the INVITE and
+     * extracted the crypto string from the SDP and must call this function with the
+     * @c sipInvite parameter set to @c false. This is usually the same point when
+     * it gets the @c zrtp-hash from the SDP parameters. The answering client must
+     * provide a @c sendCryptoStr buffer. The method fills this buffer with the crypto
+     * string that the answering client sends with 200 OK.
+     *
+     * @param recvCryptoStr points to the received crypto string in raw format,
+     *                     without any signaling prefix, for example @c
+     *                     a=crypto: in case of SDP signaling.
+     *
+     * @param recvLenght length of the received crypto string. If the length is
+     *               @c zero then the method uses @c strlen to compute
+     *               the length.
+     *
+     * @param sendCryptoStr points to a buffer. The method stores a crypto string
+     *                     in raw format, without any signaling prefix, for example @c
+     *                     a=crypto: in case of SDP signaling. Only the answering
+     *                     client must provide a buffer.
+     *
+     * @param sendLenght length of the send crypto string buffer. On return it contains the
+     *                   actual length of the crypto string.
+     *
+     * @param sipInvite the client that sent the SIP INVITE must set this to  @c true.
+     *
+     * @param streamNm stream identifier.
+     *
+     * @return @c true if data could be created, @c false otherwise.
+     */
+    bool parseSdes(char *recvCryptoStr, size_t recvLength, char *sendCryptoStr, size_t *sendLength, bool sipInvite, streamName streamNm);
 
 protected:
     friend class CtZrtpStream;
@@ -344,7 +493,6 @@ private:
     bool signSas;
     bool enableParanoidMode;
     bool isReady;
-    CMutexClass  synchLock;
 };
 
 #endif /* _CTZRTPSESSION_H_ */

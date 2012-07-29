@@ -9,10 +9,14 @@
 #include <libzrtpcpp/ZRtp.h>
 
 #include <CtZrtpStream.h>
+#include <CtZrtpCallback.h>
 #include <CtZrtpSession.h>
 
-CtZrtpSession::CtZrtpSession() : mitmMode(false), signSas(false), enableParanoidMode(false),
-    isReady(false) {
+#include <common/Thread.h>
+
+static CMutexClass sessionLock;
+
+CtZrtpSession::CtZrtpSession() : mitmMode(false), signSas(false), enableParanoidMode(false), isReady(false) {
 
     clientIdString = clientId;
     streams[AudioStream] = NULL;
@@ -28,7 +32,8 @@ int CtZrtpSession::init(bool audio, bool video, const char *zidFilename, ZrtpCon
     ZrtpConfigure* configOwn = NULL;
     if (config == NULL) {
         config = configOwn = new ZrtpConfigure();
-        config->setStandardConfig();
+        setupConfiguration(config);
+        config->setTrustedMitM(true);
     }
     config->setParanoidMode(enableParanoidMode);
 
@@ -85,6 +90,80 @@ CtZrtpSession::~CtZrtpSession() {
     delete streams[VideoStream];
 }
 
+void CtZrtpSession::setupConfiguration(ZrtpConfigure *conf) {
+
+    // Set TIVI_CONF to a real name that is TRUE if the Tivi client is compiled/built.
+#ifdef _WITHOUT_TIVI_ENV
+#define GET_CFG_I(RET,_KEY)
+#else
+void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type);
+#define GET_CFG_I(RET,_KEY) {int *p=(int*)findGlobalCfgKey((char*)_KEY,sizeof(_KEY)-1,iSZ,&opt,&type);if(p && iSZ==4)RET=*p;else RET=-1;}
+#endif
+
+    int iSZ;
+    char *opt;
+    int type;
+    int b32sas,iDisableDH2K, iDisableAES256, iPreferDH2K;
+    int iDisableECDH256, iDisableECDH384, iEnableSHA384;
+    int iHas2k=0;
+
+    GET_CFG_I(b32sas,"iDisable256SAS");
+    GET_CFG_I(iDisableAES256,"iDisableAES256");
+    GET_CFG_I(iDisableDH2K,"iDisableDH2K");
+    GET_CFG_I(iPreferDH2K,"iPreferDH2K");
+
+    GET_CFG_I(iDisableECDH256,"iDisableECDH256");
+    GET_CFG_I(iDisableECDH384,"iDisableECDH384");
+    GET_CFG_I(iEnableSHA384,"iEnableSHA384");
+
+    conf->clear();
+
+    if (iPreferDH2K && !iDisableDH2K) {
+        iHas2k=1;
+        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));  // If enabled always first
+    }
+
+    if(iDisableECDH256 == 0)
+        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC25"));  // If enabled always before DH3k
+
+    conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));      // If enabled it should appear here
+
+    if(iDisableECDH384 == 0)
+        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));  // If enabled, slowest, thus on last position
+
+    conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("Mult"));      // Tivi supports Multi-stream mode
+
+// DEBUG    conf->printConfiguredAlgos(PubKeyAlgorithm);
+
+    if(iEnableSHA384 == 1 || iDisableECDH384 == 0){
+        conf->addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
+    }
+    conf->addAlgo(HashAlgorithm, zrtpHashes.getByName("S256"));
+
+    if (iDisableAES256 == 0 ) {
+        conf->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS3"));
+        conf->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES3"));
+    }
+    conf->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS1"));
+    conf->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES1"));
+
+// DEBUG    conf->printConfiguredAlgos(CipherAlgorithm);
+
+    // Curreently only B32 supported
+    if (b32sas == 1 /* || T_getSometing1(NULL,"zrtp_sas_b32") */){
+        conf->addAlgo(SasType, zrtpSasTypes.getByName("B32 "));
+    }
+    else{
+//        conf->addAlgo(SasType, zrtpSasTypes.getByName("B256"));
+        conf->addAlgo(SasType, zrtpSasTypes.getByName("B32 "));
+    }
+
+    conf->addAlgo(AuthLength, zrtpAuthLengths.getByName("SK32"));
+    conf->addAlgo(AuthLength, zrtpAuthLengths.getByName("SK64"));
+    conf->addAlgo(AuthLength, zrtpAuthLengths.getByName("HS32"));
+    conf->addAlgo(AuthLength, zrtpAuthLengths.getByName("HS80"));
+}
+
 void CtZrtpSession::setUserCallback(CtZrtpCb* ucb, streamName streamNm) {
     if (!(streamNm >= 0 && streamNm <= AllStreams && streams[streamNm] != NULL))
         return;
@@ -123,6 +202,19 @@ void CtZrtpSession::masterStreamSecure(CtZrtpStream *stream) {
     }
 }
 
+int CtZrtpSession::startIfNotStarted(unsigned int uiSSRC, int streamNm) {
+    if (!(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return 0;
+
+    if ((streamNm == VideoStream && !isSecure(AudioStream)) || streams[streamNm]->started)
+        return 0;
+
+    start(uiSSRC, streamNm == VideoStream ? CtZrtpSession::VideoStream: CtZrtpSession::AudioStream);
+//    streams[streamNm]->started = true;  // Not necessary - will be done in start if stream is started
+
+    return 0;
+}
+
 void CtZrtpSession::start(unsigned int uiSSRC, CtZrtpSession::streamName streamNm) {
     if (!(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
         return;
@@ -134,6 +226,9 @@ void CtZrtpSession::start(unsigned int uiSSRC, CtZrtpSession::streamName streamN
         stream->enableZrtp = true;
         stream->zrtpEngine->startZrtpEngine();
         stream->started = true;
+        stream->tiviState = eLookingPeer;
+        if (stream->zrtpUserCallback != 0)
+            stream->zrtpUserCallback->onNewZrtpStatus(this, NULL, stream->index);
         return;
     }
     // Process a Slave stream.
@@ -142,6 +237,9 @@ void CtZrtpSession::start(unsigned int uiSSRC, CtZrtpSession::streamName streamN
         stream->zrtpEngine->setMultiStrParams(multiStreamParameter);
         stream->zrtpEngine->startZrtpEngine();
         stream->started = true;
+        stream->tiviState = eLookingPeer;
+        if (stream->zrtpUserCallback != 0)
+            stream->zrtpUserCallback->onNewZrtpStatus(this, NULL, stream->index);
     }
 }
 
@@ -166,7 +264,7 @@ void CtZrtpSession::release(streamName streamNm) {
     stream->stopStream();                      // stop and reset stream
 }
 
-void CtZrtpSession::setLastPeerName(const char *name, int iIsMitm) {
+void CtZrtpSession::setLastPeerNameVerify(const char *name, int iIsMitm) {
     CtZrtpStream *stream = streams[AudioStream];
 
     if (!isReady || !stream || stream->isStopped)
@@ -175,7 +273,8 @@ void CtZrtpSession::setLastPeerName(const char *name, int iIsMitm) {
     uint8_t peerZid[IDENTIFIER_LEN];
     std::string nm(name);
     stream->zrtpEngine->getPeerZid(peerZid);
-    getZidCacheInstance()->putPeerName(peerZid, &nm);
+    getZidCacheInstance()->putPeerName(peerZid, nm);
+    setVerify(1);
 }
 
 int CtZrtpSession::isSecure(streamName streamNm) {
@@ -200,12 +299,12 @@ bool CtZrtpSession::processOutoingRtp(uint8_t *buffer, size_t length, size_t *ne
 
 int32_t CtZrtpSession::processIncomingRtp(uint8_t *buffer, size_t length, size_t *newLength, streamName streamNm) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
-        return 0;
+        return fail;
 
     CtZrtpStream *stream = streams[streamNm];
 
     if (stream->isStopped)
-        return 0;
+        return fail;
 
     return stream->processIncomingRtp(buffer, length, newLength);
 }
@@ -250,15 +349,15 @@ CtZrtpSession::tiviStatus CtZrtpSession::getPreviousState(streamName streamNm) {
     return stream->getPreviousState();
 }
 
-void CtZrtpSession::getSignalingHelloHash(char *helloHash, streamName streamNm) {
+int CtZrtpSession::getSignalingHelloHash(char *helloHash, streamName streamNm) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
-        return;
+        return 0;
 
     CtZrtpStream *stream = streams[streamNm];
     if (stream->isStopped)
-        return;
+        return 0;
 
-    stream->getSignalingHelloHash(helloHash);
+    return stream->getSignalingHelloHash(helloHash);
 }
 
 void CtZrtpSession::setSignalingHelloHash(const char *helloHash, streamName streamNm) {
@@ -278,25 +377,62 @@ void CtZrtpSession::setVerify(int iVerified) {
     if (!isReady || !stream || stream->isStopped)
         return;
 
-    if (iVerified)
+    if (iVerified) {
         stream->zrtpEngine->SASVerified();
-    else
+        stream->sasVerified = true;
+    }
+    else {
         stream->zrtpEngine->resetSASVerified();
+        stream->sasVerified = false;
+    }
 }
 
-int CtZrtpSession::getInfo(const char *key, char *buffer, streamName streamNm) {
+int CtZrtpSession::getInfo(const char *key, char *buffer, int maxLen, streamName streamNm) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
-        return 0;
+        return fail;
 
     CtZrtpStream *stream = streams[streamNm];
-    return stream->getInfo(key, buffer);
+    return stream->getInfo(key, buffer, maxLen);
+}
+
+int CtZrtpSession::enrollAccepted(char *p) {
+    if (!isReady || !(streams[AudioStream] != NULL))
+        return fail;
+
+    CtZrtpStream *stream = streams[AudioStream];
+    int ret = stream->enrollAccepted(p);
+    setVerify(true);
+    return ret;
+}
+
+void CtZrtpSession::setClientId(std::string id) {
+    clientIdString = id;
+}
+
+bool CtZrtpSession::createSdes(char *cryptoString, size_t *maxLen, streamName streamNm, const sdesSuites suite) {
+
+    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return fail;
+
+    CtZrtpStream *stream = streams[streamNm];
+    return stream->createSdes(cryptoString, maxLen, static_cast<ZrtpSdesStream::sdesSuites>(suite));
+}
+
+bool CtZrtpSession::parseSdes(char *recvCryptoStr, size_t recvLength, char *sendCryptoStr,
+                              size_t *sendLength, bool sipInvite, streamName streamNm) {
+
+    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return fail;
+
+    CtZrtpStream *stream = streams[streamNm];
+    return stream->parseSdes(recvCryptoStr, recvLength, sendCryptoStr, sendLength, sipInvite);
 }
 
 void CtZrtpSession::synchEnter() {
-    synchLock.Lock();
+    sessionLock.Lock();
 }
 
 void CtZrtpSession::synchLeave() {
-    synchLock.Unlock();
+    sessionLock.Unlock();
 }
 

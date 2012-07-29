@@ -4,9 +4,10 @@
 #include <map>
 
 #include <libzrtpcpp/ZrtpCallback.h>
+#include <libzrtpcpp/ZrtpSdesStream.h>
 
 #include <CtZrtpSession.h>
-#include <TimeoutProvider.h>
+#include <TiviTimeoutProvider.h>
 
 // Define sizer of internal buffers.
 // NOTE: ZRTP buffer is large. An application shall never use ZRTP protocol
@@ -21,6 +22,8 @@ class ZRtp;
 class CtZrtpCb;
 class CtZrtpSendCb;
 class CtZrtpSession;
+class ZrtpSdesStream;
+class CMutexClass;
 
 
 typedef enum _tiviStatus {
@@ -143,8 +146,10 @@ protected:
      * @param helloHash points to a character buffer with a length of at least 65 characters.
      *                  The method fills it with the hex string part of the ZRTP hello hash and
      *                  terminates it with a @c nul byte.
+     *
+     * @return the number of characters in the @c helloHash buffer.
      */
-    void getSignalingHelloHash(char *helloHash);
+    int getSignalingHelloHash(char *helloHash);
 
     /**
      * @brief Set the ZRTP Hello hash from signaling
@@ -169,12 +174,88 @@ protected:
      * @param key which information to return
      *
      * @param buffer points to buffer that gets the information
+     *
+     * @param maxLen length of the buffer
      */
-    int getInfo(const char *key, char *buffer);
+    int getInfo(const char *key, char *buffer, int maxLen);
 
     bool isStarted() {return started;}
 
     bool isEnabled() {return enableZrtp;}
+
+    /**
+     * Accept enrollment for the active peer.
+     *
+     * The method checks if a name is already set in the name cache. If no name
+     * is found then set the name for this peer in the name cache.
+     * 
+     * @param p this is the human readable name for this peer.
+     */
+    int enrollAccepted(char *p);
+
+    /**
+     * @brief Creates an SDES crypto string for the SDES/ZRTP stream.
+     *
+     * Creates and returns a SDES crypto string for the client that sends
+     * the SIP INVITE.
+     *
+     * @param cryptoString points to a char output buffer that receives the
+     *                     crypto  string in the raw format, without the any
+     *                     signaling prefix, for example @c a=crypto: in case
+     *                     of SDP signaling. The function terminates the
+     *                     crypto string with a @c nul byte
+     *
+     * @param maxLen length of the crypto string buffer. On return it contains the
+     *               actual length of the crypto string.
+     *
+     * @param suite defines which crypto suite to use for this stream. The values are
+     *              @c AES_CM_128_HMAC_SHA1_80 or @c AES_CM_128_HMAC_SHA1_32.
+     *
+     * @return @c true if data could be created, @c false otherwise.
+     */
+    bool createSdes(char *cryptoString, size_t *maxLen, const ZrtpSdesStream::sdesSuites suite =ZrtpSdesStream::AES_CM_128_HMAC_SHA1_32);
+
+    /**
+     * @brief Parses an SDES crypto string for the SDES/ZRTP stream.
+     *
+     * Parses a received crypto string that the application received in a SIP INVITE
+     * or SIP 200 OK.
+     *
+     * An INVITE-ing application shall call this function right after it received
+     * the 200 OK from the answering application and must call this function with the
+     * @c sipInvite parameter set to @c true. This usually at the same point when
+     * it gets the  @c zrtp-hash from the SDP parameters. This application's SRTP
+     * environment is now ready. The method ignores the @c sendCryptoStr parameter
+     * and its length if @c sipInvite is true.
+     *
+     * The answering application calls this function after it received the INVITE and
+     * extracted the crypto string from the SDP and must call this function with the
+     * @c sipInvite parameter set to @c false. This is usually the same point when
+     * it gets the @c zrtp-hash from the SDP parameters. The answering client must
+     * provide a @c sendCryptoStr buffer. The method fills this buffer with the crypto
+     * string that the answering client sends with 200 OK.
+     *
+     * @param recvCryptoStr points to the received crypto string in raw format,
+     *                     without any signaling prefix, for example @c
+     *                     a=crypto: in case of SDP signaling.
+     *
+     * @param recvLenght length of the received crypto string. If the length is
+     *               @c zero then the method uses @c strlen to compute
+     *               the length.
+     *
+     * @param sendCryptoStr points to a buffer. The method stores a crypto string
+     *                     in raw format, without any signaling prefix, for example @c
+     *                     a=crypto: in case of SDP signaling. Only the answering
+     *                     client must provide a buffer.
+     *
+     * @param sendLenght length of the send crypto string buffer. On return it contains the
+     *                   actual length of the crypto string.
+     *
+     * @param sipInvite the client that sent the SIP INVITE must set this to  @c true.
+     *
+     * @return @c true if data could be created, @c false otherwise.
+     */
+    bool parseSdes(char *recvCryptoStr, size_t recvLength, char *sendCryptoStr, size_t *sendLength, bool sipInvite);
 
     /*
      * The following methods implement the GNU ZRTP callback interface.
@@ -238,7 +319,8 @@ private:
     std::string peerHelloHash;
     bool     zrtpHashMatch;
     bool     sasVerified;
-    CMutexClass       synchLock;
+    ZrtpSdesStream *sdes;
+    CMutexClass *synchLock;
 
     void initStrings();
 };
