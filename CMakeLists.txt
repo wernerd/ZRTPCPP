@@ -18,7 +18,44 @@ SET(CPACK_PACKAGE_VERSION_PATCH 0)
 
 set (VERSION 2.3.0)
 set (SOVERSION 2)
-set (PACKAGE libzrtpcpp)
+
+include(cmake/Modules/AutoArgs.cmake)
+
+# Define supported -Denable-* command line parameters.
+#
+# Example to build the tivi client: cmake -Denable-tivi=true ..
+# Without any options cmake generates libzrtpcpp for use with GNU ccRTP
+#
+enable_arg(ccrtp false "Build library to use with GNU ccRTP.")
+enable_arg(crypto_standalone false "Use embedded crypto and big number modules.")
+enable_arg(tivi false "Build library for the tivi client, implies '-Denable-crypto_standalone=true'.")
+enable_arg(sqlite false "Use SQLite DB as backend for ZRTP cache.")
+args_help()
+
+# **** Check what and how to build ****
+#
+if (enable_ccrtp AND enable_tivi)
+    MESSAGE(FATAL_ERROR "Cannot build more than one client at once. Use different build directories.")
+endif()
+
+if (enable_ccrtp)
+    set (PACKAGE libzrtpcpp)
+    set(zrtplibName zrtpcpp)
+elseif (enable_tivi)
+    set (PACKAGE libzrtptivi)
+    set(zrtplibName zrtptivi)
+    set (enable_crypto_standalone true)
+else()
+    MESSAGE(WARNING "No client defined, building for GNU ccRTP.")
+    set (PACKAGE libzrtpcpp)
+    set(enable_ccrtp true)
+    set(zrtplibName zrtpcpp)
+endif()
+
+if (enable_crypto_standalone)
+    set(CRYPTO_STANDALONE TRUE)
+endif()
+
 
 if(MSVC60)
     set(BUILD_STATIC ON CACHE BOOL "static linking only" FORCE)
@@ -30,24 +67,13 @@ endif()
 # set to true for debug and trace during CMakeLists development
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
 
-MESSAGE( STATUS "Configuring GNU ${PROJECT_NAME} ${VERSION}...")
+MESSAGE( STATUS "Configuring GNU ${PROJECT_NAME} ${VERSION} for ${PACKAGE}...")
 
 # include most of the fine stuff we need
-include(cmake/Modules/FindGcryptConfig.cmake)
 include(FindPkgConfig)
 include(CheckLibraryExists)
 include(CheckIncludeFiles)
 include(CheckFunctionExists)
-include(cmake/Modules/AutoArgs.cmake)
-
-# check the -Denable-ccrtp setting, defaults to true
-enable_arg(ccrtp true "Enable GNU ccRTP support for GNU ZRTP")
-enable_arg(crypto_standalone true)
-args_help()
-
-if (enable_crypto_standalone)
-    set(CRYPTO_STANDALONE TRUE)
-endif()
 
 if (NOT LIB_SUFFIX)
     set(LIBDIRNAME "lib")
@@ -89,7 +115,7 @@ else()
     check_function_exists(memmove HAVE_MEMMOVE)
     check_function_exists(memcpy HAVE_MEMCPY)
 
-    # below only if we compile the tests
+    # TODO: check if we compile the tests for bnlib
     #
     # check_function_exists(clock_gettime HAVE_CLOCK_GETTIME)
     # check_function_exists(getrusage HAVE_GETRUSAGE)
@@ -105,6 +131,16 @@ else()
     configure_file(${CMAKE_SOURCE_DIR}/bnlib/bnconfig.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/bnconfig.h)
 endif()
 
+if (enable_sqlite)
+    pkg_check_modules(SQLITE3 sqlite3>=3.7)
+    if (SQLITE3_FOUND)
+        check_include_files(sqlite3.h HAVE_SQLITE_H)
+        set(LIBS ${LIBS} -lsqlite3)
+    else()
+      message(FATAL_ERROR "SQLite3 library not found")
+    endif()
+endif()
+
 check_include_files(stdlib.h HAVE_STDLIB_H)
 check_include_files(string.h HAVE_STRING_H)
 
@@ -118,9 +154,74 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   add_definitions(-DNEW_STDCPP)
 endif()
 
+# **** The following source files a common for all clients ****
+#
+set(zrtp_src_no_cache
+    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpCallbackWrapper.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/ZRtp.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpCrc32.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketCommit.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketConf2Ack.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketConfirm.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketDHPart.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketGoClear.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketClearAck.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketHelloAck.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketHello.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketError.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketErrorAck.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketPingAck.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketPing.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketSASrelay.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketRelayAck.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpStateClass.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpTextData.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpConfigure.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpCWrapper.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/Base32.cpp)
+
+set(bnlib_src
+    ${CMAKE_SOURCE_DIR}/bnlib/bn00.c
+    ${CMAKE_SOURCE_DIR}/bnlib/lbn00.c
+    ${CMAKE_SOURCE_DIR}/bnlib/bn.c
+    ${CMAKE_SOURCE_DIR}/bnlib/lbnmem.c
+    ${CMAKE_SOURCE_DIR}/bnlib/sieve.c
+    ${CMAKE_SOURCE_DIR}/bnlib/prime.c
+    ${CMAKE_SOURCE_DIR}/bnlib/bnprint.c
+    ${CMAKE_SOURCE_DIR}/bnlib/jacobi.c
+    ${CMAKE_SOURCE_DIR}/bnlib/germain.c)
+
+set(zrtp_crypto_src
+    ${CMAKE_SOURCE_DIR}/zrtp/crypto/zrtpDH.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/crypto/hmac256.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha256.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/crypto/hmac384.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha384.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/crypto/aesCFB.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha2.c)
+
+if (NOT enable_sqlite)
+    set(zrtp_src ${zrtp_src_no_cache}
+        ${CMAKE_SOURCE_DIR}/zrtp/ZIDCacheFile.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/ZIDRecordFile.cpp)
+else()
+    set(zrtp_src ${zrtp_src_no_cache}
+        ${CMAKE_SOURCE_DIR}/zrtp/ZIDCacheDb.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/ZIDRecordDb.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/zrtpB64Encode.c
+        ${CMAKE_SOURCE_DIR}/zrtp/zrtpB64Decode.c
+        ${CMAKE_SOURCE_DIR}/zrtp/zrtpCacheSqliteBackend.c)
+
+endif()
+
 if (enable_ccrtp)
     add_subdirectory(clients/ccrtp)
     add_subdirectory(demo)
+endif()
+
+if (enable_tivi)
+    add_subdirectory(clients/tivi)
 endif()
 
 ##very usefull for macosx, specially when using gtkosx bundler

@@ -17,7 +17,6 @@ include_directories(${USES_CCRTP_INCLUDE_DIRS})
 link_directories(${USES_CRTP_LIBRARY_DIRS})
 add_definitions(${USES_CCRTP_CFLAGS})
 set (LIBS ${LIBS} ${USES_CCRTP_LDFLAGS} ${USES_CCRTP_LIBRARIES})
-set(zrtplib zrtpcpp)
 
 #to make sure includes are first taken - it contains config.h
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
@@ -27,18 +26,6 @@ include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOU
 # Twofish is a special case: its always a standalone modlue and thus
 # not specific to a library.
 # NOTE: the standalone modules live in the 'crypto'
-if (GCRYPT_FOUND)
-    set(crypto_src
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/gcrypt/gcryptZrtpDH.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/gcrypt/gcrypthmac256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/gcrypt/gcryptsha256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/gcrypt/gcrypthmac384.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/gcrypt/gcryptsha384.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/gcrypt/gcryptAesCFB.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/gcrypt/InitializeGcrypt.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.cpp)
-endif()
-
 if (OPENSSL_FOUND)
     set(crypto_src
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/zrtpDH.cpp
@@ -52,24 +39,7 @@ if (OPENSSL_FOUND)
 endif()
 
 if (CRYPTO_STANDALONE)
-    set(crypto_src
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/zrtpDH.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/hmac256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/hmac384.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha384.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/aesCFB.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha2.c
-        ${CMAKE_SOURCE_DIR}/bnlib/bn00.c
-        ${CMAKE_SOURCE_DIR}/bnlib/lbn00.c
-        ${CMAKE_SOURCE_DIR}/bnlib/bn.c
-        ${CMAKE_SOURCE_DIR}/bnlib/lbnmem.c
-        ${CMAKE_SOURCE_DIR}/bnlib/sieve.c
-        ${CMAKE_SOURCE_DIR}/bnlib/prime.c
-        ${CMAKE_SOURCE_DIR}/bnlib/bnprint.c
-        ${CMAKE_SOURCE_DIR}/bnlib/jacobi.c
-        ${CMAKE_SOURCE_DIR}/bnlib/germain.c)
+    set(crypto_src ${zrtp_crypto_src} ${bnlib_src})
 endif()
 
 set(cryptcommon_srcs
@@ -80,34 +50,10 @@ set(cryptcommon_srcs
     ${CMAKE_SOURCE_DIR}/cryptcommon/aestab.c
     ${CMAKE_SOURCE_DIR}/cryptcommon/aes_modes.c)
 
-set(zrtp_src
-    ${CMAKE_CURRENT_SOURCE_DIR}/ZrtpQueue.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpCallbackWrapper.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZIDFile.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZIDRecord.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZRtp.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpCrc32.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketCommit.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketConf2Ack.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketConfirm.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketDHPart.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketGoClear.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketClearAck.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketHelloAck.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketHello.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketError.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketErrorAck.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketPingAck.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketPing.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketSASrelay.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketRelayAck.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpStateClass.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpTextData.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpConfigure.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpCWrapper.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/Base32.cpp)
+set(zrtp_ccrtp_src
+    ${CMAKE_CURRENT_SOURCE_DIR}/ZrtpQueue.cpp)
 
-set(zrtpcpp_src ${zrtp_src} ${crypto_src} ${cryptcommon_srcs})
+set(zrtpcpp_src ${zrtp_src} ${zrtp_ccrtp_src} ${crypto_src} ${cryptcommon_srcs})
 
 if(BUILD_STATIC AND NOT BUILD_SHARED)
     set(LIBRARY_BUILD_TYPE STATIC)
@@ -115,11 +61,11 @@ else()
     set(LIBRARY_BUILD_TYPE SHARED)
 endif()
 
-add_library(${zrtplib} ${LIBRARY_BUILD_TYPE} ${zrtpcpp_src})
-set_target_properties(${zrtplib} PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
-target_link_libraries(${zrtplib} ${LIBS})
+add_library(${zrtplibName} ${LIBRARY_BUILD_TYPE} ${zrtpcpp_src})
+set_target_properties(${zrtplibName} PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
+target_link_libraries(${zrtplibName} ${LIBS})
 
-add_dependencies(${zrtplib} ccrtp)
+add_dependencies(${zrtplibName} ccrtp)
 
 # **** Setup packing environment ****
 #
@@ -137,8 +83,8 @@ set(libdir ${prefix}/${LIBDIRNAME})
 set(includedir ${prefix}/include)
 set(PACKAGE pkgconfig)
 
-configure_file(${CMAKE_SOURCE_DIR}/libzrtpcpp.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/lib${zrtplib}.pc @ONLY)
-configure_file(${CMAKE_SOURCE_DIR}/libzrtpcpp.spec.cmake ${CMAKE_CURRENT_BINARY_DIR}/libzrtpcpp.spec @ONLY)
+configure_file(${CMAKE_SOURCE_DIR}/libzrtpcpp.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/lib${zrtplibName}.pc @ONLY)
+configure_file(${CMAKE_SOURCE_DIR}/libzrtpcpp.spec.cmake ${CMAKE_CURRENT_BINARY_DIR}/lib${zrtplibName}.spec @ONLY)
 
 # **** install files ****
 #
@@ -154,9 +100,9 @@ install(FILES
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCWrapper.h
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpUserCallback.h ${ccrtp_inst} DESTINATION include/libzrtpcpp)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib${zrtplib}.pc DESTINATION ${LIBDIRNAME}/pkgconfig)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib${zrtplibName}.pc DESTINATION ${LIBDIRNAME}/pkgconfig)
 
-install(TARGETS ${zrtplib} DESTINATION ${LIBDIRNAME})
+install(TARGETS ${zrtplibName} DESTINATION ${LIBDIRNAME})
 
 if(${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
 
