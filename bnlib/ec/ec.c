@@ -1,4 +1,10 @@
-
+/*
+ * Copyright (C) 2012 Werner Dittmann
+ * All rights reserved. For licensing and other legal details, see the file legal.c.
+ *
+ * @author Werner Dittmann <Werner.Dittmann@t-online.de>
+ *
+ */
 #include <stdio.h>
 #include <sys/time.h>
 #include <stdlib.h>

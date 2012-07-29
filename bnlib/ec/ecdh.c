@@ -1,3 +1,10 @@
+/*
+ * Copyright (C) 2012 Werner Dittmann
+ * All rights reserved. For licensing and other legal details, see the file legal.c.
+ *
+ * @author Werner Dittmann <Werner.Dittmann@t-online.de>
+ *
+ */
 
 #include <ec/ec.h>
 #include <ec/ecdh.h>
@@ -10,6 +17,7 @@ int ecdhGeneratePublic(const NistECpCurve *curve, EcPoint *Q, const BigNum *d)
     SET_EC_BASE_POINT(curve, &G);
 
     ecMulPointScalar(curve, Q, &G, d);
+/*    ecGetAffine(curve, Q, Q); */
 
     FREE_EC_POINT(&G);
 

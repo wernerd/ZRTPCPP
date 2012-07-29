@@ -1,5 +1,18 @@
+/*
+ * Copyright (C) 2012 Werner Dittmann
+ * All rights reserved. For licensing and other legal details, see the file legal.c.
+ *
+ * @author Werner Dittmann <Werner.Dittmann@t-online.de>
+ *
+ */
 #ifndef _ECDH_H_
 #define _ECDH_H_
+/**
+ * @file ec.h
+ * @brief Elliptic Diffie-Hellman functions for bnlib
+ * @defgroup BNLIB_EC Elliptic curve functions
+ * @{
+ */
 
 #ifdef __cplusplus
 extern "C"
@@ -7,18 +20,20 @@ extern "C"
 #endif
 
 /**
- * Takes a secret large random number and computes the public EC point.
+ * @brief Takes a secret large random number and computes the public EC point.
  *
  * @param curve is the NIST curve to use.
  *
  * @param Q the functions writes the computed public point in this parameter.
  *
  * @param d is the secret random number.
+ *
+ * @sa ecGenerateRandomNumber
  */
 int ecdhGeneratePublic(const NistECpCurve *curve, EcPoint *Q, const BigNum *d);
 
 /**
- * Computes the key agreement value.
+ * @brief Computes the key agreement value.
  *
  * Takes the public EC point of the other party and applies the EC DH algorithm
  * to compute the agreed value.
@@ -37,5 +52,8 @@ int ecdhComputeAgreement(const NistECpCurve *curve, BigNum *agreement, const EcP
 #ifdef __cplusplus
 }
 #endif
+/**
+ * @}
+ */
 
 #endif
