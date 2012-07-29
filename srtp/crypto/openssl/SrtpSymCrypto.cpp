@@ -40,7 +40,7 @@
 #include <stdlib.h>
 #include <openssl/aes.h>                // the include of openSSL
 #include <crypto/SrtpSymCrypto.h>
-#include <crypto/twofish.h>
+#include <cryptcommon//twofish.h>
 #include <string.h>
 #include <stdio.h>
 #include <arpa/inet.h>
