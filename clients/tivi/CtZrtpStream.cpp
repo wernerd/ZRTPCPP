@@ -23,7 +23,7 @@ using namespace GnuZrtpCodes;
 
 CtZrtpStream::CtZrtpStream(): index(CtZrtpSession::AudioStream), type(CtZrtpSession::NoStream), zrtpEngine(NULL),
     tiviState(CtZrtpSession::eLookingPeer), ownSSRC(0), enableZrtp(0),
-    started(0), recvSrtp(NULL), recvSrtcp(NULL), sendSrtp(NULL), sendSrtcp(NULL),
+    started(0), isStopped(false), recvSrtp(NULL), recvSrtcp(NULL), sendSrtp(NULL), sendSrtcp(NULL),
     zrtpUserCallback(NULL), session(NULL), senderZrtpSeqNo(0), peerSSRC(0),
     protect(0), unprotect(0), unprotectFailed(0), srtcpIndex(0)
 {
@@ -352,13 +352,16 @@ void CtZrtpStream::srtpSecretsOn(std::string cipher, std::string sas, bool verif
         tiviState = CtZrtpSession::eSecureMitm;
 
     if (zrtpUserCallback != NULL) {
-        char *strng = NULL;            // TODO: fill this with peer's name if available
-        zrtpUserCallback->onPeer(session, strng, (int)verified, index);
+        uint8_t peerZid[IDENTIFIER_LEN];
+        zrtpEngine->getPeerZid(peerZid);
+
+        const char *strng = getZidCacheInstance()->getPeerName(peerZid);
+        zrtpUserCallback->onPeer(session, (char*)strng, (int)verified, index);
 
         // get the SAS string if it is not empty.
         if (!sas.empty())
             strng = (char*)sas.c_str();
-        zrtpUserCallback->onNewZrtpStatus(session, strng, index);
+        zrtpUserCallback->onNewZrtpStatus(session, (char*)strng, index);
     }
 }
 
@@ -434,9 +437,6 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
         return;
     }
     if (severity == Warning) {
-        if (subCode == WarningNoExpectedRSMatch) {          // Tivi needs this after we have SAS? The just remember event
-            // TODO: remember and return, discuss with Janis. Deliver after secure state reached?
-        }
         msg = warningMap[subCode];
         zrtpUserCallback->onZrtpWarning(session, (char*)msg->c_str(), index);
         return;

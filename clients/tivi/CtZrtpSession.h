@@ -35,7 +35,7 @@ public:
     } streamType;
 
     typedef enum _tiviStatus {
-        eLookingPeer = 1,
+        eLookingPeer,
         eNoPeer,
         eGoingSecure,
         eSecure,
@@ -44,12 +44,11 @@ public:
         eWrongStream = -1
     } tiviStatus;
 
-
     CtZrtpSession();
 
     ~CtZrtpSession();
 
-    /** @brief Initialize CtZrtpNew.
+    /** @brief Initialize CtZrtpSession.
      *
      * Before an application can use ZRTP it has to initialize the
      * ZRTP implementation. This method initializes the timeout
@@ -85,7 +84,7 @@ public:
      *     ZRTP processing disabled.
      *
      */
-    int32_t init(const char *zidFilename = NULL, ZrtpConfigure* config = NULL);
+    int init(const char *zidFilename = NULL, ZrtpConfigure* config = NULL);
 
     /**
      * Set the application's callback class.
@@ -133,6 +132,21 @@ public:
      * @param streamNm which stream to stop.
      */
     void stop(streamName streamNm);
+
+    /**
+     * Release all resources for the stream.
+     *
+     * @param streamNm which stream to release.
+     */
+    void release(streamName streamNm);
+
+    /**
+     * Set peer name of current call's peer.
+     *
+     * Setting the peer name will always use the AudioStream to determine
+     * the ZID and set the name into the name cache.
+     */
+    void setLastPeerName(const char *name, int iIsMitm);
 
     /**
      * Create a new stream.
@@ -229,12 +243,11 @@ protected:
      */
     void masterStreamSecure(CtZrtpStream *stream);
 
-    void synchEnter();
-
-    void synchLeave();
-
 
 private:
+    void synchEnter();
+    void synchLeave();
+
     CtZrtpStream *streams[AllStreams];
     std::string  clientIdString;
     std::string  multiStreamParameter;
@@ -245,102 +258,8 @@ private:
     bool mitmMode;
     bool signSas;
     bool enableParanoidMode;
+    bool isReady;
     CMutexClass  synchLock;
-
-
-
-
-
-    
-#if 0
-    int iStatus[2];
-    int iEnding[2];
-    int iPrevStatus[2];
-    int iHasDstHash[2];
-    void *pCtx;
-
-    void setStatus(int iNew, char *p, int iIsVideo)
-    {
-        iPrevStatus[iIsVideo] = iStatus[iIsVideo];
-        iStatus[iIsVideo] = iNew;
-        if (zrtpcb)
-            zrtpcb->onNewZrtpStatus(this, p, iIsVideo);
-    }
-
-    void onPeer(char *name, int iIsVerified){
-
-        void safeStrCpy(char *dst, const char *name, int iMaxSize);      
-        if (name)
-            safeStrCpy(&bufPeer[0], name, sizeof(bufPeer)-1);
-        if (zrtpcb)
-            zrtpcb->onPeer(this, name, iIsVerified);
-    }
-
-    void onZrtpWarning(char *p, int iIsVideo){
-        //TODO translate, onZrtpWarning(char *p, int iWarningCode, int iIsVideo);
-        void safeStrCpy(char *dst, const char *name, int iMaxSize);      
-        if (p)
-            safeStrCpy(&bufWarning[0], p, sizeof(bufWarning)-1);
-        if (zrtpcb)
-            zrtpcb->onZrtpWarning(this, p, iIsVideo);
-    }
-
-public:
-    D_EZRTPSTAT
-
-    CtZrtpNew(void *pZrtpGlobalsN);
-    ~CtZrtpNew();
-
-    int init(int iCaller, char *zid_base16, int iInitVideoHash, int iInitAudioHash);
-
-    void release();
-
-    void start(unsigned int uiSSRC, int iIsVideo);
-
-    inline int startIfNotStarted(unsigned int uiSSRC, int iIsVideo) {
-        if (!iStarted[iIsVideo] && !iEnding[iIsVideo])
-            start(uiSSRC, iIsVideo);
-        return 0;
-    }
-
-
-    int isSecure(int iIsVideo);
-
-    int encrypt(char *p, int &iLen, int iIsVideo);
-    int decrypt(char *p, int &iLen, int iIsVideo);
-
-    int setDstHash(char *p, int iLen, int iIsVideo);
- 
-    inline int isStarted(int iIsVideo) {
-        return iStarted[iIsVideo] == 1;
-    }
-
-    inline int isEnabled() {return 1;}
-
-    inline int canUseZrtp() {return iCanUseZRTP;}
-
-    inline int getStatus(int iIsVideo) {return iStatus[iIsVideo];}
-
-    int getInfo(char*key, char*p, intiMax);
-   
-   
-
-    void onNeedEnroll(){
-        iNeedEnroll=1;
-        if (zrtpcb)
-            zrtpcb->onNeedEnroll(this);
-    }
-    void enrollAccepted(const char*mitm_name);
-
-    int clearCaches();
-   
-    void setVerify(int iVerified);
-    //TODO int getSAS(int &iIsBase256, char *p, int iMaxLen);
-   
-    int setLastPeerName(char *name, int iIsMitm);
-
-    const char *getZRTP_msg(int s);
-#endif
 };
 
 #endif /* _CTZRTPSESSION_H_ */

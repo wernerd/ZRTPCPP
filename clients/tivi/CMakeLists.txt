@@ -11,27 +11,6 @@ set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
 include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/zrtp ${CMAKE_SOURCE_DIR}/srtp)
 
-set(crypto_src_zrtp
-    ${CMAKE_SOURCE_DIR}/zrtp/crypto/zrtpDH.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/crypto/hmac256.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha256.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/crypto/hmac384.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha384.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/crypto/aesCFB.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha2.c)
-
-set(bignum_src
-    ${CMAKE_SOURCE_DIR}/bnlib/bn00.c
-    ${CMAKE_SOURCE_DIR}/bnlib/lbn00.c
-    ${CMAKE_SOURCE_DIR}/bnlib/bn.c
-    ${CMAKE_SOURCE_DIR}/bnlib/lbnmem.c
-    ${CMAKE_SOURCE_DIR}/bnlib/sieve.c
-    ${CMAKE_SOURCE_DIR}/bnlib/prime.c
-    ${CMAKE_SOURCE_DIR}/bnlib/bnprint.c
-    ${CMAKE_SOURCE_DIR}/bnlib/jacobi.c
-    ${CMAKE_SOURCE_DIR}/bnlib/germain.c)
-
 set(cryptcommon_srcs
     ${CMAKE_SOURCE_DIR}/cryptcommon/twofish.c
     ${CMAKE_SOURCE_DIR}/cryptcommon/twofish_cfb.c
@@ -44,36 +23,12 @@ set(cryptcommon_srcs
     ${CMAKE_SOURCE_DIR}/cryptcommon/skein_block.c
     ${CMAKE_SOURCE_DIR}/cryptcommon/skeinApi.c)
 
-set(zrtp_src
+set(zrtp_tivi_src
     ${CMAKE_CURRENT_SOURCE_DIR}/CtZrtpSession.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/CtZrtpStream.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Thread.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/MutexClass.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/EventClass.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpCallbackWrapper.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZIDFile.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZIDRecord.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZRtp.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpCrc32.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketCommit.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketConf2Ack.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketConfirm.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketDHPart.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketGoClear.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketClearAck.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketHelloAck.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketHello.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketError.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketErrorAck.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketPingAck.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketPing.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketSASrelay.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketRelayAck.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpStateClass.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpTextData.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpConfigure.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/ZrtpCWrapper.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/Base32.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/EventClass.cpp)
 
 set(srtp_src
     ${CMAKE_SOURCE_DIR}/srtp/CryptoContext.cpp
@@ -85,7 +40,7 @@ set(crypto_src_srtp
    ${CMAKE_SOURCE_DIR}/srtp/crypto/SrtpSymCrypto.cpp
    ${CMAKE_SOURCE_DIR}/srtp/crypto/sha1.c)
 
-set(zrtpcpp_src ${zrtp_src} ${crypto_src_zrtp} ${bignum_src} ${srtp_src} ${crypto_src_srtp} ${cryptcommon_srcs})
+set(zrtpcpp_src ${zrtp_src} ${zrtp_tivi_src} ${zrtp_crypto_src} ${bnlib_src} ${srtp_src} ${crypto_src_srtp} ${cryptcommon_srcs})
 
 # for the Thread classes etc.
 add_definitions(-DLINUX -DNANO_SECOND_SLEEP)

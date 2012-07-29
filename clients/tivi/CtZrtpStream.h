@@ -54,6 +54,7 @@ protected:
     uint32_t          ownSSRC;             //!< Our own SSRC, in host order
     bool              enableZrtp;          //!< Enable the streams ZRTP engine
     bool              started;             //!< This stream's ZRTP engine is started
+    bool              isStopped;           //!< Stream stopped by Tivi
     CryptoContext     *recvSrtp;           //!< The SRTP context for this stream
     CryptoContextCtrl *recvSrtcp;          //!< The SRTCP context for this stream
     CryptoContext     *sendSrtp;           //!< The SRTP context for this stream
