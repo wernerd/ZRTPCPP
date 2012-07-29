@@ -39,7 +39,12 @@ if (OPENSSL_FOUND)
 endif()
 
 if (CRYPTO_STANDALONE)
-    set(crypto_src ${zrtp_crypto_src} ${bnlib_src})
+    set(crypto_src
+        ${CMAKE_SOURCE_DIR}/cryptcommon/ZrtpRandom.cpp
+        ${CMAKE_SOURCE_DIR}/common/Thread.cpp
+        ${CMAKE_SOURCE_DIR}/common/MutexClass.cpp
+        ${CMAKE_SOURCE_DIR}/common/EventClass.cpp
+        ${zrtp_crypto_src} ${bnlib_src})
 endif()
 
 set(cryptcommon_srcs

@@ -31,7 +31,6 @@
 #include <libzrtpcpp/ZRtp.h>
 #include <libzrtpcpp/ZrtpStateClass.h>
 #include <libzrtpcpp/ZIDCache.h>
-//#include <libzrtpcpp/ZIDRecord.h>
 #include <libzrtpcpp/Base32.h>
 
 using namespace GnuZrtpCodes;

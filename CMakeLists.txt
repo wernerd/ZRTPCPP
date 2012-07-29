@@ -65,7 +65,7 @@ else()
 endif()
 
 # set to true for debug and trace during CMakeLists development
-set(CMAKE_VERBOSE_MAKEFILE TRUE)
+# set(CMAKE_VERBOSE_MAKEFILE TRUE)
 
 MESSAGE( STATUS "Configuring GNU ${PROJECT_NAME} ${VERSION} for ${PACKAGE}...")
 
