@@ -61,23 +61,6 @@ typedef struct _dhCtx {
     BigNum pubKey;
 } dhCtx;
 
-
-static void hexdump(const char* title, const unsigned char *s, int l)
-{
-    int n=0;
-
-    if (s == NULL) return;
-
-    fprintf(stderr, "%s",title);
-    for( ; n < l ; ++n) {
-        if((n%16) == 0)
-            fprintf(stderr, "\n%04x",n);
-        fprintf(stderr, " %02x",s[n]);
-    }
-    fprintf(stderr, "\n");
-}
-
-
 void randomZRTP(uint8_t *buf, int32_t length)
 {
     ssize_t num;
@@ -228,8 +211,7 @@ ZrtpDH::ZrtpDH(const char* type) {
     }
 
     randomZRTP(random, sizeof(random));
-    hexdump("random", random, sizeof(random));
-    
+
     if (!dhinit) {
         bnBegin(&two);
         bnSetQ(&two, 2);

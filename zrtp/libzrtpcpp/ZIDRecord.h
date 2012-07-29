@@ -18,6 +18,7 @@
 #ifndef _ZIDRECORD_H_
 #define _ZIDRECORD_H_
 
+#include <stdint.h>
 
 /**
  * @file ZIDRecord.h
@@ -30,44 +31,6 @@
  * @ingroup GNU_ZRTP
  * @{
  */
-
-#include <string.h>
-#include <stdint.h>
-
-#define IDENTIFIER_LEN  12
-#define RS_LENGTH       32
-#define TIME_LENGTH      8      // 64 bit, can hold time on 64 bit systems
-
-/**
- * This is the recod structure of version 1 ZID records.
- *
- * This is not longer in use - only during migration.
- */
-typedef struct zidrecord1 {
-    char recValid;  //!< if 1 record is valid, if 0: invalid
-    char ownZid;    //!< if >1 record contains own ZID, usually 1st record
-    char rs1Valid;  //!< if 1 RS1 contains valid data
-    char rs2Valid;  //!< if 1 RS2 contains valid data
-    unsigned char identifier[IDENTIFIER_LEN]; ///< the peer's ZID or own ZID
-    unsigned char rs1Data[RS_LENGTH], rs2Data[RS_LENGTH]; ///< the peer's RS data
-} zidrecord1_t;
-
-/**
- * This is the recod structure of version 2 ZID records.
- */
-typedef struct zidrecord2 {
-    char version;   ///< version number of file format, this is #2
-    char flags;     ///< bit field holding various flags, see below
-    char filler1;   ///< round up to next 32 bit
-    char filler2;   ///< round up to next 32 bit
-    unsigned char identifier[IDENTIFIER_LEN]; ///< the peer's ZID or own ZID
-    unsigned char rs1Interval[TIME_LENGTH];   ///< expiration time of RS1; -1 means indefinite
-    unsigned char rs1Data[RS_LENGTH];         ///< the peer's RS2 data
-    unsigned char rs2Interval[TIME_LENGTH];   ///< expiration time of RS2; -1 means indefinite
-    unsigned char rs2Data[RS_LENGTH];         ///< the peer's RS2 data
-    unsigned char mitmKey[RS_LENGTH];         ///< MiTM key if available
-} zidrecord2_t;
-
 
 #ifndef __EXPORT
   #if defined _WIN32 || defined __CYGWIN__
@@ -83,152 +46,111 @@ typedef struct zidrecord2 {
   #endif
 #endif
 
-static const int Valid            = 0x1;
-static const int SASVerified      = 0x2;
-static const int RS1Valid         = 0x4;
-static const int RS2Valid         = 0x8;
-static const int MITMKeyAvailable = 0x10;
-static const int OwnZIDRecord     = 0x20;
-
 /**
- * This class implements the ZID record.
+ * These length are fixed for ZRTP. See RFC 6189.
+ */
+#define IDENTIFIER_LEN  12
+#define RS_LENGTH       32
+
+#if defined(__cplusplus)
+/**
+ * Interface for classes that implement a ZID cache record.
  *
- * The ZID record holds data about a peer. According to ZRTP specification
+ * The ZID cache record holds data about a peer. According to ZRTP specification
  * we use a ZID to identify a peer. ZRTP uses the RS (Retained Secret) data
  * to construct shared secrets.
- * <p>
- * NOTE: ZIDRecord has ZIDFile as friend. ZIDFile knows about the private
- *   data of ZIDRecord - please keep both classes synchronized.
  *
  * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 class __EXPORT ZIDRecord {
-    friend class ZIDFile;
-
-private:
-    zidrecord2_t record;
-    unsigned long position;
-
-    /*
-     * The default constructor is private
-     */
-    ZIDRecord() {
-    record.version = 2;
-    }
-
-    /**
-     * Functions for I/O availabe for ZID file handling
-     *
-     * These functions are private, thus only friends may use it.
-     */
-    void setPosition(long pos) {position = pos;}
-    long getPosition()         {return position; }
-
-    zidrecord2_t* getRecordData() {return &record; }
-    int getRecordLength()         {return sizeof(zidrecord2_t); }
-
-    bool isValid()    { return ((record.flags & Valid) == Valid); }
-    void setValid()   { record.flags |= Valid; }
 
 public:
     /**
-     * Create a ZID Record with given ZID data
+     * Set the @c ZID in the record.
      *
-     * The method creates a new ZID record and initializes its ZID
-     * data field. All other fields are set to null.
-     *
-     * An application can use this pre-initialized record to look
-     * up the associated record in the ZID file. If the record is
-     * available, the ZID record fields are filled with the stored
-     * data.
-     *
-     * @param idData
-     *     Pointer to the fixed length ZID data
-     * @see ZIDFile::getRecord
+     * Set the ZID in this record before calling read or save.
      */
-    ZIDRecord(const unsigned char *idData) {
-    memset(&record, 0, sizeof(zidrecord2_t));
-    memcpy(record.identifier, idData, IDENTIFIER_LEN);
-    record.version = 2;
-    }
+    virtual void setZid(const unsigned char *zid) =0;
 
     /**
      * Set @c valid flag in RS1
      */
-    void setRs1Valid()   { record.flags |= RS1Valid; }
+    virtual void setRs1Valid() =0;
 
     /**
      * reset @c valid flag in RS1
      */
-    void resetRs1Valid() { record.flags &= ~RS1Valid; }
+    virtual void resetRs1Valid()  =0;
 
     /**
      * Check @c valid flag in RS1
      */
-    bool isRs1Valid()    { return ((record.flags & RS1Valid) == RS1Valid); }
+    virtual bool isRs1Valid() =0;
 
     /**
      * Set @c valid flag in RS2
      */
-    void setRs2Valid()   { record.flags |= RS2Valid; }
+    virtual void setRs2Valid() =0;
 
     /**
      * Reset @c valid flag in RS2
      */
-    void resetRs2Valid() { record.flags &= ~RS2Valid; }
+    virtual void resetRs2Valid() =0;
 
     /**
      * Check @c valid flag in RS2
      */
-    bool isRs2Valid()    { return ((record.flags & RS2Valid) == RS2Valid); }
+    virtual bool isRs2Valid() =0;
 
     /**
      * Set MITM key available
      */
-    void setMITMKeyAvailable()    { record.flags |= MITMKeyAvailable; }
+    virtual void setMITMKeyAvailable() =0;
 
     /**
      * Reset MITM key available
      */
-    void resetMITMKeyAvailable()  { record.flags &= ~MITMKeyAvailable; }
+    virtual void resetMITMKeyAvailable() =0;
 
     /**
      * Check MITM key available is set
      */
-    bool isMITMKeyAvailable()     { return ((record.flags & MITMKeyAvailable) == MITMKeyAvailable); }
+    virtual bool isMITMKeyAvailable() =0;
 
     /**
      * Mark this as own ZID record
      */
-    void setOwnZIDRecord()  { record.flags = OwnZIDRecord; }
+    virtual void setOwnZIDRecord() =0;
+
     /**
      * Reset own ZID record marker
      */
-    void resetOwnZIDRecord(){ record.flags = 0; }
+    virtual void resetOwnZIDRecord() =0;
 
     /**
      * Check own ZID record marker
      */
-    bool isOwnZIDRecord()   { return (record.flags == OwnZIDRecord); }  // no other flag allowed if own ZID
+    virtual bool isOwnZIDRecord() =0;
 
     /**
      * Set SAS for this ZID as verified
      */
-    void setSasVerified()   { record.flags |= SASVerified; }
+    virtual void setSasVerified() =0;
+
     /**
      * Reset SAS for this ZID as verified
      */
-    void resetSasVerified() { record.flags &= ~SASVerified; }
+    virtual void resetSasVerified() =0;
 
     /**
      * Check if SAS for this ZID was verified
      */
-    bool isSasVerified()    { return ((record.flags & SASVerified) == SASVerified); }
+    virtual bool isSasVerified() =0;
 
     /**
      * Return the ZID for this record
      */
-    const uint8_t* getIdentifier() {return record.identifier; }
+    virtual const uint8_t* getIdentifier() =0;
 
     /**
      * Check if RS1 is still valid
@@ -238,12 +160,12 @@ public:
      * @return
      *    Returns true is RS1 is not expired (valid), false otherwise.
      */
-    const bool isRs1NotExpired();
+    virtual bool isRs1NotExpired() =0;
 
     /**
      * Returns pointer to RS1 data.
      */
-    const unsigned char* getRs1() { return record.rs1Data; }
+    virtual const unsigned char* getRs1() =0;
 
     /**
      * Check if RS2 is still valid
@@ -253,12 +175,12 @@ public:
      * @return
      *    Returns true is RS2 is not expired (valid), false otherwise.
      */
-    const bool isRs2NotExpired();
+    virtual bool isRs2NotExpired() =0;
 
     /**
      * Returns pointer to RS1 data.
      */
-    const unsigned char* getRs2() { return record.rs2Data; }
+    virtual const unsigned char* getRs2() =0;
 
     /**
      * Sets new RS1 data and associated expiration value.
@@ -281,28 +203,19 @@ public:
      *    The expiration interval in seconds. Default is -1.
      *
      */
-    void setNewRs1(const unsigned char* data, int32_t expire =-1);
+    virtual void setNewRs1(const unsigned char* data, int32_t expire =-1) =0;
 
     /**
      * Set MiTM key data.
      *
      */
-    void setMiTMData(const unsigned char* data);
+    virtual void setMiTMData(const unsigned char* data) =0;
 
     /**
      * Get MiTM key data.
      *
      */
-    const unsigned char* getMiTMData() {return record.mitmKey; }
+    virtual const unsigned char* getMiTMData() =0;
 };
-
-#endif // ZIDRECORD
-
-
-/** EMACS **
- * Local variables:
- * mode: c++
- * c-default-style: ellemtel
- * c-basic-offset: 4
- * End:
- */
+#endif /* (__cplusplus) */
+#endif

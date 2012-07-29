@@ -41,7 +41,7 @@
 #include <libzrtpcpp/ZrtpPacketSASrelay.h>
 #include <libzrtpcpp/ZrtpPacketRelayAck.h>
 #include <libzrtpcpp/ZrtpCallback.h>
-#include <libzrtpcpp/ZIDRecord.h>
+#include <libzrtpcpp/ZIDCache.h>
 
 #ifndef SHA256_DIGEST_LENGTH
 #define SHA256_DIGEST_LENGTH 32
@@ -462,7 +462,7 @@ private:
     /**
      * This is my ZID that I send to the peer.
      */
-    uint8_t zid[IDENTIFIER_LEN];
+    uint8_t ownZid[IDENTIFIER_LEN];
 
     /**
      * The peer's ZID
@@ -748,6 +748,11 @@ private:
     ZrtpPacketRelayAck zrtpRelayAck;
 
     /**
+     * ZID cache record
+     */
+    ZIDRecord *zidRec;
+
+    /**
      * Random IV data to encrypt the confirm data, 128 bit for AES
      */
     uint8_t randomIV[16];
@@ -899,16 +904,16 @@ private:
      */
     void computeHvi(ZrtpPacketDHPart* dh, ZrtpPacketHello *hello);
 
-    void computeSharedSecretSet(ZIDRecord& zidRec);
+    void computeSharedSecretSet(ZIDRecord *zidRec);
 
     void computeSRTPKeys();
 
     void KDF(uint8_t* key, uint32_t keyLength, uint8_t* label, int32_t labelLength,
                uint8_t* context, int32_t contextLength, int32_t L, uint8_t* output);
 
-    void generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec);
+    void generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec);
 
-    void generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRec);
+    void generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec);
 
     void generateKeysMultiStream();
 
