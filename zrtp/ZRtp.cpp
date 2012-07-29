@@ -2021,8 +2021,8 @@ bool ZRtp::srtpSecretsReady(EnableSecurity part) {
     // The call state engine calls ForSender always after ForReceiver.
     if (part == ForSender) {
         std::string cs(cipher->getReadable());
-        cs.append("/").append(pubKey->getName());
         if (!multiStream) {
+            cs.append("/").append(pubKey->getName());
             callback->srtpSecretsOn(cs, SAS, zidRec->isSasVerified());
         }
         else {
