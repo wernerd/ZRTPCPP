@@ -1,8 +1,21 @@
-
+/*
+ * Copyright (C) 2012 Werner Dittmann
+ * All rights reserved. For licensing and other legal details, see the file legal.c.
+ *
+ * @author Werner Dittmann <Werner.Dittmann@t-online.de>
+ *
+ */
 #ifndef _EC_H_
 #define _EC_H_
 
 #include <bn.h>
+
+/**
+ * @file ec.h
+ * @brief Elliptic curve functions for bnlib
+ * @defgroup BNLIB_EC Elliptic curve functions
+ * @{
+ */
 
 #ifdef __cplusplus
 extern "C"
@@ -20,7 +33,7 @@ typedef enum {
 } NistCurves;
 
 /**
- * \brief This structure contains the value of NIST EC curves over Prime Fields.
+ * @brief This structure contains the value of NIST EC curves over Prime Fields.
  *
  * The <b>a</b> curve parameter is the constant -3 and is computed during initialization
  * of the curve structure.
@@ -163,6 +176,16 @@ int ecMulPointScalar(const NistECpCurve *curve, EcPoint *R, const EcPoint *P, co
  */
 int ecGetAffine(const NistECpCurve *curve, EcPoint *R, const EcPoint *P);
 
+/**
+ * @brief Generate a random number.
+ *
+ * The method generates a random number and checks if it matches the curve restricitions.
+ * Use this number to generate a ECDH public key.
+ *
+ * @param curve the NIST curve to use.
+ *
+ * @param d receives the generated random number.
+ */
 int ecGenerateRandomNumber(const NistECpCurve *curve, BigNum *d);
 
 /*
@@ -185,5 +208,9 @@ int bnSquareMod_ (struct BigNum *rslt, struct BigNum *n1, struct BigNum *mod);
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif
