@@ -244,7 +244,7 @@ unsigned int ZIDCacheFile::saveRecord(ZIDRecord *zidRec) {
     return 1;
 }
 
-int32_t ZIDCacheFile::getPeerName(const uint8_t *peerZid, std::string name) {
+int32_t ZIDCacheFile::getPeerName(const uint8_t *peerZid, std::string *name) {
     return 0;
 }
 
