@@ -192,7 +192,7 @@ ZrtpQueue::takeInDataPacket(void)
 
         // store peer's SSRC, used when creating the CryptoContext
         peerSSRC = packet->getSSRC();
-        zrtpEngine->processZrtpMessage(extHeader, peerSSRC);
+        zrtpEngine->processZrtpMessage(extHeader, peerSSRC, rtn);
     }
     delete packet;
     return 0;
