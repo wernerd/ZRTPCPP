@@ -22,7 +22,7 @@
 #include <ccrtp/rtppkt.h>
 #include <libzrtpcpp/ZrtpCallback.h>
 #include <libzrtpcpp/ZrtpConfigure.h>
-#include <TimeoutProvider.h>
+#include <CcrtpTimeoutProvider.h>
 
 class __EXPORT ZrtpUserCallback;
 class __EXPORT ZRtp;
