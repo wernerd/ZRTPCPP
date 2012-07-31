@@ -72,7 +72,8 @@ extern "C" {
 ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* config, bool mitmm, bool sasSignSupport):
         callback(cb), dhContext(NULL), DHss(NULL), auxSecret(NULL), auxSecretLength(0), rs1Valid(false),
         rs2Valid(false), msgShaContext(NULL), hash(NULL), cipher(NULL), pubKey(NULL), sasType(NULL), authLength(NULL),
-        multiStream(false), multiStreamAvailable(false), pbxSecretTmp(NULL), configureAlgos(*config), zidRec(NULL) {
+        multiStream(false), multiStreamAvailable(false), peerIsEnrolled(false), mitmSeen(false), pbxSecretTmp(NULL),
+        enrollmentMode(false), configureAlgos(*config), zidRec(NULL) {
 
     enableMitmEnrollment = config->isTrustedMitM();
     paranoidMode = config->isParanoidMode();
@@ -333,9 +334,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     computeSharedSecretSet(zidRec);
 
     // Check if a PBX application set the MitM flag.
-    if (hello->isMitmMode()) {
-        mitmSeen = true;
-    }
+    mitmSeen = hello->isMitmMode();
 
     signSasSeen = hello->isSasSign();
     // Construct a DHPart2 message (Initiator's DH message). This packet
