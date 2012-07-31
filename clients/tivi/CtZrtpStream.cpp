@@ -270,7 +270,7 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
     const ZRtp::zrtpInfo *info = NULL;
     ZRtp::zrtpInfo tmpInfo;
 
-    int iLen=strlen(key);
+    int iLen = strlen(key);
 
 
     if (recvSrtp != NULL || sendSrtp != NULL) {
@@ -279,20 +279,30 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
         T_ZRTP_LB("lbClient",      zrtpEngine->getPeerClientId().c_str());
         T_ZRTP_LB("lbVersion",     zrtpEngine->getPeerProtcolVersion().c_str());
 
+        // Compute Hello-hash info string
         const char *strng = NULL;
-        if (!zrtpHashMatch) {
-            strng = "Bad";
+        if (peerHelloHash.empty() || zrtpHashMatch) {
+            strng = "Good";
         }
         else if (!peerHelloHash.empty()){
-            strng = "Good";
+            strng = "Bad";
         }
         else{
             strng = "None";
         }
         T_ZRTP_LB("sdp_hash", strng);
 
-        if(iLen==1 && key[0] == 'v'){
+        if (iLen == 1 && key[0] == 'v') {
             return sprintf(p, "%d", sasVerified);
+        }
+        if(strncmp("sc_secure", key, iLen)) {
+            int v = (zrtpHashMatch && sasVerified && !peerHelloHash.empty() && isSecure());
+
+            if (v && (info->secretsCached & ZRtp::Rs1) == 0  && !sasVerified)
+                v = 0;
+            if(v && (info->secretsMatched & ZRtp::Rs1) == 0 && !sasVerified)
+                v = 0;
+            return sprintf(p, "%d" ,v);
         }
     }
     else if (sdes != NULL) {
