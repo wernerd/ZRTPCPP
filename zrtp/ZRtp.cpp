@@ -1556,41 +1556,37 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
      * the initator's cached retained secrets.
      */
     // Check which RS we shall use for first place (s1)
-    int matchingSecrets = 0;
     detailInfo.secretsMatched = 0;
     if (memcmp(rs1IDr, dhPart->getRs1Id(), HMAC_SIZE) == 0) {
-        setD[matchingSecrets++] = zidRec->getRs1();
+        setD[0] = zidRec->getRs1();
         rsFound = 0x1;
         detailInfo.secretsMatched = Rs1;
     }
     else if (memcmp(rs1IDr, dhPart->getRs2Id(), HMAC_SIZE) == 0) {
-        setD[matchingSecrets++] = zidRec->getRs1();
+        setD[0] = zidRec->getRs1();
         rsFound = 0x2;
         detailInfo.secretsMatched = Rs1;
     }
     else if (memcmp(rs2IDr, dhPart->getRs1Id(), HMAC_SIZE) == 0) {
-        setD[matchingSecrets++] = zidRec->getRs2();
+        setD[0] = zidRec->getRs2();
         rsFound = 0x4;
         detailInfo.secretsMatched = Rs2;
     }
     else if (memcmp(rs2IDr, dhPart->getRs2Id(), HMAC_SIZE) == 0) {
-        setD[matchingSecrets++] = zidRec->getRs2();
+        setD[0] = zidRec->getRs2();
         rsFound = 0x8;
         detailInfo.secretsMatched = Rs2;
     }
     /* *** Not yet supported
     if (memcmp(auxSecretIDr, dhPart->getAuxSecretId(), 8) == 0) {
     DEBUGOUT((fprintf(stdout, "%c: Match for aux secret found\n", zid[0])));
-        setD[matchingSecrets++] = auxSecret;
+        setD[1] = auxSecret;
     }
-    else
     */
-    matchingSecrets++;                  // aux secrets is on second place (s2)
-
     // check if we have a matching PBX secret and place it third (s3)
     if (memcmp(pbxSecretIDr, dhPart->getPbxSecretId(), HMAC_SIZE) == 0) {
         DEBUGOUT((fprintf(stdout, "%c: Match for Other_secret found\n", zid[0])));
-        setD[matchingSecrets++] = zidRec->getMiTMData();
+        setD[2] = zidRec->getMiTMData();
         detailInfo.secretsMatched |= Pbx;
         // Flag to record that fact that we have a MitM key of the other peer.
         peerIsEnrolled = true;
@@ -1712,39 +1708,36 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
      */
     // Check which RS we shall use for first place (s1)
     detailInfo.secretsMatched = 0;
-    int matchingSecrets = 0;
     if (memcmp(rs1IDi, dhPart->getRs1Id(), HMAC_SIZE) == 0) {
-        setD[matchingSecrets++] = zidRec->getRs1();
+        setD[0] = zidRec->getRs1();
         rsFound = 0x1;
         detailInfo.secretsMatched = Rs1;
     }
     else if (memcmp(rs1IDi, dhPart->getRs2Id(), HMAC_SIZE) == 0) {
-        setD[matchingSecrets++] = zidRec->getRs1();
+        setD[0] = zidRec->getRs1();
         rsFound = 0x2;
         detailInfo.secretsMatched = Rs1;
     }
     else if (memcmp(rs2IDi, dhPart->getRs1Id(), HMAC_SIZE) == 0) {
-        setD[matchingSecrets++] = zidRec->getRs2();
+        setD[0] = zidRec->getRs2();
         rsFound |= 0x4;
         detailInfo.secretsMatched = Rs2;
     }
     else if (memcmp(rs2IDi, dhPart->getRs2Id(), HMAC_SIZE) == 0) {
-        setD[matchingSecrets++] = zidRec->getRs2();
+        setD[0] = zidRec->getRs2();
         rsFound |= 0x8;
         detailInfo.secretsMatched = Rs2;
     }
     /* ***** not yet supported
     if (memcmp(auxSecretIDi, dhPart->getauxSecretId(), 8) == 0) {
     DEBUGOUT((fprintf(stdout, "%c: Match for aux secret found\n", ownZidzid[0])));
-        setD[matchingSecrets++] = ;
+        setD[1] = ;
     }
-    else
     */
-    matchingSecrets++;                  // aux secrets is on second place (s2)
 
     if (memcmp(pbxSecretIDi, dhPart->getPbxSecretId(), 8) == 0) {
         DEBUGOUT((fprintf(stdout, "%c: Match for PBX secret found\n", ownZid[0])));
-        setD[matchingSecrets++] = zidRec->getMiTMData();
+        setD[2] = zidRec->getMiTMData();
         detailInfo.secretsMatched |= Pbx;
         peerIsEnrolled = true;
     }
