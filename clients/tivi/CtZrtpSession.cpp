@@ -24,7 +24,25 @@ CtZrtpSession::CtZrtpSession() : mitmMode(false), signSas(false), enableParanoid
     streams[VideoStream] = NULL;
 }
 
-int CtZrtpSession::init(bool audio, bool video, const char *zidFilename, ZrtpConfigure* config )
+int CtZrtpSession::initCache(const char *zidFilename) {
+    ZIDCache* zf = getZidCacheInstance();
+    if (!zf->isOpen()) {
+        std::string fname;
+        if (zidFilename == NULL) {
+            char *home = getenv("HOME");
+            std::string baseDir = (home != NULL) ? (std::string(home) + std::string("/."))
+                                                    : std::string(".");
+            fname = baseDir + std::string("GNUZRTP.zid");
+            zidFilename = fname.c_str();
+        }
+        if (zf->open((char *)zidFilename) < 0) {
+            return -1;
+        }
+    }
+    return 1;
+}
+
+int CtZrtpSession::init(bool audio, bool video, ZrtpConfigure* config)
 {
     int32_t ret = 1;
 
@@ -40,17 +58,7 @@ int CtZrtpSession::init(bool audio, bool video, const char *zidFilename, ZrtpCon
 
     ZIDCache* zf = getZidCacheInstance();
     if (!zf->isOpen()) {
-        std::string fname;
-        if (zidFilename == NULL) {
-            char *home = getenv("HOME");
-            std::string baseDir = (home != NULL) ? (std::string(home) + std::string("/."))
-                                                    : std::string(".");
-            fname = baseDir + std::string("GNUZRTP.zid");
-            zidFilename = fname.c_str();
-        }
-        if (zf->open((char *)zidFilename) < 0) {
-            ret = -1;
-        }
+        ret = -1;
     }
     if (ret > 0) {
         const uint8_t* ownZid = zf->getZid();
@@ -441,6 +449,10 @@ bool CtZrtpSession::parseSdes(char *recvCryptoStr, size_t recvLength, char *send
 
     CtZrtpStream *stream = streams[streamNm];
     return stream->parseSdes(recvCryptoStr, recvLength, sendCryptoStr, sendLength, sipInvite);
+}
+
+void CtZrtpSession::cleanCache() {
+    getZidCacheInstance()->cleanup();
 }
 
 void CtZrtpSession::synchEnter() {

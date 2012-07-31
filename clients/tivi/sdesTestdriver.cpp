@@ -119,14 +119,15 @@ int main(int argc,char **argv) {
     TestCallbackAudio *callback = new TestCallbackAudio();
     TestSendCallbackAudio *sendCallback = new TestSendCallbackAudio();
 
+    CtZrtpSession::initCache("testzidSdes.dat");        // initialize global cache file
+
     CtZrtpSession *inviter = new CtZrtpSession();
-    inviter->init(true, true, "testzidSdes.dat");       // audio and video, name of cache file
+    inviter->init(true, true);                          // audio and video
     inviter->setUserCallback(callback, CtZrtpSession::AudioStream);
     inviter->setSendCallback(sendCallback, CtZrtpSession::AudioStream);
 
-
     CtZrtpSession *answerer = new CtZrtpSession();
-    answerer->init(true, true, "testzidSdes.dat");       // audio and video, name of cache file
+    answerer->init(true, true);                         // audio and video
 //    answerer->setSendCallback(sendCallback, CtZrtpSession::AudioStream);
 
     invLength = sizeof(invBuffer);

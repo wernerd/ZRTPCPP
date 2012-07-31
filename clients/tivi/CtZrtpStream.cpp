@@ -281,26 +281,26 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
 
         // Compute Hello-hash info string
         const char *strng = NULL;
-        if (peerHelloHash.empty() || zrtpHashMatch) {
+        if (peerHelloHash.empty()) {
+            strng = "None";
+        }
+        else if (zrtpHashMatch) {
             strng = "Good";
         }
-        else if (!peerHelloHash.empty()){
-            strng = "Bad";
-        }
         else{
-            strng = "None";
+            strng = "Bad";
         }
         T_ZRTP_LB("sdp_hash", strng);
 
         if (iLen == 1 && key[0] == 'v') {
             return sprintf(p, "%d", sasVerified);
         }
-        if(strncmp("sc_secure", key, iLen)) {
+        if(strncmp("sc_secure", key, iLen) == 0) {
             int v = (zrtpHashMatch && sasVerified && !peerHelloHash.empty() && isSecure());
 
             if (v && (info->secretsCached & ZRtp::Rs1) == 0  && !sasVerified)
                 v = 0;
-            if(v && (info->secretsMatched & ZRtp::Rs1) == 0 && !sasVerified)
+            if (v && (info->secretsMatched & ZRtp::Rs1) == 0 && !sasVerified)
                 v = 0;
             return sprintf(p, "%d" ,v);
         }

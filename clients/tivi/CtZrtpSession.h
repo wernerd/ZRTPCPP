@@ -98,6 +98,20 @@ public:
 
     ~CtZrtpSession();
 
+    /**
+     * @brief Intialize the cache file singleton.
+     *
+     * Opens and initializes the cache file instance.
+     *
+     * @param zidFilename
+     *     The name of the ZID file, can be a relative or absolut
+     *     filename.
+     *
+     * @return
+     *     1 on success, -1 on failure
+     */
+    static int initCache(const char *zidFilename);
+
     /** @brief Initialize CtZrtpSession.
      *
      * Before an application can use ZRTP it has to initialize the
@@ -123,10 +137,6 @@ public:
      *
      * @param video
      *     set to @c true if video stream shoud be initialized.
-     * 
-     * @param zidFilename
-     *     The name of the ZID file, can be a relative or absolut
-     *     filename.
      *
      * @param config
      *     this parameter points to ZRTP configuration data. If it is
@@ -137,7 +147,7 @@ public:
      *     ZRTP processing disabled.
      *
      */
-    int init(bool audio, bool video, const char *zidFilename = NULL, ZrtpConfigure* config = NULL);
+    int init(bool audio, bool video, ZrtpConfigure* config = NULL);
 
     /**
      * Fills a ZrtpConfiguration based on selected algorithms.
@@ -502,6 +512,17 @@ public:
      * @return @c true if data could be created, @c false otherwise.
      */
     bool parseSdes(char *recvCryptoStr, size_t recvLength, char *sendCryptoStr, size_t *sendLength, bool sipInvite, streamName streamNm);
+
+    /**
+     * @brief Clean Cache
+     *
+     * This method does not work for file based cache implementation. An application
+     * shall use this functions with great care because it drops all stored retained
+     * secrets.
+     *
+     * The cache must be initialized and open.
+     */
+    static void cleanCache();
 
 protected:
     friend class CtZrtpStream;

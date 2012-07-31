@@ -89,7 +89,13 @@ class TestCallbackAudio: public CtZrtpCb {
         printf("auth: %s ", buffer);
 
         session->getInfo("lbKeyExchange", buffer, 9);
-        printf("KeyEx: %s\n", buffer);
+        printf("KeyEx: %s ", buffer);
+
+        session->getInfo("sc_secure", buffer, 9);
+        printf("SC secure: %s ", buffer);
+
+        session->getInfo("sdp_hash", buffer, 9);
+        printf("zrtp-hash: %s\n", buffer);
 
         session->setLastPeerNameVerify("TestName", 0);
     }
@@ -116,12 +122,13 @@ int main(int argc,char **argv) {
     uint8_t buffer[1300];            // Recv buffer
     uint32_t uiSSRC = 0xfeedbacc;
 
+    CtZrtpSession::initCache("testzid.dat");        // initialize cache file
 
     CtZrtpSession *session = new CtZrtpSession();
     TestCallbackAudio *callback = new TestCallbackAudio();
     TestSendCallbackAudio *sendCallback = new TestSendCallbackAudio();
 
-    session->init(true, true, "testzid.dat");       // name of cache file
+    session->init(true, true);                      // audio and video
 
     session->setUserCallback(callback, CtZrtpSession::AudioStream);
     session->setSendCallback(sendCallback, CtZrtpSession::AudioStream);
