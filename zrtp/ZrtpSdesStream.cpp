@@ -191,7 +191,7 @@ bool ZrtpSdesStream::parseSdes(char *cryptoString, size_t length, bool sipInvite
 
 bool ZrtpSdesStream::outgoingRtp(uint8_t *packet, size_t length, size_t *newLength) {
 
-    if (!SDES_SRTP_ACTIVE || sendSrtp == NULL) {
+    if (state != SDES_SRTP_ACTIVE || sendSrtp == NULL) {
         *newLength = length;
         return true;
     }
@@ -203,7 +203,7 @@ bool ZrtpSdesStream::outgoingRtp(uint8_t *packet, size_t length, size_t *newLeng
 }
 
 int ZrtpSdesStream::incomingRtp(uint8_t *packet, size_t length, size_t *newLength) {
-    if (!SDES_SRTP_ACTIVE || recvSrtp == NULL) {    // SRTP inactive, just return with newLength set
+    if (state != SDES_SRTP_ACTIVE || recvSrtp == NULL) {    // SRTP inactive, just return with newLength set
             *newLength = length;
     }
     else {
