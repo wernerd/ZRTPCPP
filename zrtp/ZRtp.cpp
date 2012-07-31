@@ -1555,6 +1555,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
      * received from responder. rs1IDr and rs2IDr are the expected ids using
      * the initator's cached retained secrets.
      */
+    // Check which RS we shall use for first place (s1)
     int matchingSecrets = 0;
     detailInfo.secretsMatched = 0;
     if (memcmp(rs1IDr, dhPart->getRs1Id(), HMAC_SIZE) == 0) {
@@ -1582,7 +1583,11 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
     DEBUGOUT((fprintf(stdout, "%c: Match for aux secret found\n", zid[0])));
         setD[matchingSecrets++] = auxSecret;
     }
+    else
     */
+    matchingSecrets++;                  // aux secrets is on second place (s2)
+
+    // check if we have a matching PBX secret and place it third (s3)
     if (memcmp(pbxSecretIDr, dhPart->getPbxSecretId(), HMAC_SIZE) == 0) {
         DEBUGOUT((fprintf(stdout, "%c: Match for Other_secret found\n", zid[0])));
         setD[matchingSecrets++] = zidRec->getMiTMData();
@@ -1705,6 +1710,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
     /*
      * Select the real secrets into setD
      */
+    // Check which RS we shall use for first place (s1)
     detailInfo.secretsMatched = 0;
     int matchingSecrets = 0;
     if (memcmp(rs1IDi, dhPart->getRs1Id(), HMAC_SIZE) == 0) {
@@ -1732,7 +1738,10 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
     DEBUGOUT((fprintf(stdout, "%c: Match for aux secret found\n", ownZidzid[0])));
         setD[matchingSecrets++] = ;
     }
+    else
     */
+    matchingSecrets++;                  // aux secrets is on second place (s2)
+
     if (memcmp(pbxSecretIDi, dhPart->getPbxSecretId(), 8) == 0) {
         DEBUGOUT((fprintf(stdout, "%c: Match for PBX secret found\n", ownZid[0])));
         setD[matchingSecrets++] = zidRec->getMiTMData();
