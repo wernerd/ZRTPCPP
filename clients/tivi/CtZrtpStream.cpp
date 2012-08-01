@@ -11,6 +11,7 @@
 #include <CtZrtpCallback.h>
 #include <TiviTimeoutProvider.h>
 #include <cryptcommon/aes.h>
+#include <cryptcommon/ZrtpRandom.h>
 
 static TimeoutProvider<std::string, CtZrtpStream*>* staticTimeoutProvider = NULL;
 
@@ -28,7 +29,7 @@ CtZrtpStream::CtZrtpStream():
     ownSSRC(0), enableZrtp(0), started(false), isStopped(false), session(NULL), tiviState(CtZrtpSession::eLookingPeer),
     prevTiviState(CtZrtpSession::eLookingPeer), recvSrtp(NULL), recvSrtcp(NULL), sendSrtp(NULL), sendSrtcp(NULL),
     zrtpUserCallback(NULL), senderZrtpSeqNo(0), peerSSRC(0), protect(0), unprotect(0), unprotectFailed(0), srtcpIndex(0),
-    zrtpHashMatch(false), sasVerified(false), sdes(NULL), supressCounter(0)
+    zrtpHashMatch(false), sasVerified(false), sdes(NULL), supressCounter(0), srtpErrorBurst(0)
 {
     synchLock = new CMutexClass();
 
@@ -72,6 +73,8 @@ void CtZrtpStream::stopStream() {
     srtcpIndex = 0;
     zrtpHashMatch= false;
     sasVerified = false;
+    supressCounter = 0;
+    srtpErrorBurst = 0;
 
     delete zrtpEngine;
     zrtpEngine = NULL;
@@ -97,17 +100,22 @@ void CtZrtpStream::stopStream() {
 }
 
 bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *newLength) {
-    if (sendSrtp == NULL) {                 //ZRTP/SRTP inactive
-        if (sdes != NULL) {                 // SDES stream available, let SDES protect if necessary
-            return sdes->outgoingRtp(buffer, length, newLength);
-        }
-        // TODO: check if ZRTP engine is started and check states to determine if we should
-        // send RTP packet. Do not send in states: CommitSent, WaitDHPart2, WaitConfirm1, WaitConfirm2, WaitConfAck
+    bool rc = false;
+    if (sendSrtp == NULL) {                 // ZRTP/SRTP inactive
         *newLength = length;
-        return true;
+        if (sdes != NULL) {                 // SDES stream available, let SDES protect if necessary
+            rc = sdes->outgoingRtp(buffer, length, newLength);
+        }
+        // Check if ZRTP engine is started and check states to determine if we should send the RTP packet.
+        // Do not send in states: CommitSent, WaitDHPart2, WaitConfirm1, WaitConfirm2, WaitConfAck
+        if (started && (zrtpEngine->inState(CommitSent) || zrtpEngine->inState(WaitDHPart2) || zrtpEngine->inState(WaitConfirm1) ||
+            zrtpEngine->inState(WaitConfirm2) || zrtpEngine->inState(WaitConfAck))) {
+            ZrtpRandom::addEntropy(buffer, length);
+            return false;
+        }
+        return rc;
     }
     // At this point ZRTP/SRTP is active
-    bool rc = false;
     if (sdes != NULL) {                     // We still have a SDES - other client did not send zrtp-hash
         rc = sdes->outgoingRtp(buffer, length, newLength);
         if (!rc) {
@@ -122,69 +130,76 @@ bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *ne
 }
 
 int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, size_t length, size_t *newLength) {
+    int32_t rc = 0;
     // check if this could be a real RTP/SRTP packet.
     if ((*buffer & 0xf0) == 0x80) {             // A real RTP, check if we are in secure mode
         if (supressCounter < supressWarn)
             supressCounter++;
-        if (recvSrtp == NULL) {                 // ZRTP/SRTP inactive
-            if (sdes != NULL) {                 // SDES stream available, let SDES unprotect if necessary
-                return sdes->incomingRtp(buffer, length, newLength);
+        if (recvSrtp == NULL) {                 // no ZRTP/SRTP available
+            if (sdes == NULL) {                 // no SDES stream available, just set length and return
+                *newLength = length;
+                return 1;
             }
-            *newLength = length;
-            return 1;
-        }
-        // At this point we have an active ZRTP/SRTP context, unprotect with ZRTP/SRTP first
-        int32_t rc = 0;
-        rc = SrtpHandler::unprotect(recvSrtp, buffer, length, newLength);
-        if (rc == 1) {
-            unprotect++;
-            // Got a good SRTP, check state, WaitConfAck is a Responder state
-            // in this case simulate a conf2Ack, refer to RFC 6189, chapter 4.6, last paragraph
-            if (zrtpEngine->inState(WaitConfAck)) {
-                zrtpEngine->conf2AckSecure();
-            }
-            if (sdes != NULL) {                   // We still have a SDES - other client did not send zrtp-hash
-                rc = sdes->incomingRtp(buffer, length, newLength);
-            }
-            if (rc == 1) {                       // SDES unprotect successful
+            rc = sdes->incomingRtp(buffer, length, newLength);
+            if (rc == 1) {                       // SDES unprotect success
+                srtpErrorBurst = 0;
                 return 1;
             }
         }
-        if (supressCounter > supressWarn) {
+        else {
+            // At this point we have an active ZRTP/SRTP context, unprotect with ZRTP/SRTP first
+            rc = SrtpHandler::unprotect(recvSrtp, buffer, length, newLength);
+            if (rc == 1) {
+                unprotect++;
+                // Got a good SRTP, check state, WaitConfAck is a Responder state
+                // in this case simulate a conf2Ack, refer to RFC 6189, chapter 4.6, last paragraph
+                if (zrtpEngine->inState(WaitConfAck)) {
+                    zrtpEngine->conf2AckSecure();
+                }
+                if (sdes != NULL) {                   // We still have a SDES - other client did not send matching zrtp-hash
+                    rc = sdes->incomingRtp(buffer, length, newLength);
+                }
+                if (rc == 1) {                       // if rc is still one: either no SDES or SDES incoming sucess
+                    srtpErrorBurst = 0;
+                    return 1;
+                }
+            }
+        }
+        // We come to this point only if we have some problems during SRTP unprotect
+        if (supressCounter > supressWarn && srtpErrorBurst >= srtpErrorBurstThreshold) {
+            srtpErrorBurst++;
             if (rc == -1) {
                 sendInfo(Warning, WarningSRTPauthError);
             }
             else {
                 sendInfo(Warning, WarningSRTPreplayError);
             }
+            unprotectFailed++;
+            return 0;
         }
-        unprotectFailed++;
-        return rc;
     }
 
-    // At this point we assume the packet is a ZRTP packet. Process it
-    // if ZRTP processing is started. In any case, let the application drop
+    // At this point we assume the packet is not an RTP packet. Check if it is a ZRTP packet.
+    // Process it if ZRTP processing is started. In any case, let the application drop
     // the packet.
     if (started) {
-        //   Fixed header length + smallest ZRTP packet (includes CRC)
-        if (length < (12 + sizeof(HelloAckPacket_t))) //data too small, dismiss
+        // Fixed header length + smallest ZRTP packet (includes CRC)
+        if (length < (12 + sizeof(HelloAckPacket_t))) // data too small, dismiss
             return 0;
-
-        // Get CRC value into crc (see above how to compute the offset)
-        uint16_t temp = length - CRC_SIZE;
-        uint32_t crc = *(uint32_t*)(buffer + temp);
-        crc = ntohl(crc);
-
-        if (!zrtpCheckCksum(buffer, temp, crc)) {
-                sendInfo(Warning, WarningCRCmismatch);
-            return 0;
-        }
 
         uint32_t magic = *(uint32_t*)(buffer + 4);
         magic = ntohl(magic);
 
         // Check if it is really a ZRTP packet, return, no further processing
         if (magic != ZRTP_MAGIC) {
+            return 0;
+        }
+        // Get CRC value into crc (see above how to compute the offset)
+        uint16_t temp = length - CRC_SIZE;
+        uint32_t crc = *(uint32_t*)(buffer + temp);
+        crc = ntohl(crc);
+        if (!zrtpCheckCksum(buffer, temp, crc)) {
+            sendInfo(Warning, WarningCRCmismatch);
             return 0;
         }
         // this now points beyond to the plain ZRTP message.

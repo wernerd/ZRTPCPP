@@ -15,6 +15,7 @@
 static const int maxZrtpSize = 3072;
 
 static const uint32_t supressWarn = 200;
+static const uint32_t srtpErrorBurstThreshold = 20;
 
 class CryptoContext;
 class CryptoContextCtrl;
@@ -313,6 +314,7 @@ private:
     bool     sasVerified;
     ZrtpSdesStream *sdes;
     uint32_t supressCounter;
+    uint32_t srtpErrorBurst;
     CMutexClass *synchLock;
 
     void initStrings();
