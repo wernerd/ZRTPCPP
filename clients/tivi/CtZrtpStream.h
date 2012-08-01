@@ -13,8 +13,8 @@
 // NOTE: ZRTP buffer is large. An application shall never use ZRTP protocol
 // options that fully use it, otherwise IP packet fragmentation may happen.
 static const int maxZrtpSize = 3072;
-static const int maxRtpSize =  1024;
-static const int maxRtcpSize = 1300;
+
+static const uint32_t supressWarn = 200;
 
 class CryptoContext;
 class CryptoContextCtrl;
@@ -302,8 +302,6 @@ private:
     CtZrtpSendCb      *zrtpSendCallback;
 
     uint8_t zrtpBuffer[maxZrtpSize];
-    uint8_t sendBuffer[maxRtpSize];
-    uint8_t sendBufferCtrl[maxRtcpSize];
     uint16_t senderZrtpSeqNo;
     uint32_t peerSSRC;
     uint64_t protect;
@@ -314,6 +312,7 @@ private:
     bool     zrtpHashMatch;
     bool     sasVerified;
     ZrtpSdesStream *sdes;
+    uint32_t supressCounter;
     CMutexClass *synchLock;
 
     void initStrings();

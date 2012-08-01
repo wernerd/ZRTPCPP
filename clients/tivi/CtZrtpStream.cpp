@@ -28,7 +28,7 @@ CtZrtpStream::CtZrtpStream():
     ownSSRC(0), enableZrtp(0), started(false), isStopped(false), session(NULL), tiviState(CtZrtpSession::eLookingPeer),
     prevTiviState(CtZrtpSession::eLookingPeer), recvSrtp(NULL), recvSrtcp(NULL), sendSrtp(NULL), sendSrtcp(NULL),
     zrtpUserCallback(NULL), senderZrtpSeqNo(0), peerSSRC(0), protect(0), unprotect(0), unprotectFailed(0), srtcpIndex(0),
-    zrtpHashMatch(false), sasVerified(false), sdes(NULL)
+    zrtpHashMatch(false), sasVerified(false), sdes(NULL), supressCounter(0)
 {
     synchLock = new CMutexClass();
 
@@ -124,6 +124,8 @@ bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *ne
 int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, size_t length, size_t *newLength) {
     // check if this could be a real RTP/SRTP packet.
     if ((*buffer & 0xf0) == 0x80) {             // A real RTP, check if we are in secure mode
+        if (supressCounter < supressWarn)
+            supressCounter++;
         if (recvSrtp == NULL) {                 // ZRTP/SRTP inactive
             if (sdes != NULL) {                 // SDES stream available, let SDES unprotect if necessary
                 return sdes->incomingRtp(buffer, length, newLength);
@@ -148,11 +150,13 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, size_t length, size_t 
                 return 1;
             }
         }
-        if (rc == -1) {
-            sendInfo(Warning, WarningSRTPauthError);
-        }
-        else {
-            sendInfo(Warning, WarningSRTPreplayError);
+        if (supressCounter > supressWarn) {
+            if (rc == -1) {
+                sendInfo(Warning, WarningSRTPauthError);
+            }
+            else {
+                sendInfo(Warning, WarningSRTPreplayError);
+            }
         }
         unprotectFailed++;
         return rc;
@@ -592,6 +596,8 @@ bool CtZrtpStream::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
 
         recvSrtcp = recvCryptoContextCtrl;
         recvSrtcp->deriveSrtcpKeys();
+
+        supressCounter = 0;         // supress SRTP warnings for some packets after we switch to SRTP
     }
     if (zrtpHashMatch && recvSrtp != NULL && sendSrtp != NULL) {
         delete sdes;
