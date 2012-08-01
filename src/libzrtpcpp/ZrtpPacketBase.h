@@ -37,7 +37,12 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+
+#if defined(_MSC_VER) || defined(WIN32) || defined(_WIN32)
+#include <winsock2.h>
+#else
 #include <netinet/in.h>
+#endif
 
 #include <libzrtpcpp/zrtpPacket.h>
 #include <libzrtpcpp/ZrtpTextData.h>

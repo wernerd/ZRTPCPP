@@ -148,7 +148,7 @@ include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DI
 add_definitions(-g -O2 -fno-strict-aliasing)
 if(CMAKE_COMPILER_IS_GNUCXX)
   add_definitions(-Wno-long-long -Wno-char-subscripts)
-  add_definitions(-Wall -ansi -pedantic)
+  add_definitions(-Wall -pedantic)
   add_definitions(-DNEW_STDCPP)
 endif()
 
