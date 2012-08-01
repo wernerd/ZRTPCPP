@@ -18,7 +18,7 @@
 
 #include <stdio.h>
 #include <openssl/evp.h>
-#include <config.h>
+#include <libzrtpcpp-config.h>
 
 #if defined(_MSC_VER) || defined(WIN32) || defined(_WIN32)
 #undef  _MSWINDOWS_

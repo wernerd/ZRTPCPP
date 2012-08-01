@@ -129,7 +129,8 @@ check_include_files(stdlib.h HAVE_STDLIB_H)
 check_include_files(string.h HAVE_STRING_H)
 
 # necessary and required modules checked, ready to generate config.h
-configure_file(config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+configure_file(libzrtpcpp-config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/libzrtpcpp-config.h)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # the following set(...) commands are only to have backward
 # compatibility with autoconf stuff to generate the pc file
