@@ -731,9 +731,14 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     // if this runs at PBX user agent enrollment service then set flag in confirm
     // packet and store the MitM key
     if (enrollmentMode) {
-        computePBXSecret();
+        // As clarification to RFC6189: store new PBX secret only if we don't have
+        // a matching PBX secret for the peer's ZID.
+        if (!peerIsEnrolled) {
+            computePBXSecret();
+            zidRec->setMiTMData(pbxSecretTmp);
+        }
+        // Set flag to enable user's client to ask for confirmation or re-confirmation.
         zrtpConfirm1.setPBXEnrollment();
-        zidRec->setMiTMData(pbxSecretTmp);
     }
     uint8_t confMac[MAX_DIGEST_LENGTH];
     uint32_t macLen;
@@ -933,8 +938,14 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
         // packet and store the MitM key. The PBX user agent service always stores
         // its MitM key.
         if (enrollmentMode) {
+            // As clarification to RFC6189: store new PBX secret only if we don't have
+            // a matching PBX secret for the peer's ZID.
+            if (!peerIsEnrolled) {
+                computePBXSecret();
+                zidRec->setMiTMData(pbxSecretTmp);
+            }
+            // Set flag to enable user's client to ask for confirmation or re-confirmation.
             zrtpConfirm2.setPBXEnrollment();
-            zidRec->setMiTMData(pbxSecretTmp);
         }
     }
     getZidCacheInstance()->saveRecord(zidRec);
@@ -953,7 +964,14 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
     // agent stores the MitM key only if the user accepts the enrollment
     // request.
     if (enableMitmEnrollment && confirm1->isPBXEnrollment()) {
-        callback->zrtpAskEnrollment(EnrollmentRequest);
+        // As clarification to RFC6189: if already enrolled (having a matching PBX secret)
+        // ask for reconfirmation.
+        if (!peerIsEnrolled) {
+            callback->zrtpAskEnrollment(EnrollmentRequest);
+        }
+        else {
+            callback->zrtpAskEnrollment(EnrollmentReconfirm);
+        }
     }
     return &zrtpConfirm2;
 }
@@ -1088,7 +1106,14 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
         // request.
         if (enableMitmEnrollment && confirm2->isPBXEnrollment()) {
             computePBXSecret();
-            callback->zrtpAskEnrollment(EnrollmentRequest);
+            // As clarification to RFC6189: if already enrolled (having a matching PBX secret)
+            // ask for reconfirmation.
+            if (!peerIsEnrolled) {
+                callback->zrtpAskEnrollment(EnrollmentRequest);
+            }
+            else {
+                callback->zrtpAskEnrollment(EnrollmentReconfirm);
+            }
         }
     }
     else {
@@ -1160,9 +1185,7 @@ ZrtpPacketRelayAck* ZRtp::prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* er
     // Cast away the const for the IV - the standalone AES CFB modifies IV on return
     cipher->getDecrypt()(ekey, cipher->getKeylen(), (uint8_t*)srly->getIv(), (uint8_t*)srly->getFiller(), hmlen);
 
-    const uint8_t* render = srly->getSas();
     const uint8_t* newSasHash = srly->getTrustedSas();
-
     bool sasHashNull = true;
     for (int i = 0; i < HASH_IMAGE_SIZE; i++) {
         if (newSasHash[i] != 0) {
@@ -1172,16 +1195,20 @@ ZrtpPacketRelayAck* ZRtp::prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* er
     }
     std::string cs(cipher->getReadable());
     cs.append("/").append(pubKey->getName());
-    cs.append(sasHashNull ? "/MitM" : "/SASviaMitM");
 
     // Check if new SAS is null or a trusted MitM relationship doesn't exist.
     // If this is the case then don't render and don't show the new SAS - use
-    // the computed SAS hash but we may use a different SAS rendering algorithm to
+    // our computed SAS hash but we may use a different SAS rendering algorithm to
     // render the computed SAS.
     if (sasHashNull || !peerIsEnrolled) {
+        cs.append("/MitM");
         newSasHash = sasHash;
     }
+    else {
+        cs.append("/SASviaMitM");
+    }
     // If other SAS schemes required - check here and use others
+    const uint8_t* render = srly->getSasAlgo();
     AlgorithmEnum* renderAlgo = &zrtpSasTypes.getByName((const char*)render);
     uint8_t sasBytes[4];;
     if (renderAlgo->isValid()) {
@@ -1189,9 +1216,13 @@ ZrtpPacketRelayAck* ZRtp::prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* er
         sasBytes[1] = newSasHash[1];
         sasBytes[2] = newSasHash[2] & 0xf0;
         sasBytes[3] = 0;
+        if (*(int32_t*)b32 == *(int32_t*)(renderAlgo->getName())) {
+            SAS = Base32(sasBytes, 20).getEncoded();
+        }
+        else {
+            SAS.assign(sas256WordsEven[sasBytes[0]]).append(":").append(sas256WordsOdd[sasBytes[1]]);
+        }
     }
-    SAS = Base32(sasBytes, 20).getEncoded();
-
     callback->srtpSecretsOn(cs, SAS, false);
     return &zrtpRelayAck;
 }
@@ -1952,7 +1983,6 @@ void ZRtp::computeSRTPKeys() {
 
     // The HMAC keys for GoClear
     KDF(s0, hashLength, (unsigned char*)iniHmacKey, strlen(iniHmacKey)+1, KDFcontext, kdfSize, hashLength*8, hmacKeyI);
-
     KDF(s0, hashLength, (unsigned char*)respHmacKey, strlen(respHmacKey)+1, KDFcontext, kdfSize, hashLength*8, hmacKeyR);
 
     // The keys for Confirm messages
@@ -1967,7 +1997,7 @@ void ZRtp::computeSRTPKeys() {
         // Compute the ZRTP Session Key
         KDF(s0, hashLength, (unsigned char*)zrtpSessionKey, strlen(zrtpSessionKey)+1, KDFcontext, kdfSize, hashLength*8, zrtpSession);
 
-        // perform SAS generation according to chapter 5.5 and 8.
+        // perform  generation according to chapter 5.5 and 8.
         // we don't need a speciai sasValue filed. sasValue are the first
         // (leftmost) 32 bits (4 bytes) of sasHash
         uint8_t sasBytes[4];
@@ -1980,7 +2010,13 @@ void ZRtp::computeSRTPKeys() {
         sasBytes[1] = sasHash[1];
         sasBytes[2] = sasHash[2] & 0xf0;
         sasBytes[3] = 0;
-        SAS = Base32(sasBytes, 20).getEncoded();
+        if (*(int32_t*)b32 == *(int32_t*)(sasType->getName())) {
+            SAS = Base32(sasBytes, 20).getEncoded();
+        }
+        else {
+            SAS.assign(sas256WordsEven[sasBytes[0]]).append(":").append(sas256WordsOdd[sasBytes[1]]);
+        }
+
         if (signSasSeen)
             callback->signSAS(sasHash);
 
@@ -2266,17 +2302,17 @@ void ZRtp::acceptEnrollment(bool accepted) {
     if (!accepted) {
         zidRec->resetMITMKeyAvailable();
         callback->zrtpInformEnrollment(EnrollmentCanceled);
+        getZidCacheInstance()->saveRecord(zidRec);
         return;
     }
     if (pbxSecretTmp != NULL) {
         zidRec->setMiTMData(pbxSecretTmp);
+        getZidCacheInstance()->saveRecord(zidRec);
         callback->zrtpInformEnrollment(EnrollmentOk);
     }
     else {
         callback->zrtpInformEnrollment(EnrollmentFailed);
-        return;
     }
-    getZidCacheInstance()->saveRecord(zidRec);
     return;
 }
 
@@ -2309,7 +2345,8 @@ void ZRtp::conf2AckSecure() {
 }
 
 int32_t ZRtp::compareCommit(ZrtpPacketCommit *commit) {
-    // TODO: enhance to compare according to rules defined in chapter 4.2
+    // TODO: enhance to compare according to rules defined in chapter 4.2,
+    // but we don't support Preshared.
     int32_t len = 0;
     len = !multiStream ? HVI_SIZE : (4 * ZRTP_WORD_SIZE);
     return (memcmp(hvi, commit->getHvi(), len));
@@ -2348,9 +2385,8 @@ bool ZRtp::sendSASRelayPacket(uint8_t* sh, std::string render) {
     randomZRTP(randomIV, sizeof(randomIV));
     zrtpSasRelay.setIv(randomIV);
     zrtpSasRelay.setTrustedSas(sh);
-    zrtpSasRelay.setSas((uint8_t*)render.c_str());
+    zrtpSasRelay.setSasAlgo((uint8_t*)render.c_str());
 
-    // Encrypt and HMAC with Initiator's key - we are Initiator here
     int16_t hmlen = (zrtpSasRelay.getLength() - 9) * ZRTP_WORD_SIZE;
     cipher->getEncrypt()(ekey, cipher->getKeylen(), randomIV, (uint8_t*)zrtpSasRelay.getFiller(), hmlen);
 

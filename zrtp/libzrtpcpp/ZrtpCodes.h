@@ -150,7 +150,8 @@ enum ZrtpErrorCodes {
  * Information codes for the Enrollment user callbacks.
  */
 enum InfoEnrollment {
-    EnrollmentRequest,              //!< Aks user to confirm or deny an Enrollemnt request
+    EnrollmentRequest = 0,          //!< Aks user to confirm or deny an Enrollemnt request
+    EnrollmentReconfirm,            //!< User already enrolled, ask re-confirmation
     EnrollmentCanceled,             //!< User did not confirm the PBX enrollement
     EnrollmentFailed,               //!< Enrollment process failed, no PBX secret available
     EnrollmentOk                    //!< Enrollment process for this PBX was ok

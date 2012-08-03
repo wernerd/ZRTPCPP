@@ -108,6 +108,7 @@ extern char mult[];
 extern const char* mandatoryPubKey;
 
 extern char b32[];
+extern char b256[];
 extern const char* mandatorySasType;
 
 extern char hs32[];
@@ -116,6 +117,9 @@ extern char sk32[];
 extern char sk64[];
 extern const char* mandatoryAuthLen_1;
 extern const char* mandatoryAuthLen_2;
+
+extern const char* sas256WordsOdd[];
+extern const char* sas256WordsEven[];
 
 /**
  * @}

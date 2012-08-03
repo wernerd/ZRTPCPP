@@ -70,7 +70,7 @@ class __EXPORT ZrtpPacketSASrelay : public ZrtpPacketBase {
         const uint8_t* getHmac()          { return sasRelayHeader->hmac; }
 
         /// Get pointer to new SAS rendering algorithm, fixed byte array
-        const uint8_t* getSas() {return sasRelayHeader->sas; }
+        const uint8_t* getSasAlgo() {return sasRelayHeader->sas; }
 
         /// Get pointer to new SAS hash data, fixed byte array
         const uint8_t* getTrustedSas() { return sasRelayHeader->trustedSasHash; }
@@ -88,7 +88,7 @@ class __EXPORT ZrtpPacketSASrelay : public ZrtpPacketBase {
         void setIv(uint8_t* text)    { memcpy(sasRelayHeader->iv, text, sizeof(sasRelayHeader->iv)); }
 
         /// Set SAS rendering algorithm, fixed length byte array
-        void setSas(uint8_t* text)    { memcpy(sasRelayHeader->sas, text, sizeof(sasRelayHeader->sas)); }
+        void setSasAlgo(uint8_t* text) { memcpy(sasRelayHeader->sas, text, sizeof(sasRelayHeader->sas)); }
 
         /// Set SAS hash data, fixed length byte array
         void setTrustedSas(uint8_t* text)    { memcpy(sasRelayHeader->trustedSasHash, text, sizeof(sasRelayHeader->trustedSasHash)); }

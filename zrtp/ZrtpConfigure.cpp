@@ -169,6 +169,7 @@ PubKeyEnum::~PubKeyEnum() {}
  */
 SasTypeEnum::SasTypeEnum() : EnumBase(SasType) {
     insert(b32);
+    insert(b256);
 }
 
 SasTypeEnum::~SasTypeEnum() {}
