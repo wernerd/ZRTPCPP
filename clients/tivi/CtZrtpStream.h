@@ -189,6 +189,14 @@ protected:
     int enrollAccepted(char *p);
 
     /**
+     * Denies enrollment for the active peer.
+     *
+     * The methods resets the stored PBX secret to @c invalid and resets the peer's
+     * name in the name cahce to an empty string.
+     */
+    int enrollDenied();
+
+    /**
      * @brief Creates an SDES crypto string for the SDES/ZRTP stream.
      *
      * Creates and returns a SDES crypto string for the client that sends

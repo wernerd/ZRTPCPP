@@ -144,7 +144,7 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
 
 // DEBUG    conf->printConfiguredAlgos(PubKeyAlgorithm);
 
-    if(iEnableSHA384 == 1 || iDisableECDH384 == 0){
+    if(iEnableSHA384 == 1 || iDisableECDH384 == 0) {
         conf->addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
     }
     conf->addAlgo(HashAlgorithm, zrtpHashes.getByName("S256"));
@@ -163,7 +163,7 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
         conf->addAlgo(SasType, zrtpSasTypes.getByName("B32 "));
     }
     else{
-//        conf->addAlgo(SasType, zrtpSasTypes.getByName("B256"));
+        conf->addAlgo(SasType, zrtpSasTypes.getByName("B256"));
         conf->addAlgo(SasType, zrtpSasTypes.getByName("B32 "));
     }
 
@@ -425,6 +425,16 @@ int CtZrtpSession::enrollAccepted(char *p) {
     CtZrtpStream *stream = streams[AudioStream];
     int ret = stream->enrollAccepted(p);
     setVerify(true);
+    return ret;
+}
+
+int CtZrtpSession::enrollDenied() {
+    if (!isReady || !(streams[AudioStream] != NULL))
+        return fail;
+
+    CtZrtpStream *stream = streams[AudioStream];
+    int ret = stream->enrollDenied();
+    setVerify(true);                        // TODO : Janis -> is that correct in this case?
     return ret;
 }
 

@@ -363,6 +363,21 @@ int CtZrtpStream::enrollAccepted(char *p) {
     return CtZrtpSession::ok;
 }
 
+int CtZrtpStream::enrollDenied() {
+    zrtpEngine->acceptEnrollment(false);
+
+    uint8_t peerZid[IDENTIFIER_LEN];
+    std::string name;
+
+    zrtpEngine->getPeerZid(peerZid);
+    int32_t nmLen = getZidCacheInstance()->getPeerName(peerZid, &name);
+
+    if (nmLen == 0)
+        getZidCacheInstance()->putPeerName(peerZid, std::string(""));
+    return CtZrtpSession::ok;
+}
+
+
 bool CtZrtpStream::createSdes(char *cryptoString, size_t *maxLen, const ZrtpSdesStream::sdesSuites sdesSuite) {
     if (sdes == NULL)
         sdes = new ZrtpSdesStream(sdesSuite);
@@ -648,7 +663,16 @@ void CtZrtpStream::srtpSecretsOn(std::string cipher, std::string sas, bool verif
             getZidCacheInstance()->getPeerName(peerZid, &name);
             zrtpUserCallback->onPeer(session, (char*)name.c_str(), (int)verified, index);
 
-            strng = (char*)sas.c_str();
+            // If SAS does not contain a : then it's a short SAS
+            size_t found = sas.find_first_of(':');
+            if (found == std::string::npos) {
+                strng = (char*)sas.c_str();
+            }
+            else {
+                std::string sasTmp = sas.substr(0, found);
+                sasTmp.append("  ").append(sas.substr(found+1));
+                strng = (char*)sasTmp.c_str();
+            }
         }
         zrtpUserCallback->onNewZrtpStatus(session, strng, index);
     }
@@ -746,11 +770,20 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
         return;
     }
     if (severity == Warning) {
-        msg = warningMap[subCode];
-        if (zrtpUserCallback != NULL)
-            zrtpUserCallback->onZrtpWarning(session, (char*)msg->c_str(), index);
-        return;
+        switch (subCode) {
+            case WarningNoRSMatch:
+                return;
+                break;                          // supress this warning message
+
+            default:
+                msg = warningMap[subCode];
+                if (zrtpUserCallback != NULL)
+                    zrtpUserCallback->onZrtpWarning(session, (char*)msg->c_str(), index);
+                return;
+                break;
+        }
     }
+    // handle severe and ZRTP errors
     zrtpNegotiationFailed(severity, subCode);
 }
 
@@ -807,9 +840,9 @@ void CtZrtpStream::synchLeave() {
 }
 
 void CtZrtpStream::zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment  info) {
-    // TODO: remember enrollment event, deliver together with security on? Discuss with Janis
+    // TODO: Discuss with Janis
     if (zrtpUserCallback != NULL) {
-        zrtpUserCallback->onNeedEnroll(session, index);
+        zrtpUserCallback->onNeedEnroll(session, index, (int32_t)info);
     }
 }
 

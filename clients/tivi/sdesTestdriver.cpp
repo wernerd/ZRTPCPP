@@ -70,8 +70,8 @@ class TestCallbackAudio: public CtZrtpCb {
 
         }
     }
-    
-    void onNeedEnroll(CtZrtpSession *session, CtZrtpSession::streamName streamNm) {
+
+    void onNeedEnroll(CtZrtpSession *session, CtZrtpSession::streamName streamNm, int32_t info) {
         fprintf(stderr, "Need enroll\n");
     }
 

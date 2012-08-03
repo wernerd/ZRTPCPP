@@ -429,6 +429,14 @@ public:
     int enrollAccepted(char *p);
 
     /**
+     * Denies enrollment for the active peer.
+     *
+     * The methods resets the stored PBX secret to @c invalid and resets the peer's
+     * name in the name cache to an empty string.
+     */
+    int enrollDenied();
+
+    /**
      * Set the client ID for ZRTP Hello message.
      *
      * The client may set its id to identify itself in the
