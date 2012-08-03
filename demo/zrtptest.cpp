@@ -465,8 +465,10 @@ class
 ZrtpSendPacketTransmissionTestCB : public Thread, public TimerPort
 {
 public:
-    void
-    run()
+
+    ZrtpConfigure config;
+
+    void run()
     {
         doTest();
     }
@@ -477,7 +479,20 @@ public:
         //RTPSession tx();
         ExtZrtpSession tx(/*pattern.getSsrc(),*/ pattern.getDestinationAddress(),
                                 pattern.getDestinationPort()+2);
-        tx.initialize("test_t.zid");
+//        config.clear();
+//        config.setStandardConfig();
+//        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
+//        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));
+//        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC25"));
+
+//         config.addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
+
+//          config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS3"));
+//          config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES3"));
+
+        config.addAlgo(SasType, zrtpSasTypes.getByName("B256"));
+
+        tx.initialize("test_t.zid", true, &config);
         // At this point the Hello hash is available. See ZRTP specification
         // chapter 9.1 for further information when an how to use the Hello
         // hash.

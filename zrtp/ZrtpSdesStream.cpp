@@ -195,28 +195,25 @@ bool ZrtpSdesStream::outgoingRtp(uint8_t *packet, size_t length, size_t *newLeng
         *newLength = length;
         return true;
     }
-    else {
-        bool rc = SrtpHandler::protect(sendSrtp, packet, length, newLength);
-        //protect++;
-        return rc;
-    }
+    bool rc = SrtpHandler::protect(sendSrtp, packet, length, newLength);
+    if (rc)
+        ;//protect++;
+    return rc;
 }
 
 int ZrtpSdesStream::incomingRtp(uint8_t *packet, size_t length, size_t *newLength) {
     if (state != SDES_SRTP_ACTIVE || recvSrtp == NULL) {    // SRTP inactive, just return with newLength set
-            *newLength = length;
+        *newLength = length;
+        return 1;
+    }
+    int32_t rc = SrtpHandler::unprotect(recvSrtp, packet, length, newLength);
+    if (rc == 1) {
+//            unprotect++
     }
     else {
-        int32_t rc = SrtpHandler::unprotect(recvSrtp, packet, length, newLength);
-        if (rc == 1) {
-//            unprotect++
-        }
-        else {
 //            unprotectFailed++;
-            return rc;
-        }
     }
-    return 1;
+    return rc;
 }
 
 bool ZrtpSdesStream::outgoingRtcp(uint8_t *packet, size_t length, size_t *newLength) {
