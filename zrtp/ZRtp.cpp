@@ -1580,6 +1580,11 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
 
     setD[0] = setD[1] = setD[2] = NULL;
 
+    detailInfo.secretsMatchedDH = 0;
+    if (memcmp(rs1IDr, dhPart->getRs1Id(), HMAC_SIZE) == 0 || memcmp(rs1IDr, dhPart->getRs2Id(), HMAC_SIZE) == 0)
+        detailInfo.secretsMatchedDH |= Rs1;
+    if (memcmp(rs2IDr, dhPart->getRs1Id(), HMAC_SIZE) == 0 || memcmp(rs2IDr, dhPart->getRs2Id(), HMAC_SIZE) == 0)
+        detailInfo.secretsMatchedDH |= Rs2;
     /*
      * Select the real secrets into setD. The dhPart is DHpart1 message
      * received from responder. rs1IDr and rs2IDr are the expected ids using
@@ -1618,6 +1623,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
         DEBUGOUT((fprintf(stdout, "%c: Match for Other_secret found\n", zid[0])));
         setD[2] = zidRec->getMiTMData();
         detailInfo.secretsMatched |= Pbx;
+        detailInfo.secretsMatchedDH |= Pbx;
         // Flag to record that fact that we have a MitM key of the other peer.
         peerIsEnrolled = true;
     }
@@ -1733,6 +1739,12 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
 
     setD[0] = setD[1] = setD[2] = NULL;
 
+    detailInfo.secretsMatchedDH = 0;
+    if (memcmp(rs1IDi, dhPart->getRs1Id(), HMAC_SIZE) == 0 || memcmp(rs1IDi, dhPart->getRs2Id(), HMAC_SIZE) == 0)
+        detailInfo.secretsMatchedDH |= Rs1;
+    if (memcmp(rs2IDi, dhPart->getRs1Id(), HMAC_SIZE) == 0 || memcmp(rs2IDi, dhPart->getRs2Id(), HMAC_SIZE) == 0)
+        detailInfo.secretsMatchedDH |= Rs2;
+
     /*
      * Select the real secrets into setD
      */
@@ -1769,6 +1781,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
         DEBUGOUT((fprintf(stdout, "%c: Match for PBX secret found\n", ownZid[0])));
         setD[2] = zidRec->getMiTMData();
         detailInfo.secretsMatched |= Pbx;
+        detailInfo.secretsMatchedDH |= Pbx;
         peerIsEnrolled = true;
     }
     // Check if some retained secrets found
@@ -2020,13 +2033,13 @@ void ZRtp::computeSRTPKeys() {
         if (signSasSeen)
             callback->signSAS(sasHash);
 
-        detailInfo.pubKey = pubKey->getName();
-        detailInfo.sasType = sasType->getName();
+        detailInfo.pubKey = pubKey->getReadable();
+        detailInfo.sasType = sasType->getReadable();
     }
     // set algorithm names into detailInfo structure
-    detailInfo.authLength = authLength->getName();
-    detailInfo.cipher = cipher->getName();
-    detailInfo.hash = hash->getName();
+    detailInfo.authLength = authLength->getReadable();
+    detailInfo.cipher = cipher->getReadable();
+    detailInfo.hash = hash->getReadable();
 
     memset(KDFcontext, 0, sizeof(KDFcontext));
 }

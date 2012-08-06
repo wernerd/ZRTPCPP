@@ -100,6 +100,7 @@ class __EXPORT ZRtp {
     typedef struct _zrtpInfo {
         int32_t secretsCached;
         int32_t secretsMatched;
+        int32_t secretsMatchedDH;
         const char *hash;
         const char *cipher;
         const char *pubKey;
