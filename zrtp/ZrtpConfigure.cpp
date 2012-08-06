@@ -133,8 +133,8 @@ std::list<std::string>* EnumBase::getAllNames() {
  * Set up the enumeration list for available hash algorithms
  */
 HashEnum::HashEnum() : EnumBase(HashAlgorithm) {
-    insert(s256);
-    insert(s384);
+    insert(s256, 0, "SHA-256", NULL, NULL, None);
+    insert(s384, 0, "SHA-384", NULL, NULL, None);
 }
 
 HashEnum::~HashEnum() {}
@@ -143,10 +143,10 @@ HashEnum::~HashEnum() {}
  * Set up the enumeration list for available symmetric cipher algorithms
  */
 SymCipherEnum::SymCipherEnum() : EnumBase(CipherAlgorithm) {
-    insert(aes3, 32, "AES-CM-256", aesCfbEncrypt, aesCfbDecrypt, Aes);
-    insert(aes1, 16, "AES-CM-128", aesCfbEncrypt, aesCfbDecrypt, Aes);
-    insert(two3, 32, "TWO-CM-256", twoCfbEncrypt, twoCfbDecrypt, TwoFish);
-    insert(two1, 16, "TWO-CM-128", twoCfbEncrypt, twoCfbDecrypt, TwoFish);
+    insert(aes3, 32, "AES-256CM", aesCfbEncrypt, aesCfbDecrypt, Aes);
+    insert(aes1, 16, "AES-128CM", aesCfbEncrypt, aesCfbDecrypt, Aes);
+    insert(two3, 32, "Twofish-256CM", twoCfbEncrypt, twoCfbDecrypt, TwoFish);
+    insert(two1, 16, "TwoFish-128CM", twoCfbEncrypt, twoCfbDecrypt, TwoFish);
 }
 
 SymCipherEnum::~SymCipherEnum() {}
@@ -155,11 +155,11 @@ SymCipherEnum::~SymCipherEnum() {}
  * Set up the enumeration list for available public key algorithms
  */
 PubKeyEnum::PubKeyEnum() : EnumBase(PubKeyAlgorithm) {
-    insert(dh2k);
-    insert(ec25);
-    insert(dh3k);
-    insert(ec38);
-    insert(mult);
+    insert(dh2k, 0, "DH-2048", NULL, NULL, None);
+    insert(ec25, 0, "ECDH-256", NULL, NULL, None);
+    insert(dh3k, 0, "DH-3072", NULL, NULL, None);
+    insert(ec38, 0, "ECDH-384", NULL, NULL, None);
+    insert(mult, 0, "Multi-stream", NULL, NULL, None);
 }
 
 PubKeyEnum::~PubKeyEnum() {}
@@ -178,10 +178,10 @@ SasTypeEnum::~SasTypeEnum() {}
  * Set up the enumeration list for available SRTP authentications
  */
 AuthLengthEnum::AuthLengthEnum() : EnumBase(AuthLength) {
-    insert(hs32, 32, "", NULL, NULL, Sha1);
-    insert(hs80, 80, "", NULL, NULL, Sha1);
-    insert(sk32, 32, "", NULL, NULL, Skein);
-    insert(sk64, 64, "", NULL, NULL, Skein);
+    insert(hs32, 32, "HMAC-SHA1 32 bit", NULL, NULL, Sha1);
+    insert(hs80, 80, "HMAC-SHA1 80 bit", NULL, NULL, Sha1);
+    insert(sk32, 32, "Skein-MAC 32 bit", NULL, NULL, Skein);
+    insert(sk64, 64, "Skein-MAC 64 bit", NULL, NULL, Skein);
 }
 
 AuthLengthEnum::~AuthLengthEnum() {}
