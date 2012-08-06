@@ -61,13 +61,13 @@ class TestCallbackAudio: public CtZrtpCb {
         fprintf(stderr, "onPeer: %s\n", name == NULL ? "NULL" : name);
         char buffer[20];
 
-        session->getInfo("rs1", buffer, 9);
+        session->getInfo("rs1", buffer, 19);
         printf("RS1: %s ", buffer);
 
-        session->getInfo("rs2", buffer, 9);
+        session->getInfo("rs2", buffer, 19);
         printf("RS2: %s ", buffer);
 
-        session->getInfo("pbx", buffer, 9);
+        session->getInfo("pbx", buffer, 19);
         printf("PBX: %s ", buffer);
 
         session->getInfo("aux", buffer, 9);
@@ -79,22 +79,22 @@ class TestCallbackAudio: public CtZrtpCb {
         session->getInfo("lbVersion", buffer, 19);
         printf("Version: %s ", buffer);
 
-        session->getInfo("lbChiper", buffer, 9);
+        session->getInfo("lbChiper", buffer, 19);
         printf("cipher: %s ", buffer);
 
-        session->getInfo("lbHash", buffer, 9);
+        session->getInfo("lbHash", buffer, 19);
         printf("hash: %s ", buffer);
 
-        session->getInfo("lbAuthTag", buffer, 9);
+        session->getInfo("lbAuthTag", buffer, 19);
         printf("auth: %s ", buffer);
 
-        session->getInfo("lbKeyExchange", buffer, 9);
+        session->getInfo("lbKeyExchange", buffer, 19);
         printf("KeyEx: %s ", buffer);
 
-        session->getInfo("sc_secure", buffer, 9);
+        session->getInfo("sc_secure", buffer, 19);
         printf("SC secure: %s ", buffer);
 
-        session->getInfo("sdp_hash", buffer, 9);
+        session->getInfo("sdp_hash", buffer, 19);
         printf("zrtp-hash: %s\n", buffer);
 
         session->setLastPeerNameVerify("TestName", 0);

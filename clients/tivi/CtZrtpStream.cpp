@@ -278,7 +278,7 @@ int CtZrtpStream::isSecure() {
 
 #define T_ZRTP_F(_K,_FV)                                                \
         if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0){              \
-            return snprintf(p, maxLen, "%d", (!!(info->secretsCached & _FV)) << (!!(info->secretsMatched & _FV)));}
+            return snprintf(p, maxLen, "%d", (!!(info->secretsCached & _FV)) << (!!(info->secretsMatchedDH & _FV)));}
 
 
 int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {

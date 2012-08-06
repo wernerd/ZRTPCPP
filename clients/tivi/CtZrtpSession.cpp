@@ -132,24 +132,24 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
         conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));  // If enabled always first
     }
 
-    if(iDisableECDH256 == 0)
+    if (iDisableECDH256 == 0)
         conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC25"));  // If enabled always before DH3k
 
     conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));      // If enabled it should appear here
 
-    if(iDisableECDH384 == 0)
+    if (iDisableECDH384 == 0)
         conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));  // If enabled, slowest, thus on last position
 
     conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("Mult"));      // Tivi supports Multi-stream mode
 
 // DEBUG    conf->printConfiguredAlgos(PubKeyAlgorithm);
 
-    if(iEnableSHA384 == 1 || iDisableECDH384 == 0) {
+    if (iEnableSHA384 == 1 || iDisableECDH384 == 0) {
         conf->addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
     }
     conf->addAlgo(HashAlgorithm, zrtpHashes.getByName("S256"));
 
-    if (iDisableAES256 == 0 ) {
+    if (iDisableAES256 == 0) {
         conf->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS3"));
         conf->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES3"));
     }
@@ -159,10 +159,10 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
 // DEBUG    conf->printConfiguredAlgos(CipherAlgorithm);
 
     // Curreently only B32 supported
-    if (b32sas == 1 /* || T_getSometing1(NULL,"zrtp_sas_b32") */){
+    if (b32sas == 1) {
         conf->addAlgo(SasType, zrtpSasTypes.getByName("B32 "));
     }
-    else{
+    else {
         conf->addAlgo(SasType, zrtpSasTypes.getByName("B256"));
         conf->addAlgo(SasType, zrtpSasTypes.getByName("B32 "));
     }
