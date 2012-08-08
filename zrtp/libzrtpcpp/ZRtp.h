@@ -852,6 +852,20 @@ private:
     bool paranoidMode;
 
     /**
+     * Find the best Hash algorithm that is offered in Hello.
+     *
+     * Find the best, that is the strongest, Hash algorithm that our peer
+     * offers in its Hello packet.
+     *
+     * @param hello
+     *    The Hello packet.
+     * @return
+     *    The Enum that identifies the best offered Hash algortihm. Return
+     *    mandatory algorithm if no match was found.
+     */
+    AlgorithmEnum* findBestHash(ZrtpPacketHello *hello);
+
+    /**
      * Find the best symmetric cipher algorithm that is offered in Hello.
      *
      * Find the best, that is the strongest, cipher algorithm that our peer

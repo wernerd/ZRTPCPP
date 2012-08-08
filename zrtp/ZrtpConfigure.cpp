@@ -143,10 +143,10 @@ HashEnum::~HashEnum() {}
  * Set up the enumeration list for available symmetric cipher algorithms
  */
 SymCipherEnum::SymCipherEnum() : EnumBase(CipherAlgorithm) {
-    insert(aes3, 32, "AES-256CM", aesCfbEncrypt, aesCfbDecrypt, Aes);
-    insert(aes1, 16, "AES-128CM", aesCfbEncrypt, aesCfbDecrypt, Aes);
-    insert(two3, 32, "Twofish-256CM", twoCfbEncrypt, twoCfbDecrypt, TwoFish);
-    insert(two1, 16, "TwoFish-128CM", twoCfbEncrypt, twoCfbDecrypt, TwoFish);
+    insert(aes3, 32, "AES-256", aesCfbEncrypt, aesCfbDecrypt, Aes);
+    insert(aes1, 16, "AES-128", aesCfbEncrypt, aesCfbDecrypt, Aes);
+    insert(two3, 32, "Twofish-256", twoCfbEncrypt, twoCfbDecrypt, TwoFish);
+    insert(two1, 16, "TwoFish-128", twoCfbEncrypt, twoCfbDecrypt, TwoFish);
 }
 
 SymCipherEnum::~SymCipherEnum() {}

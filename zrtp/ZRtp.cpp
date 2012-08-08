@@ -292,7 +292,10 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
 
     if (!multiStream) {
         pubKey = findBestPubkey(hello);                 // Check for public key algorithm first, sets 'hash' as well
-//        hash = findBestHash(hello);                   // find hash _after_ find pubKey
+        if (hash == NULL) {
+            *errMsg = UnsuppHashType;
+            return NULL;
+        }
         if (cipher == NULL)                             // public key selection may have set the cipher already
             cipher = findBestCipher(hello, pubKey);
         authLength = findBestAuthLen(hello);
@@ -403,7 +406,7 @@ ZrtpPacketCommit* ZRtp::prepareCommitMultiStream(ZrtpPacketHello *hello) {
     zrtpCommit.setHashType((uint8_t*)hash->getName());
     zrtpCommit.setCipherType((uint8_t*)cipher->getName());
     zrtpCommit.setAuthLen((uint8_t*)authLength->getName());
-    zrtpCommit.setPubKeyType((uint8_t*)"Mult");  // this is fixed because of Multi Stream mode
+    zrtpCommit.setPubKeyType((uint8_t*)mult);  // this is fixed because of Multi Stream mode
     zrtpCommit.setSasType((uint8_t*)sasType->getName());
     zrtpCommit.setNonce(hvi);
     zrtpCommit.setH2(H2);
@@ -502,12 +505,17 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
         // with the committed hash.
         computeSharedSecretSet(zidRec);
     }
-
     // check if we support the commited pub key type
     cp = &zrtpPubKeys.getByName((const char*)commit->getPubKeysType());
     if (!cp->isValid()) { // no match - something went wrong
         *errMsg = UnsuppPKExchange;
         return NULL;
+    }
+    if (*(int32_t*)(cp->getName()) == *(int32_t*)ec38) {
+        if (*(int32_t*)(hash->getName()) != *(int32_t*)s384) {
+            *errMsg = UnsuppHashType;
+            return NULL;
+        }
     }
     pubKey = cp;
 
@@ -1210,7 +1218,7 @@ ZrtpPacketRelayAck* ZRtp::prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* er
     // If other SAS schemes required - check here and use others
     const uint8_t* render = srly->getSasAlgo();
     AlgorithmEnum* renderAlgo = &zrtpSasTypes.getByName((const char*)render);
-    uint8_t sasBytes[4];;
+    uint8_t sasBytes[4];
     if (renderAlgo->isValid()) {
         sasBytes[0] = newSasHash[0];
         sasBytes[1] = newSasHash[1];
@@ -1223,7 +1231,8 @@ ZrtpPacketRelayAck* ZRtp::prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* er
             SAS.assign(sas256WordsEven[sasBytes[0]]).append(":").append(sas256WordsOdd[sasBytes[1]]);
         }
     }
-    callback->srtpSecretsOn(cs, SAS, false);
+    bool verify = zidRec->isSasVerified() && srly->isSASFlag();
+    callback->srtpSecretsOn(cs, SAS, verify);
     return &zrtpRelayAck;
 }
 
@@ -1263,6 +1272,49 @@ ZrtpPacketGoClear* ZRtp::prepareGoClear(uint32_t errMsg) {
  * Key Agreement:       DH3k (3072 Diffie-Helman)  (internal enum Dh3072)
  *
  */
+AlgorithmEnum* ZRtp::findBestHash(ZrtpPacketHello *hello) {
+
+    int i;
+    int ii;
+    int numAlgosOffered;
+    AlgorithmEnum* algosOffered[ZrtpConfigure::maxNoOfAlgos+1];
+
+    int numAlgosConf;
+    AlgorithmEnum* algosConf[ZrtpConfigure::maxNoOfAlgos+1];
+
+    // If Hello does not contain any hash names return Sha256, its mandatory
+    int num = hello->getNumHashes();
+    if (num == 0) {
+        return &zrtpHashes.getByName(mandatoryHash);
+    }
+    // Build list of configured hash algorithm names, append mandatory algos
+    // if necessary.
+    numAlgosConf = configureAlgos.getNumConfiguredAlgos(HashAlgorithm);
+    for (i = 0; i < numAlgosConf; i++) {
+        algosConf[i] = &configureAlgos.getAlgoAt(HashAlgorithm, i);
+    }
+
+    // Build list of offered known algos in Hello, append mandatory algos if necessary
+    for (numAlgosOffered = 0, i = 0; i < num; i++) {
+        algosOffered[numAlgosOffered] = &zrtpHashes.getByName((const char*)hello->getHashType(i));
+        if (!algosOffered[numAlgosOffered]->isValid())
+            continue;
+        numAlgosOffered++;
+    }
+
+    // Lookup offered algos in configured algos. Because of appended
+    // mandatory algorithms at least one match will happen
+    for (i = 0; i < numAlgosOffered; i++) {
+        for (ii = 0; ii < numAlgosConf; ii++) {
+            if (*(int32_t*)(algosOffered[i]->getName()) == *(int32_t*)(algosConf[ii]->getName())) {
+                return algosConf[ii];
+            }
+        }
+    }
+    return &zrtpHashes.getByName(mandatoryHash);
+}
+
+
 AlgorithmEnum* ZRtp::findBestCipher(ZrtpPacketHello *hello, AlgorithmEnum* pk) {
 
     int i;
@@ -1306,19 +1358,22 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
 
     int i;
     int ii;
-    int numAlgosOffered;
-    AlgorithmEnum* algosOffered[ZrtpConfigure::maxNoOfAlgos+1];
+    int numAlgosIntersect;
+    AlgorithmEnum* algosIntersect[ZrtpConfigure::maxNoOfAlgos+1];
 
     int numAlgosConf;
     AlgorithmEnum* algosConf[ZrtpConfigure::maxNoOfAlgos+1];
+
+    // Build list of own pubkey algorithm names, must follow the order
+    // defined in RFC 6189, chapter 4.1.2.
+    const char *orderedAlgos[] = {dh2k, ec25, dh3k, ec38};
+    int numOrderedAlgos = sizeof(orderedAlgos) / sizeof(const char*);
 
     int num = hello->getNumPubKeys();
     if (num == 0) {
         hash = &zrtpHashes.getByName(mandatoryHash);             // set mandatory hash
         return &zrtpPubKeys.getByName(mandatoryPubKey);
     }
-    // Build list of own configured pubkey algorithm names, must follow the order
-    // defined in RFC 6189, chapter 4.1.2.
     // The list must include real public key algorithms only, so skip
     // mult-stream mode, preshared and alike.
     numAlgosConf = configureAlgos.getNumConfiguredAlgos(PubKeyAlgorithm);
@@ -1330,38 +1385,55 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
         ii++;
     }
     numAlgosConf = ii;
-    // Build list of offered known algos in Hello, append mandatory algos if necessary
-    for (numAlgosOffered = 0, i = 0; i < num; i++) {
-        algosOffered[numAlgosOffered] = &zrtpPubKeys.getByName((const char*)hello->getPubKeyType(i));
-        if (!algosOffered[numAlgosOffered]->isValid())
-            continue;
-        numAlgosOffered++;
-    }
-
-    // Lookup offered algos in configured algos. This is a specific selection that also checks
-    // for matching Hash and symmetric cipher. 
-    for (i = 0; i < numAlgosConf; i++) {
-        for (ii = 0; ii < numAlgosOffered; ii++) {
-            if (*(int32_t*)(algosOffered[ii]->getName()) == *(int32_t*)(algosConf[i]->getName())) {
-
-               // select a corresponding strong hash. If not offered then loop and select other pubkey algo
-                if (*(int32_t*)(algosConf[i]->getName()) == *(int32_t*)ec38) {
-                    hash = getStrongHashOffered(hello);
-                    if (hash == NULL)
-                        continue;
-                    // Try to get a strong cipher. If none is offered 'cipher' remains NULL and
-                    // findBestCipher will find the next best cipher
-                    cipher = getStrongCipherOffered(hello);
-                    return algosConf[i];
-                }
-                hash = &zrtpHashes.getByName(s256);
-                return algosConf[i];
+ 
+    // Build list of intersecting algos: own and offered in Hello, intersect list is ordered according to offered algorithms
+    for (numAlgosIntersect = 0, i = 0; i < num; i++) {
+        for (ii = 0; ii < numAlgosConf; ii++) {
+            algosIntersect[numAlgosIntersect] = &zrtpPubKeys.getByName((const char*)hello->getPubKeyType(i));
+            if (*(int32_t*)(algosConf[ii]->getName()) == *(int32_t*)(algosIntersect[numAlgosIntersect]->getName())) {
+                numAlgosIntersect++;
             }
         }
     }
-    // If we don't have a match - use the mandatory algorithms
-    hash = &zrtpHashes.getByName(mandatoryHash);
-    return &zrtpPubKeys.getByName(mandatoryPubKey);
+    if (numAlgosIntersect == 0) {
+        // If we don't find a common algorithm - use the mandatory algorithms
+        hash = &zrtpHashes.getByName(mandatoryHash);
+        return &zrtpPubKeys.getByName(mandatoryPubKey);
+    }
+    AlgorithmEnum* useAlgo;
+    if (numAlgosIntersect > 1 && *(int32_t*)(algosConf[0]->getName()) != *(int32_t*)(algosIntersect[0]->getName())) {
+        int own, peer;
+
+        const int32_t *name = (int32_t*)algosConf[0]->getName();
+        for (own = 0; own < numOrderedAlgos; own++) {
+            if (*name == *(int32_t*)orderedAlgos[own])
+                break;
+        }
+        name = (int32_t*)algosIntersect[0]->getName();
+        for (peer = 0; peer < numOrderedAlgos; peer++) {
+            if (*name == *(int32_t*)orderedAlgos[peer])
+                break;
+        }
+        if (own < peer) {
+            useAlgo = algosConf[0];
+        }
+        else {
+            useAlgo = algosIntersect[0];
+        }
+        // find fastest of conf vs intersecting
+    }
+    else {
+        useAlgo = algosIntersect[0];
+    }
+    // select a corresponding strong hash if necessary.
+    if (*(int32_t*)(useAlgo->getName()) == *(int32_t*)ec38) {
+        hash = getStrongHashOffered(hello);
+        cipher = getStrongCipherOffered(hello);
+    }
+    else {
+        hash = findBestHash(hello);
+    }
+    return useAlgo;
 }
 
 AlgorithmEnum* ZRtp::findBestSASType(ZrtpPacketHello *hello) {

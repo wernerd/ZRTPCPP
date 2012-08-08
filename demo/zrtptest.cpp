@@ -481,11 +481,11 @@ public:
                                 pattern.getDestinationPort()+2);
 //        config.clear();
 //        config.setStandardConfig();
-//        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
-//        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));
-//        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC25"));
+        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));
+        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
+        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC25"));
 
-//         config.addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
+         config.addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
 
 //          config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS3"));
 //          config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES3"));
