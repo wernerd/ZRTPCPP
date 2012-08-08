@@ -25,6 +25,7 @@
 #include <stdio.h>
 
 #include <CryptoContext.h>
+#include <crypto/SrtpSymCrypto.h>
 #include <crypto/hmac.h>
 #include <cryptcommon/macSkein.h>
 

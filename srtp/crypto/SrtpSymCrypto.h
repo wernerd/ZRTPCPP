@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2005, 2004, 2010, 2012 Erik Eliasson, Johan Bilien, Werner Dittmann
+  Copyright (C) 2008-2012 Werner Dittmann
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -70,8 +70,6 @@ typedef struct _f8_ctx {
  * The implementation uses the openSSL library as its cryptographic
  * backend.
  *
- * @author Erik Eliasson <eliasson@it.kth.se>
- * @author Johan Bilien <jobi@via.ecp.fr>
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 class SrtpSymCrypto {
