@@ -106,7 +106,7 @@ public:
      *                     without any signaling prefix, for example @c
      *                     a=crypto: in case of SDP signaling.
      *
-     * @param lenght length of the crypto string to parse. If the length is
+     * @param length length of the crypto string to parse. If the length is
      *               @c zero then the function uses @c strlen to compute
      *               the length.
      *

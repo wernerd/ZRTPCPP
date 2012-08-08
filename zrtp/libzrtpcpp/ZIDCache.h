@@ -23,8 +23,8 @@
 #define _ZIDCACHE_H_
 
 /**
- * @file ZIDFile.h
- * @brief ZID file management
+ * @file ZIDCache.h
+ * @brief ZID cache management
  *
  * A ZID file stores (caches) some data that helps ZRTP to achives its
  * key continuity feature. See @c ZIDRecord for further info which data

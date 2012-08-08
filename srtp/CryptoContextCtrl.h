@@ -1,7 +1,6 @@
 /*
-  Copyright (C) 2004-2006 the Minisip Team
-  Copyright (C) 2011 Werner Dittmann for the SRTCP support
-  
+  Copyright (C) 2011 - 2012 Werner Dittmann
+
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -17,14 +16,12 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 */
 
-
-
 #ifndef CRYPTOCONTEXTCTRL_H
 #define CRYPTOCONTEXTCTRL_H
 
 /**
- * @file CryptoContext.h
- * @brief The C++ SRTP implementation
+ * @file CryptoContextCtrl.h
+ * @brief The C++ SRTCP implementation
  * @ingroup Z_SRTP
  * @{
  */
@@ -48,18 +45,12 @@ class SrtpSymCrypto;
      * cryptographic context, such as master key, key length, authentication
      * length and so on. The key management mechanisms are not part of
      * SRTP. Refer to MIKEY (RFC 3880) or to Phil Zimmermann's ZRTP protocol
-     * (draft-zimmermann-avt-zrtp-01). After key management negotiated the
-     * data the application can setup the SRTCP cryptographic context and
-     * enable SRTCP processing.
+     * (RFC6189). After key management negotiated the data the application
+     * can setup the SRTCP cryptographic context and enable SRTCP processing.
      *
      *
-     * @author Israel Abad <i_abad@terra.es>
-     * @author Erik Eliasson <eliasson@it.kth.se>
-     * @author Johan Bilien <jobi@via.ecp.fr>
-     * @author Joachim Orrblad <joachim@orrblad.com>
      * @author Werner Dittmann <Werner.Dittmann@t-online.de>
      */
-
 class CryptoContextCtrl {
     public:
     /**
@@ -127,7 +118,7 @@ class CryptoContextCtrl {
      *    The length is bytes of the authentication tag that SRTP appends
      *    to the RTP packet. Refer to chapter 4.2. in the RFC 3711.
      */
-    CryptoContextCtrl( uint32_t ssrc,
+    CryptoContextCtrl(uint32_t ssrc,
                const  int32_t ealg,
                const  int32_t aalg,
                uint8_t* masterKey,
@@ -137,11 +128,12 @@ class CryptoContextCtrl {
                int32_t  ekeyl,
                int32_t  akeyl,
                int32_t  skeyl,
-               int32_t  tagLength );
+               int32_t  tagLength);
+
     /**
      * Destructor.
      *
-     * Cleans the SRTP cryptographic context.
+     * Cleans the SRTCP cryptographic context.
      */
     ~CryptoContextCtrl();
 
@@ -154,6 +146,9 @@ class CryptoContextCtrl {
      * @param rtp
      *    The RTP packet that contains the data to encrypt.
      *
+     * @param len
+     *    Length of the RTCP packet
+     *
      * @param index
      *    The 48 bit SRTP packet index. See the <code>guessIndex</code>
      *    method.
@@ -161,7 +156,7 @@ class CryptoContextCtrl {
      * @param ssrc
      *    The RTP SSRC data in <em>host</em> order.
      */
-    void srtcpEncrypt( uint8_t* rtp, int32_t len, uint64_t index, uint32_t ssrc );
+    void srtcpEncrypt(uint8_t* rtp, int32_t len, uint64_t index, uint32_t ssrc);
 
     /**
      * Compute the authentication tag.
@@ -170,7 +165,10 @@ class CryptoContextCtrl {
      * SRTP Cryptograhic context.
      *
      * @param rtp
-     *    The RTP packet that contains the data to authenticate.
+     *    The RTCP packet that contains the data to authenticate.
+     *
+     * @param len
+     *    Length of the RTCP packet
      *
      * @param roc
      *    The 32 bit SRTP roll-over-counter.
@@ -179,7 +177,7 @@ class CryptoContextCtrl {
      *    Points to a buffer that hold the computed tag. This buffer must
      *    be able to hold <code>tagLength</code> bytes.
      */
-    void srtcpAuthenticate(uint8_t* rtp, int32_t len, uint32_t roc, uint8_t* tag );
+    void srtcpAuthenticate(uint8_t* rtp, int32_t len, uint32_t roc, uint8_t* tag);
 
     /**
      * Perform key derivation according to SRTP specification
@@ -188,9 +186,9 @@ class CryptoContextCtrl {
      * session salt key. This method must be called at least once after the
      * SRTP Cryptograhic context was set up.
      *
-     * @param index
-     *    The 48 bit SRTP packet index. See the <code>guessIndex</code>
-     *    method.
+     * This method clears the key data once it was processed by the encryptions'
+     * set key functions.
+     *
      */
      void deriveSrtcpKeys();
 
@@ -227,28 +225,39 @@ class CryptoContextCtrl {
      *
      * @return the length of the authentication tag.
      */
-    inline int32_t
-    getTagLength() const
-        {return tagLength;}
-
+    inline int32_t getTagLength() const { return tagLength; }
 
     /**
      * Get the length of the MKI in bytes.
      *
      * @return the length of the MKI.
      */
-    inline int32_t
-    getMkiLength() const
-        {return mkiLength;}
+    inline int32_t getMkiLength() const { return mkiLength; }
 
     /**
      * Get the SSRC of this SRTP Cryptograhic context.
      *
      * @return the SSRC.
      */
-    inline uint32_t
-    getSsrc() const
-        {return ssrcCtx;}
+    inline uint32_t getSsrc() const { return ssrcCtx; }
+
+    /**
+     * @brief Set the start (base) number to compute the PRF labels.
+     *
+     * Refer to RFC3711, chapters 4.3.1 and 4.3.2 about values for labels.
+     * @c CryptoContextCtrl computes the labes as follows:
+     *
+     * - labelBase + 0 -> encryption label
+     * - labelBase + 1 -> authentication label
+     * - labelBase + 2 -> salting key label
+     *
+     * @c CryptoContextCtrl initializes the label with 3 to comply with RFC 3711 label
+     * values.
+     *
+     * Applications may set the @c labelBase to other values to use the @c CryptoContextCtrl
+     * for other purposes.
+     */
+    void setLabelbase(uint8_t base) { labelBase = base; }
 
     /**
      * Derive a new Crypto Context for use with a new SSRC
@@ -264,10 +273,7 @@ class CryptoContextCtrl {
      *
      * @param ssrc
      *     The SSRC for this context
-     * @param roc
-     *     The Roll-Over-Counter for this context
-     * @param keyDerivRate
-     *     The key derivation rate for this context
+     *
      * @return
      *     a new CryptoContext with all relevant data set.
      */
@@ -304,6 +310,7 @@ class CryptoContextCtrl {
         int32_t akeyl;
         int32_t skeyl;
         int32_t tagLength;
+        uint8_t labelBase;
 
         void*   macCtx;
 

@@ -25,8 +25,8 @@
 
 
 /**
- * @file ZIDFile.h
- * @brief ZID file management
+ * @file ZIDCacheFile.h
+ * @brief ZID cache management
  *
  * A ZID file stores (caches) some data that helps ZRTP to achives its
  * key continuity feature. See @c ZIDRecord for further info which data
@@ -39,7 +39,7 @@
 /**
  * This class implements a ZID (ZRTP Identifiers) file.
  *
- * The interface defintion @c ZIDFile.h contains the method documentation.
+ * The interface defintion @c ZIDCache.h contains the method documentation.
  * The ZID cache file holds information about peers.
  *
  * @author: Werner Dittmann <Werner.Dittmann@t-online.de>

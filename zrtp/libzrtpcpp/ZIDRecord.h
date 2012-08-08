@@ -22,7 +22,7 @@
 
 /**
  * @file ZIDRecord.h
- * @brief ZID record management
+ * @brief ZID cache record management
  *
  * A ZID record stores (caches) ZID (ZRTP ID) specific data that helps ZRTP
  * to achives its key continuity feature. Please refer to the ZRTP

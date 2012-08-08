@@ -26,7 +26,7 @@
 #include <libzrtpcpp/ZrtpConfigure.h>
 
 /**
- * @file ZrtpDH.h
+ * @file zrtpDH.h
  * @brief Class that implemets Diffie-Helman key agreement for ZRTP
  * 
  * @ingroup GNU_ZRTP

@@ -1,4 +1,6 @@
 /*
+  Copyright (C) 2012 Werner Dittmann
+
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -13,6 +15,11 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 */
+
+/*
+ * @author Werner Dittmann <Werner.Dittmann@t-online.de>
+ */
+
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -63,7 +70,7 @@ bool SrtpHandler::decodeRtp(uint8_t* buffer, int32_t length, uint32_t *ssrc, uin
     if (offset > length)
         return false;
 
-    /* Find and set payload. */
+    /* Find and set payload and payload length. */
     *payload = buffer + offset;
     *payloadlen = length - offset;
 
