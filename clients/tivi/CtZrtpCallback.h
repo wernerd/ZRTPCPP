@@ -1,9 +1,27 @@
+/*
+ * Tivi client glue code for ZRTP.
+ * Copyright (c) 2012 Slient Circle LLC.  All rights reserved.
+ *
+ */
+
+/**
+ * Interfaces for Tivi callback classes.
+ *
+ * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
+ */
 
 #ifndef _CTZRTPCALLBACK_H_
 #define _CTZRTPCALLBACK_H_
 
 #include <CtZrtpSession.h>
 
+/**
+ * @brief Tivi callback functions for state changes, warnings, and enrollment.
+ *
+ * The @c CtZrpSession and @c CtZrtpStream classes use these callbacks to inform
+ * the Tivi client about a new ZRTP state, if a @c Warning occured or if the
+ * client should display the @c Enrollment GUI.
+ */
 class __EXPORT CtZrtpCb {
 public:
     virtual void onNewZrtpStatus(CtZrtpSession *session, char *p, CtZrtpSession::streamName streamNm) =0;
@@ -13,6 +31,12 @@ public:
 };
 
 
+/**
+ * @brief Tivi callback function to send a ZRTP packet via the RTP session.
+ *
+ * The @c CtZrtpStream class uses this callback to send a ZRTP packet via Tivi's
+ * RTP session.
+ */
 class __EXPORT CtZrtpSendCb {
 public:
     virtual void sendRtp(CtZrtpSession const *session, uint8_t* packet, unsigned int length, CtZrtpSession::streamName streamNm) =0;

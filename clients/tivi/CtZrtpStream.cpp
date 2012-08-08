@@ -76,6 +76,8 @@ void CtZrtpStream::stopStream() {
     supressCounter = 0;
     srtpErrorBurst = 0;
 
+    peerHelloHash.clear();
+
     delete zrtpEngine;
     zrtpEngine = NULL;
 
@@ -291,7 +293,6 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
 
     int iLen = strlen(key);
 
-
     if (recvSrtp != NULL || sendSrtp != NULL) {
         info = zrtpEngine->getDetailInfo();
 
@@ -315,7 +316,7 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
             return sprintf(p, "%d", sasVerified);
         }
         if(strncmp("sc_secure", key, iLen) == 0) {
-            int v = (zrtpHashMatch && sasVerified && !peerHelloHash.empty() && isSecure());
+            int v = (zrtpHashMatch && sasVerified && !peerHelloHash.empty() && tiviState == CtZrtpSession::eSecure);
 
             if (v && (info->secretsCached & ZRtp::Rs1) == 0  && !sasVerified)
                 v = 0;

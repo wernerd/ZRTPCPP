@@ -112,37 +112,35 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
     int iSZ;
     char *opt;
     int type;
-    int b32sas,iDisableDH2K, iDisableAES256, iPreferDH2K;
-    int iDisableECDH256, iDisableECDH384, iEnableSHA384;
-    int iHas2k=0;
+    int b32sas = 0, iDisableDH2K = 0, iDisableAES256 = 0, iPreferDH2K = 0;
+    int iDisableECDH256 = 0, iDisableECDH384 = 0, iEnableSHA384 = 1;
+    int iDisableSkein = 0, iDisableTwofish = 0;
 
-    GET_CFG_I(b32sas,"iDisable256SAS");
-    GET_CFG_I(iDisableAES256,"iDisableAES256");
-    GET_CFG_I(iDisableDH2K,"iDisableDH2K");
-    GET_CFG_I(iPreferDH2K,"iPreferDH2K");
+    GET_CFG_I(b32sas, "iDisable256SAS");
+    GET_CFG_I(iDisableAES256, "iDisableAES256");
+    GET_CFG_I(iDisableDH2K, "iDisableDH2K");
+    GET_CFG_I(iPreferDH2K, "iPreferDH2K");
 
-    GET_CFG_I(iDisableECDH256,"iDisableECDH256");
-    GET_CFG_I(iDisableECDH384,"iDisableECDH384");
-    GET_CFG_I(iEnableSHA384,"iEnableSHA384");
+    GET_CFG_I(iDisableECDH256, "iDisableECDH256");
+    GET_CFG_I(iDisableECDH384, "iDisableECDH384");
+    GET_CFG_I(iEnableSHA384, "iEnableSHA384");
+    GET_CFG_I(iDisableSkein, "iDisableSkein");
+    GET_CFG_I(iDisableTwofish, "iDisableTwofish");
 
     conf->clear();
 
-    if (iPreferDH2K && !iDisableDH2K) {
-        iHas2k=1;
-        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));  // If enabled always first
-    }
-
-    if (iDisableECDH256 == 0)
-        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC25"));  // If enabled always before DH3k
-
-    conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));      // If enabled it should appear here
 
     if (iDisableECDH384 == 0)
-        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));  // If enabled, slowest, thus on last position
+        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
 
-    conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("Mult"));      // Tivi supports Multi-stream mode
+    if (iDisableECDH256 == 0)
+        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC25"));
 
-// DEBUG    conf->printConfiguredAlgos(PubKeyAlgorithm);
+    if (iPreferDH2K && !iDisableDH2K) {
+        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));
+    }
+    conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));
+    conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("Mult"));
 
     if (iEnableSHA384 == 1 || iDisableECDH384 == 0) {
         conf->addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
@@ -150,15 +148,16 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
     conf->addAlgo(HashAlgorithm, zrtpHashes.getByName("S256"));
 
     if (iDisableAES256 == 0) {
-        conf->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS3"));
+        if (iDisableTwofish == 0) {
+            conf->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS3"));
+        }
         conf->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES3"));
     }
-    conf->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS1"));
+    if (iDisableTwofish == 0) {
+        conf->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS1"));
+    }
     conf->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES1"));
 
-// DEBUG    conf->printConfiguredAlgos(CipherAlgorithm);
-
-    // Curreently only B32 supported
     if (b32sas == 1) {
         conf->addAlgo(SasType, zrtpSasTypes.getByName("B32 "));
     }
@@ -167,8 +166,10 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
         conf->addAlgo(SasType, zrtpSasTypes.getByName("B32 "));
     }
 
-    conf->addAlgo(AuthLength, zrtpAuthLengths.getByName("SK32"));
-    conf->addAlgo(AuthLength, zrtpAuthLengths.getByName("SK64"));
+    if (iDisableSkein == 0) {
+        conf->addAlgo(AuthLength, zrtpAuthLengths.getByName("SK32"));
+        conf->addAlgo(AuthLength, zrtpAuthLengths.getByName("SK64"));
+    }
     conf->addAlgo(AuthLength, zrtpAuthLengths.getByName("HS32"));
     conf->addAlgo(AuthLength, zrtpAuthLengths.getByName("HS80"));
 }
