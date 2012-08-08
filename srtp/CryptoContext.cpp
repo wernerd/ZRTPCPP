@@ -1,4 +1,6 @@
 /*
+  Copyright (C) 2006 - 2012 Werner Dittmann
+
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -14,13 +16,8 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 */
 
-/* Copyright (C) 2004-2012
- *
- * Authors: Israel Abad <i_abad@terra.es>
- *          Erik Eliasson <eliasson@it.kth.se>
- *          Johan Bilien <jobi@via.ecp.fr>
- *          Joachim Orrblad <joachim@orrblad.com>
- *          Werner Dittmann <Werner.Dittmann@t-online.de>
+/*
+ * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
 #include <string.h>
@@ -45,11 +42,10 @@ CryptoContext::CryptoContext( uint32_t ssrc,
                               int32_t skeyl,
                               int32_t tagLength):
 
-        ssrcCtx(ssrc),using_mki(false),mkiLength(0),mki(NULL),
-        roc(roc),guessed_roc(0),s_l(0),key_deriv_rate(key_deriv_rate),
-        replay_window(0),
-        master_key_srtp_use_nb(0), master_key_srtcp_use_nb(0), seqNumSet(false),
-        macCtx(NULL), cipher(NULL), f8Cipher(NULL)
+        ssrcCtx(ssrc),using_mki(false),mkiLength(0),mki(NULL), roc(roc),guessed_roc(0),
+        s_l(0),key_deriv_rate(key_deriv_rate), replay_window(0), master_key_srtp_use_nb(0),
+        master_key_srtcp_use_nb(0), labelBase(0), seqNumSet(false), macCtx(NULL), cipher(NULL),
+        f8Cipher(NULL)
 {
     this->ealg = ealg;
     this->aalg = aalg;
@@ -289,10 +285,8 @@ static void computeIv(unsigned char* iv, uint64_t label, uint64_t index,
     }
 
     for (i = 7; i < 14 ; i++ ) {
-        iv[i] = (unsigned char)(0xFF & (key_id >> (8*(13-i)))) ^
-                master_salt[i];
+        iv[i] = (unsigned char)(0xFF & (key_id >> (8*(13-i)))) ^  master_salt[i];
     }
-
     iv[14] = iv[15] = 0;
 }
 
@@ -306,12 +300,12 @@ void CryptoContext::deriveSrtpKeys(uint64_t index)
     memset(master_key, 0, master_key_length);
 
     // compute the session encryption key
-    uint64_t label = 0;
+    uint64_t label = labelBase + 0;
     computeIv(iv, label, index, key_deriv_rate, master_salt);
     cipher->get_ctr_cipher_stream(k_e, n_e, iv);
 
     // compute the session authentication key
-    label = 0x01;
+    label = labelBase + 0x01;
     computeIv(iv, label, index, key_deriv_rate, master_salt);
     cipher->get_ctr_cipher_stream(k_a, n_a, iv);
 
@@ -328,7 +322,7 @@ void CryptoContext::deriveSrtpKeys(uint64_t index)
     memset(k_a, 0, n_a);
 
     // compute the session salt
-    label = 0x02;
+    label = labelBase + 0x02;
     computeIv(iv, label, index, key_deriv_rate, master_salt);
     cipher->get_ctr_cipher_stream(k_s, n_s, iv);
     memset(master_salt, 0, master_salt_length);

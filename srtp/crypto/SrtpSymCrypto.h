@@ -85,6 +85,11 @@ public:
      *     Pointer to key bytes.
      * @param key_length
      *     Number of key bytes.
+     * @param algo
+     *    The Encryption algorithm to use.Possible values are <code>
+     *    SrtpEncryptionNull, SrtpEncryptionAESCM, SrtpEncryptionAESF8
+     *    SrtpEncryptionTWOCM, SrtpEncryptionTWOF8</code>. See chapter 4.1.1
+     *    for AESCM (Counter mode) and 4.1.2 for AES F8 mode.
      */
     SrtpSymCrypto(uint8_t* key, int32_t key_length, int algo = SrtpEncryptionAESCM);
 
