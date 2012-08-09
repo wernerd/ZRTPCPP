@@ -27,6 +27,7 @@
 #include <CryptoContextCtrl.h>
 #include <CryptoContext.h>
 
+#include <crypto/SrtpSymCrypto.h>
 #include <crypto/hmac.h>
 #include <cryptcommon/macSkein.h>
 
@@ -159,7 +160,7 @@ CryptoContextCtrl::~CryptoContextCtrl(){
     aalg = SrtpAuthenticationNull;
 }
 
-void CryptoContextCtrl::srtcpEncrypt( uint8_t* rtp, int32_t len, uint64_t index, uint32_t ssrc )
+void CryptoContextCtrl::srtcpEncrypt( uint8_t* rtp, int32_t len, uint32_t index, uint32_t ssrc )
 {
     if (ealg == SrtpEncryptionNull) {
         return;
