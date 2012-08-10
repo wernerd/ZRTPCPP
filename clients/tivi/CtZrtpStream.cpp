@@ -1,3 +1,11 @@
+/*
+ * Tivi client glue code for ZRTP.
+ * Copyright (c) 2012 Slient Circle LLC.  All rights reserved.
+ *
+ *
+ * @author Werner Dittmann <Werner.Dittmann@t-online.de>
+ */
+
 #include <netinet/in.h>
 
 #include <libzrtpcpp/ZRtp.h>

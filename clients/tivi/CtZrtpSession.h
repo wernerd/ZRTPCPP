@@ -1,6 +1,10 @@
 /*
-*/
-
+ * Tivi client glue code for ZRTP.
+ * Copyright (c) 2012 Slient Circle LLC.  All rights reserved.
+ *
+ *
+ * @author Werner Dittmann <Werner.Dittmann@t-online.de>
+ */
 #ifndef _CTZRTPSESSION_H_
 #define _CTZRTPSESSION_H_
 
