@@ -53,7 +53,7 @@ class SrtpSymCrypto;
 class CryptoContextCtrl {
     public:
     /**
-     * Constructor for an active SRTCP cryptographic context.
+     * @brief Constructor for an active SRTCP cryptographic context.
      *
      * This constructor creates an active SRTCP cryptographic context were
      * algorithms are enabled, keys are computed and so on. This SRTCP
@@ -132,14 +132,14 @@ class CryptoContextCtrl {
                int32_t  tagLength);
 
     /**
-     * Destructor.
+     * @brief Destructor.
      *
      * Cleans the SRTCP cryptographic context.
      */
     ~CryptoContextCtrl();
 
     /**
-     * Perform SRTCP encryption.
+     * @brief Perform SRTCP encryption.
      *
      * This method encrypts <em>and</em> decrypts SRTCP payload data. Plain
      * data gets encrypted, encrypted data get decrypted.
@@ -159,7 +159,7 @@ class CryptoContextCtrl {
     void srtcpEncrypt(uint8_t* rtp, int32_t len, uint32_t index, uint32_t ssrc);
 
     /**
-     * Compute the authentication tag.
+     * @brief Compute the authentication tag.
      *
      * Compute the authentication tag according the the paramters in the
      * SRTCP Cryptograhic context.
@@ -180,7 +180,7 @@ class CryptoContextCtrl {
     void srtcpAuthenticate(uint8_t* rtp, int32_t len, uint32_t index, uint8_t* tag);
 
     /**
-     * Perform key derivation according to SRTCP specification
+     * @brief Perform key derivation according to SRTCP specification
      *
      * This method computes the session key, session authentication key and the
      * session salt key. This method must be called at least once after the
@@ -193,7 +193,7 @@ class CryptoContextCtrl {
      void deriveSrtcpKeys();
 
     /**
-     * Check for packet replay.
+     * @brief Check for packet replay.
      *
      * The method check if a received packet is either to old or was already
      * received.
@@ -210,7 +210,7 @@ class CryptoContextCtrl {
      bool checkReplay(uint32_t newSeqNumber);
 
     /**
-     * Update the SRTCP packet index.
+     * @brief Update the SRTCP packet index.
      *
      * Call this method after all checks were successful. See chapter
      * 3.3.1 in the RFC when to update the ROC and ROC processing.
@@ -221,25 +221,40 @@ class CryptoContextCtrl {
     void update(uint32_t newSeqNumber);
 
     /**
-     * Get the length of the SRTCP authentication tag in bytes.
+     * @brief Get the length of the SRTCP authentication tag in bytes.
      *
      * @return the length of the authentication tag.
      */
     inline int32_t getTagLength() const { return tagLength; }
 
     /**
-     * Get the length of the MKI in bytes.
+     * @brief Get the length of the MKI in bytes.
      *
      * @return the length of the MKI.
      */
     inline int32_t getMkiLength() const { return mkiLength; }
 
     /**
-     * Get the SSRC of this SRTCP Cryptograhic context.
+     * @brief Get the SSRC of this SRTCP Cryptograhic context.
      *
      * @return the SSRC.
      */
     inline uint32_t getSsrc() const { return ssrcCtx; }
+
+    /**
+     * @brief Get the SRTCP index field of this SRTCP Cryptograhic context.
+     *
+     * @return the SRTCP.
+     */
+    uint32_t getSrtcpIndex() const { return srtcpIndex; }
+
+    /**
+     * @brief Set the SRTCP index field of this SRTCP Cryptograhic context.
+     *
+     * @param index the new SRTCP index value.
+     *
+     */
+    void setSrtcpIndex(uint32_t index) { srtcpIndex = index; }
 
     /**
      * @brief Set the start (base) number to compute the PRF labels.
@@ -260,7 +275,7 @@ class CryptoContextCtrl {
     void setLabelbase(uint8_t base) { labelBase = base; }
 
     /**
-     * Derive a new Crypto Context for use with a new SSRC
+     * @brief Derive a new Crypto Context for use with a new SSRC
      *
      * This method returns a new CryptoContextCtrl initialized with the data
      * of this crypto context. The application can use this CryptoContextCtrl
@@ -308,6 +323,7 @@ class CryptoContextCtrl {
         int32_t akeyl;
         int32_t skeyl;
         int32_t tagLength;
+        uint32_t srtcpIndex;
         uint8_t labelBase;
 
         void*   macCtx;
@@ -321,12 +337,4 @@ class CryptoContextCtrl {
  */
 
 #endif
-
-/** EMACS **
- * Local variables:
- * mode: c++
- * c-default-style: ellemtel
- * c-basic-offset: 4
- * End:
- */
 

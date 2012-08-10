@@ -46,7 +46,7 @@ public:
 
     static int32_t unprotect(CryptoContext* pcc, uint8_t* buffer, size_t length, size_t* newLength);
 
-    static bool protectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t length, size_t* newLength, uint32_t *srtcpIndex);
+    static bool protectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t length, size_t* newLength);
 
     static int32_t unprotectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t length, size_t* newLength);
 

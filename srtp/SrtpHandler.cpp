@@ -176,7 +176,7 @@ int32_t SrtpHandler::unprotect(CryptoContext* pcc, uint8_t* buffer, size_t lengt
 }
 
 
-bool SrtpHandler::protectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t length, size_t* newLength, uint32_t *srtcpIndex)
+bool SrtpHandler::protectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t length, size_t* newLength)
 {
 
     if (pcc == NULL) {
@@ -186,9 +186,10 @@ bool SrtpHandler::protectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t le
     uint32_t ssrc = *(reinterpret_cast<uint32_t*>(buffer + 4)); // always SSRC of sender
     ssrc = ntohl(ssrc);
 
-    pcc->srtcpEncrypt(buffer + 8, length - 8, *srtcpIndex, ssrc);
+    uint32_t encIndex = pcc->getSrtcpIndex();
+    pcc->srtcpEncrypt(buffer + 8, length - 8, encIndex, ssrc);
 
-    uint32_t encIndex = *srtcpIndex | 0x80000000;  // set the E flag
+    encIndex |= 0x80000000;                                     // set the E flag
 
     // Fill SRTCP index as last word
     uint32_t* ip = reinterpret_cast<uint32_t*>(buffer+length);
@@ -200,8 +201,9 @@ bool SrtpHandler::protectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t le
     // Compute MAC and store in packet after the SRTCP index field
     pcc->srtcpAuthenticate(buffer, length, encIndex, buffer + length + sizeof(uint32_t));
 
-    (*srtcpIndex)++;
-    *srtcpIndex &= ~0x80000000;       // clear possible overflow
+    encIndex++;
+    encIndex &= ~0x80000000;                                // clear the E-flag and modulo 2^31
+    pcc->setSrtcpIndex(encIndex);
     *newLength = length + pcc->getTagLength() + sizeof(uint32_t);
 
     return true;
@@ -222,7 +224,7 @@ int32_t SrtpHandler::unprotectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size
     const uint32_t* index = reinterpret_cast<uint32_t*>(buffer + payloadLen);
 
     uint32_t encIndex = ntohl(*index);
-    uint32_t remoteIndex = encIndex & ~0x80000000;    // index without Encryption flag
+    uint32_t remoteIndex = encIndex & ~0x80000000;    // get index without Encryption flag
 
     if (!pcc->checkReplay(remoteIndex)) {
        return -2;
