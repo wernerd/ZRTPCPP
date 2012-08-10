@@ -16,41 +16,96 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 */
 
-/*
- * @author Werner Dittmann <Werner.Dittmann@t-online.de>
- */
-
 #include <stdint.h>
 
 class CryptoContext;
 class CryptoContextCtrl;
 
 /**
- * SRTP and SRTCP protect and unprotect functions.
+ * @brief SRTP and SRTCP protect and unprotect functions.
  *
- * The functions of this take a uint8_t buffer that must contain an RTP packet. The
- * functions also assume that the buffer contains all protocol relevant fields
- * (SSRC, sequence number etc.) in network order.
- *
- * When encrypting the buffer must big enough to store additional data, usually
- * 10 bytes if the application set the full authentication length (80 bit).
- *
- * All public functions expect the length of the input buffer in the @c length
- * parameter and the functions return the new length in parameter @c newLength.
+ * The static methods take SRTP or SRTCP crypto contexts, a pointer uint8_t buffer
+ * that must contain an RTP/SRTP packet and perform the actions necessary to protect
+ * the RTP/RTCP packet or to unprotect the SRTP/SRTCP packet.
  * 
+ * The methods assume that the buffer contains all protocol relevant fields (SSRC,
+ * sequence number etc.) in network order.
+ *
+ * When encrypting the buffer must be big enough to store additional data, usually
+ * 4 - 14 bytes, depending on how the application configured the authentication parameters.
+ *
+ * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 class SrtpHandler
 {
 public:
+    /**
+     * @brief Protect an RTP packet.
+     *
+     * @param pcc the SRTP CryptoContext instance
+     *
+     * @param buffer the RTP packet to protect
+     *
+     * @param length the length of the RTP packet data in bytes
+     *
+     * @param newLength the length of the resulting SRTP packet data in bytes
+     *
+     * @return @c true if protection was successful, @c false otherwise
+     */
     static bool protect(CryptoContext* pcc, uint8_t* buffer, size_t length, size_t* newLength);
 
+    /**
+     * @brief Unprotect a SRTP packet.
+     *
+     * @param pcc the SRTP CryptoContext instance
+     *
+     * @param buffer the SRTP packet to unprotect
+     *
+     * @param length the length of the SRTP packet data in bytes
+     *
+     * @param newLength the length of the resulting RTP packet data in bytes
+     *
+     * @return an integer value
+     *         - 1 - success
+     *         - -1 - SRTP authentication failed
+     *         - -2 - SRTP replay check failed
+     */
     static int32_t unprotect(CryptoContext* pcc, uint8_t* buffer, size_t length, size_t* newLength);
 
+    /**
+     * @brief Protect an RTCP packet.
+     *
+     * @param pcc the SRTCP CryptoContextCtrl instance
+     *
+     * @param buffer the RTCP packet to protect
+     *
+     * @param length the length of the RTCP packet data in bytes
+     *
+     * @param newLength the length of the resulting SRTCP packet data in bytes
+     *
+     * @return @c true if protection was successful, @c false otherwise
+     */
     static bool protectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t length, size_t* newLength);
 
+    /**
+     * @brief Unprotect a SRTCP packet.
+     *
+     * @param pcc the SRTCP CryptoContextCtrl instance
+     *
+     * @param buffer the SRTCP packet to unprotect
+     *
+     * @param length the length of the SRTCP packet data in bytes
+     *
+     * @param newLength the length of the resulting RTCP packet data in bytes
+     *
+     * @return an integer value
+     *         - 1 - success
+     *         - -1 - SRTCP authentication failed
+     *         - -2 - SRTCP replay check failed
+     */
     static int32_t unprotectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t length, size_t* newLength);
 
-//private:
+private:
     static bool decodeRtp(uint8_t* buffer, int32_t length, uint32_t *ssrc, uint16_t *seq, uint8_t** payload, int32_t *payloadlen);
 
 };

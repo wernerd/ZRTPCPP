@@ -36,7 +36,7 @@
 
 /**
  * @file SrtpSymCrypto.h
- * @brief Class which implements SRTP AES cryptographic functions
+ * @brief Class which implements SRTP cryptographic functions
  * 
  * @ingroup GNU_ZRTP
  * @{
@@ -56,7 +56,7 @@ typedef struct _f8_ctx {
 } F8_CIPHER_CTX;
 
 /**
- * Implments the SRTP encryption modes as defined in RFC3711
+ * @brief Implments the SRTP encryption modes as defined in RFC3711
  *
  * The SRTP specification defines two encryption modes, AES-CTR
  * (AES Counter mode) and AES-F8 mode. The AES-CTR is required,
@@ -74,10 +74,19 @@ typedef struct _f8_ctx {
  */
 class SrtpSymCrypto {
 public:
+    /**
+     * @brief Constructor that does not initialize key data
+     *
+     * @param algo
+     *    The Encryption algorithm to use.Possible values are <code>
+     *    SrtpEncryptionNull, SrtpEncryptionAESCM, SrtpEncryptionAESF8
+     *    SrtpEncryptionTWOCM, SrtpEncryptionTWOF8</code>. See chapter 4.1.1
+     *    for CM (Counter mode) and 4.1.2 for F8 mode.
+     */
     SrtpSymCrypto(int algo = SrtpEncryptionAESCM);
 
     /**
-     * Constructor that initializes key data
+     * @brief Constructor that initializes key data
      * 
      * @param key
      *     Pointer to key bytes.
@@ -87,17 +96,17 @@ public:
      *    The Encryption algorithm to use.Possible values are <code>
      *    SrtpEncryptionNull, SrtpEncryptionAESCM, SrtpEncryptionAESF8
      *    SrtpEncryptionTWOCM, SrtpEncryptionTWOF8</code>. See chapter 4.1.1
-     *    for AESCM (Counter mode) and 4.1.2 for AES F8 mode.
+     *    for CM (Counter mode) and 4.1.2 for F8 mode.
      */
     SrtpSymCrypto(uint8_t* key, int32_t key_length, int algo = SrtpEncryptionAESCM);
 
     ~SrtpSymCrypto();
 
     /**
-     * Encrypts the inpout to the output.
+     * @brief Encrypts the input to the output.
      *
      * Encrypts one input block to one output block. Each block
-     * is 16 bytes according to the AES encryption algorithm used.
+     * is 16 bytes according to the encryption algorithms used.
      *
      * @param input
      *    Pointer to input block, must be 16 bytes
@@ -108,7 +117,7 @@ public:
     void encrypt( const uint8_t* input, uint8_t* output );
 
     /**
-     * Set new key
+     * @brief Set new key
      *
      * @param key
      *   Pointer to key data, must have at least a size of keyLength 
@@ -122,7 +131,7 @@ public:
     bool setNewKey(const uint8_t* key, int32_t keyLength);
 
     /**
-     * Computes the cipher stream for AES CM mode.
+     * @brief Computes the cipher stream for AES CM mode.
      *
      * @param output
      *    Pointer to a buffer that receives the cipher stream. Must be
@@ -139,9 +148,9 @@ public:
     void get_ctr_cipher_stream(uint8_t* output, uint32_t length, uint8_t* iv);
 
     /**
-     * Counter-mode encryption.
+     * @brief Counter-mode encryption.
      *
-     * This method performs the AES CM encryption.
+     * This method performs the CM encryption.
      *
      * @param input
      *    Pointer to input buffer, must be <code>inputLen</code> bytes.
@@ -159,9 +168,9 @@ public:
     void ctr_encrypt(const uint8_t* input, uint32_t inputLen, uint8_t* output, uint8_t* iv );
 
     /**
-     * Counter-mode encryption, in place.
+     * @brief Counter-mode encryption, in place.
      *
-     * This method performs the AES CM encryption.
+     * This method performs the CM encryption.
      *
      * @param data
      *    Pointer to input and output block, must be <code>dataLen</code>
@@ -177,12 +186,12 @@ public:
     void ctr_encrypt(uint8_t* data, uint32_t data_length, uint8_t* iv );
 
     /**
-     * Derive a AES context to compute the IV'.
+     * @brief Derive a cipher context to compute the IV'.
      *
      * See chapter 4.1.2.1 in RFC 3711.
      *
      * @param f8Cipher
-     *    Pointer to the AES context that will be used to encrypt IV to IV'
+     *    Pointer to the cipher context that will be used to encrypt IV to IV'
      *
      * @param key
      *    The master key
@@ -199,10 +208,9 @@ public:
     void f8_deriveForIV(SrtpSymCrypto* f8Cipher, uint8_t* key, int32_t keyLen, uint8_t* salt, int32_t saltLen);
 
     /**
-     * AES F8 mode encryption, in place.
+     * @brief F8 mode encryption, in place.
      *
-     * This method performs the AES F8 encryption, see chapter 4.1.2
-     * in RFC 3711.
+     * This method performs the F8 encryption, see chapter 4.1.2 in RFC 3711.
      *
      * @param data
      *    Pointer to input and output block, must be <code>dataLen</code>
@@ -221,10 +229,9 @@ public:
     void f8_encrypt(const uint8_t* data, uint32_t dataLen, uint8_t* iv, SrtpSymCrypto* f8Cipher);
 
     /**
-     * AES F8 mode encryption.
+     * @brief F8 mode encryption.
      *
-     * This method performs the AES F8 encryption, see chapter 4.1.2
-     * in RFC 3711.
+     * This method performs the F8 encryption, see chapter 4.1.2 in RFC 3711.
      *
      * @param data
      *    Pointer to input and output block, must be <code>dataLen</code>
@@ -255,7 +262,7 @@ private:
 int testF8();
 #pragma GCC visibility pop
 
-/* Only SrtpSymCrypto functions define the MAKE_F8_TEST */
+/* Only SrtpSymCrypto functions defines the MAKE_F8_TEST */
 #ifdef MAKE_F8_TEST
 
 #include <cstring>
@@ -385,12 +392,4 @@ int testF8()
  */
 
 #endif
-
-/** EMACS **
- * Local variables:
- * mode: c++
- * c-default-style: ellemtel
- * c-basic-offset: 4
- * End:
- */
 

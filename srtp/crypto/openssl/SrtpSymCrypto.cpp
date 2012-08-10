@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2005, 2004, 2012 Erik Eliasson, Johan Bilien, Werner Dittmann
+  Copyright (C) 2012 Werner Dittmann
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -30,8 +30,6 @@
   */
 
 /**
- * @author Erik Eliasson <eliasson@it.kth.se>
- * @author Johan Bilien <jobi@via.ecp.fr>
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
@@ -314,13 +312,4 @@ int SrtpSymCrypto::processBlock(F8_CIPHER_CTX *f8ctx, const uint8_t* in, int32_t
     }
     return length;
 }
-
-
-/** EMACS **
- * Local variables:
- * mode: c++
- * c-default-style: ellemtel
- * c-basic-offset: 4
- * End:
- */
 

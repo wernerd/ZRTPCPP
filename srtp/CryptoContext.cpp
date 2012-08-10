@@ -186,7 +186,7 @@ void CryptoContext::srtpEncrypt(uint8_t* pkt, uint8_t* payload, uint32_t paylen,
             iv[i] = (0xFF & (ssrc >> ((7-i)*8))) ^ k_s[i];
         }
         for (i = 8; i < 14; i++ ) {
-            iv[i] = (0xFF & (unsigned char)( index >> ((13-i)*8) ) ) ^ k_s[i];
+            iv[i] = (0xFF & (unsigned char)(index >> ((13-i)*8) ) ) ^ k_s[i];
         }
         iv[14] = iv[15] = 0;
 
@@ -296,7 +296,7 @@ void CryptoContext::deriveSrtpKeys(uint64_t index)
 {
     uint8_t iv[16];
 
-    // prepare AES cipher to compute derived keys.
+    // prepare cipher to compute derived keys.
     cipher->setNewKey(master_key, master_key_length);
     memset(master_key, 0, master_key_length);
 
@@ -328,7 +328,7 @@ void CryptoContext::deriveSrtpKeys(uint64_t index)
     cipher->get_ctr_cipher_stream(k_s, n_s, iv);
     memset(master_salt, 0, master_salt_length);
 
-    // as last step prepare AES cipher with derived key.
+    // as last step prepare cipher with derived key.
     cipher->setNewKey(k_e, n_e);
     if (f8Cipher != NULL)
         cipher->f8_deriveForIV(f8Cipher, k_e, n_e, k_s, n_s);
@@ -449,12 +449,3 @@ CryptoContext* CryptoContext::newCryptoContextForSSRC(uint32_t ssrc, int roc, in
 
     return pcc;
 }
-
-/** EMACS **
- * Local variables:
- * mode: c++
- * c-default-style: ellemtel
- * c-basic-offset: 4
- * End:
- */
-
