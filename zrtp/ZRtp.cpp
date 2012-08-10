@@ -2145,10 +2145,14 @@ bool ZRtp::srtpSecretsReady(EnableSecurity part) {
         std::string cs(cipher->getReadable());
         if (!multiStream) {
             cs.append("/").append(pubKey->getName());
+            if (mitmSeen)
+                cs.append("/EndAtMitM");
             callback->srtpSecretsOn(cs, SAS, zidRec->isSasVerified());
         }
         else {
             std::string cs1("");
+            if (mitmSeen)
+                cs.append("/EndAtMitM");
             callback->srtpSecretsOn(cs, cs1, true);
         }
     }
