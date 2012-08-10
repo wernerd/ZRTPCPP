@@ -130,7 +130,7 @@ class SrtpSymCrypto;
 class CryptoContext {
 public:
     /**
-     * Constructor for an active SRTP cryptographic context.
+     * @brief Constructor for an active SRTP cryptographic context.
      *
      * This constructor creates an pre-initialized SRTP cryptographic context were
      * algorithms are allocated, keys are stored and so on. An application can
@@ -219,14 +219,14 @@ public:
                    int32_t  tagLength);
 
     /**
-     * Destructor.
+     * @brief Destructor.
      *
      * Cleans the SRTP cryptographic context.
      */
     ~CryptoContext();
 
     /**
-     * Set the Roll-Over-Counter.
+     * @brief Set the Roll-Over-Counter.
      *
      * Ths method sets the upper 32 bit of the 48 bit SRTP packet index
      * (the roll-over-part)
@@ -237,7 +237,7 @@ public:
     inline void setRoc(uint32_t r) { roc = r; }
 
     /**
-     * Get the Roll-Over-Counter.
+     * @brief Get the Roll-Over-Counter.
      *
      * Ths method get the upper 32 bit of the 48 bit SRTP packet index
      * (the roll-over-part)
@@ -247,7 +247,7 @@ public:
     inline uint32_t getRoc() const { return roc; }
 
     /**
-     * Perform SRTP encryption.
+     * @brief Perform SRTP encryption.
      *
      * This method encrypts <em>and</em> decrypts SRTP payload data. Plain
      * data gets encrypted, encrypted data get decrypted.
@@ -271,7 +271,7 @@ public:
     void srtpEncrypt(uint8_t* pkt, uint8_t* payload, uint32_t paylen, uint64_t index, uint32_t ssrc);
 
     /**
-     * Compute the authentication tag.
+     * @brief Compute the authentication tag.
      *
      * Compute the authentication tag according the the paramters in the
      * SRTP Cryptograhic context.
@@ -292,7 +292,7 @@ public:
     void srtpAuthenticate(uint8_t* pkt, uint32_t pktlen, uint32_t roc, uint8_t* tag);
 
     /**
-     * Perform key derivation according to SRTP specification
+     * @brief Perform key derivation according to SRTP specification
      *
      * This method computes the session key, session authentication key and the
      * session salt key. This method must be called at least once after the
@@ -308,7 +308,7 @@ public:
     void deriveSrtpKeys(uint64_t index);
 
     /**
-     * Compute (guess) the new SRTP index based on the sequence number of
+     * @brief Compute (guess) the new SRTP index based on the sequence number of
      * a received RTP packet.
      *
      * The method uses the algorithm show in RFC3711, Appendix A, to compute
@@ -322,7 +322,7 @@ public:
     uint64_t guessIndex(uint16_t newSeqNumber);
 
     /**
-     * Check for packet replay.
+     * @brief Check for packet replay.
      *
      * The method check if a received packet is either to old or was already
      * received.
@@ -339,7 +339,7 @@ public:
     bool checkReplay(uint16_t newSeqNumber);
 
     /**
-     * Update the SRTP packet index.
+     * @brief Update the SRTP packet index.
      *
      * Call this method after all checks were successful. See chapter
      * 3.3.1 in the RFC when to update the ROC and ROC processing.
@@ -350,21 +350,21 @@ public:
     void update(uint16_t newSeqNumber);
 
     /**
-     * Get the length of the SRTP authentication tag in bytes.
+     * @brief Get the length of the SRTP authentication tag in bytes.
      *
      * @return the length of the authentication tag.
      */
     int32_t getTagLength() const { return tagLength; }
 
     /**
-     * Get the length of the MKI in bytes.
+     * @brief Get the length of the MKI in bytes.
      *
      * @return the length of the MKI.
      */
     int32_t getMkiLength() const { return mkiLength; }
 
     /**
-     * Get the SSRC of this SRTP Cryptograhic context.
+     * @brief Get the SSRC of this SRTP Cryptograhic context.
      *
      * @return the SSRC.
      */
@@ -389,7 +389,7 @@ public:
     void setLabelbase(uint8_t base) { labelBase = base; }
 
     /**
-     * Derive a new Crypto Context for use with a new SSRC
+     * @brief Derive a new Crypto Context for use with a new SSRC
      *
      * This method returns a new Crypto Context initialized with the data
      * of this crypto context. Replacing the SSRC, Roll-over-Counter, and
@@ -461,12 +461,4 @@ private:
  * @}
  */
 #endif
-
-/** EMACS **
- * Local variables:
- * mode: c++
- * c-default-style: ellemtel
- * c-basic-offset: 4
- * End:
- */
 
