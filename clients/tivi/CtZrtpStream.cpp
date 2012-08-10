@@ -28,7 +28,7 @@ CtZrtpStream::CtZrtpStream():
     index(CtZrtpSession::AudioStream), type(CtZrtpSession::NoStream), zrtpEngine(NULL),
     ownSSRC(0), enableZrtp(0), started(false), isStopped(false), session(NULL), tiviState(CtZrtpSession::eLookingPeer),
     prevTiviState(CtZrtpSession::eLookingPeer), recvSrtp(NULL), recvSrtcp(NULL), sendSrtp(NULL), sendSrtcp(NULL),
-    zrtpUserCallback(NULL), senderZrtpSeqNo(0), peerSSRC(0), protect(0), unprotect(0), unprotectFailed(0), srtcpIndex(0),
+    zrtpUserCallback(NULL), senderZrtpSeqNo(0), peerSSRC(0), protect(0), unprotect(0), unprotectFailed(0),
     zrtpHashMatch(false), sasVerified(false), sdes(NULL), supressCounter(0), srtpErrorBurst(0)
 {
     synchLock = new CMutexClass();
@@ -70,7 +70,6 @@ void CtZrtpStream::stopStream() {
     senderZrtpSeqNo =  4711;     // TODO: get 15 bit random number
     unprotect = 0;
     unprotectFailed = 0;
-    srtcpIndex = 0;
     zrtpHashMatch= false;
     sasVerified = false;
     supressCounter = 0;
@@ -646,12 +645,14 @@ void CtZrtpStream::srtpSecretsOn(std::string cipher, std::string sas, bool verif
     // TODO Discuss with Janis what else to do? Set other state, for example eSecureMitmVia or some string?
     tiviState = CtZrtpSession::eSecure;
     if (cipher.find ("SASviaMitM", cipher.size() - 10, 10) != std::string::npos) { // Found: SAS via PBX
-        tiviState = CtZrtpSession::eSecureMitmVia;  //eSecureMitmVia ?
+        tiviState = CtZrtpSession::eSecureMitmVia;  //eSecureMitmVia
     }
     else if (cipher.find ("MitM", cipher.size() - 4, 4) != std::string::npos) {
         tiviState = CtZrtpSession::eSecureMitm;
     }
-
+    else if (cipher.find ("EndAtMitM", cipher.size() - 9, 9) != std::string::npos) {
+        tiviState = CtZrtpSession::eSecureMitm;
+    }
     sasVerified = verified;
     if (zrtpUserCallback != NULL) {
         char *strng = NULL;

@@ -316,7 +316,6 @@ private:
     uint64_t protect;
     uint64_t unprotect;
     uint64_t unprotectFailed;
-    uint32_t srtcpIndex;
     std::string peerHelloHash;
     bool     zrtpHashMatch;
     bool     sasVerified;
