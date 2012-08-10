@@ -293,7 +293,7 @@ void CryptoContextCtrl::deriveSrtcpKeys()
 {
     uint8_t iv[16];
 
-    // prepare AES cipher to compute derived keys.
+    // prepare cipher to compute derived keys.
     cipher->setNewKey(master_key, master_key_length);
     memset(master_key, 0, master_key_length);
 
@@ -325,7 +325,7 @@ void CryptoContextCtrl::deriveSrtcpKeys()
     cipher->get_ctr_cipher_stream(k_s, n_s, iv);
     memset(master_salt, 0, master_salt_length);
 
-    // as last step prepare AES cipher with derived key.
+    // as last step prepare cipher with derived key.
     cipher->setNewKey(k_e, n_e);
     if (f8Cipher != NULL)
         cipher->f8_deriveForIV(f8Cipher, k_e, n_e, k_s, n_s);
@@ -394,12 +394,3 @@ CryptoContextCtrl* CryptoContextCtrl::newCryptoContextForSSRC(uint32_t ssrc)
 
     return pcc;
 }
-
-/** EMACS **
- * Local variables:
- * mode: c++
- * c-default-style: ellemtel
- * c-basic-offset: 4
- * End:
- */
-

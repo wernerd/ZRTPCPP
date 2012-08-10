@@ -99,8 +99,9 @@ bool SrtpHandler::protect(CryptoContext* pcc, uint8_t* buffer, size_t length, si
     // take MKI length into account when storing the authentication tag.
 
     /* Compute MAC and store at end of RTP packet data */
-    pcc->srtpAuthenticate(buffer, length, pcc->getRoc(), buffer+length);
-
+    if (pcc->getTagLength() > 0) {
+        pcc->srtpAuthenticate(buffer, length, pcc->getRoc(), buffer+length);
+    }
     *newLength = length + pcc->getTagLength();
 
     /* Update the ROC if necessary */
@@ -126,8 +127,7 @@ int32_t SrtpHandler::unprotect(CryptoContext* pcc, uint8_t* buffer, size_t lengt
 //    fprintf(stderr, "decoded - ssrc: %x, seq: %d, payload: %p, paylen: %d\n", ssrc, seqnum, payload, payloadlen);
 
     /*
-     * This is the setting of the packet data when we come to this
-     * point:
+     * This is the setting of the packet data when we come to this point:
      *
      * length:      complete length of received data
      * buffer:      points to data as received from network
@@ -137,7 +137,6 @@ int32_t SrtpHandler::unprotect(CryptoContext* pcc, uint8_t* buffer, size_t lengt
      * The SRTP MKI and authentication data is always at the end of a
      * packet. Thus compute the position of this data.
      */
-
     uint32_t srtpDataIndex = length - (pcc->getTagLength() + pcc->getMkiLength());
 
     // Compute new length
@@ -148,7 +147,7 @@ int32_t SrtpHandler::unprotect(CryptoContext* pcc, uint8_t* buffer, size_t lengt
     payloadlen -= pcc->getTagLength() + pcc->getMkiLength();
 
     // MKI is unused, so just skip it
-    // const uint8* mki = buffer + srtpDataIndex + srtpDataIndex;
+    // const uint8* mki = buffer + srtpDataIndex;
     uint8_t* tag = buffer + srtpDataIndex + pcc->getMkiLength();
 
     /* Replay control */
@@ -158,14 +157,15 @@ int32_t SrtpHandler::unprotect(CryptoContext* pcc, uint8_t* buffer, size_t lengt
     /* Guess the index */
     uint64_t guessedIndex = pcc->guessIndex(seqnum);
 
-    uint32_t guessedRoc = guessedIndex >> 16;
-    uint8_t mac[20];
+    if (pcc->getTagLength() > 0) {
+        uint32_t guessedRoc = guessedIndex >> 16;
+        uint8_t mac[20];
 
-    pcc->srtpAuthenticate(buffer, (uint32_t)length, guessedRoc, mac);
-    if (memcmp(tag, mac, pcc->getTagLength()) != 0) {
-        return -1;
+        pcc->srtpAuthenticate(buffer, (uint32_t)length, guessedRoc, mac);
+        if (memcmp(tag, mac, pcc->getTagLength()) != 0) {
+            return -1;
+        }
     }
-
     /* Decrypt the content */
     pcc->srtpEncrypt(buffer, payload, payloadlen, guessedIndex, ssrc);
 
