@@ -116,7 +116,7 @@ protected:
     bool processOutgoingRtp(uint8_t *buffer, size_t length, size_t *newLength);
 
     /**
-     * Process incoming data.
+     * @brief Process incoming data.
      *
      * Depending on the state of the buffer the functions either returns the RTP data
      * in the buffer either umodified or decrypted. An additional status is @c drop.

@@ -477,4 +477,3 @@ void CtZrtpSession::synchEnter() {
 void CtZrtpSession::synchLeave() {
     sessionLock.Unlock();
 }
-

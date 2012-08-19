@@ -36,8 +36,8 @@ CtZrtpStream::CtZrtpStream():
     index(CtZrtpSession::AudioStream), type(CtZrtpSession::NoStream), zrtpEngine(NULL),
     ownSSRC(0), enableZrtp(0), started(false), isStopped(false), session(NULL), tiviState(CtZrtpSession::eLookingPeer),
     prevTiviState(CtZrtpSession::eLookingPeer), recvSrtp(NULL), recvSrtcp(NULL), sendSrtp(NULL), sendSrtcp(NULL),
-    zrtpUserCallback(NULL), senderZrtpSeqNo(0), peerSSRC(0), protect(0), unprotect(0), unprotectFailed(0),
-    zrtpHashMatch(false), sasVerified(false), sdes(NULL), supressCounter(0), srtpErrorBurst(0)
+    zrtpUserCallback(NULL), zrtpSendCallback(NULL), senderZrtpSeqNo(0), peerSSRC(0), protect(0), unprotect(0),
+    unprotectFailed(0), zrtpHashMatch(false), sasVerified(false), sdes(NULL), supressCounter(0), srtpErrorBurst(0)
 {
     synchLock = new CMutexClass();
 
@@ -61,6 +61,7 @@ void CtZrtpStream::setSendCallback(CtZrtpSendCb* scb) {
 CtZrtpStream::~CtZrtpStream() {
     stopStream();
     delete synchLock;
+    synchLock = NULL;
 }
 
 void CtZrtpStream::stopStream() {
@@ -103,8 +104,9 @@ void CtZrtpStream::stopStream() {
     delete sdes;
     sdes = NULL;
 
-    // Don't delete the next two classes, we don't own them.
+    // Don't delete the next classes, we don't own them.
     zrtpUserCallback = NULL;
+    zrtpSendCallback = NULL;
     session = NULL;
 }
 
@@ -141,7 +143,7 @@ bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *ne
 int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, size_t length, size_t *newLength) {
     int32_t rc = 0;
     // check if this could be a real RTP/SRTP packet.
-    if ((*buffer & 0xf0) == 0x80) {             // A real RTP, check if we are in secure mode
+    if ((*buffer & 0xc0) == 0x80) {             // A real RTP, check if we are in secure mode
         if (supressCounter < supressWarn)
             supressCounter++;
         if (recvSrtp == NULL) {                 // no ZRTP/SRTP available
@@ -258,7 +260,7 @@ void CtZrtpStream::setSignalingHelloHash(const char *hHash) {
     }
     size_t hexStringStart = ph.find_last_of(' ');
     std::string hexString = ph.substr(hexStringStart+1);
- 
+
     if (hexString.compare(peerHelloHash) == 0) {
         zrtpHashMatch = true;
         // We have a matching zrtp-hash. If ZRTP/SRTP is active we may need to release
@@ -560,11 +562,11 @@ bool CtZrtpStream::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
         if (senderCryptoContext == NULL) {
             return false;
         }
+        senderCryptoContext->deriveSrtpKeys(0L);
         sendSrtp = senderCryptoContext;
-        sendSrtp->deriveSrtpKeys(0L);
 
+        senderCryptoContextCtrl->deriveSrtcpKeys();
         sendSrtcp = senderCryptoContextCtrl;
-        sendSrtcp->deriveSrtcpKeys();
     }
     if (part == ForReceiver) {
         // To decrypt packets: intiator uses responder keys,
@@ -629,11 +631,11 @@ bool CtZrtpStream::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
         if (recvCryptoContext == NULL) {
             return false;
         }
+        recvCryptoContext->deriveSrtpKeys(0L);
         recvSrtp = recvCryptoContext;
-        recvSrtp->deriveSrtpKeys(0L);
 
+        recvCryptoContextCtrl->deriveSrtcpKeys();
         recvSrtcp = recvCryptoContextCtrl;
-        recvSrtcp->deriveSrtcpKeys();
 
         supressCounter = 0;         // supress SRTP warnings for some packets after we switch to SRTP
     }
