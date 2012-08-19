@@ -214,7 +214,7 @@ int ecGetCurveNistECp(NistCurves curveId, NistECpCurve *curve)
     bnBegin(&curve->_n);    curve->n = &curve->_n;
     bnBegin(&curve->_SEED); curve->SEED = &curve->_SEED;
     bnBegin(&curve->_c);    curve->c = &curve->_c;
-    bnBegin(&curve->_a);    curve->a = &curve->_c;
+    bnBegin(&curve->_a);    curve->a = &curve->_a;
     bnBegin(&curve->_b);    curve->b = &curve->_b;
     bnBegin(&curve->_Gx);   curve->Gx = &curve->_Gx;
     bnBegin(&curve->_Gy);   curve->Gy = &curve->_Gy;
@@ -467,7 +467,6 @@ int ecGenerateRandomNumber(const NistECpCurve *curve, BigNum *d)
         _random(ran, randomBytes);
         bnInsertBigBytes(&c, ran, 0, randomBytes);
         bnMod(d, &c, &nMinusOne);
-        bnAddMod_(d, mpiOne, curve->p);
     }
 
     bnEnd(&c);
