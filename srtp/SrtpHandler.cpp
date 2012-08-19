@@ -39,9 +39,11 @@ bool SrtpHandler::decodeRtp(uint8_t* buffer, int32_t length, uint32_t *ssrc, uin
 
     /* Assume RTP header at the start of buffer. */
 
-    if ((*buffer & 0xf0) != 0x80) {         // check version bits
+    if ((*buffer & 0xC0) != 0x80) {         // check version bits
         return false;
     }
+    if (length < RTP_HEADER_LENGTH)
+        return false;
 
     /* Get some handy pointers */
     pus = (uint16_t*)buffer;
@@ -53,24 +55,26 @@ bool SrtpHandler::decodeRtp(uint8_t* buffer, int32_t length, uint32_t *ssrc, uin
     uint32_t tmp32 = pui[2];                    // get SSRC
     *ssrc = ntohl(tmp32);                       // and return in host order
 
-
     /* Payload is located right after header plus CSRC */
     int32_t numCC = buffer[0] & 0x0f;           // lower 4 bits in first byte is num of contrib SSRC
-    offset =  RTP_HEADER_LENGTH + (numCC * sizeof(uint32_t));
+    offset = RTP_HEADER_LENGTH + (numCC * sizeof(uint32_t));
+
+    // Sanity check
+    if (offset > length)
+        return false;
 
     /* Adjust payload offset if RTP extension is used. */
-    if ((*buffer & 0xf0) == 0x10) {             // packet contains RTP extension
+    if ((*buffer & 0x10) == 0x10) {             // packet contains RTP extension
         pus = (uint16_t*)(buffer + offset);     // pus points to extension as 16bit pointer
         tmp16 = pus[1];                         // the second 16 bit word is the length
         tmp16 = ntohs(tmp16);                   // to host order
         offset += (tmp16 + 1) * sizeof(uint32_t);
     }
-
     /* Sanity check */
     if (offset > length)
         return false;
 
-    /* Find and set payload and payload length. */
+    /* Set payload and payload length. */
     *payload = buffer + offset;
     *payloadlen = length - offset;
 
@@ -79,16 +83,17 @@ bool SrtpHandler::decodeRtp(uint8_t* buffer, int32_t length, uint32_t *ssrc, uin
 
 bool SrtpHandler::protect(CryptoContext* pcc, uint8_t* buffer, size_t length, size_t* newLength)
 {
-    uint8_t* payload;
-    int32_t payloadlen;
+    uint8_t* payload = NULL;
+    int32_t payloadlen = 0;
     uint16_t seqnum;
     uint32_t ssrc;
 
 
     if (pcc == NULL) {
-        return 0;
+        return false;
     }
-    decodeRtp(buffer, length, &ssrc, &seqnum, &payload, &payloadlen);
+    if (!decodeRtp(buffer, length, &ssrc, &seqnum, &payload, &payloadlen))
+        return false;
 
     /* Encrypt the packet */
     uint64_t index = ((uint64_t)pcc->getRoc() << 16) | (uint64_t)seqnum;
@@ -108,13 +113,13 @@ bool SrtpHandler::protect(CryptoContext* pcc, uint8_t* buffer, size_t length, si
     if (seqnum == 0xFFFF ) {
         pcc->setRoc(pcc->getRoc() + 1);
     }
-    return 1;
+    return true;
 }
 
 int32_t SrtpHandler::unprotect(CryptoContext* pcc, uint8_t* buffer, size_t length, size_t* newLength)
 {
-    uint8_t* payload;
-    int32_t payloadlen;
+    uint8_t* payload = NULL;
+    int32_t payloadlen = 0;
     uint16_t seqnum;
     uint32_t ssrc;
 
@@ -122,10 +127,8 @@ int32_t SrtpHandler::unprotect(CryptoContext* pcc, uint8_t* buffer, size_t lengt
         return 0;
     }
 
-//    fprintf(stderr, "decoding - buffer: %p\n", buffer);
-    decodeRtp(buffer, length, &ssrc, &seqnum, &payload, &payloadlen);
-//    fprintf(stderr, "decoded - ssrc: %x, seq: %d, payload: %p, paylen: %d\n", ssrc, seqnum, payload, payloadlen);
-
+    if (!decodeRtp(buffer, length, &ssrc, &seqnum, &payload, &payloadlen))
+        return 0;
     /*
      * This is the setting of the packet data when we come to this point:
      *
