@@ -405,6 +405,7 @@ int32_t ZrtpDH::getPubKeyBytes(uint8_t *buf) const
 int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
 {
 
+    /* ECC validation (partial), NIST SP800-56A, section 5.6.2.6 */
     if (pkType == EC25 || pkType == EC38) {
 
         struct BigNum t1, t2;
@@ -425,8 +426,8 @@ int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
         if (bnCmpQ(pub.x, 0) == 0 && bnCmpQ(pub.y, 0) == 0) {
             goto fail;
         }
-        /* Check coordinates within range */
-        if (bnCmpQ (pub.x, 0) < 0 || bnCmp(pub.x, tmpCtx->curve.p) >= 0) {
+        /* Check that coordinates are within range */
+        if (bnCmpQ(pub.x, 0) < 0 || bnCmp(pub.x, tmpCtx->curve.p) >= 0) {
             goto fail;
         }
         if (bnCmpQ(pub.y, 0) < 0 || bnCmp(pub.y, tmpCtx->curve.p) >= 0) {

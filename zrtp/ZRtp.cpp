@@ -15,7 +15,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*F
+/*
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 #include <sstream>
