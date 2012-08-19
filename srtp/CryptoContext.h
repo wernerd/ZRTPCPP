@@ -41,6 +41,8 @@ const int SrtpEncryptionTWOF8 = 4;
 // Check if included via CryptoContextCtrl.cpp - avoid double definitions
 #ifndef CRYPTOCONTEXTCTRL_H
 
+#include <stdint.h>
+
 class SrtpSymCrypto;
 
 /**

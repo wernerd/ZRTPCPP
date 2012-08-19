@@ -99,6 +99,7 @@ public:
      * @param newLength the length of the resulting RTCP packet data in bytes
      *
      * @return an integer value
+     *         - 0 - illegal packet (too short, not a valid RTP header byte), dismiss it
      *         - 1 - success
      *         - -1 - SRTCP authentication failed
      *         - -2 - SRTCP replay check failed
