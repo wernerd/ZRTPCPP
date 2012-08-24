@@ -1737,7 +1737,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
 
     //Very first element is a fixed counter, big endian
     counter = 1;
-    counter = htonl(counter);
+    counter = zrtpHtonl(counter);
     data[pos] = (unsigned char*)&counter;
     length[pos++] = sizeof(uint32_t);
 
@@ -1772,7 +1772,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
      * this length stuff again.
      */
     int secretHashLen = RS_LENGTH;
-    secretHashLen = htonl(secretHashLen);        // prepare 32 bit big-endian number
+    secretHashLen = zrtpHtonl(secretHashLen);        // prepare 32 bit big-endian number
 
     for (int32_t i = 0; i < 3; i++) {
         if (setD[i] != NULL) {           // a matching secret, set length, then secret
@@ -1896,7 +1896,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
 
     //Very first element is a fixed counter, big endian
     counter = 1;
-    counter = htonl(counter);
+    counter = zrtpHtonl(counter);
     data[pos] = (unsigned char*)&counter;
     length[pos++] = sizeof(uint32_t);
 
@@ -1931,7 +1931,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
      * this length stuff again.
      */
     int secretHashLen = RS_LENGTH;
-    secretHashLen = htonl(secretHashLen);        // prepare 32 bit big-endian number
+    secretHashLen = zrtpHtonl(secretHashLen);        // prepare 32 bit big-endian number
 
     for (int32_t i = 0; i < 3; i++) {
         if (setD[i] != NULL) {           // a matching secret, set length, then secret
@@ -1971,7 +1971,7 @@ void ZRtp::KDF(uint8_t* key, uint32_t keyLength, uint8_t* label, int32_t labelLe
 
     // Very first element is a fixed counter, big endian
     uint32_t counter = 1;
-    counter = htonl(counter);
+    counter = zrtpHtonl(counter);
     data[pos] = (unsigned char*)&counter;
     length[pos++] = sizeof(uint32_t);
 
@@ -1984,7 +1984,7 @@ void ZRtp::KDF(uint8_t* key, uint32_t keyLength, uint8_t* label, int32_t labelLe
     length[pos++] = contextLength;
 
     // last element is HMAC length in bits, big endian
-    uint32_t len = htonl(L);
+    uint32_t len = zrtpHtonl(L);
     data[pos] = (unsigned char*)&len;
     length[pos++] = sizeof(uint32_t);
 

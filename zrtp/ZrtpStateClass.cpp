@@ -98,7 +98,7 @@ void ZrtpStateClass::processEvent(Event_t *ev) {
         // Sanity check of packet size for all states except WaitErrorAck.
         if (!inState(WaitErrorAck)) {
             uint16_t totalLength = *(uint16_t*)(pkt+2);
-            totalLength = ntohs(totalLength) * ZRTP_WORD_SIZE;
+            totalLength = zrtpNtohs(totalLength) * ZRTP_WORD_SIZE;
             totalLength += 12 + sizeof(uint32_t);           // !2 bytes is fixed header, uint32_t is CRC
 
             if (totalLength != ev->length) {

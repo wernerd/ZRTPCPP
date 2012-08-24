@@ -52,10 +52,10 @@ class __EXPORT ZrtpPacketError : public ZrtpPacketBase {
     virtual ~ZrtpPacketError();
 
     /// Get the error code from Error message
-    uint32_t getErrorCode() { return ntohl(errorHeader->errorCode); };
+    uint32_t getErrorCode() { return zrtpNtohl(errorHeader->errorCode); };
 
     /// Set error code in Error message
-    void setErrorCode(uint32_t code) {errorHeader->errorCode = htonl(code); };
+    void setErrorCode(uint32_t code) {errorHeader->errorCode = zrtpHtonl(code); };
 
  private:
      ErrorPacket_t data;

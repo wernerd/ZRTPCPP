@@ -6,7 +6,6 @@
  *
  */
 #include <stdio.h>
-#include <sys/time.h>
 #include <stdlib.h>
 #include <stdint.h>
 
@@ -162,37 +161,6 @@ int bnSquareMod_ (struct BigNum *rslt, struct BigNum *n1, struct BigNum *mod)
     return 0;
 }
 
-/**
- * \brief          Signed substraction modulo: X = A - B mod M.
- *
- * \param          X  Address of destination MPI
- * \param          A  Address of Left-hand MPI
- * \param          B  Address of Right-hand MPI
- * \param          M  Address of Modulo
- */
-/* #define MPI_SUB_MPI_MOD(X, A, B, M) {MPI_CHK(mpi_sub_mpi(X, A, B)); if (mpi_cmp_int(X, 0) < 0) {MPI_CHK(mpi_add_mpi(X, X, M));}} */
-
-/**
- * \brief          Signed addition modulo: X = A + B mod M.
- *
- * \param          X  Address of destination MPI
- * \param          A  Address of Left-hand MPI
- * \param          B  Address of Right-hand MPI
- * \param          M  Address of Modulo
- */
-/*#define MPI_ADD_MPI_MOD(X, A, B, M) {MPI_CHK(mpi_add_mpi(X, A, B)); if (mpi_cmp_mpi(X, M) >= 0) {MPI_CHK(mpi_sub_mpi(X, X, M));}} */
-
-/**
- * \brief          Signed multiplication modulo: X = A * B mod M.
- *
- * \param          X  Address of destination MPI
- * \param          A  Address of Left-hand MPI
- * \param          B  Address of Right-hand MPI
- * \param          M  Address of Modulo
- */
-/*#define MPI_MUL_MPI_MOD(X, A, B, M) {MPI_CHK(mpi_mul_mpi(X, A, B)); if (mpi_cmp_mpi(X, M) >= 0) {MPI_CHK(mpi_mod_mpi(X, X, M));}}*/
-
-
 int ecGetCurveNistECp(NistCurves curveId, NistECpCurve *curve)
 {
     size_t maxBits;
@@ -314,84 +282,208 @@ void ecFreeCurveNistECp(NistECpCurve *curve)
 /*    Elliptic Curve arithmetic                                               */
 /*============================================================================*/
 
+int ecGetAffine(const NistECpCurve *curve, EcPoint *R, const EcPoint *P)
+{
+    int ret = 0;
+
+    struct BigNum z_1, z_2;
+
+    bnBegin(&z_1);
+    bnBegin(&z_2);
+
+    /* affine x = X / Z^2 */
+    bnInv (&z_1, P->z, curve->p);          /* z_1 = Z^(-1) */
+    bnMulMod_(&z_2, &z_1, &z_1, curve->p); /* z_2 = Z^(-2) */
+    bnMulMod_(R->x, P->x, &z_2, curve->p);
+    
+    /* affine y = Y / Z^3 */
+    bnMulMod_(&z_2, &z_2, &z_1, curve->p); /* z_2 = Z^(-3) */
+    bnMulMod_(R->y, P->y, &z_2, curve->p);
+
+    bnSetQ(R->z, 1);
+
+    bnEnd(&z_1);
+    bnEnd(&z_2);
+    return ret;
+}
+
+int ecDoublePoint(const NistECpCurve *curve, EcPoint *R, const EcPoint *P)
+{
+    int ret = 0;
+
+    EcPoint tP;
+    const EcPoint *ptP = 0;
+
+    if (!bnCmp(P->y, mpiZero) || !bnCmp(P->z, mpiZero)) {
+        bnSetQ(R->x, 1);
+        bnSetQ(R->y, 1);
+        bnSetQ(R->z, 0);
+        return 0;
+    }
+
+    /* Check for overlapping arguments, copy if necessary and set pointer */
+    if (P == R) {
+        INIT_EC_POINT(&tP);
+        ptP = &tP;
+        bnCopy(tP.x, P->x);
+        bnCopy(tP.y, P->y);
+        bnCopy(tP.z, P->z);
+    }
+    else 
+        ptP = P;
+
+    /* S = 4*X*Y^2, save Y^2 in t1 for later use */
+    bnMulMod_(curve->t1, ptP->y, ptP->y, curve->p);       /* t1 = Y^2 */
+    bnMulMod_(curve->t0, ptP->x, mpiFour, curve->p);      /* t0 = 4 * X */
+    bnMulMod_(curve->S1, curve->t0, curve->t1, curve->p); /* S1 = t0 * t1 */
+
+    /* M = 3*(X + Z^2)*(X - Z^2), use scratch variable U1 to store M value */
+    bnMulMod_(curve->t2, ptP->z, ptP->z, curve->p);       /* t2 = Z^2 */
+    bnCopy(curve->t0, ptP->x);
+    bnAddMod_(curve->t0, curve->t2, curve->p);            /* t0 = X + t2  */
+    bnMulMod_(curve->t3, curve->t0, mpiThree, curve->p);  /* t3 = 3 * t0 */
+    bnCopy(curve->t0, ptP->x);
+    bnSubMod_(curve->t0, curve->t2, curve->p);            /* t0 = X - t2 */
+    bnMulMod_(curve->U1, curve->t3, curve->t0, curve->p); /* M = t3 * t0 */
+    
+    /* X' = M^2 - 2*S */
+    bnMulMod_(curve->t2, curve->U1, curve->U1, curve->p); /* t2 = M^2 */
+    bnMulMod_(curve->t0, curve->S1, mpiTwo, curve->p);    /* t0 = S * 2 */
+    bnCopy(R->x, curve->t2);
+    bnSubMod_(R->x, curve->t0, curve->p);                 /* X' = t2 - t0 */
+
+    /* Y' = M*(S - X') - 8*Y^4 */
+    bnMulMod_(curve->t3, curve->t1, curve->t1, curve->p); /* t3 = Y^4 (t1 saved above) */
+    bnMulMod_(curve->t2, curve->t3, mpiEight, curve->p); /* t2 = t3 * 8 */
+    bnCopy(curve->t3, curve->S1);
+    bnSubMod_(curve->t3, R->x, curve->p);                 /* t3 = S - X' */
+    bnMulMod_(curve->t0, curve->U1, curve->t3, curve->p); /* t0 = M * t3 */
+    bnCopy(R->y, curve->t0);
+    bnSubMod_(R->y, curve->t2, curve->p);                 /* Y' = t0 - t2 */
+
+    /* Z' = 2*Y*Z */
+    bnMulMod_(curve->t0, ptP->y, mpiTwo, curve->p);       /* t0 = 2 * Y */
+    bnMulMod_(R->z, curve->t0, ptP->z, curve->p);         /* Z' = to * Z */
+
+    if (P == R)
+        FREE_EC_POINT(&tP);
+
+    return ret;
+}
+
 /* Add two elliptic curve points. Any of them may be the same object. */
 int ecAddPoint(const NistECpCurve *curve, EcPoint *R, const EcPoint *P, const EcPoint *Q)
 {
-    struct BigNum trsltx, trslty;
-    struct BigNum t1, gam;
-    struct BigNum bnzero;
+    int ret = 0;
 
-    bnBegin (&bnzero);
+    EcPoint tP, tQ;
+    const EcPoint *ptP = 0;
+    const EcPoint *ptQ = 0;
 
-    /* Check for an operand being zero */
-    if (bnCmp (P->x, &bnzero) == 0 && bnCmp (P->y, &bnzero) == 0) {
-        bnCopy (R->x, Q->x); bnCopy (R->y, Q->y);
-        bnEnd (&bnzero);
-        return 0;
-    }
-    if (bnCmp (Q->x, &bnzero) == 0 && bnCmp (Q->y, &bnzero) == 0) {
-        bnCopy (R->x, P->x); bnCopy (R->y, P->y);
-        bnEnd (&bnzero);
-        return 0;
+
+    /* Fast check if application called add(R, P, P) */
+    if (!bnCmp(P->x, Q->x) && !bnCmp(P->y, Q->y) && !bnCmp(P->z, Q->z)) {
+        return ecDoublePoint(curve, R, P);
     }
 
-    /* Check if p1 == -p2 and return 0 if so */
-    if (bnCmp (P->x, Q->x) == 0) {
-        struct BigNum tsum;
-        bnBegin (&tsum);
-        bnCopy (&tsum, P->x);
-        bnAddMod_ (&tsum, Q->x, curve->p);
-        if (bnCmp (&tsum, &bnzero) == 0) {
-            bnSetQ (R->x, 0); bnSetQ (R->y, 0);
-            bnEnd (&tsum);
-            bnEnd (&bnzero);
+    /* if P is (@,@), R = Q */
+    if (!bnCmp(P->z, mpiZero)) {
+        bnCopy(R->x, Q->x);
+        bnCopy(R->y, Q->y);
+        bnCopy(R->z, Q->z);
+        return 0;
+    }
+
+    /* if Q is (@,@), R = P */
+    if (!bnCmp(Q->z, mpiZero)) {
+        bnCopy(R->x, P->x);
+        bnCopy(R->y, P->y);
+        bnCopy(R->z, P->z);
+        return 0;
+    }
+
+    /* Check for overlapping arguments, copy if necessary and set pointers */
+    if (P == R) {
+        INIT_EC_POINT(&tP);
+        ptP = &tP;
+        bnCopy(tP.x, P->x);
+        bnCopy(tP.y, P->y);
+        bnCopy(tP.z, P->z);
+    }
+    else 
+        ptP = P;
+
+    if (Q == R) {
+        INIT_EC_POINT(&tQ);
+        ptQ = &tQ;
+        bnCopy(tQ.x, Q->x);
+        bnCopy(tQ.y, Q->y);
+        bnCopy(tQ.z, Q->z);
+    }
+    else
+        ptQ = Q;
+
+    /* U1 = X1*Z2^2, where X1: P->x, Z2: Q->z */
+    bnMulMod_(curve->t1, ptQ->z, ptQ->z, curve->p);    /* t1 = Z2^2 */
+    bnMulMod_(curve->U1, ptP->x, curve->t1, curve->p); /* U1 = X1 * z_2 */
+
+    /* S1 = Y1*Z2^3, where Y1: P->y */
+    bnMulMod_(curve->t1, curve->t1, ptQ->z, curve->p); /* t1 = Z2^3 */
+    bnMulMod_(curve->S1, ptP->y, curve->t1, curve->p); /* S1 = Y1 * z_2 */
+
+    /* U2 = X2*Z1^2, where X2: Q->x, Z1: P->z */
+    bnMulMod_(curve->t1, ptP->z, ptP->z, curve->p);    /* t1 = Z1^2 */
+    bnMulMod_(curve->H, ptQ->x, curve->t1, curve->p);  /* H = X2 * t1 (store U2 in H) */
+
+    /* H = U2 - U1 */
+    bnSubMod_(curve->H, curve->U1, curve->p);
+
+    /* S2 = Y2*Z1^3, where Y2: Q->y */
+    bnMulMod_(curve->t1, curve->t1, ptP->z, curve->p); /* t1 = Z1^3 */
+    bnMulMod_(curve->R, ptQ->y, curve->t1, curve->p);  /* R = Y2 * t1 (store S2 in R) */
+
+    /* R = S2 - S1 */
+    bnSubMod_(curve->R, curve->S1, curve->p);
+
+    /* if (U1 == U2), i.e H is zero */
+    if (!bnCmp(curve->H, mpiZero)) {
+
+        /* if (S1 != S2), i.e. R is _not_ zero: return infinity*/
+        if (bnCmp(curve->R, mpiZero)) {
+            bnSetQ(R->x, 1);
+            bnSetQ(R->y, 1);
+            bnSetQ(R->z, 0);
             return 0;
         }
-        bnEnd (&tsum);
+        return ecDoublePoint(curve, R, P);
     }
+    /* X3 = R^2 - H^3 - 2*U1*H^2, where X3: R->x */
+    bnMulMod_(curve->t0, curve->H, curve->H, curve->p);   /* t0 = H^2 */
+    bnMulMod_(curve->t1, curve->U1, curve->t0, curve->p); /* t1 = U1 * t0, (hold t1) */
+    bnMulMod_(curve->t0, curve->t0, curve->H, curve->p);  /* t0 = H^3, (hold t0) */
+    bnMulMod_(curve->t2, curve->R, curve->R, curve->p);   /* t2 = R^2 */
+    bnCopy(curve->t3, curve->t2);
+    bnSubMod_(curve->t3, curve->t0, curve->p);            /* t3 = t2 - t0, (-H^3)*/
+    bnMulMod_(curve->t2, mpiTwo, curve->t1, curve->p);    /* t2 = 2 * t1 */
+    bnCopy(R->x, curve->t3);
+    bnSubMod_(R->x, curve->t2, curve->p);                 /* X3 = t3 - t2 */
 
-    bnBegin (&t1);
-    bnBegin (&gam);
-    bnBegin (&trsltx);
-    bnBegin (&trslty);
+    /* Y3 = R*(U1*H^2 - X3) - S1*H^3, where Y3: R->y */
+    bnSubMod_(curve->t1, R->x, curve->p);                 /* t1 = t1 - X3, overwrites t1 now */
+    bnMulMod_(curve->t2, curve->R, curve->t1, curve->p);  /* t2 = R * z_2 */
+    bnMulMod_(curve->S1, curve->S1, curve->t0, curve->p); /* S1 = S1 * t0, (t0 has H^3) */
+    bnCopy(R->y, curve->t2);
+    bnSubMod_(R->y, curve->S1, curve->p);                 /* Y3 = t2 - S1 */
 
-    /* Check for doubling, different formula for gamma */
-    if (bnCmp (P->x, Q->x) == 0 && bnCmp (P->y, Q->y) == 0) {
-        bnCopy (&t1, P->y);
-        bnAddMod_ (&t1, P->y, curve->p);
-        bnInv (&t1, &t1, curve->p);
-        bnSquareMod_ (&gam, P->x, curve->p);
-        bnMulQMod_ (&gam, &gam, 3, curve->p);
-        bnSubQMod_ (&gam, 3, curve->p);
-        bnMulMod_ (&gam, &gam, &t1, curve->p);
-    } else {
-        bnCopy (&t1, Q->x);
-        bnSubMod_ (&t1, P->x, curve->p);
-        bnInv (&t1, &t1, curve->p);
-        bnCopy (&gam, Q->y);
-        bnSubMod_ (&gam, P->y, curve->p);
-        bnMulMod_ (&gam, &gam, &t1, curve->p);
-    }
+    /* Z3 = H*Z1*Z2, where Z1: P->z, Z2: Q->z, Z3: R->z */
+    bnMulMod_(curve->t2, curve->H, P->z, curve->p);       /* t2 = H * Z1 */
+    bnMulMod_(R->z, curve->t2, Q->z, curve->p);           /* Z3 = t2 * Z2 */
 
-    bnSquareMod_ (&trsltx, &gam, curve->p);
-    bnSubMod_ (&trsltx, P->x, curve->p);
-    bnSubMod_ (&trsltx, Q->x, curve->p);
-
-    bnCopy (&trslty, P->x);
-    bnSubMod_ (&trslty, &trsltx, curve->p);
-    bnMulMod_ (&trslty, &trslty, &gam, curve->p);
-    bnSubMod_ (&trslty, P->y, curve->p);
-
-    bnCopy (R->x, &trsltx);
-    bnCopy (R->y, &trslty);
-
-    bnEnd (&t1);
-    bnEnd (&gam);
-    bnEnd (&trsltx);
-    bnEnd (&trslty);
-    bnEnd (&bnzero);
-
-    return 0;
+    if (P == R)
+        FREE_EC_POINT(&tP);
+    if (Q == R)
+        FREE_EC_POINT(&tQ);
+    return ret;
 }
 
 int ecMulPointScalar(const NistECpCurve *curve, EcPoint *R, const EcPoint *P, const BigNum *scalar)
@@ -416,8 +508,8 @@ int ecMulPointScalar(const NistECpCurve *curve, EcPoint *R, const EcPoint *P, co
         if (bnReadBit(scalar, i))
             ecAddPoint(curve, R, R, &n);
 
-        ecAddPoint(curve, &n, &n, &n);
-/*        ecDoublePoint(curve, &n, &n); */
+        /*        ecAddPoint(curve, &n, &n, &n); */
+        ecDoublePoint(curve, &n, &n);
     }
     FREE_EC_POINT(&n);
     return ret;
@@ -467,6 +559,7 @@ int ecGenerateRandomNumber(const NistECpCurve *curve, BigNum *d)
         _random(ran, randomBytes);
         bnInsertBigBytes(&c, ran, 0, randomBytes);
         bnMod(d, &c, &nMinusOne);
+        bnAddMod_(d, mpiOne, curve->p);
     }
 
     bnEnd(&c);

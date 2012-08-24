@@ -105,7 +105,7 @@ int ZrtpRandom::addEntropy(const uint8_t *buffer, uint32_t length)
 {
 
     uint8_t newSeed[64];
-    int len = getSystemSeed(newSeed, sizeof(newSeed));
+    size_t len = getSystemSeed(newSeed, sizeof(newSeed));
 
     lockRandom.Lock();
     initialize();
@@ -136,9 +136,9 @@ void ZrtpRandom::initialize() {
  * random data that we can use as seed for the internal PRNG below.
  */
 
-ssize_t ZrtpRandom::getSystemSeed(uint8_t *seed, ssize_t length)
+size_t ZrtpRandom::getSystemSeed(uint8_t *seed, size_t length)
 {
-    ssize_t num;
+    size_t num;
 
     int rnd = open("/dev/urandom", O_RDONLY);
     if (rnd >= 0) {

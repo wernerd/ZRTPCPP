@@ -17,7 +17,7 @@ int ecdhGeneratePublic(const NistECpCurve *curve, EcPoint *Q, const BigNum *d)
     SET_EC_BASE_POINT(curve, &G);
 
     ecMulPointScalar(curve, Q, &G, d);
-/*    ecGetAffine(curve, Q, Q); */
+    ecGetAffine(curve, Q, Q);
 
     FREE_EC_POINT(&G);
 
@@ -31,7 +31,7 @@ int ecdhComputeAgreement(const NistECpCurve *curve, BigNum *agreement, const EcP
     INIT_EC_POINT(&t0);
 
     ecMulPointScalar(curve, &t0, Q, d);
-/*    ecGetAffine(curve, &t0, &t0); */
+    ecGetAffine(curve, &t0, &t0);
     /* TODO: check for infinity here */
 
     bnCopy(agreement, t0.x);

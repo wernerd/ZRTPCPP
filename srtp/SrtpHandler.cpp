@@ -20,10 +20,12 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+
+#include <common/osSpecifics.h>
 
 #include <SrtpHandler.h>
 #include <CryptoContext.h>
@@ -50,10 +52,10 @@ bool SrtpHandler::decodeRtp(uint8_t* buffer, int32_t length, uint32_t *ssrc, uin
     pui = (uint32_t*)buffer;
 
     uint16_t tmp16 = pus[1];                    // get seq number
-    *seq = ntohs(tmp16);                        // and return in host oder
+    *seq = zrtpNtohs(tmp16);                        // and return in host oder
 
     uint32_t tmp32 = pui[2];                    // get SSRC
-    *ssrc = ntohl(tmp32);                       // and return in host order
+    *ssrc = zrtpNtohl(tmp32);                       // and return in host order
 
     /* Payload is located right after header plus CSRC */
     int32_t numCC = buffer[0] & 0x0f;           // lower 4 bits in first byte is num of contrib SSRC
@@ -67,7 +69,7 @@ bool SrtpHandler::decodeRtp(uint8_t* buffer, int32_t length, uint32_t *ssrc, uin
     if ((*buffer & 0x10) == 0x10) {             // packet contains RTP extension
         pus = (uint16_t*)(buffer + offset);     // pus points to extension as 16bit pointer
         tmp16 = pus[1];                         // the second 16 bit word is the length
-        tmp16 = ntohs(tmp16);                   // to host order
+        tmp16 = zrtpNtohs(tmp16);                   // to host order
         offset += (tmp16 + 1) * sizeof(uint32_t);
     }
     /* Sanity check */
@@ -187,7 +189,7 @@ bool SrtpHandler::protectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t le
     }
     /* Encrypt the packet */
     uint32_t ssrc = *(reinterpret_cast<uint32_t*>(buffer + 4)); // always SSRC of sender
-    ssrc = ntohl(ssrc);
+    ssrc = zrtpNtohl(ssrc);
 
     uint32_t encIndex = pcc->getSrtcpIndex();
     pcc->srtcpEncrypt(buffer + 8, length - 8, encIndex, ssrc);
@@ -196,7 +198,7 @@ bool SrtpHandler::protectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t le
 
     // Fill SRTCP index as last word
     uint32_t* ip = reinterpret_cast<uint32_t*>(buffer+length);
-    *ip = htonl(encIndex);
+    *ip = zrtpHtonl(encIndex);
 
     // NO MKI support yet - here we assume MKI is zero. To build in MKI
     // take MKI length into account when storing the authentication tag.
@@ -226,7 +228,7 @@ int32_t SrtpHandler::unprotectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size
     // point to the SRTCP index field just after the real payload
     const uint32_t* index = reinterpret_cast<uint32_t*>(buffer + payloadLen);
 
-    uint32_t encIndex = ntohl(*index);
+    uint32_t encIndex = zrtpNtohl(*index);
     uint32_t remoteIndex = encIndex & ~0x80000000;    // get index without Encryption flag
 
     if (!pcc->checkReplay(remoteIndex)) {
@@ -245,7 +247,7 @@ int32_t SrtpHandler::unprotectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size
     }
 
     uint32_t ssrc = *(reinterpret_cast<uint32_t*>(buffer + 4)); // always SSRC of sender
-    ssrc = ntohl(ssrc);
+    ssrc = zrtpNtohl(ssrc);
 
     // Decrypt the content, exclude the very first SRTCP header (fixed, 8 bytes)
     if (encIndex & 0x80000000)

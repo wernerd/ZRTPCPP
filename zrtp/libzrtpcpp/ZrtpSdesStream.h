@@ -322,11 +322,11 @@ private:
      * @return @c true if checks were ok, @c false
      *          otherwise.
      */
-    bool parseCreateSdesProfile(const char *cryptoString, size_t length, sdesSuites *parsedSuite, int64_t *tag);
+    bool parseCreateSdesProfile(const char *cryptoString, size_t length, sdesSuites *parsedSuite, int32_t *tag);
 
     sdesZrtpStates state;
     sdesSuites     suite;
-    int64_t        tag;
+    int32_t        tag;
     CryptoContext     *recvSrtp;           //!< The SRTP context for this stream
     CryptoContextCtrl *recvSrtcp;          //!< The SRTCP context for this stream
     CryptoContext     *sendSrtp;           //!< The SRTP context for this stream

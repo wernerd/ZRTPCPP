@@ -21,8 +21,10 @@
  */
 
 #include <string.h>
-#include <arpa/inet.h>
 #include <stdio.h>
+#include <stdint.h>
+
+#include <common/osSpecifics.h>
 
 #include <CryptoContextCtrl.h>
 #include <CryptoContext.h>
@@ -241,7 +243,7 @@ void CryptoContextCtrl::srtcpAuthenticate(uint8_t* rtp, int32_t len, uint32_t in
     unsigned char temp[20];
     const unsigned char* chunks[3];
     unsigned int chunkLength[3];
-    uint32_t beIndex = htonl(index);
+    uint32_t beIndex = zrtpHtonl(index);
 
     chunks[0] = rtp;
     chunkLength[0] = len;

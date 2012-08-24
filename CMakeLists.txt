@@ -186,7 +186,8 @@ set(zrtp_src_no_cache
     ${CMAKE_SOURCE_DIR}/zrtp/ZrtpTextData.cpp
     ${CMAKE_SOURCE_DIR}/zrtp/ZrtpConfigure.cpp
     ${CMAKE_SOURCE_DIR}/zrtp/ZrtpCWrapper.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/Base32.cpp ${sdes_src})
+    ${CMAKE_SOURCE_DIR}/zrtp/Base32.cpp
+    ${CMAKE_SOURCE_DIR}/common/osSpecifics.c ${sdes_src})
 
 set(bnlib_src
     ${CMAKE_SOURCE_DIR}/bnlib/bn00.c

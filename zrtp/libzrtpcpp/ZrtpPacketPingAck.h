@@ -49,13 +49,13 @@ class __EXPORT ZrtpPacketPingAck : public ZrtpPacketBase {
     virtual ~ZrtpPacketPingAck();
 
     /// Get SSRC from PingAck message
-    uint32_t getSSRC() { return ntohl(pingAckHeader->ssrc); };
+    uint32_t getSSRC() { return zrtpNtohl(pingAckHeader->ssrc); };
 
     /// Set ZRTP protocol version field, fixed ASCII character array
     void setVersion(uint8_t *text)      { memcpy(pingAckHeader->version, text, ZRTP_WORD_SIZE ); }
 
     /// Set SSRC in PingAck message
-    void setSSRC(uint32_t data)         {pingAckHeader->ssrc = htonl(data); };
+    void setSSRC(uint32_t data)         {pingAckHeader->ssrc = zrtpHtonl(data); };
 
     /// Set remote endpoint hash, fixed byte array
     void setRemoteEpHash(uint8_t *hash) { memcpy(pingAckHeader->remoteEpHash, hash, sizeof(pingAckHeader->remoteEpHash)); }
