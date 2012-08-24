@@ -6,7 +6,9 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <netinet/in.h>
+#include <stdint.h>
+
+#include <common/osSpecifics.h>
 
 #include <libzrtpcpp/ZRtp.h>
 #include <libzrtpcpp/ZrtpStateClass.h>
@@ -199,7 +201,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, size_t length, size_t 
             return 0;
 
         uint32_t magic = *(uint32_t*)(buffer + 4);
-        magic = ntohl(magic);
+        magic = zrtpNtohl(magic);
 
         // Check if it is really a ZRTP packet, return, no further processing
         if (magic != ZRTP_MAGIC) {
@@ -208,7 +210,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, size_t length, size_t 
         // Get CRC value into crc (see above how to compute the offset)
         uint16_t temp = length - CRC_SIZE;
         uint32_t crc = *(uint32_t*)(buffer + temp);
-        crc = ntohl(crc);
+        crc = zrtpNtohl(crc);
         if (!zrtpCheckCksum(buffer, temp, crc)) {
             sendInfo(Warning, WarningCRCmismatch);
             return 0;
@@ -218,7 +220,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, size_t length, size_t 
 
         // store peer's SSRC in host order, used when creating the CryptoContext
         peerSSRC = *(uint32_t*)(buffer + 8);
-        peerSSRC = ntohl(peerSSRC);
+        peerSSRC = zrtpNtohl(peerSSRC);
         zrtpEngine->processZrtpMessage(zrtpMsg, peerSSRC, length);
     }
     return 0;
@@ -449,9 +451,9 @@ int32_t CtZrtpStream::sendDataZRTP(const unsigned char *data, int32_t length) {
     /* set up fixed ZRTP header */
     *zrtpBuffer = 0x10;     /* invalid RTP version - refer to ZRTP spec chap 5 */
     *(zrtpBuffer + 1) = 0;
-    pus[1] = htons(senderZrtpSeqNo++);
-    pui[1] = htonl(ZRTP_MAGIC);
-    pui[2] = htonl(ownSSRC);            // ownSSRC is stored in host order
+    pus[1] = zrtpHtons(senderZrtpSeqNo++);
+    pui[1] = zrtpHtonl(ZRTP_MAGIC);
+    pui[2] = zrtpHtonl(ownSSRC);            // ownSSRC is stored in host order
 
     /* Copy ZRTP message data behind the header data */
     memcpy(zrtpBuffer+12, data, length);
@@ -461,7 +463,7 @@ int32_t CtZrtpStream::sendDataZRTP(const unsigned char *data, int32_t length) {
 
     /* convert and store CRC in ZRTP packet.*/
     crc = zrtpEndCksum(crc);
-    *(uint32_t*)(zrtpBuffer+totalLen-CRC_SIZE) = htonl(crc);
+    *(uint32_t*)(zrtpBuffer+totalLen-CRC_SIZE) = zrtpHtonl(crc);
 
     /* Send the ZRTP packet using callback */
     if (zrtpSendCallback != NULL) {

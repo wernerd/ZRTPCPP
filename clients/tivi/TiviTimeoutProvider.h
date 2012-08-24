@@ -33,7 +33,11 @@
  */
 
 #include <list>
+#if defined(_WIN32) || defined(_WIN64)
+#include <time.h>
+#else
 #include <sys/time.h>
+#endif
 #include <stdint.h>
 
 #include <common/Thread.h>

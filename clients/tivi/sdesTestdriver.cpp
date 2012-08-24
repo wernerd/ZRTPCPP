@@ -8,8 +8,6 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 
 #include <CtZrtpSession.h>
 #include <CtZrtpCallback.h>
@@ -167,7 +165,7 @@ int main(int argc,char **argv) {
     invLength = 0;
     inviter->processIncomingRtp(answererPacket, answLength, &invLength, CtZrtpSession::AudioStream);
     if (memcmp(answererPacket, answererPacket_fixed, invLength) != 0) {
-        hexdump("Answerer packet unprotected by inviter", answererPacket, invLength);
+        hexdump("Error - Answerer packet unprotected by inviter", answererPacket, invLength);
         return 1;
     }
     printf("PASSED\n");
