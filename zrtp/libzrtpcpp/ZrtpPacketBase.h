@@ -37,7 +37,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
-#include <netinet/in.h>
+
+#include <common/osSpecifics.h>
 
 #include <libzrtpcpp/zrtpPacket.h>
 #include <libzrtpcpp/ZrtpTextData.h>
@@ -95,7 +96,7 @@ class __EXPORT ZrtpPacketBase {
      * @return
      *     @c true if check was ok
      */
-    bool isZrtpPacket()            { return (ntohs(zrtpHeader->zrtpId) == zrtpId); };
+    bool isZrtpPacket()            { return (zrtpNtohs(zrtpHeader->zrtpId) == zrtpId); };
 
     /**
      * Get the length in words of the ZRTP message
@@ -103,7 +104,7 @@ class __EXPORT ZrtpPacketBase {
      * @return
      *     The length in words
      */
-    uint16_t getLength()           { return ntohs(zrtpHeader->length); };
+    uint16_t getLength()           { return zrtpNtohs(zrtpHeader->length); };
 
     /**
      * Return pointer to fixed length message type ASCII data
@@ -119,7 +120,7 @@ class __EXPORT ZrtpPacketBase {
      * @param len
      *     The length of the ZRTP message in words, host order
      */
-    void setLength(uint16_t len)  { zrtpHeader->length = htons(len); };
+    void setLength(uint16_t len)  { zrtpHeader->length = zrtpHtons(len); };
 
     /**
      * Copy the message type ASCII data to ZRTP message type field
@@ -133,7 +134,7 @@ class __EXPORT ZrtpPacketBase {
     /**
      * Initializes the ZRTP Id field
      */
-    void setZrtpId()              { zrtpHeader->zrtpId = htons(zrtpId); }
+    void setZrtpId()              { zrtpHeader->zrtpId = zrtpHtons(zrtpId); }
 };
 
 /**

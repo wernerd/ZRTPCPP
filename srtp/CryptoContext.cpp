@@ -21,8 +21,10 @@
  */
 
 #include <string.h>
-#include <arpa/inet.h>
 #include <stdio.h>
+#include <stdint.h>
+
+#include <common/osSpecifics.h>
 
 #include <CryptoContext.h>
 #include <crypto/SrtpSymCrypto.h>
@@ -210,7 +212,7 @@ void CryptoContext::srtpEncrypt(uint8_t* pkt, uint8_t* payload, uint32_t paylen,
         iv[0] = 0;
 
         // set ROC in network order into IV
-        ui32p[3] = htonl(roc);
+        ui32p[3] = zrtpHtonl(roc);
 
         cipher->f8_encrypt(payload, paylen, iv, f8Cipher);
     }
@@ -228,7 +230,7 @@ void CryptoContext::srtpAuthenticate(uint8_t* pkt, uint32_t pktlen, uint32_t roc
     unsigned char temp[20];
     const unsigned char* chunks[3];
     unsigned int chunkLength[3];
-    uint32_t beRoc = htonl(roc);
+    uint32_t beRoc = zrtpHtonl(roc);
 
     chunks[0] = pkt;
     chunkLength[0] = pktlen;

@@ -93,7 +93,7 @@ void ZrtpPacketHello::configureHello(ZrtpConfigure* config) {
         AlgorithmEnum& sas = config->getAlgoAt(SasType, i);
         setSasType(i, (int8_t*)sas.getName());
     }
-    *((uint32_t*)&helloHeader->flags) = htonl(lenField);
+    *((uint32_t*)&helloHeader->flags) = zrtpHtonl(lenField);
 }
 
 ZrtpPacketHello::ZrtpPacketHello(uint8_t *data) {
@@ -103,7 +103,7 @@ ZrtpPacketHello::ZrtpPacketHello(uint8_t *data) {
     helloHeader = (Hello_t *)&((HelloPacket_t *)data)->hello;
 
     uint32_t t = *((uint32_t*)&helloHeader->flags);
-    uint32_t temp = ntohl(t);
+    uint32_t temp = zrtpNtohl(t);
 
     nHash = (temp & (0xf << 16)) >> 16;
     nCipher = (temp & (0xf << 12)) >> 12;

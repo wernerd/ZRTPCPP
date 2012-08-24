@@ -73,7 +73,7 @@ class __EXPORT ZrtpPacketConfirm : public ZrtpPacketBase {
         const uint8_t* getHmac()          { return confirmHeader->hmac; }
 
         /// Get Expiration time data
-        const uint32_t getExpTime()       { return ntohl(confirmHeader->expTime); }
+        const uint32_t getExpTime()       { return zrtpNtohl(confirmHeader->expTime); }
 
         /// Get pointer to initial hash chain (H0) data, fixed byte array
         uint8_t* getHashH0()              { return confirmHeader->hashH0; }
@@ -97,7 +97,7 @@ class __EXPORT ZrtpPacketConfirm : public ZrtpPacketBase {
         void setIv(uint8_t* text)    { memcpy(confirmHeader->iv, text, sizeof(confirmHeader->iv)); }
 
         /// Set expiration time data
-        void setExpTime(uint32_t t)  { confirmHeader->expTime = htonl(t); }
+        void setExpTime(uint32_t t)  { confirmHeader->expTime = zrtpHtonl(t); }
 
         /// Set initial hash chain (H0) data, fixed length byte array
         void setHashH0(uint8_t* t)   { memcpy(confirmHeader->hashH0, t, sizeof(confirmHeader->hashH0)); }

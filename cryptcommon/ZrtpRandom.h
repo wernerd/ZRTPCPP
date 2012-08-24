@@ -63,7 +63,7 @@ public:
 
 private:
     static void initialize();
-    static ssize_t getSystemSeed(uint8_t *seed, ssize_t length);
+    static size_t getSystemSeed(uint8_t *seed, size_t length);
 
 };
 #endif

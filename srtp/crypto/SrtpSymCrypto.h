@@ -268,7 +268,7 @@ int testF8();
 #include <cstring>
 #include <iostream>
 #include <cstdio>
-#include <arpa/inet.h>
+#include <common/osSpecifics.h>
 
 using namespace std;
 
@@ -348,7 +348,7 @@ int testF8()
     derivedIv[0] = 0;
 
     // set ROC in network order into IV
-    ui32p[3] = htonl(ROC);
+    ui32p[3] = zrtpHtonl(ROC);
 
     int32_t pad = 0;
 

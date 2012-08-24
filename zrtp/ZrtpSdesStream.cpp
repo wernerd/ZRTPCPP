@@ -2,9 +2,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#define __STDC_FORMAT_MACROS
-#include <inttypes.h>
-
 #include <libzrtpcpp/ZrtpSdesStream.h>
 #include <libzrtpcpp/ZrtpTextData.h>
 #include <libzrtpcpp/ZrtpConfigure.h>
@@ -14,6 +11,12 @@
 #include <srtp/CryptoContext.h>
 #include <srtp/CryptoContextCtrl.h>
 #include <cryptcommon/ZrtpRandom.h>
+
+#if defined(_WIN32) || defined(_WIN64)
+# define snprintf _snprintf
+#else
+# include <inttypes.h>
+#endif
 
 /*
  * These functions support 256 bit encryption algorithms.
@@ -40,13 +43,13 @@
  * grammer shown above but without a "a=crypto:" prefix.
  *
  * The format string parses:
- * - %ld - the tag as decimal value
+ * - %d - the tag as decimal value
  * - %s - the crypto suite name, limited to 99 chars (see MAX_INNER_LEN)
  * - %s - the key parameters, limited to 99 chars
  * - %n - the number of parsed characters to far. The pointer to the session
  *   parameters is: cryptoString + numParsedChars.
  */
-static const char parseCrypto[] = "%"SCNd64" %99s %99s %n";
+static const char parseCrypto[] = "%d %99s %99s %n";
 
 static const int64_t maxTagValue = 999999999;
 
@@ -168,7 +171,7 @@ bool ZrtpSdesStream::parseSdes(char *cryptoString, size_t length, bool sipInvite
             return false;
     }
     sdesSuites tmpSuite;
-    int64_t tmpTag;
+    int32_t tmpTag;
 
     bool s = parseCreateSdesProfile(cryptoString, length, &tmpSuite, &tmpTag);
     if (!s)
@@ -334,13 +337,13 @@ bool ZrtpSdesStream::createSdesProfile(char *cryptoString, size_t *maxLen) {
     /* Get B64 code for master key and master salt */
     b64Len = b64Encode(keySalt, keyLenBytes + saltLenBytes, b64keySalt, sizeof(b64keySalt));
     b64keySalt[b64Len] = '\0';
-    *maxLen = snprintf(cryptoString, *maxLen, "%"PRId64" %s inline:%s", tag, pSuite->name, b64keySalt);
+    *maxLen = snprintf(cryptoString, *maxLen, "%d %s inline:%s", tag, pSuite->name, b64keySalt);
 
     memset(keySalt, 0, sizeof(keySalt));
     return true;
 }
 
-bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length, sdesSuites *parsedSuite, int64_t *outTag) {
+bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length, sdesSuites *parsedSuite, int32_t *outTag) {
     int elements,  i;
     int charsScanned;
     int mkiLength = 0;

@@ -21,9 +21,11 @@ Issue Date: 20/12/2007
 #include "aesopt.h"
 #include "aestab.h"
 
+/*
 #ifdef USE_VIA_ACE_IF_PRESENT
 #  include "aes_via_ace.h"
 #endif
+*/
 
 #if defined(__cplusplus)
 extern "C"
