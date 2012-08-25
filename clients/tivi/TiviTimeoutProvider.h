@@ -33,14 +33,10 @@
  */
 
 #include <list>
-#if defined(_WIN32) || defined(_WIN64)
-#include <time.h>
-#else
-#include <sys/time.h>
-#endif
 #include <stdint.h>
 
 #include <common/Thread.h>
+#include <common/osSpecifics.h>
 
 /**
  * Represents a request of a "timeout" (delivery of a command to a
@@ -48,12 +44,7 @@
  *
  * Slightly modified to use gettimeofday directly.
  *
- * NOTE: This class is only used internaly.
- * @author Erik Eliasson
  * @author Werner Dittmann
-
- * TODO: update to real event handling again so that we can process "before now" events.
- * See original TimeoutProvider.h
  */
 template <class TOCommand, class TOSubscriber>
 class TPRequest
@@ -64,10 +55,8 @@ public:
     TPRequest( TOSubscriber tsi, int timeoutMs, const TOCommand &command):
         subscriber(tsi)
     {
-        struct timeval tv;
-        gettimeofday(&tv, NULL );
+        when_ms = zrtpGetTickCount();
 
-        when_ms = ((uint64_t)tv.tv_sec) * (uint64_t)1000 + ((uint64_t)tv.tv_usec) / (uint64_t)1000;
         when_ms += timeoutMs;
         this->command = command;
     }
@@ -97,10 +86,7 @@ public:
      */
     int getMsToTimeout ()
     {
-        struct timeval tv;
-        gettimeofday(&tv, NULL );
-
-        uint64_t now = ((uint64_t)tv.tv_sec) * (uint64_t)1000 + ((uint64_t)tv.tv_usec) / (uint64_t)1000;
+        uint64_t now = zrtpGetTickCount();
 
         if (happensBefore(now)) {
             return 0;
