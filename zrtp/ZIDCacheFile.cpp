@@ -21,9 +21,9 @@
 // #define UNIT_TEST
 
 #include <string>
-#include <time.h>
 #include <stdlib.h>
-#include <unistd.h>
+
+#include <cryptcommon/ZrtpRandom.h>
 
 #include <libzrtpcpp/ZIDCacheFile.h>
 
@@ -53,12 +53,7 @@ void ZIDCacheFile::createZIDFile(char* name) {
     // New file, generate an associated random ZID and save
     // it as first record
     if (zidFile != NULL) {
-        unsigned int* ip;
-        ip = (unsigned int*) associatedZid;
-        srand(time(NULL));
-        *ip++ = rand();
-        *ip++ = rand();
-        *ip = rand();
+        zrtp_getRandomData(associatedZid, IDENTIFIER_LEN);
 
         ZIDRecordFile rec;
         rec.setZid(associatedZid);

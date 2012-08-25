@@ -32,7 +32,7 @@
 #define THREAD_CLASS
 
 #ifndef WINDOWS
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 #define WINDOWS
 #endif
 #endif
@@ -56,7 +56,7 @@ typedef long DWORD;
 typedef void *LPVOID;
 #else
 #include "afx.h"
-#include <windows.h>
+/* #include <windows.h> */
 #include <stdio.h>
 #endif
 

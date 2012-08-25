@@ -138,16 +138,17 @@ void ZrtpRandom::initialize() {
 
 size_t ZrtpRandom::getSystemSeed(uint8_t *seed, size_t length)
 {
-    size_t num;
+    size_t num = 0;
 
+#if !(defined(_WIN32) || defined(_WIN64))
     int rnd = open("/dev/urandom", O_RDONLY);
     if (rnd >= 0) {
         num = read(rnd, seed, length);
         close(rnd);
     }
     else
-        return -1;
-
+        return num;
+#endif
     return num;
 }
 
