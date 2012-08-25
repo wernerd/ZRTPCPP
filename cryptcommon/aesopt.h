@@ -430,6 +430,9 @@ Issue Date: 20/12/2007
 #  define AES_REV_DKS
 #endif
 
+/* ********** UNDEF - we don't use VIA stuff ****************** */
+#undef USE_VIA_ACE_IF_PRESENT
+
 /* Assembler support requires the use of platform byte order */
 
 #if ( defined( ASM_X86_V1C ) || defined( ASM_X86_V2C ) || defined( ASM_AMD64_C ) ) \

@@ -8,6 +8,8 @@
 #include <time.h>
 #include <sqlite3.h>
 
+#include <cryptcommon/ZrtpRandom.h>
+
 #include <libzrtpcpp/zrtpB64Encode.h>
 #include <libzrtpcpp/zrtpB64Decode.h>
 
@@ -20,6 +22,10 @@
 #define SQLITE_PREPARE sqlite3_prepare_v2
 #else
 #define SQLITE_PREPARE sqlite3_prepare
+#endif
+
+#if defined(_WIN32) || defined(_WIN64)
+# define snprintf _snprintf
 #endif
 
 #ifdef TRANSACTIONS
@@ -480,16 +486,11 @@ static int readLocalZid(void *vdb, uint8_t *localZid, const char *accountInfo, c
     }
     /* No matching record found, create new local ZID for this combination and store in DB */
     if (found == 0) {
-        int32_t *ptmp = (int32_t*)localZid;
         char b64zid[IDENTIFIER_LEN+IDENTIFIER_LEN] = {0};
         int b64len = 0;
 
         /* create a 12 byte random value, convert to base 64, insert in zrtpIdOwn table */
-        time_t now = time(NULL);
-        srandom(now);
-        *ptmp++ = random();
-        *ptmp++ = random();
-        *ptmp = random();
+        zrtp_getRandomData(localZid, IDENTIFIER_LEN);
         b64len = b64Encode(localZid, IDENTIFIER_LEN, b64zid, IDENTIFIER_LEN+IDENTIFIER_LEN);
 
         SQLITE_CHK(SQLITE_PREPARE(db, insertZrtpIdOwn, strlen(insertZrtpIdOwn)+1, &stmt, NULL));

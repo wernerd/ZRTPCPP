@@ -14,8 +14,6 @@
 
 #if defined(_WIN32) || defined(_WIN64)
 # define snprintf _snprintf
-#else
-# include <inttypes.h>
 #endif
 
 /*

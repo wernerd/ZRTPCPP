@@ -26,7 +26,9 @@
  */
 
 #include <string.h>
+#if !(defined(_WIN32) || defined(_WIN64))
 #include <unistd.h>
+#endif
 #include <stdint.h>
 #include <sys/types.h>
 

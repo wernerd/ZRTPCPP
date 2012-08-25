@@ -32,7 +32,7 @@
 extern "C"
 {
 #endif
-
+extern uint64_t zrtpGetTickCount();
 extern uint32_t zrtpNtohl (uint32_t net);
 extern uint16_t zrtpNtohs (uint16_t net);
 extern uint32_t zrtpHtonl (uint32_t host);

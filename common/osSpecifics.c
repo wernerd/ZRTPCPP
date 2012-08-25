@@ -19,10 +19,33 @@
 #include <stdint.h>
 #include <common/osSpecifics.h>
 
+
+#if defined(_WIN32) || defined(_WIN64)
+
+#else
+
+#endif
+
 #if defined(_WIN32) || defined(_WIN64)
 # include <WinSock2.h>
+# include <time.h>
+
+uint64_t zrtpGetTickCount()
+{
+   return GetTickCount64();
+}
 #else
 # include <netinet/in.h>
+# include <sys/time.h>
+
+uint64_t zrtpGetTickCount()
+{
+   struct timeval tv;
+   gettimeofday(&tv, 0);
+
+   return ((uint64_t)tv.tv_sec) * (uint64_t)1000 + ((uint64_t)tv.tv_usec) / (uint64_t)1000;
+}
+
 #endif
 
 uint32_t zrtpNtohl (uint32_t net)
