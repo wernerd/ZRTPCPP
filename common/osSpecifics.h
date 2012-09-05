@@ -24,6 +24,12 @@
  * @defgroup GNU_ZRTP The GNU ZRTP C++ implementation
  * @{
  *
+ * This modules contains some functions that are either specific for a particular
+ * OS or use include files that are not common.
+ *
+ * This header file shall not #include system specific header files and shall also
+ * not use specific #ifdef stuff. Refer to @c osSpecifics.c for the OS specific
+ * #include, #ifdef and implementations.
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
@@ -32,10 +38,58 @@
 extern "C"
 {
 #endif
+/**
+ * Get surrent system time in milli-second.
+ *
+ * @return current time in ms.
+ */
 extern uint64_t zrtpGetTickCount();
+
+/**
+ * Convert a 32bit variable from network to host order.
+ *
+ * Replaces the macros found in @c inet.h or @c WinSock2.h. Use this function
+ * to avoid different includes freamed with @c #idef in the sources. Including
+ * @c WinSock2 will increase compile time and may lead to other subtle problems
+ * because @c WinSock2 also includes @c windows.h.
+ *
+ * @param net 32bit variable in network byte order.
+ *
+ * @return 32bit variable in host byte order.
+ */
 extern uint32_t zrtpNtohl (uint32_t net);
+
+/**
+ * Convert a 16bit variable from network to host order.
+ *
+ * @param net 16bit variable in network byte order.
+ *
+ * @return 16bit variable in host byte order.
+ *
+ * @sa zrtpNtohl()
+ */
 extern uint16_t zrtpNtohs (uint16_t net);
+
+/**
+ * Convert a 32bit variable from host to network order.
+ *
+ * @param host 32bit variable in host byte order.
+ *
+ * @return 32bit variable in network byte order.
+ *
+ * @sa zrtpNtohl()
+ */
 extern uint32_t zrtpHtonl (uint32_t host);
+
+/**
+ * Convert a 16bit variable from host to network order.
+ *
+ * @param host 16bit variable in host byte order.
+ *
+ * @return 16bit variable in network byte order.
+ *
+ * @sa zrtpNtohl()
+ */
 extern uint16_t zrtpHtons (uint16_t host);
 
 #if defined(__cplusplus)

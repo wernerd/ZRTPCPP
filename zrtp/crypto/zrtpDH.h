@@ -23,7 +23,6 @@
 #define _ZRTPDH_H__
 
 #include <stdint.h>
-#include <libzrtpcpp/ZrtpConfigure.h>
 
 /**
  * @file zrtpDH.h
@@ -43,7 +42,18 @@
  * @param length
  *    Number of random bytes to produce.
  */
+#if defined(__cplusplus)
+extern "C"
+{
+#endif
 void randomZRTP(uint8_t *buf, int32_t length);
+#if defined(__cplusplus)
+}
+#endif
+
+#if defined(__cplusplus)
+
+#include <libzrtpcpp/ZrtpConfigure.h>
 
 const int32_t DH2K = 0;
 const int32_t DH3K = 1;
@@ -152,8 +162,8 @@ public:
      */
     const char* getDHtype();
 };
-
-#endif // ZRTPDH_H
+#endif /*__cpluscplus */
+#endif
 
 /**
  * @}
