@@ -335,7 +335,8 @@ bool ZrtpSdesStream::createSdesProfile(char *cryptoString, size_t *maxLen) {
     /* Get B64 code for master key and master salt */
     b64Len = b64Encode(keySalt, keyLenBytes + saltLenBytes, b64keySalt, sizeof(b64keySalt));
     b64keySalt[b64Len] = '\0';
-    *maxLen = snprintf(cryptoString, *maxLen, "%d %s inline:%s", tag, pSuite->name, b64keySalt);
+    memset(cryptoString, 0, *maxLen);
+    *maxLen = snprintf(cryptoString, *maxLen-1, "%d %s inline:%s", tag, pSuite->name, b64keySalt);
 
     memset(keySalt, 0, sizeof(keySalt));
     return true;
