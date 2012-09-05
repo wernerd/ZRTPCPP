@@ -8,7 +8,7 @@
 #include <time.h>
 #include <sqlite3.h>
 
-#include <cryptcommon/ZrtpRandom.h>
+#include <crypto/zrtpDH.h>
 
 #include <libzrtpcpp/zrtpB64Encode.h>
 #include <libzrtpcpp/zrtpB64Decode.h>
@@ -490,7 +490,7 @@ static int readLocalZid(void *vdb, uint8_t *localZid, const char *accountInfo, c
         int b64len = 0;
 
         /* create a 12 byte random value, convert to base 64, insert in zrtpIdOwn table */
-        zrtp_getRandomData(localZid, IDENTIFIER_LEN);
+        randomZRTP(localZid, IDENTIFIER_LEN);
         b64len = b64Encode(localZid, IDENTIFIER_LEN, b64zid, IDENTIFIER_LEN+IDENTIFIER_LEN);
 
         SQLITE_CHK(SQLITE_PREPARE(db, insertZrtpIdOwn, strlen(insertZrtpIdOwn)+1, &stmt, NULL));
@@ -539,7 +539,7 @@ static int openCache(const char* name, void **vpdb, char *errString)
     sqlite3 *db;
 
 #ifdef SQLITE_USE_V2
-    int rc = sqlite3_open_v2(name, pdb, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
+    int rc = sqlite3_open_v2(name, pdb, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, NULL);
 #else
     int rc = sqlite3_open(name, pdb);
 #endif

@@ -23,7 +23,7 @@
 #include <string>
 #include <stdlib.h>
 
-#include <cryptcommon/ZrtpRandom.h>
+#include <crypto/zrtpDH.h>
 
 #include <libzrtpcpp/ZIDCacheFile.h>
 
@@ -53,7 +53,7 @@ void ZIDCacheFile::createZIDFile(char* name) {
     // New file, generate an associated random ZID and save
     // it as first record
     if (zidFile != NULL) {
-        zrtp_getRandomData(associatedZid, IDENTIFIER_LEN);
+        randomZRTP(associatedZid, IDENTIFIER_LEN);
 
         ZIDRecordFile rec;
         rec.setZid(associatedZid);
