@@ -30,9 +30,17 @@
 # include <WinSock2.h>
 # include <time.h>
 
-uint64_t zrtpGetTickCount()
+uint64_t  zrtpGetTickCount()
 {
-   return GetTickCount64();
+   // return GetTickCount64();  //works only on 64bit OS
+   unsigned long long ret;
+   FILETIME ft;
+   GetSystemTimeAsFileTime(&ft);
+   ret = ft.dwHighDateTime;
+   ret <<= 32;
+   ret |= ft.dwLowDateTime;
+
+   return ret / 10;             //return msec
 }
 #else
 # include <netinet/in.h>
