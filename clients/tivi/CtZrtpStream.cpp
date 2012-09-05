@@ -188,8 +188,8 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, size_t length, size_t 
                 sendInfo(Warning, WarningSRTPreplayError);
             }
             unprotectFailed++;
-            return 0;
         }
+        return 0;
     }
 
     // At this point we assume the packet is not an RTP packet. Check if it is a ZRTP packet.
@@ -410,6 +410,12 @@ bool CtZrtpStream::parseSdes(char *recvCryptoStr, size_t recvLength, char *sendC
     if (!sdes->parseSdes(recvCryptoStr, recvLength, sipInvite))
         goto cleanup;
     if (!sipInvite) {
+        size_t len;
+        if (sendCryptoStr == NULL) {
+            sendCryptoStr = sdesTempBuffer;
+            len = maxSdesString;
+            sendLength = &len;
+        }
         if (!sdes->createSdes(sendCryptoStr, sendLength, sipInvite))
             goto cleanup;
     }
@@ -426,6 +432,17 @@ bool CtZrtpStream::parseSdes(char *recvCryptoStr, size_t recvLength, char *sendC
     return false;
 }
 
+bool CtZrtpStream::getSavedSdes(char *sendCryptoStr, size_t *sendLength) {
+
+    size_t len = strlen(sdesTempBuffer);
+
+    if (len > *sendLength)
+        return false;
+
+    strcpy(sendCryptoStr, sdesTempBuffer);
+    *sendLength = len;
+    return true;
+}
 
 /* *********************
  * Here the callback methods required by the ZRTP implementation
@@ -668,6 +685,7 @@ void CtZrtpStream::srtpSecretsOn(std::string cipher, std::string sas, bool verif
     sasVerified = verified;
     if (zrtpUserCallback != NULL) {
         char *strng = NULL;
+        std::string sasTmp;
 
         if (!sas.empty()) {                 // Multi-stream mode streams don't have SAS, no reporting
             uint8_t peerZid[IDENTIFIER_LEN];
@@ -683,7 +701,7 @@ void CtZrtpStream::srtpSecretsOn(std::string cipher, std::string sas, bool verif
                 strng = (char*)sas.c_str();
             }
             else {
-                std::string sasTmp = sas.substr(0, found);
+                sasTmp = sas.substr(0, found);
                 sasTmp.append("  ").append(sas.substr(found+1));
                 strng = (char*)sasTmp.c_str();
             }

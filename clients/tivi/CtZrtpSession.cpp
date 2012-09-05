@@ -466,6 +466,14 @@ bool CtZrtpSession::parseSdes(char *recvCryptoStr, size_t recvLength, char *send
     return stream->parseSdes(recvCryptoStr, recvLength, sendCryptoStr, sendLength, sipInvite);
 }
 
+bool CtZrtpSession::getSavedSdes(char *sendCryptoStr, size_t *sendLength, streamName streamNm) {
+        if (!isReady || !sdesEnabled || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return fail;
+
+    CtZrtpStream *stream = streams[streamNm];
+    return stream->getSavedSdes(sendCryptoStr, sendLength);
+}
+
 void CtZrtpSession::cleanCache() {
     getZidCacheInstance()->cleanup();
 }

@@ -130,14 +130,23 @@ int main(int argc,char **argv) {
 
     invLength = sizeof(invBuffer);
     inviter->createSdes(invBuffer, &invLength, CtZrtpSession::AudioStream);
-//    printf("Inviter SDES security: length: %ld\n%s\n", invLength, invBuffer);
+    if (invLength != 73) {
+        fprintf(stderr, "Inviter - Answerer - SDES crypto string wrong size: got: %d, expected: 73\n%s\n", (int)invLength, invBuffer);
+        return 1;
+    }
 
     // Now send the Inviter SDES crypto string to the answerer via SIP INVITE ........
 
     answLength = sizeof(answBuffer);
     // Answerer parses received string and gets its SDES crypto string, sets "sipInvite" parameter to false
-    answerer->parseSdes(invBuffer, invLength, answBuffer, &answLength, false, CtZrtpSession::AudioStream);
-//    printf("Answerer SDES security: length: %ld\n%s\n", answLength, answBuffer);
+
+//    answerer->parseSdes(invBuffer, invLength, answBuffer, &answLength, false, CtZrtpSession::AudioStream);
+    answerer->parseSdes(invBuffer, invLength, NULL, NULL, false, CtZrtpSession::AudioStream);
+    answerer->getSavedSdes(answBuffer, &answLength, CtZrtpSession::AudioStream);
+    if (answLength != 73) {
+        fprintf(stderr, "Error - Answerer - SDES crypto string wrong size: got: %d, expected: 73\n%s\n", (int)answLength, answBuffer);
+        return 1;
+    }
 
     // Send the answerer SDES crypto back to Inviter, via 200 OK probably
 

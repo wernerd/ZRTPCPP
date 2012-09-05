@@ -21,6 +21,7 @@
 // NOTE: ZRTP buffer is large. An application shall never use ZRTP protocol
 // options that fully use it, otherwise IP packet fragmentation may happen.
 static const int maxZrtpSize = 3072;
+static const int maxSdesString = 256;
 
 static const uint32_t supressWarn = 200;
 static const uint32_t srtpErrorBurstThreshold = 20;
@@ -255,9 +256,11 @@ protected:
      *               the length.
      *
      * @param sendCryptoStr points to a buffer. The method stores a crypto string
-     *                     in raw format, without any signaling prefix, for example @c
-     *                     a=crypto: in case of SDP signaling. Only the answering
-     *                     client must provide a buffer.
+     *                     in raw format in this buffer (without any signaling prefix, for
+     *                     example @c a=crypto: in case of SDP signaling. If the answering client
+     *                     does not provide a buffer (sendCryptoStr == NULL) then the method
+     *                     stores the string in a temporary buffer and the client can get the
+     *                     string at a later time using getSavedSdes().
      *
      * @param sendLenght length of the send crypto string buffer. On return it contains the
      *                   actual length of the crypto string.
@@ -267,6 +270,21 @@ protected:
      * @return @c true if data could be created, @c false otherwise.
      */
     bool parseSdes(char *recvCryptoStr, size_t recvLength, char *sendCryptoStr, size_t *sendLength, bool sipInvite);
+
+    /**
+     * @brief Get the saved SDES crypto string.
+     *
+     * Refer to parseSdes() documentation.
+     * 
+     * @param sendCryptoStr points to a buffer. The method stores the saved crypto string
+     *                     in this buffer.
+     *
+     * @param sendLenght length of the send crypto string buffer. On return it contains the
+     *                   actual length of the crypto string.
+     * 
+     * @return @c true if data could be copied, @c false otherwise, i.e buffer length too short.
+     */
+    bool getSavedSdes(char *sendCryptoStr, size_t *sendLength);
 
     /*
      * The following methods implement the GNU ZRTP callback interface.
@@ -319,6 +337,7 @@ private:
     CtZrtpSendCb      *zrtpSendCallback;
 
     uint8_t zrtpBuffer[maxZrtpSize];
+    char sdesTempBuffer[maxSdesString];
     uint16_t senderZrtpSeqNo;
     uint32_t peerSSRC;
     uint64_t protect;
