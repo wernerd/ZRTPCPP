@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006-2010 Werner Dittmann
+  Copyright (C) 2006-2012 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -137,23 +137,19 @@ class __EXPORT ZRtp {
     void stopZrtp();
 
     /**
-     * Process RTP extension header.
+     * Process ZRTP message.
      *
-     * This method expects to get a pointer to the extension header of
-     * a RTP packet. The method checks if this is really a ZRTP
-     * packet. If this check fails the method returns 0 (false) in
-     * case this is not a ZRTP packet. We return a 1 if we processed
-     * the ZRTP extension header and the caller may process RTP data
-     * after the extension header as usual.  The method return -1 the
-     * call shall dismiss the packet and shall not forward it to
-     * further RTP processing.
+     * The method takes the data and forwards it to the ZRTP state engine for further
+     * processing. It's the caller's duty to check the ZRTP CRC and the ZRTP magic
+     * cookie before calling this function.
      *
      * @param extHeader
-     *    A pointer to the first byte of the extension header. Refer to
-     *    RFC3550.
+     *    A pointer to the first byte of the ZRTP message. Refer to RFC6189.
      * @param peerSSRC
      *    The peer's SSRC.
-     * @param length of the received data packet - used to do santity checks.
+     * @param length
+     *     of the received data packet, this includes the RTP like header
+     *     and the ZRTP CRC field - used to do santity checks.
      *
      * @return
      *    Code indicating further packet handling, see description above.
