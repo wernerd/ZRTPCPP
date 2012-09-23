@@ -65,6 +65,12 @@ class __EXPORT ZIDRecord {
 
 public:
     /**
+     * @brief Destructor.
+     * Define a virtual destructor to enable cleanup in derived classes.
+     */
+    virtual ~ZIDRecord() {};
+
+    /**
      * Set the @c ZID in the record.
      *
      * Set the ZID in this record before calling read or save.

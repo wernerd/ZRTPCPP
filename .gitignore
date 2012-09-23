@@ -1,4 +1,4 @@
-build/
+build*/
 autoconf/
 doc/html/
 configure

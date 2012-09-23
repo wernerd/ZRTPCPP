@@ -21,7 +21,7 @@ int ecdhGeneratePublic(const NistECpCurve *curve, EcPoint *Q, const BigNum *d)
 
     FREE_EC_POINT(&G);
 
-    return 0;
+    return ecCheckPubKey(curve, Q);
 }
 
 int ecdhComputeAgreement(const NistECpCurve *curve, BigNum *agreement, const EcPoint *Q, const BigNum *d)

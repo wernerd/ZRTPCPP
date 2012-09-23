@@ -338,7 +338,8 @@ int32_t ZrtpDH::generatePublicKey()
 
     case EC25:
     case EC38:
-        return ecdhGeneratePublic(&tmpCtx->curve, &tmpCtx->pubPoint, &tmpCtx->privKey);
+        while (!ecdhGeneratePublic(&tmpCtx->curve, &tmpCtx->pubPoint, &tmpCtx->privKey))
+            ecGenerateRandomNumber(&tmpCtx->curve, &tmpCtx->privKey);
     }
     return 0;
 }
@@ -407,47 +408,16 @@ int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
     /* ECC validation (partial), NIST SP800-56A, section 5.6.2.6 */
     if (pkType == EC25 || pkType == EC38) {
 
-        struct BigNum t1, t2;
         dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
         EcPoint pub;
-        int ret = 0;
 
         INIT_EC_POINT(&pub);
         int32_t len = getPubKeySize() / 2;
 
-        bnBegin(&t1);
-        bnBegin(&t2);
-
         bnInsertBigBytes(pub.x, pubKeyBytes, 0, len);
         bnInsertBigBytes(pub.y, pubKeyBytes+len, 0, len);
 
-        /* Represent point at infinity by (0, 0), make sure it's not that */
-        if (bnCmpQ(pub.x, 0) == 0 && bnCmpQ(pub.y, 0) == 0) {
-            goto fail;
-        }
-        /* Check that coordinates are within range */
-        if (bnCmpQ(pub.x, 0) < 0 || bnCmp(pub.x, tmpCtx->curve.p) >= 0) {
-            goto fail;
-        }
-        if (bnCmpQ(pub.y, 0) < 0 || bnCmp(pub.y, tmpCtx->curve.p) >= 0) {
-            goto fail;
-        }
-        /* Check that point satisfies EC equation y^2 = x^3 - 3x + b, mod P */
-        bnSquareMod_(&t1, pub.y, tmpCtx->curve.p);
-        bnSquareMod_(&t2, pub.x, tmpCtx->curve.p);
-        bnSubQMod_(&t2, 3, tmpCtx->curve.p);
-        bnMulMod_(&t2, &t2, pub.x, tmpCtx->curve.p);
-        bnAddMod_(&t2, tmpCtx->curve.b, tmpCtx->curve.p);
-        if (bnCmp (&t1, &t2) != 0) {
-            goto fail;
-        }
-        ret = 1;
-
-    fail:
-        FREE_EC_POINT(&pub);
-        bnEnd(&t1);
-        bnEnd(&t2);
-        return ret;
+        return ecCheckPubKey(&tmpCtx->curve, &pub);
     }
 
     BigNum pubKeyOther;

@@ -101,10 +101,10 @@ typedef struct _suite {
 /* NOTE: the b64len of a 128 bit suite is 40, a 256bit suite uses 64 characters */
 static suiteParam knownSuites[] = {
     {ZrtpSdesStream::AES_CM_128_HMAC_SHA1_32, "AES_CM_128_HMAC_SHA1_32", 128, 112, 160,
-     hs32, aes1, 40, (uint64_t)1<<48, 1<<31
+     hs32, aes1, 40, (uint64_t)1<<48, (uint64_t)1<<31
     },
     {ZrtpSdesStream::AES_CM_128_HMAC_SHA1_80, "AES_CM_128_HMAC_SHA1_80", 128, 112, 160,
-     hs80, aes1, 40, (uint64_t)1<<48, 1<<31
+     hs80, aes1, 40, (uint64_t)1<<48, (uint64_t)1<<31
     },
     {(ZrtpSdesStream::sdesSuites)0, NULL, 0, 0, 0, 0, 0, 0, 0, 0}
 };
