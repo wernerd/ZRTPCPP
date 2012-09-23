@@ -62,6 +62,7 @@ typedef struct {
        avoid to much memory allocation/deallocatio0n overhead */
   BigNum _S1, _U1, _H, _R, _t0, _t1, _t2, _t3;
   BigNum *S1, *U1, *H, *R, *t0, *t1, *t2, *t3;
+  int (*modOp)(BigNum *, const BigNum *, const BigNum *);
 } NistECpCurve;
 
 /**
@@ -180,13 +181,29 @@ int ecGetAffine(const NistECpCurve *curve, EcPoint *R, const EcPoint *P);
  * @brief Generate a random number.
  *
  * The method generates a random number and checks if it matches the curve restricitions.
- * Use this number to generate a ECDH public key.
+ * Use this number as ECDH private key.
  *
  * @param curve the NIST curve to use.
  *
  * @param d receives the generated random number.
  */
 int ecGenerateRandomNumber(const NistECpCurve *curve, BigNum *d);
+
+/**
+ * @brief Check a public key.
+ *
+ * The mehtod checks if a public key is valid. It uses the
+ * ECC Partial Validation, NIST SP800-56A section 5.6.2.6
+ *
+ * @param curve the NIST curve to use.
+ *
+ * @param pub the public key to check.
+ *
+ * @returns true (!0) if the check was ok, fals (0) otherwise.
+ *
+ * @note The function uses some scratch pad variable of the NistECpCurve structure.
+ */
+int ecCheckPubKey(const NistECpCurve *curve, const EcPoint *pub);
 
 /*
  * Some additional functions that are not available in bnlib
@@ -199,11 +216,11 @@ int bnSubMod_ (struct BigNum *rslt, struct BigNum *n1, struct BigNum *mod);
 
 int bnSubQMod_ (struct BigNum *rslt, unsigned n1, struct BigNum *mod);
 
-int bnMulMod_ (struct BigNum *rslt, struct BigNum *n1, struct BigNum *n2, struct BigNum *mod);
+int bnMulMod_ (struct BigNum *rslt, struct BigNum *n1, struct BigNum *n2, struct BigNum *mod, const NistECpCurve *curve);
 
-int bnMulQMod_ (struct BigNum *rslt, struct BigNum *n1, unsigned n2, struct BigNum *mod);
+int bnMulQMod_ (struct BigNum *rslt, struct BigNum *n1, unsigned n2, struct BigNum *mod, const NistECpCurve *curve);
 
-int bnSquareMod_ (struct BigNum *rslt, struct BigNum *n1, struct BigNum *mod);
+int bnSquareMod_ (struct BigNum *rslt, struct BigNum *n1, struct BigNum *mod, const NistECpCurve *curve);
 
 #ifdef __cplusplus
 }
