@@ -28,6 +28,8 @@ extern "C"
  *
  * @param d is the secret random number.
  *
+ * @return @c true (!0) if public key was computed, @c false otherwise.
+ *
  * @sa ecGenerateRandomNumber
  */
 int ecdhGeneratePublic(const NistECpCurve *curve, EcPoint *Q, const BigNum *d);
