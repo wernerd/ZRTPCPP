@@ -187,6 +187,8 @@ set(zrtp_src_no_cache
     ${CMAKE_SOURCE_DIR}/zrtp/ZrtpConfigure.cpp
     ${CMAKE_SOURCE_DIR}/zrtp/ZrtpCWrapper.cpp
     ${CMAKE_SOURCE_DIR}/zrtp/Base32.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/zrtpB64Encode.c
+    ${CMAKE_SOURCE_DIR}/zrtp/zrtpB64Decode.c
     ${CMAKE_SOURCE_DIR}/common/osSpecifics.c ${sdes_src})
 
 set(bnlib_src
@@ -221,8 +223,6 @@ else()
     set(zrtp_src ${zrtp_src_no_cache}
         ${CMAKE_SOURCE_DIR}/zrtp/ZIDCacheDb.cpp
         ${CMAKE_SOURCE_DIR}/zrtp/ZIDRecordDb.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/zrtpB64Encode.c
-        ${CMAKE_SOURCE_DIR}/zrtp/zrtpB64Decode.c
         ${CMAKE_SOURCE_DIR}/zrtp/zrtpCacheSqliteBackend.c)
 
 endif()
