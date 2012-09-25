@@ -143,21 +143,30 @@ int bnSubQMod_ (struct BigNum *rslt, unsigned n1, struct BigNum *mod)
 int bnMulMod_ (struct BigNum *rslt, struct BigNum *n1, struct BigNum *n2, struct BigNum *mod, const NistECpCurve *curve)
 {
     bnMul (rslt, n1, n2);
-    curve->modOp(rslt, rslt, mod);
+    if (curve)
+        curve->modOp(rslt, rslt, mod);
+    else
+        bnMod(rslt, rslt, mod);
     return 0;
 }
 
 int bnMulQMod_ (struct BigNum *rslt, struct BigNum *n1, unsigned n2, struct BigNum *mod, const NistECpCurve *curve)
 {
     bnMulQ (rslt, n1, n2);
-    curve->modOp(rslt, rslt, mod);
+    if (curve)
+        curve->modOp(rslt, rslt, mod);
+    else
+        bnMod(rslt, rslt, mod);
     return 0;
 }
 
 int bnSquareMod_ (struct BigNum *rslt, struct BigNum *n1, struct BigNum *mod, const NistECpCurve *curve)
 {
     bnSquare (rslt, n1);
-    curve->modOp(rslt, rslt, mod);
+    if (curve)
+        curve->modOp(rslt, rslt, mod);
+    else
+        bnMod(rslt, rslt, mod);
     return 0;
 }
 
