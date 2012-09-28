@@ -16,9 +16,12 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+#include <commoncpp/string.h>
+
+
 #include <cstdlib>
 #include <map>
-#include <libzrtpcpp/zrtpccrtp.h>
+#include <zrtpccrtp.h>
 #include <libzrtpcpp/ZrtpUserCallback.h>
 
 using namespace ost;
@@ -73,7 +76,7 @@ PacketsPattern pattern;
 class ExtZrtpSession : public SymmetricZRTPSession {
 //     ExtZrtpSession(InetMcastAddress& ima, tpport_t port) :
 //     RTPSession(ima,port) {}
-// 
+//
 //     ExtZrtpSession(InetHostAddress& ia, tpport_t port) :
 //     RTPSession(ia,port) {}
 
@@ -465,8 +468,10 @@ class
 ZrtpSendPacketTransmissionTestCB : public Thread, public TimerPort
 {
 public:
-    void
-    run()
+
+    ZrtpConfigure config;
+
+    void run()
     {
         doTest();
     }
@@ -477,7 +482,20 @@ public:
         //RTPSession tx();
         ExtZrtpSession tx(/*pattern.getSsrc(),*/ pattern.getDestinationAddress(),
                                 pattern.getDestinationPort()+2);
-        tx.initialize("test_t.zid");
+//        config.clear();
+//        config.setStandardConfig();
+        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));
+        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
+        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC25"));
+
+         config.addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
+
+//          config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS3"));
+//          config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES3"));
+
+        config.addAlgo(SasType, zrtpSasTypes.getByName("B256"));
+
+        tx.initialize("test_t.zid", true, &config);
         // At this point the Hello hash is available. See ZRTP specification
         // chapter 9.1 for further information when an how to use the Hello
         // hash.

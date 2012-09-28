@@ -1,3 +1,10 @@
+
+#to make sure includes are first taken - it contains config.h
+include_directories(BEFORE ${CMAKE_BINARY_DIR})
+include_directories (${CMAKE_CURRENT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR}
+                     ${CMAKE_CURRENT_SOURCE_DIR}/../zrtp
+                     ${CMAKE_CURRENT_SOURCE_DIR}/../clients/ccrtp)
+
 ########### next target ###############
 
 add_executable(zrtptest zrtptest.cpp)

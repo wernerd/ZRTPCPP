@@ -52,24 +52,20 @@ MACRO(GENERATE_PACKAGING PACKAGE VERSION)
 
 #  SPECFILE()
 
-  ADD_CUSTOM_TARGET( svncheck
-    COMMAND cd $(CMAKE_SOURCE_DIR) && LC_ALL=C git status | grep -q "nothing to commit .working directory clean."
-  )
+  ADD_CUSTOM_TARGET(svncheck
+    COMMAND cd $(CMAKE_SOURCE_DIR) && LC_ALL=C git status | grep -q "nothing to commit .working directory clean.")
 
-  SET( AUTOBUILD_COMMAND
-    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/package/*.tar.bz2
+  SET(AUTOBUILD_COMMAND
+    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/*.tar.bz2
     COMMAND ${CMAKE_MAKE_PROGRAM} package_source
-    COMMAND ${CMAKE_COMMAND} -E copy ${CPACK_SOURCE_PACKAGE_FILE_NAME}.tar.bz2 ${CMAKE_BINARY_DIR}/package
-    COMMAND ${CMAKE_COMMAND} -E remove ${CPACK_SOURCE_PACKAGE_FILE_NAME}.tar.bz2
 #    COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/package/${PACKAGE}.changes" "${CMAKE_BINARY_DIR}/package/${PACKAGE}.changes"
   )
 
-  ADD_CUSTOM_TARGET( srcpackage_local
-    ${AUTOBUILD_COMMAND}
-  )
+  ADD_CUSTOM_TARGET(srcpackage_local
+      ${AUTOBUILD_COMMAND})
 
-  ADD_CUSTOM_TARGET( srcpackage
-    COMMAND ${CMAKE_MAKE_PROGRAM} svncheck
-    ${AUTOBUILD_COMMAND}
-  )
-ENDMACRO(GENERATE_PACKAGING)
+  ADD_CUSTOM_TARGET(srcpackage
+     COMMAND ${CMAKE_MAKE_PROGRAM} svncheck
+     ${AUTOBUILD_COMMAND})
+
+  ENDMACRO(GENERATE_PACKAGING)
