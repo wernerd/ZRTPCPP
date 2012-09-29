@@ -27,7 +27,7 @@
 #endif
 
 #if defined(_WIN32) || defined(_WIN64)
-# include <WinSock2.h>
+# include <winsock2.h>
 # include <time.h>
 
 uint64_t  zrtpGetTickCount()
