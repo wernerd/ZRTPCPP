@@ -11,13 +11,14 @@
 cmake_minimum_required(VERSION 2.6)
 
 PROJECT(libzrtpcpp)
+set (PACKAGE libzrtpcpp)
+set (VERSION 3.0.0)
+set (SOVERSION ${VERSION})
+STRING(REGEX REPLACE "[.].*$" "" SOVERSION ${SOVERSION})
 
 SET(CPACK_PACKAGE_VERSION_MAJOR 3)
 SET(CPACK_PACKAGE_VERSION_MINOR 0)
 SET(CPACK_PACKAGE_VERSION_PATCH 0)
-
-set (VERSION 3.0.0)
-set (SOVERSION 3)
 
 include(cmake/Modules/AutoArgs.cmake)
 
@@ -65,11 +66,6 @@ endif()
 if (enable_crypto_standalone)
     set(CRYPTO_STANDALONE TRUE)
 endif()
-
-set (VERSION 2.1.2)
-set (SOVERSION ${VERSION})
-STRING(REGEX REPLACE "[.].*$" "" SOVERSION ${SOVERSION})
-set (PACKAGE libzrtpcpp)
 
 if(CMAKE_GENERATOR MATCHES "Unix Makefiles")
 	add_custom_target(cleandist
