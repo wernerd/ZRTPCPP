@@ -24,6 +24,7 @@ STRING(REGEX REPLACE ".*[.]" "" CPACK_PACKAGE_VERSION_MINOR ${CPACK_PACKAGE_VERS
 STRING(REGEX REPLACE ".*[.]" "" CPACK_PACKAGE_VERSION_PATCH ${VERSION})
 
 include(cmake/Modules/AutoArgs.cmake)
+include(cmake/Modules/FindGcryptConfig.cmake)
 
 # Define supported -Denable-* command line parameters.
 #

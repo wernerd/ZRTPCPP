@@ -76,7 +76,7 @@ add_dependencies(${zrtplibName} ccrtp)
 # **** Setup packing environment ****
 #
 if(${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
-    include(${CMAKE_SCURRENT_OURCE_DIR}/../../cmake/Modules/GeneratePackage.cmake)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/Modules/GeneratePackage.cmake)
 
     GENERATE_PACKAGING(${PACKAGE} ${VERSION})
 endif()
