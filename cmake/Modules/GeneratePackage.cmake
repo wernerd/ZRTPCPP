@@ -23,7 +23,7 @@ MACRO(GENERATE_PACKAGING PACKAGE VERSION)
   # others
   "\\\\.#"
   "/#"
-  "/build/"
+  "/build*"
   "/autom4te\\\\.cache/"
   "/_build/"
   "/doc/html/"
