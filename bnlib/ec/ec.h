@@ -97,6 +97,15 @@ typedef struct _EcPoint {
  */
 #define SET_EC_BASE_POINT(C, P) {EcPoint *e = P;  const NistECpCurve *c = C; bnCopy(e->x, c->Gx); bnCopy(e->y, c->Gy); bnSetQ(e->z, 1);}
 
+/*
+ * EC point helper functions
+ */
+extern void ecInitPoint(EcPoint *P);
+
+extern void ecFreePoint(EcPoint *P);
+
+extern void ecSetBasePoint(NistECpCurve *C, EcPoint *P);
+
 /**
  * \brief          Get NIST EC curve parameters.
  *
