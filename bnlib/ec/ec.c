@@ -267,10 +267,6 @@ int ecGetCurveNistECp(NistCurves curveId, NistECpCurve *curve)
     bnPrealloc(curve->t3, maxBits);
 
     return 0;
-
-/*     ecFreeCurveNistECp(curve);
-     return ret;
-*/
 }
 
 
@@ -297,6 +293,24 @@ void ecFreeCurveNistECp(NistECpCurve *curve)
     bnEnd(curve->t3);
 }
 
+/*
+ * EC point helper functions
+ */
+
+void ecInitPoint(EcPoint *P)
+{
+    INIT_EC_POINT(P);
+}
+
+void ecFreePoint(EcPoint *P)
+{
+    FREE_EC_POINT(P);
+}
+
+void ecSetBasePoint(NistECpCurve *C, EcPoint *P)
+{
+    SET_EC_BASE_POINT(C, P);
+}
 
 /*============================================================================*/
 /*    Elliptic Curve arithmetic                                               */
