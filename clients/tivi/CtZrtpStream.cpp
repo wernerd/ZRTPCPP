@@ -113,18 +113,18 @@ void CtZrtpStream::stopStream() {
 }
 
 bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *newLength) {
-    bool rc = false;
+    bool rc = true;
     if (sendSrtp == NULL) {                 // ZRTP/SRTP inactive
         *newLength = length;
-        if (sdes != NULL) {                 // SDES stream available, let SDES protect if necessary
-            rc = sdes->outgoingRtp(buffer, length, newLength);
-        }
         // Check if ZRTP engine is started and check states to determine if we should send the RTP packet.
         // Do not send in states: CommitSent, WaitDHPart2, WaitConfirm1, WaitConfirm2, WaitConfAck
         if (started && (zrtpEngine->inState(CommitSent) || zrtpEngine->inState(WaitDHPart2) || zrtpEngine->inState(WaitConfirm1) ||
             zrtpEngine->inState(WaitConfirm2) || zrtpEngine->inState(WaitConfAck))) {
             ZrtpRandom::addEntropy(buffer, length);
             return false;
+        }
+        if (sdes != NULL) {                 // SDES stream available, let SDES protect if necessary
+            rc = sdes->outgoingRtp(buffer, length, newLength);
         }
         return rc;
     }
