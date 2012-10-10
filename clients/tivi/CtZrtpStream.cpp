@@ -436,7 +436,7 @@ bool CtZrtpStream::getSavedSdes(char *sendCryptoStr, size_t *sendLength) {
 
     size_t len = strlen(sdesTempBuffer);
 
-    if (len > *sendLength)
+    if (len >= *sendLength)
         return false;
 
     strcpy(sendCryptoStr, sdesTempBuffer);
