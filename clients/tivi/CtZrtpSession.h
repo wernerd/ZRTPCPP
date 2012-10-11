@@ -545,6 +545,15 @@ public:
     bool getSavedSdes(char *sendCryptoStr, size_t *sendLength, streamName streamNm);
 
     /**
+     * @brief Check if SDES is active.
+     *
+     * @param streamNm stream identifier.
+     *
+     * @return @c true if SDES context is available, @c false otherwise.
+     */
+    bool isSdesActive(streamName streamNm);
+
+    /**
      * @brief Clean Cache
      *
      * This method does not work for file based cache implementation. An application

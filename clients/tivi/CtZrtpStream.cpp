@@ -444,6 +444,10 @@ bool CtZrtpStream::getSavedSdes(char *sendCryptoStr, size_t *sendLength) {
     return true;
 }
 
+bool CtZrtpStream::isSdesActive() {
+    return sdes != NULL;
+}
+
 /* *********************
  * Here the callback methods required by the ZRTP implementation
  *

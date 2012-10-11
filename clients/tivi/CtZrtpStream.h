@@ -286,6 +286,13 @@ protected:
      */
     bool getSavedSdes(char *sendCryptoStr, size_t *sendLength);
 
+    /**
+     * @brief Check if SDES is active.
+     *
+     * @return @c true if SDES context is available, @c false otherwise.
+     */
+    bool isSdesActive();
+
     /*
      * The following methods implement the GNU ZRTP callback interface.
      * For detailed documentation refer to file ZrtpCallback.h

@@ -467,11 +467,19 @@ bool CtZrtpSession::parseSdes(char *recvCryptoStr, size_t recvLength, char *send
 }
 
 bool CtZrtpSession::getSavedSdes(char *sendCryptoStr, size_t *sendLength, streamName streamNm) {
-        if (!isReady || !sdesEnabled || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+    if (!isReady || !sdesEnabled || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
         return fail;
 
     CtZrtpStream *stream = streams[streamNm];
     return stream->getSavedSdes(sendCryptoStr, sendLength);
+}
+
+bool CtZrtpSession::isSdesActive(streamName streamNm) {
+    if (!isReady || !sdesEnabled || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return fail;
+
+    CtZrtpStream *stream = streams[streamNm];
+    return stream->isSdesActive();
 }
 
 void CtZrtpSession::cleanCache() {
