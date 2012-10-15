@@ -154,7 +154,7 @@ public:
     int init(bool audio, bool video, ZrtpConfigure* config = NULL);
 
     /**
-     * Fills a ZrtpConfiguration based on selected algorithms.
+     * @brief Fills a ZrtpConfiguration based on selected algorithms.
      *
      * The method looks up some global keys and enables or disables various
      * algorithms. The method creates the configuration for the publik key
@@ -163,7 +163,7 @@ public:
     void setupConfiguration(ZrtpConfigure *conf);
 
     /**
-     * Set the application's callback class.
+     * @brief Set the application's callback class.
      *
      * @param ucb
      *     Implementation of the application's callback class
@@ -171,7 +171,7 @@ public:
     void setUserCallback(CtZrtpCb* ucb, streamName streamNm);
 
     /**
-     * Set the application's send data callback class.
+     * @brief Set the application's send data callback class.
      *
      *
      * @param ucb
@@ -180,7 +180,7 @@ public:
     void setSendCallback(CtZrtpSendCb* scb, streamName streamNm);
 
     /**
-     * Start a stream if it is not already started.
+     * @brief Start a stream if it is not already started.
      *
      * The method starts a stream if it is not already started and it starts
      * a video stream (Slave) only if the audio stream (Master) is already secure.
@@ -188,7 +188,7 @@ public:
     int startIfNotStarted(unsigned int uiSSRC, int streamNm);
 
     /**
-     * Start a stream.
+     * @brief Start a stream.
      *
      * If this start command specifies the @c Master stream the method starts it
      * immediately. The ZRTP engine immediatley send the first Hello packet.
@@ -208,7 +208,7 @@ public:
     void start(unsigned int uiSSRC, streamName streamNm);
 
     /**
-     * Stop a stream.
+     * @brief Stop a stream.
      *
      * Stop a stream and remove it from the session. To create a new stream
      * see @c newStream
@@ -218,7 +218,7 @@ public:
     void stop(streamName streamNm);
 
     /**
-     * Release all streams in this session.
+     * @brief Release all streams in this session.
      *
      * All streams are reset to their initiali values. The application may call
      * @c init to initialize stream(s) again. A stream can be started only if it
@@ -227,14 +227,14 @@ public:
     void release();
 
     /**
-     * Release all resources for the stream.
+     * @brief Release all resources for the stream.
      *
      * @param streamNm which stream to release.
      */
     void release(streamName streamNm);
 
     /**
-     * Set peer name of current call's peer.
+     * @brief Set peer name of current call's peer.
      *
      * Setting the peer name will always use the AudioStream to determine
      * the ZID and set the name into the name cache.
@@ -242,7 +242,7 @@ public:
     void setLastPeerNameVerify(const char *name, int iIsMitm);
 
     /**
-     * Process outgoing data.
+     * @brief Process outgoing data.
      *
      * Depending on the state of the buffer the functions either returns the buffer
      * umodified or encrypted.
@@ -270,7 +270,7 @@ public:
     bool processOutoingRtp(uint8_t *buffer, size_t length, size_t *newLength, streamName streamNm);
 
     /**
-     * Process incoming data.
+     * @brief Process incoming data.
      *
      * Depending on the state of the buffer the functions either returns the RTP data
      * in the buffer either umodified or decrypted. An additional status is @c drop.
@@ -300,14 +300,14 @@ public:
     int32_t processIncomingRtp(uint8_t *buffer, size_t length, size_t *newLength, streamName streamNm);
 
     /**
-     * Check if a stream was started.
+     * @brief Check if a stream was started.
      *
      * @return @c true is started, @c false otherwise.
      */
     bool isStarted(streamName streamNm);
 
     /**
-     * Check if a stream is enabled for ZRTP.
+     * @brief Check if a stream is enabled for ZRTP.
      *
      * For slave streams this flag is @c true if the application called @c start() for
      * this stream but the master stream is not yet in secure state.
@@ -321,21 +321,21 @@ public:
     tiviStatus getPreviousState(streamName streamNm);
 
     /**
-     * Is ZRTP enabled for this session.
+     * @brief Is ZRTP enabled for this session.
      *
      * @return @c true if ZRTP is enabled, @c false otherwise
      */
     bool isZrtpEnabled();
 
     /**
-     * Is SDES enabled for this session.
+     * @brief Is SDES enabled for this session.
      *
      * @return @c true if SDES is enabled, @c false otherwise
      */
     bool isSdesEnabled();
 
     /**
-     * Enable or disable ZRTP processing for this session.
+     * @brief Enable or disable ZRTP processing for this session.
      *
      * If the application enabled ZRTP processing it should also call @c start
      * to really start the ZRTP engines. An application can enable and start ZRTP
@@ -346,7 +346,7 @@ public:
     void setZrtpEnabled(bool yesNo);
 
     /**
-     * Enable or disable SDES processing for this session.
+     * @brief Enable or disable SDES processing for this session.
      *
      * If SDES processing is not enabled the functions @c createSdes and @c parseSdes
      * always return false.
@@ -358,7 +358,7 @@ public:
     void setSdesEnabled(bool yesNo);
 
     /**
-     * @brief Get the ZRTP Hello hash to be used for signaling
+     * @brief Get the ZRTP Hello hash to be used for signaling.
      *
      * Refer to RFC 6189 chapter 8 to get the full documentation on the intercation
      * between ZRTP and a signaling layer.
@@ -374,7 +374,7 @@ public:
     int getSignalingHelloHash(char *helloHash, streamName streamNm);
 
     /**
-     * Set the ZRTP Hello hash from signaling
+     * @brief Set the ZRTP Hello hash from signaling.
      *
      * Refer to RFC 6189 chapter 8 to get the full documentation on the intercation
      * between ZRTP and a signaling layer.
@@ -386,7 +386,7 @@ public:
     void setSignalingHelloHash(const char *helloHash, streamName streamNm);
 
     /**
-     * Set verification flag.
+     * @brief Set verification flag.
      *
      * If the user verified the SAS he/she should press a @c verify button and
      * this button calls this method to set the verified flag in the cache. This
@@ -398,7 +398,7 @@ public:
     void setVerify(int iVerified);
 
     /**
-     * Checks the security state of the stream.
+     * @brief Checks the security state of the stream.
      *
      *
      * @param streamNm specifies which stream to check
@@ -408,20 +408,20 @@ public:
     int isSecure(streamName streamNm);
 
     /**
-     * Return information to tivi client.
+     * @brief Return information to tivi client.
      *
      * @param key which information to return
      *
      * @param buffer points to buffer that gets the information
      *
-     * @param maxLen length of the buffer
+     * @param length length of the buffer
      *
      * @param streamNm stream, if not specified the default is @c AudioStream
      */
-    int getInfo(const char *key, char *buffer, int maxLen, streamName streamNm =AudioStream);
+    int getInfo(const char *key, uint8_t *buffer, size_t length, streamName streamNm =AudioStream);
 
     /**
-     * Accept enrollment for the active peer.
+     * @brief Accept enrollment for the active peer.
      *
      * The method checks if a name is already set in the name cache. If no name
      * is found then set the name for this peer in the name cache.
@@ -433,7 +433,7 @@ public:
     int enrollAccepted(char *p);
 
     /**
-     * Denies enrollment for the active peer.
+     * @brief Denies enrollment for the active peer.
      *
      * The methods resets the stored PBX secret to @c invalid and resets the peer's
      * name in the name cache to an empty string.
@@ -441,7 +441,7 @@ public:
     int enrollDenied();
 
     /**
-     * Set the client ID for ZRTP Hello message.
+     * @brief Set the client ID for ZRTP Hello message.
      *
      * The client may set its id to identify itself in the
      * ZRTP Hello message. The maximum length is 16 characters. A
@@ -568,7 +568,7 @@ protected:
     friend class CtZrtpStream;
 
     /**
-     * Session master stream entered secure state.
+     * @brief Session master stream entered secure state.
      *
      * The session's master stream entered secure state and computed all
      * necessary information to kick of slave streams. The session checks

@@ -26,6 +26,12 @@
  */
 class __EXPORT CtZrtpCb {
 public:
+    /**
+     * @brief Destructor.
+     * Define a virtual destructor to enable cleanup in derived classes.
+     */
+    virtual ~CtZrtpCb() {};
+
     virtual void onNewZrtpStatus(CtZrtpSession *session, char *p, CtZrtpSession::streamName streamNm) =0;
     virtual void onNeedEnroll(CtZrtpSession *session, CtZrtpSession::streamName streamNm, int32_t info) =0;
     virtual void onPeer(CtZrtpSession *session, char *name, int iIsVerified, CtZrtpSession::streamName streamNm) =0;
@@ -41,7 +47,13 @@ public:
  */
 class __EXPORT CtZrtpSendCb {
 public:
-    virtual void sendRtp(CtZrtpSession const *session, uint8_t* packet, unsigned int length, CtZrtpSession::streamName streamNm) =0;
+    /**
+     * @brief Destructor.
+     * Define a virtual destructor to enable cleanup in derived classes.
+     */
+    virtual ~CtZrtpSendCb() {};
+
+    virtual void sendRtp(CtZrtpSession const *session, uint8_t* packet, size_t length, CtZrtpSession::streamName streamNm) =0;
 };
 
 #endif

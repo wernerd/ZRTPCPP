@@ -415,12 +415,12 @@ void CtZrtpSession::setVerify(int iVerified) {
     }
 }
 
-int CtZrtpSession::getInfo(const char *key, char *buffer, int maxLen, streamName streamNm) {
+int CtZrtpSession::getInfo(const char *key, uint8_t *buffer, size_t maxLen, streamName streamNm) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
         return fail;
 
     CtZrtpStream *stream = streams[streamNm];
-    return stream->getInfo(key, buffer, maxLen);
+    return stream->getInfo(key, (char*)buffer, (int)maxLen);
 }
 
 int CtZrtpSession::enrollAccepted(char *p) {

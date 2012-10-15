@@ -53,6 +53,48 @@ else()
     set(LIBRARY_BUILD_TYPE SHARED)
 endif()
 
+set(JAVA true)
+
+if(JAVA)
+    # check if JAVA development environment is available. If javac is available
+    # we assume the full JDK is available also.
+    find_program(JAVAC NAMES javac -version DOC "Java compiler")
+    if(NOT JAVAC)
+        MESSAGE(FATAL_ERROR "Java support -- Java compiler not found")
+    endif()
+    if (NOT IS_DIRECTORY $ENV{JAVA_HOME})
+        MESSAGE(FATAL_ERROR "Java support -- JAVA_HOME environment variable not set or wrong")
+    endif()
+
+    # set the required include paths to compile JNI files
+    set(jniInclude $ENV{JAVA_HOME}/include)
+    string(TOLOWER ${CMAKE_SYSTEM_NAME} osName)
+    set(jniIncludeOs ${jniInclude}/${osName})
+    if(NOT IS_DIRECTORY ${jniInclude} AND NOT IS_DIRECTORY ${jniIncludeOs})
+        MESSAGE(FATAL_ERROR "Java support -- expected include paths '${jniInclude}' and '${jniIncludeOs}' not found")
+    endif()
+
+    # Now we need the swig process to generate the C wrapper and Java files
+    find_program(SWIG NAMES swig -version DOC "SWIG process")
+    if(NOT SWIG)
+        MESSAGE(FATAL_ERROR "Java support -- swig executable not found")
+    endif()
+
+    # Generate the files and store them in correct dir, Java package name is: 'cp.bnlib'
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/swigJava/wd/tivi)
+    execute_process(COMMAND swig -java -c++ -outdir wd/tivi -package wd.tivi -o sessionTest_wrap.cpp -outcurrentdir ${CMAKE_CURRENT_SOURCE_DIR}/swigJava/sessionTest.i
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/swigJava")
+
+    # The wrapper file requires some special include paths, set as source file properties
+    set(sessionTest_wrap ${CMAKE_CURRENT_BINARY_DIR}/swigJava/sessionTest_wrap.cpp)
+    set_source_files_properties(${sessionTest_wrap} PROPERTIES COMPILE_FLAGS "-I${jniInclude} -I${jniIncludeOs}")
+
+    # Add both source files to the bnlib_src
+    set(zrtpcpp_src ${zrtpcpp_src} ${sessionTest_wrap})
+
+endif()
+
+
 add_library(${zrtplibName} ${LIBRARY_BUILD_TYPE} ${zrtpcpp_src})
 set_target_properties(${zrtplibName} PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
 target_link_libraries(${zrtplibName} ${LIBS})
@@ -67,6 +109,17 @@ add_executable(sdesTestdriver sdesTestdriver.cpp)
 target_link_libraries(sdesTestdriver ${zrtplibName})
 add_dependencies(sdesTestdriver ${zrtplibName})
 
+
+if(JAVA)
+    add_custom_command(TARGET ${zrtplibName} POST_BUILD
+                     COMMAND javac -d . wd/tivi/*.java
+                     COMMAND jar -cf sessionTest.jar wd
+                     COMMAND javac -cp sessionTest.jar -d . "${CMAKE_CURRENT_SOURCE_DIR}/swigJava/SessionTest.java"
+                     WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/swigJava"
+                     COMMENT "Compile the generated Java source, build JAR file, and test class")
+    # To run test class in build directory: java -cp swigJava/sessionTest.jar:swigJava -Djava.library.path=`pwd` SessionTest
+endif()
+
 # **** Setup packing environment ****
 #
 if(${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
@@ -75,37 +128,28 @@ if(${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
     GENERATE_PACKAGING(${PACKAGE} ${VERSION})
 endif()
 
-# **** Create the external files for RPM and pkgconfig ****
+set(ANDROID true)
 #
-set(prefix ${CMAKE_INSTALL_PREFIX})
-set(exec_prefix ${prefix}/bin)
-set(libdir ${prefix}/${LIBDIRNAME})
-set(includedir ${prefix}/include)
-set(PACKAGE pkgconfig)
+# Create the Android make files but do not execute them
+if(ANDROID)
+    set(TIVI_ENV "-D_WITHOUT_TIVI_ENV")
 
-configure_file(${CMAKE_SOURCE_DIR}/libzrtpcpp.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/lib${zrtplibName}.pc @ONLY)
-configure_file(${CMAKE_SOURCE_DIR}/libzrtpcpp.spec.cmake ${CMAKE_CURRENT_BINARY_DIR}/lib${zrtplibName}.spec @ONLY)
+    foreach(loop ${zrtpcpp_src})
+        string(REPLACE "${CMAKE_SOURCE_DIR}/" "" o ${loop})
+        set(zrtpcpp_src_spc ${zrtpcpp_src_spc} ${o})
+    endforeach()
 
-# **** install files ****
-#
-set(tivi_inst
-    ${CMAKE_CURRENT_SOURCE_DIR}/CtZrtpNew.h)
+    string(REPLACE ";" " " zrtpcpp_src_spc "${zrtpcpp_src_spc}")
+#    configure_file(${CMAKE_SOURCE_DIR}/clients/tivi/jni/zrtplib/Android.mk.cmake
+#                   ${CMAKE_BINARY_DIR}/clients/tivi/jni/zrtplib/Android.mk @ONLY)
 
-install(FILES
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCodes.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpConfigure.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCallback.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCWrapper.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpUserCallback.h ${ccrtp_inst} DESTINATION include/libzrtpcpp)
+#    configure_file(${CMAKE_SOURCE_DIR}/clients/tivi/jni/sqlite3/Android.mk.cmake
+#                   ${CMAKE_BINARY_DIR}/clients/tivi/jni/sqlite3/Android.mk @ONLY)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib${zrtplibName}.pc DESTINATION ${LIBDIRNAME}/pkgconfig)
+    configure_file(${CMAKE_SOURCE_DIR}/clients/tivi/android/jni/Android.mk
+                   ${CMAKE_BINARY_DIR}/clients/tivi/android/jni/Android.mk @ONLY)
 
-install(TARGETS ${zrtplibName} DESTINATION ${LIBDIRNAME})
-
-if(${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
-
-    ########### Add uninstall target ###############
-    configure_file("${CMAKE_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake" IMMEDIATE @ONLY)
-    add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
-
+    configure_file(${CMAKE_SOURCE_DIR}/clients/tivi/android/jni/Application.mk
+                   ${CMAKE_BINARY_DIR}/clients/tivi/android/jni/Application.mk COPYONLY)
 endif()
+

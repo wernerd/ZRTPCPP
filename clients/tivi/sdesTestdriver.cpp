@@ -34,7 +34,7 @@ class TestCallbackAudio: public CtZrtpCb {
     void onNewZrtpStatus(CtZrtpSession *session, char *p, CtZrtpSession::streamName streamNm) {
         fprintf(stderr, "new status: %s\n", p == NULL ? "NULL" : p);
         if (session->isSecure(streamNm)) {
-            char buffer[20];
+            uint8_t buffer[20];
 
             session->getInfo("rs1", buffer, 9);
             printf("RS1: %s ", buffer);
@@ -84,9 +84,9 @@ class TestCallbackAudio: public CtZrtpCb {
 };
 
 class TestSendCallbackAudio: public CtZrtpSendCb {
-    void sendRtp(CtZrtpSession const *session, uint8_t* packet, unsigned int length, CtZrtpSession::streamName streamNm) {
+    void sendRtp(CtZrtpSession const *session, uint8_t* packet, size_t length, CtZrtpSession::streamName streamNm) {
 //        hexdump("ZRTP packet", packet, length);
-        fprintf(stderr, "ZRTP send packet, length: %d\n", length);
+        fprintf(stderr, "ZRTP send packet, length: %lu\n", length);
     }
 };
 

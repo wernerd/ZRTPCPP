@@ -202,8 +202,7 @@ set(bnlib_src
     ${CMAKE_SOURCE_DIR}/bnlib/jacobi.c
     ${CMAKE_SOURCE_DIR}/bnlib/germain.c
     ${CMAKE_SOURCE_DIR}/bnlib/ec/ec.c
-    ${CMAKE_SOURCE_DIR}/bnlib/ec/ecdh.c
-    ${CMAKE_SOURCE_DIR}/bnlib/bnprint.c)
+    ${CMAKE_SOURCE_DIR}/bnlib/ec/ecdh.c)
 
 set(zrtp_crypto_src
     ${CMAKE_SOURCE_DIR}/zrtp/crypto/zrtpDH.cpp

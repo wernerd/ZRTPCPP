@@ -299,6 +299,7 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
     if ((sdes == NULL && !started) || isStopped || !isSecure())
         return 0;
 
+    memset(p, 0, maxLen);
     const ZRtp::zrtpInfo *info = NULL;
     ZRtp::zrtpInfo tmpInfo;
 

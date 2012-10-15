@@ -59,7 +59,7 @@ class TestCallbackAudio: public CtZrtpCb {
 
     void onPeer(CtZrtpSession *session, char *name, int iIsVerified, CtZrtpSession::streamName streamNm) {
         fprintf(stderr, "onPeer: %s\n", name == NULL ? "NULL" : name);
-        char buffer[20];
+        uint8_t buffer[20];
 
         session->getInfo("rs1", buffer, 19);
         printf("RS1: %s ", buffer);
@@ -107,9 +107,9 @@ class TestCallbackAudio: public CtZrtpCb {
 };
 
 class TestSendCallbackAudio: public CtZrtpSendCb {
-    void sendRtp(CtZrtpSession const *session, uint8_t* packet, unsigned int length, CtZrtpSession::streamName streamNm) {
+    void sendRtp(CtZrtpSession const *session, uint8_t* packet, size_t length, CtZrtpSession::streamName streamNm) {
 //        hexdump("ZRTP packet", packet, length);
-        fprintf(stderr, "ZRTP send packet, length: %d, %.8s\n", length, packet+16);
+        fprintf(stderr, "ZRTP send packet, length: %lu, %.8s\n", length, packet+16);
         sendData(packet, length);
     }
 };
