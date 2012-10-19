@@ -15,7 +15,11 @@ include $(BUILD_STATIC_LIBRARY)
 #
 include $(CLEAR_VARS)
 LOCAL_MODULE := zrtpcpp
-LOCAL_CPP_FEATURES := rtti exceptions
+LOCAL_CPP_FEATURES := @local_cpp_features@
+
+#
+# set to false if testing/compiling new modules to catch undefined symbols
+LOCAL_ALLOW_UNDEFINED_SYMBOLS := true
 
 # include paths for zrtpcpp modules
 LOCAL_C_INCLUDES += $(ROOT_SRC_PATH) $(ROOT_SRC_PATH)/srtp $(ROOT_SRC_PATH)/zrtp $(ROOT_SRC_PATH)/bnlib \

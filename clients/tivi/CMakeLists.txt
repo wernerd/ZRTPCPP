@@ -53,7 +53,6 @@ else()
     set(LIBRARY_BUILD_TYPE SHARED)
 endif()
 
-set(JAVA true)
 
 if(JAVA)
     # check if JAVA development environment is available. If javac is available
@@ -110,6 +109,8 @@ target_link_libraries(sdesTestdriver ${zrtplibName})
 add_dependencies(sdesTestdriver ${zrtplibName})
 
 
+# If Java support is enabled then compile the generate Java classes, build jar
+# and compile java test program after the shared lib is ready
 if(JAVA)
     add_custom_command(TARGET ${zrtplibName} POST_BUILD
                      COMMAND javac -d . wd/tivi/*.java
@@ -128,7 +129,6 @@ if(${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
     GENERATE_PACKAGING(${PACKAGE} ${VERSION})
 endif()
 
-set(ANDROID true)
 #
 # Create the Android make files but do not execute them
 if(ANDROID)
@@ -138,6 +138,12 @@ if(ANDROID)
         string(REPLACE "${CMAKE_SOURCE_DIR}/" "" o ${loop})
         set(zrtpcpp_src_spc ${zrtpcpp_src_spc} ${o})
     endforeach()
+    set(local_cpp_features "exceptions")
+
+    # The java wrappers may require RTTI in case the SWIG director feature is active.
+    if(JAVA)
+        set(local_cpp_features ${local_cpp_features} rtti)
+    endif()
 
     string(REPLACE ";" " " zrtpcpp_src_spc "${zrtpcpp_src_spc}")
 #    configure_file(${CMAKE_SOURCE_DIR}/clients/tivi/jni/zrtplib/Android.mk.cmake
