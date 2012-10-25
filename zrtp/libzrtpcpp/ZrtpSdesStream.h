@@ -15,7 +15,7 @@ public:
      * Supported SDES crypto suites.
      */
     typedef enum {
-        AES_CM_128_HMAC_SHA1_32 = 1,
+        AES_CM_128_HMAC_SHA1_32 = 0,
         AES_CM_128_HMAC_SHA1_80
     } sdesSuites;
 

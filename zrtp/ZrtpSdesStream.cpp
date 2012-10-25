@@ -101,10 +101,10 @@ typedef struct _suite {
 /* NOTE: the b64len of a 128 bit suite is 40, a 256bit suite uses 64 characters */
 static suiteParam knownSuites[] = {
     {ZrtpSdesStream::AES_CM_128_HMAC_SHA1_32, "AES_CM_128_HMAC_SHA1_32", 128, 112, 160,
-     hs32, aes1, 40, (uint64_t)1<<48, (uint64_t)1<<31
+     hs32, "AES-128", 40, (uint64_t)1<<48, (uint64_t)1<<31
     },
     {ZrtpSdesStream::AES_CM_128_HMAC_SHA1_80, "AES_CM_128_HMAC_SHA1_80", 128, 112, 160,
-     hs80, aes1, 40, (uint64_t)1<<48, (uint64_t)1<<31
+     hs80, "AES-128", 40, (uint64_t)1<<48, (uint64_t)1<<31
     },
     {(ZrtpSdesStream::sdesSuites)0, NULL, 0, 0, 0, 0, 0, 0, 0, 0}
 };
@@ -235,8 +235,11 @@ const char* ZrtpSdesStream::getCipher() {
     return knownSuites[suite].cipher;
 }
 
-const char* ZrtpSdesStream::getAuthAlgo(){
-    return knownSuites[suite].tagLength;
+const char* ZrtpSdesStream::getAuthAlgo() {
+    if (strcmp(knownSuites[suite].tagLength, hs80) == 0)
+        return "HMAC-SHA1 80 bit";
+    else
+        return "HMAC-SHA1 32 bit";
 }
 
 #ifdef WEAKRANDOM
@@ -309,7 +312,7 @@ bool ZrtpSdesStream::createSdesProfile(char *cryptoString, size_t *maxLen) {
 
     // If SDES will support other encryption algos - get it here based on
     // the algorithm name in suite
-    int cipher = SrtpEncryptionAESCM;
+    int ciph = SrtpEncryptionAESCM;
 
     int keyLenBytes = pSuite->keyLength / 8;
     int saltLenBytes = pSuite->saltLength / 8;
@@ -317,7 +320,7 @@ bool ZrtpSdesStream::createSdesProfile(char *cryptoString, size_t *maxLen) {
     sendSrtp = new CryptoContext(0,                     // SSRC (used for lookup)
                                  0,                     // Roll-Over-Counter (ROC)
                                  0L,                    // keyderivation << 48,
-                                 cipher,                // encryption algo
+                                 ciph,                // encryption algo
                                  authn,                 // authtentication algo
                                  keySalt,               // Master Key
                                  keyLenBytes,           // Master Key length
