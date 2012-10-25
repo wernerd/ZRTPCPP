@@ -54,16 +54,16 @@ class TestCallbackAudio: public CtZrtpCb {
             session->getInfo("lbVersion", buffer, 19);
             printf("Version: %s ", buffer);
 
-            session->getInfo("lbChiper", buffer, 9);
+            session->getInfo("lbChiper", buffer, 19);
             printf("cipher: %s ", buffer);
 
-            session->getInfo("lbHash", buffer, 9);
+            session->getInfo("lbHash", buffer, 19);
             printf("hash: %s ", buffer);
 
-            session->getInfo("lbAuthTag", buffer, 9);
+            session->getInfo("lbAuthTag", buffer, 19);
             printf("auth: %s ", buffer);
 
-            session->getInfo("lbKeyExchange", buffer, 9);
+            session->getInfo("lbKeyExchange", buffer, 19);
             printf("KeyEx: %s\n", buffer);
 
         }

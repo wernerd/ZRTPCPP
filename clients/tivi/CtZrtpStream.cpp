@@ -125,12 +125,16 @@ bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *ne
         }
         if (sdes != NULL) {                 // SDES stream available, let SDES protect if necessary
             rc = sdes->outgoingRtp(buffer, length, newLength);
+            if (*sdesTempBuffer != 0)       // clear SDES crypto string if not already done
+                memset(sdesTempBuffer, 0, maxSdesString);
         }
         return rc;
     }
     // At this point ZRTP/SRTP is active
-    if (sdes != NULL) {                     // We still have a SDES - other client did not send zrtp-hash
+    if (sdes != NULL) {                     // We still have a SDES - other client did not send zrtp-hash thus we protect twice
         rc = sdes->outgoingRtp(buffer, length, newLength);
+        if (*sdesTempBuffer != 0)           // clear SDES crypto string if not already done
+            memset(sdesTempBuffer, 0, maxSdesString);
         if (!rc) {
             return rc;
         }
@@ -154,6 +158,9 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, size_t length, size_t 
                 return 1;
             }
             rc = sdes->incomingRtp(buffer, length, newLength);
+            if (*sdesTempBuffer != 0)           // clear SDES crypto string if not already done
+                memset(sdesTempBuffer, 0, maxSdesString);
+
             if (rc == 1) {                       // SDES unprotect success
                 srtpErrorBurst = 0;
                 return 1;
@@ -305,24 +312,24 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
 
     int iLen = strlen(key);
 
+    // Compute Hello-hash info string
+    const char *strng = NULL;
+    if (peerHelloHash.empty()) {
+        strng = "None";
+    }
+    else if (zrtpHashMatch) {
+        strng = "Good";
+    }
+    else {
+        strng = "Bad";
+    }
+    T_ZRTP_LB("sdp_hash", strng);
+
     if (recvSrtp != NULL || sendSrtp != NULL) {
         info = zrtpEngine->getDetailInfo();
 
         T_ZRTP_LB("lbClient",      zrtpEngine->getPeerClientId().c_str());
         T_ZRTP_LB("lbVersion",     zrtpEngine->getPeerProtcolVersion().c_str());
-
-        // Compute Hello-hash info string
-        const char *strng = NULL;
-        if (peerHelloHash.empty()) {
-            strng = "None";
-        }
-        else if (zrtpHashMatch) {
-            strng = "Good";
-        }
-        else{
-            strng = "Bad";
-        }
-        T_ZRTP_LB("sdp_hash", strng);
 
         if (iLen == 1 && key[0] == 'v') {
             return sprintf(p, "%d", sasVerified);
@@ -344,7 +351,7 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
         tmpInfo.secretsMatched = 0;
         tmpInfo.secretsCached = 0;
         tmpInfo.hash = (const char*)"";
-        tmpInfo.pubKey = (const char*)"";
+        tmpInfo.pubKey = (const char*)"SIP SDES";
         tmpInfo.cipher = sdes->getCipher();
         tmpInfo.authLength = sdes->getAuthAlgo();
         info = &tmpInfo;
@@ -392,6 +399,9 @@ int CtZrtpStream::enrollDenied() {
 
 
 bool CtZrtpStream::createSdes(char *cryptoString, size_t *maxLen, const ZrtpSdesStream::sdesSuites sdesSuite) {
+    if (isSecure())         // don't take action if we are already secure
+        return false;
+
     if (sdes == NULL)
         sdes = new ZrtpSdesStream(sdesSuite);
 
@@ -404,6 +414,9 @@ bool CtZrtpStream::createSdes(char *cryptoString, size_t *maxLen, const ZrtpSdes
 }
 
 bool CtZrtpStream::parseSdes(char *recvCryptoStr, size_t recvLength, char *sendCryptoStr, size_t *sendLength, bool sipInvite) {
+    if (isSecure())         // don't take action if we are already secure
+        return false;
+
     // The ZrtpSdesStream determines its suite by parsing the crypto string.
     if (sdes == NULL)
         sdes = new ZrtpSdesStream();
@@ -442,11 +455,14 @@ bool CtZrtpStream::getSavedSdes(char *sendCryptoStr, size_t *sendLength) {
 
     strcpy(sendCryptoStr, sdesTempBuffer);
     *sendLength = len;
+
+    if (zrtpUserCallback != NULL)
+        zrtpUserCallback->onNewZrtpStatus(session, NULL, index);
     return true;
 }
 
 bool CtZrtpStream::isSdesActive() {
-    return sdes != NULL;
+    return (sdes != NULL && sdes->getState() == ZrtpSdesStream::SDES_SRTP_ACTIVE);
 }
 
 /* *********************
