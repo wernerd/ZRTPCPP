@@ -403,7 +403,8 @@ public:
      *
      * @param streamNm specifies which stream to check
      *
-     * @return non null if either @c eSecure or @c eSecureMitm set.
+     * @return non null if either @c eSecure, @c eSecureMitm , @c eSecureMitmVia
+     *         or @c eSecureSdes is set.
      */
     int isSecure(streamName streamNm);
 
