@@ -166,9 +166,10 @@ protected:
     void setSignalingHelloHash(const char *helloHash);
 
     /**
-     * Checks the security state of the stream.
+     * @brief Checks the security state of the stream.
      *
-     * @return non null if either @c eSecure or @c eSecureMitm set.
+     * @return non null if either @c eSecure, @c eSecureMitm , @c eSecureMitmVia
+     *         or @c eSecureSdes is set.
      */
     int isSecure();
 
@@ -287,9 +288,9 @@ protected:
     bool getSavedSdes(char *sendCryptoStr, size_t *sendLength);
 
     /**
-     * @brief Check if SDES is active.
+     * @brief Check if SDES is active and is in SDES secure state.
      *
-     * @return @c true if SDES context is available, @c false otherwise.
+     * @return @c true if SDES is in secure state, @c false otherwise.
      */
     bool isSdesActive();
 
@@ -353,6 +354,8 @@ private:
     std::string peerHelloHash;
     bool     zrtpHashMatch;
     bool     sasVerified;
+    bool     helloReceived;
+    bool     sdesActive;
     ZrtpSdesStream *sdes;
     uint32_t supressCounter;
     uint32_t srtpErrorBurst;
