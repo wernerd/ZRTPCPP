@@ -125,7 +125,7 @@ bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *ne
             ZrtpRandom::addEntropy(buffer, length);
             return false;
         }
-        if (sdes != NULL) {                 // SDES stream available, let SDES protect if necessary
+        if (sdesActive && sdes != NULL) {   // SDES stream available, let SDES protect if necessary
             rc = sdes->outgoingRtp(buffer, length, newLength);
             if (*sdesTempBuffer != 0)       // clear SDES crypto string if not already done
                 memset(sdesTempBuffer, 0, maxSdesString);
@@ -133,7 +133,7 @@ bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *ne
         return rc;
     }
     // At this point ZRTP/SRTP is active
-    if (sdes != NULL) {                     // We still have a SDES - other client did not send zrtp-hash thus we protect twice
+    if (sdesActive && sdes != NULL) {       // We still have a SDES - other client did not send zrtp-hash thus we protect twice
         rc = sdes->outgoingRtp(buffer, length, newLength);
         if (*sdesTempBuffer != 0)           // clear SDES crypto string if not already done
             memset(sdesTempBuffer, 0, maxSdesString);
