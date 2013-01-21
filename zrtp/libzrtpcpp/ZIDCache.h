@@ -161,9 +161,9 @@ public:
     /**
      * @brief Clean the cache.
      *
-     * This method cleans the cache and discards all information about remote peers.
-     * The method does not delete the local (own) ZID. To delete local ZID information
-     * the user must delete the database base.
+     * The function drops and re-creates all tables in the database. This removes all stored
+     * data. The application must not call this while a ZRTP call is active. Also the application
+     * <b>must</b> get the local ZID again.
      *
      */
     virtual void cleanup() =0;
