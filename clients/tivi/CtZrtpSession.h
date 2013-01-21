@@ -17,8 +17,7 @@
   #if defined _WIN32 || defined __CYGWIN__
     #define __EXPORT    __declspec(dllimport)
     #define __LOCAL
-  #endif
-  #if __GNUC__ >= 4
+  #elif __GNUC__ >= 4
     #define __EXPORT    __attribute__ ((visibility("default")))
     #define __LOCAL     __attribute__ ((visibility("hidden")))
   #else
