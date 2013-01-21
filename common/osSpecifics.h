@@ -34,6 +34,10 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
+#if defined(_WIN32) || defined(_WIN64)
+# define snprintf _snprintf
+#endif
+
 #if defined(__cplusplus)
 extern "C"
 {
