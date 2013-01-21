@@ -133,4 +133,5 @@ void ZIDCacheDb::putPeerName(const uint8_t *peerZid, const std::string name) {
 
 void ZIDCacheDb::cleanup() {
     cacheOps.cleanCache(zidFile, errorBuffer);
+    cacheOps.readLocalZid(zidFile, associatedZid, NULL, errorBuffer);
 }

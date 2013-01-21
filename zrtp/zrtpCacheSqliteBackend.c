@@ -56,6 +56,8 @@ static char *lookupTables = "SELECT name FROM sqlite_master WHERE type='table' A
 /* *****************************************************************************
  * SQL statements to process the zrtpIdOwn table.
  */
+static const char *dropZrtpIdOwn =      "DROP TABLE zrtpIdOwn;";
+
 /* SQLite doesn't care about the VARCHAR length. */
 static char *createZrtpIdOwn = "CREATE TABLE zrtpIdOwn(localZid CHAR(18), type INTEGER, accountInfo VARCHAR(1000));";
 
@@ -576,9 +578,31 @@ static int openCache(const char* name, void **vpdb, char *errString)
 
 static int closeCache(void *vdb)
 {
+
     sqlite3 *db = (sqlite3*)vdb;
     sqlite3_close(db);
     return SQLITE_OK;
+}
+
+static int clearCache(void *vdb, char *errString)
+{
+
+    sqlite3 *db = (sqlite3*)vdb;
+    sqlite3_stmt * stmt;
+    int rc;
+
+    rc = SQLITE_PREPARE(db, dropZrtpIdOwn, strlen(dropZrtpIdOwn)+1, &stmt, NULL);
+    rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
+    rc = createTables(db, errString);
+    if (rc)
+        return rc;
+    return SQLITE_OK;
+
+  cleanup:
+    sqlite3_finalize(stmt);
+    return rc;
 }
 
 static int insertZidNameRecord(void *vdb, const uint8_t *remoteZid, const uint8_t *localZid,
@@ -736,6 +760,7 @@ void getDbCacheOps(dbCacheOps_t *ops)
 {
     ops->openCache = openCache;
     ops->closeCache = closeCache;
+    ops->cleanCache = clearCache;
 
     ops->readLocalZid = readLocalZid;
 
