@@ -482,6 +482,22 @@ bool CtZrtpSession::isSdesActive(streamName streamNm) {
     return stream->isSdesActive();
 }
 
+int CtZrtpSession::getCryptoMixAttribute(char *algoNames, size_t length, streamName streamNm) {
+    if (!isReady || !sdesEnabled || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return 0;
+
+    CtZrtpStream *stream = streams[streamNm];
+    return stream->getCryptoMixAttribute(algoNames, length);
+}
+
+bool CtZrtpSession::setCryptoMixAttribute(char *algoNames, streamName streamNm) {
+    if (!isReady || !sdesEnabled || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return fail;
+
+    CtZrtpStream *stream = streams[streamNm];
+    return stream->setCryptoMixAttribute(algoNames);
+}
+
 void CtZrtpSession::cleanCache() {
     getZidCacheInstance()->cleanup();
 }

@@ -554,6 +554,50 @@ public:
     bool isSdesActive(streamName streamNm);
 
     /**
+     * @brief Get Crypto Mix attribute string
+     *
+     * The @b offerer shall call this method to get a string of @b all supported crypto mix algorithms
+     * and shall send this list to the answerer.
+     *
+     * The @b answerer must call this function after it received the crypto mix string and @b after it
+     * called @c setCryptoMixAttribute(...). In this case the method returns only one (the selected)
+     * crypto mix algorithm and the answerer must send this to the offerer in 200 OK for example. Must
+     * be called before @c parseSdes
+     *
+     * @param algoNames points to a buffer that will filled with the crypto mix algorithm names.
+     *                  The buffer must be long enough to hold at least the name of the mandatory
+     *                  algorithm HMAC-SHA-384.
+     *
+     * @param streamNm stream identifier.
+     *
+     * @param length length buffer
+     *
+     * @return Length of algorithm names (excluding zero byte) or zero if crypto mix not supported or
+     *         enabled.
+     */
+    int getCryptoMixAttribute(char *algoNames, size_t length, streamName streamNm);
+
+    /**
+     * @brief Set Crypto Mix attribute string
+     *
+     * The method splits the string into algorithm names and checks if it contains an
+     * supported algorithm.
+     *
+     * The answerer must call this method @b before it calls the @c getCryptoMixAttribute() method and
+     * @b before it calls the @c parseSdes method.
+     *
+     * The offerer call this method @b before it calls @c parseSdes
+     *
+     * @param algoNames points to a buffer that holds the received crypto mix algorithm names.
+     *                  The buffer must be zero terminated.
+     *
+     * @param streamNm stream identifier.
+     *
+     * @return @c false if algorithm is not supported.
+     */
+    bool setCryptoMixAttribute(char *algoNames, streamName streamNm);
+
+    /**
      * @brief Clean Cache
      *
      * This method does not work for file based cache implementation. An application

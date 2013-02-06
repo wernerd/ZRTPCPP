@@ -470,6 +470,26 @@ bool CtZrtpStream::isSdesActive() {
     return (sdes != NULL && sdes->getState() == ZrtpSdesStream::SDES_SRTP_ACTIVE);
 }
 
+int CtZrtpStream::getCryptoMixAttribute(char *algoNames, size_t length) {
+    if (isSecure()) // don't take action if we are already secure
+        return 0;
+
+    if (sdes == NULL)
+        sdes = new ZrtpSdesStream();
+
+    return sdes->getCryptoMixAttribute(algoNames, length);
+}
+
+bool  CtZrtpStream::setCryptoMixAttribute(char *algoNames) {
+    if (isSecure()) // don't take action if we are already secure
+        return false;
+
+    if (sdes == NULL)
+        sdes = new ZrtpSdesStream();
+
+    return sdes->setCryptoMixAttribute(algoNames);
+}
+
 /* *********************
  * Here the callback methods required by the ZRTP implementation
  *

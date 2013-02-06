@@ -294,6 +294,44 @@ protected:
      */
     bool isSdesActive();
 
+    /**
+     * @brief Get Crypto Mix attribute string
+     *
+     * The offerer shall call this method to get a string of @b all supported crypto mix algorithms
+     * and shall send this list to the answerer.
+     *
+     * The answerer shall call this function only @b after it received the crypto mix string and
+     * called @c setCryptoMixAttribute(...). In this case the method returns only one (the selected)
+     * crypto mix algorithm and the answerer must send this to the offerer in 200 OK for example.
+     *
+     * @param algoNames points to a buffer that will filled with the crypto mix algorithm names.
+     *                  The buffer must be long enough to hold at least the name of the mandatory
+     *                  algorithm HMAC-SHA-384.
+     *
+     * @param length length buffer
+     *
+     * @return Length of algorithm names (excluding zero byte) or zero if crypto mix not supported or
+     *         enabled.
+     */
+    int getCryptoMixAttribute(char *algoNames, size_t length);
+
+    /**
+     * @brief Set Crypto Mix attribute string
+     *
+     * The method splits the string into algorithm names and checks if it contains an
+     * supported algorithm.
+     *
+     * The answerer must call this method @b before it calls the @c getCryptoMixAttribute() method.
+     *
+     * The offerer call this method only @b after it received the selected algorithm in the answer.
+     *
+     * @param algoNames points to a buffer that holds the received crypto mix algorithm names.
+     *                  The buffer must be zero terminated.
+     *
+     * @return @c false if algorithm is not supported.
+     */
+    bool setCryptoMixAttribute(char *algoNames);
+
     /*
      * The following methods implement the GNU ZRTP callback interface.
      * For detailed documentation refer to file ZrtpCallback.h
