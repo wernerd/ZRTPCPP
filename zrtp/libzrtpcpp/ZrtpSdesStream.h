@@ -2,6 +2,13 @@
 class CryptoContext;
 class CryptoContextCtrl;
 
+/*
+ * These functions support 256 bit encryption algorithms.
+ */
+#define MAX_KEY_LEN           32
+#define MAX_SALT_LEN          14
+#define MAX_DIGEST_LENGTH     64
+
 /**
  * Maximum length of a raw crypto string.
  */
@@ -119,6 +126,46 @@ public:
      */
     bool parseSdes(char *cryptoString, size_t length, bool sipInvite);
 
+    /**
+     * @brief Get Crypto Mix attribute string
+     *
+     * The offerer shall call this method to get a string of @b all supported crypto mix algorithms
+     * and shall send this list to the answerer. Call this method after @c createSdes.
+     *
+     * The answerer shall call this function only @b after it received the crypto mix string and
+     * called @c setCryptoMixAttribute(...). In this case the method returns only one (the selected)
+     * crypto mix algorithm and the answerer must send this to the offerer in 200 OK for example.
+     *
+     * @param algoNames points to a buffer that will filled with the crypto mix algorithm names.
+     *                  The buffer must be long enough to hold at least the name of the mandatory
+     *                  algorithm HMAC-SHA-384.
+     *
+     * @param length length buffer
+     *
+     * @return Length of algorithm names (excluding zero byte) or zero if crypto mix not supported or
+     *         enabled.
+     */
+    int getCryptoMixAttribute(char *algoNames, size_t length);
+
+    /**
+     * @brief Set Crypto Mix attribute string
+     *
+     * The method splits the string into algorithm names and checks if it contains an
+     * supported algorithm.
+     *
+     * The answerer must call this method @b before it calls the @c getCryptoMixAttribute() method but
+     * after it called @c parseSdes.
+     *
+     * The offerer calls this method only @b after it received the selected algorithm in the answer and
+     * after it called @c parseSdes.
+     *
+     * @param algoNames points to a buffer that holds the received crypto mix algorithm names.
+     *                  The buffer must be zero terminated.
+     *
+     * @return @c false if algorithm is not supported.
+     */
+    bool setCryptoMixAttribute(char *algoNames);
+
     /*
      * ******** Outgoing RTP/RTCP packet handling
      */
@@ -216,21 +263,21 @@ public:
     int incomingSrtcp(uint8_t *packet, size_t length, size_t *newLength);
 
     /**
-     * Return state of SDES stream.
+     * @brief Return state of SDES stream.
      *
      * @return state of stream.
      */
     sdesZrtpStates getState() {return state;}
 
     /**
-     * Return name of active cipher algorithm.
+     * @brief Return name of active cipher algorithm.
      *
      * @return point to name of cipher algorithm.
      */
     const char* getCipher();
 
     /**
-     * Return name of active SRTP authentication algorithm.
+     * @brief Return name of active SRTP authentication algorithm.
      *
      * @return point to name of authentication algorithm.
      */
@@ -324,6 +371,28 @@ private:
      */
     bool parseCreateSdesProfile(const char *cryptoString, size_t length, sdesSuites *parsedSuite, int32_t *tag);
 
+    /**
+     * @brief Create the SRTP contexts after all SDES creation and parsing is done.
+     * 
+     * @param sipInvite if this is set to @c true (not zero) then the method
+     *                  computes the key data for the inviting SIP application (offerer) and
+     *                  for the answerer otherwise.
+     */
+    void createSrtpContexts(bool sipInvite);
+
+    /**
+     * @brief Compute the mixed keys if SDES mixing attribute is set.
+     *
+     * The method takes the parsed or created SDES key material and computes the mixed keys and salt.
+     * It replaces the existing key material with the new data.
+     *
+     * @param sipInvite if this is set to @c true (not zero) then the method
+     *                  computes the key data for the inviting SIP application (offerer) and
+     *                  for the answerer otherwise.
+     */
+    void computeMixedKeys(bool sipInvite);
+
+
     sdesZrtpStates state;
     sdesSuites     suite;
     int32_t        tag;
@@ -332,5 +401,27 @@ private:
     CryptoContext     *sendSrtp;           //!< The SRTP context for this stream
     CryptoContextCtrl *sendSrtcp;          //!< The SRTCP context for this stream
     uint32_t srtcpIndex;                   //!< the local SRTCP index
+
+    int32_t cryptoMixHashLength;
+    int32_t cryptoMixHashType;
+
+    // Variables for crypto that this client creates and sends to the other client, filled during SDES create
+    uint8_t localKeySalt[((MAX_KEY_LEN + MAX_SALT_LEN + 3)/4)*4];  //!< Some buffer for key and salt, multiple of 4
+    int localKeyLenBytes;
+    int localSaltLenBytes;
+    int localCipher;
+    int localAuthn;
+    int localAuthKeyLen;
+    int localTagLength;
+
+    // Variables for crypto that this client receives from the other client, filled during SDES parse
+    uint8_t remoteKeySalt[((MAX_KEY_LEN + MAX_SALT_LEN + 3)/4)*4];  //!< Some buffer for key and salt, multiple of 4
+    int remoteKeyLenBytes;
+    int remoteSaltLenBytes;
+    int remoteCipher;
+    int remoteAuthn;
+    int remoteAuthKeyLen;
+    int remoteTagLength;
+
 
 };
