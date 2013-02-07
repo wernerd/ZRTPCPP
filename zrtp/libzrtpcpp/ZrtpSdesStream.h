@@ -1,4 +1,86 @@
 
+/*
+  Copyright (C) 2006-2013 Werner Dittmann
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef _ZRTPSDESSTREAM_H_
+#define _ZRTPSDESSTREAM_H_
+/**
+ * @file ZrtpSdesStream.h
+ * @brief The ZRTP main engine
+ * @defgroup GNU_ZRTP The GNU ZRTP C++ implementation
+ * @{
+ *
+ * This class implements SDES and provides a simple to use API for applications.
+ *
+ * This SDES implementation currently supports only two SDES algorithms and it does
+ * not support optional parameters such as lifetime or MKI parameters. Also session
+ * parameters are not supported. Most applications that use SDES don't use these
+ * optional parameters.
+ *
+ * It is not necessary to explicitly start the SDES stream. The class initiates
+ * the SRTP after it created and parsed all necessary SDES crypto strings.
+ *
+ * Because SDES works together with the signaling protocol, for example SIP, it is
+ * important to adhere to a defined flow. The following pseudo code snippet depicts
+ * such a flow. Applications shall follow this flow.
+ *
+ *<pre>
+ *
+ *     Inviter                           Answerer
+ *    (Offerer)
+ *
+ * ZrtpSdesStream inv;                 ZrtpSdesStream answ;
+ *
+ * // create/get own SDES data
+ * inv.createSdes(...);
+ * inv.getCryptoMixAttribute(...)
+ *
+ * // prepare SIP/SDP offer, send
+ * // it to answerer
+ *                                    // receive SIP/SDP, get
+ *                                    // SDES data, parse/set it
+ *                                    answ.setCryptoMixAttribute(...)
+ *                                    answ.parseSdes(...)
+ *
+ *                                    // create/get own SDES data
+ *                                    answ.getCryptoMixAttribute(...)
+ *                                    answ.createSdes(...)
+ *
+ *                                    // prepare SIP/SDP answer,
+ *                                    // send to offerer
+ * //receive SIP/SDP answer, get
+ * //SDES data, parse/set it
+ * inv.setCryptoMixAttribute(...)
+ * inv.parseSdes(...)
+ *
+ * ...                                ...
+ *
+ * inv.outgoingRtp(...)
+ *                                    answ.incomingRtp(...)
+ *
+ *                                    answ.outgoingRtp(...)
+ * inv.incomingRtp(...)
+ *</pre>
+ *
+ * @author Werner Dittmann <Werner.Dittmann@t-online.de>
+ */
+
+#include <common/osSpecifics.h>
+
 class CryptoContext;
 class CryptoContextCtrl;
 
@@ -14,7 +96,7 @@ class CryptoContextCtrl;
  */
 #define MAX_CRYPT_STRING_LEN 200
 
-class ZrtpSdesStream {
+class __EXPORT ZrtpSdesStream {
 
 public:
 
@@ -27,7 +109,7 @@ public:
     } sdesSuites;
 
     /**
-     * SDES stream stated
+     * SDES stream state
      */
     typedef enum {
         STREAM_INITALIZED = 1,
@@ -41,9 +123,6 @@ public:
      *
      * This method creates an SDES stream with capabilities to handle RTP,
      * RTCP, SRTP, and SRTCP packets.
-     *
-     * It is not necessary to explicitly start the SDES stream. The method initiates
-     * the SRTP after it created and parsed all necessary SDES crypto strings.
      *
      * @param suite defines which crypto suite to use for this stream. The values are
      *              @c AES_CM_128_HMAC_SHA1_80 or @c AES_CM_128_HMAC_SHA1_32.
@@ -74,19 +153,16 @@ public:
      * @c zrtp-hash from the SDP parameters and forwards it to @c libzrtp. The
      * answering application's SRTP environment is now ready.
      *
-     * @param cryptoString points to a char output buffer that receives the
-     *                     crypto  string in the raw format, without the any
-     *                     signaling prefix, for example @c a=crypto: in case
-     *                     of SDP signaling. The function terminates the
-     *                     crypto string with a @c nul byte
+     * @param cryptoString output buffer that receives the crypto  string in raw
+     *                     format, without the any signaling prefix, for example
+     *                     @c a=crypto:. The function terminates the crypto string
+     *                     with a @c nul byte
      *
      * @param maxLen length of the crypto string buffer. On return it contains the
      *               actual length of the crypto string.
      *
-     * @param sipInvite if this is set to @c true (not zero) then the method
-     *                  takes the necessary actions to create the crypto eonvironment
-     *                  for the inviting SIP application. It it is zero then it handles
-     *                  the invited case (answerer).
+     * @param sipInvite the inviter (offerer) must set this to @c true, the answerer must
+     *                  set it to @c false.
      *
      * @return @c true if data could be created, @c false otherwise.
      */
@@ -95,32 +171,26 @@ public:
     /**
      * @brief Parses an SDES crypto string for the SDES/ZRTP stream.
      *
-     * Parses a received crypto string that the application received in a SIP INVITE
+     * Parses a SDES crypto string that the application received in a SIP INVITE
      * or SIP 200 OK.
      *
-     * An INVITE-ing application shall call this function right after it received
+     * An INVITE-ing (offerer) application shall call this function right after it received
      * the 200 OK from the answering application and must call this function with the
-     * @c sipInvite parameter set to @c true. This usually at the same point when
-     * it gets the  @c zrtp-hash from the SDP parameters.
-     * This application's SRTP environment is now ready.
+     * @c sipInvite parameter set to @c true. The offerer's SRTP is now ready for use.
      *
      * The answering application calls this function after it received the INVITE and
      * extracted the crypto string from the SDP and must call this function with the
-     * @c sipInvite parameter set to @c false. This is usually the same point when
-     * it gets the @c zrtp-hash from the SDP parameters.
+     * @c sipInvite parameter set to @c false.
      *
-     * @param cryptoString points to the crypto sting in raw format,
-     *                     without any signaling prefix, for example @c
-     *                     a=crypto: in case of SDP signaling.
+     * @param cryptoString the received crypto sting in raw format,
+     *                     without any signaling prefix, for example @c a=crypto:
      *
      * @param length length of the crypto string to parse. If the length is
      *               @c zero then the function uses @c strlen to compute
      *               the length.
      *
-     * @param sipInvite if this is set to @c true then the method
-     *                  takes the necessary actions to create the crypto eonvironment
-     *                  for the inviting SIP application. It it is zero then it handles
-     *                  the invited case (answerer).
+     * @param sipInvite the inviter (offerer) must set this to @c true, the answerer must
+     *                  set it to @c false.
      *
      * @return @c true if data could be created, @c false otherwise.
      */
@@ -129,20 +199,20 @@ public:
     /**
      * @brief Get Crypto Mix attribute string
      *
-     * The offerer shall call this method to get a string of @b all supported crypto mix algorithms
-     * and shall send this list to the answerer. Call this method after @c createSdes.
+     * The offerer calls this method to get a string of @b all supported crypto mix algorithms
+     * and shall send this list to the answerer.
      *
-     * The answerer shall call this function only @b after it received the crypto mix string and
-     * called @c setCryptoMixAttribute(...). In this case the method returns only one (the selected)
+     * The answerer calls this function only @b after it received the crypto mix string and @b after
+     * calling @c setCryptoMixAttribute(...). The method returns only one (the selected)
      * crypto mix algorithm and the answerer must send this to the offerer in 200 OK for example.
      *
-     * @param algoNames points to a buffer that will filled with the crypto mix algorithm names.
+     * @param algoNames buffer to store the nul terminated crypto mix algorithm names.
      *                  The buffer must be long enough to hold at least the name of the mandatory
      *                  algorithm HMAC-SHA-384.
      *
-     * @param length length buffer
+     * @param length length of buffer
      *
-     * @return Length of algorithm names (excluding zero byte) or zero if crypto mix not supported or
+     * @return Length of algorithm names (excluding nul byte) or zero if crypto mix not supported or
      *         enabled.
      */
     int getCryptoMixAttribute(char *algoNames, size_t length);
@@ -150,19 +220,16 @@ public:
     /**
      * @brief Set Crypto Mix attribute string
      *
-     * The method splits the string into algorithm names and checks if it contains an
-     * supported algorithm.
+     * The method checks if it the string contains an supported algorithm and selects one algorithm.
      *
-     * The answerer must call this method @b before it calls the @c getCryptoMixAttribute() method but
-     * after it called @c parseSdes.
+     * The offerer calls this method @b after it received the selected algorithm in the answer.
      *
-     * The offerer calls this method only @b after it received the selected algorithm in the answer and
-     * after it called @c parseSdes.
+     * The answerer must call this method @b before it calls the @c getCryptoMixAttribute() method.
      *
-     * @param algoNames points to a buffer that holds the received crypto mix algorithm names.
-     *                  The buffer must be zero terminated.
+     * @param algoNames buffer that contains the received crypto mix algorithm names.
+     *                  The buffer must be nul terminated.
      *
-     * @return @c false if algorithm is not supported.
+     * @return @c false if none of the offered algorithms is supported.
      */
     bool setCryptoMixAttribute(char *algoNames);
 
@@ -425,3 +492,4 @@ private:
 
 
 };
+#endif
