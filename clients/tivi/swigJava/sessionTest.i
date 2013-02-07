@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2013 Slient Circle LLC.  All rights reserved.
+ *
+ *
+ * @author Werner Dittmann <Werner.Dittmann@t-online.de>
+ */
 
 /*
  * Call swig:         "swig -java -c++ -package wd.tivi -outdir wd/tivi session.i"

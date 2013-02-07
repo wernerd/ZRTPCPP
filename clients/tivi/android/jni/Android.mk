@@ -1,3 +1,8 @@
+#
+# Copyright (c) 2013 Slient Circle LLC.  All rights reserved.
+#
+# @author Werner Dittmann <Werner.Dittmann@t-online.de>
+#
 
 LOCAL_PATH := /home/werner/silentC/zrtpcpp
 ROOT_SRC_PATH := $(LOCAL_PATH)

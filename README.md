@@ -48,7 +48,7 @@ To enable C based code to use ZRTP C++ I did a C wrapper that offers the same
 functionality to C based RTP implementations. The first use of the ZRTP C
 wrapper was for the [PJSIP][] library, actually the RTP part of this
 library. The ZRTP handler for PJSIP is [here][pjzrtp]. This port enables PJSIP
-based clients to use ZRTP. One of the first clients that use this feature is
+based clients to use ZRTP. One of the first clients that uses this feature is
 *[CSipSimple][]*, an very good open source Android SIP client.
 
 [pjsip]: http://www.pjsip.org
@@ -71,12 +71,17 @@ following versions of Twinkle include GNU ZRTP C++ as well.
 
 
 ### License and further information
-Please note, this library is licensed under the GNU GPL, version 3 or 
-later, and has been copyright assigned to the Free Software Foundation.
+Please note, most this library is licensed under the GNU GPL, version 3 or 
+later.
 
 For further information refer to the [ZRTP FAQ][zrtpfaq] and the
 [GNU ZRTP howto][zrtphow]. Both are part of the GNU Telephony wiki and are
 located in its documentation category.
+
+Source code in the directory `clients/tivi` and below is not licensed under the
+GNU GPL and is for reference and review only. Refer to the copyright statments
+of the source code in these directories, in particular the sqlite3 sources which
+have their own license.
 
 [zrtphow]:  http://www.gnutelephony.org/index.php/GNU_ZRTP_How_To
 [zrtpfaq]:  http://www.gnutelephony.org/index.php/ZRTP_FAQ
