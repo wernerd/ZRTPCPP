@@ -540,7 +540,6 @@ void ZrtpSdesStream::createSrtpContexts(bool sipInvite) {
 
 bool ZrtpSdesStream::createSdesProfile(char *cryptoString, size_t *maxLen) {
 
-    // uint8_t keySalt[((MAX_KEY_LEN + MAX_SALT_LEN + 3)/4)*4] = {0};  /* Some buffer for random data, multiple of 4 */
     char b64keySalt[(MAX_KEY_LEN + MAX_SALT_LEN) * 2] = {'\0'};
     uint32_t sidx;
     int32_t b64Len;
@@ -599,7 +598,6 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
         length = strlen(cryptoStr);
 
     if (length > MAX_CRYPT_STRING_LEN) {
-//        fprintf(stderr, "parseCreateSdesProfile() crypto string too long: %ld, maximum: %d\n", length, MAX_CRYPT_STRING_LEN);
         return false;
     }
     /* make own copy, null terminated */
@@ -610,7 +608,6 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
 
     /* Do we have enough elements in the string */
     if (elements < minElementsCrypto) {
-//        fprintf(stderr, "parseCreateSdesProfile() to few elements in crypto string: %d, expected: %d\n", elements, minElementsCrypto);
         return false;
     }
 
@@ -620,7 +617,6 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
             break;
     }
     if (sidx >= sizeof(knownSuites)/sizeof(struct _suite)) {
-//        fprintf(stderr, "parseCreateSdesProfile() unsupported crypto suite: %s\n", suiteName);
         return false;
     }
     suiteParam *pSuite = &knownSuites[sidx];
@@ -631,8 +627,6 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
 
     /* Currently only one we only accept key||salt B64 string, no other parameters */
     if (elements != minElementsKeyParam) {
-//         fprintf(stderr, "parseCreateSdesProfile() wrong number of parameters in key parameters: %d, expected: %d\n",
-//                      elements, minElementsKeyParam);
         return false;
     }
 
@@ -641,8 +635,6 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
 
     /* Check if key||salt B64 string hast the correct length */
     if (strlen(keySaltB64) != pSuite->b64length) {
-//         fprintf(stderr, "parseCreateSdesProfile() B64 key||salt string length does not match: %ld, expected: %d\n",
-//                     strlen(keySaltB64), pSuite->b64length);
         return false;
     }
 
@@ -650,8 +642,6 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
 
     /* Did the B64 decode deliver enough data for key||salt */
     if (i != (remoteKeyLenBytes + remoteSaltLenBytes)) {
-//         fprintf(stderr, "parseCreateSdesProfile() B64 key||salt binary data length does not match: %d, expected: %d\n",
-//                     i, keyLenBytes + saltLenBytes);
         return false;
     }
 

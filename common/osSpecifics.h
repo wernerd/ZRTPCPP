@@ -34,6 +34,19 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
+#ifndef __EXPORT
+  #if defined _WIN32 || defined __CYGWIN__
+    #define __EXPORT    __declspec(dllimport)
+    #define __LOCAL
+  #elif __GNUC__ >= 4
+    #define __EXPORT    __attribute__ ((visibility("default")))
+    #define __LOCAL     __attribute__ ((visibility("hidden")))
+  #else
+    #define __EXPORT
+    #define __LOCAL
+  #endif
+#endif
+
 #if defined(_WIN32) || defined(_WIN64)
 # define snprintf _snprintf
 #endif

@@ -599,10 +599,6 @@ static int clearCache(void *vdb, char *errString)
     if (rc)
         return rc;
     return SQLITE_OK;
-
-  cleanup:
-    sqlite3_finalize(stmt);
-    return rc;
 }
 
 static int insertZidNameRecord(void *vdb, const uint8_t *remoteZid, const uint8_t *localZid,

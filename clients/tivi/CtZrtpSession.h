@@ -73,28 +73,6 @@ public:
     typedef enum _retCodes {
         ok           = 0,       /** OK status */
         fail         = 1       /** General, unspecified failure */
-#if 0
-        bad_param    = 2,       /** Wrong, unsupported parameter */
-        alloc_fail   = 3,       /** Fail allocate memory */
-        auth_fail    = 4,       /** SRTP authentication failure */
-        cipher_fail  = 5,       /** Cipher failure on RTP encrypt/decrypt */
-        algo_fail    = 6,       /** General Crypto Algorithm failure */
-        key_expired  = 7,       /** SRTP can't use key any longer */
-        buffer_size  = 8,       /** Input buffer too small */
-        drop         = 9,       /** Packet process DROP status */
-        open_fail    = 10,      /** Failed to open file/device */
-        read_fail    = 11,      /** Unable to read data from the file/stream */
-        write_fail   = 12,      /** Unable to write to the file/stream */
-        old_pkt          = 13,      /** SRTP packet is out of sliding window */
-        rp_fail              = 14,  /** RTP replay protection failed */
-        zrp_fail     = 15,  /** ZRTP replay protection failed */
-        crc_fail     = 16,  /** ZRTP packet CRC is wrong */
-        rng_fail     = 17,  /** Can't generate random value */
-        wrong_state  = 18,  /** Illegal operation in current state */
-        attack               = 19,  /** Attack detected */
-        notavailable = 20,  /** Function is not available in current configuration  */
-        count                = 21
-#endif
     } returnCodes;
 
     CtZrtpSession();

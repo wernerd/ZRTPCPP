@@ -19,7 +19,7 @@
 #define _ZIDRECORD_H_
 
 #include <stdint.h>
-
+#include <common/osSpecifics.h>
 /**
  * @file ZIDRecord.h
  * @brief ZID cache record management
@@ -31,19 +31,6 @@
  * @ingroup GNU_ZRTP
  * @{
  */
-
-#ifndef __EXPORT
-  #if defined _WIN32 || defined __CYGWIN__
-    #define __EXPORT    __declspec(dllimport)
-    #define __LOCAL
-  #elif __GNUC__ >= 4
-    #define __EXPORT    __attribute__ ((visibility("default")))
-    #define __LOCAL     __attribute__ ((visibility("hidden")))
-  #else
-    #define __EXPORT
-    #define __LOCAL
-  #endif
-#endif
 
 /**
  * These length are fixed for ZRTP. See RFC 6189.
