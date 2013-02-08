@@ -480,7 +480,7 @@ int CtZrtpStream::getCryptoMixAttribute(char *algoNames, size_t length) {
     return sdes->getCryptoMixAttribute(algoNames, length);
 }
 
-bool  CtZrtpStream::setCryptoMixAttribute(char *algoNames) {
+bool  CtZrtpStream::setCryptoMixAttribute(const char *algoNames) {
     if (isSecure()) // don't take action if we are already secure
         return false;
 

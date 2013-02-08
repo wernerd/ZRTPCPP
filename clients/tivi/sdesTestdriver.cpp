@@ -29,10 +29,14 @@ static void hexdump(const char* title, const unsigned char *s, int l)
     fprintf(stderr, "\n");
 }
 
+static bool verbose = false;
 
 // This is the callback that we use for audio stream
 class TestCallbackAudio: public CtZrtpCb {
     void onNewZrtpStatus(CtZrtpSession *session, char *p, CtZrtpSession::streamName streamNm) {
+        if (!verbose)
+            return;
+
         fprintf(stderr, "new status: %s\n", p == NULL ? "NULL" : p);
         if (session->isSecure(streamNm)) {
             uint8_t buffer[20];
@@ -66,7 +70,6 @@ class TestCallbackAudio: public CtZrtpCb {
 
             session->getInfo("lbKeyExchange", buffer, 19);
             printf("KeyEx: %s\n", buffer);
-
         }
     }
 
@@ -86,6 +89,8 @@ class TestCallbackAudio: public CtZrtpCb {
 
 class TestSendCallbackAudio: public CtZrtpSendCb {
     void sendRtp(CtZrtpSession const *session, uint8_t* packet, size_t length, CtZrtpSession::streamName streamNm) {
+        if (!verbose)
+            return;
 //        hexdump("ZRTP packet", packet, length);
         fprintf(stderr, "ZRTP send packet, length: %lu\n", length);
     }
@@ -109,33 +114,59 @@ uint8_t answererPacket_fixed[] = {
     0x20, 0x19, 0x18, 0x17, 0x16, 0x15, 0x14, 0x13, 0x12, 0x11};
 
 
-int main(int argc,char **argv) {
-    size_t invLength, answLength;
+static bool testBasicMix()
+{
     char buffer[200];
+
+    ZrtpSdesStream sdes;
+
+    int rc = sdes.getCryptoMixAttribute(buffer, sizeof(buffer));
+    if (rc == 0) {
+        fprintf(stderr, "testBasicMix: Get mix is zero\n");
+        return false;
+    }
+
+    if (sdes.setCryptoMixAttribute("")) {
+        fprintf(stderr, "testBasicMix: Testing empty mix returned true, expecting false\n");
+        return false;
+    }
+    if (!sdes.setCryptoMixAttribute("HMAC-SHA-384")) {
+        fprintf(stderr, "testBasicMix: Testing one valid algo returned false, expecting true\n");
+        return false;
+    }
+    if (!sdes.setCryptoMixAttribute("BABAB HMAC-SHA-384")) {
+        fprintf(stderr, "testBasicMix: Testing invalid/valid returned false, expecting true\n");
+        return false;
+    }
+    if (sdes.setCryptoMixAttribute("BABAB")) {
+        fprintf(stderr, "testBasicMix: Testing invalid returned true, expecting false\n");
+        return false;
+    }
+    // set a valid algorithms that we can check on the next get
+    sdes.setCryptoMixAttribute("BABAB HMAC-SHA-384");
+
+    rc = sdes.getCryptoMixAttribute(buffer, sizeof(buffer));
+    int len = strlen("HMAC-SHA-384");
+    if (rc != len) {
+        fprintf(stderr, "testBasicMix: get final mix algo returned wrong length, expected: %d, got: %d\n", len, rc);
+        return false;
+    }
+    if (strcmp(buffer, "HMAC-SHA-384") != 0) {
+        fprintf(stderr, "testBasicMix: get final mix algo returned wrong algorithm, expected:\n'HMAC-SHA-384', got: '%s'\n", buffer);
+        return false;
+    }
+    printf("PASSED - basic mix test\n");
+    return true;
+}
+
+static bool testNormalSdes()
+{
+    size_t invLength, answLength;
     char invBuffer[200];
     char answBuffer[200];
 
-    char invMixBuffer[200];
-    char answMixBuffer[200];
-
-//     ZrtpSdesStream sdes;
-// 
-//     fprintf(stderr, "Get mix: %d ", sdes.getCryptoMixAttribute(buffer, 200));
-//     fprintf(stderr, "Get mix: %s\n", buffer);
-// 
-//     fprintf(stderr, "Empty: %d\n", sdes.setCryptoMixAttribute(""));
-//     fprintf(stderr, "Only one valid: %d\n", sdes.setCryptoMixAttribute("HMAC-SHA-384"));
-//     fprintf(stderr, "Invalid valid: %d\n", sdes.setCryptoMixAttribute("BABAB HMAC-SHA-384"));
-//     fprintf(stderr, "Invalid: %d\n", sdes.setCryptoMixAttribute("BABAB"));
-//     fprintf(stderr, "Invalid valid: %d\n", sdes.setCryptoMixAttribute("BABAB HMAC-SHA-384"));
-// 
-//     fprintf(stderr, "Get mix: %d ", sdes.getCryptoMixAttribute(buffer, 200));
-//     fprintf(stderr, "Get mix: %s\n", buffer);
-
     TestCallbackAudio *callback = new TestCallbackAudio();
     TestSendCallbackAudio *sendCallback = new TestSendCallbackAudio();
-
-    CtZrtpSession::initCache("testzidSdes.dat");        // initialize global cache file
 
     // The Inviter session (offerer)
     CtZrtpSession *inviter = new CtZrtpSession();
@@ -152,17 +183,101 @@ int main(int argc,char **argv) {
     invLength = sizeof(invBuffer);
     inviter->createSdes(invBuffer, &invLength, CtZrtpSession::AudioStream);
     if (invLength != 73) {
-        fprintf(stderr, "Inviter - Answerer - SDES crypto string wrong size: got: %d, expected: 73\n%s\n", (int)invLength, invBuffer);
-        return 1;
+        fprintf(stderr, "testNormalSdes: Inviter: SDES crypto string wrong size: got: %d, expected: 73\n%s\n", (int)invLength, invBuffer);
+        return false;
+    }
+
+    // ****
+    //  Now send the Inviter SDES crypto string to the answerer via SIP INVITE ........
+    // ****
+
+
+    // answerer first step: parse the SDES crypto string and the answerer SDES creates onw crypto string
+    answLength = sizeof(answBuffer);
+    answerer->parseSdes(invBuffer, invLength, NULL, NULL, false, CtZrtpSession::AudioStream);
+
+    // answerer second step: get the generated SDES crypto string
+    answerer->getSavedSdes(answBuffer, &answLength, CtZrtpSession::AudioStream);
+    if (answLength != 73) {
+        fprintf(stderr, "testNormalSdes: Answerer: SDES crypto string wrong size: got: %d, expected: 73\n%s\n", (int)answLength, answBuffer);
+        return false;
+    }
+
+    // Send the answerer SDES crypto string and crypto mixer algorithms back to Inviter, via 200 OK probably
+
+    // Inviter second step: parses answerer's string, sets the "sipInvite" parameter to true
+    inviter->parseSdes(answBuffer, answLength, NULL, NULL, true, CtZrtpSession::AudioStream);
+    inviter->start(0xfeedbac, CtZrtpSession::AudioStream);
+
+
+    invLength = 0;
+    inviter->processOutoingRtp(inviterPacket, sizeof(inviterPacket), &invLength, CtZrtpSession::AudioStream);
+//    hexdump("Inviter packet protected", inviterPacket, invLength);
+
+    answLength = 0;
+    answerer->processIncomingRtp(inviterPacket, invLength, &answLength, CtZrtpSession::AudioStream);
+    if (memcmp(inviterPacket, inviterPacket_fixed, answLength) != 0) {
+        hexdump("testNormalSdes: Inviter packet unprotected by answerer does not match original data", inviterPacket, answLength);
+        return false;
+    }
+
+    answLength = 0;
+    answerer->processOutoingRtp(answererPacket, sizeof(answererPacket), &answLength, CtZrtpSession::AudioStream);
+//    hexdump("Answerer packet protected", answererPacket, answLength);
+
+    invLength = 0;
+    inviter->processIncomingRtp(answererPacket, answLength, &invLength, CtZrtpSession::AudioStream);
+    if (memcmp(answererPacket, answererPacket_fixed, invLength) != 0) {
+        hexdump("testNormalSdes: Answerer packet unprotected by inviter does not match original data", answererPacket, invLength);
+        return false;
+    }
+    delete inviter;
+    delete answerer;
+    delete callback;
+    delete sendCallback;
+
+    printf("PASSED - normal SDES\n");
+    return true;
+
+}
+
+static bool testWithMix()
+{
+    size_t invLength, answLength;
+    char invBuffer[200];
+    char answBuffer[200];
+
+    char invMixBuffer[200];
+    char answMixBuffer[200];
+
+    TestCallbackAudio *callback = new TestCallbackAudio();
+    TestSendCallbackAudio *sendCallback = new TestSendCallbackAudio();
+
+    // The Inviter session (offerer)
+    CtZrtpSession *inviter = new CtZrtpSession();
+    inviter->init(true, true);                          // audio and video
+    inviter->setUserCallback(callback, CtZrtpSession::AudioStream);
+    inviter->setSendCallback(sendCallback, CtZrtpSession::AudioStream);
+
+    // The answerer session
+    CtZrtpSession *answerer = new CtZrtpSession();
+    answerer->init(true, true);                         // audio and video
+    answerer->setSendCallback(sendCallback, CtZrtpSession::AudioStream);
+
+    // Inviter first step: create a SDES crypto string
+    invLength = sizeof(invBuffer);
+    inviter->createSdes(invBuffer, &invLength, CtZrtpSession::AudioStream);
+    if (invLength != 73) {
+        fprintf(stderr, "testWithMix: Inviter: SDES crypto string wrong size: got: %d, expected: 73\n%s\n", (int)invLength, invBuffer);
+        return false;
     }
     // Inviter second step: Get all available SDES crypto mix algorithms as nul terminated string
     int invMixLength = sizeof(invMixBuffer);
     invMixLength = inviter->getCryptoMixAttribute(invMixBuffer, invMixLength, CtZrtpSession::AudioStream);
     if (invMixLength == 0) {
-        fprintf(stderr, "Inviter: SDES crypto mixer algorithm returned zero\n");
-        return 1;
+        fprintf(stderr, "testWithMix: Inviter: SDES crypto mixer algorithm returned zero\n");
+        return false;
     }
-    fprintf(stderr, "Inviter mixer algos: %s\n", invMixBuffer);
 
     // ****
     //  Now send the Inviter SDES crypto string and the mixer algo string to the answerer via SIP INVITE ........
@@ -175,10 +290,9 @@ int main(int argc,char **argv) {
     int answMixLength = sizeof(answMixBuffer);
     answMixLength = answerer->getCryptoMixAttribute(answMixBuffer, answMixLength, CtZrtpSession::AudioStream);
     if (answMixLength == 0) {
-        fprintf(stderr, "Answerer: SDES crypto mixer algorithm returned zero\n");
-        return 1;
+        fprintf(stderr, "testWithMix: Answerer: SDES crypto mixer algorithm returned zero\n");
+        return false;
     }
-    fprintf(stderr, "Answerer selected mixer algos: %s\n", answMixBuffer);
 
    // answerer third step: parse the SDES crypto string and the answere SDES creates onw crypto string
     answLength = sizeof(answBuffer);
@@ -187,8 +301,8 @@ int main(int argc,char **argv) {
     // answerer fourth step: get the generated SDES crypto string
     answerer->getSavedSdes(answBuffer, &answLength, CtZrtpSession::AudioStream);
     if (answLength != 73) {
-        fprintf(stderr, "Error - Answerer - SDES crypto string wrong size: got: %d, expected: 73\n%s\n", (int)answLength, answBuffer);
-        return 1;
+        fprintf(stderr, "testWithMix: Answerer: SDES crypto string wrong size: got: %d, expected: 73\n%s\n", (int)answLength, answBuffer);
+        return false;
     }
 
     // Send the answerer SDES crypto string and crypto mixer algorithms back to Inviter, via 200 OK probably
@@ -208,8 +322,8 @@ int main(int argc,char **argv) {
     answLength = 0;
     answerer->processIncomingRtp(inviterPacket, invLength, &answLength, CtZrtpSession::AudioStream);
     if (memcmp(inviterPacket, inviterPacket_fixed, answLength) != 0) {
-        hexdump("Error - Inviter packet unprotected by answerer", inviterPacket, answLength);
-        return 1;
+        hexdump("testWithMix: Inviter packet unprotected by answerer does not match original data", inviterPacket, answLength);
+        return false;
     }
 
     answLength = 0;
@@ -219,10 +333,35 @@ int main(int argc,char **argv) {
     invLength = 0;
     inviter->processIncomingRtp(answererPacket, answLength, &invLength, CtZrtpSession::AudioStream);
     if (memcmp(answererPacket, answererPacket_fixed, invLength) != 0) {
-        hexdump("Error - Answerer packet unprotected by inviter", answererPacket, invLength);
+        hexdump("testWithMix: Answerer packet unprotected by inviter does not match original data", answererPacket, invLength);
+        return false;
+    }
+    delete inviter;
+    delete answerer;
+    delete callback;
+    delete sendCallback;
+
+    printf("PASSED - with SDES Mix\n");
+    return true;
+
+}
+
+int main(int argc,char **argv)
+{
+    CtZrtpSession::initCache("testzidSdes.dat");        // initialize global cache file
+
+    if (!testNormalSdes()) {
+        fprintf(stderr, "SDES crypto test failed\n");
         return 1;
     }
-    printf("PASSED\n");
+    if (!testBasicMix()) {
+        fprintf(stderr, "Basic crypto mixing test failed\n");
+        return 1;
+    }
+    if (!testWithMix()) {
+        fprintf(stderr, "SDES crypto mixing test failed\n");
+        return 1;
+    }
     return 0;
 }
 

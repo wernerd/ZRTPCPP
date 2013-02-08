@@ -490,7 +490,7 @@ int CtZrtpSession::getCryptoMixAttribute(char *algoNames, size_t length, streamN
     return stream->getCryptoMixAttribute(algoNames, length);
 }
 
-bool CtZrtpSession::setCryptoMixAttribute(char *algoNames, streamName streamNm) {
+bool CtZrtpSession::setCryptoMixAttribute(const char *algoNames, streamName streamNm) {
     if (!isReady || !sdesEnabled || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
         return fail;
 

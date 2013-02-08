@@ -330,7 +330,7 @@ protected:
      *
      * @return @c false if algorithm is not supported.
      */
-    bool setCryptoMixAttribute(char *algoNames);
+    bool setCryptoMixAttribute(const char *algoNames);
 
     /*
      * The following methods implement the GNU ZRTP callback interface.

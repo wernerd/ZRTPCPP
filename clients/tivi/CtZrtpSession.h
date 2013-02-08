@@ -573,7 +573,7 @@ public:
      *
      * @return @c false if algorithm is not supported.
      */
-    bool setCryptoMixAttribute(char *algoNames, streamName streamNm);
+    bool setCryptoMixAttribute(const char *algoNames, streamName streamNm);
 
     /**
      * @brief Clean Cache
