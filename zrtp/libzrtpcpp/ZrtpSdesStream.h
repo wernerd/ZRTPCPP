@@ -1,6 +1,5 @@
-
 /*
-  Copyright (C) 2006-2013 Werner Dittmann
+  Copyright (C) 2012-2013 Werner Dittmann
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -62,8 +61,9 @@
  *
  *                                    // prepare SIP/SDP answer,
  *                                    // send to offerer
- * //receive SIP/SDP answer, get
- * //SDES data, parse/set it
+ * // receive SIP/SDP answer, get
+ * // SDES data, parse, set mix algo
+ * // if availabe
  * inv.setCryptoMixAttribute(...)
  * inv.parseSdes(...)
  *
@@ -76,6 +76,11 @@
  * inv.incomingRtp(...)
  *</pre>
  *
+ * To use SDES without the new crypto mix feature just do not use the crypto mix functions.
+ * An application may always send crypto mix attributes. If the answerer does not support this
+ * feature it does not send back a selected algorithm and the offerer cannot set an algorithm.
+ * Thus the crypto mix feature is not used.
+ * 
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
@@ -194,7 +199,7 @@ public:
      *
      * @return @c true if data could be created, @c false otherwise.
      */
-    bool parseSdes(char *cryptoString, size_t length, bool sipInvite);
+    bool parseSdes(const char *cryptoString, size_t length, bool sipInvite);
 
     /**
      * @brief Get Crypto Mix attribute string
@@ -231,7 +236,7 @@ public:
      *
      * @return @c false if none of the offered algorithms is supported.
      */
-    bool setCryptoMixAttribute(char *algoNames);
+    bool setCryptoMixAttribute(const char *algoNames);
 
     /*
      * ******** Outgoing RTP/RTCP packet handling

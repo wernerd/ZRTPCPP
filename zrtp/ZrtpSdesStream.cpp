@@ -1,3 +1,20 @@
+/*
+  Copyright (C) 2012-2013 Werner Dittmann
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -174,7 +191,7 @@ bool ZrtpSdesStream::createSdes(char *cryptoString, size_t *maxLen, bool sipInvi
 
 }
 
-bool ZrtpSdesStream::parseSdes(char *cryptoString, size_t length, bool sipInvite) {
+bool ZrtpSdesStream::parseSdes(const char *cryptoString, size_t length, bool sipInvite) {
 
     if (sipInvite) {
         if (state != OUT_PROFILE_READY)
@@ -270,7 +287,6 @@ int ZrtpSdesStream::getCryptoMixAttribute(char *algoNames, size_t length) {
     const char* name = NULL;
     if (cryptoMixHashType != NONE) {
         for (cryptoMix* cp = knownMixAlgos; cp->name != NULL; cp++) {
-            fprintf(stderr, "name0: %s\n", cp->name);
             if (cp->hashLength == cryptoMixHashLength && cp->hashType == cryptoMixHashType) {
                 name = cp->name;
                 break;
@@ -288,7 +304,7 @@ int ZrtpSdesStream::getCryptoMixAttribute(char *algoNames, size_t length) {
     return len;
 }
 
-bool ZrtpSdesStream::setCryptoMixAttribute(char *algoNames) {
+bool ZrtpSdesStream::setCryptoMixAttribute(const char *algoNames) {
 
     int len = strlen(algoNames);
     if (len <= 0)
@@ -399,7 +415,6 @@ static int expand(uint8_t* prk, uint32_t prkLen, uint8_t* info, int32_t infoLen,
     // T points to buffer that holds concatenated T(1) || T(2) || ... T(N))
     T = reinterpret_cast<uint8_t*>(malloc(n * hashLen));
 
-    // Prepare the HMAC
     if (hashLen == 384/8)
         hmacCtx = createSha384HmacContext(prk, prkLen);
     else
@@ -544,8 +559,7 @@ bool ZrtpSdesStream::createSdesProfile(char *cryptoString, size_t *maxLen) {
     uint32_t sidx;
     int32_t b64Len;
 
-    /* Lookup crypto suite parameters */
-    for (sidx = 0; knownSuites[sidx].name != NULL; sidx++) {
+    for (sidx = 0; knownSuites[sidx].name != NULL; sidx++) {  // Lookup crypto suite parameters
         if (knownSuites[sidx].suite == suite)
             break;
     }
@@ -570,7 +584,7 @@ bool ZrtpSdesStream::createSdesProfile(char *cryptoString, size_t *maxLen) {
     if (tag == -1)
         tag = 1;
 
-    /* Get B64 code for master key and master salt */
+    // Get B64 code for master key and master salt and then construct the SDES crypto string
     b64Len = b64Encode(localKeySalt, localKeyLenBytes + localSaltLenBytes, b64keySalt, sizeof(b64keySalt));
     b64keySalt[b64Len] = '\0';
     memset(cryptoString, 0, *maxLen);
@@ -600,19 +614,16 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
     if (length > MAX_CRYPT_STRING_LEN) {
         return false;
     }
-    /* make own copy, null terminated */
-    memcpy(cryptoString, cryptoStr, length);
+    memcpy(cryptoString, cryptoStr, length);   // make own copy, null terminated
 
     *outTag = -1;
     elements = sscanf(cryptoString, parseCrypto, outTag, suiteName, keyParams, &charsScanned);
 
-    /* Do we have enough elements in the string */
-    if (elements < minElementsCrypto) {
+    if (elements < minElementsCrypto) {        // Do we have enough elements in the string
         return false;
     }
 
-    /* Lookup crypto suite */
-    for (sidx = 0; knownSuites[sidx].name != NULL; sidx++) {
+    for (sidx = 0; knownSuites[sidx].name != NULL; sidx++) {  // Lookup crypto suite
         if (!strcmp(knownSuites[sidx].name, suiteName))
             break;
     }
@@ -625,23 +636,19 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
     /* Now scan the key parameters */
     elements = sscanf(keyParams, parseKeyParam, keySaltB64, lifetime, mkiVal, &mkiLength);
 
-    /* Currently only one we only accept key||salt B64 string, no other parameters */
-    if (elements != minElementsKeyParam) {
+    if (elements != minElementsKeyParam) {     // Currently we only accept key||salt B64 string, no other parameters 
         return false;
     }
 
     remoteKeyLenBytes = pSuite->keyLength / 8;
     remoteSaltLenBytes = pSuite->saltLength / 8;
 
-    /* Check if key||salt B64 string hast the correct length */
-    if (strlen(keySaltB64) != pSuite->b64length) {
+    if (strlen(keySaltB64) != pSuite->b64length) {  // Check if key||salt B64 string hast the correct length
         return false;
     }
-
     i = b64Decode(keySaltB64, pSuite->b64length, remoteKeySalt, remoteKeyLenBytes + remoteSaltLenBytes);
 
-    /* Did the B64 decode deliver enough data for key||salt */
-    if (i != (remoteKeyLenBytes + remoteSaltLenBytes)) {
+    if (i != (remoteKeyLenBytes + remoteSaltLenBytes)) {  // Did the B64 decode delivered enough data for key||salt
         return false;
     }
 
