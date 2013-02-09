@@ -471,8 +471,6 @@ bool CtZrtpStream::isSdesActive() {
 }
 
 int CtZrtpStream::getCryptoMixAttribute(char *algoNames, size_t length) {
-    if (isSecure()) // don't take action if we are already secure
-        return 0;
 
     if (sdes == NULL)
         sdes = new ZrtpSdesStream();

@@ -304,6 +304,13 @@ static bool testWithMix()
         fprintf(stderr, "testWithMix: Answerer: SDES crypto string wrong size: got: %d, expected: 73\n%s\n", (int)answLength, answBuffer);
         return false;
     }
+    // additional test: get the seleted crypto mixer algorithm again after parse and check.
+    answMixLength = sizeof(answMixBuffer);
+    answMixLength = answerer->getCryptoMixAttribute(answMixBuffer, answMixLength, CtZrtpSession::AudioStream);
+    if (answMixLength == 0) {
+        fprintf(stderr, "testWithMix: Answerer: SDES crypto mixer algorithm returned zero at second call\n");
+        return false;
+    }
 
     // Send the answerer SDES crypto string and crypto mixer algorithms back to Inviter, via 200 OK probably
 
