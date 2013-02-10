@@ -4,7 +4,7 @@
 # @author Werner Dittmann <Werner.Dittmann@t-online.de>
 #
 
-LOCAL_PATH := /home/werner/silentC/zrtpcpp
+LOCAL_PATH := @CMAKE_SOURCE_DIR@
 ROOT_SRC_PATH := $(LOCAL_PATH)
 
 #
