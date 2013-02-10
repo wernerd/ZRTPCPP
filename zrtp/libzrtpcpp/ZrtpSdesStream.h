@@ -209,7 +209,7 @@ public:
      *
      * The answerer calls this function only @b after it received the crypto mix string and @b after
      * calling @c setCryptoMixAttribute(...). The method returns only one (the selected)
-     * crypto mix algorithm and the answerer must send this to the offerer in 200 OK for example.
+     * crypto mix algorithm and the answerer must send this to the offerer, for example in 200 OK.
      *
      * @param algoNames buffer to store the nul terminated crypto mix algorithm names.
      *                  The buffer must be long enough to hold at least the name of the mandatory
@@ -270,7 +270,7 @@ public:
     /**
      * @brief Process an outgoing RTCP packet
      *
-     * This function works in the same way as @c sdesZrtpProcessRtp.
+     * This function works in the same way as @c outgoingRtp.
      *
      * @param packet the buffer that contains the RTCP packet. After processing, the
      *               encrypted packet is stored in the same buffer. The buffer must
@@ -318,7 +318,7 @@ public:
     /**
      * @brief Process an incoming RTCP or SRTCP packet
      *
-     * This function works in the same way as @c sdesZrtpProcessSrtp.
+     * This function works in the same way as @c incomingRtp.
      *
      * @param packet the buffer that contains the RTCP/SRTCP packet. After processing,
      *               the decrypted packet is stored in the same buffer.
@@ -363,11 +363,9 @@ private:
     /**
      * @brief Create an SRTP crypto context and the according SDES crypto string.
      *
-     * This lower layer method creates an SRTP profile an the according SDES
-     * crypto string. It selects a valid crypto suite, generates the key and salt
-     * data, converts these into base 64 and returns the crypto string in raw format
-     * without any signaling prefixes. The method also creates the internal
-     * SRTP/SRTCP crypto contexts for outgoing data.
+     * This lower layer method creates an SDES crypto string. It selects a valid
+     * crypto suite, generates the key and salt data, converts these into base 64
+     * and returns the crypto string in raw format without any signaling prefixes.
      *
      * The output string has the following format:
      * @verbatim
@@ -410,8 +408,7 @@ private:
      *
      * The method parses an offered SDES crypto string and checks if it is
      * valid. Next it checks if the string contains a supported crypto suite
-     * and if the key and salt lengths match the selected crypto suite. The method
-     * also creates the internal SRTP/SRTCP crypto contexts for incoming data.
+     * and if the key and salt lengths match the selected crypto suite.
      *
      * Applications usually don't use this method directly. Applications shall
      * use the SDES stream functions.
