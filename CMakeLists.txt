@@ -46,6 +46,7 @@ elseif (TIVI)
     set (PACKAGE libzrtptivi)
     set(zrtplibName zrtptivi)
     set(CRYPTO_STANDALONE true)
+    set(SQLITE true)
 else()
     MESSAGE(WARNING "No client defined, building for GNU ccRTP.")
     set (PACKAGE libzrtpcpp)
@@ -87,7 +88,7 @@ endif()
 check_include_files(stdlib.h HAVE_STDLIB_H)
 check_include_files(string.h HAVE_STRING_H)
 
-if (NOT enable_crypto_standalone)
+if (NOT CRYPTO_STANDALONE)
     pkg_check_modules(OPENSSL libcrypto>=0.9.8)
     if (OPENSSL_FOUND)
       set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES} ${OPENSSL_INCLUDE_DIRS}) #update include files search directory
@@ -151,16 +152,16 @@ endif()
 
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
 include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/zrtp)
-if(enable_standalone)
+if(CRYPTO_STANDALONE)
     include_directories (${CMAKE_SOURCE_DIR}/bnlib)
 endif()
 
-# **** The following source files a common for all clients ****
-#
 if (NOT CCRTP)
     set (sdes_src ${CMAKE_SOURCE_DIR}/zrtp/ZrtpSdesStream.cpp)
 endif()
 
+# **** The following source files a common for all clients ****
+#
 set(zrtp_src_no_cache
     ${CMAKE_SOURCE_DIR}/zrtp/ZrtpCallbackWrapper.cpp
     ${CMAKE_SOURCE_DIR}/zrtp/ZRtp.cpp

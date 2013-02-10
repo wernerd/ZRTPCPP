@@ -37,6 +37,9 @@ MACRO(GENERATE_PACKAGING PACKAGE VERSION)
   "\\\\.la$"
   "\\\\.sh$"
   "Makefile\\\\.in$"
+  "\\\\.directory$"
+  "\\\\._.DS_Store$"
+  "\\\\._buildmac$"
   )
 
   SET(CPACK_PACKAGE_VENDOR "Werner Dittmann")
