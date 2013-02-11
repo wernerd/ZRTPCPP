@@ -317,20 +317,19 @@ bool ZrtpSdesStream::setCryptoMixAttribute(const char *algoNames) {
         if (next == std::string::npos)
             break;
 
-        const char* nm = algoIn.substr(current, next - current ).c_str();
+        std::string tmps = algoIn.substr(current, next - current );
+        const char* nm = tmps.c_str();
 
         for (cryptoMix* cp = knownMixAlgos; cp->name != NULL; cp++) {
-            if (strcmp(cp->name, nm) == 0) {
+            if (strncmp(cp->name, nm, strlen(cp->name)) == 0) {
                 cryptoMixHashLength = cp->hashLength;
                 cryptoMixHashType = cp->hashType;
                 return true;
             }
         }
-    }
-    while (true);
+    } while (true);
 
     return false;
-
 }
 
 #ifdef WEAKRANDOM
@@ -478,7 +477,7 @@ void ZrtpSdesStream::computeMixedKeys(bool sipInvite) {
             return;
     }
 
-    uint8_t T[(MAX_SALT_LEN + MAX_KEY_LEN)*2];
+    uint8_t T[(MAX_SALT_LEN + MAX_KEY_LEN)*2] = {0};
     expand(prk, prkLen, NULL, 0, L, cryptoMixHashLength/8, T);
 
     // We have a new set of SRTP key data now, replace the old with the new.
@@ -522,7 +521,7 @@ void ZrtpSdesStream::createSrtpContexts(bool sipInvite) {
                                  localSaltLenBytes,          // Master Salt length
                                  localKeyLenBytes,           // encryption keylen
                                  localAuthKeyLen,            // authentication key len (HMAC key lenght)
-                                 localKeyLenBytes,          // session salt len
+                                 localSaltLenBytes,          // session salt len
                                  localTagLength);            // authentication tag len
     sendSrtp->deriveSrtpKeys(0L);
     memset(localKeySalt, 0, sizeof(localKeySalt));

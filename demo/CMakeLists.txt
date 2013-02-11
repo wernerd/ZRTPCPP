@@ -5,22 +5,30 @@ include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}
                      ${CMAKE_SOURCE_DIR}/zrtp
                      ${CMAKE_SOURCE_DIR}/clients/ccrtp)
 
-########### next target ###############
+if (CCRTP)
+    ########### next target ###############
 
-add_executable(zrtptest zrtptest.cpp)
-target_link_libraries(zrtptest zrtpcpp)
-add_dependencies(zrtptest zrtpcpp)
+    add_executable(zrtptest zrtptest.cpp)
+    target_link_libraries(zrtptest ${zrtplibName})
+    add_dependencies(zrtptest ${zrtplibName})
 
-########### next target ###############
+    ########### next target ###############
 
-add_executable(zrtptestMulti zrtptestMulti.cpp)
-target_link_libraries(zrtptestMulti zrtpcpp)
-add_dependencies(zrtptestMulti zrtpcpp)
-
+    add_executable(zrtptestMulti zrtptestMulti.cpp)
+    target_link_libraries(zrtptestMulti ${zrtplibName})
+    add_dependencies(zrtptestMulti ${zrtplibName})
+endif()
 ########### next target ###############
 
 #add_executable(wrappertest wrappertest.c)
 #target_link_libraries(wrappertest zrtpcpp)
+
+########### next target ###############
+
+add_executable(sdestest sdestest.cpp)
+target_link_libraries(sdestest ${zrtplibName})
+add_dependencies(sdestest ${zrtplibName})
+
 
 ########### install files ###############
 # None
