@@ -44,7 +44,9 @@ set(crypto_src_srtp
 
 set(zrtpcpp_src ${zrtp_src} ${zrtp_tivi_src} ${zrtp_crypto_src} ${bnlib_src} ${srtp_src} ${crypto_src_srtp} ${cryptcommon_srcs})
 
-# for the Thread classes etc.
+# for the Thread classes etc. - remove D_WITHOUT_TIVI_ENV if you compile for/with Tivi modules, maybe build static
+# and iclude this into Tivi shared lib in the second step. Need to cross-check with Java build in case of static build.
+# Beware of undefined symbols - set correct library build parameters in case of shared lib
 add_definitions(-DLINUX -DNANO_SECOND_SLEEP -D_WITHOUT_TIVI_ENV)
 
 if(BUILD_STATIC AND NOT BUILD_SHARED)
