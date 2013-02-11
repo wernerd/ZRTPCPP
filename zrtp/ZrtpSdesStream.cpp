@@ -102,19 +102,17 @@ static const char parseKeyParam[] = " inline:%[A-Za-z0-9+/=]|%[0-9^]|%[0-9]:%d";
 
 static const int minElementsKeyParam = 1;
 
-static const int32_t NONE = 0;
-static const int32_t HMAC_SHA = 1;
-static const int32_t SKEIN = 2;
-
 typedef struct _cryptoMix {
     const char* name;
     int32_t hashLength;
-    int32_t hashType;
+    ZrtpSdesStream::sdesHmacTypeMix hashType;
 } cryptoMix;
 
+static const size_t MIX_HMAC_STRING_MIN_LEN = sizeof("HMAC-SHA-384");
+
 static cryptoMix knownMixAlgos[] = {
-    {"HMAC-SHA-384", 384, HMAC_SHA},
-    {NULL, 0, 0}
+    {"HMAC-SHA-384", 384, ZrtpSdesStream::MIX_HMAC_SHA},
+    {NULL, 0, ZrtpSdesStream::MIX_NONE}
 };
 
 typedef struct _suite {
@@ -143,7 +141,7 @@ static suiteParam knownSuites[] = {
 
 ZrtpSdesStream::ZrtpSdesStream(const sdesSuites s) :
     state(STREAM_INITALIZED), suite(s), recvSrtp(NULL), recvSrtcp(NULL), sendSrtp(NULL),
-    sendSrtcp(NULL), srtcpIndex(0), cryptoMixHashLength(0), cryptoMixHashType(NONE)  {
+    sendSrtcp(NULL), srtcpIndex(0), cryptoMixHashLength(0), cryptoMixHashType(MIX_NONE)  {
 }
 
 ZrtpSdesStream::~ZrtpSdesStream() {
@@ -188,7 +186,6 @@ bool ZrtpSdesStream::createSdes(char *cryptoString, size_t *maxLen, bool sipInvi
         state = SDES_SRTP_ACTIVE;
     }
     return s;
-
 }
 
 bool ZrtpSdesStream::parseSdes(const char *cryptoString, size_t length, bool sipInvite) {
@@ -278,30 +275,25 @@ const char* ZrtpSdesStream::getAuthAlgo() {
 
 int ZrtpSdesStream::getCryptoMixAttribute(char *algoNames, size_t length) {
 
-    size_t len = strlen(knownMixAlgos[0].name);
-    if (length < len+1)
+    if (length < MIX_HMAC_STRING_MIN_LEN)
         return 0;
 
     // In case we support more than one MIX profile select the correct one if the
-    // application called setCryptoMixAttribute(...) and we selected one to use.
-    const char* name = NULL;
-    if (cryptoMixHashType != NONE) {
+    // application called setCryptoMixAttribute(...) and we already selected the one to use.
+    if (cryptoMixHashType != MIX_NONE) {
         for (cryptoMix* cp = knownMixAlgos; cp->name != NULL; cp++) {
             if (cp->hashLength == cryptoMixHashLength && cp->hashType == cryptoMixHashType) {
-                name = cp->name;
-                break;
+                strcpy(algoNames, cp->name);
+                return strlen(cp->name);
             }
         }
     }
-    else
-        name = knownMixAlgos[0].name;
-
-    // TODO: enhance here to support multiple algorithms (concatenate string into the buffer until buffer full)
-    if (name == NULL)
-        return 0;
-
-    strcpy(algoNames, name);
-    return len;
+    // TODO: enhance here to support multiple algorithms (concatenate strings into the buffer until buffer full)
+    else {
+        strcpy(algoNames, knownMixAlgos[0].name);
+        return strlen(algoNames);
+    }
+    return 0;
 }
 
 bool ZrtpSdesStream::setCryptoMixAttribute(const char *algoNames) {
@@ -318,7 +310,6 @@ bool ZrtpSdesStream::setCryptoMixAttribute(const char *algoNames) {
     std::string delimiters = " ";
     size_t current;
     size_t next = -1;
-    cryptoMix* mix = NULL;
 
     do {
         current = next + 1;
@@ -330,19 +321,16 @@ bool ZrtpSdesStream::setCryptoMixAttribute(const char *algoNames) {
 
         for (cryptoMix* cp = knownMixAlgos; cp->name != NULL; cp++) {
             if (strcmp(cp->name, nm) == 0) {
-                mix = cp;
-                break;
+                cryptoMixHashLength = cp->hashLength;
+                cryptoMixHashType = cp->hashType;
+                return true;
             }
         }
     }
     while (true);
 
-    if (mix == NULL)
-        return false;
+    return false;
 
-    cryptoMixHashLength = mix->hashLength;
-    cryptoMixHashType = mix->hashType;
-    return true;
 }
 
 #ifdef WEAKRANDOM
@@ -476,14 +464,17 @@ void ZrtpSdesStream::computeMixedKeys(bool sipInvite) {
     uint32_t prkLen;
 
     switch(cryptoMixHashType) {
-        case HMAC_SHA:
+        case MIX_HMAC_SHA:
             if (cryptoMixHashLength == 384)
                 hmac_sha384(salt, saltLen, ikm, keyLen, prk, &prkLen);
             else
                 return;
             break;
 
-        case SKEIN:
+        case MIX_MAC_SKEIN:
+            return;
+
+        default:
             return;
     }
 
@@ -516,7 +507,7 @@ void ZrtpSdesStream::computeMixedKeys(bool sipInvite) {
 
 void ZrtpSdesStream::createSrtpContexts(bool sipInvite) {
 
-    if (cryptoMixHashType != NONE) {
+    if (cryptoMixHashType != MIX_NONE) {
         computeMixedKeys(sipInvite);
     }
 

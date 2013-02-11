@@ -123,6 +123,12 @@ public:
         SDES_SRTP_ACTIVE
     } sdesZrtpStates;
 
+    typedef enum {
+        MIX_NONE = 0,
+        MIX_HMAC_SHA,
+        MIX_MAC_SKEIN
+    } sdesHmacTypeMix;
+
     /**
      * @brief Create and SDES/ZRTP stream.
      *
@@ -342,6 +348,13 @@ public:
     sdesZrtpStates getState() {return state;}
 
     /**
+     * @brief Return SDES crypto mixer HMAC type.
+     *
+     * @return HMAC type
+     */
+    sdesHmacTypeMix getHmacTypeMix() {return cryptoMixHashType;}
+
+    /**
      * @brief Return name of active cipher algorithm.
      *
      * @return point to name of cipher algorithm.
@@ -472,7 +485,7 @@ private:
     uint32_t srtcpIndex;                   //!< the local SRTCP index
 
     int32_t cryptoMixHashLength;
-    int32_t cryptoMixHashType;
+    sdesHmacTypeMix cryptoMixHashType;
 
     // Variables for crypto that this client creates and sends to the other client, filled during SDES create
     uint8_t localKeySalt[((MAX_KEY_LEN + MAX_SALT_LEN + 3)/4)*4];  //!< Some buffer for key and salt, multiple of 4
@@ -491,7 +504,5 @@ private:
     int remoteAuthn;
     int remoteAuthKeyLen;
     int remoteTagLength;
-
-
 };
 #endif
