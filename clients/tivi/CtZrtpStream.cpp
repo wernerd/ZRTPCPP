@@ -352,7 +352,14 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
         tmpInfo.secretsMatched = 0;
         tmpInfo.secretsCached = 0;
         tmpInfo.hash = (const char*)"";
-        tmpInfo.pubKey = (const char*)"SIP SDES";
+        if (sdes->getHmacTypeMix() == ZrtpSdesStream::MIX_NONE) {
+            tmpInfo.pubKey = (const char*)"SIP SDES";
+        }
+        else {
+            if (sdes->getCryptoMixAttribute(mixAlgoName, sizeof(mixAlgoName)) > 0)
+                tmpInfo.hash = mixAlgoName;
+            tmpInfo.pubKey = (const char*)"SIP SDES-MIX";
+        }
         tmpInfo.cipher = sdes->getCipher();
         tmpInfo.authLength = sdes->getAuthAlgo();
         info = &tmpInfo;

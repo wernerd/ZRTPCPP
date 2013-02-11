@@ -105,7 +105,7 @@ CtZrtpSession::~CtZrtpSession() {
 
 void CtZrtpSession::setupConfiguration(ZrtpConfigure *conf) {
 
-    // Set TIVI_CONF to a real name that is TRUE if the Tivi client is compiled/built.
+// Set _WITHOUT_TIVI_ENV to a real name that is TRUE if the Tivi client is compiled/built.
 #ifdef _WITHOUT_TIVI_ENV
 #define GET_CFG_I(RET,_KEY)
 #else
@@ -113,9 +113,11 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
 #define GET_CFG_I(RET,_KEY) {int *p=(int*)findGlobalCfgKey((char*)_KEY,sizeof(_KEY)-1,iSZ,&opt,&type);if(p && iSZ==4)RET=*p;else RET=-1;}
 #endif
 
+// The next three vars are used in case of a real Tivi compile, see macro above.
     int iSZ;
     char *opt;
     int type;
+
     int b32sas = 0, iDisableDH2K = 0, iDisableAES256 = 0, iPreferDH2K = 0;
     int iDisableECDH256 = 0, iDisableECDH384 = 0, iEnableSHA384 = 1;
     int iDisableSkein = 0, iDisableTwofish = 0;

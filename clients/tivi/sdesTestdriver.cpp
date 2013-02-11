@@ -30,6 +30,7 @@ static void hexdump(const char* title, const unsigned char *s, int l)
 }
 
 static bool verbose = false;
+// static bool verbose = true;
 
 // This is the callback that we use for audio stream
 class TestCallbackAudio: public CtZrtpCb {
@@ -125,6 +126,8 @@ static bool testBasicMix()
         fprintf(stderr, "testBasicMix: Get mix is zero\n");
         return false;
     }
+    if (verbose)
+        fprintf(stderr, "testBasicMix: algorithms on first get: %s\n", buffer);
 
     if (sdes.setCryptoMixAttribute("")) {
         fprintf(stderr, "testBasicMix: Testing empty mix returned true, expecting false\n");
@@ -134,16 +137,16 @@ static bool testBasicMix()
         fprintf(stderr, "testBasicMix: Testing one valid algo returned false, expecting true\n");
         return false;
     }
-    if (!sdes.setCryptoMixAttribute("BABAB HMAC-SHA-384")) {
+    if (!sdes.setCryptoMixAttribute("BABAB HMAC-SHA-384 XYZABC")) {
         fprintf(stderr, "testBasicMix: Testing invalid/valid returned false, expecting true\n");
         return false;
     }
-    if (sdes.setCryptoMixAttribute("BABAB")) {
+    if (sdes.setCryptoMixAttribute("BABAB XYZABC")) {
         fprintf(stderr, "testBasicMix: Testing invalid returned true, expecting false\n");
         return false;
     }
     // set a valid algorithms that we can check on the next get
-    sdes.setCryptoMixAttribute("BABAB HMAC-SHA-384");
+    sdes.setCryptoMixAttribute("BABAB HMAC-SHA-384 XYZABC");
 
     rc = sdes.getCryptoMixAttribute(buffer, sizeof(buffer));
     int len = strlen("HMAC-SHA-384");
@@ -207,7 +210,7 @@ static bool testNormalSdes()
 
     // Inviter second step: parses answerer's string, sets the "sipInvite" parameter to true
     inviter->parseSdes(answBuffer, answLength, NULL, NULL, true, CtZrtpSession::AudioStream);
-    inviter->start(0xfeedbac, CtZrtpSession::AudioStream);
+    inviter->start(0xfeedbac, CtZrtpSession::AudioStream);  // start this stream to get a send callback
 
 
     invLength = 0;
@@ -319,7 +322,7 @@ static bool testWithMix()
 
     // Inviter fourth step: parses answerer's string, sets the "sipInvite" parameter to true
     inviter->parseSdes(answBuffer, answLength, NULL, NULL, true, CtZrtpSession::AudioStream);
-    inviter->start(0xfeedbac, CtZrtpSession::AudioStream);
+    inviter->start(0xfeedbac, CtZrtpSession::AudioStream);  // start this stream to get a send callback
 
 
     invLength = 0;

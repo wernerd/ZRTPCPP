@@ -399,6 +399,8 @@ private:
     uint32_t srtpErrorBurst;
     CMutexClass *synchLock;
 
+    char mixAlgoName[20];                   //!< stores name in during getInfo() call
+
     void initStrings();
 };
 
