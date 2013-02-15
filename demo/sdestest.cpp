@@ -154,22 +154,21 @@ static uint8_t OKM_A3[] = {
     
 void* createSha256HmacContext(uint8_t* key, int32_t keyLength);
 void freeSha256HmacContext(void* ctx);
-void hmacSha256Ctx(void* ctx, const uint8_t* data, uint32_t dataLength, uint8_t* mac, int32_t* macLength);
 void hmacSha256Ctx(void* ctx, const uint8_t* data[], uint32_t dataLength[], uint8_t* mac, int32_t* macLength );
 
 
-static int expand(uint8_t* prk, int32_t prkLen, uint8_t* info, int32_t infoLen, int32_t L, int32_t hashLen, uint8_t* outbuffer)
+static int expand(uint8_t* prk, uint32_t prkLen, uint8_t* info, int32_t infoLen, int32_t L, uint32_t hashLen, uint8_t* outbuffer)
 {
     int32_t n;
     uint8_t *T;
     void* hmacCtx;
 
-    uint8_t* data[4];      // Data pointers for HMAC data, max. 3 plus terminating NULL
+    const uint8_t* data[4];      // Data pointers for HMAC data, max. 3 plus terminating NULL
     uint32_t dataLen[4];
     int32_t dataIdx = 0;
 
     uint8_t counter;
-    uint32_t macLength;
+    int32_t macLength;
 
     if (prkLen < hashLen)
         return -1;
@@ -180,7 +179,7 @@ static int expand(uint8_t* prk, int32_t prkLen, uint8_t* info, int32_t infoLen, 
     T = reinterpret_cast<uint8_t*>(malloc(n * hashLen));
 
     // Prepare the HMAC
-//    hmacCtx = createSha256HmacContext(prk, prkLen);
+    hmacCtx = createSha256HmacContext(prk, prkLen);
 
     // Prepare first HMAC. T(0) has zero length, thus we ignore it in first run.
     // After first run use its output (T(1)) as first data in next HMAC run.
@@ -196,13 +195,13 @@ static int expand(uint8_t* prk, int32_t prkLen, uint8_t* info, int32_t infoLen, 
         data[dataIdx] = NULL;
         dataLen[dataIdx++] = 0;
 
-        hmac_sha256(prk, prkLen, data, dataLen, T + ((i-1) * hashLen), &macLength);
+        hmacSha256Ctx(hmacCtx, data, dataLen, T + ((i-1) * hashLen), &macLength);
 
         dataIdx = 0;
         data[dataIdx] = T + ((i-1) * hashLen);
         dataLen[dataIdx++] = hashLen;
     }
-//    freeSha256HmacContext(hmacCtx);
+    freeSha256HmacContext(hmacCtx);
     memcpy(outbuffer, T, L);
     free(T);
     return 0;

@@ -14,7 +14,7 @@ else()
     pkg_check_modules(USES_CCRTP libccrtp>=2.0.0)
 endif()
 include_directories(${USES_CCRTP_INCLUDE_DIRS})
-link_directories(${USES_CRTP_LIBRARY_DIRS})
+link_directories(${USES_CCRTP_LIBRARY_DIRS})
 add_definitions(${USES_CCRTP_CFLAGS})
 set (LIBS ${LIBS} ${USES_CCRTP_LDFLAGS} ${USES_CCRTP_LIBRARIES})
 
