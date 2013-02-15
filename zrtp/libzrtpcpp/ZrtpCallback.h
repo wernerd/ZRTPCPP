@@ -46,6 +46,7 @@
  * </ul>
  */
 typedef enum  {
+    NoRole = 0,     ///< ZRTP role not yet set
     Responder = 1,  ///< This client is in ZRTP Responder mode
     Initiator       ///< This client is in ZRTP Initiator mode
 } Role;

@@ -401,6 +401,8 @@ private:
 
     char mixAlgoName[20];                   //!< stores name in during getInfo() call
 
+    int role;                               //!< Initiator or Responder role
+
     void initStrings();
 };
 

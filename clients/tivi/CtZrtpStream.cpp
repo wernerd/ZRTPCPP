@@ -40,7 +40,7 @@ CtZrtpStream::CtZrtpStream():
     prevTiviState(CtZrtpSession::eLookingPeer), recvSrtp(NULL), recvSrtcp(NULL), sendSrtp(NULL), sendSrtcp(NULL),
     zrtpUserCallback(NULL), zrtpSendCallback(NULL), senderZrtpSeqNo(0), peerSSRC(0), protect(0), unprotect(0),
     unprotectFailed(0), zrtpHashMatch(false), sasVerified(false), helloReceived(false), sdesActive(false), sdes(NULL),
-    supressCounter(0), srtpErrorBurst(0)
+    supressCounter(0), srtpErrorBurst(0), role(NoRole)
 {
     synchLock = new CMutexClass();
 
@@ -301,11 +301,18 @@ int CtZrtpStream::isSecure() {
         if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0){              \
             return snprintf(p, maxLen, "%d", (!!(info->secretsCached & _FV)) << (!!(info->secretsMatchedDH & _FV)));}
 
+void tmp_log(const char *p);
+
 
 int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
 
-    if ((sdes == NULL && !started) || isStopped || !isSecure())
-        return 0;
+    char bu[256] = {'\0'};
+
+    sprintf(bu, "getInfo: sdes: %p, started: %d, stopped: %d, secure: %d\n", sdes, started, isStopped, isSecure());
+    tmp_log(bu);
+
+//     if ((sdes == NULL /*&& !started*/) || isStopped || !isSecure())
+//         return 0;
 
     memset(p, 0, maxLen);
     const ZRtp::zrtpInfo *info = NULL;
@@ -326,11 +333,15 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
     }
     T_ZRTP_LB("sdp_hash", strng);
 
+    std::string client = zrtpEngine->getPeerProtcolVersion();
+    if (role != NoRole) {
+        client.append(role == Initiator ? "(I)" : "(R)");
+    }
+    T_ZRTP_LB("lbClient",  zrtpEngine->getPeerClientId().c_str());
+    T_ZRTP_LB("lbVersion", client.c_str());
+
     if (recvSrtp != NULL || sendSrtp != NULL) {
         info = zrtpEngine->getDetailInfo();
-
-        T_ZRTP_LB("lbClient",  zrtpEngine->getPeerClientId().c_str());
-        T_ZRTP_LB("lbVersion", zrtpEngine->getPeerProtcolVersion().c_str());
 
         if (iLen == 1 && key[0] == 'v') {
             return sprintf(p, "%d", sasVerified);
@@ -364,6 +375,8 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
         tmpInfo.authLength = sdes->getAuthAlgo();
         info = &tmpInfo;
     }
+    else
+        return 0;
     T_ZRTP_F("rs1",ZRtp::Rs1);
     T_ZRTP_F("rs2",ZRtp::Rs2);
     T_ZRTP_F("aux",ZRtp::Aux);
@@ -567,6 +580,8 @@ bool CtZrtpStream::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
 
     if (secrets->symEncAlgorithm == TwoFish)
         cipher = SrtpEncryptionTWOCM;
+
+    role = secrets->role;
 
     if (part == ForSender) {
         // To encrypt packets: intiator uses initiator keys,
