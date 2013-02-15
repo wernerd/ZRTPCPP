@@ -360,36 +360,36 @@ void ZrtpStateClass::evAckSent(void) {
      */
     if (event->type == ZrtpPacket) {
         pkt = event->packet;
-	msg = (char *)pkt + 4;
+        msg = (char *)pkt + 4;
 
-	first = tolower(*msg);
-	last = tolower(*(msg+7));
+        first = tolower(*msg);
+        last = tolower(*(msg+7));
 
-	/*
+        /*
          * HelloAck:
          * The peer answers with HelloAck to own HelloAck/Hello. Send Commit
          * and try Initiator mode. The requirement defined in chapter 4.1 to
          * have a complete Hello/HelloAck is fulfilled.
-	 * - stop Hello timer T1
-	 * - send own Commit message
-	 * - switch state to CommitSent, start Commit timer, assume Initiator
-	 */
-	if (first == 'h' && last =='k') {
-	    cancelTimer();
+         * - stop Hello timer T1
+         * - send own Commit message
+         * - switch state to CommitSent, start Commit timer, assume Initiator
+         */
+        if (first == 'h' && last =='k') {
+            cancelTimer();
 
             // remember packet for easy resend in case timer triggers
             // Timer trigger received in new state CommitSend
             sentPacket = static_cast<ZrtpPacketBase *>(commitPkt);
             commitPkt = NULL;                    // now stored in sentPacket
-	    nextState(CommitSent);
+            nextState(CommitSent);
             if (!parent->sendPacketZRTP(sentPacket)) {
                 sendFailed();             // returns to state Initial
                 return;
             }
             if (startTimer(&T2) <= 0) {
                 timerFailed(SevereNoTimer);  // returns to state Initial
-	    }
-	    return;
+            }
+            return;
         }
         /*
          * Hello:
@@ -421,7 +421,7 @@ void ZrtpStateClass::evAckSent(void) {
          * - switch to state WaitDHPart2 and wait for peer's DHPart2
          * - don't start timer, we are responder
          */
-        if (first == 'c') {
+        if (first == 'c' && last == ' ') {
             cancelTimer();
             ZrtpPacketCommit cpkt(pkt);
 
@@ -459,7 +459,7 @@ void ZrtpStateClass::evAckSent(void) {
     }
     /*
      * Timer:
-     * - resend Hello packet, stay in state, restart timer until repeat 
+     * - resend Hello packet, stay in state, restart timer until repeat
      *   counter triggers
      * - if repeat counter triggers switch to state Detect, con't clear
      *   sentPacket, Detect requires it to point to own Hello message
@@ -561,7 +561,7 @@ void ZrtpStateClass::evAckDetected(void) {
          * - Initiator role, thus start timer T2 to monitor timeout for Commit
          */
 
-        if (first == 'h') {
+        if (first == 'h' && last == ' ') {
             // Parse peer's packet data into a Hello packet
             ZrtpPacketHello hpkt(pkt);
             ZrtpPacketCommit* commit = parent->prepareCommit(&hpkt, &errorCode);
@@ -611,7 +611,7 @@ void ZrtpStateClass::evWaitCommit(void) {
 
     DEBUGOUT((cout << "Checking for match in WaitCommit.\n"));
 
-    char *msg, first;
+    char *msg, first, last;
     uint8_t *pkt;
     uint32_t errorCode = 0;
 
@@ -620,12 +620,13 @@ void ZrtpStateClass::evWaitCommit(void) {
         msg = (char *)pkt + 4;
 
         first = tolower(*msg);
+        last = tolower(*(msg+7));
         /*
          * Hello:
          * - resend HelloAck
          * - stay in WaitCommit
          */
-        if (first == 'h') {
+        if (first == 'h' && last == ' ') {
             if (!parent->sendPacketZRTP(sentPacket)) {
                 sendFailed();       // returns to state Initial
             }
@@ -638,7 +639,7 @@ void ZrtpStateClass::evWaitCommit(void) {
          * - switch state to WaitDHPart2 or WaitConfirm2 if multi stream mode
          * - don't start timer, we are responder
          */
-        if (first == 'c') {
+        if (first == 'c' && last == ' ') {
             ZrtpPacketCommit cpkt(pkt);
 
             if (!multiStream) {
@@ -706,7 +707,7 @@ void ZrtpStateClass::evCommitSent(void) {
 
     DEBUGOUT((cout << "Checking for match in CommitSend.\n"));
 
-    char *msg, first, last;
+    char *msg, first, middle, last, secondLast;
     uint8_t *pkt;
     uint32_t errorCode = 0;
 
@@ -715,7 +716,9 @@ void ZrtpStateClass::evCommitSent(void) {
         msg = (char *)pkt + 4;
 
         first = tolower(*msg);
+        middle = tolower(*(msg+4));
         last = tolower(*(msg+7));
+        secondLast = tolower(*(msg+6));
 
         /*
          * HelloAck or Hello:
@@ -723,7 +726,7 @@ void ZrtpStateClass::evCommitSent(void) {
          *   ignore it
          * - no switch in state, leave timer as it is
          */
-        if (first == 'h' && (last =='k' || last == ' ')) {
+        if (first == 'h' && middle == 'o' && (last =='k' || last == ' ')) {
             return;
         }
 
@@ -800,7 +803,7 @@ void ZrtpStateClass::evCommitSent(void) {
          * - switch to WaitConfirm1
          * - start timer to resend DHPart2 if necessary, we are Initiator
          */
-        if (first == 'd') {
+        if (first == 'd' && secondLast == '1') {
             cancelTimer();
             sentPacket = NULL;
             ZrtpPacketDHPart dpkt(pkt);
@@ -832,6 +835,11 @@ void ZrtpStateClass::evCommitSent(void) {
             return;
         }
 
+        /*
+         * Confirm1 and multi-stream mode
+         * - switch off resending commit
+         * - prepare Confirm2
+         */
         if (multiStream && (first == 'c' && last == '1')) {
             cancelTimer();
             ZrtpPacketConfirm cpkt(pkt);
@@ -902,7 +910,7 @@ void ZrtpStateClass::evWaitDHPart2(void) {
 
     DEBUGOUT((cout << "Checking for match in DHPart2.\n"));
 
-    char *msg, first;
+    char *msg, first, secondLast, last;
     uint8_t *pkt;
     uint32_t errorCode = 0;
 
@@ -911,12 +919,14 @@ void ZrtpStateClass::evWaitDHPart2(void) {
         msg = (char *)pkt + 4;
 
         first = tolower(*msg);
+        last = tolower(*(msg+7));
+        secondLast = tolower(*(msg+6));
         /*
          * Commit:
          * - resend DHPart1
          * - stay in state
          */
-        if (first == 'c') {
+        if (first == 'c' && last == ' ') {
             if (!parent->sendPacketZRTP(sentPacket)) {
                 return sendFailed();       // returns to state Initial
             }
@@ -928,7 +938,7 @@ void ZrtpStateClass::evWaitDHPart2(void) {
          * - switch to WaitConfirm2
          * - No timer, we are responder
          */
-        if (first == 'd') {
+        if (first == 'd' && secondLast == '2') {
             ZrtpPacketDHPart dpkt(pkt);
             ZrtpPacketConfirm* confirm = parent->prepareConfirm1(&dpkt, &errorCode);
 
@@ -1069,7 +1079,7 @@ void ZrtpStateClass::evWaitConfirm2(void) {
 
     DEBUGOUT((cout << "Checking for match in WaitConfirm2.\n"));
 
-    char *msg, first, last;
+    char *msg, first, secondLast, last;
     uint8_t *pkt;
     uint32_t errorCode = 0;
 
@@ -1078,6 +1088,7 @@ void ZrtpStateClass::evWaitConfirm2(void) {
         msg = (char *)pkt + 4;
 
         first = tolower(*msg);
+        secondLast = tolower(*(msg+6));
         last = tolower(*(msg+7));
 
         /*
@@ -1085,7 +1096,7 @@ void ZrtpStateClass::evWaitConfirm2(void) {
          * - resend Confirm1 packet
          * - stay in state
          */
-        if (first == 'd' || (multiStream && (first == 'c' && last == ' '))) {
+        if ((first == 'd' && secondLast == '2') || (multiStream && (first == 'c' && last == ' '))) {
             if (!parent->sendPacketZRTP(sentPacket)) {
                 sendFailed();             // returns to state Initial
             }
@@ -1151,7 +1162,7 @@ void ZrtpStateClass::evWaitConfAck(void) {
 
     DEBUGOUT((cout << "Checking for match in WaitConfAck.\n"));
 
-    char *msg, first;
+    char *msg, first, last;
     uint8_t *pkt;
 
     if (event->type == ZrtpPacket) {
@@ -1159,12 +1170,13 @@ void ZrtpStateClass::evWaitConfAck(void) {
         msg = (char *)pkt + 4;
 
         first = tolower(*msg);
+        last = tolower(*(msg+7));
          /*
          * ConfAck:
          * - Switch off resending Confirm2
          * - switch to SecureState
          */
-        if (first == 'c') {
+        if (first == 'c' && last == 'k') {
             cancelTimer();
             sentPacket = NULL;
             // Receiver was already enabled after sending Confirm2 packet
@@ -1208,7 +1220,7 @@ void ZrtpStateClass::evWaitConfAck(void) {
 void ZrtpStateClass::evWaitClearAck(void) {
     DEBUGOUT((cout << "Checking for match in ClearAck.\n"));
 
-    char *msg, first, last;
+    char *msg, first, last, middle;
     uint8_t *pkt;
 
     if (event->type == ZrtpPacket) {
@@ -1216,6 +1228,7 @@ void ZrtpStateClass::evWaitClearAck(void) {
 	msg = (char *)pkt + 4;
 
 	first = tolower(*msg);
+    middle = tolower(*(msg+4));
 	last = tolower(*(msg+7));
 
 	/*
@@ -1223,7 +1236,7 @@ void ZrtpStateClass::evWaitClearAck(void) {
 	 * - stop resending GoClear,
 	 * - switch to state AckDetected, wait for peer's Hello
 	 */
-	if (first == 'c' && last =='k') {
+	if (first == 'c' && middle == 'r' && last =='k') {
 	    cancelTimer();
 	    sentPacket = NULL;
 	    nextState(Initial);
