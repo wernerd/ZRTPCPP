@@ -301,15 +301,9 @@ int CtZrtpStream::isSecure() {
         if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0){              \
             return snprintf(p, maxLen, "%d", (!!(info->secretsCached & _FV)) << (!!(info->secretsMatchedDH & _FV)));}
 
-void tmp_log(const char *p);
-
-
 int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
 
     char bu[256] = {'\0'};
-
-    sprintf(bu, "getInfo: sdes: %p, started: %d, stopped: %d, secure: %d\n", sdes, started, isStopped, isSecure());
-    tmp_log(bu);
 
 //     if ((sdes == NULL /*&& !started*/) || isStopped || !isSecure())
 //         return 0;
@@ -377,6 +371,7 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
     }
     else
         return 0;
+
     T_ZRTP_F("rs1",ZRtp::Rs1);
     T_ZRTP_F("rs2",ZRtp::Rs2);
     T_ZRTP_F("aux",ZRtp::Aux);
