@@ -90,9 +90,9 @@ enum InfoCodes {
  * Sub-codes for Warning
  */
 enum WarningCodes {
-    WarningDHAESmismatch = 1,       //!< Commit contains an AES256 cipher but does not offer a Diffie-Helman 4096
+    WarningDHAESmismatch = 1,       //!< Commit contains an AES256 cipher but does not offer a Diffie-Helman 4096 - not used DH4096 was discarded
     WarningGoClearReceived,         //!< Received a GoClear message
-    WarningDHShort,                 //!< Hello offers an AES256 cipher but does not offer a Diffie-Helman 4096
+    WarningDHShort,                 //!< Hello offers an AES256 cipher but does not offer a Diffie-Helman 4096- not used DH4096 was discarded
     WarningNoRSMatch,               //!< No retained shared secrets available - must verify SAS
     WarningCRCmismatch,             //!< Internal ZRTP packet checksum mismatch - packet dropped
     WarningSRTPauthError,           //!< Dropping packet because SRTP authentication failed!
