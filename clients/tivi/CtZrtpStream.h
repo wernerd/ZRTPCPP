@@ -49,6 +49,14 @@ protected:
     CtZrtpSession::streamType  type;       //!< Master or slave stream. Necessary to handle multi-stream
     ZRtp              *zrtpEngine;         //!< The ZRTP core class of this stream
     uint32_t          ownSSRC;             //!< Our own SSRC, in host order
+
+    uint64_t          zrtpProtect;
+    uint64_t          sdesProtect;
+
+    uint64_t          zrtpUnprotect;
+    uint64_t          sdesUnprotect;
+    uint64_t          unprotectFailed;
+
     bool              enableZrtp;          //!< Enable the streams ZRTP engine
     bool              started;             //!< This stream's ZRTP engine is started
     bool              isStopped;           //!< Stream stopped by Tivi
@@ -386,9 +394,6 @@ private:
     char sdesTempBuffer[maxSdesString];
     uint16_t senderZrtpSeqNo;
     uint32_t peerSSRC;
-    uint64_t protect;
-    uint64_t unprotect;
-    uint64_t unprotectFailed;
     std::string peerHelloHash;
     bool     zrtpHashMatch;
     bool     sasVerified;
