@@ -198,8 +198,8 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, size_t length, size_t 
             }
         }
         // We come to this point only if we have some problems during SRTP unprotect
-        if (supressCounter > supressWarn && srtpErrorBurst >= srtpErrorBurstThreshold) {
-            srtpErrorBurst++;
+        srtpErrorBurst++;
+        if (supressCounter >= supressWarn && srtpErrorBurst >= srtpErrorBurstThreshold) {
             if (rc == -1) {
                 sendInfo(Warning, WarningSRTPauthError);
             }
