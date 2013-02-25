@@ -118,9 +118,10 @@ protected:
      * ZRTP calls this method to send a ZRTP packet via the RTP session.
      *
      * @param data
-     *    Points to ZRTP packet to send.
+     *    Points to ZRTP packet to send. The packet already contains a 4 bytes
+     *    storage at the end to store CRC.
      * @param length
-     *    The length in bytes of the data
+     *    The length in bytes of the data, including the CRC storage.
      * @return
      *    zero if sending failed, one if packet was send
      */
