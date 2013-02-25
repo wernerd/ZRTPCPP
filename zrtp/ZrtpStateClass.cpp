@@ -99,7 +99,7 @@ void ZrtpStateClass::processEvent(Event_t *ev) {
         if (!inState(WaitErrorAck)) {
             uint16_t totalLength = *(uint16_t*)(pkt+2);
             totalLength = zrtpNtohs(totalLength) * ZRTP_WORD_SIZE;
-            totalLength += 12 + sizeof(uint32_t);           // !2 bytes is fixed header, uint32_t is CRC
+            totalLength += 12 + sizeof(uint32_t);           // 12 bytes is fixed header, uint32_t is CRC
 
             if (totalLength != ev->length) {
                 fprintf(stderr, "Total length does not match received length: %d - %ld\n", totalLength, ev->length);
