@@ -147,7 +147,7 @@ protected:
      * @return 1: success, 0: not an error but drop packet, -1: SRTP authentication failed,
      *            -2: SRTP replay check failed
      */
-    int32_t processIncomingRtp(uint8_t *buffer, size_t length, size_t *newLength);
+    int32_t processIncomingRtp(uint8_t* buffer, const size_t length, size_t* newLength);
 
     /**
      * @brief Get the ZRTP Hello hash to be used for signaling

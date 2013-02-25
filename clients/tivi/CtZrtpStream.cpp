@@ -34,6 +34,26 @@ static int initialized = 0;
 
 using namespace GnuZrtpCodes;
 
+/**
+ * The following code is for internal logging only
+ *
+ */
+static void (*_zrtp_log_cb)(void *ret, const char *tag, const char *buf) = NULL;
+static void *pLogRet=NULL;
+
+// this function must be public. Tivi C++ code set its internal log function
+void set_zrtp_log_cb(void *pRet, void (*cb)(void *ret, const char *tag, const char *buf)){
+    _zrtp_log_cb=cb;
+    pLogRet=pRet;
+}
+
+// This function is static (could be global) to reduce visibility
+static void zrtp_log( const char *tag, const char *buf){
+    if(_zrtp_log_cb){
+        _zrtp_log_cb(pLogRet, tag, buf);
+    }
+}
+
 CtZrtpStream::CtZrtpStream():
     index(CtZrtpSession::AudioStream), type(CtZrtpSession::NoStream), zrtpEngine(NULL),
     ownSSRC(0), zrtpProtect(0), sdesProtect(0), zrtpUnprotect(0), sdesUnprotect(0), unprotectFailed(0),
@@ -156,7 +176,7 @@ bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *ne
     return rc;
 }
 
-int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, size_t length, size_t *newLength) {
+int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, size_t *newLength) {
     int32_t rc = 0;
     // check if this could be a real RTP/SRTP packet.
     if ((*buffer & 0xc0) == 0x80) {             // A real RTP, check if we are in secure mode
@@ -183,7 +203,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, size_t length, size_t 
             rc = SrtpHandler::unprotect(recvSrtp, buffer, length, newLength);
             if (rc == 1) {
                 zrtpUnprotect++;
-                // Got a good SRTP, check state, WaitConfAck is a Responder state
+                // Got a good SRTP, check state, WaitConfAck is an Initiator state
                 // in this case simulate a conf2Ack, refer to RFC 6189, chapter 4.6, last paragraph
                 if (zrtpEngine->inState(WaitConfAck)) {
                     zrtpEngine->conf2AckSecure();
@@ -199,6 +219,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, size_t length, size_t 
         }
         // We come to this point only if we have some problems during SRTP unprotect
         srtpErrorBurst++;
+        unprotectFailed++;
         if (supressCounter >= supressWarn && srtpErrorBurst >= srtpErrorBurstThreshold) {
             if (rc == -1) {
                 sendInfo(Warning, WarningSRTPauthError);
@@ -206,7 +227,6 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, size_t length, size_t 
             else {
                 sendInfo(Warning, WarningSRTPreplayError);
             }
-            unprotectFailed++;
             return rc;    // Check with Janis if this is OK
         }
         return 0;
