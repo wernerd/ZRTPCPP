@@ -70,7 +70,7 @@ CtZrtpStream::CtZrtpStream():
         staticTimeoutProvider->Event(&staticTimeoutProvider);  // Event argument is dummy, not used
     }
     initStrings();
-    senderZrtpSeqNo = ZrtpRandom::getRandomData((uint8_t*)&senderZrtpSeqNo, 2);
+    ZrtpRandom::getRandomData((uint8_t*)&senderZrtpSeqNo, 2);
     senderZrtpSeqNo &= 0x7fff;
 }
 
@@ -106,7 +106,7 @@ void CtZrtpStream::stopStream() {
     sdesProtect = 0;
     unprotectFailed = 0;
 
-    senderZrtpSeqNo = ZrtpRandom::getRandomData((uint8_t*)&senderZrtpSeqNo, 2);
+    ZrtpRandom::getRandomData((uint8_t*)&senderZrtpSeqNo, 2);
     senderZrtpSeqNo &= 0x7fff;
     zrtpHashMatch= false;
     sasVerified = false;
@@ -209,7 +209,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
                     zrtpEngine->conf2AckSecure();
                 }
                 if (sdesActive && sdes != NULL) {    // We still have a SDES - other client did not send matching zrtp-hash
-                    rc = sdes->incomingRtp(buffer, length, newLength);
+                    rc = sdes->incomingRtp(buffer, *newLength, newLength);
                 }
                 if (rc == 1) {                       // if rc is still one: either no SDES or SDES incoming sucess
                     srtpErrorBurst = 0;
