@@ -261,12 +261,14 @@ void ZrtpStateClass::evDetect(void) {
 
             /*
              * Check and negotiate the ZRTP protocol version first.
+             *
+             * This selection mechanism relies on the fact that we sent the highest supported protocol version in
+             * the initial Hello packet with as stated in RFC6189, section 4.1.1
              */
             int32_t recvVersion = hpkt.getVersionInt();
             if (recvVersion > sentVersion) {   // We don't support this version, stay in state with timer active
                 if (startTimer(&T1) <= 0) {
                     timerFailed(SevereNoTimer);      // returns to state Initial
-                    return;
                 }
                 return;
             }
@@ -274,20 +276,14 @@ void ZrtpStateClass::evDetect(void) {
             /*
              * The versions don't match. Start negotiating versions. This negotiation stays in the Detect state.
              * Only if the received version matches our own sent version we start to send a HelloAck.
-             * 
-             * This selection mechanism relies on the fact that we sent the highest supported protocol version in
-             * the initial Hello packet with as stated in RFC6189, section 4.1.1
              */
-            fprintf(stderr, "rv: %d, sv: %d\n", recvVersion, sentVersion);
             if (recvVersion != sentVersion) {
-                fprintf(stderr, "rv: %d not equal sv: %d\n", recvVersion, sentVersion);
                 ZRtp::HelloPacketVersion* hpv = parent->helloPackets;
 
                 int32_t index;
                 for (index = 0; hpv->packet && hpv->packet != parent->currentHelloPacket; hpv++, index++)   // Find current sent Hello
                     ;
 
-                fprintf(stderr, "hpv->v: %d, index: %d\n", hpv->version, index);
                 for(; index >= 0 && hpv->version > recvVersion; hpv--, index--)   // find a supported version less-equal to received version
                     ;
 
@@ -300,7 +296,6 @@ void ZrtpStateClass::evDetect(void) {
 
                 // remember packet for easy resend in case timer triggers
                 sentPacket = static_cast<ZrtpPacketBase *>(parent->currentHelloPacket);
-                fprintf(stderr, "new hello v: %d, index: %d\n", sentVersion, index);
 
                 if (!parent->sendPacketZRTP(sentPacket)) {
                     sendFailed();                 // returns to state Initial
@@ -313,7 +308,6 @@ void ZrtpStateClass::evDetect(void) {
                 return;
             }
             ZrtpPacketHelloAck* helloAck = parent->prepareHelloAck();
-            fprintf(stderr, "send helloAck from detect\n");
 
             if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(helloAck))) {
                 parent->zrtpNegotiationFailed(Severe, SevereCannotSend);
