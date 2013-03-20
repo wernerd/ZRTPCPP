@@ -30,7 +30,7 @@ ZrtpPacketPing::ZrtpPacketPing() {
     setZrtpId();
     setLength((sizeof(PingPacket_t) / ZRTP_WORD_SIZE) - 1);
     setMessageType((uint8_t*)PingMsg);
-    setVersion((uint8_t*)zrtpVersion);
+    setVersion((uint8_t*)zrtpVersion_11);  // TODO: fix version string after clarification
 }
 
 ZrtpPacketPing::ZrtpPacketPing(uint8_t *data) {

@@ -161,6 +161,11 @@ private:
      */
     bool subEvWaitRelayAck();
 
+    /**
+     * Hello packet version sent to other partner
+     */
+    int32_t sentVersion;
+
 public:
     /// Create a ZrtpStateClass
     ZrtpStateClass(ZRtp *p);

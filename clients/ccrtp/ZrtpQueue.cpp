@@ -679,9 +679,9 @@ void ZrtpQueue::setClientId(std::string id) {
     clientIdString = id;
 }
 
-std::string ZrtpQueue::getHelloHash()  {
+std::string ZrtpQueue::getHelloHash(int32_t index)  {
     if (zrtpEngine != NULL)
-        return zrtpEngine->getHelloHash();
+        return zrtpEngine->getHelloHash(index);
     else
         return std::string();
 }
@@ -810,6 +810,21 @@ int32 ZrtpQueue::getPeerZid(uint8* data) {
 
     return 0;
 }
+
+int32_t ZrtpQueue::getNumberSupportedVersions() {
+    if (zrtpEngine != NULL)
+        return zrtpEngine->getNumberSupportedVersions();
+
+    return 0;
+}
+
+int32_t ZrtpQueue::getCurrentProtocolVersion() {
+    if (zrtpEngine != NULL)
+        return zrtpEngine->getCurrentProtocolVersion();
+
+    return 0;
+}
+
 
 IncomingZRTPPkt::IncomingZRTPPkt(const unsigned char* const block, size_t len) :
         IncomingRTPPkt(block,len) {

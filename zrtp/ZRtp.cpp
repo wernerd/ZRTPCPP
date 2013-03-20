@@ -86,6 +86,8 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* conf
     hmacFunctionImpl = hmac_sha256;
     hmacListFunctionImpl = hmac_sha256;
 
+    memcpy(ownZid, myZid, ZID_SIZE);        // save the ZID
+
     /*
      * Generate H0 as a random number (256 bits, 32 bytes) and then
      * the hash chain, refer to chapter 9. Use the implicit hash function.
@@ -95,20 +97,39 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* conf
     sha256(H1, HASH_IMAGE_SIZE, H2);        // H2
     sha256(H2, HASH_IMAGE_SIZE, H3);        // H3
 
-    zrtpHello.configureHello(&configureAlgos);
-    zrtpHello.setH3(H3);                    // set H3 in Hello, included in helloHash
+    // configure all supported Hello packet versions
+    zrtpHello_11.configureHello(&configureAlgos);
+    zrtpHello_11.setH3(H3);                    // set H3 in Hello, included in helloHash
+    zrtpHello_11.setZid(ownZid);
+    zrtpHello_11.setVersion((uint8_t*)zrtpVersion_11);
+
+
+    zrtpHello_12.configureHello(&configureAlgos);
+    zrtpHello_12.setH3(H3);                 // set H3 in Hello, included in helloHash
+    zrtpHello_12.setZid(ownZid);
+    zrtpHello_12.setVersion((uint8_t*)zrtpVersion_12);
+
+    if (mitmm) {                            // this session acts for a trusted MitM (PBX)
+        zrtpHello_11.setMitmMode();
+        zrtpHello_12.setMitmMode();
+    }
+    if (sasSignSupport) {                   // the application supports SAS signing
+        zrtpHello_11.setSasSign();
+        zrtpHello_12.setSasSign();
+    }
+
+    // Keep array in ascending order (greater index -> greater version)
+    helloPackets[0].packet = &zrtpHello_11;
+    helloPackets[0].version = zrtpHello_11.getVersionInt();
+    setClientId(id, &helloPackets[0]);      // set id, compute HMAC and final helloHash
+
+    helloPackets[1].packet = &zrtpHello_12;
+    helloPackets[1].version = zrtpHello_12.getVersionInt();
+    setClientId(id, &helloPackets[1]);      // set id, compute HMAC and final helloHash
+ 
+    currentHelloPacket = helloPackets[MAX_ZRTP_VERSIONS-1].packet;  // start with highest available version
+    helloPackets[MAX_ZRTP_VERSIONS].packet = NULL;
     peerHelloVersion[0] = 0;
-
-    memcpy(ownZid, myZid, ZID_SIZE);
-    zrtpHello.setZid(ownZid);
-
-    if (mitmm)                              // this session acts for a trusted MitM (PBX)
-        zrtpHello.setMitmMode();
-
-    if (sasSignSupport)                     // the application supports SAS signing
-        zrtpHello.setSasSign();
-
-    setClientId(id);                        // set id, compute HMAC and final helloHash
 
     stateEngine = new ZrtpStateClass(this);
 }
@@ -235,7 +256,7 @@ bool ZRtp::inState(int32_t state)
 }
 
 ZrtpPacketHello* ZRtp::prepareHello() {
-    return &zrtpHello;
+    return currentHelloPacket;
 }
 
 ZrtpPacketHelloAck* ZRtp::prepareHelloAck() {
@@ -253,11 +274,6 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     peerClientId.assign((char*)hello->getClientId(), ZRTP_WORD_SIZE * 4);
     memcpy(peerHelloVersion, hello->getVersion(), ZRTP_WORD_SIZE);
     peerHelloVersion[ZRTP_WORD_SIZE] = 0;
-
-    if (memcmp(hello->getVersion(), zrtpVersion, ZRTP_WORD_SIZE-1) != 0) {
-        *errMsg = UnsuppZRTPVersion;
-        return NULL;
-    }
 
     // Save our peer's (presumably the Responder) ZRTP id
     memcpy(peerZid, hello->getZid(), ZID_SIZE);
@@ -576,7 +592,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     // (always Initator's), then the DH1 message (which is always a
     // Responder's message).
     // Must use negotiated hash
-    hashCtxFunction(msgShaContext, (unsigned char*)zrtpHello.getHeaderBase(), zrtpHello.getLength() * ZRTP_WORD_SIZE);
+    hashCtxFunction(msgShaContext, (unsigned char*)currentHelloPacket->getHeaderBase(), currentHelloPacket->getLength() * ZRTP_WORD_SIZE);
     hashCtxFunction(msgShaContext, (unsigned char*)commit->getHeaderBase(), commit->getLength() * ZRTP_WORD_SIZE);
     hashCtxFunction(msgShaContext, (unsigned char*)zrtpDH1.getHeaderBase(), zrtpDH1.getLength() * ZRTP_WORD_SIZE);
 
@@ -689,7 +705,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     // using my Hello packet and the Initiator's DHPart2 and compare with
     // hvi sent in commit packet. If it doesn't macht then a MitM attack
     // may have occured.
-    computeHvi(dhPart2, &zrtpHello);
+    computeHvi(dhPart2, currentHelloPacket);
     if (memcmp(hvi, peerHvi, HVI_SIZE) != 0) {
         *errMsg = DHErrorWrongHVI;
         return NULL;
@@ -840,7 +856,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
     // First the Responder's (my) Hello message, second the Commit
     // (always Initator's)
     // use negotiated hash
-    hashCtxFunction(msgShaContext, (unsigned char*)zrtpHello.getHeaderBase(), zrtpHello.getLength() * ZRTP_WORD_SIZE);
+    hashCtxFunction(msgShaContext, (unsigned char*)currentHelloPacket->getHeaderBase(), currentHelloPacket->getLength() * ZRTP_WORD_SIZE);
     hashCtxFunction(msgShaContext, (unsigned char*)commit->getHeaderBase(), commit->getLength() * ZRTP_WORD_SIZE);
 
     closeHashCtx(msgShaContext, messageHash);
@@ -2262,29 +2278,27 @@ void ZRtp::setAuxSecret(uint8_t* data, int32_t length) {
     }
 }
 
-void ZRtp::setClientId(std::string id) {
-    if (id.size() < CLIENT_ID_SIZE) {
-        unsigned char tmp[CLIENT_ID_SIZE +1] = {' '};
-        memcpy(tmp, id.c_str(), id.size());
-        tmp[CLIENT_ID_SIZE] = 0;
-        zrtpHello.setClientId(tmp);
-    } else {
-        zrtpHello.setClientId((unsigned char*)id.c_str());
-    }
+void ZRtp::setClientId(std::string id, HelloPacketVersion* hpv) {
 
-    int32_t len = zrtpHello.getLength() * ZRTP_WORD_SIZE;
+    unsigned char tmp[CLIENT_ID_SIZE +1] = {' '};
+    memcpy(tmp, id.c_str(), id.size());
+    tmp[CLIENT_ID_SIZE] = 0;
 
-    // Hello packet is ready now, compute its HMAC
+    hpv->packet->setClientId(tmp);
+
+    int32_t len = hpv->packet->getLength() * ZRTP_WORD_SIZE;
+
+    // Hello packets are ready now, compute its HMAC
     // (excluding the HMAC field (2*ZTP_WORD_SIZE)) and store in Hello
     // use the implicit hash function
     uint8_t hmac[IMPL_MAX_DIGEST_LENGTH];
     uint32_t macLen;
-    hmacFunctionImpl(H2, HASH_IMAGE_SIZE, (uint8_t*)zrtpHello.getHeaderBase(), len-(2*ZRTP_WORD_SIZE), hmac, &macLen);
-    zrtpHello.setHMAC(hmac);
+    hmacFunctionImpl(H2, HASH_IMAGE_SIZE, (uint8_t*)hpv->packet->getHeaderBase(), len-(2*ZRTP_WORD_SIZE), hmac, &macLen);
+    hpv->packet->setHMAC(hmac);
 
     // calculate hash over the final Hello packet, refer to chap 9.1 how to
     // use this hash in SIP/SDP.
-    hashFunctionImpl((uint8_t*)zrtpHello.getHeaderBase(), len, helloHash);
+    hashFunctionImpl((uint8_t*)hpv->packet->getHeaderBase(), len, hpv->helloHash);
 }
 
 void ZRtp::storeMsgTemp(ZrtpPacketBase* pkt) {
@@ -2304,12 +2318,18 @@ bool ZRtp::checkMsgHmac(uint8_t* key) {
     return (memcmp(hmac, tempMsgBuffer+len, (HMAC_SIZE)) == 0 ? true : false);
 }
 
-std::string ZRtp::getHelloHash() {
+std::string ZRtp::getHelloHash(int32_t index) {
     std::ostringstream stm;
 
-    uint8_t* hp = helloHash;
+    if (index < 0 || index >= MAX_ZRTP_VERSIONS)
+        return std::string();
 
-    stm << zrtpVersion;
+    uint8_t* hp = helloPackets[index].helloHash;
+
+    char version[5] = {'\0'};
+    strncpy(version, (const char*)helloPackets[index].packet->getVersion(), ZRTP_WORD_SIZE);
+
+    stm << version;
     stm << " ";
     stm.fill('0');
     stm << hex;

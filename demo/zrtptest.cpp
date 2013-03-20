@@ -494,9 +494,13 @@ public:
         // At this point the Hello hash is available. See ZRTP specification
         // chapter 9.1 for further information when an how to use the Hello
         // hash.
-        cout << "TX Hello hash: " << tx.getHelloHash() << endl;
-        cout << "TX Hello hash length: " << tx.getHelloHash().length() << endl;
-
+        int numSupportedVersion = tx.getNumberSupportedVersions();
+        cout << "TX Hello hash 0: " << tx.getHelloHash(0) << endl;
+        cout << "TX Hello hash 0 length: " << tx.getHelloHash(0).length() << endl;
+        if (numSupportedVersion > 1) {
+            cout << "TX Hello hash 1: " << tx.getHelloHash(1) << endl;
+            cout << "TX Hello hash 1 length: " << tx.getHelloHash(1).length() << endl;
+        }
         tx.setUserCallback(new MyUserCallback(&tx));
 
         tx.setSchedulingTimeout(10000);
@@ -548,9 +552,13 @@ public:
         // At this point the Hello hash is available. See ZRTP specification
         // chapter 9.1 for further information when an how to use the Hello
         // hash.
-        cout << "RX Hello hash: " << rx.getHelloHash() << endl;
-        cout << "RX Hello hash length: " << rx.getHelloHash().length() << endl;
-
+        int numSupportedVersion = rx.getNumberSupportedVersions();
+        cout << "RX Hello hash 0: " << rx.getHelloHash(0) << endl;
+        cout << "RX Hello hash 0 length: " << rx.getHelloHash(0).length() << endl;
+        if (numSupportedVersion > 1) {
+            cout << "RX Hello hash 1: " << rx.getHelloHash(1) << endl;
+            cout << "RX Hello hash 1 length: " << rx.getHelloHash(1).length() << endl;
+        }
         rx.setUserCallback(new MyUserCallback(&rx));
 
         rx.setSchedulingTimeout(10000);

@@ -368,20 +368,28 @@ public:
      */
     void setClientId(std::string id);
 
-    /**
+   /**
      * Get the ZRTP Hello Hash data.
      *
-     * Use this method to get the ZRTP Hello Hash data. The method
-     * returns the data as a string containing hex-digits. Refer
-     * to ZRTP specification, chapter 9.1.
+     * Use this method to get the ZRTP Hello hash data. The method
+     * returns the data as a string containing the ZRTP protocol version and
+     * hex-digits.
+     * 
+     * The index defines which Hello packet to use. Each supported ZRTP procol version
+     * uses a different Hello packet and thus computes different hashes.
+     *
+     * Refer to ZRTP specification, chapter 8.
+     *
+     * @param index
+     *     Hello hash of the Hello packet identfied by index. Index must be 0 <= index < getNumberSupportedVersions().
      *
      * @return
-     *    a std:string containing the Hello hash value as hex-digits. The
-     *    hello hash is available immediatly after calling
-     *    ZrtpQueue#startZrtp. If ZRTP was not started the method returns
-     *    an empty string.
+     *    a std::string formatted according to RFC6189 section 8 without the leading 'a=zrtp-hash:'
+     *    SDP attribute identifier. The hello hash is available immediatly after class instantiation.
+     * 
+     * @see getNumberSupportedVersions()
      */
-    std::string getHelloHash();
+    std::string getHelloHash(int32_t index);
 
     /**
      * Get the peer's ZRTP Hello Hash data.
@@ -742,6 +750,20 @@ public:
      *    to 96 bit, usually 12 bytes.
      */
     int32 getPeerZid(uint8* data);
+
+    /**
+      * Get number of supported ZRTP protocol versions.
+      *
+      * @return the number of supported ZRTP protocol versions.
+      */
+     int32_t getNumberSupportedVersions();
+
+     /**
+      * Get negotiated ZRTP protocol version.
+      *
+      * @return the integer representation of the negotiated ZRTP protocol version.
+      */
+     int32_t getCurrentProtocolVersion();
 
 protected:
     friend class TimeoutProvider<std::string, ost::ZrtpQueue*>;

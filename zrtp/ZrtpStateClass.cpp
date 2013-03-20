@@ -46,13 +46,8 @@ state_t states[numberOfStates] = {
 };
 
 
-ZrtpStateClass::ZrtpStateClass(ZRtp *p) {
-    parent = p;
-    secSubstate = Normal;
+ZrtpStateClass::ZrtpStateClass(ZRtp *p) : parent(p), commitPkt(NULL), multiStream(false), secSubstate(Normal), sentVersion(0) {
     engine = new ZrtpStates(states, numberOfStates, Initial);
-
-    commitPkt = NULL;
-    multiStream = false;
 
     // Set up timers according to ZRTP spec
     T1.start = 50;
@@ -157,10 +152,11 @@ void ZrtpStateClass::evInitial(void) {
     DEBUGOUT((cout << "Checking for match in Initial.\n"));
 
     if (event->type == ZrtpInitial) {
-	ZrtpPacketHello* hello = parent->prepareHello();
+        ZrtpPacketHello* hello = parent->prepareHello();
+        sentVersion = hello->getVersionInt();
 
-	// remember packet for easy resend in case timer triggers
-	sentPacket = static_cast<ZrtpPacketBase *>(hello);
+        // remember packet for easy resend in case timer triggers
+        sentPacket = static_cast<ZrtpPacketBase *>(hello);
 
         if (!parent->sendPacketZRTP(sentPacket)) {
             sendFailed();                 // returns to state Initial
@@ -170,7 +166,7 @@ void ZrtpStateClass::evInitial(void) {
             timerFailed(SevereNoTimer);      // returns to state Initial
             return;
         }
-	nextState(Detect);
+        nextState(Detect);
     }
 }
 
@@ -238,6 +234,8 @@ void ZrtpStateClass::evDetect(void) {
          * - our peer acknowledged our Hello packet, we have not seen the peer's Hello yet
          * - cancel timer T1 to stop resending Hello
          * - switch to state AckDetected, wait for peer's Hello (F3)
+         * 
+         * When we receive an HelloAck this also means that out partner accepted our protocol version.
          */
         if (first == 'h' && last =='k') {
             cancelTimer();
@@ -247,7 +245,8 @@ void ZrtpStateClass::evDetect(void) {
         }
         /*
          * Hello:
-         * - send HelloAck packet to acknowledge the received Hello packet 
+         * - send HelloAck packet to acknowledge the received Hello packet if versions match.
+         *   Otherweise negotiate ZRTP versions.
          * - use received Hello packet to prepare own Commit packet. We need to
          *   do it at this point because we need the hash value computed from
          *   peer's Hello packet. Follwing states my use the prepared Commit.
@@ -256,8 +255,65 @@ void ZrtpStateClass::evDetect(void) {
          * - Don't clear sentPacket, points to Hello
          */
         if (first == 'h' && last ==' ') {
+            ZrtpPacketHello hpkt(pkt);
+
             cancelTimer();
+
+            /*
+             * Check and negotiate the ZRTP protocol version first.
+             */
+            int32_t recvVersion = hpkt.getVersionInt();
+            if (recvVersion > sentVersion) {   // We don't support this version, stay in state with timer active
+                if (startTimer(&T1) <= 0) {
+                    timerFailed(SevereNoTimer);      // returns to state Initial
+                    return;
+                }
+                return;
+            }
+
+            /*
+             * The versions don't match. Start negotiating versions. This negotiation stays in the Detect state.
+             * Only if the received version matches our own sent version we start to send a HelloAck.
+             * 
+             * This selection mechanism relies on the fact that we sent the highest supported protocol version in
+             * the initial Hello packet with as stated in RFC6189, section 4.1.1
+             */
+            fprintf(stderr, "rv: %d, sv: %d\n", recvVersion, sentVersion);
+            if (recvVersion != sentVersion) {
+                fprintf(stderr, "rv: %d not equal sv: %d\n", recvVersion, sentVersion);
+                ZRtp::HelloPacketVersion* hpv = parent->helloPackets;
+
+                int32_t index;
+                for (index = 0; hpv->packet && hpv->packet != parent->currentHelloPacket; hpv++, index++)   // Find current sent Hello
+                    ;
+
+                fprintf(stderr, "hpv->v: %d, index: %d\n", hpv->version, index);
+                for(; index >= 0 && hpv->version > recvVersion; hpv--, index--)   // find a supported version less-equal to received version
+                    ;
+
+                if (index < 0) {
+                    sendErrorPacket(UnsuppZRTPVersion);
+                    return;
+                }
+                parent->currentHelloPacket = hpv->packet;
+                sentVersion = parent->currentHelloPacket->getVersionInt();
+
+                // remember packet for easy resend in case timer triggers
+                sentPacket = static_cast<ZrtpPacketBase *>(parent->currentHelloPacket);
+                fprintf(stderr, "new hello v: %d, index: %d\n", sentVersion, index);
+
+                if (!parent->sendPacketZRTP(sentPacket)) {
+                    sendFailed();                 // returns to state Initial
+                    return;
+                }
+                if (startTimer(&T1) <= 0) {
+                    timerFailed(SevereNoTimer);      // returns to state Initial
+                    return;
+                }
+                return;
+            }
             ZrtpPacketHelloAck* helloAck = parent->prepareHelloAck();
+            fprintf(stderr, "send helloAck from detect\n");
 
             if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(helloAck))) {
                 parent->zrtpNegotiationFailed(Severe, SevereCannotSend);
@@ -265,7 +321,6 @@ void ZrtpStateClass::evDetect(void) {
             }
             // Use peer's Hello packet to create my commit packet, store it 
             // for possible later usage in state AckSent
-            ZrtpPacketHello hpkt(pkt);
             commitPkt = parent->prepareCommit(&hpkt, &errorCode);
 
             nextState(AckSent);
@@ -292,7 +347,7 @@ void ZrtpStateClass::evDetect(void) {
             nextState(Detect);
         }
     }
-    // If application call zrtpStart() to restart discovery
+    // If application calls zrtpStart() to restart discovery
     else if (event->type == ZrtpInitial) {
         cancelTimer();
         if (!parent->sendPacketZRTP(sentPacket)) {

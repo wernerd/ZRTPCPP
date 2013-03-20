@@ -30,7 +30,7 @@ ZrtpPacketPingAck::ZrtpPacketPingAck() {
     setZrtpId();
     setLength((sizeof(PingAckPacket_t) / ZRTP_WORD_SIZE) - 1);
     setMessageType((uint8_t*)PingAckMsg);
-    setVersion((uint8_t*)zrtpVersion);
+    setVersion((uint8_t*)zrtpVersion_11);  // TODO: fix version string after clarification
 }
 
 ZrtpPacketPingAck::ZrtpPacketPingAck(uint8_t *data) {

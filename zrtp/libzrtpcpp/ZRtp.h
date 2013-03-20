@@ -51,6 +51,12 @@
 #define MAX_DIGEST_LENGTH       64
 #define IMPL_MAX_DIGEST_LENGTH  64
 
+// max. number of parallel supported ZRTP protocol versions.
+#define MAX_ZRTP_VERSIONS       1
+
+// Integer representation of highest supported ZRTP protocol version
+#define HIGHEST_ZRTP_VERION    12
+
 class __EXPORT ZrtpStateClass;
 class ZrtpDH;
 
@@ -108,6 +114,14 @@ class __EXPORT ZRtp {
         const char *authLength;
     } zrtpInfo;
 
+    /**
+     * Faster access to Hello packets with different versions.
+     */
+    typedef struct _HelloPacketVersion {
+        int32_t version;
+        ZrtpPacketHello* packet;
+        uint8_t helloHash[IMPL_MAX_DIGEST_LENGTH];
+    } HelloPacketVersion;
 
     /**
      * Constructor intializes all relevant data but does not start the
@@ -219,17 +233,25 @@ class __EXPORT ZRtp {
     /**
      * Get the ZRTP Hello Hash data.
      *
-     * Use this method to get the ZRTP Hello Hash data. The method
+     * Use this method to get the ZRTP Hello hash data. The method
      * returns the data as a string containing the ZRTP protocol version and
      * hex-digits.
+     * 
+     * The index defines which Hello packet to use. Each supported ZRTP procol version
+     * uses a different Hello packet and thus computes different hashes.
      *
      * Refer to ZRTP specification, chapter 8.
+     * 
+     * @param index
+     *     Hello hash of the Hello packet identfied by index. Index must be 0 <= index < MAX_ZRTP_VERSIONS.
      *
      * @return
-     *    a std:string containing the Hello hash value as hex-digits. The
-     *    hello hash is available immediately after class instantiation.
+     *    a std::string formatted according to RFC6189 section 8 without the leading 'a=zrtp-hash:'
+     *    SDP attribute identifier. The hello hash is available immediately after class instantiation.
+     * 
+     * @see getNumberSupportedVersions()
      */
-    std::string getHelloHash();
+    std::string getHelloHash(int index);
 
     /**
      * Get the peer's ZRTP Hello Hash data.
@@ -490,6 +512,20 @@ class __EXPORT ZRtp {
       */
      std::string getPeerProtcolVersion();
 
+     /**
+      * Get number of supported ZRTP protocol versions.
+      *
+      * @return the number of supported ZRTP protocol versions.
+      */
+     int32_t getNumberSupportedVersions() {return MAX_ZRTP_VERSIONS;}
+
+     /**
+      * Get negotiated ZRTP protocol version.
+      *
+      * @return the integer representation of the negotiated ZRTP protocol version.
+      */
+     int32_t getCurrentProtocolVersion() {return currentHelloPacket->getVersionInt();}
+
 private:
      friend class ZrtpStateClass;
 
@@ -612,7 +648,6 @@ private:
     uint8_t H1[IMPL_MAX_DIGEST_LENGTH];
     uint8_t H2[IMPL_MAX_DIGEST_LENGTH];
     uint8_t H3[IMPL_MAX_DIGEST_LENGTH];
-    uint8_t helloHash[IMPL_MAX_DIGEST_LENGTH];
 
     uint8_t peerHelloHash[IMPL_MAX_DIGEST_LENGTH];
     uint8_t peerHelloVersion[ZRTP_WORD_SIZE + 1];   // +1 for nul byte
@@ -770,7 +805,9 @@ private:
     /**
      * Pre-initialized packets.
      */
-    ZrtpPacketHello    zrtpHello;
+    ZrtpPacketHello    zrtpHello_11;
+    ZrtpPacketHello    zrtpHello_12;   // Prepare for ZRTP protocol version 1.2
+
     ZrtpPacketHelloAck zrtpHelloAck;
     ZrtpPacketConf2Ack zrtpConf2Ack;
     ZrtpPacketClearAck zrtpClearAck;
@@ -785,6 +822,12 @@ private:
     ZrtpPacketPingAck  zrtpPingAck;
     ZrtpPacketSASrelay zrtpSasRelay;
     ZrtpPacketRelayAck zrtpRelayAck;
+
+    HelloPacketVersion helloPackets[MAX_ZRTP_VERSIONS + 1];
+    int32_t highestZrtpVersion;
+
+    /// Pointer to Hello packet sent to partner, initialized in ZRtp, modified by ZrtpStateClass
+    ZrtpPacketHello* currentHelloPacket;
 
     /**
      * ZID cache record
@@ -1345,8 +1388,10 @@ private:
       *
       * @param id
       *     The client's id
+      * @param hpv
+      *     Pointer to hello packet version structure.
       */
-     void setClientId(std::string id);
+     void setClientId(std::string id, HelloPacketVersion* hpv);
 };
 
 /**
