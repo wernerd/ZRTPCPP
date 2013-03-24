@@ -1372,74 +1372,75 @@ AlgorithmEnum* ZRtp::findBestCipher(ZrtpPacketHello *hello, AlgorithmEnum* pk) {
 
 AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
 
-    int i;
-    int ii;
-    int numAlgosIntersect;
-    AlgorithmEnum* algosIntersect[ZrtpConfigure::maxNoOfAlgos+1];
-
-    int numAlgosConf;
-    AlgorithmEnum* algosConf[ZrtpConfigure::maxNoOfAlgos+1];
+    AlgorithmEnum* peerIntersect[ZrtpConfigure::maxNoOfAlgos+1];
+    AlgorithmEnum* ownIntersect[ZrtpConfigure::maxNoOfAlgos+1];
 
     // Build list of own pubkey algorithm names, must follow the order
     // defined in RFC 6189, chapter 4.1.2.
     const char *orderedAlgos[] = {dh2k, ec25, dh3k, ec38};
     int numOrderedAlgos = sizeof(orderedAlgos) / sizeof(const char*);
 
-    int num = hello->getNumPubKeys();
-    if (num == 0) {
+    int numAlgosPeer = hello->getNumPubKeys();
+    if (numAlgosPeer == 0) {
         hash = &zrtpHashes.getByName(mandatoryHash);             // set mandatory hash
         return &zrtpPubKeys.getByName(mandatoryPubKey);
     }
-    // The list must include real public key algorithms only, so skip
-    // mult-stream mode, preshared and alike.
-    numAlgosConf = configureAlgos.getNumConfiguredAlgos(PubKeyAlgorithm);
-    for (i = 0, ii = 0; i < numAlgosConf; i++) {
-        algosConf[ii] = &configureAlgos.getAlgoAt(PubKeyAlgorithm, ii);
-        if (*(int32_t*)(algosConf[ii]->getName()) == *(int32_t*)mult) {
+    // Build own list of intersecting algos, keep own order or algorithms
+    // The list must include real public key algorithms only, so skip mult-stream mode, preshared and alike.
+    int numAlgosOwn = configureAlgos.getNumConfiguredAlgos(PubKeyAlgorithm);
+    int numOwnIntersect = 0;
+    for (int i = 0; i < numAlgosOwn; i++) {
+        ownIntersect[numOwnIntersect] = &configureAlgos.getAlgoAt(PubKeyAlgorithm, i);
+        if (*(int32_t*)(ownIntersect[numOwnIntersect]->getName()) == *(int32_t*)mult) {
             continue;                               // skip multi-stream mode
         }
-        ii++;
-    }
-    numAlgosConf = ii;
- 
-    // Build list of intersecting algos: own and offered in Hello, intersect list is ordered according to offered algorithms
-    for (numAlgosIntersect = 0, i = 0; i < num; i++) {
-        for (ii = 0; ii < numAlgosConf; ii++) {
-            algosIntersect[numAlgosIntersect] = &zrtpPubKeys.getByName((const char*)hello->getPubKeyType(i));
-            if (*(int32_t*)(algosConf[ii]->getName()) == *(int32_t*)(algosIntersect[numAlgosIntersect]->getName())) {
-                numAlgosIntersect++;
+        for (int ii = 0; ii < numAlgosPeer; ii++) {
+            if (*(int32_t*)(ownIntersect[numOwnIntersect]->getName()) == *(int32_t*)(zrtpPubKeys.getByName((const char*)hello->getPubKeyType(ii)).getName())) {
+                numOwnIntersect++;
+                break;
             }
         }
     }
-    if (numAlgosIntersect == 0) {
+    // Build list of peer's intersecting algos: take own list as input, order according to sequence in hello packet (peer's order)
+    int numPeerIntersect = 0;
+    for (int i = 0; i < numAlgosPeer; i++) {
+        peerIntersect[numPeerIntersect] = &zrtpPubKeys.getByName((const char*)hello->getPubKeyType(i));
+        for (int ii = 0; ii < numOwnIntersect; ii++) {
+            if (*(int32_t*)(ownIntersect[ii]->getName()) == *(int32_t*)(peerIntersect[numPeerIntersect]->getName())) {
+                numPeerIntersect++;
+                break;
+            }
+        }
+    }
+    if (numPeerIntersect == 0) {
         // If we don't find a common algorithm - use the mandatory algorithms
         hash = &zrtpHashes.getByName(mandatoryHash);
         return &zrtpPubKeys.getByName(mandatoryPubKey);
     }
     AlgorithmEnum* useAlgo;
-    if (numAlgosIntersect > 1 && *(int32_t*)(algosConf[0]->getName()) != *(int32_t*)(algosIntersect[0]->getName())) {
+    if (numPeerIntersect > 1 && *(int32_t*)(ownIntersect[0]->getName()) != *(int32_t*)(peerIntersect[0]->getName())) {
         int own, peer;
 
-        const int32_t *name = (int32_t*)algosConf[0]->getName();
+        const int32_t *name = (int32_t*)ownIntersect[0]->getName();
         for (own = 0; own < numOrderedAlgos; own++) {
             if (*name == *(int32_t*)orderedAlgos[own])
                 break;
         }
-        name = (int32_t*)algosIntersect[0]->getName();
+        name = (int32_t*)peerIntersect[0]->getName();
         for (peer = 0; peer < numOrderedAlgos; peer++) {
             if (*name == *(int32_t*)orderedAlgos[peer])
                 break;
         }
         if (own < peer) {
-            useAlgo = algosConf[0];
+            useAlgo = ownIntersect[0];
         }
         else {
-            useAlgo = algosIntersect[0];
+            useAlgo = peerIntersect[0];
         }
         // find fastest of conf vs intersecting
     }
     else {
-        useAlgo = algosIntersect[0];
+        useAlgo = peerIntersect[0];
     }
     // select a corresponding strong hash if necessary.
     if (*(int32_t*)(useAlgo->getName()) == *(int32_t*)ec38) {

@@ -488,7 +488,8 @@ int ZrtpSendPacketTransmissionTestCB::doTest() {
     if (!multiParams.empty()) {
         tx = new SymmetricZRTPSession(pattern.getDestinationAddress(),
                                       pattern.getDestinationPort()+2+10);
-//            tx->initialize("test_t.zid", true, &config);
+
+        //            tx->initialize("test_t.zid", true, &config);
         tx->initialize("test_t.zid", true);
         tx->setMultiStrParams(multiParams);
 
@@ -499,13 +500,12 @@ int ZrtpSendPacketTransmissionTestCB::doTest() {
     else {
         tx = new SymmetricZRTPSession(pattern.getDestinationAddress(),
                                       pattern.getDestinationPort()+2);
-        //config.addHashAlgo(Sha384);
-//            tx->initialize("test_t.zid", true, &config);
         if (mitm) {                      // Act as trusted MitM - could be enrolled
             tx->setMitmMode(true);
         }
 
         tx->setSignSas(signsas);
+//            tx->initialize("test_t.zid", true, &config);
         tx->initialize("test_t.zid", true);
 
         if (enroll)                     // act as PBX enrollement service
@@ -588,12 +588,14 @@ int ZrtpRecvPacketTransmissionTestCB::doTest() {
         rx = new SymmetricZRTPSession(pattern.getDestinationAddress(),
                                       pattern.getDestinationPort());
         config.setStandardConfig();
+//        config.clear();
+//        config.addAlgo(SasType, zrtpSasTypes.getByName("B256"));
+
         if (enroll)
             config.setTrustedMitM(true);                // allow a trusted MitM to start enrollment process
 
         rx->setSignSas(signsas);
 
-        // config.addHashAlgo(Sha384);
         rx->initialize("test_r.zid", true, &config);
 //            rx->initialize("test_r.zid", true);
 

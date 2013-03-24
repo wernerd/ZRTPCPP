@@ -467,23 +467,21 @@ public:
 
     ZrtpConfigure config;
 
-    void run()
-    {
+    void run() {
         doTest();
     }
 
-    int doTest()
-    {
+    int doTest() {
         // should be valid?
         //RTPSession tx();
         ExtZrtpSession tx(/*pattern.getSsrc(),*/ pattern.getSenderAddress(), pattern.getSenderPort());
-//        config.clear();
-//        config.setStandardConfig();
-        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));
-        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
-        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC25"));
-
-         config.addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
+        config.clear();
+        config.setStandardConfig();
+//         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));
+//         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));
+//         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC25"));
+//
+//         config.addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
 
 //          config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS3"));
 //          config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES3"));
@@ -539,16 +537,29 @@ class
 ZrtpRecvPacketTransmissionTestCB: public Thread
 {
 public:
-    void
-    run() {
+    ZrtpConfigure config;
+
+    void run() {
         doTest();
     }
 
-    int
-    doTest() {
+    int doTest() {
         ExtZrtpSession rx( /*pattern.getSsrc()+1,*/ pattern.getReceiverAddress(), pattern.getReceiverPort());
+//        config.clear();
+        config.setStandardConfig();
+//        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
+//         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC25"));
+//         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));
 
-        rx.initialize("test_r.zid");
+//        config.addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
+
+//          config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS3"));
+//          config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES3"));
+
+        config.addAlgo(SasType, zrtpSasTypes.getByName("B256"));
+
+
+        rx.initialize("test_r.zid", true, &config);
         // At this point the Hello hash is available. See ZRTP specification
         // chapter 9.1 for further information when an how to use the Hello
         // hash.
