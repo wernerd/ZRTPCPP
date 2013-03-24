@@ -127,8 +127,8 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* conf
     helloPackets[1].version = zrtpHello_12.getVersionInt();
     setClientId(id, &helloPackets[1]);      // set id, compute HMAC and final helloHash
  
-    currentHelloPacket = helloPackets[MAX_ZRTP_VERSIONS-1].packet;  // start with highest available version
-    helloPackets[MAX_ZRTP_VERSIONS].packet = NULL;
+    currentHelloPacket = helloPackets[SUPPORTED_ZRTP_VERSIONS-1].packet;  // start with highest supported version
+    helloPackets[SUPPORTED_ZRTP_VERSIONS].packet = NULL;
     peerHelloVersion[0] = 0;
 
     stateEngine = new ZrtpStateClass(this);

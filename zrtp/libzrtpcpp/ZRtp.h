@@ -52,7 +52,10 @@
 #define IMPL_MAX_DIGEST_LENGTH  64
 
 // max. number of parallel supported ZRTP protocol versions.
-#define MAX_ZRTP_VERSIONS       1
+#define MAX_ZRTP_VERSIONS       2
+
+// currently only 1.10 supported
+#define SUPPORTED_ZRTP_VERSIONS       1
 
 // Integer representation of highest supported ZRTP protocol version
 #define HIGHEST_ZRTP_VERION    12
@@ -517,7 +520,7 @@ class __EXPORT ZRtp {
       *
       * @return the number of supported ZRTP protocol versions.
       */
-     int32_t getNumberSupportedVersions() {return MAX_ZRTP_VERSIONS;}
+     int32_t getNumberSupportedVersions() {return SUPPORTED_ZRTP_VERSIONS;}
 
      /**
       * Get negotiated ZRTP protocol version.
