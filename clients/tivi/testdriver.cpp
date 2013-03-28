@@ -132,7 +132,7 @@ int main(int argc,char **argv) {
 
     session->setUserCallback(callback, CtZrtpSession::AudioStream);
     session->setSendCallback(sendCallback, CtZrtpSession::AudioStream);
-    session->getSignalingHelloHash((char*)buffer, CtZrtpSession::AudioStream);
+    session->getSignalingHelloHash((char*)buffer, CtZrtpSession::AudioStream, 0);
 
     fprintf(stderr, "Our Hello hash: %s\n", buffer);
 

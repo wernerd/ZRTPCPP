@@ -32,6 +32,8 @@ static std::map<int32_t, std::string*> zrtpMap;
 static std::map<int32_t, std::string*> enrollMap;
 static int initialized = 0;
 
+static const char* peerHelloMismatchMsg = "s2_c050: Received Hello hash does not match computed Hello hash"; 
+
 using namespace GnuZrtpCodes;
 
 /**
@@ -114,7 +116,7 @@ void CtZrtpStream::stopStream() {
     srtpErrorBurst = 0;
     helloReceived = false;
 
-    peerHelloHash.clear();
+    peerHelloHashes.clear();
 
     delete zrtpEngine;
     zrtpEngine = NULL;
@@ -268,34 +270,48 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
     return 0;
 }
 
-int CtZrtpStream::getSignalingHelloHash(char *hHash) {
+int CtZrtpStream::getSignalingHelloHash(char *hHash, int32_t index) {
 
     if (hHash == NULL)
         return 0;
 
     std::string hash;
-    std::string hexString;
-    size_t hexStringStart;
+//     std::string hexString;
+//     size_t hexStringStart;
 
     // The Tivi client requires the 64 char hex string only, thus
     // split the string that we get from ZRTP engine that contains
     // the version info as well (which is the right way to do because
     // the engine knows which version of the ZRTP protocol it uses.)
-    hash = zrtpEngine->getHelloHash();
-    hexStringStart = hash.find_last_of(' ');
-    hexString = hash.substr(hexStringStart+1);
-
-    // Copy the hex string and terminate with nul
-    int maxLen = hexString.length() > 64 ? 64 : hexString.length();
-    memcpy(hHash, hexString.c_str(), maxLen);
-    hHash[maxLen] = '\0';
-    return maxLen;
+    hash = zrtpEngine->getHelloHash(index);   // TODO change IF to Janis' code
+//     hexStringStart = hash.find_last_of(' ');
+//     hexString = hash.substr(hexStringStart+1);
+//
+//     // Copy the hex string and terminate with nul
+//     int maxLen = hexString.length() > 64 ? 64 : hexString.length();
+//    memcpy(hHash, hash.c_str(), maxLen);
+    strcpy(hHash, hash.c_str());
+//    hHash[maxLen] = '\0';
+    return hash.size();
 }
 
+// TODO: change / check after clarfification with Janis (string handling)
 
 void CtZrtpStream::setSignalingHelloHash(const char *hHash) {
     synchEnter();
-    peerHelloHash.assign(hHash);
+
+    std::string hashStr;
+    hashStr.assign(hHash);
+
+    bool found = false;
+    for (std::vector<std::string>::iterator it = peerHelloHashes.begin() ; it != peerHelloHashes.end(); ++it) {
+        if ((*it).compare(hashStr) == 0) {
+            found = true;
+            break;
+        }
+    }
+    if (!found)
+        peerHelloHashes.push_back(hashStr);
 
     std::string ph = zrtpEngine->getPeerHelloHash();
     if (ph.empty()) {
@@ -305,18 +321,19 @@ void CtZrtpStream::setSignalingHelloHash(const char *hHash) {
     size_t hexStringStart = ph.find_last_of(' ');
     std::string hexString = ph.substr(hexStringStart+1);
 
-    if (hexString.compare(peerHelloHash) == 0) {
-        zrtpHashMatch = true;
-        // We have a matching zrtp-hash. If ZRTP/SRTP is active we may need to release
-        // an existig SDES stream.
-        if (sdes != NULL && sendSrtp != NULL && recvSrtp != NULL) {
-            sdesActive = false;
+    for (std::vector<std::string>::iterator it = peerHelloHashes.begin() ; it != peerHelloHashes.end(); ++it) {
+        if ((*it).compare(hexString) == 0) {
+            zrtpHashMatch = true;
+            // We have a matching zrtp-hash. If ZRTP/SRTP is active we may need to release
+            // an existig SDES stream.
+            if (sdes != NULL && sendSrtp != NULL && recvSrtp != NULL) {
+                sdesActive = false;
+            }
+            break;
         }
     }
-    else {
-        if (zrtpUserCallback != NULL)
-            zrtpUserCallback->onZrtpWarning(session, (char*)"ZRTP_EVENT_WRONG_SIGNALING_HASH", index);
-    }
+    if (!zrtpHashMatch && zrtpUserCallback != NULL)
+        zrtpUserCallback->onZrtpWarning(session, (char*)peerHelloMismatchMsg, index);
     synchLeave();
 }
 
@@ -347,7 +364,7 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
 
     // Compute Hello-hash info string
     const char *strng = NULL;
-    if (peerHelloHash.empty()) {
+    if (peerHelloHashes.empty()) {
         strng = "None";
     }
     else if (zrtpHashMatch) {
@@ -372,7 +389,7 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
             return sprintf(p, "%d", sasVerified);
         }
         if(strncmp("sc_secure", key, iLen) == 0) {
-            int v = (zrtpHashMatch && sasVerified && !peerHelloHash.empty() && tiviState == CtZrtpSession::eSecure);
+            int v = (zrtpHashMatch && sasVerified && !peerHelloHashes.empty() && tiviState == CtZrtpSession::eSecure);
 
             if (v && (info->secretsCached & ZRtp::Rs1) == 0  && !sasVerified)
                 v = 0;
@@ -532,6 +549,11 @@ bool  CtZrtpStream::setCryptoMixAttribute(const char *algoNames) {
         sdes = new ZrtpSdesStream();
 
     return sdes->setCryptoMixAttribute(algoNames);
+}
+
+int32_t CtZrtpStream::getNumberSupportedVersions() {
+
+    return zrtpEngine->getNumberSupportedVersions();
 }
 
 /* *********************
@@ -750,7 +772,7 @@ bool CtZrtpStream::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
 
         supressCounter = 0;         // supress SRTP warnings for some packets after we switch to SRTP
     }
-    if (zrtpHashMatch && recvSrtp != NULL && sendSrtp != NULL) {
+    if (peerHelloHashes.size() > 0 && recvSrtp != NULL && sendSrtp != NULL) {
         sdesActive = false;
     }
     return true;
@@ -856,18 +878,23 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
                 // split the string that we get from ZRTP engine that contains
                 // the version info as well (which is the right way to do because
                 // the engine knows which version of the ZRTP protocol it uses.)
-                if (peerHelloHash.empty())
+                if (peerHelloHashes.empty())
                     break;
+
+                // TODO: change / check after clarfification with Janis (string handling)
                 peerHash = zrtpEngine->getPeerHelloHash();
                 hexStringStart = peerHash.find_last_of(' ');
                 hexString = peerHash.substr(hexStringStart+1);
                 helloReceived = true;
-                if (hexString.compare(peerHelloHash) == 0) {
-                    zrtpHashMatch = true;
-                    break;
+
+                for (std::vector<std::string>::iterator it = peerHelloHashes.begin() ; it != peerHelloHashes.end(); ++it) {
+                    if ((*it).compare(hexString) == 0) {
+                        zrtpHashMatch = true;
+                        break;
+                    }
                 }
-                if (zrtpUserCallback != NULL)
-                    zrtpUserCallback->onZrtpWarning(session, (char*)"ZRTP_EVENT_WRONG_SIGNALING_HASH", index);
+                if (!zrtpHashMatch && zrtpUserCallback != NULL)
+                    zrtpUserCallback->onZrtpWarning(session, (char*)peerHelloMismatchMsg, index);
                 break;
 
             case InfoSecureStateOn:
@@ -1021,7 +1048,7 @@ void CtZrtpStream::initStrings() {
     severeMap.insert(std::pair<int32_t, std::string*>(SevereCannotSend,       new std::string("s3_c005: Cannot send data - connection or peer down?")));
     severeMap.insert(std::pair<int32_t, std::string*>(SevereProtocolError,    new std::string("s3_c006: Internal protocol error occured!")));
     severeMap.insert(std::pair<int32_t, std::string*>(SevereNoTimer,          new std::string("s3_c007: Cannot start a timer - internal resources exhausted?")));
-    severeMap.insert(std::pair<int32_t, std::string*>(SevereTooMuchRetries,   new std::string("s3_c008: Too much retries during ZRTP negotiation - connection or peer down?")));
+    severeMap.insert(std::pair<int32_t, std::string*>(SevereTooMuchRetries,   new std::string("s3_c008: Too many retries during ZRTP negotiation - connection or peer down?")));
 
     zrtpMap.insert(std::pair<int32_t, std::string*>(MalformedPacket,   new std::string("s4_c016: Malformed packet (CRC OK, but wrong structure)")));
     zrtpMap.insert(std::pair<int32_t, std::string*>(CriticalSWError,   new std::string("s4_c020: Critical software error")));
@@ -1038,7 +1065,7 @@ void CtZrtpStream::initStrings() {
     zrtpMap.insert(std::pair<int32_t, std::string*>(SASuntrustedMiTM,  new std::string("s4_c099: Received relayed SAS from untrusted MiTM")));
     zrtpMap.insert(std::pair<int32_t, std::string*>(ConfirmHMACWrong,  new std::string("s4_c112: Auth. Error: Bad Confirm pkt HMAC")));
     zrtpMap.insert(std::pair<int32_t, std::string*>(NonceReused,       new std::string("s4_c128: Nonce reuse")));
-    zrtpMap.insert(std::pair<int32_t, std::string*>(EqualZIDHello,     new std::string("s4_c144: Equal ZIDs in Hello")));
+    zrtpMap.insert(std::pair<int32_t, std::string*>(EqualZIDHello,     new std::string("s4_c144: Duplicate ZIDs in Hello Packets")));
     zrtpMap.insert(std::pair<int32_t, std::string*>(GoCleatNotAllowed, new std::string("s4_c160: GoClear packet received, but not allowed")));
 
     enrollMap.insert(std::pair<int32_t, std::string*>(EnrollmentRequest,  new std::string("s5_c000: Trusted MitM enrollment requested")));

@@ -57,6 +57,7 @@ public:
         eSecureMitm,
         eSecureMitmVia,
         eSecureSdes,
+        eSecurityDisabled,
         eWrongStream = -1
     } tiviStatus;
 
@@ -346,9 +347,12 @@ public:
      *
      * @param streamNm specifies which stream for this hello hash.
      *
+     * @param index  Hello hash of the Hello packet identfied by index. Index must 
+     *               be 0 <= index < getNumberSupportedVersions().
+     *
      * @return the number of characters in the @c helloHash buffer.
      */
-    int getSignalingHelloHash(char *helloHash, streamName streamNm);
+    int getSignalingHelloHash(char *helloHash, streamName streamNm, int32_t index);
 
     /**
      * @brief Set the ZRTP Hello hash from signaling.
@@ -585,6 +589,16 @@ public:
      * The cache must be initialized and open.
      */
     static void cleanCache();
+
+    /**
+     * Get number of supported ZRTP protocol versions.
+     *
+     * @param streamNm stream identifier.
+     *
+     * @return the number of supported ZRTP protocol versions.
+     */
+    int32_t getNumberSupportedVersions(streamName streamNm);
+
 
 protected:
     friend class CtZrtpStream;

@@ -10,6 +10,7 @@
 #define _CTZRTPSTREAM_H_
 
 #include <map>
+#include <vector>
 
 #include <libzrtpcpp/ZrtpCallback.h>
 #include <libzrtpcpp/ZrtpSdesStream.h>
@@ -159,9 +160,12 @@ protected:
      *                  The method fills it with the hex string part of the ZRTP hello hash and
      *                  terminates it with a @c nul byte.
      *
+     * @param index  Hello hash of the Hello packet identfied by index. Index must 
+     *               be 0 <= index < getNumberSupportedVersions().
+     *
      * @return the number of characters in the @c helloHash buffer.
      */
-    int getSignalingHelloHash(char *helloHash);
+    int getSignalingHelloHash(char *helloHash, int32_t index);
 
     /**
      * @brief Set the ZRTP Hello hash from signaling
@@ -340,6 +344,13 @@ protected:
      */
     bool setCryptoMixAttribute(const char *algoNames);
 
+    /**
+     * Get number of supported ZRTP protocol versions.
+     *
+     * @return the number of supported ZRTP protocol versions.
+     */
+    int32_t getNumberSupportedVersions();
+
     /*
      * The following methods implement the GNU ZRTP callback interface.
      * For detailed documentation refer to file ZrtpCallback.h
@@ -394,7 +405,8 @@ private:
     char sdesTempBuffer[maxSdesString];
     uint16_t senderZrtpSeqNo;
     uint32_t peerSSRC;
-    std::string peerHelloHash;
+//    std::string peerHelloHash;
+    std::vector<std::string> peerHelloHashes;
     bool     zrtpHashMatch;
     bool     sasVerified;
     bool     helloReceived;

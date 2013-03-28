@@ -379,7 +379,7 @@ void CtZrtpSession::setSdesEnabled(bool yesNo) {
     sdesEnabled = yesNo;
 }
 
-int CtZrtpSession::getSignalingHelloHash(char *helloHash, streamName streamNm) {
+int CtZrtpSession::getSignalingHelloHash(char *helloHash, streamName streamNm, int32_t index) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
         return 0;
 
@@ -387,7 +387,7 @@ int CtZrtpSession::getSignalingHelloHash(char *helloHash, streamName streamNm) {
     if (stream->isStopped)
         return 0;
 
-    return stream->getSignalingHelloHash(helloHash);
+    return stream->getSignalingHelloHash(helloHash, index);
 }
 
 void CtZrtpSession::setSignalingHelloHash(const char *helloHash, streamName streamNm) {
@@ -499,6 +499,15 @@ bool CtZrtpSession::setCryptoMixAttribute(const char *algoNames, streamName stre
     CtZrtpStream *stream = streams[streamNm];
     return stream->setCryptoMixAttribute(algoNames);
 }
+
+int32_t CtZrtpSession::getNumberSupportedVersions(streamName streamNm) {
+    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return 0;
+
+    CtZrtpStream *stream = streams[streamNm];
+    return stream->getNumberSupportedVersions();
+}
+
 
 void CtZrtpSession::cleanCache() {
     getZidCacheInstance()->cleanup();
