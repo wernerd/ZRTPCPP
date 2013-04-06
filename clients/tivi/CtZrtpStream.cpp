@@ -62,7 +62,8 @@ CtZrtpStream::CtZrtpStream():
     enableZrtp(0), started(false), isStopped(false), session(NULL), tiviState(CtZrtpSession::eLookingPeer),
     prevTiviState(CtZrtpSession::eLookingPeer), recvSrtp(NULL), recvSrtcp(NULL), sendSrtp(NULL), sendSrtcp(NULL),
     zrtpUserCallback(NULL), zrtpSendCallback(NULL), senderZrtpSeqNo(0), peerSSRC(0), zrtpHashMatch(false),
-    sasVerified(false), helloReceived(false), sdesActive(false), sdes(NULL), supressCounter(0), srtpErrorBurst(0), role(NoRole)
+    sasVerified(false), helloReceived(false), sdesActive(false), sdes(NULL), supressCounter(0), srtpAuthErrorBurst(0), 
+    srtpReplayErrorBurst(0), role(NoRole)
 {
     synchLock = new CMutexClass();
 
@@ -113,7 +114,8 @@ void CtZrtpStream::stopStream() {
     zrtpHashMatch= false;
     sasVerified = false;
     supressCounter = 0;
-    srtpErrorBurst = 0;
+    srtpAuthErrorBurst = 0;
+    srtpReplayErrorBurst = 0;
     helloReceived = false;
 
     peerHelloHashes.clear();
@@ -194,8 +196,9 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
             if (*sdesTempBuffer != 0)           // clear SDES crypto string if not already done
                 memset(sdesTempBuffer, 0, maxSdesString);
 
-            if (rc == 1) {                       // SDES unprotect success
-                srtpErrorBurst = 0;
+            if (rc == 1) {                       // SDES unprotect success, do some statistics and return success
+                srtpAuthErrorBurst = 0;
+                srtpReplayErrorBurst = 0;
                 sdesUnprotect++;
                 return 1;
             }
@@ -214,24 +217,28 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
                     rc = sdes->incomingRtp(buffer, *newLength, newLength);
                 }
                 if (rc == 1) {                       // if rc is still one: either no SDES or SDES incoming sucess
-                    srtpErrorBurst = 0;
+                    srtpAuthErrorBurst = 0;
+                    srtpReplayErrorBurst = 0;
                     return 1;
                 }
             }
         }
         // We come to this point only if we have some problems during SRTP unprotect
-        srtpErrorBurst++;
+        if (rc == -1)
+            srtpAuthErrorBurst++;
+        else 
+            srtpReplayErrorBurst++;
+
         unprotectFailed++;
-        if (supressCounter >= supressWarn && srtpErrorBurst >= srtpErrorBurstThreshold) {
+        if (supressCounter >= supressWarn && (srtpAuthErrorBurst >= srtpErrorBurstThreshold || srtpReplayErrorBurst >= srtpErrorBurstThreshold)) {
             if (rc == -1) {
                 sendInfo(Warning, WarningSRTPauthError);
             }
             else {
                 sendInfo(Warning, WarningSRTPreplayError);
             }
-            return rc;    // Check with Janis if this is OK
         }
-        return 0;
+        return rc;
     }
 
     // At this point we assume the packet is not an RTP packet. Check if it is a ZRTP packet.
@@ -276,26 +283,10 @@ int CtZrtpStream::getSignalingHelloHash(char *hHash, int32_t index) {
         return 0;
 
     std::string hash;
-//     std::string hexString;
-//     size_t hexStringStart;
-
-    // The Tivi client requires the 64 char hex string only, thus
-    // split the string that we get from ZRTP engine that contains
-    // the version info as well (which is the right way to do because
-    // the engine knows which version of the ZRTP protocol it uses.)
-    hash = zrtpEngine->getHelloHash(index);   // TODO change IF to Janis' code
-//     hexStringStart = hash.find_last_of(' ');
-//     hexString = hash.substr(hexStringStart+1);
-//
-//     // Copy the hex string and terminate with nul
-//     int maxLen = hexString.length() > 64 ? 64 : hexString.length();
-//    memcpy(hHash, hash.c_str(), maxLen);
+    hash = zrtpEngine->getHelloHash(index);
     strcpy(hHash, hash.c_str());
-//    hHash[maxLen] = '\0';
     return hash.size();
 }
-
-// TODO: change / check after clarfification with Janis (string handling)
 
 void CtZrtpStream::setSignalingHelloHash(const char *hHash) {
     synchEnter();
@@ -322,7 +313,12 @@ void CtZrtpStream::setSignalingHelloHash(const char *hHash) {
     std::string hexString = ph.substr(hexStringStart+1);
 
     for (std::vector<std::string>::iterator it = peerHelloHashes.begin() ; it != peerHelloHashes.end(); ++it) {
-        if ((*it).compare(hexString) == 0) {
+        int match;
+        if ((*it).size() > SHA256_DIGEST_LENGTH*2)      // got the full string incl. version prefix, compare with full peer hash string
+            match = (*it).compare(ph);
+        else
+            match = (*it).compare(hexString);
+        if (match == 0) {
             zrtpHashMatch = true;
             // We have a matching zrtp-hash. If ZRTP/SRTP is active we may need to release
             // an existig SDES stream.
@@ -881,13 +877,17 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
                 if (peerHelloHashes.empty())
                     break;
 
-                // TODO: change / check after clarfification with Janis (string handling)
                 peerHash = zrtpEngine->getPeerHelloHash();
                 hexStringStart = peerHash.find_last_of(' ');
                 hexString = peerHash.substr(hexStringStart+1);
                 helloReceived = true;
 
                 for (std::vector<std::string>::iterator it = peerHelloHashes.begin() ; it != peerHelloHashes.end(); ++it) {
+                    int match;
+                    if ((*it).size() > SHA256_DIGEST_LENGTH*2)      // got the full string incl. version prefix, compare with full peer hash string
+                        match = (*it).compare(peerHash);
+                    else
+                        match = (*it).compare(hexString);
                     if ((*it).compare(hexString) == 0) {
                         zrtpHashMatch = true;
                         break;

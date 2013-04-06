@@ -405,15 +405,17 @@ private:
     char sdesTempBuffer[maxSdesString];
     uint16_t senderZrtpSeqNo;
     uint32_t peerSSRC;
-//    std::string peerHelloHash;
     std::vector<std::string> peerHelloHashes;
     bool     zrtpHashMatch;
     bool     sasVerified;
     bool     helloReceived;
     bool     sdesActive;
     ZrtpSdesStream *sdes;
+
     uint32_t supressCounter;
-    uint32_t srtpErrorBurst;
+    uint32_t srtpAuthErrorBurst;
+    uint32_t srtpReplayErrorBurst;
+
     CMutexClass *synchLock;
 
     char mixAlgoName[20];                   //!< stores name in during getInfo() call
