@@ -230,11 +230,11 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
             srtpReplayErrorBurst++;
 
         unprotectFailed++;
-        if (supressCounter >= supressWarn && (srtpAuthErrorBurst >= srtpErrorBurstThreshold || srtpReplayErrorBurst >= srtpErrorBurstThreshold)) {
-            if (rc == -1) {
+        if (supressCounter >= supressWarn) {
+            if (rc == -1 && srtpAuthErrorBurst >= srtpErrorBurstThreshold) {
                 sendInfo(Warning, WarningSRTPauthError);
             }
-            else {
+            else if (srtpReplayErrorBurst >= srtpErrorBurstThreshold){
                 sendInfo(Warning, WarningSRTPreplayError);
             }
         }
