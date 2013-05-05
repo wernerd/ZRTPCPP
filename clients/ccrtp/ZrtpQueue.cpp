@@ -119,12 +119,15 @@ ZrtpQueue::initialize(const char *zidFilename, bool autoEnable, ZrtpConfigure* c
 void ZrtpQueue::startZrtp() {
     if (zrtpEngine != NULL) {
         zrtpEngine->startZrtpEngine();
+        zrtpUnprotect = 0;
         started = true;
     }
 }
 
 void ZrtpQueue::stopZrtp() {
     if (zrtpEngine != NULL) {
+        if (zrtpUnprotect < 50 && !zrtpEngine->isMultiStream())
+            zrtpEngine->setRs2Valid();
         delete zrtpEngine;
         zrtpEngine = NULL;
         started = false;

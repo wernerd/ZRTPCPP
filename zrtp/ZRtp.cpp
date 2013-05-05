@@ -2228,6 +2228,11 @@ void ZRtp::resetSASVerified() {
     getZidCacheInstance()->saveRecord(zidRec);
 }
 
+void ZRtp::setRs2Valid() {
+
+    zidRec->setRs2Valid();
+    getZidCacheInstance()->saveRecord(zidRec);
+}
 
 void ZRtp::sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) {
 
