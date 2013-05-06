@@ -43,6 +43,7 @@ void ZIDRecordDb::setNewRs1(const unsigned char* data, int32_t expire) {
         validThru = time(NULL) + expire;
     }
     record.rs1Ttl = validThru;
+    resetRs2Valid();
     setRs1Valid();
 }
 
