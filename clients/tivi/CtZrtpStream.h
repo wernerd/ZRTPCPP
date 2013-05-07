@@ -415,6 +415,7 @@ private:
     uint32_t supressCounter;
     uint32_t srtpAuthErrorBurst;
     uint32_t srtpReplayErrorBurst;
+    uint32_t zrtpCrcErrors;
 
     CMutexClass *synchLock;
 
