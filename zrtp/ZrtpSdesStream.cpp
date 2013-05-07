@@ -39,6 +39,9 @@
 # define snprintf _snprintf
 #endif
 
+// SRTP authentication tag length is 80 bits = 10 bytes
+#define ZRTP_TUNNEL_AUTH_LEN  10
+#define ZRTP_TUNNEL_LABEL     10
 /*
  * The ABNF grammar for the crypto attribute is defined below (from RFC 4568):
  *
@@ -141,7 +144,8 @@ static suiteParam knownSuites[] = {
 
 ZrtpSdesStream::ZrtpSdesStream(const sdesSuites s) :
     state(STREAM_INITALIZED), suite(s), recvSrtp(NULL), recvSrtcp(NULL), sendSrtp(NULL),
-    sendSrtcp(NULL), srtcpIndex(0), cryptoMixHashLength(0), cryptoMixHashType(MIX_NONE)  {
+    sendSrtcp(NULL), srtcpIndex(0), recvZrtpTunnel(0), sendZrtpTunnel(0), cryptoMixHashLength(0), 
+    cryptoMixHashType(MIX_NONE)  {
 }
 
 ZrtpSdesStream::~ZrtpSdesStream() {
@@ -160,6 +164,12 @@ void ZrtpSdesStream::close() {
 
     delete recvSrtcp;
     recvSrtp = NULL;
+
+    delete recvZrtpTunnel;
+    recvZrtpTunnel = NULL;
+
+    delete sendZrtpTunnel;
+    sendZrtpTunnel = NULL;
 }
 
 bool ZrtpSdesStream::createSdes(char *cryptoString, size_t *maxLen, bool sipInvite) {
@@ -247,6 +257,36 @@ int ZrtpSdesStream::incomingRtp(uint8_t *packet, size_t length, size_t *newLengt
     }
     return rc;
 }
+
+
+bool ZrtpSdesStream::outgoingZrtpTunnel(uint8_t *packet, size_t length, size_t *newLength) {
+
+    if (state != SDES_SRTP_ACTIVE || sendZrtpTunnel == NULL) {
+        *newLength = length;
+        return true;
+    }
+    bool rc = SrtpHandler::protect(sendZrtpTunnel, packet, length, newLength);
+    if (rc)
+        ;//protect++;
+    return rc;
+}
+
+int ZrtpSdesStream::incomingZrtpTunnel(uint8_t *packet, size_t length, size_t *newLength) {
+    if (state != SDES_SRTP_ACTIVE || recvZrtpTunnel == NULL) {    // SRTP inactive, just return with newLength set
+        *newLength = length;
+        return 1;
+    }
+    int32_t rc = SrtpHandler::unprotect(recvZrtpTunnel, packet, length, newLength);
+    if (rc == 1) {
+//            unprotect++
+    }
+    else {
+//            unprotectFailed++;
+    }
+    return rc;
+}
+
+
 
 bool ZrtpSdesStream::outgoingRtcp(uint8_t *packet, size_t length, size_t *newLength) {
 #if 0
@@ -524,6 +564,23 @@ void ZrtpSdesStream::createSrtpContexts(bool sipInvite) {
                                  localSaltLenBytes,          // session salt len
                                  localTagLength);            // authentication tag len
     sendSrtp->deriveSrtpKeys(0L);
+
+    sendZrtpTunnel = new CryptoContext(0,                     // SSRC (used for lookup)
+                                 0,                     // Roll-Over-Counter (ROC)
+                                 0L,                    // keyderivation << 48,
+                                 localCipher,                // encryption algo
+                                 localAuthn,                 // authtentication algo
+                                 localKeySalt,               // Master Key
+                                 localKeyLenBytes,           // Master Key length
+                                 &localKeySalt[localKeyLenBytes], // Master Salt
+                                 localSaltLenBytes,          // Master Salt length
+                                 localKeyLenBytes,           // encryption keylen
+                                 localAuthKeyLen,            // authentication key len (HMAC key lenght)
+                                 localSaltLenBytes,          // session salt len
+                                 ZRTP_TUNNEL_AUTH_LEN);      // authentication tag len
+
+    sendZrtpTunnel->setLabelbase(ZRTP_TUNNEL_LABEL);
+    sendZrtpTunnel->deriveSrtpKeys(0L);
     memset(localKeySalt, 0, sizeof(localKeySalt));
 
     recvSrtp = new CryptoContext(0,                     // SSRC (used for lookup)
@@ -540,6 +597,23 @@ void ZrtpSdesStream::createSrtpContexts(bool sipInvite) {
                                  remoteSaltLenBytes,          // session salt len
                                  remoteTagLength);            // authentication tag len
     recvSrtp->deriveSrtpKeys(0L);
+
+    recvZrtpTunnel = new CryptoContext(0,                     // SSRC (used for lookup)
+                                 0,                     // Roll-Over-Counter (ROC)
+                                 0L,                    // keyderivation << 48,
+                                 remoteCipher,                // encryption algo
+                                 remoteAuthn,                 // authtentication algo
+                                 remoteKeySalt,               // Master Key
+                                 remoteKeyLenBytes,           // Master Key length
+                                 &remoteKeySalt[remoteKeyLenBytes], // Master Salt
+                                 remoteSaltLenBytes,          // Master Salt length
+                                 remoteKeyLenBytes,           // encryption keylen
+                                 remoteAuthKeyLen,            // authentication key len (HMAC key lenght)
+                                 remoteSaltLenBytes,          // session salt len
+                                 ZRTP_TUNNEL_AUTH_LEN);       // authentication tag len
+
+    recvZrtpTunnel->setLabelbase(ZRTP_TUNNEL_LABEL);
+    recvZrtpTunnel->deriveSrtpKeys(0L);
     memset(remoteKeySalt, 0, sizeof(remoteKeySalt));
 }
 

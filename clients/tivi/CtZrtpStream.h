@@ -410,6 +410,7 @@ private:
     bool     sasVerified;
     bool     helloReceived;
     bool     sdesActive;
+    bool     useZrtpTunnel;
     ZrtpSdesStream *sdes;
 
     uint32_t supressCounter;
