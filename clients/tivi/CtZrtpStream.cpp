@@ -63,7 +63,7 @@ CtZrtpStream::CtZrtpStream():
     prevTiviState(CtZrtpSession::eLookingPeer), recvSrtp(NULL), recvSrtcp(NULL), sendSrtp(NULL), sendSrtcp(NULL),
     zrtpUserCallback(NULL), zrtpSendCallback(NULL), senderZrtpSeqNo(0), peerSSRC(0), zrtpHashMatch(false),
     sasVerified(false), helloReceived(false), sdesActive(false), sdes(NULL), supressCounter(0), srtpAuthErrorBurst(0), 
-    srtpReplayErrorBurst(0), role(NoRole)
+    srtpReplayErrorBurst(0), zrtpCrcErrors(0), role(NoRole)
 {
     synchLock = new CMutexClass();
 
@@ -124,6 +124,7 @@ void CtZrtpStream::stopStream() {
     supressCounter = 0;
     srtpAuthErrorBurst = 0;
     srtpReplayErrorBurst = 0;
+    zrtpCrcErrors = 0;
     helloReceived = false;
 
     peerHelloHashes.clear();
@@ -269,7 +270,11 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
         uint32_t crc = *(uint32_t*)(buffer + temp);
         crc = zrtpNtohl(crc);
         if (!zrtpCheckCksum(buffer, temp, crc)) {
-            sendInfo(Warning, WarningCRCmismatch);
+            zrtpCrcErrors++;
+            if (zrtpCrcErrors > 15) {
+                sendInfo(Warning, WarningCRCmismatch);
+                zrtpCrcErrors = 0;
+            }
             return 0;
         }
         // this now points beyond to the plain ZRTP message.
