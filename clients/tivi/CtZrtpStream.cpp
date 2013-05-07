@@ -93,6 +93,14 @@ CtZrtpStream::~CtZrtpStream() {
 
 void CtZrtpStream::stopStream() {
 
+    // If we got only a small amout of valid SRTP packets after ZRTP negotiation then
+    // assume that our peer couldn't store the RS data, thus make sure we have a second
+    // retained shared secret available. Refer to RFC 6189bis, chapter 4.6.1
+    // 50 packets are about 1 second of audio data
+    if (zrtpEngine != NULL && zrtpUnprotect < 10 && !zrtpEngine->isMultiStream()) {
+        zrtpEngine->setRs2Valid();
+    }
+
     index = CtZrtpSession::AudioStream;
     type = CtZrtpSession::NoStream;
     tiviState = CtZrtpSession::eLookingPeer;

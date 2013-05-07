@@ -873,6 +873,7 @@ private:
     int16 senderZrtpSeqNo;
     ost::Mutex synchLock;   // Mutex for ZRTP (used by ZrtpStateClass)
     uint32 peerSSRC;
+    uint64 zrtpUnprotect;
     bool started;
     bool mitmMode;
     bool signSas;
