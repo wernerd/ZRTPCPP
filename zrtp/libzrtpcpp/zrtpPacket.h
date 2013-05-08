@@ -41,7 +41,6 @@
  * The following defines match the ZRTP specification, chapter 5
  */
 #define ZRTP_MAGIC       0x5a525450
-#define ZRTP_MAGIQ       0x5a525451
 
 #define ZRTP_WORD_SIZE   4
 #define CRC_SIZE         4

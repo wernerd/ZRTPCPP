@@ -33,6 +33,7 @@ static std::map<int32_t, std::string*> enrollMap;
 static int initialized = 0;
 
 static const char* peerHelloMismatchMsg = "s2_c050: Received Hello hash does not match computed Hello hash"; 
+static const char* zrtpEncap = "zrtp";
 
 using namespace GnuZrtpCodes;
 
@@ -62,13 +63,8 @@ CtZrtpStream::CtZrtpStream():
     enableZrtp(0), started(false), isStopped(false), session(NULL), tiviState(CtZrtpSession::eLookingPeer),
     prevTiviState(CtZrtpSession::eLookingPeer), recvSrtp(NULL), recvSrtcp(NULL), sendSrtp(NULL), sendSrtcp(NULL),
     zrtpUserCallback(NULL), zrtpSendCallback(NULL), senderZrtpSeqNo(0), peerSSRC(0), zrtpHashMatch(false),
-<<<<<<< HEAD
-    sasVerified(false), helloReceived(false), sdesActive(false), sdes(NULL), supressCounter(0), srtpAuthErrorBurst(0), 
-    srtpReplayErrorBurst(0), zrtpCrcErrors(0), role(NoRole)
-=======
-    sasVerified(false), helloReceived(false), sdesActive(false), useZrtpTunnel(false), sdes(NULL), supressCounter(0),
-    srtpAuthErrorBurst(0), srtpReplayErrorBurst(0), role(NoRole)
->>>>>>> Implement a first ZRTP tunnel via SDES/SRTP
+    sasVerified(false), helloReceived(false), sdesActive(false), useZrtpTunnel(false), zrtpEncapSignaled(false), 
+    sdes(NULL), supressCounter(0), srtpAuthErrorBurst(0), srtpReplayErrorBurst(0), zrtpCrcErrors(0), role(NoRole)
 {
     synchLock = new CMutexClass();
 
@@ -127,6 +123,7 @@ void CtZrtpStream::stopStream() {
     zrtpHashMatch= false;
     sasVerified = false;
     useZrtpTunnel = false;
+    zrtpEncapSignaled = false;
     supressCounter = 0;
     srtpAuthErrorBurst = 0;
     srtpReplayErrorBurst = 0;
@@ -270,23 +267,19 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
         magic = zrtpNtohl(magic);
 
         // Check if it is really a ZRTP packet, return, no further processing
-        if (magic != ZRTP_MAGIC && magic != ZRTP_MAGIQ) {
+        if (magic != ZRTP_MAGIC) {
             return 0;
         }
-        if (magic == ZRTP_MAGIQ && useZrtpTunnel) {
-            fprintf(stderr, "Receiving tunneled ZRTP\n");
-            zrtp_log("CtZrtpStream", "Receiving tunneled ZRTP");
+        if (useZrtpTunnel) {
             size_t newLength;
             *buffer = 0x80;                                    // make it to a real RTP packet
             rc = sdes->incomingZrtpTunnel(buffer, length, &newLength);
             if (rc < 0) {
                 if (rc == -1) {
-                    fprintf(stderr, "Receiving tunneled ZRTP - SRTP failure -1\n");
                     zrtp_log("CtZrtpStream", "Receiving tunneled ZRTP - SRTP failure -1");
                     sendInfo(Warning, WarningSRTPauthError);
                 }
                 else {
-                    fprintf(stderr, "Receiving tunneled ZRTP - SRTP failure -2\n");
                     zrtp_log("CtZrtpStream", "Receiving tunneled ZRTP - SRTP failure -2");
                     sendInfo(Warning, WarningSRTPreplayError);
                 }
@@ -418,7 +411,10 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
 
     std::string client = zrtpEngine->getPeerProtcolVersion();
     if (role != NoRole) {
-        client.append(role == Initiator ? "(I)" : "(R)");
+        if (useZrtpTunnel)
+            client.append(role == Initiator ? "(IT)" : "(RT)");
+        else
+            client.append(role == Initiator ? "(I)" : "(R)");
     }
     T_ZRTP_LB("lbClient",  zrtpEngine->getPeerClientId().c_str());
     T_ZRTP_LB("lbVersion", client.c_str());
@@ -544,9 +540,9 @@ bool CtZrtpStream::parseSdes(char *recvCryptoStr, size_t recvLength, char *sendC
             zrtpUserCallback->onNewZrtpStatus(session, NULL, index);    // Inform client about new state
     }
     sdesActive = true;
-    fprintf(stderr, "switch on ZRTP tunnel - parse SDES\n");
-    zrtp_log("CtZrtpStream", "switch on ZRTP tunnel - parse SDES");
-    useZrtpTunnel = true;
+    if (zrtpEncapSignaled) {
+        useZrtpTunnel = true;
+    }
     return true;
 
  cleanup:
@@ -598,6 +594,19 @@ int32_t CtZrtpStream::getNumberSupportedVersions() {
     return zrtpEngine->getNumberSupportedVersions();
 }
 
+const char* CtZrtpStream::getZrtpEncapAttribute() {
+    return zrtpEncap;
+}
+
+void CtZrtpStream::setZrtpEncapAttribute(const char *attribute) {
+    if (attribute != NULL && strncmp(attribute, zrtpEncap, 4) == 0) {
+        zrtpEncapSignaled = true;
+        if (sdesActive) {
+            useZrtpTunnel = true;
+        }
+    }
+}
+
 /* *********************
  * Here the callback methods required by the ZRTP implementation
  *
@@ -622,32 +631,23 @@ int32_t CtZrtpStream::sendDataZRTP(const unsigned char *data, int32_t length) {
     pui = (uint32_t*)zrtpBuffer;
 
     /* set up fixed ZRTP header */
-    *zrtpBuffer = 0x10;     /* invalid RTP version - refer to ZRTP spec chap 5 */
     *(zrtpBuffer + 1) = 0;
     pus[1] = zrtpHtons(senderZrtpSeqNo++);
+    pui[1] = zrtpHtonl(ZRTP_MAGIC);
     pui[2] = zrtpHtonl(ownSSRC);            // ownSSRC is stored in host order
 
-    /* Copy ZRTP message data behind the header data */
-    memcpy(zrtpBuffer+12, data, length);
+    memcpy(zrtpBuffer+12, data, length);    // Copy ZRTP message data behind the header data
 
     if (useZrtpTunnel) {
-        fprintf(stderr, "send ZRTP thru tunnel 0, totalLen: %d (%d)\n", totalLen, length);
-        zrtp_log("CtZrtpStream", "send ZRTP thru tunnel");
-        pui[1] = zrtpHtonl(ZRTP_MAGIQ);
-        *zrtpBuffer = 0x80;                                 // temporarily make it to a real RTP packet 
+        *zrtpBuffer = 0x80;                                            // temporarily make it to a real RTP packet 
         sdes->outgoingZrtpTunnel(zrtpBuffer, totalLen-CRC_SIZE, &newLength);
-        *zrtpBuffer = 0x10;                                 // invalid RTP version - refer to ZRTP spec chap 5
+        *zrtpBuffer = 0x10;                                            // invalid RTP version - refer to ZRTP spec chap 5
         totalLen = newLength;
-        fprintf(stderr, "send ZRTP thru tunnel 1, totalLen: %d\n", totalLen);
     }
     else {
-        *zrtpBuffer = 0x10;     /* invalid RTP version - refer to ZRTP spec chap 5 */
-        pui[1] = zrtpHtonl(ZRTP_MAGIC);
-        /* Setup and compute ZRTP CRC */
-        crc = zrtpGenerateCksum(zrtpBuffer, totalLen-CRC_SIZE);
-
-        /* convert and store CRC in ZRTP packet.*/
-        crc = zrtpEndCksum(crc);
+        *zrtpBuffer = 0x10;                                            // invalid RTP version - refer to ZRTP spec chap 5
+        crc = zrtpGenerateCksum(zrtpBuffer, totalLen-CRC_SIZE);        // Setup and compute ZRTP CRC
+        crc = zrtpEndCksum(crc);                                       // convert and store CRC in ZRTP packet.
         *(uint32_t*)(zrtpBuffer+totalLen-CRC_SIZE) = zrtpHtonl(crc);
     }
 
@@ -949,7 +949,7 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
                         match = (*it).compare(peerHash);
                     else
                         match = (*it).compare(hexString);
-                    if ((*it).compare(hexString) == 0) {
+                    if (match == 0) {
                         zrtpHashMatch = true;
                         break;
                     }

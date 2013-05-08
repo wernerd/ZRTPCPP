@@ -351,6 +351,28 @@ protected:
      */
     int32_t getNumberSupportedVersions();
 
+    /**
+     * @brief Get the supported ZRTP encapsulation attribute.
+     * 
+     * Get this attribute value and set it as a SDP parameter to signal support of ZRTP encapsulation.
+     *
+     * @return the pointer to the attribute cC-string or @c NULL if encapsulation is not supported.
+     */
+    const char* getZrtpEncapAttribute();
+
+    /**
+     * @brief Set the ZRTP encapsulation attribute.
+     * 
+     * If an application receives the ZRTP encapsulation SDP attribute then it should set the
+     * attribute value. The stream uses ZRTP encapsulation only if this SDP parameter is set
+     * @b and SDES is available and active.
+     * 
+     * @param attribute pointer to a C-string that defines the ZRTP encapsulation method.
+     *
+     * @see getZrtpEncapAttribute
+     */
+    void setZrtpEncapAttribute(const char *attribute);
+
     /*
      * The following methods implement the GNU ZRTP callback interface.
      * For detailed documentation refer to file ZrtpCallback.h
@@ -411,6 +433,7 @@ private:
     bool     helloReceived;
     bool     sdesActive;
     bool     useZrtpTunnel;
+    bool     zrtpEncapSignaled;
     ZrtpSdesStream *sdes;
 
     uint32_t supressCounter;

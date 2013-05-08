@@ -591,7 +591,7 @@ public:
     static void cleanCache();
 
     /**
-     * Get number of supported ZRTP protocol versions.
+     * @brief Get number of supported ZRTP protocol versions.
      *
      * @param streamNm stream identifier.
      *
@@ -599,6 +599,30 @@ public:
      */
     int32_t getNumberSupportedVersions(streamName streamNm);
 
+    /**
+     * @brief Get the supported ZRTP encapsulation attribute.
+     * 
+     * Get this attribute value and set it as a SDP parameter to signal support of ZRTP encapsulation.
+     *
+     * @param streamNm stream identifier.
+     *
+     * @return the pointer to the attribute cC-string or @c NULL if encapsulation is not supported.
+     */
+    const char* getZrtpEncapAttribute(streamName streamNm);
+
+    /**
+     * @brief Set the ZRTP encapsulation attribute.
+     * 
+     * If an application receives the ZRTP encapsulation SDP attribute then it should set the
+     * attribute value. The stream uses ZRTP encapsulation only if this SDP parameter is set
+     * @b and SDES is available and active.
+     * 
+     * @param attribute pointer to a C-string that defines the ZRTP encapsulation method.
+     * @param streamNm stream identifier.
+     *
+     * @see getZrtpEncapAttribute
+     */
+    void setZrtpEncapAttribute(const char *attribute, streamName streamNm);
 
 protected:
     friend class CtZrtpStream;
