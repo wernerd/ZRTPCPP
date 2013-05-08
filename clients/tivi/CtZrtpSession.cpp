@@ -508,6 +508,28 @@ int32_t CtZrtpSession::getNumberSupportedVersions(streamName streamNm) {
     return stream->getNumberSupportedVersions();
 }
 
+const char* CtZrtpSession::getZrtpEncapAttribute(streamName streamNm) {
+    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return NULL;
+
+    CtZrtpStream *stream = streams[streamNm];
+    if (stream->isStopped)
+        return NULL;
+
+    return stream->getZrtpEncapAttribute();
+}
+
+void CtZrtpSession::setZrtpEncapAttribute(const char *attribute, streamName streamNm) {
+    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return;
+
+    CtZrtpStream *stream = streams[streamNm];
+    if (stream->isStopped)
+        return;
+
+    stream->setZrtpEncapAttribute(attribute);
+}
+
 
 void CtZrtpSession::cleanCache() {
     getZidCacheInstance()->cleanup();

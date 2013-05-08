@@ -33,6 +33,7 @@ static std::map<int32_t, std::string*> enrollMap;
 static int initialized = 0;
 
 static const char* peerHelloMismatchMsg = "s2_c050: Received Hello hash does not match computed Hello hash"; 
+static const char* zrtpEncap = "zrtp";
 
 using namespace GnuZrtpCodes;
 
@@ -62,8 +63,8 @@ CtZrtpStream::CtZrtpStream():
     enableZrtp(0), started(false), isStopped(false), session(NULL), tiviState(CtZrtpSession::eLookingPeer),
     prevTiviState(CtZrtpSession::eLookingPeer), recvSrtp(NULL), recvSrtcp(NULL), sendSrtp(NULL), sendSrtcp(NULL),
     zrtpUserCallback(NULL), zrtpSendCallback(NULL), senderZrtpSeqNo(0), peerSSRC(0), zrtpHashMatch(false),
-    sasVerified(false), helloReceived(false), sdesActive(false), sdes(NULL), supressCounter(0), srtpAuthErrorBurst(0), 
-    srtpReplayErrorBurst(0), zrtpCrcErrors(0), role(NoRole)
+    sasVerified(false), helloReceived(false), sdesActive(false), useZrtpTunnel(false), zrtpEncapSignaled(false), 
+    sdes(NULL), supressCounter(0), srtpAuthErrorBurst(0), srtpReplayErrorBurst(0), zrtpCrcErrors(0), role(NoRole)
 {
     synchLock = new CMutexClass();
 
@@ -121,6 +122,8 @@ void CtZrtpStream::stopStream() {
     senderZrtpSeqNo &= 0x7fff;
     zrtpHashMatch= false;
     sasVerified = false;
+    useZrtpTunnel = false;
+    zrtpEncapSignaled = false;
     supressCounter = 0;
     srtpAuthErrorBurst = 0;
     srtpReplayErrorBurst = 0;
@@ -258,6 +261,8 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
         if (length < (12 + sizeof(HelloAckPacket_t))) // data too small, dismiss
             return 0;
 
+        size_t useLength = length;
+ 
         uint32_t magic = *(uint32_t*)(buffer + 4);
         magic = zrtpNtohl(magic);
 
@@ -265,17 +270,37 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
         if (magic != ZRTP_MAGIC) {
             return 0;
         }
-        // Get CRC value into crc (see above how to compute the offset)
-        uint16_t temp = length - CRC_SIZE;
-        uint32_t crc = *(uint32_t*)(buffer + temp);
-        crc = zrtpNtohl(crc);
-        if (!zrtpCheckCksum(buffer, temp, crc)) {
-            zrtpCrcErrors++;
-            if (zrtpCrcErrors > 15) {
-                sendInfo(Warning, WarningCRCmismatch);
-                zrtpCrcErrors = 0;
+        if (useZrtpTunnel) {
+            size_t newLength;
+            *buffer = 0x80;                                    // make it to a real RTP packet
+            rc = sdes->incomingZrtpTunnel(buffer, length, &newLength);
+            if (rc < 0) {
+                if (rc == -1) {
+                    zrtp_log("CtZrtpStream", "Receiving tunneled ZRTP - SRTP failure -1");
+                    sendInfo(Warning, WarningSRTPauthError);
+                }
+                else {
+                    zrtp_log("CtZrtpStream", "Receiving tunneled ZRTP - SRTP failure -2");
+                    sendInfo(Warning, WarningSRTPreplayError);
+                }
+                return 0;
             }
-            return 0;
+            useLength = newLength + CRC_SIZE;                  // length check assumes a ZRTP CRC
+        }
+        else {
+            useZrtpTunnel = false;
+            // Get CRC value into crc (see above how to compute the offset)
+            uint16_t temp = length - CRC_SIZE;
+            uint32_t crc = *(uint32_t*)(buffer + temp);
+            crc = zrtpNtohl(crc);
+            if (!zrtpCheckCksum(buffer, temp, crc)) {
+                zrtpCrcErrors++;
+                if (zrtpCrcErrors > 15) {
+                    sendInfo(Warning, WarningCRCmismatch);
+                    zrtpCrcErrors = 0;
+                }
+                return 0;
+            }
         }
         // this now points beyond to the plain ZRTP message.
         unsigned char* zrtpMsg = (buffer + 12);
@@ -285,7 +310,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
             peerSSRC = *(uint32_t*)(buffer + 8);
             peerSSRC = zrtpNtohl(peerSSRC);
         }
-        zrtpEngine->processZrtpMessage(zrtpMsg, peerSSRC, length);
+        zrtpEngine->processZrtpMessage(zrtpMsg, peerSSRC, useLength);
     }
     return 0;
 }
@@ -386,7 +411,10 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
 
     std::string client = zrtpEngine->getPeerProtcolVersion();
     if (role != NoRole) {
-        client.append(role == Initiator ? "(I)" : "(R)");
+        if (useZrtpTunnel)
+            client.append(role == Initiator ? "(IT)" : "(RT)");
+        else
+            client.append(role == Initiator ? "(I)" : "(R)");
     }
     T_ZRTP_LB("lbClient",  zrtpEngine->getPeerClientId().c_str());
     T_ZRTP_LB("lbVersion", client.c_str());
@@ -479,12 +507,10 @@ bool CtZrtpStream::createSdes(char *cryptoString, size_t *maxLen, const ZrtpSdes
         sdes = new ZrtpSdesStream(sdesSuite);
 
     if (sdes == NULL || !sdes->createSdes(cryptoString, maxLen, true)) {
-        sdesActive = false;
         delete sdes;
         sdes = NULL;
         return false;
     }
-    sdesActive = true;
     return true;
 }
 
@@ -514,6 +540,9 @@ bool CtZrtpStream::parseSdes(char *recvCryptoStr, size_t recvLength, char *sendC
             zrtpUserCallback->onNewZrtpStatus(session, NULL, index);    // Inform client about new state
     }
     sdesActive = true;
+    if (zrtpEncapSignaled) {
+        useZrtpTunnel = true;
+    }
     return true;
 
  cleanup:
@@ -565,6 +594,19 @@ int32_t CtZrtpStream::getNumberSupportedVersions() {
     return zrtpEngine->getNumberSupportedVersions();
 }
 
+const char* CtZrtpStream::getZrtpEncapAttribute() {
+    return zrtpEncap;
+}
+
+void CtZrtpStream::setZrtpEncapAttribute(const char *attribute) {
+    if (attribute != NULL && strncmp(attribute, zrtpEncap, 4) == 0) {
+        zrtpEncapSignaled = true;
+        if (sdesActive) {
+            useZrtpTunnel = true;
+        }
+    }
+}
+
 /* *********************
  * Here the callback methods required by the ZRTP implementation
  *
@@ -579,6 +621,8 @@ int32_t CtZrtpStream::sendDataZRTP(const unsigned char *data, int32_t length) {
     uint16_t* pus;
     uint32_t* pui;
 
+    size_t newLength;
+
     if ((totalLen) > maxZrtpSize)
         return 0;
 
@@ -587,21 +631,25 @@ int32_t CtZrtpStream::sendDataZRTP(const unsigned char *data, int32_t length) {
     pui = (uint32_t*)zrtpBuffer;
 
     /* set up fixed ZRTP header */
-    *zrtpBuffer = 0x10;     /* invalid RTP version - refer to ZRTP spec chap 5 */
     *(zrtpBuffer + 1) = 0;
     pus[1] = zrtpHtons(senderZrtpSeqNo++);
     pui[1] = zrtpHtonl(ZRTP_MAGIC);
     pui[2] = zrtpHtonl(ownSSRC);            // ownSSRC is stored in host order
 
-    /* Copy ZRTP message data behind the header data */
-    memcpy(zrtpBuffer+12, data, length);
+    memcpy(zrtpBuffer+12, data, length);    // Copy ZRTP message data behind the header data
 
-    /* Setup and compute ZRTP CRC */
-    crc = zrtpGenerateCksum(zrtpBuffer, totalLen-CRC_SIZE);
-
-    /* convert and store CRC in ZRTP packet.*/
-    crc = zrtpEndCksum(crc);
-    *(uint32_t*)(zrtpBuffer+totalLen-CRC_SIZE) = zrtpHtonl(crc);
+    if (useZrtpTunnel) {
+        *zrtpBuffer = 0x80;                                            // temporarily make it to a real RTP packet 
+        sdes->outgoingZrtpTunnel(zrtpBuffer, totalLen-CRC_SIZE, &newLength);
+        *zrtpBuffer = 0x10;                                            // invalid RTP version - refer to ZRTP spec chap 5
+        totalLen = newLength;
+    }
+    else {
+        *zrtpBuffer = 0x10;                                            // invalid RTP version - refer to ZRTP spec chap 5
+        crc = zrtpGenerateCksum(zrtpBuffer, totalLen-CRC_SIZE);        // Setup and compute ZRTP CRC
+        crc = zrtpEndCksum(crc);                                       // convert and store CRC in ZRTP packet.
+        *(uint32_t*)(zrtpBuffer+totalLen-CRC_SIZE) = zrtpHtonl(crc);
+    }
 
     /* Send the ZRTP packet using callback */
     if (zrtpSendCallback != NULL) {
@@ -870,7 +918,7 @@ void CtZrtpStream::handleTimeout(const std::string &c) {
 }
 
 void CtZrtpStream::handleGoClear() {
-    fprintf(stderr, "Need to process a GoClear message!");
+    fprintf(stderr, "Need to process a GoClear message!\n");
 }
 
 void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
@@ -901,7 +949,7 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
                         match = (*it).compare(peerHash);
                     else
                         match = (*it).compare(hexString);
-                    if ((*it).compare(hexString) == 0) {
+                    if (match == 0) {
                         zrtpHashMatch = true;
                         break;
                     }
