@@ -580,6 +580,17 @@ public:
     bool setCryptoMixAttribute(const char *algoNames, streamName streamNm);
 
     /**
+     * @brief Reset SDES
+     * 
+     * This method deletes an existing SDES context unconditionally. The application must make
+     * sure that it does not use the SDES context in any way, for example feeding RTP or SRTP packets
+     * to this stream.
+     *
+     * @param streamNm stream identifier.
+     */
+    void resetSdesContext(streamName streamNm);
+
+    /**
      * @brief Clean Cache
      *
      * This method does not work for file based cache implementation. An application

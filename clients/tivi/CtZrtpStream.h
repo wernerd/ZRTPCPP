@@ -345,7 +345,16 @@ protected:
     bool setCryptoMixAttribute(const char *algoNames);
 
     /**
-     * Get number of supported ZRTP protocol versions.
+     * @brief Reset SDES
+     * 
+     * This method deletes an existing SDES context unconditionally. The application must make
+     * sure that it does not use the SDES context in any way, for example feeding RTP or SRTP packets
+     * to this stream.
+     */
+    void resetSdesContext();
+
+    /**
+     * @brief Get number of supported ZRTP protocol versions.
      *
      * @return the number of supported ZRTP protocol versions.
      */

@@ -500,6 +500,15 @@ bool CtZrtpSession::setCryptoMixAttribute(const char *algoNames, streamName stre
     return stream->setCryptoMixAttribute(algoNames);
 }
 
+void CtZrtpSession::resetSdesContext(streamName streamNm) {
+    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return;
+
+    CtZrtpStream *stream = streams[streamNm];
+    stream->resetSdesContext();
+}
+
+
 int32_t CtZrtpSession::getNumberSupportedVersions(streamName streamNm) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
         return 0;

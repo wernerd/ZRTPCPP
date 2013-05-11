@@ -579,6 +579,12 @@ int CtZrtpStream::getCryptoMixAttribute(char *algoNames, size_t length) {
     return sdes->getCryptoMixAttribute(algoNames, length);
 }
 
+void CtZrtpStream::resetSdesContext() {
+    sdesActive = false;
+    delete sdes;
+    sdes = NULL;
+}
+
 bool  CtZrtpStream::setCryptoMixAttribute(const char *algoNames) {
     if (isSecure()) // don't take action if we are already secure
         return false;
