@@ -33,6 +33,7 @@ static std::map<int32_t, std::string*> enrollMap;
 static int initialized = 0;
 
 static const char* peerHelloMismatchMsg = "s2_c050: Received Hello hash does not match computed Hello hash"; 
+static const char* srtpDecodeFailedMsg  = "s2_c051: Parsing of received SRTP packet failed"; 
 static const char* zrtpEncap = "zrtp";
 
 using namespace GnuZrtpCodes;
@@ -64,7 +65,8 @@ CtZrtpStream::CtZrtpStream():
     prevTiviState(CtZrtpSession::eLookingPeer), recvSrtp(NULL), recvSrtcp(NULL), sendSrtp(NULL), sendSrtcp(NULL),
     zrtpUserCallback(NULL), zrtpSendCallback(NULL), senderZrtpSeqNo(0), peerSSRC(0), zrtpHashMatch(false),
     sasVerified(false), helloReceived(false), sdesActive(false), useZrtpTunnel(false), zrtpEncapSignaled(false), 
-    sdes(NULL), supressCounter(0), srtpAuthErrorBurst(0), srtpReplayErrorBurst(0), zrtpCrcErrors(0), role(NoRole)
+    sdes(NULL), supressCounter(0), srtpAuthErrorBurst(0), srtpReplayErrorBurst(0), srtpDecodeErrorBurst(0), 
+    zrtpCrcErrors(0), role(NoRole)
 {
     synchLock = new CMutexClass();
 
@@ -127,6 +129,7 @@ void CtZrtpStream::stopStream() {
     supressCounter = 0;
     srtpAuthErrorBurst = 0;
     srtpReplayErrorBurst = 0;
+    srtpDecodeErrorBurst = 0;
     zrtpCrcErrors = 0;
     helloReceived = false;
 
@@ -211,6 +214,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
             if (rc == 1) {                       // SDES unprotect success, do some statistics and return success
                 srtpAuthErrorBurst = 0;
                 srtpReplayErrorBurst = 0;
+                srtpDecodeErrorBurst = 0;
                 sdesUnprotect++;
                 return 1;
             }
@@ -231,22 +235,28 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
                 if (rc == 1) {                       // if rc is still one: either no SDES or SDES incoming sucess
                     srtpAuthErrorBurst = 0;
                     srtpReplayErrorBurst = 0;
+                    srtpDecodeErrorBurst = 0;
                     return 1;
                 }
             }
         }
         // We come to this point only if we have some problems during SRTP unprotect
-        if (rc == -1)
+        if (rc == 0) 
+            srtpDecodeErrorBurst++;
+        else if (rc == -1)
             srtpAuthErrorBurst++;
-        else 
+        else if (rc == -2)
             srtpReplayErrorBurst++;
 
         unprotectFailed++;
         if (supressCounter >= supressWarn) {
+            if (rc == 0 && srtpDecodeErrorBurst > srtpErrorBurstThreshold && zrtpUserCallback != NULL) {
+                zrtpUserCallback->onZrtpWarning(session, (char*)srtpDecodeFailedMsg, index);
+            }
             if (rc == -1 && srtpAuthErrorBurst >= srtpErrorBurstThreshold) {
                 sendInfo(Warning, WarningSRTPauthError);
             }
-            else if (srtpReplayErrorBurst >= srtpErrorBurstThreshold){
+            if (rc == -2 && srtpReplayErrorBurst >= srtpErrorBurstThreshold){
                 sendInfo(Warning, WarningSRTPreplayError);
             }
         }
@@ -1102,7 +1112,7 @@ void CtZrtpStream::initStrings() {
     warningMap.insert(std::pair<int32_t, std::string*>(WarningGoClearReceived, new std::string("s2_c002: Received a GoClear message")));
     warningMap.insert(std::pair<int32_t, std::string*>(WarningDHShort,         new std::string("s2_c003: Hello offers an AES256 cipher but does not offer a Diffie-Helman 4096")));
     warningMap.insert(std::pair<int32_t, std::string*>(WarningNoRSMatch,       new std::string("s2_c004: No retained secret matches - verify SAS")));
-    warningMap.insert(std::pair<int32_t, std::string*>(WarningCRCmismatch,     new std::string("s2_c005: Internal ZRTP packet checksum mismatch - packet dropped")));
+    warningMap.insert(std::pair<int32_t, std::string*>(WarningCRCmismatch,     new std::string("s2_c005: Internal ZRTP packet CRC mismatch - packet dropped")));
     warningMap.insert(std::pair<int32_t, std::string*>(WarningSRTPauthError,   new std::string("s2_c006: Dropping packet because SRTP authentication failed!")));
     warningMap.insert(std::pair<int32_t, std::string*>(WarningSRTPreplayError, new std::string("s2_c007: Dropping packet because SRTP replay check failed!")));
     warningMap.insert(std::pair<int32_t, std::string*>(WarningNoExpectedRSMatch,
