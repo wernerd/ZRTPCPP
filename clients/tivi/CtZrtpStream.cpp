@@ -282,7 +282,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
         }
         if (useZrtpTunnel) {
             size_t newLength;
-            *buffer = 0x80;                                    // make it to a real RTP packet
+            *buffer = 0x80;                                    // make it look like a real RTP packet
             rc = sdes->incomingZrtpTunnel(buffer, length, &newLength);
             if (rc < 0) {
                 if (rc == -1) {
@@ -395,6 +395,10 @@ int CtZrtpStream::isSecure() {
         if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0){              \
             return snprintf(p, maxLen, "%d", (!!(info->secretsCached & _FV)) << (!!(info->secretsMatchedDH & _FV)));}
 
+#define T_ZRTP_I(_K,_I)                                                \
+        if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0){              \
+            return snprintf(p, maxLen, "%d", _I);}
+
 int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
 
 //     if ((sdes == NULL /*&& !started*/) || isStopped || !isSecure())
@@ -405,6 +409,13 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
     ZRtp::zrtpInfo tmpInfo;
 
     int iLen = strlen(key);
+
+    // set the security state as a combination of tivi state and stateflags
+    int secState = tiviState & 0xff;
+    if (sdesActive)
+        secState |= 0x100;
+
+    T_ZRTP_I("sec_state", secState);
 
     // Compute Hello-hash info string
     const char *strng = NULL;

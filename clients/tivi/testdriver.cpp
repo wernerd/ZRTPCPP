@@ -50,7 +50,10 @@ static void sendData(uint8_t *buffer, unsigned int length)
 // This is the callback that we use for audio stream
 class TestCallbackAudio: public CtZrtpCb {
     void onNewZrtpStatus(CtZrtpSession *session, char *p, CtZrtpSession::streamName streamNm) {
+        uint8_t buffer[20];
         fprintf(stderr, "new status: %s\n", p == NULL ? "NULL" : p);
+        session->getInfo("sec_state", buffer, 19);
+        printf("secState: %s\n", buffer);
     }
 
     void onNeedEnroll(CtZrtpSession *session, CtZrtpSession::streamName streamNm, int32_t info) {
