@@ -545,6 +545,7 @@ bool CtZrtpStream::parseSdes(char *recvCryptoStr, size_t recvLength, char *sendC
 
     if (sdes == NULL || !sdes->parseSdes(recvCryptoStr, recvLength, sipInvite))
         goto cleanup;
+
     if (!sipInvite) {
         size_t len;
         if (sendCryptoStr == NULL) {
@@ -557,17 +558,19 @@ bool CtZrtpStream::parseSdes(char *recvCryptoStr, size_t recvLength, char *sendC
     }
     if (sdes->getState() == ZrtpSdesStream::SDES_SRTP_ACTIVE) {
         tiviState = CtZrtpSession::eSecureSdes;
-        if (zrtpUserCallback != NULL)
+        if (zrtpUserCallback != NULL) {
             zrtpUserCallback->onNewZrtpStatus(session, NULL, index);    // Inform client about new state
+        }
+        sdesActive = true;
+        if (zrtpEncapSignaled) {
+            useZrtpTunnel = true;
+        }
+        return true;
     }
-    sdesActive = true;
-    if (zrtpEncapSignaled) {
-        useZrtpTunnel = true;
-    }
-    return true;
 
  cleanup:
     sdesActive = false;
+    useZrtpTunnel = false;
     delete sdes;
     sdes = NULL;
     return false;
@@ -602,6 +605,7 @@ int CtZrtpStream::getCryptoMixAttribute(char *algoNames, size_t length) {
 
 void CtZrtpStream::resetSdesContext() {
     sdesActive = false;
+    useZrtpTunnel = false;
     delete sdes;
     sdes = NULL;
 }
