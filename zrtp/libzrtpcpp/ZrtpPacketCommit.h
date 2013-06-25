@@ -90,6 +90,9 @@ class __EXPORT ZrtpPacketCommit : public ZrtpPacketBase {
     /// Get pointer to MAC field during multi-stream mode, a fixed length byte array
     uint8_t* getHMACMulti()   { return commitHeader->hmac-4*ZRTP_WORD_SIZE; };
 
+    /// Check if packet length makes sense. Smallest Commit packet is 25 words
+    bool isLengthOk()         {return (getLength() >= 25);}
+
     /// Set hash algorithm type field, fixed length character field
     void setHashType(uint8_t* text)    { memcpy(commitHeader->hash, text, ZRTP_WORD_SIZE); };
 

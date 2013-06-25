@@ -84,6 +84,9 @@ class __EXPORT ZrtpPacketConfirm : public ZrtpPacketBase {
         /// get the signature length in words
         int32_t getSignatureLength();
 
+        /// Check if packet length makes sense. Confirm packets are 19 words at minumum
+        bool isLengthOk()                 {return (getLength() >= 19);}
+
         /// set SAS verified flag
         void setSASFlag()            { confirmHeader->flags |= 0x4; }
 
