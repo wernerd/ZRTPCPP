@@ -270,6 +270,10 @@ ZrtpPacketHelloAck* ZRtp::prepareHelloAck() {
  */
 ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) {
 
+    if (!hello->isLengthOk()) {
+        *errMsg = CriticalSWError;
+        return NULL;
+    }
     // Save data before detailed checks - may aid in analysing problems
     peerClientId.assign((char*)hello->getClientId(), ZRTP_WORD_SIZE * 4);
     memcpy(peerHelloVersion, hello->getVersion(), ZRTP_WORD_SIZE);
@@ -468,6 +472,10 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
 
     sendInfo(Info, InfoRespCommitReceived);
 
+    if (!commit->isLengthOk()) {
+        *errMsg = CriticalSWError;
+        return NULL;
+    }
     // The following code check the hash chain according chapter 10 to detect
     // false ZRTP packets.
     // Must use the implicit hash function.
@@ -611,6 +619,10 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
 
     sendInfo(Info, InfoInitDH1Received);
 
+    if (!dhPart1->isLengthOk()) {
+        *errMsg = CriticalSWError;
+        return NULL;
+    }
     // Because we are initiator the protocol engine didn't receive Commit
     // thus could not store a peer's H2. A two step SHA256 is required to
     // re-compute H3. Then compare with peer's H3 from peer's Hello packet.
@@ -683,6 +695,10 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
 
     sendInfo(Info, InfoRespDH2Received);
 
+    if (!dhPart2->isLengthOk()) {
+        *errMsg = CriticalSWError;
+        return NULL;
+    }
     // Because we are responder we received a Commit and stored its H2.
     // Now re-compute H2 from received H1 and compare with stored peer's H2.
     // Use implicit hash function
@@ -786,6 +802,10 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
 
     sendInfo(Info, InfoRespCommitReceived);
 
+    if (!commit->isLengthOk()) {
+        *errMsg = CriticalSWError;
+        return NULL;
+    }
     // The following code checks the hash chain according chapter 10 to detect
     // false ZRTP packets.
     // Use implicit hash function
@@ -894,6 +914,10 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
 
     sendInfo(Info, InfoInitConf1Received);
 
+    if (!confirm1->isLengthOk()) {
+        *errMsg = CriticalSWError;
+        return NULL;
+    }
     uint8_t confMac[MAX_DIGEST_LENGTH];
     uint32_t macLen;
 
@@ -1010,6 +1034,10 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2MultiStream(ZrtpPacketConfirm* confirm1,
     // don't update SAS, RS
     sendInfo(Info, InfoInitConf1Received);
 
+    if (!confirm1->isLengthOk()) {
+        *errMsg = CriticalSWError;
+        return NULL;
+    }
     uint8_t confMac[MAX_DIGEST_LENGTH];
     uint32_t macLen;
 
@@ -1075,6 +1103,10 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
 
     sendInfo(Info, InfoRespConf2Received);
 
+    if (!confirm2->isLengthOk()) {
+        *errMsg = CriticalSWError;
+        return NULL;
+    }
     uint8_t confMac[MAX_DIGEST_LENGTH];
     uint32_t macLen;
 
@@ -1184,6 +1216,10 @@ ZrtpPacketRelayAck* ZRtp::prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* er
     if (!mitmSeen || paranoidMode)
         return &zrtpRelayAck;
 
+    if (!srly->isLengthOk()) {
+        *errMsg = CriticalSWError;
+        return NULL;
+    }
     uint8_t* hkey, *ekey;
     // If we are responder then the PBX used it's Initiator keys
     if (myRole == Responder) {
