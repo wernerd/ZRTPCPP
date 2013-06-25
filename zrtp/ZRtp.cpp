@@ -1167,7 +1167,8 @@ ZrtpPacketError* ZRtp::prepareError(uint32_t errMsg) {
 }
 
 ZrtpPacketPingAck* ZRtp::preparePingAck(ZrtpPacketPing* ppkt) {
-
+    if (ppkt->getLength() != 6)                    // A PING packet must have a length of 6 words
+        return NULL;
     // Because we do not support ZRTP proxy mode use the truncated ZID.
     // If this code shall be used in ZRTP proxy implementation the computation
     // of the endpoint hash must be enhanced (see chaps 5.15ff and 5.16)
@@ -1467,14 +1468,14 @@ AlgorithmEnum* ZRtp::findBestSASType(ZrtpPacketHello *hello) {
     if (num == 0) {
         return &zrtpSasTypes.getByName(mandatorySasType);
     }
-    // Buildlist of configured SAS algorithm names
+    // Build list of configured SAS algorithm names
     numAlgosConf = configureAlgos.getNumConfiguredAlgos(SasType);
     for (i = 0; i < numAlgosConf; i++) {
         algosConf[i] = &configureAlgos.getAlgoAt(SasType, i);
     }
     // Build list of offered known algos in Hello,
     for (numAlgosOffered = 0, i = 0; i < num; i++) {
-        algosOffered[numAlgosOffered] = &zrtpSasTypes.getByName((const char*)hello->getSasType(i++));
+        algosOffered[numAlgosOffered] = &zrtpSasTypes.getByName((const char*)hello->getSasType(i));
         if (!algosOffered[numAlgosOffered]->isValid())
             continue;
         numAlgosOffered++;
@@ -2310,7 +2311,8 @@ void ZRtp::setClientId(std::string id, HelloPacketVersion* hpv) {
 }
 
 void ZRtp::storeMsgTemp(ZrtpPacketBase* pkt) {
-    int32_t length = pkt->getLength() * ZRTP_WORD_SIZE;
+    uint32_t length = pkt->getLength() * ZRTP_WORD_SIZE;
+    length = (length > sizeof(tempMsgBuffer)) ? sizeof(tempMsgBuffer) : length;
     memset(tempMsgBuffer, 0, sizeof(tempMsgBuffer));
     memcpy(tempMsgBuffer, (uint8_t*)pkt->getHeaderBase(), length);
     lengthOfMsgData = length;
