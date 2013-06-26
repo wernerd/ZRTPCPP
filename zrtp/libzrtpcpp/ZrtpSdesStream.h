@@ -310,7 +310,7 @@ public:
      * @param packet the buffer that contains the RTP/SRTP packet. After processing,
      *               the decrypted packet is stored in the same buffer.
      *
-     * @param length length of the RTCP packet
+     * @param length length of the RTP packet
      *
      * @param newLength to an integer that get the new length of the packet excluding SRTCP data.
      *
@@ -341,6 +341,42 @@ public:
     int incomingSrtcp(uint8_t *packet, size_t length, size_t *newLength);
 
     /**
+     * @brief Process an outgoing ZRTP packet.
+     * 
+     * Works like @c outgoingRtp, refer to that documentation.
+     * 
+     * @param packet the buffer that contains the ZRTP packet.
+     *
+     * @param length length of the ZRTP packet
+     *
+     * @param newLength to an integer that get the new length of the packet including SRTP data.
+     *
+     * @return
+     *  - @c true if encryption is successful, app shall send packet to the recipient.
+     *  - @c false if there was an error during encryption, don't send the packet.
+     */
+    bool outgoingZrtpTunnel(uint8_t *packet, size_t length, size_t *newLength);
+
+    /**
+     * @brief Process an incoming ZRTP packet
+     *
+     * Works like @c incomingRtp, refer to that documentation.
+     *
+     * @param packet the buffer that contains the ZRTP/SRTP packet. After processing,
+     *               the decrypted packet is stored in the same buffer.
+     *
+     * @param length length of the RTP packet
+     *
+     * @param newLength to an integer that get the new length of the packet excluding SRTCP data.
+     *
+     * @return
+     *       - 1: success,
+     *       - -1: SRTP authentication failed,
+     *       - -2: SRTP replay check failed
+     */
+    int incomingZrtpTunnel(uint8_t *packet, size_t length, size_t *newLength);
+
+        /**
      * @brief Return state of SDES stream.
      *
      * @return state of stream.
@@ -483,6 +519,9 @@ private:
     CryptoContext     *sendSrtp;           //!< The SRTP context for this stream
     CryptoContextCtrl *sendSrtcp;          //!< The SRTCP context for this stream
     uint32_t srtcpIndex;                   //!< the local SRTCP index
+
+    CryptoContext     *recvZrtpTunnel;     //!< The SRTP context for sender ZRTP tunnel
+    CryptoContext     *sendZrtpTunnel;     //!< The SRTP context for receiver ZRTP tunnel
 
     int32_t cryptoMixHashLength;
     sdesHmacTypeMix cryptoMixHashType;

@@ -529,6 +529,14 @@ class __EXPORT ZRtp {
       */
      int32_t getCurrentProtocolVersion() {return currentHelloPacket->getVersionInt();}
 
+     /**
+      * Validate the RS2 data if necessary.
+      *
+      * The cache functions stores the RS2 data but does not set its valid flag. The
+      * application may decide to set this flag.
+      */
+     void setRs2Valid();
+
 private:
      friend class ZrtpStateClass;
 

@@ -123,7 +123,9 @@ void ZrtpStateClass::processEvent(Event_t *ev) {
         else if (first == 'p' && middle == ' ' && last == ' ') {
             ZrtpPacketPing ppkt(pkt);
             ZrtpPacketPingAck* ppktAck = parent->preparePingAck(&ppkt);
-            parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(ppktAck));
+            if (ppktAck != NULL) {          // ACK only to valid PING packet, otherwise ignore it
+                parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(ppktAck));
+            }
             parent->synchLeave();
             return;
         }

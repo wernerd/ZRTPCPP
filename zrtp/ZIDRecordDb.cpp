@@ -29,11 +29,6 @@ void ZIDRecordDb::setNewRs1(const unsigned char* data, int32_t expire) {
     memcpy(record.rs2, record.rs1, RS_LENGTH);
     record.rs2Ttl = record.rs1Ttl;
 
-    // now propagate flags as well
-    if (isRs1Valid()) {
-        setRs2Valid();
-    }
-
     // set new RS1 data
     memcpy(record.rs1, data, RS_LENGTH);
 
@@ -48,6 +43,7 @@ void ZIDRecordDb::setNewRs1(const unsigned char* data, int32_t expire) {
         validThru = time(NULL) + expire;
     }
     record.rs1Ttl = validThru;
+    resetRs2Valid();
     setRs1Valid();
 }
 

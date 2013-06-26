@@ -73,10 +73,13 @@ class __EXPORT ZrtpPacketSASrelay : public ZrtpPacketBase {
         const uint8_t* getSasAlgo() {return sasRelayHeader->sas; }
 
         /// Get pointer to new SAS hash data, fixed byte array
-        const uint8_t* getTrustedSas() { return sasRelayHeader->trustedSasHash; }
+        const uint8_t* getTrustedSas()    { return sasRelayHeader->trustedSasHash; }
 
         /// get the signature length in words
         uint32_t getSignatureLength();
+
+        /// Check if packet length makes sense. SAS rely packets are 19 words at minumum, they are similar to Confirm
+        bool isLengthOk()                 {return (getLength() >= 19);}
 
         /// set SAS verified flag
         void setSASFlag()            { sasRelayHeader->flags |= 0x4; }

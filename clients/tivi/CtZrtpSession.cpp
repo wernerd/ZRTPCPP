@@ -500,12 +500,43 @@ bool CtZrtpSession::setCryptoMixAttribute(const char *algoNames, streamName stre
     return stream->setCryptoMixAttribute(algoNames);
 }
 
+void CtZrtpSession::resetSdesContext(streamName streamNm) {
+    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return;
+
+    CtZrtpStream *stream = streams[streamNm];
+    stream->resetSdesContext();
+}
+
+
 int32_t CtZrtpSession::getNumberSupportedVersions(streamName streamNm) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
         return 0;
 
     CtZrtpStream *stream = streams[streamNm];
     return stream->getNumberSupportedVersions();
+}
+
+const char* CtZrtpSession::getZrtpEncapAttribute(streamName streamNm) {
+    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return NULL;
+
+    CtZrtpStream *stream = streams[streamNm];
+    if (stream->isStopped)
+        return NULL;
+
+    return stream->getZrtpEncapAttribute();
+}
+
+void CtZrtpSession::setZrtpEncapAttribute(const char *attribute, streamName streamNm) {
+    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return;
+
+    CtZrtpStream *stream = streams[streamNm];
+    if (stream->isStopped)
+        return;
+
+    stream->setZrtpEncapAttribute(attribute);
 }
 
 
