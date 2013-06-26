@@ -20,10 +20,9 @@ C++ supports the following features:
 * The Short Authentication String (SAS) type with base 32 encoding (4
   characters)
 
-Enhanced features like PBX SAS relay aka *trusted Man-in-the-Middle* or
-preshared mode are not supported but the GNU ZRTP C++ implementation defines
-the necessary external interfaces and functions for these enhanced features
-(stubs only).
+Some features like preshared mode or signed SAS are not supported but the GNU
+ZRTP C++ implementation defines the necessary external interfaces and
+functions for these enhanced features (stubs only).
 
 ### SDES support
 This release also provides SDES support. The SDES implementation does not
