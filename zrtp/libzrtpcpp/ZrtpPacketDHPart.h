@@ -79,8 +79,8 @@ class __EXPORT ZrtpPacketDHPart : public ZrtpPacketBase {
     /// Get pointer to HMAC, fixed length byte array
     uint8_t* getHMAC()           { return pv+dhLength; };
 
-    /// Check if packet length makes sense. DHPart packets are 21 words at minumum
-    bool isLengthOk()            {return (getLength() >= 21);}
+    /// Check if packet length makes sense. DHPart packets are 37 words at minumum, using DH EC25
+    bool isLengthOk()            {return (getLength() >= 37);}
 
     /// Setpublic key value, variable length byte array
     void setPv(uint8_t* text)         { memcpy(pv, text, dhLength); };
