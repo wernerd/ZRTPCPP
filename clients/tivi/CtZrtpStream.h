@@ -440,7 +440,7 @@ private:
     bool     zrtpHashMatch;
     bool     sasVerified;
     bool     helloReceived;
-    bool     sdesActive;
+    bool     useSdesForMedia;
     bool     useZrtpTunnel;
     bool     zrtpEncapSignaled;
     ZrtpSdesStream *sdes;
