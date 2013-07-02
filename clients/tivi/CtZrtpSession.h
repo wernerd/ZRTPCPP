@@ -14,7 +14,7 @@
 #include <string.h>
 
 #ifndef __EXPORT
-  #if defined _WIN32 || defined __CYGWIN__
+  #if (defined _WIN32 || defined __CYGWIN__) && defined(_DLL)
     #define __EXPORT    __declspec(dllimport)
     #define __LOCAL
   #elif __GNUC__ >= 4

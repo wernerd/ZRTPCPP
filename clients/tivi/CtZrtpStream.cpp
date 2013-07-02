@@ -64,7 +64,7 @@ CtZrtpStream::CtZrtpStream():
     enableZrtp(0), started(false), isStopped(false), session(NULL), tiviState(CtZrtpSession::eLookingPeer),
     prevTiviState(CtZrtpSession::eLookingPeer), recvSrtp(NULL), recvSrtcp(NULL), sendSrtp(NULL), sendSrtcp(NULL),
     zrtpUserCallback(NULL), zrtpSendCallback(NULL), senderZrtpSeqNo(0), peerSSRC(0), zrtpHashMatch(false),
-    sasVerified(false), helloReceived(false), sdesActive(false), useZrtpTunnel(false), zrtpEncapSignaled(false), 
+    sasVerified(false), helloReceived(false), useSdesForMedia(false), useZrtpTunnel(false), zrtpEncapSignaled(false), 
     sdes(NULL), supressCounter(0), srtpAuthErrorBurst(0), srtpReplayErrorBurst(0), srtpDecodeErrorBurst(0), 
     zrtpCrcErrors(0), role(NoRole)
 {
@@ -93,7 +93,7 @@ CtZrtpStream::~CtZrtpStream() {
     delete synchLock;
     synchLock = NULL;
 }
-
+//
 void CtZrtpStream::stopStream() {
 
     // If we got only a small amout of valid SRTP packets after ZRTP negotiation then
@@ -124,6 +124,7 @@ void CtZrtpStream::stopStream() {
     senderZrtpSeqNo &= 0x7fff;
     zrtpHashMatch= false;
     sasVerified = false;
+    useSdesForMedia = false;
     useZrtpTunnel = false;
     zrtpEncapSignaled = false;
     supressCounter = 0;
@@ -170,7 +171,7 @@ bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *ne
             ZrtpRandom::addEntropy(buffer, length);
             return false;
         }
-        if (sdesActive && sdes != NULL) {   // SDES stream available, let SDES protect if necessary
+        if (useSdesForMedia && sdes != NULL) {   // SDES stream available, let SDES protect if necessary
             rc = sdes->outgoingRtp(buffer, length, newLength);
             if (*sdesTempBuffer != 0)       // clear SDES crypto string if not already done
                 memset(sdesTempBuffer, 0, maxSdesString);
@@ -179,7 +180,7 @@ bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *ne
         return rc;
     }
     // At this point ZRTP/SRTP is active
-    if (sdesActive && sdes != NULL) {       // We still have a SDES - other client did not send zrtp-hash thus we protect twice
+    if (useSdesForMedia && sdes != NULL) {       // We still have a SDES - other client did not send zrtp-hash thus we protect twice
         rc = sdes->outgoingRtp(buffer, length, newLength);
         if (*sdesTempBuffer != 0)           // clear SDES crypto string if not already done
             memset(sdesTempBuffer, 0, maxSdesString);
@@ -203,7 +204,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
             supressCounter++;
 
         if (recvSrtp == NULL) {                 // no ZRTP/SRTP available
-            if (!sdesActive || sdes == NULL) {  // no SDES stream available, just set length and return
+            if (!useSdesForMedia || sdes == NULL) {  // no SDES stream available, just set length and return
                 *newLength = length;
                 return 1;
             }
@@ -211,7 +212,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
             if (*sdesTempBuffer != 0)           // clear SDES crypto string if not already done
                 memset(sdesTempBuffer, 0, maxSdesString);
 
-            if (rc == 1) {                       // SDES unprotect success, do some statistics and return success
+            if (rc == 1) {                      // SDES unprotect OK, do some statistics and return success
                 srtpAuthErrorBurst = 0;
                 srtpReplayErrorBurst = 0;
                 srtpDecodeErrorBurst = 0;
@@ -224,15 +225,15 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
             rc = SrtpHandler::unprotect(recvSrtp, buffer, length, newLength);
             if (rc == 1) {
                 zrtpUnprotect++;
-                // Got a good SRTP, check state, WaitConfAck is an Initiator state
-                // in this case simulate a conf2Ack, refer to RFC 6189, chapter 4.6, last paragraph
+                // Got a good SRTP, check state and if in WaitConfAck (an Initiator state)
+                // then simulate a conf2Ack, refer to RFC 6189, chapter 4.6, last paragraph
                 if (zrtpEngine->inState(WaitConfAck)) {
                     zrtpEngine->conf2AckSecure();
                 }
-                if (sdesActive && sdes != NULL) {    // We still have a SDES - other client did not send matching zrtp-hash
+                if (useSdesForMedia && sdes != NULL) {    // We still have a SDES - other client did not send matching zrtp-hash
                     rc = sdes->incomingRtp(buffer, *newLength, newLength);
                 }
-                if (rc == 1) {                       // if rc is still one: either no SDES or SDES incoming sucess
+                if (rc == 1) {                       // if rc is still OK: either no SDES or layered SDES unprotect OK
                     srtpAuthErrorBurst = 0;
                     srtpReplayErrorBurst = 0;
                     srtpDecodeErrorBurst = 0;
@@ -312,7 +313,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
                 return 0;
             }
         }
-        // this now points beyond to the plain ZRTP message.
+        // this now points to the plain ZRTP message.
         unsigned char* zrtpMsg = (buffer + 12);
 
         // store peer's SSRC in host order, used when creating the CryptoContext
@@ -371,7 +372,7 @@ void CtZrtpStream::setSignalingHelloHash(const char *hHash) {
             // We have a matching zrtp-hash. If ZRTP/SRTP is active we may need to release
             // an existig SDES stream.
             if (sdes != NULL && sendSrtp != NULL && recvSrtp != NULL) {
-                sdesActive = false;
+                useSdesForMedia = false;
             }
             break;
         }
@@ -412,7 +413,7 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
 
     // set the security state as a combination of tivi state and stateflags
     int secState = tiviState & 0xff;
-    if (sdesActive)
+    if (useSdesForMedia)
         secState |= 0x100;
 
     T_ZRTP_I("sec_state", secState);
@@ -456,7 +457,7 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
             return sprintf(p, "%d" ,v);
         }
     }
-    else if (sdesActive && sdes != NULL) {
+    else if (useSdesForMedia && sdes != NULL) {
         T_ZRTP_LB("lbClient",      (const char*)"SDES");
         T_ZRTP_LB("lbVersion",     (const char*)"");
 
@@ -521,7 +522,7 @@ int CtZrtpStream::enrollDenied() {
 
 
 bool CtZrtpStream::createSdes(char *cryptoString, size_t *maxLen, const ZrtpSdesStream::sdesSuites sdesSuite) {
-    if (isSecure())         // don't take action if we are already secure
+    if (isSecure() || isSdesActive())   // don't take action if we are already secure or SDES already in active state
         return false;
 
     if (sdes == NULL)
@@ -536,7 +537,7 @@ bool CtZrtpStream::createSdes(char *cryptoString, size_t *maxLen, const ZrtpSdes
 }
 
 bool CtZrtpStream::parseSdes(char *recvCryptoStr, size_t recvLength, char *sendCryptoStr, size_t *sendLength, bool sipInvite) {
-    if (isSecure())         // don't take action if we are already secure
+    if (isSecure() || isSdesActive())   // don't take action if we are already secure or SDES already in active state
         return false;
 
     // The ZrtpSdesStream determines its suite by parsing the crypto string.
@@ -561,7 +562,7 @@ bool CtZrtpStream::parseSdes(char *recvCryptoStr, size_t recvLength, char *sendC
         if (zrtpUserCallback != NULL) {
             zrtpUserCallback->onNewZrtpStatus(session, NULL, index);    // Inform client about new state
         }
-        sdesActive = true;
+        useSdesForMedia = true;
         if (zrtpEncapSignaled) {
             useZrtpTunnel = true;
         }
@@ -569,7 +570,7 @@ bool CtZrtpStream::parseSdes(char *recvCryptoStr, size_t recvLength, char *sendC
     }
 
  cleanup:
-    sdesActive = false;
+    useSdesForMedia = false;
     useZrtpTunnel = false;
     delete sdes;
     sdes = NULL;
@@ -604,14 +605,14 @@ int CtZrtpStream::getCryptoMixAttribute(char *algoNames, size_t length) {
 }
 
 void CtZrtpStream::resetSdesContext() {
-    sdesActive = false;
+    useSdesForMedia = false;
     useZrtpTunnel = false;
     delete sdes;
     sdes = NULL;
 }
 
 bool  CtZrtpStream::setCryptoMixAttribute(const char *algoNames) {
-    if (isSecure()) // don't take action if we are already secure
+    if (isSecure() || isSdesActive())   // don't take action if we are already secure or SDES already in active state
         return false;
 
     if (sdes == NULL)
@@ -632,7 +633,7 @@ const char* CtZrtpStream::getZrtpEncapAttribute() {
 void CtZrtpStream::setZrtpEncapAttribute(const char *attribute) {
     if (attribute != NULL && strncmp(attribute, zrtpEncap, 4) == 0) {
         zrtpEncapSignaled = true;
-        if (sdesActive) {
+        if (useSdesForMedia) {
             useZrtpTunnel = true;
         }
     }
@@ -861,7 +862,7 @@ bool CtZrtpStream::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
         supressCounter = 0;         // supress SRTP warnings for some packets after we switch to SRTP
     }
     if (peerHelloHashes.size() > 0 && recvSrtp != NULL && sendSrtp != NULL) {
-        sdesActive = false;
+        useSdesForMedia = false;
     }
     return true;
 }

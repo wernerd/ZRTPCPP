@@ -476,6 +476,16 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
         *errMsg = CriticalSWError;
         return NULL;
     }
+
+    // Check if ZID in Commit is the same as we got in Hello
+    uint8_t tmpZid[ZID_SIZE];
+    memcpy(tmpZid, commit->getZid(), ZID_SIZE);
+    if (memcmp(peerZid, tmpZid, ZID_SIZE) != 0) {       // ZIDs do not match????
+        sendInfo(Severe, SevereProtocolError);
+        *errMsg = CriticalSWError;
+        return NULL;
+    }
+
     // The following code check the hash chain according chapter 10 to detect
     // false ZRTP packets.
     // Must use the implicit hash function.
