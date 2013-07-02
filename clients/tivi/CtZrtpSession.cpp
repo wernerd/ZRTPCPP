@@ -500,12 +500,12 @@ bool CtZrtpSession::setCryptoMixAttribute(const char *algoNames, streamName stre
     return stream->setCryptoMixAttribute(algoNames);
 }
 
-void CtZrtpSession::resetSdesContext(streamName streamNm) {
+void CtZrtpSession::resetSdesContext(streamName streamNm, bool force) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
         return;
 
     CtZrtpStream *stream = streams[streamNm];
-    stream->resetSdesContext();
+    stream->resetSdesContext(force);
 }
 
 

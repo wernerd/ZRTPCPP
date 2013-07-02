@@ -350,8 +350,11 @@ protected:
      * This method deletes an existing SDES context unconditionally. The application must make
      * sure that it does not use the SDES context in any way, for example feeding RTP or SRTP packets
      * to this stream.
+     * 
+     * @param force if set to true then it resets the context unconditionally, otherwise only if
+     *              SDES is not in active state.
      */
-    void resetSdesContext();
+    void resetSdesContext(bool force =false);
 
     /**
      * @brief Get number of supported ZRTP protocol versions.

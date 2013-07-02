@@ -604,11 +604,13 @@ int CtZrtpStream::getCryptoMixAttribute(char *algoNames, size_t length) {
     return sdes->getCryptoMixAttribute(algoNames, length);
 }
 
-void CtZrtpStream::resetSdesContext() {
-    useSdesForMedia = false;
-    useZrtpTunnel = false;
-    delete sdes;
-    sdes = NULL;
+void CtZrtpStream::resetSdesContext(bool force) {
+    if (force || !isSdesActive()) {
+        useSdesForMedia = false;
+        useZrtpTunnel = false;
+        delete sdes;
+        sdes = NULL;
+    }
 }
 
 bool  CtZrtpStream::setCryptoMixAttribute(const char *algoNames) {

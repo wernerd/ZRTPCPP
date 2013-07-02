@@ -587,8 +587,11 @@ public:
      * to this stream.
      *
      * @param streamNm stream identifier.
+     *
+     * @param force if set to true then it resets the context unconditionally, otherwise only if
+     *              SDES is not in active state.
      */
-    void resetSdesContext(streamName streamNm);
+    void resetSdesContext(streamName streamNm, bool force =false);
 
     /**
      * @brief Clean Cache
