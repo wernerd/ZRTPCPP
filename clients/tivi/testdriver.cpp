@@ -61,7 +61,8 @@ class TestCallbackAudio: public CtZrtpCb {
     }
 
     void onPeer(CtZrtpSession *session, char *name, int iIsVerified, CtZrtpSession::streamName streamNm) {
-        fprintf(stderr, "onPeer: %s\n", name == NULL ? "NULL" : name);
+        fprintf(stderr, "onPeer: %s", name == NULL || strlen(name) == 0 ? "NULL" : name);
+        fprintf(stderr, ", verified: %s\n", iIsVerified ? "YES" : "NO");
         uint8_t buffer[20];
 
         session->getInfo("rs1", buffer, 19);

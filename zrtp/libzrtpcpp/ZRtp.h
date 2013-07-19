@@ -846,6 +846,12 @@ private:
     ZIDRecord *zidRec;
 
     /**
+     * Save record
+     * 
+     * If false don't save record until user vrified and confirmed the SAS.
+     */
+    bool saveZidRecord;
+    /**
      * Random IV data to encrypt the confirm data, 128 bit for AES
      */
     uint8_t randomIV[16];

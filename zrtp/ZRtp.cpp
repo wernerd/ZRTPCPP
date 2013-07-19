@@ -73,7 +73,7 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* conf
         callback(cb), dhContext(NULL), DHss(NULL), auxSecret(NULL), auxSecretLength(0), rs1Valid(false),
         rs2Valid(false), msgShaContext(NULL), hash(NULL), cipher(NULL), pubKey(NULL), sasType(NULL), authLength(NULL),
         multiStream(false), multiStreamAvailable(false), peerIsEnrolled(false), mitmSeen(false), pbxSecretTmp(NULL),
-        enrollmentMode(false), configureAlgos(*config), zidRec(NULL) {
+        enrollmentMode(false), configureAlgos(*config), zidRec(NULL), saveZidRecord(true) {
 
     enableMitmEnrollment = config->isTrustedMitM();
     paranoidMode = config->isParanoidMode();
@@ -1006,7 +1006,8 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
             zrtpConfirm2.setPBXEnrollment();
         }
     }
-    getZidCacheInstance()->saveRecord(zidRec);
+    if (saveZidRecord)
+        getZidCacheInstance()->saveRecord(zidRec);
 
     // Encrypt and HMAC with Initiator's key - we are Initiator here
     hmlen = (zrtpConfirm2.getLength() - 9) * ZRTP_WORD_SIZE;
@@ -1164,7 +1165,8 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
 
         // save new RS1, this inherits the verified flag from old RS1
         zidRec->setNewRs1((const uint8_t*)newRs1);
-        getZidCacheInstance()->saveRecord(zidRec);
+        if (saveZidRecord)
+            getZidCacheInstance()->saveRecord(zidRec);
 
         // Ask for enrollment only if enabled via configuration and the
         // confirm packet contains the enrollment flag. The enrolling user
@@ -1768,6 +1770,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
         if (rs1Valid || rs2Valid) {            // but valid RS records in cache
             sendInfo(Warning, WarningNoExpectedRSMatch);
             zidRec->resetSasVerified();
+            saveZidRecord = false;             // Don't save RS until user verfied/confirmed SAS
         }
         else {                                 // No valid RS record in cache
             sendInfo(Warning, WarningNoRSMatch);
@@ -1925,6 +1928,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
         if (rs1Valid || rs2Valid) {            // but valid RS records in cache
             sendInfo(Warning, WarningNoExpectedRSMatch);
             zidRec->resetSasVerified();
+            saveZidRecord = false;             // Don't save RS until user verfied/confirmed SAS
         }
         else {                                 // No valid RS record in cache
             sendInfo(Warning, WarningNoRSMatch);
@@ -2266,6 +2270,7 @@ void ZRtp::SASVerified() {
         return;
 
     zidRec->setSasVerified();
+    saveZidRecord = true;
     getZidCacheInstance()->saveRecord(zidRec);
 }
 
@@ -2279,7 +2284,8 @@ void ZRtp::setRs2Valid() {
 
     if (zidRec != NULL) {
         zidRec->setRs2Valid();
-        getZidCacheInstance()->saveRecord(zidRec);
+        if (saveZidRecord)
+            getZidCacheInstance()->saveRecord(zidRec);
     }
 }
 
