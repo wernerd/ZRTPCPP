@@ -445,7 +445,7 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
         info = zrtpEngine->getDetailInfo();
 
         if (iLen == 1 && key[0] == 'v') {
-            return sprintf(p, "%d", sasVerified);
+            return snprintf(p, maxLen, "%d", sasVerified);
         }
         if(strncmp("sc_secure", key, iLen) == 0) {
             int v = (zrtpHashMatch && sasVerified && !peerHelloHashes.empty() && tiviState == CtZrtpSession::eSecure);
@@ -454,7 +454,7 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
                 v = 0;
             if (v && (info->secretsMatched & ZRtp::Rs1) == 0 && !sasVerified)
                 v = 0;
-            return sprintf(p, "%d" ,v);
+            return snprintf(p, maxLen, "%d", v);
         }
     }
     else if (useSdesForMedia && sdes != NULL) {

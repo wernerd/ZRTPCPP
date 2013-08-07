@@ -2350,7 +2350,7 @@ void ZRtp::setAuxSecret(uint8_t* data, int32_t length) {
 void ZRtp::setClientId(std::string id, HelloPacketVersion* hpv) {
 
     unsigned char tmp[CLIENT_ID_SIZE +1] = {' '};
-    memcpy(tmp, id.c_str(), id.size());
+    memcpy(tmp, id.c_str(), id.size() > CLIENT_ID_SIZE ? CLIENT_ID_SIZE : id.size());
     tmp[CLIENT_ID_SIZE] = 0;
 
     hpv->packet->setClientId(tmp);
