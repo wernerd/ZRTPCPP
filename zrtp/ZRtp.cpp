@@ -76,6 +76,7 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* conf
         enrollmentMode(false), configureAlgos(*config), zidRec(NULL), saveZidRecord(true) {
 
     enableMitmEnrollment = config->isTrustedMitM();
+    signatureData = NULL;
     paranoidMode = config->isParanoidMode();
 
     // setup the implicit hash function pointers and length
@@ -472,7 +473,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
 
     sendInfo(Info, InfoRespCommitReceived);
 
-    if (!commit->isLengthOk()) {
+    if (!commit->isLengthOk(ZrtpPacketCommit::DhExchange)) {
         *errMsg = CriticalSWError;
         return NULL;
     }
@@ -812,7 +813,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
 
     sendInfo(Info, InfoRespCommitReceived);
 
-    if (!commit->isLengthOk()) {
+    if (!commit->isLengthOk(ZrtpPacketCommit::MultiStream)) {
         *errMsg = CriticalSWError;
         return NULL;
     }
@@ -953,7 +954,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
         return NULL;
     }
     signatureLength = confirm1->getSignatureLength();
-    if (signSasSeen && signatureLength > 0) {
+    if (signSasSeen && signatureLength > 0 && confirm1->isSignatureLengthOk()) {
         signatureData = confirm1->getSignatureData();
         callback->checkSASSignature(sasHash);
         // TODO: error handling if checkSASSignature returns false.
@@ -1147,7 +1148,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
             return NULL;
         }
         signatureLength = confirm2->getSignatureLength();
-        if (signSasSeen && signatureLength > 0) {
+        if (signSasSeen && signatureLength > 0 && confirm2->isSignatureLengthOk() ) {
             signatureData = confirm2->getSignatureData();
             callback->checkSASSignature(sasHash);
             // TODO: error handling if checkSASSignature returns false.
@@ -1201,7 +1202,10 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
 }
 
 ZrtpPacketErrorAck* ZRtp::prepareErrorAck(ZrtpPacketError* epkt) {
-    sendInfo(ZrtpError, epkt->getErrorCode() * -1);
+    if (epkt->getLength() < 4)
+        sendInfo(ZrtpError, CriticalSWError * -1);
+    else
+        sendInfo(ZrtpError, epkt->getErrorCode() * -1);
     return &zrtpErrorAck;
 }
 
@@ -1623,6 +1627,10 @@ bool ZRtp::checkMultiStream(ZrtpPacketHello *hello) {
 
 bool ZRtp::verifyH2(ZrtpPacketCommit *commit) {
     uint8_t tmpH3[IMPL_MAX_DIGEST_LENGTH];
+
+    // packet does not have the correct size, treat H2 verfication as failed.
+    if (!commit->isLengthOk(multiStream ? ZrtpPacketCommit::MultiStream : ZrtpPacketCommit::DhExchange))
+        return false;
 
     sha256(commit->getH2(), HASH_IMAGE_SIZE, tmpH3);
     if (memcmp(tmpH3, peerH3, HASH_IMAGE_SIZE) != 0) {

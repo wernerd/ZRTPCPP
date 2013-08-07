@@ -802,6 +802,11 @@ void ZrtpStateClass::evCommitSent(void) {
             }
             cancelTimer();         // this cancels the Commit timer T2
 
+            if (zpCo.isLengthOk(multiStream ? ZrtpPacketCommit::MultiStream : ZrtpPacketCommit::DhExchange)) {
+                sendErrorPacket(CriticalSWError);
+                return;
+            }
+
             // if our hvi is less than peer's hvi: switch to Responder mode and
             // send DHPart1 or Confirm1 packet. Peer (as Initiator) will retrigger if
             // necessary
