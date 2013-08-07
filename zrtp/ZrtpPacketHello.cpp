@@ -101,6 +101,12 @@ ZrtpPacketHello::ZrtpPacketHello(uint8_t *data) {
     zrtpHeader = (zrtpPacketHeader_t *)&((HelloPacket_t *)data)->hdr;	// the standard header
     helloHeader = (Hello_t *)&((HelloPacket_t *)data)->hello;
 
+    // Force the isLengthOk() check to fail when we process the packet.
+    if (getLength() < HELLO_FIXED_PART_LEN) {
+        computedLength = 0;
+        return;
+    }
+
     uint32_t t = *((uint32_t*)&helloHeader->flags);
     uint32_t temp = zrtpNtohl(t);
 

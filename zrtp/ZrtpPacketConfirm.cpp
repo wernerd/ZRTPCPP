@@ -66,6 +66,20 @@ bool ZrtpPacketConfirm::setSignatureData(uint8_t* data, int32_t length) {
     return true;
 }
 
+bool ZrtpPacketConfirm::isSignatureLengthOk() {
+    int32_t actualLen = getLength();
+    int32_t expectedLen = 19;                  // Confirm packet fixed part is 19 ZRTP words
+    int32_t sigLen = getSignatureLength();
+
+    fprintf(stderr, "Confirm has signature len: %d\n", sigLen);
+    if (sigLen > 0) {                          // We have a signature
+        expectedLen += sigLen + 1;             // +1 for the signature length field
+    }
+
+    fprintf(stderr, "Confirm is length OK: %d == %d\n", expectedLen, actualLen);
+    return (expectedLen == actualLen);
+}
+
 int32_t ZrtpPacketConfirm::getSignatureLength() {
     int32_t sl = confirmHeader->sigLength & 0xff;
     if (confirmHeader->filler[1] == 1) {                              // do we have a 9th bit
