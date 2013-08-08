@@ -802,7 +802,7 @@ void ZrtpStateClass::evCommitSent(void) {
             }
             cancelTimer();         // this cancels the Commit timer T2
 
-            if (zpCo.isLengthOk(multiStream ? ZrtpPacketCommit::MultiStream : ZrtpPacketCommit::DhExchange)) {
+            if (!zpCo.isLengthOk(multiStream ? ZrtpPacketCommit::MultiStream : ZrtpPacketCommit::DhExchange)) {
                 sendErrorPacket(CriticalSWError);
                 return;
             }
