@@ -16,6 +16,7 @@
  */
 
 #include <fcntl.h>
+#include <time.h>
 
 #include <cryptcommon/ZrtpRandom.h>
 #include <cryptcommon/aescpp.h>
@@ -128,6 +129,29 @@ void ZrtpRandom::initialize() {
 
     sha512_begin(&mainCtx);
     initialized = true;
+
+    // Use the processor time consumed by the program and the
+    // current time for additional entropy
+    clock_t clock1 = clock();
+    time_t time1 = time(NULL);
+    sha512_hash((unsigned char*)&clock1, sizeof(clock1), &mainCtx);
+    sha512_hash((unsigned char*)&time1, sizeof(time1), &mainCtx);
+#if defined(_WIN32) || defined(_WIN64)
+    // On Windows the /dev/urandom is not used so additional
+    // entropy has to be gathered from timers. The run time
+    // of this loop should be not deterministic, because
+    // it depends on CPU frequency, cache status, context
+    // switching speed.
+    // It runs under 1 second.
+    clock_t clock2;
+    time_t time2;
+    do {
+        clock2 = clock();
+        time2 = time(NULL);
+        sha512_hash((unsigned char*)&clock2, sizeof(clock2), &mainCtx);
+        sha512_hash((unsigned char*)&time2, sizeof(time2), &mainCtx);
+    } while (clock1 == clock1 && time1 == time2);
+#endif
 }
 
 /*
@@ -148,6 +172,13 @@ size_t ZrtpRandom::getSystemSeed(uint8_t *seed, size_t length)
     }
     else
         return num;
+#else
+    clock_t c = clock();
+    if (length > sizeof(c))
+    {
+        memcpy(seed, &c, sizeof(c));
+        num = sizeof(c);
+    }
 #endif
     return num;
 }
