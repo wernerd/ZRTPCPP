@@ -173,12 +173,7 @@ size_t ZrtpRandom::getSystemSeed(uint8_t *seed, size_t length)
     else
         return num;
 #else
-    clock_t c = clock();
-    if (length > sizeof(c))
-    {
-        memcpy(seed, &c, sizeof(c));
-        num = sizeof(c);
-    }
+#error This random number generator can not be used on Windows platform without seeding!
 #endif
     return num;
 }
