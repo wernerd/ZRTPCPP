@@ -148,6 +148,8 @@ size_t ZrtpRandom::getSystemSeed(uint8_t *seed, size_t length)
     }
     else
         return num;
+#else
+#error This random number generator can not be used on Windows platform without seeding!
 #endif
     return num;
 }
