@@ -173,8 +173,8 @@ bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *ne
         }
         if (useSdesForMedia && sdes != NULL) {   // SDES stream available, let SDES protect if necessary
             rc = sdes->outgoingRtp(buffer, length, newLength);
-            if (*sdesTempBuffer != 0)       // clear SDES crypto string if not already done
-                memset(sdesTempBuffer, 0, maxSdesString);
+//             if (*sdesTempBuffer != 0)       // clear SDES crypto string if not already done
+//                 memset(sdesTempBuffer, 0, maxSdesString);
             sdesProtect++;
         }
         return rc;
@@ -182,8 +182,8 @@ bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *ne
     // At this point ZRTP/SRTP is active
     if (useSdesForMedia && sdes != NULL) {       // We still have a SDES - other client did not send zrtp-hash thus we protect twice
         rc = sdes->outgoingRtp(buffer, length, newLength);
-        if (*sdesTempBuffer != 0)           // clear SDES crypto string if not already done
-            memset(sdesTempBuffer, 0, maxSdesString);
+//         if (*sdesTempBuffer != 0)           // clear SDES crypto string if not already done
+//             memset(sdesTempBuffer, 0, maxSdesString);
         if (!rc) {
             return rc;
         }
@@ -209,10 +209,10 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
                 return 1;
             }
             rc = sdes->incomingRtp(buffer, length, newLength);
-            if (*sdesTempBuffer != 0)           // clear SDES crypto string if not already done
-                memset(sdesTempBuffer, 0, maxSdesString);
-
             if (rc == 1) {                      // SDES unprotect OK, do some statistics and return success
+                if (*sdesTempBuffer != 0)       // clear SDES crypto string if not already done
+                    memset(sdesTempBuffer, 0, maxSdesString);
+
                 srtpAuthErrorBurst = 0;
                 srtpReplayErrorBurst = 0;
                 srtpDecodeErrorBurst = 0;
@@ -296,9 +296,12 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
                 }
                 return 0;
             }
+            if (*sdesTempBuffer != 0)                          // clear SDES crypto string if not already done
+                memset(sdesTempBuffer, 0, maxSdesString);
             useLength = newLength + CRC_SIZE;                  // length check assumes a ZRTP CRC
         }
         else {
+            char tmpBuffer[500];
             useZrtpTunnel = false;
             // Get CRC value into crc (see above how to compute the offset)
             uint16_t temp = length - CRC_SIZE;
@@ -307,6 +310,9 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
             if (!zrtpCheckCksum(buffer, temp, crc)) {
                 zrtpCrcErrors++;
                 if (zrtpCrcErrors > 15) {
+                    snprintf(tmpBuffer, 500, "buffer %p, length: %d, sdes: %p, sdesMedia: %d, zrtpEncap: %d, crc: %x",
+                        buffer, temp, (void*)sdes, useSdesForMedia, zrtpEncapSignaled, crc);
+                    zrtp_log("CtZrtpStream", tmpBuffer);
                     sendInfo(Warning, WarningCRCmismatch);
                     zrtpCrcErrors = 0;
                 }
