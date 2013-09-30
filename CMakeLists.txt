@@ -211,6 +211,12 @@ set(zrtp_crypto_src
     ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha256.cpp
     ${CMAKE_SOURCE_DIR}/zrtp/crypto/hmac384.cpp
     ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha384.cpp
+
+    ${CMAKE_SOURCE_DIR}/zrtp/crypto/skeinMac256.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein256.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/crypto/skeinMac384.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein384.cpp
+
     ${CMAKE_SOURCE_DIR}/zrtp/crypto/aesCFB.cpp
     ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.cpp
     ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha2.c)

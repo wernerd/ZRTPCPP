@@ -149,8 +149,10 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
     conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("Mult"));
 
     if (iEnableSHA384 == 1 || iDisableECDH384 == 0) {
+        conf->addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN3"));
         conf->addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
     }
+    conf->addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN2"));
     conf->addAlgo(HashAlgorithm, zrtpHashes.getByName("S256"));
 
     if (iDisableAES256 == 0) {

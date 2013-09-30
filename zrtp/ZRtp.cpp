@@ -25,6 +25,12 @@
 #include <crypto/sha256.h>
 #include <crypto/hmac384.h>
 #include <crypto/sha384.h>
+
+#include <crypto/skeinMac256.h>
+#include <crypto/skein256.h>
+#include <crypto/skeinMac384.h>
+#include <crypto/skein384.h>
+
 #include <crypto/aesCFB.h>
 #include <crypto/twoCFB.h>
 
@@ -547,7 +553,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
         return NULL;
     }
     if (*(int32_t*)(cp->getName()) == *(int32_t*)ec38) {
-        if (*(int32_t*)(hash->getName()) != *(int32_t*)s384) {
+        if (!(*(int32_t*)(hash->getName()) == *(int32_t*)s384 || *(int32_t*)(hash->getName()) == *(int32_t*)skn3)) {
             *errMsg = UnsuppHashType;
             return NULL;
         }
@@ -1589,7 +1595,7 @@ AlgorithmEnum* ZRtp::getStrongHashOffered(ZrtpPacketHello *hello) {
 
     int numHash = hello->getNumHashes();
     for (int i = 0; i < numHash; i++) {
-        if (*(int32_t*)(hello->getHashType(i)) == *(int32_t*)s384) {
+        if (*(int32_t*)(hello->getHashType(i)) == *(int32_t*)s384 || *(int32_t*)(hello->getHashType(i)) == *(int32_t*)skn3) {
             return &zrtpHashes.getByName((const char*)hello->getHashType(i));
         }
     }
@@ -2262,6 +2268,34 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hash) {
 
         createHashCtx = createSha384Context;
         closeHashCtx = closeSha384Context;
+        hashCtxFunction = sha384Ctx;
+        hashCtxListFunction = sha384Ctx;
+        break;
+
+    case 2:
+        hashLength = SKEIN256_DIGEST_LENGTH;
+        hashFunction = skein256;
+        hashListFunction = skein256;
+
+        hmacFunction = macSkein256;
+        hmacListFunction = macSkein256;
+
+        createHashCtx = createSkein256Context;
+        closeHashCtx = closeSkein256Context;
+        hashCtxFunction = sha256Ctx;
+        hashCtxListFunction = sha256Ctx;
+        break;
+
+    case 3:
+        hashLength = SKEIN384_DIGEST_LENGTH;
+        hashFunction = skein384;
+        hashListFunction = skein384;
+
+        hmacFunction = macSkein384;
+        hmacListFunction = macSkein384;
+
+        createHashCtx = createSkein384Context;
+        closeHashCtx = closeSkein384Context;
         hashCtxFunction = sha384Ctx;
         hashCtxListFunction = sha384Ctx;
         break;

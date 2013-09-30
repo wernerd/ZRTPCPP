@@ -70,6 +70,8 @@ char zrtpTrustedMitm[] = "Trusted MiTM key";
 
 char s256[] = "S256";
 char s384[] = "S384";
+char skn2[] = "SKN2";
+char skn3[] = "SKN3";
 const char* mandatoryHash = s256;
 
 char aes3[] = "AES3";

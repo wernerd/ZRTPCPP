@@ -135,6 +135,8 @@ std::list<std::string>* EnumBase::getAllNames() {
 HashEnum::HashEnum() : EnumBase(HashAlgorithm) {
     insert(s256, 0, "SHA-256", NULL, NULL, None);
     insert(s384, 0, "SHA-384", NULL, NULL, None);
+    insert(skn2, 0, "Skein-256", NULL, NULL, None);
+    insert(skn3, 0, "Skein-384", NULL, NULL, None);
 }
 
 HashEnum::~HashEnum() {}

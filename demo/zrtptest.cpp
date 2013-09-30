@@ -476,12 +476,13 @@ public:
         //RTPSession tx();
         ExtZrtpSession tx(/*pattern.getSsrc(),*/ pattern.getSenderAddress(), pattern.getSenderPort());
         config.clear();
-        config.setStandardConfig();
+//        config.setStandardConfig();
 //         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));
 //         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));
-//         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC25"));
-//
-//         config.addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
+         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
+
+         config.addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
+         config.addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN3"));
 
 //          config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS3"));
 //          config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES3"));

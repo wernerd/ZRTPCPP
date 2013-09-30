@@ -88,6 +88,8 @@ extern char zrtpTrustedMitm[];
 
 extern char s256[];
 extern char s384[];
+extern char skn2[];
+extern char skn3[];
 extern const char* mandatoryHash;
 
 extern char aes3[];
