@@ -2282,8 +2282,8 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hash) {
 
         createHashCtx = createSkein256Context;
         closeHashCtx = closeSkein256Context;
-        hashCtxFunction = sha256Ctx;
-        hashCtxListFunction = sha256Ctx;
+        hashCtxFunction = skein256Ctx;
+        hashCtxListFunction = skein256Ctx;
         break;
 
     case 3:
@@ -2296,8 +2296,8 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hash) {
 
         createHashCtx = createSkein384Context;
         closeHashCtx = closeSkein384Context;
-        hashCtxFunction = sha384Ctx;
-        hashCtxListFunction = sha384Ctx;
+        hashCtxFunction = skein384Ctx;
+        hashCtxListFunction = skein384Ctx;
         break;
     }
 }
