@@ -120,7 +120,7 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
 
     int b32sas = 0, iDisableDH2K = 0, iDisableAES256 = 0, iPreferDH2K = 0;
     int iDisableECDH256 = 0, iDisableECDH384 = 0, iEnableSHA384 = 1;
-    int iDisableSkein = 0, iDisableTwofish = 0;
+    int iDisableSkein = 0, iDisableTwofish = 0, iPreferNIST = 0;
 
     GET_CFG_I(b32sas, "iDisable256SAS");
     GET_CFG_I(iDisableAES256, "iDisableAES256");
@@ -132,10 +132,19 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
     GET_CFG_I(iEnableSHA384, "iEnableSHA384");
     GET_CFG_I(iDisableSkein, "iDisableSkein");
     GET_CFG_I(iDisableTwofish, "iDisableTwofish");
+    GET_CFG_I(iPreferNIST, "iPreferNIST");
 
     conf->clear();
 
 
+    /*
+     * Handling of iPreferNIST: if this is false (== 0) then we add the non-NIST algorithms
+     * to the configuration and place them in front of the NIST algorithms. According
+     * to ZRTP the Initiator selects the first algorithms it finds inside the Hello
+     * packets. Only the Public key selection differs. Refer to RFC6189, section 4.1.2
+     * 
+     * If iPreferNIST is true (== 1) we don't add non-NIST algorithms at all.
+     */
     if (iDisableECDH384 == 0)
         conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
 
@@ -149,19 +158,21 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
     conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("Mult"));
 
     if (iEnableSHA384 == 1 || iDisableECDH384 == 0) {
-        conf->addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN3"));
+        if (iPreferNIST == 0)
+            conf->addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN3"));
         conf->addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
     }
-    conf->addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN2"));
+    if (iPreferNIST == 0)
+        conf->addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN2"));
     conf->addAlgo(HashAlgorithm, zrtpHashes.getByName("S256"));
 
     if (iDisableAES256 == 0) {
-        if (iDisableTwofish == 0) {
+        if (iDisableTwofish == 0 || iPreferNIST == 0) {            // TwoFish is a not NIST approved 
             conf->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS3"));
         }
         conf->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES3"));
     }
-    if (iDisableTwofish == 0) {
+    if (iDisableTwofish == 0 || iPreferNIST == 0) {
         conf->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS1"));
     }
     conf->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES1"));
@@ -174,7 +185,7 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
         conf->addAlgo(SasType, zrtpSasTypes.getByName("B32 "));
     }
 
-    if (iDisableSkein == 0) {
+    if (iDisableSkein == 0 || iPreferNIST == 0) {
         conf->addAlgo(AuthLength, zrtpAuthLengths.getByName("SK32"));
         conf->addAlgo(AuthLength, zrtpAuthLengths.getByName("SK64"));
     }
