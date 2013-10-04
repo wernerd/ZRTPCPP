@@ -29,6 +29,10 @@ include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOU
 # NOTE: the standalone modules live in the 'crypto'
 
 set(cryptcommon_srcs
+    ${CMAKE_SOURCE_DIR}/cryptcommon/macSkein.cpp
+    ${CMAKE_SOURCE_DIR}/cryptcommon/skein.c
+    ${CMAKE_SOURCE_DIR}/cryptcommon/skein_block.c
+    ${CMAKE_SOURCE_DIR}/cryptcommon/skeinApi.c
     ${CMAKE_SOURCE_DIR}/cryptcommon/twofish.c
     ${CMAKE_SOURCE_DIR}/cryptcommon/twofish_cfb.c)
 
