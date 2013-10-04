@@ -305,6 +305,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
             useLength = newLength + CRC_SIZE;                  // length check assumes a ZRTP CRC
         }
         else {
+            char tmpBuffer[500];
             useZrtpTunnel = false;
             // Get CRC value into crc (see above how to compute the offset)
             uint16_t temp = length - CRC_SIZE;
@@ -313,8 +314,14 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
             if (!zrtpCheckCksum(buffer, temp, crc)) {
                 zrtpCrcErrors++;
                 if (zrtpCrcErrors > 15) {
+<<<<<<< HEAD
                     DEBUG(snprintf(debBuf, 499, "len: %d, sdes: %p, sdesMedia: %d, zrtpEncap: %d", temp, (void*)sdes, useSdesForMedia, zrtpEncapSignaled); zrtp_log("CtZrtpStream", debBuf);)
 
+=======
+                    snprintf(tmpBuffer, 500, "buffer %p, length: %d, sdes: %p, sdesMedia: %d, zrtpEncap: %d, crc: %x",
+                        buffer, temp, (void*)sdes, useSdesForMedia, zrtpEncapSignaled, crc);
+                    zrtp_log("CtZrtpStream", tmpBuffer);
+>>>>>>> cdeccb5d2286192e28c85abbc314ff5093febccc
                     sendInfo(Warning, WarningCRCmismatch);
                     zrtpCrcErrors = 0;
                 }
