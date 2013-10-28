@@ -565,7 +565,7 @@ extern "C"
      * @returns
      *      Pointer to the ZrtpContext
      */
-    ZrtpContext* zrtp_CreateWrapper();
+    ZrtpContext* zrtp_CreateWrapper(void);
 
     /**
      * Initialize the ZRTP protocol engine.
