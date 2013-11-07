@@ -37,6 +37,9 @@
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
+
+extern char zrtpBuildInfo[];
+
 extern char clientId[];
 extern char zrtpVersion_11[];
 extern char zrtpVersion_12[];
