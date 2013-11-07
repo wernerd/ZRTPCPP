@@ -118,6 +118,8 @@ class TestSendCallbackAudio: public CtZrtpSendCb {
     }
 };
 
+extern char zrtpBuildInfo[];
+
 int main(int argc,char **argv) {
     int z;
     ssize_t length;
@@ -126,6 +128,8 @@ int main(int argc,char **argv) {
     uint8_t buffer[1300];            // Recv buffer
     uint32_t uiSSRC = 0xfeedbacc;
 
+    fprintf(stderr, "Config info: %s\n", zrtpBuildInfo);
+    
     CtZrtpSession::initCache("testzid.dat");        // initialize cache file
 
     CtZrtpSession *session = new CtZrtpSession();

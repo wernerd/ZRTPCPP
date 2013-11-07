@@ -65,7 +65,10 @@ endif()
 # set to true for debug and trace during CMakeLists development
 # set(CMAKE_VERBOSE_MAKEFILE TRUE)
 
-MESSAGE( STATUS "Configuring GNU ${PROJECT_NAME} ${VERSION} for ${PACKAGE}...")
+execute_process(COMMAND git rev-parse --short HEAD OUTPUT_VARIABLE GIT_COMMIT)
+STRING(REGEX REPLACE "(\r?\n)+$" "" GIT_COMMIT "${GIT_COMMIT}")
+
+MESSAGE( STATUS "Configuring GNU ${PROJECT_NAME} ${VERSION} for ${PACKAGE}, commit: ${GIT_COMMIT} ...")
 
 # include most of the fine stuff we need
 include(FindPkgConfig)
