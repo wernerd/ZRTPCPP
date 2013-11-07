@@ -95,10 +95,14 @@ if(JAVA)
 
 endif()
 
+add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/buildinfo.c 
+                   COMMAND ${CMAKE_COMMAND} -E echo \"char zrtpBuildInfo[] = \\\"${VERSION}:${GIT_COMMIT}:${CMAKE_SYSTEM_PROCESSOR}\\\"\;\" > ${CMAKE_BINARY_DIR}/buildinfo.c)
 
-add_library(${zrtplibName} ${LIBRARY_BUILD_TYPE} ${zrtpcpp_src})
+add_library(${zrtplibName} ${LIBRARY_BUILD_TYPE} ${zrtpcpp_src} ${CMAKE_BINARY_DIR}/buildinfo.c)
 set_target_properties(${zrtplibName} PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
 target_link_libraries(${zrtplibName} ${LIBS})
+
+add_custom_command(TARGET ${zrtplibName} POST_BUILD COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/buildinfo.c)
 
 # **** Test programs ****
 #

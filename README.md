@@ -125,3 +125,12 @@ build directory and create a new one to start from fresh (this is the ultimate
 different settings without mixing the two builds.
 
 [github]: http://github.com/wernerd/ZRTPCPP
+
+
+### Notes when building ZRTP C++ for Android
+
+The CMake files support creation of an `Android.mk` file for the Tivi client
+and may give you an idea how to do it for other clients. The generated
+`Android.mk` generates `buildinfo_*.c` files in the root directory. You may
+delete these files after the Android static libraries are ready.
+

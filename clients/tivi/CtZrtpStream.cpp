@@ -426,6 +426,7 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
         secState |= 0x100;
 
     T_ZRTP_I("sec_state", secState);
+    T_ZRTP_LB("buildInfo",  zrtpBuildInfo);
 
     // Compute Hello-hash info string
     const char *strng = NULL;
