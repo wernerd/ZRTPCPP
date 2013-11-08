@@ -108,6 +108,8 @@ extern char dh2k[];
 extern char dh3k[];
 extern char ec25[];
 extern char ec38[];
+extern char e255[];
+extern char e414[];
 
 extern char mult[];
 
