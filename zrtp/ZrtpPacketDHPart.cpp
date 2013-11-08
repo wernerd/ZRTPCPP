@@ -59,6 +59,9 @@ void ZrtpPacketDHPart::setPubKeyType(const char* pkt) {
     else if (*(int32_t*)pkt == *(int32_t*)ec38) {
         dhLength = 96;
     }
+    else if (*(int32_t*)pkt == *(int32_t*)e414) {
+        dhLength = 104;
+    }
     else
         return;
 
@@ -74,17 +77,20 @@ ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t *data) {
 
     int16_t len = getLength();
     DEBUGOUT((fprintf(stdout, "DHPart length: %d\n", len)));
-    if (len == 85) {
+    if (len == 85) {         // Dh2k
         dhLength = 256;
     }
-    else if (len == 117) {
+    else if (len == 117) {   // Dh3k
         dhLength = 384;
     }
-    else if (len == 37) {
+    else if (len == 37) {    // EC256
         dhLength = 64;
     }
-    else if (len == 45) {
+    else if (len == 45) {    // EC384
         dhLength = 96;
+    }
+    else if (len == 47) {    // E414
+        dhLength = 104;
     }
     else {
         pv = NULL;

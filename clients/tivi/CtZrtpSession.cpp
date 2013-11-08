@@ -145,8 +145,11 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
      * 
      * If iPreferNIST is true (== 1) we don't add non-NIST algorithms at all.
      */
-    if (iDisableECDH384 == 0)
+    if (iDisableECDH384 == 0) {
+        if (iPreferNIST == 0)
+            conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));
         conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
+    }
 
     if (iDisableECDH256 == 0)
         conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC25"));
