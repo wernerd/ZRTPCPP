@@ -552,7 +552,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
         *errMsg = UnsuppPKExchange;
         return NULL;
     }
-    if (*(int32_t*)(cp->getName()) == *(int32_t*)ec38) {
+    if (*(int32_t*)(cp->getName()) == *(int32_t*)ec38 || *(int32_t*)(cp->getName()) == *(int32_t*)e414) {
         if (!(*(int32_t*)(hash->getName()) == *(int32_t*)s384 || *(int32_t*)(hash->getName()) == *(int32_t*)skn3)) {
             *errMsg = UnsuppHashType;
             return NULL;
@@ -569,7 +569,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     sasType = cp;
 
     // dhContext cannot be NULL - always setup during prepareCommit()
-    // check if we can use the dhContext prepared by prepareCOmmit(),
+    // check if we can use the dhContext prepared by prepareCommit(),
     // if not delete old DH context and generate new one
     // The algorithm names are 4 chars only, thus we can cast to int32_t
     if (*(int32_t*)(dhContext->getDHtype()) != *(int32_t*)(pubKey->getName())) {
@@ -1436,7 +1436,7 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
 
     // Build list of own pubkey algorithm names, must follow the order
     // defined in RFC 6189, chapter 4.1.2.
-    const char *orderedAlgos[] = {dh2k, ec25, dh3k, ec38};
+    const char *orderedAlgos[] = {dh2k, ec25, dh3k, e414, ec38};
     int numOrderedAlgos = sizeof(orderedAlgos) / sizeof(const char*);
 
     int numAlgosPeer = hello->getNumPubKeys();
@@ -1502,7 +1502,7 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
         useAlgo = peerIntersect[0];
     }
     // select a corresponding strong hash if necessary.
-    if (*(int32_t*)(useAlgo->getName()) == *(int32_t*)ec38) {
+    if (*(int32_t*)(useAlgo->getName()) == *(int32_t*)ec38 || *(int32_t*)(useAlgo->getName()) == *(int32_t*)e414) {
         hash = getStrongHashOffered(hello);
         cipher = getStrongCipherOffered(hello);
     }
