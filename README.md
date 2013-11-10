@@ -7,22 +7,31 @@ together with GNU ccRTP (1.5.0 or later) and provides a ZRTP
 implementation that can be directly embedded into client and server
 applications.
 
-The GNU ZRTP implementation is compliant to [RFC 6189][]. Currently GNU ZRTP
-C++ supports the following features:
+The GNU ZRTP implementation is compliant to [RFC 6189][] and adds some more
+algorithms. Currently GNU ZRTP C++ supports the following features:
 
 * multi-stream mode
-* Finite field Diffie-Helman with 2048 and 3072 bit primes
-* Elliptic curve Diffie-Helman with 256 and 384 bit curves
+* Finite field Diffie-Hellman with 2048 and 3072 bit primes
+* Elliptic curve Diffie-Hellman with 256 and 384 bit curves
+* Elliptic curves Curve25519 and Curve3617 (Dan Berstein, Tanja Lange)
+* Skein Hash for ZRTP
 * AES-128 and AES-256 symmetric cipher
 * Twofish-128 and Twofish-256 bit symmetric ciphers
 * The SRTP authentication methods HMAC-SHA1 with 32 bit and 80 bit length and
   the Skein MAC with 32 bit and 64 bit length
 * The Short Authentication String (SAS) type with base 32 encoding (4
-  characters)
+  characters) and the SAS 256 type using words.
 
 Some features like preshared mode or signed SAS are not supported but the GNU
 ZRTP C++ implementation defines the necessary external interfaces and
 functions for these enhanced features (stubs only).
+
+**Note:** The Elliptic curves Cure25519 and Curve3617 are available only if you
+select the crypto standalone mode during build.
+
+I changed the license of the ZRTP core source files from GPL to LGPL. Other
+sources files may have own license. Please refer to the copyright notices of
+the files.
 
 ### SDES support
 This release also provides SDES support. The SDES implementation does not
@@ -76,15 +85,14 @@ following versions of Twinkle include GNU ZRTP C++ as well.
 
 
 ### License and further information
-Please note, most this library is licensed under the GNU GPL, version 3 or 
-later.
+Most this library is licensed under the GNU LGPL, version 3 or later.
 
 For further information refer to the [ZRTP FAQ][zrtpfaq] and the
 [GNU ZRTP howto][zrtphow]. Both are part of the GNU Telephony wiki and are
 located in its documentation category.
 
 Source code in the directory `clients/tivi` and below is not licensed under the
-GNU GPL and is for reference and review only. Refer to the copyright statments
+GNU LGPL and is for reference and review only. Refer to the copyright statments
 of the source code in these directories, in particular the sqlite3 sources which
 have their own license.
 
