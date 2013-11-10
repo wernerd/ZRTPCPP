@@ -7,16 +7,6 @@ if(CMAKE_HAVE_PTHREAD_H)
 endif()
 set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})
 
-if (USES_CCRTP_INCLUDE_DIRS)
-    message(STATUS "  Using local commoncpp dependency")
-else()
-    find_package(PkgConfig)
-    pkg_check_modules(USES_CCRTP libccrtp>=2.0.0)
-endif()
-include_directories(${USES_CCRTP_INCLUDE_DIRS})
-link_directories(${USES_CCRTP_LIBRARY_DIRS})
-add_definitions(${USES_CCRTP_CFLAGS})
-set (LIBS ${LIBS} ${USES_CCRTP_LDFLAGS} ${USES_CCRTP_LIBRARIES})
 
 #to make sure includes are first taken - it contains config.h
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
@@ -25,7 +15,7 @@ include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOU
 
 # **** setup the various crypto interface implementations ***
 # Twofish is a special case: its always a standalone modlue and thus
-# not specific to a library.
+# not specific to a library. Same is true for Skein hash.
 # NOTE: the standalone modules live in the 'crypto'
 
 set(cryptcommon_srcs
@@ -64,10 +54,7 @@ if (CRYPTO_STANDALONE)
         ${CMAKE_SOURCE_DIR}/cryptcommon/aes_modes.c)
 endif()
 
-set(zrtp_ccrtp_src
-    ${CMAKE_CURRENT_SOURCE_DIR}/ZrtpQueue.cpp)
-
-set(zrtpcpp_src ${zrtp_src} ${zrtp_ccrtp_src} ${crypto_src} ${cryptcommon_srcs})
+set(zrtpcpp_src ${zrtp_src} ${crypto_src} ${cryptcommon_srcs})
 
 if(BUILD_STATIC AND NOT BUILD_SHARED)
     set(LIBRARY_BUILD_TYPE STATIC)
@@ -78,8 +65,6 @@ endif()
 add_library(${zrtplibName} ${LIBRARY_BUILD_TYPE} ${zrtpcpp_src})
 set_target_properties(${zrtplibName} PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
 target_link_libraries(${zrtplibName} ${LIBS})
-
-add_dependencies(${zrtplibName} ccrtp)
 
 # **** Setup packing environment ****
 #
@@ -102,17 +87,12 @@ configure_file(${CMAKE_SOURCE_DIR}/libzrtpcpp.spec.cmake ${CMAKE_CURRENT_BINARY_
 
 # **** install files ****
 #
-set(ccrtp_inst
-    ${CMAKE_CURRENT_SOURCE_DIR}/ZrtpQueue.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/zrtpccrtp.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/CcrtpTimeoutProvider.h)
-
 install(FILES
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCodes.h
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpConfigure.h
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCallback.h
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCWrapper.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpUserCallback.h ${ccrtp_inst} DESTINATION include/libzrtpcpp)
+        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpUserCallback.h DESTINATION include/libzrtpcpp)
 
 install(FILES ${CMAKE_SOURCE_DIR}/common/osSpecifics.h DESTINATION include/libzrtpcpp/common)
 

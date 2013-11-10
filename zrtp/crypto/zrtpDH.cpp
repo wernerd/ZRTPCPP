@@ -202,6 +202,9 @@ ZrtpDH::ZrtpDH(const char* type) {
     else if (*(int32_t*)type == *(int32_t*)ec38) {
         pkType = EC38;
     }
+    else if (*(int32_t*)type == *(int32_t*)e255) {
+        pkType = E255;
+    }
     else if (*(int32_t*)type == *(int32_t*)e414) {
         pkType = E414;
     }
@@ -250,8 +253,13 @@ ZrtpDH::ZrtpDH(const char* type) {
         ecGenerateRandomNumber(&tmpCtx->curve, &tmpCtx->privKey);
         break;
 
+    case E255:
+        ecGetCurvesCurve(Curve25519, &tmpCtx->curve);
+        ecGenerateRandomNumber(&tmpCtx->curve, &tmpCtx->privKey);
+        break;
+
     case E414:
-        ecGetCurveNistECp(Curve3617, &tmpCtx->curve);
+        ecGetCurvesCurve(Curve3617, &tmpCtx->curve);
         ecGenerateRandomNumber(&tmpCtx->curve, &tmpCtx->privKey);
         break;
     }
@@ -332,6 +340,23 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
 
         return length;
     }
+    if (pkType == E255) {
+        int32_t len = getPubKeySize();
+        EcPoint pub;
+
+        bnBegin(&sec);
+        INIT_EC_POINT(&pub);
+
+        bnInsertLittleBytes(pub.x, pubKeyBytes, 0, len);
+
+        /* Generate agreement for responder: sec = pub * privKey */
+        ecdhComputeAgreement(&tmpCtx->curve, &sec, &pub, &tmpCtx->privKey);
+        bnExtractLittleBytes(&sec, secret, 0, length);
+        bnEnd(&sec);
+        FREE_EC_POINT(&pub);
+
+        return length;
+    }
     return -1;
 }
 
@@ -351,6 +376,7 @@ int32_t ZrtpDH::generatePublicKey()
 
     case EC25:
     case EC38:
+    case E255:
     case E414:
         while (!ecdhGeneratePublic(&tmpCtx->curve, &tmpCtx->pubPoint, &tmpCtx->privKey))
             ecGenerateRandomNumber(&tmpCtx->curve, &tmpCtx->privKey);
@@ -375,6 +401,9 @@ int32_t ZrtpDH::getDhSize() const
         return 48;
         break;
 
+    case E255:
+        return 32;
+        break;
     case E414:
         return 52;
         break;
@@ -391,6 +420,8 @@ int32_t ZrtpDH::getPubKeySize() const
     if (pkType == EC25 || pkType == EC38 || pkType == E414)
         return bnBytes(tmpCtx->curve.p) * 2;   // *2 -> x and y coordinate
 
+    if (pkType == E255)
+        return bnBytes(tmpCtx->curve.p);
     return 0;
 
 }
@@ -417,6 +448,11 @@ int32_t ZrtpDH::getPubKeyBytes(uint8_t *buf) const
         bnExtractBigBytes(tmpCtx->pubPoint.y, buf+len, 0, len);
         return len * 2;
     }
+    if (pkType == E255) {
+        int32_t len = getPubKeySize();
+        bnExtractLittleBytes(tmpCtx->pubPoint.x, buf, 0, len);
+        return len;
+    }
     return 0;
 }
 
@@ -436,6 +472,10 @@ int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
         bnInsertBigBytes(pub.y, pubKeyBytes+len, 0, len);
 
         return ecCheckPubKey(&tmpCtx->curve, &pub);
+    }
+
+    if (pkType == E255) {
+        return 1;
     }
 
     BigNum pubKeyOther;
@@ -469,18 +509,16 @@ const char* ZrtpDH::getDHtype()
     switch (pkType) {
     case DH2K:
         return dh2k;
-        break;
     case DH3K:
         return dh3k;
-        break;
     case EC25:
         return ec25;
-        break;
     case EC38:
         return ec38;
+    case E255:
+        return e255;
     case E414:
         return e414;
-        break;
     }
     return NULL;
 }
