@@ -84,6 +84,7 @@ struct EcCurve {
   int (*modOp)(BigNum *, const BigNum *, const BigNum *);
   int (*checkPubOp)(const struct EcCurve *curve, const EcPoint *pub);
   int (*randomOp)(const struct EcCurve *curve, BigNum *d);
+  int (*mulScalar)(const struct EcCurve *curve, EcPoint *R, const EcPoint *P, const BigNum *scalar);
 
 };
 
@@ -237,6 +238,11 @@ int ecGetCurvesCurve(Curves curveId, EcCurve *curve);
 
 void ecFreeCurvesCurve(EcCurve *curve);
 
+/**
+ * This is a special function for DJB's curve 25519. Actually it's the scalar multiplication
+ * mypublic = basepoint * secret
+ */
+int curve25519_donna(unsigned char *mypublic, const unsigned char *secret, const unsigned char *basepoint);
 
 /*
  * Some additional functions that are not available in bnlib

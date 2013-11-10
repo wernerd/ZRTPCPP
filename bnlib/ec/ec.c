@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 Werner Dittmann
+ * Copyright (C) 2012-2013 Werner Dittmann
  * All rights reserved. For licensing and other legal details, see the file legal.c.
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
@@ -116,6 +116,30 @@ static curveData curve3617 = {
     "22",                                                                                                        /* Gy (radix 16) */
 };
 
+/*
+ * The data for curve25519 copied from:
+ * http://safecurves.cr.yp.to/field.html
+ * http://safecurves.cr.yp.to/base.html
+ * 
+ * Note: 
+ * The data for Curve25519 is here for the sake of completeness and to have the same
+ * set of initialization. One exception if the base point X coordinate (Gx) that we use to
+ * compute the DH public value, refer to function ecdhGeneratePublic(...) in ecdh.c.
+ * 
+ * Otherwise the functions use EcCurve structure only to get the pointers to the Curve25519
+ * wrapper functions.
+ * 
+ */
+static curveData curve25519 = {
+    "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed",   /* Prime */
+    "1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed",   /* order */
+    "",                                                                   /* SEED */
+    "",                                                                   /* c */
+    "",                                                                   /* b */
+    "9",                                                                  /* Gx */
+    "20ae19a1b8a086b4e01edd2c7748d14c923d4d7e6d7c61b229e9c5a27eced3d9",   /* Gy */
+};
+
 /*============================================================================*/
 /*    Bignum Shorthand Functions                                              */
 /*============================================================================*/
@@ -186,16 +210,38 @@ int bnSquareMod_ (struct BigNum *rslt, struct BigNum *n1, struct BigNum *mod, co
     return 0;
 }
 
+/*
+ * Note on the Curve25519 functions and usage of BigNumber:
+ * In most cases the functions to compute Curve25519 data are small wrapper functions
+ * that implement the same API as for the other curve functions. The wrapper functions
+ * then call the very specific, high-efficient function in curve25519-donna.c .
+ * 
+ * For Curve25519 we don't have a real implementation for point add, point doubling, modulo
+ * and check public key. Please refer to the actual implementations below.
+ */
+
 static int ecGetAffineNist(const EcCurve *curve, EcPoint *R, const EcPoint *P);
 static int ecGetAffineEd(const EcCurve *curve, EcPoint *R, const EcPoint *P);
+static int ecGetAffine25519(const EcCurve *curve, EcPoint *R, const EcPoint *P);
+
 static int ecDoublePointNist(const EcCurve *curve, EcPoint *R, const EcPoint *P);
 static int ecDoublePointEd(const EcCurve *curve, EcPoint *R, const EcPoint *P);
+static int ecDoublePoint25519(const EcCurve *curve, EcPoint *R, const EcPoint *P);
+
 static int ecAddPointNist(const EcCurve *curve, EcPoint *R, const EcPoint *P, const EcPoint *Q);
 static int ecAddPointEd(const EcCurve *curve, EcPoint *R, const EcPoint *P, const EcPoint *Q);
+static int ecAddPoint25519(const EcCurve *curve, EcPoint *R, const EcPoint *P, const EcPoint *Q);
+
 static int ecCheckPubKeyNist(const EcCurve *curve, const EcPoint *pub);
 static int ecCheckPubKey3617(const EcCurve *curve, const EcPoint *pub);
+static int ecCheckPubKey25519(const EcCurve *curve, const EcPoint *pub);
+
 static int ecGenerateRandomNumberNist(const EcCurve *curve, BigNum *d);
 static int ecGenerateRandomNumber3617(const EcCurve *curve, BigNum *d);
+static int ecGenerateRandomNumber25519(const EcCurve *curve, BigNum *d);
+
+static int ecMulPointScalarNormal(const EcCurve *curve, EcPoint *R, const EcPoint *P, const BigNum *scalar);
+static int ecMulPointScalar25519(const EcCurve *curve, EcPoint *R, const EcPoint *P, const BigNum *scalar);
 
 /* Forward declaration of new modulo functions for the EC curves */
 static int newMod192(BigNum *r, const BigNum *a, const BigNum *modulo);
@@ -204,6 +250,7 @@ static int newMod384(BigNum *r, const BigNum *a, const BigNum *modulo);
 static int newMod521(BigNum *r, const BigNum *a, const BigNum *modulo);
 
 static int mod3617(BigNum *r, const BigNum *a, const BigNum *modulo);
+static int mod25519(BigNum *r, const BigNum *a, const BigNum *modulo);
 
 static void commonInit()
 {
@@ -307,6 +354,7 @@ int ecGetCurveNistECp(Curves curveId, EcCurve *curve)
     curve->addOp = ecAddPointNist;
     curve->checkPubOp = ecCheckPubKeyNist;
     curve->randomOp = ecGenerateRandomNumberNist;
+    curve->mulScalar = ecMulPointScalarNormal;
 
     bnReadAscii(curve->p, cd->p, 10);
     bnReadAscii(curve->n, cd->n, 10);
@@ -356,6 +404,22 @@ int ecGetCurvesCurve(Curves curveId, EcCurve *curve)
         curve->addOp = ecAddPointEd;
         curve->checkPubOp = ecCheckPubKey3617;
         curve->randomOp = ecGenerateRandomNumber3617;
+        curve->mulScalar = ecMulPointScalarNormal;
+
+        bnReadAscii(curve->a, "3617", 10);
+        break;
+
+    case Curve25519:
+        cd = &curve25519;
+        curve->modOp = mod25519;
+        curve->affineOp = ecGetAffine25519;
+        curve->doubleOp = ecDoublePoint25519;
+        curve->addOp = ecAddPoint25519;
+        curve->checkPubOp = ecCheckPubKey25519;
+        curve->randomOp = ecGenerateRandomNumber25519;
+        curve->mulScalar = ecMulPointScalar25519;
+
+        bnReadAscii(curve->a, "486662", 10);
         break;
 
     default:
@@ -363,8 +427,6 @@ int ecGetCurvesCurve(Curves curveId, EcCurve *curve)
     }
     bnReadAscii(curve->p, cd->p, 16);
     bnReadAscii(curve->n, cd->n, 16);
-
-    bnReadAscii(curve->a, "3617", 10);
 
     bnReadAscii(curve->Gx, cd->Gx, 16);
     bnReadAscii(curve->Gy, cd->Gy, 16);
@@ -475,6 +537,20 @@ static int ecGetAffineEd(const EcCurve *curve, EcPoint *R, const EcPoint *P)
     bnEnd(&z_1);
     return ret;
 
+}
+
+/* 
+ * If the arguments do not point to the same EcPoint then copy P to result.
+ * Curve25519 has no specific GetAffine function, it's all inside curve25519-donna
+ */
+static int ecGetAffine25519(const EcCurve *curve, EcPoint *R, const EcPoint *P)
+{
+    if (R != P) {
+        bnCopy(R->x, P->x);
+        bnCopy(R->y, P->y);
+        bnCopy(R->z, P->z);
+    }
+    return 0;
 }
 
 int ecDoublePoint(const EcCurve *curve, EcPoint *R, const EcPoint *P)
@@ -591,7 +667,18 @@ static int ecDoublePointEd(const EcCurve *curve, EcPoint *R, const EcPoint *P)
     /* Compute Rz */
     bnMulMod_(R->z, curve->t2, curve->t1, curve->p, curve);    /* J * E */
 
+    if (P == R)
+        FREE_EC_POINT(&tP);
+
     return 0;
+}
+
+/* 
+ * Curve25519 has no specific Double Point function, all inside curve25519-donna
+ */
+static int ecDoublePoint25519(const EcCurve *curve, EcPoint *R, const EcPoint *P)
+{
+    return -2;
 }
 
 /* Add two elliptic curve points. Any of them may be the same object. */
@@ -802,10 +889,28 @@ static int ecAddPointEd(const EcCurve *curve, EcPoint *R, const EcPoint *P, cons
     bnMulMod_(R->y, curve->t2, R->z, curve->p, curve);           /* Ry = t2 * G */
     bnMulMod_(R->z, curve->t3, R->z, curve->p, curve);           /* Rz = F * G */
 
+    if (P == R)
+        FREE_EC_POINT(&tP);
+    if (Q == R)
+        FREE_EC_POINT(&tQ);
+
     return 0;
 }
 
+/* 
+ * Curve25519 has no specific Add Point function, all inside curve25519-donna
+ */
+static int ecAddPoint25519(const EcCurve *curve, EcPoint *R, const EcPoint *P, const EcPoint *Q)
+{
+    return -2;
+}
+
 int ecMulPointScalar(const EcCurve *curve, EcPoint *R, const EcPoint *P, const BigNum *scalar)
+{
+    return curve->mulScalar(curve, R, P, scalar);
+}
+
+static int ecMulPointScalarNormal(const EcCurve *curve, EcPoint *R, const EcPoint *P, const BigNum *scalar)
 {
     int ret = 0;
     int i;
@@ -830,6 +935,23 @@ int ecMulPointScalar(const EcCurve *curve, EcPoint *R, const EcPoint *P, const B
     }
     FREE_EC_POINT(&n);
     return ret;
+}
+
+/* 
+ * This function uses BigNumber only as containers to transport the 32 byte data.
+ * This makes it compliant to the other functions and thus higher-level API does not change.
+ * 
+ * curve25519_donna function uses data in little endian format.
+ */
+static int ecMulPointScalar25519(const EcCurve *curve, EcPoint *R, const EcPoint *P, const BigNum *scalar)
+{
+    uint8_t basepoint[32], secret[32], result[32];
+
+    bnExtractLittleBytes(P->x, basepoint, 0, 32);  /* 25519 function requires the X coordinate only (compressed) */
+    bnExtractLittleBytes(scalar, secret, 0, 32);
+    curve25519_donna(result, secret, basepoint);
+    bnInsertLittleBytes(R->x, result, 0, 32);
+    return 0;
 }
 
 #ifdef WEAKRANDOM
@@ -913,9 +1035,24 @@ static int ecGenerateRandomNumber3617(const EcCurve *curve, BigNum *d)
     return 0;
 }
 
+static int ecGenerateRandomNumber25519(const EcCurve *curve, BigNum *d)
+{
+    unsigned char random[32];
+    _random(random, 32);
+
+    /* No specific preparation. The curve25519_donna functions prepares the data.
+     *
+     * convert the random data into big numbers. the bigNumber is a container only.
+     * we don not use the big number for any arithmetic
+     */
+    bnInsertLittleBytes(d, random, 0, 32);
+    return 0;
+
+}
+
 int ecCheckPubKey(const EcCurve *curve, const EcPoint *pub)
 {
-    curve->checkPubOp(curve, pub);
+    return curve->checkPubOp(curve, pub);
 }
 
 static int ecCheckPubKeyNist(const NistECpCurve *curve, const EcPoint *pub)
@@ -973,6 +1110,15 @@ static int ecCheckPubKey3617(const EcCurve *curve, const EcPoint *pub)
     return 1;
 }
 
+/**
+ * According to http://cr.yp.to/ecdh.html#validate no validation is required if used for Diffie-Hellman
+ * thus always return success.
+ */
+static int ecCheckPubKey25519(const EcCurve *curve, const EcPoint *pub)
+{
+    return 1;
+}
+
 static int mod3617(BigNum *r, const BigNum *a, const BigNum *modulo)
 {
     unsigned char buffer[52] = {0};
@@ -1006,6 +1152,14 @@ static int mod3617(BigNum *r, const BigNum *a, const BigNum *modulo)
     }
     bnEnd(&tmp);
     return 0;
+}
+
+/* 
+ * Curve25519 has no specific modulo function, all inside curve25519-donna
+ */
+static int mod25519(BigNum *r, const BigNum *a, const BigNum *modulo)
+{
+    return -2;
 }
 
 /*
