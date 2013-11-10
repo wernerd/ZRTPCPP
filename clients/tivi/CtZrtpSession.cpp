@@ -155,8 +155,11 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
         conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
     }
 
-    if (iDisableECDH256 == 0)
+    if (iDisableECDH256 == 0) {
+        if (iPreferNIST == 0)
+            conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E255"));
         conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC25"));
+    }
 
     if (iPreferDH2K && !iDisableDH2K) {
         conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));

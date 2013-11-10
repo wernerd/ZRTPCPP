@@ -160,9 +160,12 @@ PubKeyEnum::PubKeyEnum() : EnumBase(PubKeyAlgorithm) {
     insert(dh2k, 0, "DH-2048", NULL, NULL, None);
     insert(ec25, 0, "ECDH-256", NULL, NULL, None);
     insert(dh3k, 0, "DH-3072", NULL, NULL, None);
-    insert(e414, 0, "Curve3617", NULL, NULL, None);
     insert(ec38, 0, "ECDH-384", NULL, NULL, None);
     insert(mult, 0, "Multi-stream", NULL, NULL, None);
+#ifdef SUPPORT_NON_NIST
+    insert(e255, 0, "Curve25519", NULL, NULL, None);
+    insert(e414, 0, "Curve3617", NULL, NULL, None);
+#endif
 }
 
 PubKeyEnum::~PubKeyEnum() {}

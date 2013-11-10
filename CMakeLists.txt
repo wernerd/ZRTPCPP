@@ -25,6 +25,7 @@ set (SOVERSION 3)
 # Without any options cmake generates libzrtpcpp for use with GNU ccRTP
 #
 option(CCRTP "Build library to use with GNU ccRTP." OFF)
+option(CORE_LIB "Build core library only, no spcific client support." OFF)
 option(CRYPTO_STANDALONE "Use embedded crypto and big number modules." ON)
 option(TIVI "Build library for the tivi client, implies '-DCRYPTO_STNDALONE=true'." OFF)
 option(SQLITE "Use SQLite DB as backend for ZRTP cache." OFF)
@@ -47,6 +48,9 @@ elseif (TIVI)
     set(zrtplibName zrtptivi)
     set(CRYPTO_STANDALONE true)
     set(SQLITE true)
+elseif (CORE_LIB)
+    set (PACKAGE libzrtpcore)
+    set(zrtplibName zrtpcppcore)
 else()
     MESSAGE(WARNING "No client defined, building for GNU ccRTP.")
     set (PACKAGE libzrtpcpp)
@@ -158,7 +162,9 @@ endif()
 
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
 include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/zrtp)
+
 if(CRYPTO_STANDALONE)
+    add_definitions(-DSUPPORT_NON_NIST)
     include_directories (${CMAKE_SOURCE_DIR}/bnlib)
 endif()
 
@@ -206,7 +212,14 @@ set(bnlib_src
     ${CMAKE_SOURCE_DIR}/bnlib/jacobi.c
     ${CMAKE_SOURCE_DIR}/bnlib/germain.c
     ${CMAKE_SOURCE_DIR}/bnlib/ec/ec.c
-    ${CMAKE_SOURCE_DIR}/bnlib/ec/ecdh.c)
+    ${CMAKE_SOURCE_DIR}/bnlib/ec/ecdh.c
+    ${CMAKE_SOURCE_DIR}/bnlib/ec/curve25519-donna.c)
+
+set(zrtp_skein_src
+    ${CMAKE_SOURCE_DIR}/zrtp/crypto/skeinMac256.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein256.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/crypto/skeinMac384.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein384.cpp)
 
 set(zrtp_crypto_src
     ${CMAKE_SOURCE_DIR}/zrtp/crypto/zrtpDH.cpp
@@ -214,11 +227,6 @@ set(zrtp_crypto_src
     ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha256.cpp
     ${CMAKE_SOURCE_DIR}/zrtp/crypto/hmac384.cpp
     ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha384.cpp
-
-    ${CMAKE_SOURCE_DIR}/zrtp/crypto/skeinMac256.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein256.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/crypto/skeinMac384.cpp
-    ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein384.cpp
 
     ${CMAKE_SOURCE_DIR}/zrtp/crypto/aesCFB.cpp
     ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.cpp
@@ -238,12 +246,15 @@ endif()
 
 if (CCRTP)
     add_subdirectory(clients/ccrtp)
+    add_subdirectory(demo)
 endif()
-
-add_subdirectory(demo)
 
 if (TIVI)
     add_subdirectory(clients/tivi)
+endif()
+
+if (CORE_LIB)
+    add_subdirectory(clients/no_client)
 endif()
 
 ##very usefull for macosx, specially when using gtkosx bundler
