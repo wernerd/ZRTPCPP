@@ -651,6 +651,10 @@ void CtZrtpStream::setZrtpEncapAttribute(const char *attribute) {
     }
 }
 
+void CtZrtpStream::setAuxSecret(const unsigned char *secret, int length) {
+    zrtpEngine->setAuxSecret((unsigned char*)secret, length);
+}
+
 /* *********************
  * Here the callback methods required by the ZRTP implementation
  *
@@ -1145,6 +1149,7 @@ void CtZrtpStream::initStrings() {
     warningMap.insert(std::pair<int32_t, std::string*>(WarningSRTPreplayError, new std::string("s2_c007: Dropping packet because SRTP replay check failed!")));
     warningMap.insert(std::pair<int32_t, std::string*>(WarningNoExpectedRSMatch,
                                                 new std::string("s2_c008: You MUST check SAS with your partner. If it doesn't match, it indicates the presence of a wiretapper.")));
+    warningMap.insert(std::pair<int32_t, std::string*>(WarningNoExpectedAuxMatch, new std::string("s2_c009: Expected auxilliary secret match failed")));
 
     severeMap.insert(std::pair<int32_t, std::string*>(SevereHelloHMACFailed,  new std::string("s3_c001: Hash HMAC check of Hello failed!")));
     severeMap.insert(std::pair<int32_t, std::string*>(SevereCommitHMACFailed, new std::string("s3_c002: Hash HMAC check of Commit failed!")));

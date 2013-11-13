@@ -97,7 +97,8 @@ enum WarningCodes {
     WarningCRCmismatch,             //!< Internal ZRTP packet checksum mismatch - packet dropped
     WarningSRTPauthError,           //!< Dropping packet because SRTP authentication failed!
     WarningSRTPreplayError,         //!< Dropping packet because SRTP replay check failed!
-    WarningNoExpectedRSMatch        //!< Valid retained shared secrets availabe but no matches found - must verify SAS
+    WarningNoExpectedRSMatch,       //!< Valid retained shared secrets availabe but no matches found - must verify SAS
+    WarningNoExpectedAuxMatch       //!< Our AUX secret was set but the other peer's AUX secret does not match ours
 };
 
 /**
