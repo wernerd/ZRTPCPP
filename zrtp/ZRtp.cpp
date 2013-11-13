@@ -58,7 +58,7 @@ static void hexdump(const char* title, const unsigned char *s, int l) {
     }
     fprintf(stderr, "\n");
 }
- */
+ * */
 
 /*
  * This method simplifies detection of libzrtpcpp inside Automake, configure
@@ -277,6 +277,8 @@ ZrtpPacketHelloAck* ZRtp::prepareHelloAck() {
  */
 ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) {
 
+    myRole = Initiator;
+
     if (!hello->isLengthOk()) {
         *errMsg = CriticalSWError;
         return NULL;
@@ -467,7 +469,7 @@ ZrtpPacketCommit* ZRtp::prepareCommitMultiStream(ZrtpPacketHello *hello) {
 }
 
 /*
- * At this point we will take the role of the Responder. We may have been in
+ * At this point we will take the role of the Responder. We have been in
  * the role of the Initiator before and already sent a commit packet that
  * clashed with a commit packet from our peer. If our HVI was lower than our
  * peer's HVI then we switched to Responder and handle our peer's commit packet
@@ -493,8 +495,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
         return NULL;
     }
 
-    // The following code check the hash chain according chapter 10 to detect
-    // false ZRTP packets.
+    // The following code checks the hash chain according chapter 10 to detect false ZRTP packets.
     // Must use the implicit hash function.
     uint8_t tmpH3[IMPL_MAX_DIGEST_LENGTH];
     memcpy(peerH2, commit->getH2(), HASH_IMAGE_SIZE);
@@ -581,7 +582,11 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
 
     dhContext->getPubKeyBytes(pubKeyBytes);
 
+    // Re-compute auxSecretIDr because we changed roles *IDr with my H3, *IDi with peer's H3
     // Setup a DHPart1 packet.
+    myRole = Responder;
+    computeAuxSecretIds();                 // recompute AUX secret ids because we are now Responder, use different H3
+
     zrtpDH1.setPubKeyType(pubKey->getName());
     zrtpDH1.setMessageType((uint8_t*)DHPart1Msg);
     zrtpDH1.setRs1Id(rs1IDr);
@@ -602,21 +607,19 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     zrtpDH1.setHMAC(hmac);
 
     // We are definitly responder. Save the peer's hvi for later compare.
-    myRole = Responder;
     memcpy(peerHvi, commit->getHvi(), HVI_SIZE);
 
-    // We are responder. Release a possibly pre-computed SHA context
-    // because this was prepared for Initiator. Then create a new one.
+    // We are responder. Release the pre-computed SHA context because it was prepared for Initiator.
+    // Setup and compute for Responder.
     if (msgShaContext != NULL) {
         closeHashCtx(msgShaContext, NULL);
     }
     msgShaContext = createHashCtx();
 
     // Hash messages to produce overall message hash:
-    // First the Responder's (my) Hello message, second the Commit
-    // (always Initator's), then the DH1 message (which is always a
-    // Responder's message).
-    // Must use negotiated hash
+    // First the Responder's (my) Hello message, second the Commit (always Initator's), 
+    // then the DH1 message (which is always a Responder's message).
+    // Must use negotiated hash.
     hashCtxFunction(msgShaContext, (unsigned char*)currentHelloPacket->getHeaderBase(), currentHelloPacket->getLength() * ZRTP_WORD_SIZE);
     hashCtxFunction(msgShaContext, (unsigned char*)commit->getHeaderBase(), commit->getLength() * ZRTP_WORD_SIZE);
     hashCtxFunction(msgShaContext, (unsigned char*)zrtpDH1.getHeaderBase(), zrtpDH1.getLength() * ZRTP_WORD_SIZE);
@@ -677,8 +680,6 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
         return NULL;
     }
     dhContext->computeSecretKey(pvr, DHss);
-
-    myRole = Initiator;
 
     // We are Initiator: the Responder's Hello and the Initiator's (our) Commit
     // are already hashed in the context. Now hash the Responder's DH1 and then
@@ -755,8 +756,8 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
         return NULL;
     }
     dhContext->computeSecretKey(pvi, DHss);
-    // Hash the Initiator's DH2 into the message Hash (other messages already
-    // prepared, see method prepareDHPart1().
+
+    // Hash the Initiator's DH2 into the message Hash (other messages already prepared, see method prepareDHPart1().
     // Use neotiated hash function
     hashCtxFunction(msgShaContext, (unsigned char*)dhPart2->getHeaderBase(), dhPart2->getLength() * ZRTP_WORD_SIZE);
 
@@ -1673,6 +1674,7 @@ void ZRtp:: computeSharedSecretSet(ZIDRecord *zidRec) {
     uint8_t randBuf[RS_LENGTH];
     uint32_t macLen;
 
+    fprintf(stderr, "Compute shared secrets\n");
     detailInfo.secretsCached = 0;
     if (!zidRec->isRs1Valid()) {
         randomZRTP(randBuf, RS_LENGTH);
@@ -1698,15 +1700,6 @@ void ZRtp:: computeSharedSecretSet(ZIDRecord *zidRec) {
         detailInfo.secretsCached |= Rs2;
     }
 
-    /*
-    * For the time being we don't support this type of shared secrect. Could be
-    * easily done: somebody sets some data into our ZRtp object, check it here
-    * and use it. Otherwise use the random data.
-    */
-    randomZRTP(randBuf, RS_LENGTH);
-    hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator, strlen(initiator), auxSecretIDi, &macLen);
-    hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder, strlen(responder), auxSecretIDr, &macLen);
-
     if (!zidRec->isMITMKeyAvailable()) {
         randomZRTP(randBuf, RS_LENGTH);
         hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator, strlen(initiator), pbxSecretIDi, &macLen);
@@ -1717,6 +1710,28 @@ void ZRtp:: computeSharedSecretSet(ZIDRecord *zidRec) {
         hmacFunction((unsigned char*)zidRec->getMiTMData(), RS_LENGTH, (unsigned char*)initiator, strlen(initiator), pbxSecretIDi, &macLen);
         hmacFunction((unsigned char*)zidRec->getMiTMData(), RS_LENGTH, (unsigned char*)responder, strlen(responder), pbxSecretIDr, &macLen);
         detailInfo.secretsCached |= Pbx;
+    }
+    computeAuxSecretIds();
+}
+
+void ZRtp::computeAuxSecretIds() {
+    uint8_t randBuf[RS_LENGTH];
+    uint32_t macLen;
+
+    if (auxSecret == NULL) {
+        randomZRTP(randBuf, RS_LENGTH);
+        hmacFunction(randBuf, RS_LENGTH, H3, HASH_IMAGE_SIZE, auxSecretIDi, &macLen);
+        hmacFunction(randBuf, RS_LENGTH, H3, HASH_IMAGE_SIZE, auxSecretIDr, &macLen);
+    }
+    else {
+        if (myRole == Initiator) {  // I'm initiator thus use my H3 for initiator's IDi, peerH3 for respnder's IDr
+            hmacFunction(auxSecret, auxSecretLength, H3, HASH_IMAGE_SIZE, auxSecretIDi, &macLen);
+            hmacFunction(auxSecret, auxSecretLength, peerH3, HASH_IMAGE_SIZE, auxSecretIDr, &macLen);
+        }
+        else {
+            hmacFunction(auxSecret, auxSecretLength, peerH3, HASH_IMAGE_SIZE, auxSecretIDi, &macLen);
+            hmacFunction(auxSecret, auxSecretLength, H3, HASH_IMAGE_SIZE, auxSecretIDr, &macLen);
+        }
     }
 }
 
@@ -1764,12 +1779,17 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
         rsFound = 0x8;
         detailInfo.secretsMatched = Rs2;
     }
-    /* *** Not yet supported
+
     if (memcmp(auxSecretIDr, dhPart->getAuxSecretId(), 8) == 0) {
-    DEBUGOUT((fprintf(stdout, "%c: Match for aux secret found\n", zid[0])));
+        DEBUGOUT((fprintf(stdout, "Initiator: Match for aux secret found\n")));
         setD[1] = auxSecret;
+        detailInfo.secretsMatched |= Aux;
+        detailInfo.secretsMatchedDH |= Aux;
     }
-    */
+    if (auxSecret != NULL && (detailInfo.secretsMatched & Aux) == 0) {
+        sendInfo(Warning, WarningNoExpectedAuxMatch);
+    }
+
     // check if we have a matching PBX secret and place it third (s3)
     if (memcmp(pbxSecretIDr, dhPart->getPbxSecretId(), HMAC_SIZE) == 0) {
         DEBUGOUT((fprintf(stdout, "%c: Match for Other_secret found\n", zid[0])));
@@ -1861,7 +1881,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
             data[pos] = (unsigned char*)&sLen[i];
             length[pos++] = sizeof(uint32_t);
             data[pos] = (unsigned char*)setD[i];
-            length[pos++] = RS_LENGTH;
+            length[pos++] = (i != 1) ? RS_LENGTH : auxSecretLength;
         }
         else {                           // no machting secret, set length 0, skip secret
             sLen[i] = 0;
@@ -1923,12 +1943,17 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
         rsFound |= 0x8;
         detailInfo.secretsMatched = Rs2;
     }
-    /* ***** not yet supported
-    if (memcmp(auxSecretIDi, dhPart->getauxSecretId(), 8) == 0) {
-    DEBUGOUT((fprintf(stdout, "%c: Match for aux secret found\n", ownZidzid[0])));
-        setD[1] = ;
+
+    if (memcmp(auxSecretIDi, dhPart->getAuxSecretId(), 8) == 0) {
+        DEBUGOUT((fprintf(stdout, "Responder: Match for aux secret found\n")));
+        setD[1] = auxSecret;
+        detailInfo.secretsMatched |= Aux;
+        detailInfo.secretsMatchedDH |= Aux;
     }
-    */
+    // If we have an auxSecret but no match from peer - report this.
+    if (auxSecret != NULL && (detailInfo.secretsMatched & Aux) == 0) {
+        sendInfo(Warning, WarningNoExpectedAuxMatch);
+    }
 
     if (memcmp(pbxSecretIDi, dhPart->getPbxSecretId(), 8) == 0) {
         DEBUGOUT((fprintf(stdout, "%c: Match for PBX secret found\n", ownZid[0])));
@@ -2021,7 +2046,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
             data[pos] = (unsigned char*)&sLen[i];
             length[pos++] = sizeof(uint32_t);
             data[pos] = (unsigned char*)setD[i];
-            length[pos++] = RS_LENGTH;
+            length[pos++] = (i != 1) ? RS_LENGTH : auxSecretLength;
         }
         else {                           // no machting secret, set length 0, skip secret
             sLen[i] = 0;

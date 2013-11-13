@@ -558,6 +558,16 @@ void CtZrtpSession::setZrtpEncapAttribute(const char *attribute, streamName stre
     stream->setZrtpEncapAttribute(attribute);
 }
 
+void CtZrtpSession::setAuxSecret(const unsigned char *secret, int length) {
+    if (!isReady || !(streams[AudioStream] != NULL))
+        return;
+
+    CtZrtpStream *stream = streams[AudioStream];
+    if (stream->isStopped)
+        return;
+
+    stream->setAuxSecret(secret, length);
+}
 
 void CtZrtpSession::cleanCache() {
     getZidCacheInstance()->cleanup();
