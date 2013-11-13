@@ -119,6 +119,8 @@ class TestSendCallbackAudio: public CtZrtpSendCb {
 };
 
 extern char zrtpBuildInfo[];
+static unsigned char recvAuxSecret[] = {1,2,3,4,5,6,7,8,9,0};
+
 
 int main(int argc,char **argv) {
     int z;
@@ -141,6 +143,7 @@ int main(int argc,char **argv) {
     session->setUserCallback(callback, CtZrtpSession::AudioStream);
     session->setSendCallback(sendCallback, CtZrtpSession::AudioStream);
     session->getSignalingHelloHash((char*)buffer, CtZrtpSession::AudioStream, 0);
+    session->setAuxSecret(recvAuxSecret, sizeof(recvAuxSecret));
 
     fprintf(stderr, "Our Hello hash: %s\n", buffer);
 

@@ -1025,6 +1025,8 @@ private:
 
     void computeSharedSecretSet(ZIDRecord *zidRec);
 
+    void computeAuxSecretIds();
+
     void computeSRTPKeys();
 
     void KDF(uint8_t* key, uint32_t keyLength, uint8_t* label, int32_t labelLength,
