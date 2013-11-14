@@ -20,6 +20,10 @@
 
 static CMutexClass sessionLock;
 
+const char *getZrtpBuildInfo()
+{
+    return zrtpBuildInfo;
+}
 CtZrtpSession::CtZrtpSession() : mitmMode(false), signSas(false), enableParanoidMode(false), isReady(false),
     zrtpEnabled(true), sdesEnabled(true) {
 

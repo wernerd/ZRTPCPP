@@ -128,7 +128,7 @@ int main(int argc,char **argv) {
     uint8_t buffer[1300];            // Recv buffer
     uint32_t uiSSRC = 0xfeedbacc;
 
-    fprintf(stderr, "Config info: %s\n", zrtpBuildInfo);
+    fprintf(stderr, "Config info: %s\n", getZrtpBuildInfo());
     
     CtZrtpSession::initCache("testzid.dat");        // initialize cache file
 

@@ -33,6 +33,8 @@ class CtZrtpSendCb;
 class ZrtpConfigure;
 class CMutexClass;
 
+extern "C" __EXPORT const char *getZrtpBuildInfo();
+
 class __EXPORT CtZrtpSession {
 
 public:
