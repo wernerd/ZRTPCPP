@@ -344,6 +344,8 @@ class MyUserCallback: public ZrtpUserCallback {
         warningMap.insert(pair<int32, std::string*>(WarningCRCmismatch, new string("Internal ZRTP packet checksum mismatch - packet dropped")));
         warningMap.insert(pair<int32, std::string*>(WarningSRTPauthError, new string("Dropping packet because SRTP authentication failed!")));
         warningMap.insert(pair<int32, std::string*>(WarningSRTPreplayError, new string("Dropping packet because SRTP replay check failed!")));
+        warningMap.insert(pair<int32, std::string*>(WarningNoExpectedRSMatch, new string("No RS match found - but ZRTP expected a match.")));
+        warningMap.insert(pair<int32, std::string*>(WarningNoExpectedAuxMatch, new string("The auxlliary secrets do not match.")));
 
         severeMap.insert(pair<int32, std::string*>(SevereHelloHMACFailed, new string("Hash HMAC check of Hello failed!")));
         severeMap.insert(pair<int32, std::string*>(SevereCommitHMACFailed, new string("Hash HMAC check of Commit failed!")));
@@ -449,6 +451,8 @@ map<int32, std::string*>MyUserCallback::zrtpMap;
 
 bool MyUserCallback::initialized = false;
 
+static unsigned char transmAuxSecret[] = {1,2,3,4,5,6,7,8,9,0};
+
 /**
  * SymmetricZRTPSession in security mode and using a callback class.
  *
@@ -479,13 +483,14 @@ public:
 //        config.setStandardConfig();
 //         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));
 //         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));
-         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
+        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E255"));
+        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
 
-         config.addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
-         config.addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN3"));
+        config.addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN3"));
+        config.addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
 
-//          config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS3"));
-//          config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES3"));
+        config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS3"));
+        config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES3"));
 
         config.addAlgo(SasType, zrtpSasTypes.getByName("B256"));
 
@@ -501,6 +506,7 @@ public:
             cout << "TX Hello hash 1 length: " << tx.getHelloHash(1).length() << endl;
         }
         tx.setUserCallback(new MyUserCallback(&tx));
+        tx.setAuxSecret(transmAuxSecret, sizeof(transmAuxSecret));
 
         tx.setSchedulingTimeout(10000);
         tx.setExpireTimeout(1000000);
@@ -533,6 +539,7 @@ public:
     }
 };
 
+static unsigned char recvAuxSecret[] = {1,2,3,4,5,6,7,8,9,9};
 
 class
 ZrtpRecvPacketTransmissionTestCB: public Thread
@@ -546,13 +553,15 @@ public:
 
     int doTest() {
         ExtZrtpSession rx( /*pattern.getSsrc()+1,*/ pattern.getReceiverAddress(), pattern.getReceiverPort());
-//        config.clear();
-        config.setStandardConfig();
-//        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
-//         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC25"));
+        config.clear();
+//        config.setStandardConfig();
 //         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));
 
-//        config.addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
+         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E255"));
+         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
+
+         config.addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
+         config.addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN3"));
 
 //          config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS3"));
 //          config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES3"));
@@ -572,6 +581,7 @@ public:
             cout << "RX Hello hash 1 length: " << rx.getHelloHash(1).length() << endl;
         }
         rx.setUserCallback(new MyUserCallback(&rx));
+        rx.setAuxSecret(recvAuxSecret, sizeof(recvAuxSecret));
 
         rx.setSchedulingTimeout(10000);
         rx.setExpireTimeout(1000000);

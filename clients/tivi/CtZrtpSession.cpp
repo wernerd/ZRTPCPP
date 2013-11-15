@@ -149,11 +149,17 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
      * 
      * If iPreferNIST is true (== 1) we don't add non-NIST algorithms at all.
      */
-    if (iDisableECDH384 == 0)
+    if (iDisableECDH384 == 0) {
+        if (iPreferNIST == 0)
+            conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));
         conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
+    }
 
-    if (iDisableECDH256 == 0)
+    if (iDisableECDH256 == 0) {
+        if (iPreferNIST == 0)
+            conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E255"));
         conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC25"));
+    }
 
     if (iPreferDH2K && !iDisableDH2K) {
         conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));
@@ -556,6 +562,16 @@ void CtZrtpSession::setZrtpEncapAttribute(const char *attribute, streamName stre
     stream->setZrtpEncapAttribute(attribute);
 }
 
+void CtZrtpSession::setAuxSecret(const unsigned char *secret, int length) {
+    if (!isReady || !(streams[AudioStream] != NULL))
+        return;
+
+    CtZrtpStream *stream = streams[AudioStream];
+    if (stream->isStopped)
+        return;
+
+    stream->setAuxSecret(secret, length);
+}
 
 void CtZrtpSession::cleanCache() {
     getZidCacheInstance()->cleanup();
