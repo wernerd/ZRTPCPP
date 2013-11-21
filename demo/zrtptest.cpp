@@ -483,16 +483,26 @@ public:
 //        config.setStandardConfig();
 //         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));
 //         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));
-        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E255"));
+
+        // This ordering prefers NIST
         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
+        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));
 
-        config.addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN3"));
+        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC25"));
+        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E255"));
+
         config.addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
+        config.addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN3"));
 
-        config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS3"));
         config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES3"));
+        config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS3"));
 
         config.addAlgo(SasType, zrtpSasTypes.getByName("B256"));
+
+        config.addAlgo(AuthLength, zrtpAuthLengths.getByName("HS32"));
+        config.addAlgo(AuthLength, zrtpAuthLengths.getByName("HS80"));
+        config.addAlgo(AuthLength, zrtpAuthLengths.getByName("SK32"));
+        config.addAlgo(AuthLength, zrtpAuthLengths.getByName("SK64"));
 
         tx.initialize("test_t.zid", true, &config);
         // At this point the Hello hash is available. See ZRTP specification
@@ -557,7 +567,7 @@ public:
 //        config.setStandardConfig();
 //         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));
 
-         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E255"));
+         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));
          config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
 
          config.addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));

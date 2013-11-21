@@ -315,6 +315,14 @@ public:
     ~ZrtpConfigure();
 
     /**
+     * Define the algorithm selection policies.
+     */
+    typedef enum _policies {
+        Standard = 1,
+        PreferNonNist = 2
+    } Policy;
+
+    /**
      * Set the maximum number of algorithms per algorithm type that an application can
      * configure.
      */
@@ -510,6 +518,9 @@ public:
     /// Helper function to print some internal data
     void printConfiguredAlgos(AlgoTypes algoTyp);
 
+    Policy getSelectionPolicy()         {return selectionPolicy;}
+    void setSelectionPolicy(Policy pol) {selectionPolicy = pol;}
+
   private:
     std::vector<AlgorithmEnum* > hashes;
     std::vector<AlgorithmEnum* > symCiphers;
@@ -531,6 +542,8 @@ public:
     std::vector<AlgorithmEnum* >& getEnum(AlgoTypes algoType);
 
     void printConfiguredAlgos(std::vector<AlgorithmEnum* >& a);
+
+    Policy selectionPolicy;
 
   protected:
 
