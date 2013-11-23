@@ -1429,6 +1429,11 @@ AlgorithmEnum* ZRtp::findBestCipher(ZrtpPacketHello *hello, AlgorithmEnum* pk) {
     return &zrtpSymCiphers.getByName(mandatoryCipher);
 }
 
+// We can have the non-NIST in the list of orderedAlgos even if they are not available
+// in the code (refer to ZrtpConfigure.cpp). If they are not build in they cannot appear
+// in'configureAlgos' and thus not in the intersection lists. Thus a ZRTP build that
+// does not include the non-NIST curves also works without problems.
+//
 AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
 
     AlgorithmEnum* peerIntersect[ZrtpConfigure::maxNoOfAlgos+1];
@@ -1445,7 +1450,8 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
         return &zrtpPubKeys.getByName(mandatoryPubKey);
     }
     // Build own list of intersecting algos, keep own order or algorithms
-    // The list must include real public key algorithms only, so skip mult-stream mode, preshared and alike.
+    // The list must include real public key algorithms only, so skip mult-stream mode, 
+    // preshared and alike.
     int numAlgosOwn = configureAlgos.getNumConfiguredAlgos(PubKeyAlgorithm);
     int numOwnIntersect = 0;
     for (int i = 0; i < numAlgosOwn; i++) {
@@ -1460,7 +1466,9 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
             }
         }
     }
-    // Build list of peer's intersecting algos: take own list as input, order according to sequence in hello packet (peer's order)
+    // Build list of peer's intersecting algos: take own list as input and build a 
+    // list of algorithms that we have in common. The order of the list is according
+    // to peer's Hello packet (peer's preferences). 
     int numPeerIntersect = 0;
     for (int i = 0; i < numAlgosPeer; i++) {
         peerIntersect[numPeerIntersect] = &zrtpPubKeys.getByName((const char*)hello->getPubKeyType(i));
@@ -1471,11 +1479,14 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
             }
         }
     }
-    if (numPeerIntersect == 0) {
-        // If we don't find a common algorithm - use the mandatory algorithm
+    if (numPeerIntersect == 0) {       // If we don't have a common algorithm - use mandatory algorithms
         hash = findBestHash(hello);
         return &zrtpPubKeys.getByName(mandatoryPubKey);
     }
+
+    // If we have only one algorithm in common or if the first entry matches - take it.
+    // Otherwise determine which algorithm from the intersection lists is first in the 
+    // list of ordered algorithms and select it (RFC6189, section 4.1.2).
     AlgorithmEnum* useAlgo;
     if (numPeerIntersect > 1 && *(int32_t*)(ownIntersect[0]->getName()) != *(int32_t*)(peerIntersect[0]->getName())) {
         int own, peer;
@@ -1595,11 +1606,18 @@ AlgorithmEnum* ZRtp::findBestAuthLen(ZrtpPacketHello *hello) {
     return &zrtpAuthLengths.getByName(mandatoryAuthLen_1);
 }
 
-// The following set of functions implement a 'non-NIST first policy' if nonNist is true.
-// They prefer nonNist algorithms if these are available. Otherwise they use the NIST
+// The following set of functions implement a 'non-NIST first policy' if nonNist computes 
+// to true. They prefer nonNist algorithms if these are available. Otherwise they use the NIST
 // counterpart or simply call the according findBest*(...) function.
 //
-// Only the findBestPubkey(...) function calls them.
+// Only the findBestPubkey(...) function calls them after it selected the public key algorithm.
+// If the public key algorithm is non-NIST and if the policy is set to PreferNonNist then
+// nonNist becomes true.
+//
+// The functions work according to the RFC6189 spec: the initiator can select every algorithm
+// that both parties support. Thus the Initiator can even select an algorithm the wasn't offered
+// in its own Hello packet but that the Initiator found in the peer's Hello and that is available
+// for it.
 //
 AlgorithmEnum* ZRtp::getStrongHashOffered(ZrtpPacketHello *hello, int32_t algoName) {
 
@@ -1620,7 +1638,7 @@ AlgorithmEnum* ZRtp::getStrongHashOffered(ZrtpPacketHello *hello, int32_t algoNa
             return &zrtpHashes.getByName((const char*)hello->getHashType(i));
         }
     }
-    return NULL;
+    return NULL;         // returning NULL -> prepareCommit(...) terminates ZRTP, missing strong hash is an error
 }
 
 AlgorithmEnum* ZRtp::getStrongCipherOffered(ZrtpPacketHello *hello, int32_t algoName) {
@@ -1642,7 +1660,7 @@ AlgorithmEnum* ZRtp::getStrongCipherOffered(ZrtpPacketHello *hello, int32_t algo
             return &zrtpSymCiphers.getByName((const char*)hello->getCipherType(i));
         }
     }
-    return NULL;
+    return NULL;       // returning NULL -> prepareCommit(...) finds the best cipher
 }
 
 AlgorithmEnum* ZRtp::getHashOffered(ZrtpPacketHello *hello, int32_t algoName) {
@@ -1674,7 +1692,7 @@ AlgorithmEnum* ZRtp::getCipherOffered(ZrtpPacketHello *hello, int32_t algoName) 
             }
         }
     }
-    return NULL;
+    return NULL;       // returning NULL -> prepareCommit(...) finds the best cipher
 }
 
 AlgorithmEnum* ZRtp::getAuthLenOffered(ZrtpPacketHello *hello, int32_t algoName) {

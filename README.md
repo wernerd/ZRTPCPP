@@ -12,26 +12,31 @@ algorithms. Currently GNU ZRTP C++ supports the following features:
 
 * multi-stream mode
 * Finite field Diffie-Hellman with 2048 and 3072 bit primes
-* Elliptic curve Diffie-Hellman with 256 and 384 bit curves
+* Elliptic curve Diffie-Hellman with 256 and 384 bit curves (NIST curves)
 * Elliptic curves Curve25519 and Curve3617 (Dan Berstein, Tanja Lange)
-* Skein Hash for ZRTP
-* AES-128 and AES-256 symmetric cipher
+* Skein Hash and MAC for ZRTP
+* AES-128 and AES-256 symmetric ciphers
 * Twofish-128 and Twofish-256 bit symmetric ciphers
 * The SRTP authentication methods HMAC-SHA1 with 32 bit and 80 bit length and
   the Skein MAC with 32 bit and 64 bit length
 * The Short Authentication String (SAS) type with base 32 encoding (4
   characters) and the SAS 256 type using words.
 
-Some features like preshared mode or signed SAS are not supported but the GNU
+Some features like preshared mode are not supported but the GNU
 ZRTP C++ implementation defines the necessary external interfaces and
-functions for these enhanced features (stubs only).
+functions for these enhanced features.
 
 **Note:** The Elliptic curves Cure25519 and Curve3617 are available only if you
 select the crypto standalone mode during build.
 
-I changed the license of the ZRTP core source files from GPL to LGPL. Other
-sources files may have own license. Please refer to the copyright notices of
-the files.
+The newer verisons (starting with 4.1) implement an extensible mechanisms to
+define algorithm selection policies that control selection of Hash, symmetric
+cipher, and the SRTP authentication. Currently two policies exist: _Standard_
+and _PreferNonNist_. The Standard policy selects algorihms based on the
+preferences (order) in the Hello packet, the PreferNonNist policy prefers 
+non-NIST algorithms, for example Skein and Twofish, if the selected public key
+(Diffie-Hellman) algorithm is also one of the non-NIST algorithms. This is 
+fully backward compatible and in-line with RFC6189.
 
 ### SDES support
 This release also provides SDES support. The SDES implementation does not
@@ -85,7 +90,11 @@ following versions of Twinkle include GNU ZRTP C++ as well.
 
 
 ### License and further information
-Most this library is licensed under the GNU LGPL, version 3 or later.
+I changed the license of the ZRTP core source files from GPL to LGPL. Other
+sources files may have own license. Please refer to the copyright notices of
+the files.
+
+Thus most of this library is licensed under the GNU LGPL, version 3 or later.
 
 For further information refer to the [ZRTP FAQ][zrtpfaq] and the
 [GNU ZRTP howto][zrtphow]. Both are part of the GNU Telephony wiki and are
@@ -107,10 +116,10 @@ process. To build GNU ZRTP C++ perform the following steps after you unpacked
 the source archive or pulled the source from [Github][]:
 
     cd <zrtpsrc_dir>
-	mkdir build
-	cd build
-	cmake ..
-	make
+    mkdir build
+    cd build
+    cmake ..
+    make
 
 The CMakeLists.txt supports several options. If you don't specify any options
 then `cmake` generates the build that supports GNU ccRTP library and it uses

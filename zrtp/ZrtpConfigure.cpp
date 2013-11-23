@@ -225,7 +225,8 @@ AuthLengthEnum zrtpAuthLengths;
 /*
  * The public methods are mainly a facade to the private methods.
  */
-ZrtpConfigure::ZrtpConfigure() : enableTrustedMitM(false), enableSasSignature(false), enableParanoidMode(false) {}
+ZrtpConfigure::ZrtpConfigure(): enableTrustedMitM(false), enableSasSignature(false), enableParanoidMode(false),
+selectionPolicy(Standard){}
 
 ZrtpConfigure::~ZrtpConfigure() {}
 
