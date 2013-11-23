@@ -1,7 +1,8 @@
 ## GNU ZRTP C++
 
 This package provides a library that adds ZRTP support to the GNU
-ccRTP stack. Phil Zimmermann developed ZRTP to allow ad-hoc, easy to
+ccRTP stack and serves as library for other RTP stacks (PJSIP, GStreamer).
+Phil Zimmermann developed ZRTP to allow ad-hoc, easy to
 use key negotiation to setup Secure RTP (SRTP) sessions. GNU ZRTP works
 together with GNU ccRTP (1.5.0 or later) and provides a ZRTP
 implementation that can be directly embedded into client and server
@@ -13,7 +14,7 @@ algorithms. Currently GNU ZRTP C++ supports the following features:
 * multi-stream mode
 * Finite field Diffie-Hellman with 2048 and 3072 bit primes
 * Elliptic curve Diffie-Hellman with 256 and 384 bit curves (NIST curves)
-* Elliptic curves Curve25519 and Curve3617 (Dan Berstein, Tanja Lange)
+* Elliptic curves Curve25519 and Curve3617 (Dan Bernstein, Tanja Lange)
 * Skein Hash and MAC for ZRTP
 * AES-128 and AES-256 symmetric ciphers
 * Twofish-128 and Twofish-256 bit symmetric ciphers
