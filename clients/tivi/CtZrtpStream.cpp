@@ -305,7 +305,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
             useLength = newLength + CRC_SIZE;                  // length check assumes a ZRTP CRC
         }
         else {
-            char tmpBuffer[500];
+            DEBUG(char tmpBuffer[500];)
             useZrtpTunnel = false;
             // Get CRC value into crc (see above how to compute the offset)
             uint16_t temp = length - CRC_SIZE;

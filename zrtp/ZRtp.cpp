@@ -320,14 +320,15 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     sasType = findBestSASType(hello);
 
     if (!multiStream) {
-        pubKey = findBestPubkey(hello);                 // Check for public key algorithm first, sets 'hash' as well
+        pubKey = findBestPubkey(hello);                 // Check for public key algorithm first, must set 'hash' as well
         if (hash == NULL) {
             *errMsg = UnsuppHashType;
             return NULL;
         }
         if (cipher == NULL)                             // public key selection may have set the cipher already
             cipher = findBestCipher(hello, pubKey);
-        authLength = findBestAuthLen(hello);
+        if (authLength == NULL)                         // public key selection may have set the SRTP authLen already
+            authLength = findBestAuthLen(hello);
         multiStreamAvailable = checkMultiStream(hello);
     }
     else {
@@ -1363,8 +1364,7 @@ AlgorithmEnum* ZRtp::findBestHash(ZrtpPacketHello *hello) {
     if (num == 0) {
         return &zrtpHashes.getByName(mandatoryHash);
     }
-    // Build list of configured hash algorithm names, append mandatory algos
-    // if necessary.
+    // Build list of configured hash algorithm names.
     numAlgosConf = configureAlgos.getNumConfiguredAlgos(HashAlgorithm);
     for (i = 0; i < numAlgosConf; i++) {
         algosConf[i] = &configureAlgos.getAlgoAt(HashAlgorithm, i);
@@ -1378,8 +1378,7 @@ AlgorithmEnum* ZRtp::findBestHash(ZrtpPacketHello *hello) {
         numAlgosOffered++;
     }
 
-    // Lookup offered algos in configured algos. Because of appended
-    // mandatory algorithms at least one match will happen
+    // Lookup offered algos in configured algos.
     for (i = 0; i < numAlgosOffered; i++) {
         for (ii = 0; ii < numAlgosConf; ii++) {
             if (*(int32_t*)(algosOffered[i]->getName()) == *(int32_t*)(algosConf[ii]->getName())) {
@@ -1430,6 +1429,11 @@ AlgorithmEnum* ZRtp::findBestCipher(ZrtpPacketHello *hello, AlgorithmEnum* pk) {
     return &zrtpSymCiphers.getByName(mandatoryCipher);
 }
 
+// We can have the non-NIST in the list of orderedAlgos even if they are not available
+// in the code (refer to ZrtpConfigure.cpp). If they are not build in they cannot appear
+// in'configureAlgos' and thus not in the intersection lists. Thus a ZRTP build that
+// does not include the non-NIST curves also works without problems.
+//
 AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
 
     AlgorithmEnum* peerIntersect[ZrtpConfigure::maxNoOfAlgos+1];
@@ -1442,11 +1446,12 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
 
     int numAlgosPeer = hello->getNumPubKeys();
     if (numAlgosPeer == 0) {
-        hash = &zrtpHashes.getByName(mandatoryHash);             // set mandatory hash
+        hash = findBestHash(hello);                    // find a hash algorithm
         return &zrtpPubKeys.getByName(mandatoryPubKey);
     }
     // Build own list of intersecting algos, keep own order or algorithms
-    // The list must include real public key algorithms only, so skip mult-stream mode, preshared and alike.
+    // The list must include real public key algorithms only, so skip mult-stream mode, 
+    // preshared and alike.
     int numAlgosOwn = configureAlgos.getNumConfiguredAlgos(PubKeyAlgorithm);
     int numOwnIntersect = 0;
     for (int i = 0; i < numAlgosOwn; i++) {
@@ -1461,7 +1466,9 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
             }
         }
     }
-    // Build list of peer's intersecting algos: take own list as input, order according to sequence in hello packet (peer's order)
+    // Build list of peer's intersecting algos: take own list as input and build a 
+    // list of algorithms that we have in common. The order of the list is according
+    // to peer's Hello packet (peer's preferences). 
     int numPeerIntersect = 0;
     for (int i = 0; i < numAlgosPeer; i++) {
         peerIntersect[numPeerIntersect] = &zrtpPubKeys.getByName((const char*)hello->getPubKeyType(i));
@@ -1472,11 +1479,14 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
             }
         }
     }
-    if (numPeerIntersect == 0) {
-        // If we don't find a common algorithm - use the mandatory algorithms
-        hash = &zrtpHashes.getByName(mandatoryHash);
+    if (numPeerIntersect == 0) {       // If we don't have a common algorithm - use mandatory algorithms
+        hash = findBestHash(hello);
         return &zrtpPubKeys.getByName(mandatoryPubKey);
     }
+
+    // If we have only one algorithm in common or if the first entry matches - take it.
+    // Otherwise determine which algorithm from the intersection lists is first in the 
+    // list of ordered algorithms and select it (RFC6189, section 4.1.2).
     AlgorithmEnum* useAlgo;
     if (numPeerIntersect > 1 && *(int32_t*)(ownIntersect[0]->getName()) != *(int32_t*)(peerIntersect[0]->getName())) {
         int own, peer;
@@ -1502,14 +1512,18 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
     else {
         useAlgo = peerIntersect[0];
     }
+    int32_t algoName = *(int32_t*)(useAlgo->getName());
+
     // select a corresponding strong hash if necessary.
-    if (*(int32_t*)(useAlgo->getName()) == *(int32_t*)ec38 || *(int32_t*)(useAlgo->getName()) == *(int32_t*)e414) {
-        hash = getStrongHashOffered(hello);
-        cipher = getStrongCipherOffered(hello);
+    if (algoName == *(int32_t*)ec38 || algoName == *(int32_t*)e414) {
+        hash = getStrongHashOffered(hello, algoName);
+        cipher = getStrongCipherOffered(hello, algoName);
     }
     else {
-        hash = findBestHash(hello);
+        hash = getHashOffered(hello, algoName);;
+        cipher = getCipherOffered(hello, algoName);
     }
+    authLength = getAuthLenOffered(hello, algoName);
     return useAlgo;
 }
 
@@ -1592,27 +1606,109 @@ AlgorithmEnum* ZRtp::findBestAuthLen(ZrtpPacketHello *hello) {
     return &zrtpAuthLengths.getByName(mandatoryAuthLen_1);
 }
 
-AlgorithmEnum* ZRtp::getStrongHashOffered(ZrtpPacketHello *hello) {
+// The following set of functions implement a 'non-NIST first policy' if nonNist computes 
+// to true. They prefer nonNist algorithms if these are available. Otherwise they use the NIST
+// counterpart or simply call the according findBest*(...) function.
+//
+// Only the findBestPubkey(...) function calls them after it selected the public key algorithm.
+// If the public key algorithm is non-NIST and if the policy is set to PreferNonNist then
+// nonNist becomes true.
+//
+// The functions work according to the RFC6189 spec: the initiator can select every algorithm
+// that both parties support. Thus the Initiator can even select an algorithm the wasn't offered
+// in its own Hello packet but that the Initiator found in the peer's Hello and that is available
+// for it.
+//
+AlgorithmEnum* ZRtp::getStrongHashOffered(ZrtpPacketHello *hello, int32_t algoName) {
 
     int numHash = hello->getNumHashes();
+    bool nonNist = (algoName == *(int32_t*)e414 || algoName == *(int32_t*)e255) && configureAlgos.getSelectionPolicy() == ZrtpConfigure::PreferNonNist;
+
+    if (nonNist) {
+        for (int i = 0; i < numHash; i++) {
+            int32_t nm = *(int32_t*)(hello->getHashType(i));
+            if (nm == *(int32_t*)skn3) {
+                return &zrtpHashes.getByName((const char*)hello->getHashType(i));
+            }
+        }
+    }
     for (int i = 0; i < numHash; i++) {
-        if (*(int32_t*)(hello->getHashType(i)) == *(int32_t*)s384 || *(int32_t*)(hello->getHashType(i)) == *(int32_t*)skn3) {
+        int32_t nm = *(int32_t*)(hello->getHashType(i));
+        if (nm == *(int32_t*)s384 || nm == *(int32_t*)skn3) {
             return &zrtpHashes.getByName((const char*)hello->getHashType(i));
         }
     }
-    return NULL;
+    return NULL;         // returning NULL -> prepareCommit(...) terminates ZRTP, missing strong hash is an error
 }
 
-AlgorithmEnum* ZRtp::getStrongCipherOffered(ZrtpPacketHello *hello) {
+AlgorithmEnum* ZRtp::getStrongCipherOffered(ZrtpPacketHello *hello, int32_t algoName) {
 
     int num = hello->getNumCiphers();
+    bool nonNist = (algoName == *(int32_t*)e414 || algoName == *(int32_t*)e255) && configureAlgos.getSelectionPolicy() == ZrtpConfigure::PreferNonNist;
+
+    if (nonNist) {
+        for (int i = 0; i < num; i++) {
+            int32_t nm = *(int32_t*)(hello->getCipherType(i));
+            if (nm == *(int32_t*)two3) {
+                return &zrtpSymCiphers.getByName((const char*)hello->getCipherType(i));
+            }
+        }
+    }
     for (int i = 0; i < num; i++) {
-        if (*(int32_t*)(hello->getCipherType(i)) == *(int32_t*)aes3 ||
-            *(int32_t*)(hello->getCipherType(i)) == *(int32_t*)two3) {
+        int32_t nm = *(int32_t*)(hello->getCipherType(i));
+        if (nm == *(int32_t*)aes3 || nm == *(int32_t*)two3) {
             return &zrtpSymCiphers.getByName((const char*)hello->getCipherType(i));
         }
     }
-    return NULL;
+    return NULL;       // returning NULL -> prepareCommit(...) finds the best cipher
+}
+
+AlgorithmEnum* ZRtp::getHashOffered(ZrtpPacketHello *hello, int32_t algoName) {
+
+    int num = hello->getNumHashes();
+    bool nonNist = (algoName == *(int32_t*)e414 || algoName == *(int32_t*)e255) && configureAlgos.getSelectionPolicy() == ZrtpConfigure::PreferNonNist;
+
+    if (nonNist) {
+        for (int i = 0; i < num; i++) {
+            int32_t nm = *(int32_t*)(hello->getHashType(i));
+            if (nm == *(int32_t*)skn2 || nm == *(int32_t*)skn3) {
+                return &zrtpHashes.getByName((const char*)hello->getHashType(i));
+            }
+        }
+    }
+    return findBestHash(hello);
+}
+
+AlgorithmEnum* ZRtp::getCipherOffered(ZrtpPacketHello *hello, int32_t algoName) {
+
+    int num = hello->getNumCiphers();
+    bool nonNist = (algoName == *(int32_t*)e414 || algoName == *(int32_t*)e255) && configureAlgos.getSelectionPolicy() == ZrtpConfigure::PreferNonNist;
+
+    if (nonNist) {
+        for (int i = 0; i < num; i++) {
+            int32_t nm = *(int32_t*)(hello->getCipherType(i));
+            if (nm == *(int32_t*)two2 || nm == *(int32_t*)two3) {
+                return &zrtpSymCiphers.getByName((const char*)hello->getCipherType(i));
+            }
+        }
+    }
+    return NULL;       // returning NULL -> prepareCommit(...) finds the best cipher
+}
+
+AlgorithmEnum* ZRtp::getAuthLenOffered(ZrtpPacketHello *hello, int32_t algoName) {
+
+    int num = hello->getNumAuth();
+    bool nonNist = (algoName == *(int32_t*)e414 || algoName == *(int32_t*)e255) && configureAlgos.getSelectionPolicy() == ZrtpConfigure::PreferNonNist;
+
+    if (nonNist) {
+        for (int i = 0; i < num; i++) {
+            int32_t nm = *(int32_t*)(hello->getAuthLen(i));
+            if (nm == *(int32_t*)sk32 || nm == *(int32_t*)sk64) {
+                return &zrtpAuthLengths.getByName((const char*)hello->getAuthLen(i));
+            }
+        }
+    }
+    return findBestAuthLen(hello);
 }
 
 bool ZRtp::checkMultiStream(ZrtpPacketHello *hello) {
