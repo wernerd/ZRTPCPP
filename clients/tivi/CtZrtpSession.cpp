@@ -128,7 +128,7 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
     int b32sas = 0, iDisableDH2K = 0, iDisableAES256 = 0, iPreferDH2K = 0;
     int iDisableECDH256 = 0, iDisableECDH384 = 0, iEnableSHA384 = 1;
     int iDisableSkein = 0, iDisableTwofish = 0, iPreferNIST = 0;
-    int iDisableSkeinHash = 0, iDisableBernsteinCurve25519 = 0, iDisableBernsteinCurve3617 = 0
+    int iDisableSkeinHash = 0, iDisableBernsteinCurve25519 = 0, iDisableBernsteinCurve3617 = 0;
 
     GET_CFG_I(b32sas, "iDisable256SAS");
     GET_CFG_I(iDisableAES256, "iDisableAES256");
