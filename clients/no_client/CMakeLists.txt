@@ -10,8 +10,7 @@ set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})
 
 #to make sure includes are first taken - it contains config.h
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
-include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/zrtp
-    ${CMAKE_SOURCE_DIR}/srtp ${CMAKE_SOURCE_DIR}/bnlib)
+include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/zrtp ${CMAKE_SOURCE_DIR}/bnlib)
 
 # **** setup the various crypto interface implementations ***
 # Twofish is a special case: its always a standalone modlue and thus
@@ -54,7 +53,18 @@ if (CRYPTO_STANDALONE)
         ${CMAKE_SOURCE_DIR}/cryptcommon/aes_modes.c)
 endif()
 
-set(zrtpcpp_src ${zrtp_src} ${crypto_src} ${cryptcommon_srcs})
+if (SDES)
+   include_directories(${CMAKE_SOURCE_DIR}/srtp ${CMAKE_SOURCE_DIR}/srtp/crypto)
+   set (zrtp_srtp_src
+       ${CMAKE_SOURCE_DIR}/srtp/CryptoContext.cpp
+       ${CMAKE_SOURCE_DIR}/srtp/CryptoContextCtrl.cpp
+       ${CMAKE_SOURCE_DIR}/srtp/SrtpHandler.cpp
+       ${CMAKE_SOURCE_DIR}/srtp/crypto/sha1.c
+       ${CMAKE_SOURCE_DIR}/srtp/crypto/hmac.cpp
+       ${CMAKE_SOURCE_DIR}/srtp/crypto/SrtpSymCrypto.cpp)
+endif()
+
+set(zrtpcpp_src ${zrtp_src} ${crypto_src} ${cryptcommon_srcs} ${zrtp_srtp_src})
 
 if(BUILD_STATIC AND NOT BUILD_SHARED)
     set(LIBRARY_BUILD_TYPE STATIC)

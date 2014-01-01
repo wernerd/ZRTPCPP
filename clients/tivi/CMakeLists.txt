@@ -152,11 +152,6 @@ if(ANDROID)
     endif()
 
     string(REPLACE ";" " " zrtpcpp_src_spc "${zrtpcpp_src_spc}")
-#    configure_file(${CMAKE_SOURCE_DIR}/clients/tivi/jni/zrtplib/Android.mk.cmake
-#                   ${CMAKE_BINARY_DIR}/clients/tivi/jni/zrtplib/Android.mk @ONLY)
-
-#    configure_file(${CMAKE_SOURCE_DIR}/clients/tivi/jni/sqlite3/Android.mk.cmake
-#                   ${CMAKE_BINARY_DIR}/clients/tivi/jni/sqlite3/Android.mk @ONLY)
 
     configure_file(${CMAKE_SOURCE_DIR}/clients/tivi/android/jni/Android.mk
                    ${CMAKE_BINARY_DIR}/clients/tivi/android/jni/Android.mk @ONLY)
