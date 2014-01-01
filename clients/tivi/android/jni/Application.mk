@@ -8,3 +8,4 @@
 APP_STL := gnustl_shared
 APP_MODULES := zrtpcpp
 APP_ABI := armeabi armeabi-v7a
+NDK_TOOLCHAIN_VERSION := 4.8
