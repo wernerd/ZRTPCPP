@@ -22,7 +22,7 @@
 #include <libzrtpcpp/ZrtpConfigure.h>
 //                             1
 //                    1234567890123456
-char clientId[] =    "GNU ZRTP 4.0.0  "; // 16 chars max.
+char clientId[] =    "GNU ZRTP 4.1.1  "; // 16 chars max.
 char zrtpVersion_11[] = "1.10";          // must be 4 chars
 char zrtpVersion_12[] = "1.20";          // must be 4 chars
 /**
