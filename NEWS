@@ -1,3 +1,22 @@
+== GNU ZRTP 4.1.1 ==
+
+Is a bug fix release that fixes some problems when building a standalone
+version of the library, i.e. with embedded crypto algorithms and not using
+on openSSL.
+
+Another fix was necessary for NetBSD thread handling.
+
+
+== GNU ZRTP 4.1.0 ==
+
+Small enhancements when dealing with non-NIST algorithms. An application may
+set a ''algorithm selection policy'' to control the selection behaviour. In
+addition the the standrad selection policy (as per RFC6189) this version
+provides a _non-NIST_ selection policy: if the selected public key algorithm
+is a non-NIST ECC algorithm then the other selection functions prefer non-NIST
+HASH algorithms (Skein etc).
+
+
 == GNU ZRTP 4.0.0 ==
 
 For this version I added some new algorithms for the DH key agreement
@@ -256,7 +275,7 @@ not support this additional secret anymore.
 The method ''setOtherSecret(...)'' was renamed to ''setPbxSecret(...)''
 to reflect the modification in the draft.
 
-The methos ''setSrtpsSecret(...)'' is was renamed to ''setAuxSecret(...)''
+The method ''setSrtpsSecret(...)'' was renamed to ''setAuxSecret(...)''
 to reflect the modification in the draft.
 
 
