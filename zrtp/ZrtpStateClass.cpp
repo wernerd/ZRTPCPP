@@ -97,7 +97,7 @@ void ZrtpStateClass::processEvent(Event_t *ev) {
             totalLength += 12 + sizeof(uint32_t);           // 12 bytes is fixed header, uint32_t is CRC
 
             if (totalLength != ev->length) {
-                fprintf(stderr, "Total length does not match received length: %d - %ld\n", totalLength, ev->length);
+                fprintf(stderr, "Total length does not match received length: %d - %ld\n", totalLength, (long int)(ev->length & 0xffff));
                 sendErrorPacket(MalformedPacket);
                 parent->synchLeave();
                 return;

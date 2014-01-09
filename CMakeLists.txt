@@ -13,10 +13,10 @@ cmake_minimum_required(VERSION 2.6)
 PROJECT(libzrtpcpp)
 
 SET(CPACK_PACKAGE_VERSION_MAJOR 4)
-SET(CPACK_PACKAGE_VERSION_MINOR 0)
-SET(CPACK_PACKAGE_VERSION_PATCH 0)
+SET(CPACK_PACKAGE_VERSION_MINOR 1)
+SET(CPACK_PACKAGE_VERSION_PATCH 1)
 
-set (VERSION 4.0.0)
+set (VERSION 4.1.1)
 set (SOVERSION 4)
 
 # Define supported command line parameters.
@@ -29,6 +29,7 @@ option(CORE_LIB "Build core library only, no spcific client support." OFF)
 option(CRYPTO_STANDALONE "Use embedded crypto and big number modules." ON)
 option(TIVI "Build library for the tivi client, implies '-DCRYPTO_STNDALONE=true'." OFF)
 option(SQLITE "Use SQLite DB as backend for ZRTP cache." OFF)
+option(SDES "Include SDES when not building for CCRTP." ON)
 
 option(ANDROID "Generate Android makefiles (Android.mk)" ON)
 option(JAVA "Generate Java support files (requires JDK and SWIG)" OFF)
@@ -168,7 +169,7 @@ if(CRYPTO_STANDALONE)
     include_directories (${CMAKE_SOURCE_DIR}/bnlib)
 endif()
 
-if (NOT CCRTP)
+if (SDES AND NOT CCRTP)
     set (sdes_src ${CMAKE_SOURCE_DIR}/zrtp/ZrtpSdesStream.cpp)
 endif()
 

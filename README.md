@@ -152,3 +152,4 @@ and may give you an idea how to do it for other clients. The generated
 `Android.mk` generates `buildinfo_*.c` files in the root directory. You may
 delete these files after the Android static libraries are ready.
 
+Since version 4.1.1 the example Android build files require NDK r9c.
