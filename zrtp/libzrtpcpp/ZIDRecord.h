@@ -38,6 +38,9 @@
 #define IDENTIFIER_LEN  12
 #define RS_LENGTH       32
 
+#define FILE_TYPE_RECORD    1
+#define SQLITE_TYPE_RECORD  2
+
 #if defined(__cplusplus)
 /**
  * Interface for classes that implement a ZID cache record.
@@ -208,6 +211,8 @@ public:
      *
      */
     virtual const unsigned char* getMiTMData() =0;
+
+    virtual int getRecordType() =0;
 };
 #endif /* (__cplusplus) */
 #endif

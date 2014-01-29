@@ -58,6 +58,7 @@ private:
     char errorBuffer[DB_CACHE_ERR_BUFF_SIZE];
 
     void createZIDFile(char* name);
+    void formatOutput(remoteZidRecord_t *remZid, const char *nameBuffer, std::string *output);
 
 public:
 
@@ -85,6 +86,11 @@ public:
 
     void cleanup();
 
+    void *prepareReadAll();
+
+    void *readNextRecord(void *stmt, std::string *name);
+
+    void closeOpenStatment(void *stmt);
 };
 
 /**
