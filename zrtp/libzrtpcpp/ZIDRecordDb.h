@@ -272,6 +272,8 @@ public:
      *
      */
     const unsigned char* getMiTMData() {return record.mitmKey; }
+    
+    int getRecordType() {return SQLITE_TYPE_RECORD; }
 };
 #endif /* (__cplusplus) */
 

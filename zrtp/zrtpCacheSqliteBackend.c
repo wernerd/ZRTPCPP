@@ -124,6 +124,14 @@ static const char *updateZrtpIdRemote =
     "secureSince=strftime('%s', ?11, 'unixepoch'), preshCounter=?13 "
     "WHERE remoteZid=?1 AND localZid=?12;";
 
+static const char *selectZrtpIdRemoteAllNoCondition = 
+    "SELECT flags,"
+    "rs1, strftime('%s', rs1LastUsed, 'unixepoch'), strftime('%s', rs1TimeToLive, 'unixepoch'),"
+    "rs2, strftime('%s', rs2LastUsed, 'unixepoch'), strftime('%s', rs2TimeToLive, 'unixepoch'),"
+    "mitmKey, strftime('%s', mitmLastUsed, 'unixepoch'), strftime('%s', secureSince, 'unixepoch'),"
+    "preshCounter, remoteZid "
+    "FROM zrtpIdRemote;";
+
 
 /* *****************************************************************************
  * SQL statements to process the name table.
@@ -770,6 +778,65 @@ static int readZidNameRecord(void *vdb, const uint8_t *remoteZid, const uint8_t 
     return rc;
 }
 
+static void *prepareReadAllZid(void *vdb, char *errString)
+{
+    sqlite3 *db = (sqlite3*)vdb;
+    sqlite3_stmt *stmt;
+    int rc;
+
+    SQLITE_CHK(SQLITE_PREPARE(db, selectZrtpIdRemoteAllNoCondition, strlen(selectZrtpIdRemoteAllNoCondition)+1, &stmt, NULL));
+    return stmt;
+
+  cleanup:
+    sqlite3_finalize(stmt);
+    return NULL;
+}
+
+static void *readNextZidRecord(void *vdb, void *vstmt, remoteZidRecord_t *remZid, char* errString)
+{
+    sqlite3 *db = (sqlite3*)vdb;
+    sqlite3_stmt *stmt;
+    char *zidBase64Text;
+    int rc;
+
+    if (vstmt == NULL)
+        return NULL;
+    stmt = (sqlite3_stmt*)vstmt;
+
+    /* Getting data from result set: column index starts with 0 (zero), not one */
+    if ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+        remZid->flags =         sqlite3_column_int(stmt,    0);
+        memcpy(remZid->rs1,     sqlite3_column_blob(stmt,   1), RS_LENGTH);
+        remZid->rs1LastUse =    sqlite3_column_int64(stmt,  2);
+        remZid->rs1Ttl =        sqlite3_column_int64(stmt,  3);
+        memcpy(remZid->rs2,     sqlite3_column_blob(stmt,   4), RS_LENGTH);
+        remZid->rs2LastUse =    sqlite3_column_int64(stmt,  5);
+        remZid->rs2Ttl =        sqlite3_column_int64(stmt,  6);
+        memcpy(remZid->mitmKey, sqlite3_column_blob(stmt,   7), RS_LENGTH);
+        remZid->mitmLastUse =   sqlite3_column_int64(stmt,  8);
+        remZid->secureSince =   sqlite3_column_int64(stmt,  9);
+        remZid->preshCounter =  sqlite3_column_int(stmt,   10);
+        zidBase64Text = (char *)sqlite3_column_text(stmt,  11);
+        b64Decode(zidBase64Text, strlen(zidBase64Text), remZid->identifier, IDENTIFIER_LEN);
+        return stmt;
+    }
+    sqlite3_finalize(stmt);
+
+    if (rc != SQLITE_DONE)
+        ERRMSG;
+    return NULL;
+}
+
+static void closeStatement(void *vstmt)
+{
+    sqlite3_stmt *stmt;
+
+    if (vstmt == NULL)
+        return;
+    stmt = (sqlite3_stmt*)vstmt;
+    sqlite3_finalize(stmt);
+}
+
 void getDbCacheOps(dbCacheOps_t *ops)
 {
     ops->openCache = openCache;
@@ -785,5 +852,9 @@ void getDbCacheOps(dbCacheOps_t *ops)
     ops->readZidNameRecord =   readZidNameRecord;
     ops->updateZidNameRecord = updateZidNameRecord;
     ops->insertZidNameRecord = insertZidNameRecord;
+
+    ops->prepareReadAllZid = prepareReadAllZid;
+    ops->readNextZidRecord = readNextZidRecord;
+    ops->closeStatement = closeStatement;
 }
 

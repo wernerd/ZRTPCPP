@@ -267,6 +267,8 @@ public:
      *
      */
     const unsigned char* getMiTMData() {return record.mitmKey; }
+
+    int getRecordType() {return FILE_TYPE_RECORD; }
 };
 
 #endif // ZIDRECORDSMALL

@@ -204,7 +204,7 @@ typedef struct {
      * returns without error. The application must check the flags if the
      * method found a valid record.
      * 
-     * @param db Pointer to an internal structure that the database
+     * @param vdb Pointer to an internal structure that the database
      *           implementation requires.
      *
      * @param localZid Pointer to a buffer of at least @c IDENTIFIER_LEN @c
@@ -237,7 +237,7 @@ typedef struct {
      *          record exists in the database and the application must use the
      *          @c insertZidNameRecord (see below).
      *
-     * @param db Pointer to an internal structure that the database
+     * @param vdb Pointer to an internal structure that the database
      *           implementation requires.
      *
      * @param localZid Pointer to a buffer of at least @c IDENTIFIER_LEN @c
@@ -305,6 +305,61 @@ typedef struct {
      *                  notes above.
      */
     int (*cleanCache)(void *db, char* errString);
+
+    /**
+     * @brief Prepare a SQL cursor to read all records from the remote (peer) ZID table.
+     * 
+     * The function creates a SQL cursor (prepares a statement in sqlite3 parlance) to
+     * read all records from the table that contains the remote (peers') ZID data.
+     * 
+     * This functions returns a pointer to the SQL cursor or @c NULL if it fails to
+     * create a cursor.
+     * 
+     * @param db Pointer to an internal structure that the database
+     *           implementation requires.
+     * 
+     * @param errString Pointer to a character buffer, see implementation
+     *                  notes above.
+     * 
+     * @return a void pointer to the sqlite3 statment (SQL cursor) or @c NULL
+     */
+    void *(*prepareReadAllZid)(void *db, char *errString);
+
+    /**
+     * @brief Read next ZID record from and SQL cursor.
+     * 
+     * The function reads the next ZID record from a SQL cursor. If it cannot read a
+     * record or encounters an error the function closes the cursor and returns @c NULL.
+     * In this case the function must not use the SQL cursor pointer again.
+     * 
+     * @param db Pointer to an internal structure that the database
+     *           implementation requires.
+     * 
+     * @param stmt a void pointer to a sqlite3 statement (SQL cursor)
+     *
+     * @param remZid Pointer to the @c remoteZidRecord_t structure. The method
+     *               fills this structure with data it read from the database.
+     * 
+     * @param errString Pointer to a character buffer, see implementation
+     *                  notes above.
+     * 
+     * @return void pointer to statment if successful, this is the same pointer as
+     *         the @c stmt input parameter. The function returns @c NULL if either 
+     *         no more record is available or it got another error.
+     */
+    void *(*readNextZidRecord)(void *db, void *stmt, remoteZidRecord_t *remZid, char* errString);
+
+    /**
+     * @brief Close sqlite3 statment (SQL cursor)
+     * 
+     * This functions closes (finalizes) an open sqlite3 statment. Usually the 
+     * @c readNextZidRecord closes the statment if no more record is available. However, an
+     * application may decide not to read every record. In this case it @b must close the
+     * sqlite3 statment
+     * 
+     * @param stmt a void pointer to a sqlite3 statement (SQL cursor)
+     */
+    void (*closeStatement)(void *vstmt);
 } dbCacheOps_t;
 
 void getDbCacheOps(dbCacheOps_t *ops);

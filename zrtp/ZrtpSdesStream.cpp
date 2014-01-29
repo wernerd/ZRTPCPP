@@ -444,8 +444,10 @@ static int expand(uint8_t* prk, uint32_t prkLen, uint8_t* info, int32_t infoLen,
 
     if (hashLen == 384/8)
         hmacCtx = createSha384HmacContext(prk, prkLen);
-    else
+    else {
+        free(T);
         return -1;
+    }
 
     // Prepare first HMAC. T(0) has zero length, thus we ignore it in first run.
     // After first run use its output (T(1)) as first data in next HMAC run.

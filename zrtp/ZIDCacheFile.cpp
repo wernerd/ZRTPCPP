@@ -96,7 +96,7 @@ void ZIDCacheFile::checkDoMigration(char* name) {
     // just a little inconvenience for the user, need to verify new SAS
     std::string fn = std::string(name) + std::string(".save");
     if (rename(name, fn.c_str()) < 0) {
-	unlink(name);
+        unlink(name);
         createZIDFile(name);
         return;
     }
@@ -114,6 +114,7 @@ void ZIDCacheFile::checkDoMigration(char* name) {
     }
     zidFile = fopen(name, "wb+");    // create new format file in binary r/w mode
     if (zidFile == NULL) {
+        fclose(fdOld);
         return;
     }
     // create ZIDRecord in new format, copy over own ZID and write the record

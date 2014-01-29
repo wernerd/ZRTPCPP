@@ -1029,7 +1029,7 @@ CThread::~CThread(void)
 				throw "\n\tthread failed to stop in a timely manner!\n";
 			}
 		}
-		catch( char *psz )
+		catch(const char *psz )
 		{
 #ifdef WINDOWS
 		    MessageBoxA(NULL,&psz[2],"Fatal exception CThread::Stop",MB_ICONHAND);
