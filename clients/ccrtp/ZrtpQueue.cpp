@@ -147,7 +147,7 @@ ZrtpQueue::takeInDataPacket(void)
     unsigned char* buffer = new unsigned char[nextSize];
     int32 rtn = (int32)recvData(buffer, nextSize, network_address, transport_port);
     if ( (rtn < 0) || ((uint32)rtn > getMaxRecvPacketSize()) ){
-        delete buffer;
+        delete[] buffer;
         return 0;
     }
 
@@ -171,7 +171,7 @@ ZrtpQueue::takeInDataPacket(void)
         crc = ntohl(crc);
 
         if (!zrtpCheckCksum(buffer, temp, crc)) {
-            delete buffer;
+            delete[] buffer;
             if (zrtpUserCallback != NULL)
                 zrtpUserCallback->showMessage(Warning, WarningCRCmismatch);
             return 0;
