@@ -130,7 +130,7 @@ static const char *selectZrtpIdRemoteAllNoCondition =
     "rs2, strftime('%s', rs2LastUsed, 'unixepoch'), strftime('%s', rs2TimeToLive, 'unixepoch'),"
     "mitmKey, strftime('%s', mitmLastUsed, 'unixepoch'), strftime('%s', secureSince, 'unixepoch'),"
     "preshCounter, remoteZid "
-    "FROM zrtpIdRemote;";
+    "FROM zrtpIdRemote ORDER BY secureSince DESC;";
 
 
 /* *****************************************************************************
