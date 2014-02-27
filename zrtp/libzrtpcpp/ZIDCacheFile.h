@@ -80,7 +80,7 @@ public:
     // Not implemented for file based cache
     void cleanup() {};
     void *prepareReadAll() { return NULL; };
-    void *readNextRecord(void *stmt, ZIDRecord *zidRec, std::string *name) { return NULL; };
+    void *readNextRecord(void *stmt, std::string *output) { return NULL; };
     void closeOpenStatment(void *stmt) {}
 
 
