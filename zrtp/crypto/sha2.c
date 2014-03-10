@@ -387,7 +387,7 @@ VOID_RETURN sha224_end(unsigned char hval[], sha224_ctx ctx[1])
     sha_end1(hval, ctx, SHA224_DIGEST_SIZE);
 }
 
-VOID_RETURN sha224(unsigned char hval[], const unsigned char data[], unsigned long len)
+VOID_RETURN sha224_zrtp(unsigned char hval[], const unsigned char data[], unsigned long len)
 {   sha224_ctx  cx[1];
 
     sha224_begin(cx);
@@ -416,7 +416,7 @@ VOID_RETURN sha256_end(unsigned char hval[], sha256_ctx ctx[1])
     sha_end1(hval, ctx, SHA256_DIGEST_SIZE);
 }
 
-VOID_RETURN sha256(unsigned char hval[], const unsigned char data[], unsigned long len)
+VOID_RETURN sha256_zrtp(unsigned char hval[], const unsigned char data[], unsigned long len)
 {   sha256_ctx  cx[1];
 
     sha256_begin(cx);
@@ -632,7 +632,7 @@ VOID_RETURN sha384_end(unsigned char hval[], sha384_ctx ctx[1])
     sha_end2(hval, ctx, SHA384_DIGEST_SIZE);
 }
 
-VOID_RETURN sha384(unsigned char hval[], const unsigned char data[], unsigned long len)
+VOID_RETURN sha384_zrtp(unsigned char hval[], const unsigned char data[], unsigned long len)
 {   sha384_ctx  cx[1];
 
     sha384_begin(cx);
@@ -665,7 +665,7 @@ VOID_RETURN sha512_end(unsigned char hval[], sha512_ctx ctx[1])
     sha_end2(hval, ctx, SHA512_DIGEST_SIZE);
 }
 
-VOID_RETURN sha512(unsigned char hval[], const unsigned char data[], unsigned long len)
+VOID_RETURN sha512_zrtp(unsigned char hval[], const unsigned char data[], unsigned long len)
 {   sha512_ctx  cx[1];
 
     sha512_begin(cx);

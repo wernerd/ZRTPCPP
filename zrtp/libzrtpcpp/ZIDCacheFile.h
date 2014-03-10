@@ -77,8 +77,13 @@ public:
 
     void putPeerName(const uint8_t *peerZid, const std::string name);
 
-    // Not implemented for file base cache
+    // Not implemented for file based cache
     void cleanup() {};
+    void *prepareReadAll() { return NULL; };
+    void *readNextRecord(void *stmt, std::string *output) { return NULL; };
+    void closeOpenStatment(void *stmt) {}
+
+
 };
 
 /**

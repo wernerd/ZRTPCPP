@@ -127,7 +127,7 @@ public:
     virtual const unsigned char* getZid() =0;
 
     /**
-     * @brief Get peer name from database
+     * @brief Get peer name from database.
      *
      * This is an optional function.
      *
@@ -144,7 +144,7 @@ public:
     virtual int32_t getPeerName(const uint8_t *peerZid, std::string *name) =0;
 
     /**
-     * @brief Write peer name to database
+     * @brief Write peer name to database.
      *
      * This is an optional function.
      *
@@ -159,7 +159,7 @@ public:
     virtual void putPeerName(const uint8_t *peerZid, const std::string name) =0;
 
     /**
-     * @brief Clean the cache.
+     * @brief Clean the cache - only for ZID cache with Sqlite3 backend.
      *
      * The function drops and re-creates all tables in the database. This removes all stored
      * data. The application must not call this while a ZRTP call is active. Also the application
@@ -167,6 +167,70 @@ public:
      *
      */
     virtual void cleanup() =0;
+
+    /**
+     * @brief Prepare a SQL cursor to read all records from the remote (peer) ZID table.
+     * 
+     * The function creates a SQL cursor (prepares a statement in sqlite3 parlance) to
+     * read all records from the table that contains the remote (peers') ZID data.
+     * 
+     * This functions returns a pointer to the SQL cursor or @c NULL if it fails to
+     * create a cursor.
+     * 
+     * @return a void pointer to the sqlite3 statment (SQL cursor) or @c NULL
+     */
+    virtual void *prepareReadAll() =0;
+
+    /**
+     * @brief Read next ZID record from and SQL cursor.
+     * 
+     * The function reads the next ZID record from a SQL cursor. If it cannot read a
+     * record or encounters an error the function closes the cursor and returns @c NULL.
+     * In this case the function must not use the SQL cursor pointer again.
+     * 
+     * For the second parameter the caller @b must use a ZIDRecordDb pointer, not
+     * a ZIDRecordFile pointer.
+     * 
+     * The function returns a string in its output parameter. The '|' symbol separates
+     * the different fields. Here the description of the fields:
+     * <ol>
+     * <li> The own ZID, should always be the same (in theroy we coud use different local ZIDs), hex value of random data </li>
+     * <li> the partner's (remote) ZID, hex value of random data</li>
+     * <li> the flag byte (bit field, explanation see below and in ZIDRecordDb.h:
+     * <ul>
+     *     <li>Valid            = 0x1;</li>
+     *     <li>SASVerified      = 0x2;</li>
+     *     <li>RS1Valid         = 0x4;</li>
+     *     <li>RS2Valid         = 0x8;</li>
+     *     <li> MITMKeyAvailable= 0x10;</li>
+     *     <li>inUse            = 0x20;</li>
+     * </ul>
+     * </li>
+     * <li> RS1 value, hex field, 32 binary bytes</li>
+     * <li> RS1 last used timestamp (Unix epoch), decimal, currently not used, always 0</li>
+     * <li> RS1 Time-To-Live timestamp (Unix epoch), decimal, if -1: valid for ever, otherwise the time it's not longer valid</li>
+     * <li> RS2 value, hex field, 32 binary bytes</li>
+     * <li> RS2 last used timestamp (Unix epoch), decimal, currently not used, always 0</li>
+     * <li> RS2 Time-To-Live timestamp (Unix epoch), decimal, if -1: valid for ever, otherwise the time it's not longer valid</li>
+     * <li> trusted PBX shared key value, hex field, 32 binary bytes, valid only if MITMKeyAvailable bit is set</li>
+     * <li> trusted PBX shared key last used timestamp (Unix epoch), decimal, currently not used, always 0</li>
+     * <li> Secure since timestamp (Unix epoch), decimal, shows time ZRTP created this ZID record</li>
+     * <li> Name, may be empty</li>
+     * </ol>
+     * 
+     * @param stmt a void pointer to a sqlite3 statement (SQL cursor)
+     *
+     * @param output that will get the peer's name. The returned name will
+     *             be truncated to 200 bytes
+     * 
+     * @return void pointer to statment if successful, this is the same pointer as
+     *         the @c stmt input parameter. The function returns @c NULL if either 
+     *         no more record is available or it got another error.
+     */
+    virtual void *readNextRecord(void *stmt, std::string *output) =0;
+
+    virtual void closeOpenStatment(void *stmt) =0;
+
 };
 
 /**

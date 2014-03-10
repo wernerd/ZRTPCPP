@@ -33,7 +33,7 @@ ZrtpPacketCommit::ZrtpPacketCommit() {
 }
 
 void ZrtpPacketCommit::setNonce(uint8_t* text) {
-    memcpy(commitHeader->hvi, text, sizeof(commitHeader->hvi-4*ZRTP_WORD_SIZE));
+    memcpy(commitHeader->hvi, text, sizeof(data.commit.hvi)-4*ZRTP_WORD_SIZE);
     uint16_t len = getLength();
     len -= 4;
     setLength(len);

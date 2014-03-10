@@ -19,12 +19,13 @@
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 // #define UNIT_TEST
-
+#include <sstream>
 #include <string>
 #include <time.h>
 #include <stdlib.h>
 
 #include <libzrtpcpp/ZIDCacheDb.h>
+#include <cryptcommon/aes.h>
 
 
 static ZIDCacheDb* instance;
@@ -134,4 +135,70 @@ void ZIDCacheDb::putPeerName(const uint8_t *peerZid, const std::string name) {
 void ZIDCacheDb::cleanup() {
     cacheOps.cleanCache(zidFile, errorBuffer);
     cacheOps.readLocalZid(zidFile, associatedZid, NULL, errorBuffer);
+}
+
+void *ZIDCacheDb::prepareReadAll() {
+    return cacheOps.prepareReadAllZid(zidFile, errorBuffer);
+}
+
+static void formatHex(std::ostringstream &stm, uint8_t *hexBuffer, int32_t length) {
+    stm << std::hex;
+    for (int i = 0; i < length; i++) {
+        stm.width(2);
+        stm << static_cast<uint32_t>(*hexBuffer++);
+    }
+
+}
+
+void ZIDCacheDb::formatOutput(remoteZidRecord_t *remZid, const char *nameBuffer, std::string *output) {
+    std::ostringstream stm;
+
+    stm.fill('0');
+    formatHex(stm, associatedZid, IDENTIFIER_LEN); stm << '|';
+    formatHex(stm, remZid->identifier, IDENTIFIER_LEN); stm << '|';
+    uint_8t flag = remZid->flags & 0xff;
+    formatHex(stm, &flag, 1); stm << '|';
+
+    formatHex(stm, remZid->rs1, RS_LENGTH); stm << '|';
+    stm << std::dec;
+    stm << remZid->rs1LastUse; stm << '|';
+    stm << remZid->rs1Ttl; stm << '|';
+
+    formatHex(stm, remZid->rs2, RS_LENGTH); stm << '|';
+    stm << std::dec;
+    stm << remZid->rs2LastUse; stm << '|';
+    stm << remZid->rs2Ttl; stm << '|';
+
+    formatHex(stm, remZid->mitmKey, RS_LENGTH); stm << '|';
+    stm << std::dec;
+    stm << remZid->mitmLastUse; stm << '|';
+
+    stm << remZid->secureSince; stm << '|';
+    stm << nameBuffer;
+    output->assign(stm.str());
+}
+
+void *ZIDCacheDb::readNextRecord(void *stmt, std::string *output) {
+    void *iStmnt = stmt;
+    zidNameRecord_t nameRec;
+    ZIDRecordDb zidRec;
+    char buffer[201] = {'\0'};
+
+    nameRec.name = buffer;
+    nameRec.nameLength = 200;
+    while ((iStmnt = cacheOps.readNextZidRecord(zidFile, stmt, zidRec.getRecordData(), errorBuffer)) != NULL) {
+        if (!zidRec.isValid())
+            continue;
+        cacheOps.readZidNameRecord(zidFile, zidRec.getIdentifier(), associatedZid, NULL, &nameRec, errorBuffer);
+        if ((nameRec.flags & Valid) != Valid)
+            formatOutput(zidRec.getRecordData(), "", output);
+        else
+            formatOutput(zidRec.getRecordData(), buffer, output);
+        return iStmnt;
+    }
+    return NULL;
+}
+
+void ZIDCacheDb::closeOpenStatment(void *stmt) {
+    cacheOps.closeStatement(stmt);
 }
