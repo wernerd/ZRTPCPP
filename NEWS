@@ -1,3 +1,23 @@
+== GNU ZRTP 4.2.0 ==
+
+Implemented a new function to read the ZID file if the ZID file backend
+is SQlite3. This is not a security problem because the ZRTP cache was 
+always public and readable, refer to RFC6189.
+
+SQL statement returns all ZID records, sorted by date, newest on top. The 
+function can then step thru the DB cursor and read the records.
+
+The version also include sevral fixes, usually compiler warnings, some
+small problems reported by 'cppcheck' analyser.
+
+Because we have a new set of functions the API changed, thus it's necessary
+to recompile applications that use the new library version.
+
+
+== GNU ZRTP 4.1.2 ==
+
+Fix the library's name in libzrtpcpp.pc.make
+
 == GNU ZRTP 4.1.1 ==
 
 Is a bug fix release that fixes some problems when building a standalone
