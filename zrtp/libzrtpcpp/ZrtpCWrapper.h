@@ -818,7 +818,8 @@ extern "C"
      * Refer to ZRTP specification, chapter 8.
      *
      * @return
-     *    a std:string containing the Hello version and the hello hash as hex digits.
+     *    a C-string containing the Hello version and the hello hash as hex digits. The caller 
+     *    must @c free() if it does not use the hello hash C-string anymore.
      */
     char* zrtp_getPeerHelloHash(ZrtpContext* zrtpContext);
 
@@ -843,7 +844,8 @@ extern "C"
      * @return
      *    a char array that contains the multi-stream parameters.
      *    If ZRTP was not started or ZRTP is not yet in secure state the method
-     *    returns NULL and a length of 0.
+     *    returns NULL and a length of 0. The caller must @c free() if it does not
+     *    use the data anymore, e.g. after using it in zrtp_setMultiStrParams
      */
     char* zrtp_getMultiStrParams(ZrtpContext* zrtpContext, int32_t *length);
 
@@ -968,9 +970,11 @@ extern "C"
      * 
      * @param zrtpContext
      *    Pointer to the opaque ZrtpContext structure.
-     * @return the commited SAS rendering algorithm
+     * @return the commited SAS rendering algorithm. The caller must @c free() the buffer
+     *    if it does not use the string anymore.
      */
     const char* zrtp_getSasType(ZrtpContext* zrtpContext);
+#warning zrtp_getSasType(...) API changed - caller shall free() returned data
  
     /**
      * Get the computed SAS hash for this ZRTP session.
