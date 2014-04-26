@@ -1,3 +1,16 @@
+== GNU ZRTP 4.2.1 ==
+
+Bug fixes in the SRTP part that checks for replay and updates the ROC.
+
+The wrong computations lead to false replay indications and to wrong
+HMAC, thus they dropped to much packets, in particular under bad network
+conditions.
+
+Changed the handling the the zrtp_getSasType function the the ZrtpCWrapper.
+Please check the inline documentation and the compiler warning how to
+use the return value of the function.
+
+
 == GNU ZRTP 4.2.0 ==
 
 Implemented a new function to read the ZID file if the ZID file backend

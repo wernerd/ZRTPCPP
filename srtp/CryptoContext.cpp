@@ -399,29 +399,39 @@ bool CryptoContext::checkReplay( uint16_t new_seq_nb )
                 return false;  /* Packet already received ! */
             }
             else {
-                return true;  /* Packet not yet received */
+                return true;   /* Older (out-of-order) packet, not yet received */
             }
         }
     }
 }
 
+// This function assumes that it never gets a sequence number that is out of order
+// of greater or equal than REPLAY_WINDOW_SIZE. Thus an application MUST perform a 
+// replay check first and discard any packet which fails this check.
 void CryptoContext::update(uint16_t new_seq_nb)
 {
+    // Get the index of the new sequence number and compute the delta to the
+    // index of the highest sequence number we received so far. If the delta 
+    // is negative then we received an older packet, thus we will not
+    // update the locally stored remote sequence number (s_l) below.
     int64_t delta = guessIndex(new_seq_nb) - (((uint64_t)roc) << 16 | s_l );
 
-    /* update the replay bitmask */
-    if ( delta > 0 ) {
+    // update the replay bitmask
+    if (delta > 0) {
         replay_window = replay_window << delta;
         replay_window |= 1;
     }
     else {
-        replay_window |= ( 1 << delta );
+        replay_window |= ( 1 << -delta );
     }
 
-    /* update the locally stored ROC and highest sequence number */
-    if ( new_seq_nb > s_l ) {
+    // update the locally stored ROC and highest sequence number if we received a not
+    //  yet received packet, i.e. the delta is > 0
+    if (delta > 0 &&  new_seq_nb > s_l ) {
         s_l = new_seq_nb;
     }
+    // Reset local stored sequence number (low 16 bits) also if ROC increases
+    // The guessed_roc is bigger than roc only if we received a not yet seen packet.
     if ( guessed_roc > roc ) {
         roc = guessed_roc;
         s_l = new_seq_nb;

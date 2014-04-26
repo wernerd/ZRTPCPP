@@ -174,6 +174,7 @@ static unsigned long solaris_thread_id(void) {
 }
 #endif /* SOLARIS */
 
+#if !defined _MSWINDOWS_ && !defined SOLARIS
 
 static pthread_mutex_t* lock_cs;
 static long* lock_count;
@@ -223,7 +224,7 @@ static void myLockingCallback(int mode, int type, const char *file,
     pthread_mutex_unlock(&(lock_cs[type]));
     }
 }
-
+#endif /* !defined _MSWINDOWS_ && !defined SOLARIS */
 /*
 static unsigned long pthreads_thread_id(void)
 {

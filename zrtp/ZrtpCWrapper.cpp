@@ -275,7 +275,12 @@ int32_t zrtp_sendSASRelayPacket(ZrtpContext* zrtpContext, uint8_t* sh, char* ren
 const char* zrtp_getSasType(ZrtpContext* zrtpContext) {
     if (zrtpContext && zrtpContext->zrtpEngine) {
         std::string rn = zrtpContext->zrtpEngine->getSasType();
-        return rn.c_str();
+        if (rn.size() == 0)
+            return NULL;
+
+        char* retval = (char*)malloc(rn.size()+1);
+        strcpy(retval, rn.c_str());
+        return retval;
     }
     return NULL;
 }
