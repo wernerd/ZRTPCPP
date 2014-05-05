@@ -46,10 +46,11 @@ CryptoContext::CryptoContext( uint32_t ssrc,
                               int32_t tagLength):
 
         ssrcCtx(ssrc),using_mki(false),mkiLength(0),mki(NULL), roc(roc),guessed_roc(0),
-        s_l(0),key_deriv_rate(key_deriv_rate), replay_window(0), master_key_srtp_use_nb(0),
+        s_l(0),key_deriv_rate(key_deriv_rate), master_key_srtp_use_nb(0),
         master_key_srtcp_use_nb(0), labelBase(0), seqNumSet(false), macCtx(NULL), cipher(NULL),
         f8Cipher(NULL)
 {
+    replay_window[0] = replay_window[1] = 0;
     this->ealg = ealg;
     this->aalg = aalg;
     this->ekeyl = ekeyl;
@@ -368,7 +369,8 @@ uint64_t CryptoContext::guessIndex(uint16_t new_seq_nb )
     return ((uint64_t)guessed_roc) << 16 | new_seq_nb;
 }
 
-bool CryptoContext::checkReplay( uint16_t new_seq_nb )
+
+bool CryptoContext::checkReplay(uint16_t newSeq)
 {
     if ( aalg == SrtpAuthenticationNull && ealg == SrtpEncryptionNull ) {
         /* No security policy, don't use the replay protection */
@@ -381,9 +383,9 @@ bool CryptoContext::checkReplay( uint16_t new_seq_nb )
      */
     if (!seqNumSet) {
         seqNumSet = true;
-        s_l = new_seq_nb;
+        s_l = newSeq;
     }
-    uint64_t guessed_index = guessIndex( new_seq_nb );
+    uint64_t guessed_index = guessIndex(newSeq);
     uint64_t local_index = (((uint64_t)roc) << 16) | s_l;
 
     int64_t delta = guessed_index - local_index;
@@ -391,50 +393,75 @@ bool CryptoContext::checkReplay( uint16_t new_seq_nb )
         return true;           /* Packet not yet received*/
     }
     else {
-        if ( -delta >= REPLAY_WINDOW_SIZE ) {
+        if (-delta >= REPLAY_WINDOW_SIZE) {
             return false;      /* Packet too old */
         }
+
+        delta = -delta;
+        int idx = delta / 64;
+        uint64_t bit = 1UL << (delta % 64);
+        if ((replay_window[idx] & bit) == bit) {
+            return false;  /* Packet already received ! */
+        }
         else {
-            if ((replay_window >> (-delta)) & 0x1) {
-                return false;  /* Packet already received ! */
-            }
-            else {
-                return true;   /* Older (out-of-order) packet, not yet received */
-            }
+            return true;  /* Packet not yet received */
         }
     }
 }
 
 // This function assumes that it never gets a sequence number that is out of order
-// of greater or equal than REPLAY_WINDOW_SIZE. Thus an application MUST perform a 
-// replay check first and discard any packet which fails this check.
-void CryptoContext::update(uint16_t new_seq_nb)
+// greater or equal than REPLAY_WINDOW_SIZE. Thus an application MUST perform a 
+// replay check first and discard any packet which fails this check. This restriction
+// applies to older packets only, a new (not seen) packet's sequence number can jump 
+// ahead by more than REPLAY_WINDOW_SIZE.
+void CryptoContext::update(uint16_t newSeq)
 {
     // Get the index of the new sequence number and compute the delta to the
     // index of the highest sequence number we received so far. If the delta 
     // is negative then we received an older packet, thus we will not
     // update the locally stored remote sequence number (s_l) below.
-    int64_t delta = guessIndex(new_seq_nb) - (((uint64_t)roc) << 16 | s_l );
+    int64_t delta = guessIndex(newSeq) - (((uint64_t)roc) << 16 | s_l );
+    int64_t rocDelta = delta;
+    uint64_t carry = 0;
 
-    // update the replay bitmask
-    if (delta > 0) {
-        replay_window = replay_window << delta;
-        replay_window |= 1;
+    // update the replay shift register
+    // The shift register array stores bits of newer packets (higher sequence numbers) at 
+    // index 0 and shifts older packets (lower sequence numbers) left to index one
+
+    if (delta > 0) {                         // We got a new packet, no yet seen
+        if (delta >= REPLAY_WINDOW_SIZE) {
+            replay_window[0] = 1;
+            replay_window[1] = 0;
+        }
+        else {
+            if (delta < REPLAY_WINDOW_SIZE/2) {
+                carry = replay_window[0] >> ((REPLAY_WINDOW_SIZE/2) - delta);
+                replay_window[0] = (replay_window[0] << delta) | 1;
+                replay_window[1] = (replay_window[1] << delta) | carry;
+            }
+            else {
+                replay_window[1] = replay_window[0] << (delta - REPLAY_WINDOW_SIZE/2);
+                replay_window[0] = 1;
+            }
+        }
     }
     else {
-        replay_window |= ( 1 << -delta );
+        delta = -delta;
+        int idx = delta / 64;
+        uint64_t bit = 1UL << (delta % 64);
+        replay_window[idx] |= bit;
     }
 
     // update the locally stored ROC and highest sequence number if we received a not
-    //  yet received packet, i.e. the delta is > 0
-    if (delta > 0 &&  new_seq_nb > s_l ) {
-        s_l = new_seq_nb;
+    // yet received packet, i.e. the delta is > 0
+    if (rocDelta > 0 && newSeq > s_l) {
+        s_l = newSeq;
     }
     // Reset local stored sequence number (low 16 bits) also if ROC increases
     // The guessed_roc is bigger than roc only if we received a not yet seen packet.
-    if ( guessed_roc > roc ) {
+    if (guessed_roc > roc) {
         roc = guessed_roc;
-        s_l = new_seq_nb;
+        s_l = newSeq;
     }
 }
 

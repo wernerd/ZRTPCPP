@@ -26,7 +26,7 @@
  * @{
  */
 
-#define REPLAY_WINDOW_SIZE 64
+#define REPLAY_WINDOW_SIZE 128
 
 const int SrtpAuthenticationNull      = 0;
 const int SrtpAuthenticationSha1Hmac  = 1;
@@ -425,7 +425,7 @@ private:
     int64_t  key_deriv_rate;
 
     /* bitmask for replay check */
-    uint64_t replay_window;
+    uint64_t replay_window[2];
 
     uint8_t* master_key;
     uint32_t master_key_length;

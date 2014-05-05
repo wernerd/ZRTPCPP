@@ -1,3 +1,15 @@
+== GNU ZRTP 4.2.2 ==
+
+A small enhancement in SRTP handling to provide a longer bit-shift 
+register with 128 bits. The replay now check accepts packets which
+are up to 127 sequence number behing the current packet. The upper
+layer (codecs) gets more packets on slower/bad networks that we may
+see on mobile 3G/4G connections.
+
+If the codecs do not remove silence then this may lead to some longer
+audio replay, similar to sattelite communication.
+
+
 == GNU ZRTP 4.2.1 ==
 
 Bug fixes in the SRTP part that checks for replay and updates the ROC.
