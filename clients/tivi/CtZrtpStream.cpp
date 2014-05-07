@@ -26,9 +26,9 @@
 // #define DEBUG_CTSTREAM
 #ifdef DEBUG_CTSTREAM
 static char debBuf[500];
-#define DEBUG(deb)   deb
+#define T_DEBUG(deb)   deb
 #else
-#define DEBUG(deb)
+#define T_DEBUG(deb)
 #endif
 
 static TimeoutProvider<std::string, CtZrtpStream*>* staticTimeoutProvider = NULL;
@@ -176,7 +176,7 @@ bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *ne
         // Do not send in states: CommitSent, WaitDHPart2, WaitConfirm1, WaitConfirm2, WaitConfAck
         if (started && (zrtpEngine->inState(CommitSent) || zrtpEngine->inState(WaitDHPart2) || zrtpEngine->inState(WaitConfirm1) ||
             zrtpEngine->inState(WaitConfirm2) || zrtpEngine->inState(WaitConfAck))) {
-            ZrtpRandom::addEntropy(buffer, length);
+            ZrtpRandom::addEntropy(buffer, (uint32_t)length);
             return false;
         }
         if (useSdesForMedia && sdes != NULL) {   // SDES stream available, let SDES protect if necessary
@@ -305,7 +305,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
             useLength = newLength + CRC_SIZE;                  // length check assumes a ZRTP CRC
         }
         else {
-            DEBUG(char tmpBuffer[500];)
+            T_DEBUG(char tmpBuffer[500];)
             useZrtpTunnel = false;
             // Get CRC value into crc (see above how to compute the offset)
             uint16_t temp = length - CRC_SIZE;
@@ -314,7 +314,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
             if (!zrtpCheckCksum(buffer, temp, crc)) {
                 zrtpCrcErrors++;
                 if (zrtpCrcErrors > 15) {
-                    DEBUG(snprintf(debBuf, 499, "len: %d, sdes: %p, sdesMedia: %d, zrtpEncap: %d", temp, (void*)sdes, useSdesForMedia, zrtpEncapSignaled); zrtp_log("CtZrtpStream", debBuf);)
+                    T_DEBUG(snprintf(debBuf, 499, "len: %d, sdes: %p, sdesMedia: %d, zrtpEncap: %d", temp, (void*)sdes, useSdesForMedia, zrtpEncapSignaled); zrtp_log("CtZrtpStream", debBuf);)
 
                     sendInfo(Warning, WarningCRCmismatch);
                     zrtpCrcErrors = 0;
@@ -343,7 +343,7 @@ int CtZrtpStream::getSignalingHelloHash(char *hHash, int32_t index) {
     std::string hash;
     hash = zrtpEngine->getHelloHash(index);
     strcpy(hHash, hash.c_str());
-    return hash.size();
+    return (int)hash.size();
 }
 
 void CtZrtpStream::setSignalingHelloHash(const char *hHash) {
@@ -418,7 +418,7 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
     const ZRtp::zrtpInfo *info = NULL;
     ZRtp::zrtpInfo tmpInfo;
 
-    int iLen = strlen(key);
+    int iLen = (int)strlen(key);
 
     // set the security state as a combination of tivi state and stateflags
     int secState = tiviState & 0xff;

@@ -250,9 +250,9 @@ public:
         do {
             synchLock.Lock();
             int32_t time = 3600000;
-            int32_t size = 0;
+            int32_t size = (int32_t)requests.size();
 
-            if ((size = requests.size()) > 0) {
+            if (size > 0) {
                 time = requests.front()->getMsToTimeout();
             }
             if (time == 0 && size > 0) {

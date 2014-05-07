@@ -974,7 +974,7 @@ extern "C"
      *    if it does not use the string anymore.
      */
     const char* zrtp_getSasType(ZrtpContext* zrtpContext);
-#warning zrtp_getSasType(...) API changed - caller shall free() returned data
+//#warning zrtp_getSasType(...) API changed - caller shall free() returned data
  
     /**
      * Get the computed SAS hash for this ZRTP session.

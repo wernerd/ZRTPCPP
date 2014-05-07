@@ -62,7 +62,7 @@ bool ZIDRecordFile::isRs1NotExpired() {
     if (sizeof(time_t) == 4) {
         long long temp;
         memcpy((unsigned char*)&temp, record.rs1Interval, TIME_LENGTH);
-        validThru = temp;
+        validThru = (time_t)temp;
     }
     else {
         memcpy((unsigned char*)&validThru, record.rs1Interval, TIME_LENGTH);
@@ -82,7 +82,7 @@ bool ZIDRecordFile::isRs2NotExpired() {
     if (sizeof(time_t) == 4) {
         long long temp;
         memcpy((unsigned char*)&temp, record.rs2Interval, TIME_LENGTH);
-        validThru = temp;
+        validThru = (time_t)temp;
     }
     else {
         memcpy((unsigned char*)&validThru, record.rs2Interval, TIME_LENGTH);

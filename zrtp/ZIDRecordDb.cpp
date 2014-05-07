@@ -52,7 +52,7 @@ bool ZIDRecordDb::isRs1NotExpired() {
     time_t current = time(NULL);
     time_t validThru;
 
-    validThru = record.rs1Ttl;
+    validThru = (time_t)record.rs1Ttl;
 
     if (validThru == -1)
         return true;
@@ -65,7 +65,7 @@ bool ZIDRecordDb::isRs2NotExpired() {
     time_t current = time(NULL);
     time_t validThru;
 
-    validThru = record.rs2Ttl;
+    validThru = (time_t)record.rs2Ttl;
 
     if (validThru == -1)
         return true;

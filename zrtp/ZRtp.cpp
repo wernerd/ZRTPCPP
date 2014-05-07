@@ -1774,37 +1774,37 @@ void ZRtp:: computeSharedSecretSet(ZIDRecord *zidRec) {
     detailInfo.secretsCached = 0;
     if (!zidRec->isRs1Valid()) {
         randomZRTP(randBuf, RS_LENGTH);
-        hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator, strlen(initiator), rs1IDi, &macLen);
-        hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder, strlen(responder), rs1IDr, &macLen);
+        hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator, (int32_t)strlen(initiator), rs1IDi, &macLen);
+        hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder, (int32_t)strlen(responder), rs1IDr, &macLen);
     }
     else {
         rs1Valid = true;
-        hmacFunction((unsigned char*)zidRec->getRs1(), RS_LENGTH, (unsigned char*)initiator, strlen(initiator), rs1IDi, &macLen);
-        hmacFunction((unsigned char*)zidRec->getRs1(), RS_LENGTH, (unsigned char*)responder, strlen(responder), rs1IDr, &macLen);
+        hmacFunction((unsigned char*)zidRec->getRs1(), RS_LENGTH, (unsigned char*)initiator, (int32_t)strlen(initiator), rs1IDi, &macLen);
+        hmacFunction((unsigned char*)zidRec->getRs1(), RS_LENGTH, (unsigned char*)responder, (int32_t)strlen(responder), rs1IDr, &macLen);
         detailInfo.secretsCached = Rs1;
     }
 
     if (!zidRec->isRs2Valid()) {
         randomZRTP(randBuf, RS_LENGTH);
-        hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator, strlen(initiator), rs2IDi, &macLen);
-        hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder, strlen(responder), rs2IDr, &macLen);
+        hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator, (int32_t)strlen(initiator), rs2IDi, &macLen);
+        hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder, (int32_t)strlen(responder), rs2IDr, &macLen);
     }
     else {
         rs2Valid = true;
-        hmacFunction((unsigned char*)zidRec->getRs2(), RS_LENGTH, (unsigned char*)initiator, strlen(initiator), rs2IDi, &macLen);
-        hmacFunction((unsigned char*)zidRec->getRs2(), RS_LENGTH, (unsigned char*)responder, strlen(responder), rs2IDr, &macLen);
+        hmacFunction((unsigned char*)zidRec->getRs2(), RS_LENGTH, (unsigned char*)initiator, (int32_t)strlen(initiator), rs2IDi, &macLen);
+        hmacFunction((unsigned char*)zidRec->getRs2(), RS_LENGTH, (unsigned char*)responder, (int32_t)strlen(responder), rs2IDr, &macLen);
         detailInfo.secretsCached |= Rs2;
     }
 
     if (!zidRec->isMITMKeyAvailable()) {
         randomZRTP(randBuf, RS_LENGTH);
-        hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator, strlen(initiator), pbxSecretIDi, &macLen);
-        hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder, strlen(responder), pbxSecretIDr, &macLen);
+        hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator, (int32_t)strlen(initiator), pbxSecretIDi, &macLen);
+        hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder, (int32_t)strlen(responder), pbxSecretIDr, &macLen);
 
     }
     else {
-        hmacFunction((unsigned char*)zidRec->getMiTMData(), RS_LENGTH, (unsigned char*)initiator, strlen(initiator), pbxSecretIDi, &macLen);
-        hmacFunction((unsigned char*)zidRec->getMiTMData(), RS_LENGTH, (unsigned char*)responder, strlen(responder), pbxSecretIDr, &macLen);
+        hmacFunction((unsigned char*)zidRec->getMiTMData(), RS_LENGTH, (unsigned char*)initiator, (int32_t)strlen(initiator), pbxSecretIDi, &macLen);
+        hmacFunction((unsigned char*)zidRec->getMiTMData(), RS_LENGTH, (unsigned char*)responder, (int32_t)strlen(responder), pbxSecretIDr, &macLen);
         detailInfo.secretsCached |= Pbx;
     }
     computeAuxSecretIds();
@@ -1944,7 +1944,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
 
     // Next the fixed string "ZRTP-HMAC-KDF"
     data[pos] = (unsigned char*)KDFString;
-    length[pos++] = strlen(KDFString);
+    length[pos++] = (unsigned int)strlen(KDFString);
 
     // Next is Initiator's id (ZIDi), in this case as Initiator
     // it is zid
@@ -2109,7 +2109,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
 
     // Next the fixed string "ZRTP-HMAC-KDF"
     data[pos] = (unsigned char*)KDFString;
-    length[pos++] = strlen(KDFString);
+    length[pos++] = (unsigned int)strlen(KDFString);
 
     // Next is Initiator's id (ZIDi), in this case as Responder
     // it is peerZid
@@ -2214,7 +2214,7 @@ void ZRtp::generateKeysMultiStream() {
     }
     memcpy(KDFcontext+sizeof(ownZid)+sizeof(peerZid), messageHash, hashLength);
 
-    KDF(zrtpSession, hashLength, (unsigned char*)zrtpMsk, strlen(zrtpMsk)+1, KDFcontext, kdfSize, hashLength*8, s0);
+    KDF(zrtpSession, hashLength, (unsigned char*)zrtpMsk, (int32_t)strlen(zrtpMsk)+1, KDFcontext, kdfSize, hashLength*8, s0);
 
     memset(KDFcontext, 0, sizeof(KDFcontext));
 
@@ -2236,7 +2236,7 @@ void ZRtp::computePBXSecret() {
         memcpy(KDFcontext+sizeof(ownZid), peerZid, sizeof(peerZid));
     }
 
-    KDF(zrtpSession, hashLength, (unsigned char*)zrtpTrustedMitm, strlen(zrtpTrustedMitm)+1, KDFcontext,
+    KDF(zrtpSession, hashLength, (unsigned char*)zrtpTrustedMitm, (int32_t)strlen(zrtpTrustedMitm)+1, KDFcontext,
         kdfSize, SHA256_DIGEST_LENGTH * 8, pbxSecretTmpBuffer);
 
     pbxSecretTmp = pbxSecretTmpBuffer;  // set pointer to buffer, signal PBX secret was computed
@@ -2262,34 +2262,34 @@ void ZRtp::computeSRTPKeys() {
     memcpy(KDFcontext+sizeof(ownZid)+sizeof(peerZid), messageHash, hashLength);
 
     // Inititiator key and salt
-    KDF(s0, hashLength, (unsigned char*)iniMasterKey, strlen(iniMasterKey)+1, KDFcontext, kdfSize, keyLen, srtpKeyI);
-    KDF(s0, hashLength, (unsigned char*)iniMasterSalt, strlen(iniMasterSalt)+1, KDFcontext, kdfSize, 112, srtpSaltI);
+    KDF(s0, hashLength, (unsigned char*)iniMasterKey, (int32_t)strlen(iniMasterKey)+1, KDFcontext, kdfSize, keyLen, srtpKeyI);
+    KDF(s0, hashLength, (unsigned char*)iniMasterSalt, (int32_t)strlen(iniMasterSalt)+1, KDFcontext, kdfSize, 112, srtpSaltI);
 
     // Responder key and salt
-    KDF(s0, hashLength, (unsigned char*)respMasterKey, strlen(respMasterKey)+1, KDFcontext, kdfSize, keyLen, srtpKeyR);
-    KDF(s0, hashLength, (unsigned char*)respMasterSalt, strlen(respMasterSalt)+1, KDFcontext, kdfSize, 112, srtpSaltR);
+    KDF(s0, hashLength, (unsigned char*)respMasterKey, (int32_t)strlen(respMasterKey)+1, KDFcontext, kdfSize, keyLen, srtpKeyR);
+    KDF(s0, hashLength, (unsigned char*)respMasterSalt, (int32_t)strlen(respMasterSalt)+1, KDFcontext, kdfSize, 112, srtpSaltR);
 
     // The HMAC keys for GoClear
-    KDF(s0, hashLength, (unsigned char*)iniHmacKey, strlen(iniHmacKey)+1, KDFcontext, kdfSize, hashLength*8, hmacKeyI);
-    KDF(s0, hashLength, (unsigned char*)respHmacKey, strlen(respHmacKey)+1, KDFcontext, kdfSize, hashLength*8, hmacKeyR);
+    KDF(s0, hashLength, (unsigned char*)iniHmacKey, (int32_t)strlen(iniHmacKey)+1, KDFcontext, kdfSize, hashLength*8, hmacKeyI);
+    KDF(s0, hashLength, (unsigned char*)respHmacKey, (int32_t)strlen(respHmacKey)+1, KDFcontext, kdfSize, hashLength*8, hmacKeyR);
 
     // The keys for Confirm messages
-    KDF(s0, hashLength, (unsigned char*)iniZrtpKey, strlen(iniZrtpKey)+1, KDFcontext, kdfSize, keyLen, zrtpKeyI);
-    KDF(s0, hashLength, (unsigned char*)respZrtpKey, strlen(respZrtpKey)+1, KDFcontext, kdfSize, keyLen, zrtpKeyR);
+    KDF(s0, hashLength, (unsigned char*)iniZrtpKey, (int32_t)strlen(iniZrtpKey)+1, KDFcontext, kdfSize, keyLen, zrtpKeyI);
+    KDF(s0, hashLength, (unsigned char*)respZrtpKey, (int32_t)strlen(respZrtpKey)+1, KDFcontext, kdfSize, keyLen, zrtpKeyR);
 
     detailInfo.pubKey = detailInfo.sasType = NULL;
     if (!multiStream) {
         // Compute the new Retained Secret
-        KDF(s0, hashLength, (unsigned char*)retainedSec, strlen(retainedSec)+1, KDFcontext, kdfSize, SHA256_DIGEST_LENGTH*8, newRs1);
+        KDF(s0, hashLength, (unsigned char*)retainedSec, (int32_t)strlen(retainedSec)+1, KDFcontext, kdfSize, SHA256_DIGEST_LENGTH*8, newRs1);
 
         // Compute the ZRTP Session Key
-        KDF(s0, hashLength, (unsigned char*)zrtpSessionKey, strlen(zrtpSessionKey)+1, KDFcontext, kdfSize, hashLength*8, zrtpSession);
+        KDF(s0, hashLength, (unsigned char*)zrtpSessionKey, (int32_t)strlen(zrtpSessionKey)+1, KDFcontext, kdfSize, hashLength*8, zrtpSession);
 
         // perform  generation according to chapter 5.5 and 8.
         // we don't need a speciai sasValue filed. sasValue are the first
         // (leftmost) 32 bits (4 bytes) of sasHash
         uint8_t sasBytes[4];
-        KDF(s0, hashLength, (unsigned char*)sasString, strlen(sasString)+1, KDFcontext, kdfSize, SHA256_DIGEST_LENGTH*8, sasHash);
+        KDF(s0, hashLength, (unsigned char*)sasString, (int32_t)strlen(sasString)+1, KDFcontext, kdfSize, SHA256_DIGEST_LENGTH*8, sasHash);
 
         // according to chapter 8 only the leftmost 20 bits of sasValue (aka
         //  sasHash) are used to create the character SAS string of type SAS
