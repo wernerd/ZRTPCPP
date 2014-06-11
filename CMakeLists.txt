@@ -14,9 +14,9 @@ PROJECT(libzrtpcpp)
 
 SET(CPACK_PACKAGE_VERSION_MAJOR 4)
 SET(CPACK_PACKAGE_VERSION_MINOR 2)
-SET(CPACK_PACKAGE_VERSION_PATCH 2)
+SET(CPACK_PACKAGE_VERSION_PATCH 3)
 
-set (VERSION 4.2.2)
+set (VERSION 4.2.3)
 set (SOVERSION 4)
 
 # Define supported command line parameters.
@@ -34,6 +34,11 @@ option(SDES "Include SDES when not building for CCRTP." ON)
 option(ANDROID "Generate Android makefiles (Android.mk)" ON)
 option(JAVA "Generate Java support files (requires JDK and SWIG)" OFF)
 
+#
+# If your project needs SAS relay support (refer to RFC6189 chapter 7.3) then
+# uncomment the following add_definitiones statement. Make sure you understand
+# the consequences.
+## add_definitions(-DZRTP_SAS_RELAY_SUPPORT)
 
 # **** Check what and how to build ****
 #

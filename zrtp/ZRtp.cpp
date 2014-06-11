@@ -81,7 +81,13 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* conf
         multiStream(false), multiStreamAvailable(false), peerIsEnrolled(false), mitmSeen(false), pbxSecretTmp(NULL),
         enrollmentMode(false), configureAlgos(*config), zidRec(NULL), saveZidRecord(true) {
 
+#ifdef ZRTP_SAS_RELAY_SUPPORT
     enableMitmEnrollment = config->isTrustedMitM();
+#pragma message "ZRTP SAS relay support is enabled."
+#else
+    enableMitmEnrollment = false;
+#endif
+
     signatureData = NULL;
     paranoidMode = config->isParanoidMode();
 
@@ -366,8 +372,10 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     //Compute the Initator's and Responder's retained secret ids.
     computeSharedSecretSet(zidRec);
 
+#ifdef ZRTP_SAS_RELAY_SUPPORT
     // Check if a PBX application set the MitM flag.
     mitmSeen = hello->isMitmMode();
+#endif
 
     signSasSeen = hello->isSasSign();
     // Construct a DHPart2 message (Initiator's DH message). This packet
@@ -787,6 +795,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     zrtpConfirm1.setIv(randomIV);
     zrtpConfirm1.setHashH0(H0);
 
+#ifdef ZRTP_SAS_RELAY_SUPPORT
     // if this runs at PBX user agent enrollment service then set flag in confirm
     // packet and store the MitM key
     if (enrollmentMode) {
@@ -799,6 +808,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
         // Set flag to enable user's client to ask for confirmation or re-confirmation.
         zrtpConfirm1.setPBXEnrollment();
     }
+#endif
     uint8_t confMac[MAX_DIGEST_LENGTH];
     uint32_t macLen;
 
@@ -996,6 +1006,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
     zrtpConfirm2.setExpTime(0xFFFFFFFF);
     zrtpConfirm2.setIv(randomIV);
 
+#ifdef ZRTP_SAS_RELAY_SUPPORT
     // Compute PBX secret if we are in enrollemnt mode (PBX user agent)
     // or enrollment was enabled at normal user agent and flag in confirm packet
     if (enrollmentMode || (enableMitmEnrollment && confirm1->isPBXEnrollment())) {
@@ -1015,6 +1026,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
             zrtpConfirm2.setPBXEnrollment();
         }
     }
+#endif
     if (saveZidRecord)
         getZidCacheInstance()->saveRecord(zidRec);
 
@@ -1027,6 +1039,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
 
     zrtpConfirm2.setHmac(confMac);
 
+#ifdef ZRTP_SAS_RELAY_SUPPORT
     // Ask for enrollment only if enabled via configuration and the
     // confirm1 packet contains the enrollment flag. The enrolling user
     // agent stores the MitM key only if the user accepts the enrollment
@@ -1041,6 +1054,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
             callback->zrtpAskEnrollment(EnrollmentReconfirm);
         }
     }
+#endif
     return &zrtpConfirm2;
 }
 
@@ -1177,6 +1191,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
         if (saveZidRecord)
             getZidCacheInstance()->saveRecord(zidRec);
 
+#ifdef ZRTP_SAS_RELAY_SUPPORT
         // Ask for enrollment only if enabled via configuration and the
         // confirm packet contains the enrollment flag. The enrolling user
         // agent stores the MitM key only if the user accepts the enrollment
@@ -1192,6 +1207,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
                 callback->zrtpAskEnrollment(EnrollmentReconfirm);
             }
         }
+#endif
     }
     else {
         // Check HMAC of Commit packet stored in temporary buffer. The
@@ -1235,6 +1251,8 @@ ZrtpPacketPingAck* ZRtp::preparePingAck(ZrtpPacketPing* ppkt) {
 }
 
 ZrtpPacketRelayAck* ZRtp::prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* errMsg) {
+
+#ifdef ZRTP_SAS_RELAY_SUPPORT
     // handle and render SAS relay data only if the peer announced that it is a trusted
     // PBX. Don't handle SAS relay in paranoidMode.
     if (!mitmSeen || paranoidMode)
@@ -1310,6 +1328,8 @@ ZrtpPacketRelayAck* ZRtp::prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* er
     }
     bool verify = zidRec->isSasVerified() && srly->isSASFlag();
     callback->srtpSecretsOn(cs, SAS, verify);
+
+#endif
     return &zrtpRelayAck;
 }
 
@@ -1886,6 +1906,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
         sendInfo(Warning, WarningNoExpectedAuxMatch);
     }
 
+#ifdef ZRTP_SAS_RELAY_SUPPORT
     // check if we have a matching PBX secret and place it third (s3)
     if (memcmp(pbxSecretIDr, dhPart->getPbxSecretId(), HMAC_SIZE) == 0) {
         DEBUGOUT((fprintf(stdout, "%c: Match for Other_secret found\n", zid[0])));
@@ -1895,6 +1916,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
         // Flag to record that fact that we have a MitM key of the other peer.
         peerIsEnrolled = true;
     }
+#endif
     // Check if some retained secrets found
     if (rsFound == 0) {                        // no RS matches found
         if (rs1Valid || rs2Valid) {            // but valid RS records in cache
@@ -2051,6 +2073,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
         sendInfo(Warning, WarningNoExpectedAuxMatch);
     }
 
+#ifdef ZRTP_SAS_RELAY_SUPPORT
     if (memcmp(pbxSecretIDi, dhPart->getPbxSecretId(), 8) == 0) {
         DEBUGOUT((fprintf(stdout, "%c: Match for PBX secret found\n", ownZid[0])));
         setD[2] = zidRec->getMiTMData();
@@ -2058,6 +2081,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
         detailInfo.secretsMatchedDH |= Pbx;
         peerIsEnrolled = true;
     }
+#endif
     // Check if some retained secrets found
     if (rsFound == 0) {                        // no RS matches found
         if (rs1Valid || rs2Valid) {            // but valid RS records in cache
@@ -2222,6 +2246,7 @@ void ZRtp::generateKeysMultiStream() {
 }
 
 void ZRtp::computePBXSecret() {
+#ifdef ZRTP_SAS_RELAY_SUPPORT
     // Construct the KDF context as per ZRTP specification chap 7.3.1:
     // ZIDi || ZIDr
     uint8_t KDFcontext[sizeof(peerZid)+sizeof(ownZid)];
@@ -2240,8 +2265,8 @@ void ZRtp::computePBXSecret() {
         kdfSize, SHA256_DIGEST_LENGTH * 8, pbxSecretTmpBuffer);
 
     pbxSecretTmp = pbxSecretTmpBuffer;  // set pointer to buffer, signal PBX secret was computed
+#endif
 }
-
 
 void ZRtp::computeSRTPKeys() {
 
@@ -2633,6 +2658,7 @@ bool ZRtp::isMultiStreamAvailable() {
 }
 
 void ZRtp::acceptEnrollment(bool accepted) {
+#ifdef ZRTP_SAS_RELAY_SUPPORT
     if (!accepted) {
         zidRec->resetMITMKeyAvailable();
         callback->zrtpInformEnrollment(EnrollmentCanceled);
@@ -2647,7 +2673,7 @@ void ZRtp::acceptEnrollment(bool accepted) {
     else {
         callback->zrtpInformEnrollment(EnrollmentFailed);
     }
-    return;
+#endif
 }
 
 bool ZRtp::setSignatureData(uint8_t* data, int32_t length) {
@@ -2692,7 +2718,11 @@ bool ZRtp::isEnrollmentMode() {
 }
 
 void ZRtp::setEnrollmentMode(bool enrollmentMode) {
+#ifdef ZRTP_SAS_RELAY_SUPPORT
     this->enrollmentMode = enrollmentMode;
+#else
+    this->enrollmentMode = false;
+#endif
 }
 
 bool ZRtp::isPeerEnrolled() {
