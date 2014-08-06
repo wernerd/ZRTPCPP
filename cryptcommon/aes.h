@@ -86,7 +86,7 @@ typedef struct
 /* This routine must be called before first use if non-static       */
 /* tables are being used                                            */
 
-AES_RETURN aes_init(void);
+AES_RETURN aes_init_zrtp(void);
 
 /* Key lengths in the range 16 <= key_len <= 32 are given in bytes, */
 /* those in the range 128 <= key_len <= 256 are given in bits       */

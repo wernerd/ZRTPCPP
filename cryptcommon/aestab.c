@@ -184,7 +184,7 @@ extern "C"
 
 /* implemented in case of wrong call for fixed tables */
 
-AES_RETURN aes_init(void)
+AES_RETURN aes_init_zrtp(void)
 {
     return EXIT_SUCCESS;
 }
@@ -267,7 +267,7 @@ uint_8t inv_affine(const uint_8t x)
 
 static int init = 0;
 
-AES_RETURN aes_init(void)
+AES_RETURN aes_init_zrtp(void)
 {   uint_32t  i, w;
 
 #if defined(FF_TABLES)
