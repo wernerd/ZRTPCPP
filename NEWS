@@ -1,3 +1,12 @@
+== GNU ZRTP 4.2.4 ==
+
+Only small changes to enable Android X86 (see clients/tivi/android)
+as an example.
+
+Rename functions aes_init() to aes_init_zrtp() to avoid names clashes
+with other libreries that may include own AES modules.
+
+
 == GNU ZRTP 4.2.3 ==
 
 The optional SAS relay feature (refer to RFC6189, chapter 7.3) is
