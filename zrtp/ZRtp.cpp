@@ -2477,6 +2477,13 @@ void ZRtp::setRs2Valid() {
     }
 }
 
+int64_t ZRtp::getSecureSince() {
+    if (zidRec != NULL)
+        return zidRec->getSecureSince();
+    return 0;
+}
+
+
 void ZRtp::sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) {
 
     // We've reached secure state: overwrite the SRTP master key and master salt.

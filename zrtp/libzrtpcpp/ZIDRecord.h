@@ -213,6 +213,14 @@ public:
     virtual const unsigned char* getMiTMData() =0;
 
     virtual int getRecordType() =0;
+ 
+    /**
+     * Get the secure since field
+     * 
+     * Returns the secure since field or 0 if no such field is available. Secure since
+     * uses the unixepoch.
+     */
+    virtual int64_t getSecureSince() =0;
 };
 #endif /* (__cplusplus) */
 #endif

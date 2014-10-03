@@ -537,6 +537,14 @@ class __EXPORT ZRtp {
       */
      void setRs2Valid();
 
+    /**
+     * Get the secure since field
+     * 
+     * Returns the secure since field or 0 if no such field is available. Secure since
+     * uses the unixepoch.
+     */
+    int64_t getSecureSince();
+
 private:
      friend class ZrtpStateClass;
 
