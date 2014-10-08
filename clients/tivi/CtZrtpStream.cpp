@@ -468,19 +468,19 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
         }
     }
     else if (useSdesForMedia && sdes != NULL) {
-        T_ZRTP_LB("lbClient",      (const char*)"SDES");
+        T_ZRTP_LB("lbClient",      (const char*)"SDP/S");
         T_ZRTP_LB("lbVersion",     (const char*)"");
 
         tmpInfo.secretsMatched = 0;
         tmpInfo.secretsCached = 0;
         tmpInfo.hash = (const char*)"";
         if (sdes->getHmacTypeMix() == ZrtpSdesStream::MIX_NONE) {
-            tmpInfo.pubKey = (const char*)"SIP SDES";
+            tmpInfo.pubKey = (const char*)"SIP SDP/S";
         }
         else {
             if (sdes->getCryptoMixAttribute(mixAlgoName, sizeof(mixAlgoName)) > 0)
                 tmpInfo.hash = mixAlgoName;
-            tmpInfo.pubKey = (const char*)"SIP SDES-MIX";
+            tmpInfo.pubKey = (const char*)"SIP SDP/S-MIX";
         }
         tmpInfo.cipher = sdes->getCipher();
         tmpInfo.authLength = sdes->getAuthAlgo();
