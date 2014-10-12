@@ -174,11 +174,11 @@ bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *ne
         *newLength = length;
         // Check if ZRTP engine is started and check states to determine if we should send the RTP packet.
         // Do not send in states: CommitSent, WaitDHPart2, WaitConfirm1, WaitConfirm2, WaitConfAck
-        if (started && (zrtpEngine->inState(CommitSent) || zrtpEngine->inState(WaitDHPart2) || zrtpEngine->inState(WaitConfirm1) ||
-            zrtpEngine->inState(WaitConfirm2) || zrtpEngine->inState(WaitConfAck))) {
-            ZrtpRandom::addEntropy(buffer, length);
-            return false;
-        }
+//        if (started && (zrtpEngine->inState(CommitSent) || zrtpEngine->inState(WaitDHPart2) || zrtpEngine->inState(WaitConfirm1) ||
+//            zrtpEngine->inState(WaitConfirm2) || zrtpEngine->inState(WaitConfAck))) {
+//            ZrtpRandom::addEntropy(buffer, length);
+//             return false;
+//         }
         if (useSdesForMedia && sdes != NULL) {   // SDES stream available, let SDES protect if necessary
             rc = sdes->outgoingRtp(buffer, length, newLength);
             sdesProtect++;
@@ -214,14 +214,9 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
             }
             rc = sdes->incomingRtp(buffer, length, newLength);
             if (rc == 1) {                      // SDES unprotect OK, do some statistics and return success
+                sdesUnprotect++;
                 if (*sdesTempBuffer != 0)       // clear SDES crypto string if not already done
                     memset(sdesTempBuffer, 0, maxSdesString);
-
-                srtpAuthErrorBurst = 0;
-                srtpReplayErrorBurst = 0;
-                srtpDecodeErrorBurst = 0;
-                sdesUnprotect++;
-                return 1;
             }
         }
         else {
@@ -237,16 +232,19 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
                 if (useSdesForMedia && sdes != NULL) {    // We still have a SDES - other client did not send matching zrtp-hash
                     rc = sdes->incomingRtp(buffer, *newLength, newLength);
                 }
-                if (rc == 1) {                       // if rc is still OK: either no SDES or layered SDES unprotect OK
-                    srtpAuthErrorBurst = 0;
-                    srtpReplayErrorBurst = 0;
-                    srtpDecodeErrorBurst = 0;
-                    return 1;
-                }
+            }
+            else if (sdes != NULL) {
+                rc = sdes->incomingRtp(buffer, length, newLength);
             }
         }
+        if (rc == 1) {
+            srtpAuthErrorBurst = 0;
+            srtpReplayErrorBurst = 0;
+            srtpDecodeErrorBurst = 0;
+            return 1;
+        }
         // We come to this point only if we have some problems during SRTP unprotect
-        if (rc == 0) 
+        else if (rc == 0) 
             srtpDecodeErrorBurst++;
         else if (rc == -1)
             srtpAuthErrorBurst++;
@@ -349,6 +347,11 @@ int CtZrtpStream::getSignalingHelloHash(char *hHash, int32_t index) {
 void CtZrtpStream::setSignalingHelloHash(const char *hHash) {
     synchEnter();
 
+    // set new timer values for ZRTP restransmission
+    zrtpEngine->setT1Resend(100);
+    zrtpEngine->setT1ResendExtend(200);
+    zrtpEngine->setT2Resend(-1);
+
     std::string hashStr;
     hashStr.assign(hHash);
 
@@ -409,6 +412,16 @@ int CtZrtpStream::isSecure() {
         if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0){              \
             return snprintf(p, maxLen, "%d", _I);}
 
+#if __WORDSIZE == 64
+#define T_ZRTP_L(_K,_I)                                                \
+        if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0){              \
+            return snprintf(p, maxLen, "%ld", _I);}
+#else
+#define T_ZRTP_L(_K,_I)                                                \
+        if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0){              \
+            return snprintf(p, maxLen, "%lld", _I);}
+#endif
+
 int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
 
 //     if ((sdes == NULL /*&& !started*/) || isStopped || !isSecure())
@@ -440,6 +453,8 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
         strng = !sdes || helloReceived ? "Bad" : "No hello";
     }
     T_ZRTP_LB("sdp_hash", strng);
+
+    T_ZRTP_L("sec_since", zrtpEngine->getSecureSince());
 
     std::string client = zrtpEngine->getPeerProtcolVersion();
     if (role != NoRole) {

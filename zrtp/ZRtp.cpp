@@ -19,6 +19,7 @@
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 #include <sstream>
+#include <bits/algorithmfwd.h>
 
 #include <crypto/zrtpDH.h>
 #include <crypto/hmac256.h>
@@ -2799,6 +2800,30 @@ std::string ZRtp::getPeerProtcolVersion() {
     if (peerHelloVersion[0] == 0)
         return std::string();
     return std::string((char*)peerHelloVersion);
+}
+
+void ZRtp::setT1Resend(int32_t counter) {
+    if (counter < 0 || counter > 10)
+        stateEngine->setT1Resend(counter);
+}
+
+void ZRtp::setT1ResendExtend(int32_t counter) {
+    stateEngine->setT1ResendExtend(counter);
+}
+
+void ZRtp::setT1Capping(int32_t capping) {
+    if (capping >= 50)
+        stateEngine->setT1Capping(capping);
+}
+
+void ZRtp::setT2Resend(int32_t counter) {
+    if (counter < 0 || counter > 10)
+        stateEngine->setT2Resend(counter);
+}
+
+void ZRtp::setT2Capping(int32_t capping) {
+    if (capping >= 150)
+        stateEngine->setT2Capping(capping);
 }
 
 /** EMACS **
