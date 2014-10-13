@@ -60,7 +60,7 @@ int CtZrtpSession::init(bool audio, bool video, ZrtpConfigure* config)
     if (config == NULL) {
         config = configOwn = new ZrtpConfigure();
         setupConfiguration(config);
-        config->setTrustedMitM(true);
+        config->setTrustedMitM(false);
     }
     config->setParanoidMode(enableParanoidMode);
 

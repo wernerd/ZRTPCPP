@@ -19,7 +19,6 @@
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 #include <sstream>
-#include <bits/algorithmfwd.h>
 
 #include <crypto/zrtpDH.h>
 #include <crypto/hmac256.h>

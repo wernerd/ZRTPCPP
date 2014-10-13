@@ -54,7 +54,7 @@ ZrtpStateClass::ZrtpStateClass(ZRtp *p) : parent(p), commitPkt(NULL), t1Resend(2
     // Set up timers according to ZRTP spec
     T1.start = 50;
     T1.maxResend = t1Resend;
-    T1.capping = 200;
+    T1.capping = 800;
 
     T2.start = 150;
     T2.maxResend = t2Resend;
