@@ -7,5 +7,5 @@
 # APP_PLATFORM := android-14
 APP_STL := gnustl_shared
 APP_MODULES := zrtpcpp
-APP_ABI := armeabi armeabi-v7a
+APP_ABI := armeabi armeabi-v7a x86
 NDK_TOOLCHAIN_VERSION := 4.8

@@ -46,17 +46,19 @@ state_t states[numberOfStates] = {
 };
 
 
-ZrtpStateClass::ZrtpStateClass(ZRtp *p) : parent(p), commitPkt(NULL), multiStream(false), secSubstate(Normal), sentVersion(0) {
+ZrtpStateClass::ZrtpStateClass(ZRtp *p) : parent(p), commitPkt(NULL), t1Resend(20), t1ResendExtend(60), t2Resend(10),
+                                          multiStream(false), secSubstate(Normal), sentVersion(0) {
+
     engine = new ZrtpStates(states, numberOfStates, Initial);
 
     // Set up timers according to ZRTP spec
     T1.start = 50;
-    T1.maxResend = 20;
+    T1.maxResend = t1Resend;
     T1.capping = 200;
 
     T2.start = 150;
-    T2.maxResend = 10;
-    T2.capping = 600;
+    T2.maxResend = t2Resend;
+    T2.capping = 1200;
 }
 
 ZrtpStateClass::~ZrtpStateClass(void) {
@@ -327,7 +329,7 @@ void ZrtpStateClass::evDetect(void) {
             if (startTimer(&T1) <= 0) {        // restart own Hello timer/counter
                 timerFailed(SevereNoTimer);    // returns to state Initial
             }
-            T1.maxResend = 60;                 // more retries to extend time, see chap. 6
+            T1.maxResend = t1ResendExtend;     // more retries to extend time, see chap. 6
         }
         return;      // unknown packet for this state - Just ignore it
     }
@@ -1504,9 +1506,11 @@ int32_t ZrtpStateClass::nextTimer(zrtpTimer_t *t) {
 
     t->time += t->time;
     t->time = (t->time > t->capping)? t->capping : t->time;
-    t->counter++;
-    if (t->counter > t->maxResend) {
-        return -1;
+    if (t->maxResend > 0) {
+        t->counter++;
+        if (t->counter > t->maxResend) {
+            return -1;
+        }
     }
     return parent->activateTimer(t->time);
 }

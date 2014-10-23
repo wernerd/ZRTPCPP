@@ -537,6 +537,65 @@ class __EXPORT ZRtp {
       */
      void setRs2Valid();
 
+     /**
+      * Get the secure since field
+      * 
+      * Returns the secure since field or 0 if no such field is available. Secure since
+      * uses the unixepoch.
+      */
+     int64_t getSecureSince();
+
+     /**
+      * Set the resend counter of timer T1 - T1 controls the Hello packets.
+      * 
+      * This overwrites the standard value of 20 retries. Setting to <0 means
+      * 'indefinite', counter values less then 10 are ignored.
+      * 
+      * Applications may set the resend counter based on network  or some other 
+      * conditions. Applications may set this value any time and it's in effect
+      * for the current call. Setting the counter after the hello phase has no
+      * effect.
+      */
+     void setT1Resend(int32_t counter);
+
+     /**
+      * Set the extended resend counter of timer T1 - T1 controls the Hello packets.
+      *
+      * More retries to extend time, see RFC6189 chap. 6. This overwrites the standard 
+      * value of 60 extended retiries.
+      * 
+      * Applications may set the resend counter based on network  or some other 
+      * conditions. 
+      */
+     void setT1ResendExtend(int32_t counter);
+
+     /**
+      * Set the time capping of timer T1 - T1 controls the Hello packets.
+      * 
+      * Values <50ms are not set.
+      */
+     void setT1Capping(int32_t capping);
+
+     /**
+      * Set the resend counter of timer T2 - T2 controls other (post-Hello) packets.
+      * 
+      * This overwrites the standard value of 10 retiries. Setting to <0 means
+      * 'indefinite', counter values less then 10 are ignored.
+      * 
+      * Applications may set the resend counter based on network  or some other 
+      * conditions. Applications may set this value any time and it's in effect
+      * for the current call. Setting the counter after tZRTP enetered secure state
+      * has no effect.
+      */
+     void setT2Resend(int32_t counter);
+
+     /**
+      * Set the time capping of timer T2 - T2 controls other (post-Hello) packets.
+      * 
+      * Values <150ms are not set.
+      */
+     void setT2Capping(int32_t capping);
+
 private:
      friend class ZrtpStateClass;
 

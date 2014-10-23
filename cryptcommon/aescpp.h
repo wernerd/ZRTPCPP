@@ -31,7 +31,7 @@ class AESencrypt
 {
 public:
     aes_encrypt_ctx cx[1];
-    AESencrypt(void) { aes_init(); };
+    AESencrypt(void) { aes_init_zrtp(); };
 #if defined(AES_128)
     AESencrypt(const unsigned char key[])
         {   aes_encrypt_key128(key, cx); }
@@ -98,7 +98,7 @@ class AESdecrypt
 {
 public:
     aes_decrypt_ctx cx[1];
-    AESdecrypt(void) { aes_init(); };
+    AESdecrypt(void) { aes_init_zrtp(); };
 #if defined(AES_128)
     AESdecrypt(const unsigned char key[])
             { aes_decrypt_key128(key, cx); }

@@ -136,12 +136,16 @@ private:
     zrtpTimer_t T1;         ///< The Hello message timeout timer
     zrtpTimer_t T2;         ///< Timeout timer for other messages
 
+    int32_t t1Resend;       ///< configurable resend counter for T1 (Hello packets)
+    int32_t t1ResendExtend; ///< configurable extended resend counter for T1 (Hello packets)
+    int32_t t2Resend;       ///< configurable resend counter for T2 (other packets)
+
     /*
      * If this is set to true the protocol engine handle the multi-stream
      * variant of ZRTP. Refer to chapter 5.4.2 in the ZRTP specification.
      */
     bool multiStream;
-    
+
     // Secure substate to handle SAS relay packets
     SecureSubStates secSubstate;
 
@@ -321,6 +325,33 @@ public:
      *    Pointer to the SAS relay packet.
      */
     void sendSASRelay(ZrtpPacketSASrelay* relay);
+
+    /**
+     * Set the resend counter of timer T1 - T1 controls the Hello packets.
+     */
+    void setT1Resend(int32_t counter) {T1.maxResend = counter;}
+
+    /**
+     * Set the time capping of timer T1 - T1 controls the Hello packets.
+     */
+    void setT1Capping(int32_t capping) {T1.capping = capping;}
+
+    /**
+     * Set the extended resend counter of timer T1 - T1 controls the Hello packets.
+     *
+     * More retries to extend time, see chap. 6
+     */
+    void setT1ResendExtend(int32_t counter) {t1ResendExtend = counter;}
+
+    /**
+     * Set the resend counter of timer T2 - T2 controls other (post-Hello) packets.
+     */
+    void setT2Resend(int32_t counter) {T2.maxResend = counter;}
+
+    /**
+     * Set the time capping of timer T2 - T2 controls other (post-Hello) packets.
+     */
+    void setT2Capping(int32_t capping) {T2.capping = capping;}
 };
 
 /**

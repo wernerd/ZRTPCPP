@@ -272,8 +272,10 @@ public:
      *
      */
     const unsigned char* getMiTMData() {return record.mitmKey; }
-    
+
     int getRecordType() {return SQLITE_TYPE_RECORD; }
+
+    int64_t getSecureSince() { return record.secureSince; }
 };
 #endif /* (__cplusplus) */
 

@@ -92,12 +92,12 @@ int CtZrtpSession::init(bool audio, bool video, ZrtpConfigure* config)
             stream->index = VideoStream;
             stream->session = this;
         }
+        isReady = true;
     }
     if (configOwn != NULL) {
         delete configOwn;
     }
     synchLeave();
-    isReady = true;
     return ret;
 }
 
