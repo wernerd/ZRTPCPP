@@ -596,6 +596,26 @@ class __EXPORT ZRtp {
       */
      void setT2Capping(int32_t capping);
 
+     /**
+      * @brief Get required buffer size to get all 32-bit statistic counters of ZRTP
+      *
+      * @param streamNm stream, if not specified the default is @c AudioStream
+      * 
+      * @return number of 32 bit integer elements required or < 0 on error
+      */
+     int getNumberOfCountersZrtp();
+
+     /**
+      * @brief Read statistic counters of ZRTP
+      * 
+      * @param buffer Pointer to buffer of 32-bit integers. The buffer must be able to
+      *         hold at least getNumberOfCountersZrtp() 32-bit integers
+      * @param streamNm stream, if not specified the default is @c AudioStream
+      * 
+      * @return number of 32-bit counters returned in buffer or < 0 on error
+      */
+     int getCountersZrtp(int32_t* counters);
+
 private:
      friend class ZrtpStateClass;
 

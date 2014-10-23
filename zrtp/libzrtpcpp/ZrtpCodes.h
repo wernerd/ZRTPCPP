@@ -21,7 +21,7 @@
 #define _ZRTPCODES_H_
 /**
  * @file ZrtpCodes.h
- * @brief The ZRTP info, warning, and error codes
+ * @brief The ZRTP info, warning, error codes, and other contants and enums that applications may use.
  * @ingroup GNU_ZRTP
  * @{
  */
@@ -157,6 +157,25 @@ enum InfoEnrollment {
     EnrollmentFailed,               //!< Enrollment process failed, no PBX secret available
     EnrollmentOk                    //!< Enrollment process for this PBX was ok
 };
+
+/**
+ * Offsets into the ZRTP counter array.
+ * 
+ */
+//!< How many Hello packet retries in detect state
+#define HelloRetry      0
+//!< How many Hello packet retries in Ack sent state
+#define HelloRetryAck   1
+//!< How many Commit packet retries
+#define CommitRetry     2
+//!< How many DhPart2 packet retries
+#define DhPart2Retry    3
+//!< How many Confirm2 packet retries
+#define Confirm2Retry   4
+//!< How many Error packet retries
+#define ErrorRetry      5
+
+
 
 }
 

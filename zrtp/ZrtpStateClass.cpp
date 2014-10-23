@@ -50,6 +50,7 @@ ZrtpStateClass::ZrtpStateClass(ZRtp *p) : parent(p), commitPkt(NULL), t1Resend(2
                                           multiStream(false), secSubstate(Normal), sentVersion(0) {
 
     engine = new ZrtpStates(states, numberOfStates, Initial);
+    memset(retryCounters, 0, sizeof(retryCounters));
 
     // Set up timers according to ZRTP spec
     T1.start = 50;
@@ -239,7 +240,7 @@ void ZrtpStateClass::evDetect(void) {
          * - cancel timer T1 to stop resending Hello
          * - switch to state AckDetected, wait for peer's Hello (F3)
          * 
-         * When we receive an HelloAck this also means that out partner accepted our protocol version.
+         * When we receive an HelloAck this also means that our partner accepted our protocol version.
          */
         if (first == 'h' && last =='k') {
             cancelTimer();
@@ -339,6 +340,8 @@ void ZrtpStateClass::evDetect(void) {
             sendFailed();       // returns to state Initial
             return;
         }
+        retryCounters[HelloRetry]++;
+
         if (nextTimer(&T1) <= 0) {
             commitPkt = NULL;
             parent->zrtpNotSuppOther();
@@ -521,6 +524,8 @@ void ZrtpStateClass::evAckSent(void) {
         if (!parent->sendPacketZRTP(sentPacket)) {
             return sendFailed();      // returns to state Initial
         }
+        retryCounters[HelloRetryAck]++;
+
         if (nextTimer(&T1) <= 0) {
             parent->zrtpNotSuppOther();
             commitPkt = NULL;
@@ -936,6 +941,8 @@ void ZrtpStateClass::evCommitSent(void) {
                 sendFailed();       // returns to state Initial
                 return;
         }
+        retryCounters[CommitRetry]++;
+
         if (nextTimer(&T2) <= 0) {
             timerFailed(SevereTooMuchRetries);       // returns to state Initial
         }
@@ -1100,6 +1107,8 @@ void ZrtpStateClass::evWaitConfirm1(void) {
             sendFailed();             // returns to state Initial
             return;
         }
+        retryCounters[DhPart2Retry]++;
+
         if (nextTimer(&T2) <= 0) {
             timerFailed(SevereTooMuchRetries);     // returns to state Initial
         }
@@ -1255,6 +1264,8 @@ void ZrtpStateClass::evWaitConfAck(void) {
             parent->srtpSecretsOff(ForReceiver);
             return;
         }
+        retryCounters[Confirm2Retry]++;
+
         if (nextTimer(&T2) <= 0) {
             timerFailed(SevereTooMuchRetries); // returns to state Initial
             parent->srtpSecretsOff(ForReceiver);
@@ -1368,6 +1379,8 @@ void ZrtpStateClass::evWaitErrorAck(void) {
             sendFailed();                 // returns to state Initial
             return;
         }
+        retryCounters[ErrorRetry]++;
+
         if (nextTimer(&T2) <= 0) {
             timerFailed(SevereTooMuchRetries);     // returns to state Initial
         }
@@ -1555,6 +1568,16 @@ void ZrtpStateClass::setMultiStream(bool multi) {
 
 bool ZrtpStateClass::isMultiStream() {
     return multiStream;
+}
+
+
+int ZrtpStateClass::getNumberOfRetryCounters() {
+    return sizeof(retryCounters)/sizeof(int32_t);
+}
+
+int ZrtpStateClass::getRetryCounters(int32_t* counters) {
+    memcpy(counters, retryCounters, sizeof(retryCounters));
+    return sizeof(retryCounters)/sizeof(int32_t);
 }
 
 /** EMACS **

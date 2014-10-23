@@ -1,3 +1,26 @@
+== GNU ZRTP 4.3.0 ==
+
+This version adds some new API that provide to set retry timer 
+values and to get some retry counters.
+
+Application may now set some values of the retry counters during 
+the discovery (Hello) and the negotiation phase. Applications may
+increase the number of retries or modify the capping to support 
+slow or bad networks.
+
+To get some idea about the actual number of retries during ZRTP
+negotiation an application may now use the new API to get an array
+of counters. The ZRTP state engine records how many retries occured
+during the different protocol states. 
+
+Note: only the ZRTP initiator performs packet retries after the
+discovery (Hello) phase. The responder would always return zero
+alues for the other retry counters.
+
+Because we have a new set of functions the API changed, thus it's
+necessary to recompile applications that use the new library version.
+
+
 == GNU ZRTP 4.2.4 ==
 
 Only small changes to enable Android X86 (see clients/tivi/android)

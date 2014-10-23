@@ -405,6 +405,26 @@ public:
     int getInfo(const char *key, uint8_t *buffer, size_t length, streamName streamNm =AudioStream);
 
     /**
+     * @brief Get required buffer size to get all 32-bit statistic counters of ZRTP
+     *
+     * @param streamNm stream, if not specified the default is @c AudioStream
+     * 
+     * @return number of 32 bit integer elements required or < 0 on error
+     */
+    int getNumberOfCountersZrtp(streamName streamNm =AudioStream);
+
+    /**
+     * @brief Read statistic counters of ZRTP
+     * 
+     * @param buffer Pointer to buffer of 32-bit integers. The buffer must be able to
+     *         hold at least getNumberOfCountersZrtp() 32-bit integers
+     * @param streamNm stream, if not specified the default is @c AudioStream
+     * 
+     * @return number of 32-bit counters returned in buffer or < 0 on error
+     */
+    int getCountersZrtp(int32_t* counters, streamName streamNm =AudioStream);
+
+    /**
      * @brief Accept enrollment for the active peer.
      *
      * The method checks if a name is already set in the name cache. If no name

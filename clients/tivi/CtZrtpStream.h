@@ -196,6 +196,23 @@ protected:
      */
     int getInfo(const char *key, char *buffer, int maxLen);
 
+    /**
+     * @brief Get required buffer size to get all 32-bit statistic counters of ZRTP
+     *
+     * @return number of 32 bit integer elements required or < 0 on error
+     */
+    int getNumberOfCountersZrtp();
+
+    /**
+     * @brief Read statistic counters of ZRTP
+     * 
+     * @param buffer Pointer to buffer of 32-bit integers. The buffer must be able to
+     *         hold at least getNumberOfCountersZrtp() 32-bit integers
+     * 
+     * @return number of 32-bit counters returned in buffer or < 0 on error
+     */
+    int getCountersZrtp(int32_t* counters);
+
     bool isStarted() {return started;}
 
     bool isEnabled() {return enableZrtp;}

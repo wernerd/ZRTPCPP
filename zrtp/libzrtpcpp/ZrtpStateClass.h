@@ -26,6 +26,7 @@
  * @{
  */
 
+#include <libzrtpcpp/ZRtp.h>
 #include <libzrtpcpp/ZrtpStates.h>
 #include <libzrtpcpp/ZrtpPacketBase.h>
 
@@ -169,6 +170,8 @@ private:
      * Hello packet version sent to other partner
      */
     int32_t sentVersion;
+    
+    int32_t retryCounters[ErrorRetry+1];  // TODO adjust
 
 public:
     /// Create a ZrtpStateClass
@@ -352,6 +355,27 @@ public:
      * Set the time capping of timer T2 - T2 controls other (post-Hello) packets.
      */
     void setT2Capping(int32_t capping) {T2.capping = capping;}
+
+    /**
+     * @brief Get required buffer size to get all 32-bit retry counters
+     *
+     * @param streamNm stream, if not specified the default is @c AudioStream
+     * 
+     * @return number of 32 bit integer elements required or < 0 on error
+     */
+    int getNumberOfRetryCounters();
+
+    /**
+     * @brief Read retry counters
+     * 
+     * @param buffer Pointer to buffer of 32-bit integers. The buffer must be able to
+     *         hold at least getNumberOfRetryCounters() 32-bit integers
+     * @param streamNm stream, if not specified the default is @c AudioStream
+     * 
+     * @return number of 32-bit counters returned in buffer or < 0 on error
+     */
+    int getRetryCounters(int32_t* counters);
+
 };
 
 /**

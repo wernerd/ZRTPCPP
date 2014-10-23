@@ -517,6 +517,14 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
     return 0;
 }
 
+int CtZrtpStream::getNumberOfCountersZrtp() {
+    return zrtpEngine->getNumberOfCountersZrtp();
+}
+
+int CtZrtpStream::getCountersZrtp(int32_t* counters) {
+    return zrtpEngine->getCountersZrtp(counters);
+}
+
 int CtZrtpStream::enrollAccepted(char *p) {
     zrtpEngine->acceptEnrollment(true);
 

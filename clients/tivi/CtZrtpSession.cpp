@@ -514,6 +514,23 @@ int CtZrtpSession::getInfo(const char *key, uint8_t *buffer, size_t maxLen, stre
     return stream->getInfo(key, (char*)buffer, (int)maxLen);
 }
 
+int CtZrtpSession::getNumberOfCountersZrtp(streamName streamNm) {
+    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return -1;
+
+    CtZrtpStream *stream = streams[streamNm];
+    return stream->getNumberOfCountersZrtp();
+}
+
+int CtZrtpSession::getCountersZrtp(int32_t* counters, streamName streamNm) {
+    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return -1;
+
+    CtZrtpStream *stream = streams[streamNm];
+    return stream->getCountersZrtp(counters);
+}
+
+
 int CtZrtpSession::enrollAccepted(char *p) {
     if (!isReady || !(streams[AudioStream] != NULL))
         return fail;

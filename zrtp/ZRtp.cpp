@@ -2825,6 +2825,15 @@ void ZRtp::setT2Capping(int32_t capping) {
         stateEngine->setT2Capping(capping);
 }
 
+int ZRtp::getNumberOfCountersZrtp() {
+    // If we add some other counters add them here before returning
+    return stateEngine->getNumberOfRetryCounters();
+}
+
+int ZRtp::getCountersZrtp(int32_t* counters) {
+    return stateEngine->getRetryCounters(counters);
+}
+
 /** EMACS **
  * Local variables:
  * mode: c++
