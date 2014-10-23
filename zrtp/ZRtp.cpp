@@ -19,7 +19,12 @@
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 #include <sstream>
+
+#ifdef __APPLE__
+#include <algorithm>
+#else
 #include <bits/algorithmfwd.h>
+#endif
 
 #include <crypto/zrtpDH.h>
 #include <crypto/hmac256.h>
