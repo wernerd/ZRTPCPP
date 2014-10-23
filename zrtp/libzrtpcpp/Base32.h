@@ -136,7 +136,7 @@ class Base32 {
      *      The length of the base-32 encoding of the data in characters
      */
     static size_t const b2alen(const size_t lengthInBits) {
-	return divceil(lengthInBits, 5); };
+	return divceil((int)lengthInBits, 5); };
 
  private:
 

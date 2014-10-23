@@ -91,7 +91,7 @@ void EnumBase::insert(const char* name, int32_t klen, const char* ra,
 }
 
 int EnumBase::getSize() {
-    return algos.size(); 
+    return (int)algos.size();
 }
 
 AlgoTypes EnumBase::getAlgoType() {

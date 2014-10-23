@@ -206,7 +206,7 @@ char* zrtp_getMultiStrParams(ZrtpContext* zrtpContext, int32_t *length) {
     if (ret.size() == 0)
         return NULL;
 
-    *length = ret.size();
+    *length = (int32_t)ret.size();
     char* retval = (char*) malloc(ret.size());
     ret.copy(retval, ret.size(), 0);
     return retval;

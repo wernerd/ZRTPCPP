@@ -125,7 +125,7 @@ void Base32::b2a_l(const unsigned char* os, int len,
     /* index into the result buffer, initially pointing to the
      * "one-past-the-end" quintet
      */
-    int resp = result.size();
+    int resp = (int)result.size();
 
     /* pointer into the os buffer, initially pointing to the
      * "one-past-the-end" octet
@@ -170,14 +170,14 @@ void Base32::b2a_l(const unsigned char* os, int len,
     } /* switch ((osp - os.buf) % 5) */
 
     /* truncate any unused trailing zero quintets */
-    encoded = result.substr(0, divceil(lengthinbits, 5));
+    encoded = result.substr(0, divceil((int)lengthinbits, 5));
     return;
 }
 
 void Base32::a2b_l(const string cs, size_t size, const size_t lengthinbits ) {
     unsigned long x = 0;	// to hold up to 32 bits worth of the input
 
-    int len = divceil(size*5, 8);
+    int len = divceil((int)size*5, 8);
 
     /* if lengthinbits is not a multiple of 5 then this is
      * allocating space for 0 or 1 extra octets that will be
@@ -200,7 +200,7 @@ void Base32::a2b_l(const string cs, size_t size, const size_t lengthinbits ) {
     /* index into the input buffer, initially pointing to the
      * "one-past-the-end" character
      */
-    int csp = size;
+    int csp = (int)size;
 
     /* Now this is a real live Duff's device.  You gotta love it. */
     switch (csp % 8) {
@@ -234,7 +234,7 @@ void Base32::a2b_l(const string cs, size_t size, const size_t lengthinbits ) {
     } /* switch ((csp - cs.buf) % 8) */
 
     /* truncate any unused trailing zero octets */
-    resultLength = divceil(lengthinbits, 8);
+    resultLength = divceil((int)lengthinbits, 8);
     return;
 }
 

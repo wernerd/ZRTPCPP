@@ -99,7 +99,7 @@ static int getAsciiDigit( uint32_t *d, int radix, char c )
 int
 bnReadAscii(struct BigNum *X, char *s, int radix)
 {
-    int slen = strlen(s);
+    int slen = (int)strlen(s);
     int i, neg = 0;
     uint32_t d;
 

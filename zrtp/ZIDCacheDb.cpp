@@ -108,7 +108,7 @@ int32_t ZIDCacheDb::getPeerName(const uint8_t *peerZid, std::string *name) {
         return 0;
     }
     name->assign(buffer);
-    return name->length();
+    return (int32_t)name->length();
 }
 
 void ZIDCacheDb::putPeerName(const uint8_t *peerZid, const std::string name) {
@@ -120,7 +120,7 @@ void ZIDCacheDb::putPeerName(const uint8_t *peerZid, const std::string name) {
     cacheOps.readZidNameRecord(zidFile, peerZid, associatedZid, NULL, &nameRec, errorBuffer);
 
     nameRec.name = (char*)name.c_str();
-    nameRec.nameLength = name.length();
+    nameRec.nameLength = (int32_t)name.length();
     nameRec.nameLength = nameRec.nameLength > 200 ? 200 : nameRec.nameLength;
     if ((nameRec.flags & Valid) != Valid) {
         nameRec.flags = Valid;

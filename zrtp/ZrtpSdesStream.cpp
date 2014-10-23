@@ -324,21 +324,21 @@ int ZrtpSdesStream::getCryptoMixAttribute(char *algoNames, size_t length) {
         for (cryptoMix* cp = knownMixAlgos; cp->name != NULL; cp++) {
             if (cp->hashLength == cryptoMixHashLength && cp->hashType == cryptoMixHashType) {
                 strcpy(algoNames, cp->name);
-                return strlen(cp->name);
+                return (int)strlen(cp->name);
             }
         }
     }
     // TODO: enhance here to support multiple algorithms (concatenate strings into the buffer until buffer full)
     else {
         strcpy(algoNames, knownMixAlgos[0].name);
-        return strlen(algoNames);
+        return (int)strlen(algoNames);
     }
     return 0;
 }
 
 bool ZrtpSdesStream::setCryptoMixAttribute(const char *algoNames) {
 
-    int len = strlen(algoNames);
+    int len = (int)strlen(algoNames);
     if (len <= 0)
         return false;
 
@@ -391,7 +391,7 @@ static int _random(unsigned char *output, size_t len)
 #include <cryptcommon/ZrtpRandom.h>
 static int _random(unsigned char *output, size_t len)
 {
-    return ZrtpRandom::getRandomData(output, len);
+    return ZrtpRandom::getRandomData(output, (uint32_t)len);
 }
 #endif
 
@@ -647,7 +647,7 @@ bool ZrtpSdesStream::createSdesProfile(char *cryptoString, size_t *maxLen) {
     localKeyLenBytes = pSuite->keyLength / 8;
     localSaltLenBytes = pSuite->saltLength / 8;
 
-    if (tag == -1)
+    if ((tag == -1) || (tag > maxTagValue))
         tag = 1;
 
     // Get B64 code for master key and master salt and then construct the SDES crypto string

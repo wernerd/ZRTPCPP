@@ -200,7 +200,7 @@ _THKERNEL( LPVOID lpvData /* CThread Object */
 		} */
 
 		if( pThread->m_type == ThreadTypeIntervalDriven )
-			Sleep(pThread->m_dwIdle);
+			Sleep((unsigned int)pThread->m_dwIdle);
 
 	}
 
@@ -717,7 +717,7 @@ CThread::Pop()
 {
 
 	m_mutex.Lock();
-	if( m_queuePos-1 < 0 )
+	if( (int)m_queuePos-1 < 0 )
 	{
 		m_queuePos = 0;
 		m_dwObjectCondition |= STACK_EMPTY;
@@ -1071,7 +1071,7 @@ CThread::PingThread(DWORD dwTimeout /* timeout in milli-seconds */
 			}
 		dwTotal += m_dwIdle;
 		m_mutex.Unlock();
-		Sleep(m_dwIdle);
+		Sleep((unsigned int)m_dwIdle);
 	}
 
 	return FALSE;

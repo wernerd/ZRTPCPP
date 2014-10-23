@@ -94,7 +94,7 @@ bool SrtpHandler::protect(CryptoContext* pcc, uint8_t* buffer, size_t length, si
     if (pcc == NULL) {
         return false;
     }
-    if (!decodeRtp(buffer, length, &ssrc, &seqnum, &payload, &payloadlen))
+    if (!decodeRtp(buffer, (int32_t)length, &ssrc, &seqnum, &payload, &payloadlen))
         return false;
 
     /* Encrypt the packet */
@@ -107,7 +107,7 @@ bool SrtpHandler::protect(CryptoContext* pcc, uint8_t* buffer, size_t length, si
 
     /* Compute MAC and store at end of RTP packet data */
     if (pcc->getTagLength() > 0) {
-        pcc->srtpAuthenticate(buffer, length, pcc->getRoc(), buffer+length);
+        pcc->srtpAuthenticate(buffer, (int32_t)length, pcc->getRoc(), buffer+length);
     }
     *newLength = length + pcc->getTagLength();
 
@@ -129,7 +129,7 @@ int32_t SrtpHandler::unprotect(CryptoContext* pcc, uint8_t* buffer, size_t lengt
         return 0;
     }
 
-    if (!decodeRtp(buffer, length, &ssrc, &seqnum, &payload, &payloadlen))
+    if (!decodeRtp(buffer, (int32_t)length, &ssrc, &seqnum, &payload, &payloadlen))
         return 0;
     /*
      * This is the setting of the packet data when we come to this point:
@@ -142,7 +142,7 @@ int32_t SrtpHandler::unprotect(CryptoContext* pcc, uint8_t* buffer, size_t lengt
      * The SRTP MKI and authentication data is always at the end of a
      * packet. Thus compute the position of this data.
      */
-    uint32_t srtpDataIndex = length - (pcc->getTagLength() + pcc->getMkiLength());
+    uint32_t srtpDataIndex = (uint32_t)(length - (pcc->getTagLength() + pcc->getMkiLength()));
 
     // Compute new length
     length -= pcc->getTagLength() + pcc->getMkiLength();
@@ -163,7 +163,7 @@ int32_t SrtpHandler::unprotect(CryptoContext* pcc, uint8_t* buffer, size_t lengt
     uint64_t guessedIndex = pcc->guessIndex(seqnum);
 
     if (pcc->getTagLength() > 0) {
-        uint32_t guessedRoc = guessedIndex >> 16;
+        uint32_t guessedRoc = (uint32_t)(guessedIndex >> 16);
         uint8_t mac[20];
 
         pcc->srtpAuthenticate(buffer, (uint32_t)length, guessedRoc, mac);
@@ -192,7 +192,7 @@ bool SrtpHandler::protectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t le
     ssrc = zrtpNtohl(ssrc);
 
     uint32_t encIndex = pcc->getSrtcpIndex();
-    pcc->srtcpEncrypt(buffer + 8, length - 8, encIndex, ssrc);
+    pcc->srtcpEncrypt(buffer + 8, (int32_t)length - 8, encIndex, ssrc);
 
     encIndex |= 0x80000000;                                     // set the E flag
 
@@ -204,7 +204,7 @@ bool SrtpHandler::protectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t le
     // take MKI length into account when storing the authentication tag.
 
     // Compute MAC and store in packet after the SRTCP index field
-    pcc->srtcpAuthenticate(buffer, length, encIndex, buffer + length + sizeof(uint32_t));
+    pcc->srtcpAuthenticate(buffer, (int32_t)length, encIndex, buffer + length + sizeof(uint32_t));
 
     encIndex++;
     encIndex &= ~0x80000000;                                // clear the E-flag and modulo 2^31
@@ -222,7 +222,7 @@ int32_t SrtpHandler::unprotectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size
     }
 
     // Compute the total length of the payload
-    int32_t payloadLen = length - (pcc->getTagLength() + pcc->getMkiLength() + 4);
+    int32_t payloadLen = (int32_t)length - (pcc->getTagLength() + pcc->getMkiLength() + 4);
     *newLength = payloadLen;
 
     // point to the SRTCP index field just after the real payload

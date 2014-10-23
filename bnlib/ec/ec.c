@@ -284,14 +284,14 @@ static void curveCommonPrealloc(EcCurve *curve)
 
     /* The set_bit allocates enough memory to hold maximum values */
     /* Initialize scratchpad variables before use */
-    bnPrealloc(curve->S1, maxBits);
-    bnPrealloc(curve->U1, maxBits);
-    bnPrealloc(curve->H, maxBits);
-    bnPrealloc(curve->R, maxBits);
-    bnPrealloc(curve->S1, maxBits);
-    bnPrealloc(curve->t1, maxBits);
-    bnPrealloc(curve->t2, maxBits);
-    bnPrealloc(curve->t3, maxBits);
+    bnPrealloc(curve->S1, (unsigned int)maxBits);
+    bnPrealloc(curve->U1, (unsigned int)maxBits);
+    bnPrealloc(curve->H, (unsigned int)maxBits);
+    bnPrealloc(curve->R, (unsigned int)maxBits);
+    bnPrealloc(curve->S1, (unsigned int)maxBits);
+    bnPrealloc(curve->t1, (unsigned int)maxBits);
+    bnPrealloc(curve->t2, (unsigned int)maxBits);
+    bnPrealloc(curve->t3, (unsigned int)maxBits);
 }
 
 int ecGetCurveNistECp(Curves curveId, EcCurve *curve)
@@ -332,6 +332,7 @@ int ecGetCurveNistECp(Curves curveId, EcCurve *curve)
 
     case NIST256P:
         cd = &nist256;
+        curve->modOp = newMod256; // avoids unused function warning
         curve->modOp = bnMod;
         break;
 
@@ -980,7 +981,7 @@ static int _random(unsigned char *output, size_t len)
 #include <cryptcommon/ZrtpRandom.h>
 static int _random(unsigned char *output, size_t len)
 {
-    return zrtp_getRandomData(output, len);
+    return zrtp_getRandomData(output, (uint32_t)len);
 }
 #endif
 
@@ -1008,7 +1009,7 @@ static int ecGenerateRandomNumberNist(const EcCurve *curve, BigNum *d)
     while (!bnCmpQ(d, 0)) {
         /* use _random function */
         _random(ran, randomBytes);
-        bnInsertBigBytes(&c, ran, 0, randomBytes);
+        bnInsertBigBytes(&c, ran, 0, (unsigned int)randomBytes);
         bnMod(d, &c, &nMinusOne);
         bnAddMod_(d, mpiOne, curve->p);
     }
@@ -1671,11 +1672,11 @@ static int newMod521(BigNum *r, const BigNum *a, const BigNum *modulo)
     }
     modSize = bnBytes(modulo);
 
-    bnExtractBigBytes(a, buf1, 0, modSize*2); /* a must be less modulo^2 */
+    bnExtractBigBytes(a, buf1, 0, (unsigned int)modSize*2); /* a must be less modulo^2 */
     buf1[modSize] &= 1;                   /* clear all bits except least significat */
 
     bnRShift(r, 521);
-    bnExtractBigBytes(r, buf2, 0, modSize*2);
+    bnExtractBigBytes(r, buf2, 0, (unsigned int)modSize*2);
     buf2[modSize] &= 1;
 
     p1 = &buf2[131];            /* p1 is pointer to A0 */
@@ -1685,7 +1686,7 @@ static int newMod521(BigNum *r, const BigNum *a, const BigNum *modulo)
         ac += *p1 + *p2--; *p1-- = ac; ac >>= 8;
     }
     bnSetQ(r, 0);
-    bnInsertBigBytes(r, p1+1, 0, modSize);
+    bnInsertBigBytes(r, p1+1, 0, (unsigned int)modSize);
 
     while (bnCmp(r, modulo) >= 0) {
         bnSub(r, modulo);
