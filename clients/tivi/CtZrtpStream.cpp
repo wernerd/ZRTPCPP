@@ -410,11 +410,11 @@ int CtZrtpStream::isSecure() {
 #if __WORDSIZE == 64
 #define T_ZRTP_L(_K,_I)                                                \
         if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0){              \
-            return snprintf(p, maxLen, "%ld", _I);}
+            return snprintf(p, maxLen, "%ld", (long)_I);}
 #else
 #define T_ZRTP_L(_K,_I)                                                \
         if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0){              \
-            return snprintf(p, maxLen, "%lld", _I);}
+            return snprintf(p, maxLen, "%lld", (long long)_I);}
 #endif
 
 int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
