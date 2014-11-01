@@ -61,94 +61,94 @@ public:
     virtual ~ZIDRecord() {};
 
     /**
-     * Set the @c ZID in the record.
+     * @brief Set the @c ZID in the record.
      *
      * Set the ZID in this record before calling read or save.
      */
     virtual void setZid(const unsigned char *zid) =0;
 
     /**
-     * Set @c valid flag in RS1
+     * @brief Set @c valid flag in RS1
      */
     virtual void setRs1Valid() =0;
 
     /**
-     * reset @c valid flag in RS1
+     * @brief Reset @c valid flag in RS1
      */
     virtual void resetRs1Valid()  =0;
 
     /**
-     * Check @c valid flag in RS1
+     * @brief Check @c valid flag in RS1
      */
     virtual bool isRs1Valid() =0;
 
     /**
-     * Set @c valid flag in RS2
+     * @brief Set @c valid flag in RS2
      */
     virtual void setRs2Valid() =0;
 
     /**
-     * Reset @c valid flag in RS2
+     * @brief Reset @c valid flag in RS2
      */
     virtual void resetRs2Valid() =0;
 
     /**
-     * Check @c valid flag in RS2
+     * @brief Check @c valid flag in RS2
      */
     virtual bool isRs2Valid() =0;
 
     /**
-     * Set MITM key available
+     * @brief Set MITM key available
      */
     virtual void setMITMKeyAvailable() =0;
 
     /**
-     * Reset MITM key available
+     * @brief Reset MITM key available
      */
     virtual void resetMITMKeyAvailable() =0;
 
     /**
-     * Check MITM key available is set
+     * @brief Check MITM key available is set
      */
     virtual bool isMITMKeyAvailable() =0;
 
     /**
-     * Mark this as own ZID record
+     * @brief Mark this as own ZID record
      */
     virtual void setOwnZIDRecord() =0;
 
     /**
-     * Reset own ZID record marker
+     * @brief Reset own ZID record marker
      */
     virtual void resetOwnZIDRecord() =0;
 
     /**
-     * Check own ZID record marker
+     * @brief Check own ZID record marker
      */
     virtual bool isOwnZIDRecord() =0;
 
     /**
-     * Set SAS for this ZID as verified
+     * @brief Set SAS for this ZID as verified
      */
     virtual void setSasVerified() =0;
 
     /**
-     * Reset SAS for this ZID as verified
+     * @brief Reset SAS for this ZID as verified
      */
     virtual void resetSasVerified() =0;
 
     /**
-     * Check if SAS for this ZID was verified
+     * @brief Check if SAS for this ZID was verified
      */
     virtual bool isSasVerified() =0;
 
     /**
-     * Return the ZID for this record
+     * @brief Return the ZID for this record
      */
     virtual const uint8_t* getIdentifier() =0;
 
     /**
-     * Check if RS1 is still valid
+     * @brief Check if RS1 is still valid
      *
      * Returns true if RS1 is still valid, false otherwise.
      *
@@ -158,12 +158,12 @@ public:
     virtual bool isRs1NotExpired() =0;
 
     /**
-     * Returns pointer to RS1 data.
+     * @brief Returns pointer to RS1 data.
      */
     virtual const unsigned char* getRs1() =0;
 
     /**
-     * Check if RS2 is still valid
+     * @brief Check if RS2 is still valid
      *
      * Returns true if RS2 is still valid, false otherwise.
      *
@@ -173,12 +173,12 @@ public:
     virtual bool isRs2NotExpired() =0;
 
     /**
-     * Returns pointer to RS1 data.
+     * @brief Returns pointer to RS1 data.
      */
     virtual const unsigned char* getRs2() =0;
 
     /**
-     * Sets new RS1 data and associated expiration value.
+     * @brief Sets new RS1 data and associated expiration value.
      *
      * If the expiration value is >0 or -1 the method stores the new
      * RS1. Before it stores the new RS1 it shifts the exiting RS1
@@ -201,13 +201,13 @@ public:
     virtual void setNewRs1(const unsigned char* data, int32_t expire =-1) =0;
 
     /**
-     * Set MiTM key data.
+     * @brief Set MiTM key data.
      *
      */
     virtual void setMiTMData(const unsigned char* data) =0;
 
     /**
-     * Get MiTM key data.
+     * @brief Get MiTM key data.
      *
      */
     virtual const unsigned char* getMiTMData() =0;
@@ -215,7 +215,7 @@ public:
     virtual int getRecordType() =0;
  
     /**
-     * Get the secure since field
+     * @brief Get the secure since field
      * 
      * Returns the secure since field or 0 if no such field is available. Secure since
      * uses the unixepoch.

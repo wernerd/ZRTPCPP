@@ -117,7 +117,7 @@ public:
     }
 
     /**
-     * Set the @c ZID in the record.
+     * @brief Set the @c ZID in the record.
      *
      * Set the ZID in this record before calling read or save.
      */
@@ -126,85 +126,85 @@ public:
     }
 
     /**
-     * Set @c valid flag in RS1
+     * @brief Set @c valid flag in RS1
      */
     void setRs1Valid()   { record.flags |= RS1Valid; }
 
     /**
-     * reset @c valid flag in RS1
+     * @brief Reset @c valid flag in RS1
      */
     void resetRs1Valid() { record.flags &= ~RS1Valid; }
 
     /**
-     * Check @c valid flag in RS1
+     * @brief Check @c valid flag in RS1
      */
     bool isRs1Valid()    { return ((record.flags & RS1Valid) == RS1Valid); }
 
     /**
-     * Set @c valid flag in RS2
+     * @brief Set @c valid flag in RS2
      */
     void setRs2Valid()   { record.flags |= RS2Valid; }
 
     /**
-     * Reset @c valid flag in RS2
+     * @brief Reset @c valid flag in RS2
      */
     void resetRs2Valid() { record.flags &= ~RS2Valid; }
 
     /**
-     * Check @c valid flag in RS2
+     * @brief Check @c valid flag in RS2
      */
     bool isRs2Valid()    { return ((record.flags & RS2Valid) == RS2Valid); }
 
     /**
-     * Set MITM key available
+     * @brief Set MITM key available
      */
     void setMITMKeyAvailable()    { record.flags |= MITMKeyAvailable; }
 
     /**
-     * Reset MITM key available
+     * @brief Reset MITM key available
      */
     void resetMITMKeyAvailable()  { record.flags &= ~MITMKeyAvailable; }
 
     /**
-     * Check MITM key available is set
+     * @brief Check MITM key available is set
      */
     bool isMITMKeyAvailable()     { return ((record.flags & MITMKeyAvailable) == MITMKeyAvailable); }
 
     /**
-     * Mark this as own ZID record
+     * @brief Mark this as own ZID record
      */
     void setOwnZIDRecord()  { record.flags = OwnZIDRecord; }
     /**
-     * Reset own ZID record marker
+     * @brief Reset own ZID record marker
      */
     void resetOwnZIDRecord(){ record.flags = 0; }
 
     /**
-     * Check own ZID record marker
+     * @brief Check own ZID record marker
      */
     bool isOwnZIDRecord()   { return (record.flags == OwnZIDRecord); }  // no other flag allowed if own ZID
 
     /**
-     * Set SAS for this ZID as verified
+     * @brief Set SAS for this ZID as verified
      */
     void setSasVerified()   { record.flags |= SASVerified; }
     /**
-     * Reset SAS for this ZID as verified
+     * @brief Reset SAS for this ZID as verified
      */
     void resetSasVerified() { record.flags &= ~SASVerified; }
 
     /**
-     * Check if SAS for this ZID was verified
+     * @brief Check if SAS for this ZID was verified
      */
     bool isSasVerified()    { return ((record.flags & SASVerified) == SASVerified); }
 
     /**
-     * Return the ZID for this record
+     * @brief Return the ZID for this record
      */
     const uint8_t* getIdentifier() {return record.identifier; }
 
     /**
-     * Check if RS1 is still valid
+     * @brief Check if RS1 is still valid
      *
      * Returns true if RS1 is still valid, false otherwise.
      *
@@ -214,12 +214,12 @@ public:
     bool isRs1NotExpired();
 
     /**
-     * Returns pointer to RS1 data.
+     * @brief Returns pointer to RS1 data.
      */
     const unsigned char* getRs1() { return record.rs1Data; }
 
     /**
-     * Check if RS2 is still valid
+     * @brief Check if RS2 is still valid
      *
      * Returns true if RS2 is still valid, false otherwise.
      *
@@ -229,12 +229,12 @@ public:
     bool isRs2NotExpired();
 
     /**
-     * Returns pointer to RS1 data.
+     * @brief Returns pointer to RS1 data.
      */
     const unsigned char* getRs2() { return record.rs2Data; }
 
     /**
-     * Sets new RS1 data and associated expiration value.
+     * @brief Sets new RS1 data and associated expiration value.
      *
      * If the expiration value is >0 or -1 the method stores the new
      * RS1. Before it stores the new RS1 it shifts the exiting RS1
@@ -257,18 +257,26 @@ public:
     void setNewRs1(const unsigned char* data, int32_t expire =-1);
 
     /**
-     * Set MiTM key data.
+     * @brief Set MiTM key data.
      *
      */
     void setMiTMData(const unsigned char* data);
 
     /**
-     * Get MiTM key data.
+     * @brief Get MiTM key data.
      *
      */
     const unsigned char* getMiTMData() {return record.mitmKey; }
 
     int getRecordType() {return FILE_TYPE_RECORD; }
+    
+    /**
+     * @brief Get Secure since date.
+     * 
+     * The file based cache implementation does not support this datum, thus return 0
+     * 
+     */
+    int64_t getSecureSince() { return 0; }
 };
 
 #endif // ZIDRECORDSMALL
