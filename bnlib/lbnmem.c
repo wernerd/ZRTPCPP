@@ -66,11 +66,20 @@ void free();
 
 #include "kludge.h"
 
+/*
+ * memset_volatile is a volatile pointer to the memset function.
+ * You can call (*memset_volatile)(buf, val, len) or even
+ * memset_volatile(buf, val, len) just as you would call
+ * memset(buf, val, len), but the use of a volatile pointer
+ * guarantees that the compiler will not optimise the call away.
+ */
+static void * (*volatile memset_volatile)(void *, int, size_t) = memset;
+
 #ifndef lbnMemWipe
 void
 lbnMemWipe(void *ptr, unsigned bytes)
 {
-	memset(ptr, 0, bytes);
+	(*memset_volatile)(ptr, 0, bytes);
 }
 #define lbnMemWipe(ptr, bytes) memset(ptr, 0, bytes)
 #endif

@@ -110,34 +110,43 @@ labelBase(3), macCtx(NULL), cipher(NULL), f8Cipher(NULL)        // SRTCP labels 
     }
 }
 
+/*
+ * memset_volatile is a volatile pointer to the memset function.
+ * You can call (*memset_volatile)(buf, val, len) or even
+ * memset_volatile(buf, val, len) just as you would call
+ * memset(buf, val, len), but the use of a volatile pointer
+ * guarantees that the compiler will not optimise the call away.
+ */
+static void * (*volatile memset_volatile)(void *, int, size_t) = memset;
+
 CryptoContextCtrl::~CryptoContextCtrl(){
 
     if (mki)
         delete [] mki;
 
     if (master_key_length > 0) {
-        memset(master_key, 0, master_key_length);
+        memset_volatile(master_key, 0, master_key_length);
         master_key_length = 0;
         delete [] master_key;
     }
     if (master_salt_length > 0) {
-        memset(master_salt, 0, master_salt_length);
+        memset_volatile(master_salt, 0, master_salt_length);
         master_salt_length = 0;
         delete [] master_salt;
     }
     if (n_e > 0) {
-        memset(k_e, 0, n_e);
+        memset_volatile(k_e, 0, n_e);
         n_e = 0;
         delete [] k_e;
     }
     if (n_s > 0) {
-        memset(k_s, 0, n_s);
+        memset_volatile(k_s, 0, n_s);
         n_s = 0;
         delete [] k_s;
     }
     if (n_a > 0) {
         n_a = 0;
-        memset(k_a, 0, n_a);
+        memset_volatile(k_a, 0, n_a);
         delete [] k_a;
     }
     if (cipher != NULL) {

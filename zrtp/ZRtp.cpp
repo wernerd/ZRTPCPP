@@ -1852,6 +1852,15 @@ void ZRtp::computeAuxSecretIds() {
 }
 
 /*
+ * memset_volatile is a volatile pointer to the memset function.
+ * You can call (*memset_volatile)(buf, val, len) or even
+ * memset_volatile(buf, val, len) just as you would call
+ * memset(buf, val, len), but the use of a volatile pointer
+ * guarantees that the compiler will not optimise the call away.
+ */
+static void * (*volatile memset_volatile)(void *, int, size_t) = memset;
+
+/*
  * The DH packet for this function is DHPart1 and contains the Responder's
  * retained secret ids. Compare them with the expected secret ids (refer
  * to chapter 5.3 in the specification).
@@ -2012,7 +2021,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
     hashListFunction(data, length, s0);
 //  hexdump("S0 I", s0, hashLength);
 
-    memset(DHss, 0, dhContext->getDhSize());
+    memset_volatile(DHss, 0, dhContext->getDhSize());
     delete[] DHss;
     DHss = NULL;
 
@@ -2179,7 +2188,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
     hashListFunction(data, length, s0);
 //  hexdump("S0 R", s0, hashLength);
 
-    memset(DHss, 0, dhContext->getDhSize());
+    memset_volatile(DHss, 0, dhContext->getDhSize());
     delete[] DHss;
     DHss = NULL;
 

@@ -29,6 +29,15 @@ static CMutexClass lockRandom;
 static bool initialized = false;
 
 /*
+ * memset_volatile is a volatile pointer to the memset function.
+ * You can call (*memset_volatile)(buf, val, len) or even
+ * memset_volatile(buf, val, len) just as you would call
+ * memset(buf, val, len), but the use of a volatile pointer
+ * guarantees that the compiler will not optimise the call away.
+ */
+static void * (*volatile memset_volatile)(void *, int, size_t) = memset;
+
+/*
  * Random bits are produced as follows.
  * First stir new entropy into the random state (zrtp->rand_ctx).
  * Then make a copy of the random context and finalize it.
@@ -91,11 +100,11 @@ int ZrtpRandom::getRandomData(uint8_t* buffer, uint32_t length) {
             }
         }
     }
-    memset(&randCtx2, 0, sizeof(randCtx2));
-    memset(md, 0, sizeof(md));
-    memset(&aesCtx, 0, sizeof(aesCtx));
-    memset(ctr, 0, sizeof(ctr));
-    memset(rdata, 0, sizeof(rdata));
+    memset_volatile(&randCtx2, 0, sizeof(randCtx2));
+    memset_volatile(md, 0, sizeof(md));
+    memset_volatile(&aesCtx, 0, sizeof(aesCtx));
+    memset_volatile(ctr, 0, sizeof(ctr));
+    memset_volatile(rdata, 0, sizeof(rdata));
 
     return generated;
 }

@@ -1314,7 +1314,15 @@ int Twofish_initialise()
 static unsigned int rs_poly_const[] = {0, 0x14d}; 
 static unsigned int rs_poly_div_const[] = {0, 0xa6 }; 
  
- 
+/*
+ * memset_volatile is a volatile pointer to the memset function.
+ * You can call (*memset_volatile)(buf, val, len) or even
+ * memset_volatile(buf, val, len) just as you would call
+ * memset(buf, val, len), but the use of a volatile pointer
+ * guarantees that the compiler will not optimise the call away.
+ */
+static void * (*volatile memset_volatile)(void *, int, size_t) = memset;
+
 /* 
  * Prepare a key for use in encryption and decryption. 
  * Like most block ciphers, Twofish allows the key schedule  
@@ -1576,7 +1584,7 @@ int Twofish_prepare_key( Twofish_Byte key[], int key_len, Twofish_key * xkey )
     fill_keyed_sboxes( &K[32], kCycles, xkey ); 
  
     /* Wipe array that contained key material. */ 
-    memset( K, 0, sizeof( K ) );
+    (*memset_volatile)( K, 0, sizeof( K ) );
     return SUCCESS;
     } 
  
