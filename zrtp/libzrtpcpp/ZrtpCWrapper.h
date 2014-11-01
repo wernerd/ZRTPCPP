@@ -252,7 +252,9 @@ typedef struct c_srtpSecrets
 #define ForSender   2       /*!< Enable security for SRTP sender */
 
 #ifdef __cplusplus
+#ifdef __GNUC__ 
 #pragma GCC visibility push(default)
+#endif
 extern "C"
 {
 #endif
@@ -974,8 +976,10 @@ extern "C"
      *    if it does not use the string anymore.
      */
     const char* zrtp_getSasType(ZrtpContext* zrtpContext);
+#ifdef  __GNUC__ 
 #warning zrtp_getSasType(...) API changed - caller shall free() returned data
- 
+#endif
+
     /**
      * Get the computed SAS hash for this ZRTP session.
      * 
@@ -1363,7 +1367,9 @@ extern "C"
 
 #ifdef __cplusplus
 }
+#ifdef __GNUC__ 
 #pragma GCC visibility pop
+#endif
 #endif
 
 /**
