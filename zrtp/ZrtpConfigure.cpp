@@ -73,7 +73,17 @@ static AlgorithmEnum invalidAlgo(Invalid, "", 0, "", NULL, NULL, None);
 EnumBase::EnumBase(AlgoTypes a) : algoType(a) {
 }
 
-EnumBase::~EnumBase() {}
+
+EnumBase::~EnumBase() {
+    std::vector<AlgorithmEnum* >::iterator b = algos.begin();
+    std::vector<AlgorithmEnum* >::iterator e = algos.end();
+
+    for (; b != e; b++) {
+        if (*b) {
+            delete *b;
+        }
+    }
+}
 
 void EnumBase::insert(const char* name) {
     if (!name)
