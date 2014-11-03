@@ -259,9 +259,9 @@ extern "C"
 {
 #endif
 
-    typedef struct ZRtp ZRtp;
-    typedef struct ZrtpCallbackWrapper ZrtpCallbackWrapper;
-    typedef struct ZrtpConfigure ZrtpConfigure;
+    typedef class ZRtp ZRtp;
+    typedef class ZrtpCallbackWrapper ZrtpCallbackWrapper;
+    typedef class ZrtpConfigure ZrtpConfigure;
 
 
     typedef struct zrtpContext

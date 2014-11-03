@@ -3,6 +3,10 @@
 
 #include "twofish.h"
 
+#ifdef ANDROID
+void Two_debugDummy(Twofish_Byte* in, Twofish_Byte* out, Twofish_Byte* ivec);
+#endif
+
 void Twofish_cfb128_encrypt(Twofish_key* keyCtx, Twofish_Byte* in, 
 			    Twofish_Byte* out, size_t len,
 			    Twofish_Byte* ivec, int32_t *num)
