@@ -35,7 +35,7 @@
  */
 
 #ifndef __EXPORT
-  #if (defined _WIN32 || defined __CYGWIN__) && defined(_DLL)
+  #if (defined _WIN32 || defined __CYGWIN__) && defined(_WINDLL)
     #define __EXPORT    __declspec(dllimport)
     #define __LOCAL
   #elif __GNUC__ >= 4

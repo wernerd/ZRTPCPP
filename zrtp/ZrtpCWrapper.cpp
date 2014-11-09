@@ -330,11 +330,15 @@ int32_t zrtp_getPeerZid(ZrtpContext* zrtpContext, uint8_t* data) {
 }
 
 int32_t zrtp_getNumberSupportedVersions(ZrtpContext* zrtpContext) {
-    return zrtpContext->zrtpEngine->getNumberSupportedVersions();
+    if (zrtpContext && zrtpContext->zrtpEngine)
+        return zrtpContext->zrtpEngine->getNumberSupportedVersions();
+    return -1;
 }
 
 int32_t zrtp_getCurrentProtocolVersion(ZrtpContext* zrtpContext) {
-    return zrtpContext->zrtpEngine->getCurrentProtocolVersion();
+    if (zrtpContext && zrtpContext->zrtpEngine)
+        return zrtpContext->zrtpEngine->getCurrentProtocolVersion();
+    return -1;
 }
 /*
  * The following methods wrap the ZRTP Configure functions
@@ -380,12 +384,12 @@ char** zrtp_getAlgorithmNames(ZrtpContext* zrtpContext, Zrtp_AlgoTypes type)
 
     if (!base)
         return NULL;
-    
+
     names = base->getAllNames();
     int size = base->getSize();
     char** cNames = new char* [size+1];
     cNames[size] = NULL;
-    
+
     std::list<std::string >::iterator b = names->begin();
     std::list<std::string >::iterator e = names->end();
 
@@ -409,73 +413,98 @@ void zrtp_freeAlgorithmNames(char** names)
 
 void zrtp_setStandardConfig(ZrtpContext* zrtpContext)
 {
-    zrtpContext->configure->setStandardConfig();
+    if (zrtpContext && zrtpContext->configure)
+        zrtpContext->configure->setStandardConfig();
 }
 
 void zrtp_setMandatoryOnly(ZrtpContext* zrtpContext)
 {
-    zrtpContext->configure->setMandatoryOnly();
+    if (zrtpContext && zrtpContext->configure)
+        zrtpContext->configure->setMandatoryOnly();
 }
 
 int32_t zrtp_addAlgo(ZrtpContext* zrtpContext, zrtp_AlgoTypes algoType, const char* algo)
 {
     EnumBase* base = getEnumBase(algoType);
-    AlgorithmEnum& a = base->getByName(algo);
-
-    return zrtpContext->configure->addAlgo((AlgoTypes)algoType, a);
+    if (base) {
+        AlgorithmEnum& a = base->getByName(algo);
+        if (zrtpContext && zrtpContext->configure)
+            return zrtpContext->configure->addAlgo((AlgoTypes)algoType, a);
+    }
+    return -1;
 }
 
 int32_t zrtp_addAlgoAt(ZrtpContext* zrtpContext, zrtp_AlgoTypes algoType, const char* algo, int32_t index)
 {
     EnumBase* base = getEnumBase(algoType);
-    AlgorithmEnum& a = base->getByName(algo);
-
-    return zrtpContext->configure->addAlgoAt((AlgoTypes)algoType, a, index);
+    if (base) {
+        AlgorithmEnum& a = base->getByName(algo);
+        if (zrtpContext && zrtpContext->configure)
+            return zrtpContext->configure->addAlgoAt((AlgoTypes)algoType, a, index);
+    }
+    return -1;
 }
 
 int32_t zrtp_removeAlgo(ZrtpContext* zrtpContext, zrtp_AlgoTypes algoType, const char* algo)
 {
     EnumBase* base = getEnumBase(algoType);
-    AlgorithmEnum& a = base->getByName(algo);
-
-    return zrtpContext->configure->removeAlgo((AlgoTypes)algoType, a);
+    if (base) {
+        AlgorithmEnum& a = base->getByName(algo);
+        if (zrtpContext && zrtpContext->configure)
+            return zrtpContext->configure->removeAlgo((AlgoTypes)algoType, a);
+    }
+    return -1;
 }
 
 int32_t zrtp_getNumConfiguredAlgos(ZrtpContext* zrtpContext, zrtp_AlgoTypes algoType)
 {
-    return zrtpContext->configure->getNumConfiguredAlgos((AlgoTypes)algoType);
+    if (zrtpContext && zrtpContext->configure)
+        return zrtpContext->configure->getNumConfiguredAlgos((AlgoTypes)algoType);
+    return -1;
 }
 
 const char* zrtp_getAlgoAt(ZrtpContext* zrtpContext, Zrtp_AlgoTypes algoType, int32_t index)
 {
+    if (zrtpContext && zrtpContext->configure) {
        AlgorithmEnum& a = zrtpContext->configure->getAlgoAt((AlgoTypes)algoType, index);
        return a.getName();
+    }
+    return NULL;
 }
 
 int32_t zrtp_containsAlgo(ZrtpContext* zrtpContext, Zrtp_AlgoTypes algoType, const char*  algo)
 {
     EnumBase* base = getEnumBase(algoType);
-    AlgorithmEnum& a = base->getByName(algo);
-
-    return zrtpContext->configure->containsAlgo((AlgoTypes)algoType, a) ? 1 : 0;
+    if (base) {
+        AlgorithmEnum& a = base->getByName(algo);
+        if (zrtpContext && zrtpContext->configure)
+            return zrtpContext->configure->containsAlgo((AlgoTypes)algoType, a) ? 1 : 0;
+    }
+    return 0;
 }
 
 void zrtp_setTrustedMitM(ZrtpContext* zrtpContext, int32_t yesNo)
 {
-    zrtpContext->configure->setTrustedMitM(yesNo ? true : false);
+    if (zrtpContext && zrtpContext->configure)
+        zrtpContext->configure->setTrustedMitM(yesNo ? true : false);
 }
 
 int32_t zrtp_isTrustedMitM(ZrtpContext* zrtpContext)
 {
-    return zrtpContext->configure->isTrustedMitM() ? 1 : 0;
+    if (zrtpContext && zrtpContext->configure)
+        return zrtpContext->configure->isTrustedMitM() ? 1 : 0;
+    return 0;        /* standard setting: trustedMitM is false, thus if zrtp not initialized it's always false */
 }
 
 void zrtp_setSasSignature(ZrtpContext* zrtpContext, int32_t yesNo)
 {
-    zrtpContext->configure->setSasSignature(yesNo ? true : false);
+    if (zrtpContext && zrtpContext->configure)
+        zrtpContext->configure->setSasSignature(yesNo ? true : false);
 }
 
 int32_t zrtp_isSasSignature(ZrtpContext* zrtpContext)
 {
-    return zrtpContext->configure->isSasSignature() ? 1 : 0;
+    if (zrtpContext && zrtpContext->configure)
+        return zrtpContext->configure->isSasSignature() ? 1 : 0;
+    return 0;       /* standard setting: sasSignature is false, thus if zrtp not initialized it's always false */
 }

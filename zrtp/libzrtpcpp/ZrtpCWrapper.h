@@ -257,12 +257,14 @@ typedef struct c_srtpSecrets
 #endif
 extern "C"
 {
-#endif
-
     typedef class ZRtp ZRtp;
     typedef class ZrtpCallbackWrapper ZrtpCallbackWrapper;
     typedef class ZrtpConfigure ZrtpConfigure;
-
+#else
+    typedef struct ZRtp ZRtp;
+    typedef struct ZrtpCallbackWrapper ZrtpCallbackWrapper;
+    typedef struct ZrtpConfigure ZrtpConfigure;
+#endif
 
     typedef struct zrtpContext
     {
@@ -1091,7 +1093,8 @@ extern "C"
       * @param zrtpContext
       *    Pointer to the opaque ZrtpContext structure.
       *
-      * @return the number of supported ZRTP protocol versions.
+      * @return the number of supported ZRTP protocol versions or -1 in case
+      *         of an error, for example non-initialized data.
       */
      int32_t zrtp_getNumberSupportedVersions(ZrtpContext* zrtpContext);
 
@@ -1101,7 +1104,8 @@ extern "C"
       * @param zrtpContext
       *    Pointer to the opaque ZrtpContext structure.
       *
-      * @return the integer representation of the negotiated ZRTP protocol version.
+      * @return the integer representation of the negotiated ZRTP protocol version
+      *         of -1 in case of an error, for example non-initialized data.
       */
      int32_t zrtp_getCurrentProtocolVersion(ZrtpContext* zrtpContext);
 
@@ -1269,7 +1273,7 @@ extern "C"
      * @param algo
      *    The name of the algorithm to remove.
      * @return
-     *    Number of free configuration slots.
+     *    Number of free configuration slots or -1 on error
      */
     int32_t zrtp_removeAlgo(ZrtpContext* zrtpContext, Zrtp_AlgoTypes algoType, const char* algo);
 
@@ -1282,7 +1286,7 @@ extern "C"
      *    Specifies which algorithm type to select
      * @return
      *    The number of configured algorithms (used configuration
-     *    data slots)
+     *    data slots) or -1 on error
      */
     int32_t zrtp_getNumConfiguredAlgos(ZrtpContext* zrtpContext, Zrtp_AlgoTypes algoType);
 
