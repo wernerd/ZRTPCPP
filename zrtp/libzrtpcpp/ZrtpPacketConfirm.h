@@ -58,10 +58,10 @@ class __EXPORT ZrtpPacketConfirm : public ZrtpPacketBase {
         virtual ~ZrtpPacketConfirm();
 
         /// Check if SAS verify flag is set
-        const bool isSASFlag()            { return confirmHeader->flags & 0x4; }
+        const bool isSASFlag()            { return (confirmHeader->flags & 0x4) == 0x4 ? true : false; }
 
         /// Check if PBXEnrollment flag is set
-        const bool isPBXEnrollment()      { return confirmHeader->flags & 0x8; }
+        const bool isPBXEnrollment()      { return (confirmHeader->flags & 0x8) == 0x8 ? true : false; }
 
         /// Get pointer to filler bytes (contains one bit of signature length)
         const uint8_t* getFiller()        { return confirmHeader->filler; }

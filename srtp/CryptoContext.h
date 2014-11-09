@@ -415,7 +415,6 @@ public:
 private:
 
     uint32_t ssrcCtx;
-    bool   using_mki;
     uint32_t mkiLength;
     uint8_t* mki;
 
@@ -429,8 +428,6 @@ private:
 
     uint8_t* master_key;
     uint32_t master_key_length;
-    uint32_t master_key_srtp_use_nb;
-    uint32_t master_key_srtcp_use_nb;
     uint8_t* master_salt;
     uint32_t master_salt_length;
 

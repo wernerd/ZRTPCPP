@@ -45,10 +45,9 @@ CryptoContext::CryptoContext( uint32_t ssrc,
                               int32_t skeyl,
                               int32_t tagLength):
 
-        ssrcCtx(ssrc),using_mki(false),mkiLength(0),mki(NULL), roc(roc),guessed_roc(0),
-        s_l(0),key_deriv_rate(key_deriv_rate), master_key_srtp_use_nb(0),
-        master_key_srtcp_use_nb(0), labelBase(0), seqNumSet(false), macCtx(NULL), cipher(NULL),
-        f8Cipher(NULL)
+        ssrcCtx(ssrc), mkiLength(0),mki(NULL), roc(roc),guessed_roc(0),
+        s_l(0),key_deriv_rate(key_deriv_rate), labelBase(0), seqNumSet(false), 
+        macCtx(NULL), cipher(NULL), f8Cipher(NULL)
 {
     replay_window[0] = replay_window[1] = 0;
     this->ealg = ealg;

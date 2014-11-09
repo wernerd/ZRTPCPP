@@ -110,13 +110,13 @@ class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
     void setZid(uint8_t *text)         { memcpy(helloHeader->zid, text, sizeof(helloHeader->zid)); }
 
     /// Check passive mode (mode not implemented)
-    bool isPassive()       { return helloHeader->flags & 0x10; };
+    bool isPassive()       { return (helloHeader->flags & 0x10) == 0x10 ? true : false; };
 
     /// Check if MitM flag is set
-    bool isMitmMode()       { return helloHeader->flags & 0x20; };
+    bool isMitmMode()       { return (helloHeader->flags & 0x20) == 0x20 ? true : false; };
 
     /// Check if SAS sign flag is set
-    bool isSasSign()       { return helloHeader->flags & 0x40; };
+    bool isSasSign()       { return (helloHeader->flags & 0x40) == 0x40 ? true : false; };
 
     /// Get hash algorithm name at position n, fixed ASCII character array
     uint8_t* getHashType(int32_t n)   { return ((uint8_t*)helloHeader)+oHash+(n*ZRTP_WORD_SIZE); }

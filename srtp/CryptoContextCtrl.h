@@ -295,7 +295,6 @@ class CryptoContextCtrl {
     private:
 
         uint32_t ssrcCtx;
-        bool   using_mki;
         uint32_t mkiLength;
         uint8_t* mki;
 

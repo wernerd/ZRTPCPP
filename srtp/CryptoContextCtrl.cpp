@@ -45,7 +45,7 @@ CryptoContextCtrl::CryptoContextCtrl(uint32_t ssrc,
                                 int32_t akeyl,
                                 int32_t skeyl,
                                 int32_t tagLength):
-ssrcCtx(ssrc),using_mki(false),mkiLength(0),mki(NULL), replay_window(0), srtcpIndex(0),
+ssrcCtx(ssrc), mkiLength(0),mki(NULL), replay_window(0), srtcpIndex(0),
 labelBase(3), macCtx(NULL), cipher(NULL), f8Cipher(NULL)        // SRTCP labels start at 3
 
 {

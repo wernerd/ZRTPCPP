@@ -58,7 +58,7 @@ class __EXPORT ZrtpPacketSASrelay : public ZrtpPacketBase {
         virtual ~ZrtpPacketSASrelay();
 
         /// Check is SAS verify flag is set
-        const bool isSASFlag()            { return sasRelayHeader->flags & 0x4; }
+        const bool isSASFlag()            { return (sasRelayHeader->flags & 0x4) == 0x4 ? true : false; }
 
         /// Get pointer to filler bytes (contains one bit of signature length)
         const uint8_t* getFiller()        { return sasRelayHeader->filler; }
