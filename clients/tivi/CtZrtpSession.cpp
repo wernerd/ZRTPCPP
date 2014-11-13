@@ -25,7 +25,7 @@ const char *getZrtpBuildInfo()
     return zrtpBuildInfo;
 }
 CtZrtpSession::CtZrtpSession() : mitmMode(false), signSas(false), enableParanoidMode(false), isReady(false),
-    zrtpEnabled(true), sdesEnabled(true) {
+    zrtpEnabled(true), sdesEnabled(true), discriminatorMode(false) {
 
     clientIdString = clientId;
     streams[AudioStream] = NULL;
@@ -82,6 +82,7 @@ int CtZrtpSession::init(bool audio, bool video, ZrtpConfigure* config)
             stream->type = Master;
             stream->index = AudioStream;
             stream->session = this;
+            stream->discriminatorMode = discriminatorMode;
         }
         if (video) {
             if (streams[VideoStream] == NULL)
@@ -91,6 +92,7 @@ int CtZrtpSession::init(bool audio, bool video, ZrtpConfigure* config)
             stream->type = Slave;
             stream->index = VideoStream;
             stream->session = this;
+            stream->discriminatorMode = discriminatorMode;
         }
         isReady = true;
     }
@@ -654,6 +656,14 @@ void CtZrtpSession::setAuxSecret(const unsigned char *secret, int length) {
         return;
 
     stream->setAuxSecret(secret, length);
+}
+
+void CtZrtpSession::setDiscriminatorMode ( bool on ) {
+    discriminatorMode = on;
+}
+
+bool CtZrtpSession::isDiscriminatorMode() {
+    return discriminatorMode;
 }
 
 void CtZrtpSession::cleanCache() {

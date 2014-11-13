@@ -42,7 +42,7 @@ public:
 
     CtZrtpSession::tiviStatus getCurrentState() {return tiviState;}
 
-    CtZrtpSession::tiviStatus  getPreviousState() {return prevTiviState;}
+    CtZrtpSession::tiviStatus getPreviousState() {return prevTiviState;}
 
 protected:
 
@@ -61,6 +61,7 @@ protected:
     bool              enableZrtp;          //!< Enable the streams ZRTP engine
     bool              started;             //!< This stream's ZRTP engine is started
     bool              isStopped;           //!< Stream stopped by Tivi
+    bool              discriminatorMode;   //!< If true use the security discriminator mode
     CtZrtpSession     *session;
 
     CtZrtpStream();

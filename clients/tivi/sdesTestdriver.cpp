@@ -86,6 +86,10 @@ class TestCallbackAudio: public CtZrtpCb {
         fprintf(stderr, "Warning: %s\n", p == NULL ? "NULL" : p);
     }
 
+    void onDiscriminatorException(CtZrtpSession *session, char *p, CtZrtpSession::streamName streamNm) {
+        fprintf(stderr, "Discriminator: %s\n", p == NULL ? "NULL" : p);
+    }
+
 };
 
 class TestSendCallbackAudio: public CtZrtpSendCb {

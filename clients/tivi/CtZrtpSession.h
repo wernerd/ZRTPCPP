@@ -674,6 +674,20 @@ public:
      */
     void setAuxSecret(const unsigned char *secret, int length);
 
+    /**
+     * @brief Enable or diable the security discriminator mode of this session.
+     * 
+     * @param on Enable discriminator mode if true, disable if false.
+     */
+    void setDiscriminatorMode(bool on);
+
+    /**
+     * @brief Return status of discriminator mode of this session.
+     * 
+     * @return @c true is discriminator mode is enable, false otherwise.
+     */
+    bool isDiscriminatorMode();
+
 protected:
     friend class CtZrtpStream;
 
@@ -705,6 +719,7 @@ private:
     bool isReady;
     bool zrtpEnabled;
     bool sdesEnabled;
+    bool discriminatorMode;
 };
 
 #endif /* _CTZRTPSESSION_H_ */

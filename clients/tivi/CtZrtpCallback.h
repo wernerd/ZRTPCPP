@@ -36,6 +36,7 @@ public:
     virtual void onNeedEnroll(CtZrtpSession *session, CtZrtpSession::streamName streamNm, int32_t info) =0;
     virtual void onPeer(CtZrtpSession *session, char *name, int iIsVerified, CtZrtpSession::streamName streamNm) =0;
     virtual void onZrtpWarning(CtZrtpSession *session, char *p, CtZrtpSession::streamName streamNm) =0;
+    virtual void onDiscriminatorException(CtZrtpSession *session, char *message, CtZrtpSession::streamName streamNm) =0;
 };
 
 

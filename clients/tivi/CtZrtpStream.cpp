@@ -43,6 +43,10 @@ static int initialized = 0;
 static const char* peerHelloMismatchMsg = "s2_c050: Received Hello hash does not match computed Hello hash"; 
 static const char* srtpDecodeFailedMsg  = "s2_c051: Parsing of received SRTP packet failed"; 
 static const char* zrtpEncap = "zrtp";
+static const char* noLocalSrtp          = "s3_c103: Local SRTP not enabled.";
+//static const char* zrtpHashMismatch     = "s3_c106: SIP ZRTP-hash failed to match Hello message.";
+static const char* noZrtpTunnel         = "s3_c104: ZRTP tunneling not enabled.";
+static const char* noZrtpHashInSip      = "s3_c105: No ZRTP-hash received in SIP.";
 
 using namespace GnuZrtpCodes;
 
@@ -69,7 +73,7 @@ static void zrtp_log( const char *tag, const char *buf){
 CtZrtpStream::CtZrtpStream():
     index(CtZrtpSession::AudioStream), type(CtZrtpSession::NoStream), zrtpEngine(NULL),
     ownSSRC(0), zrtpProtect(0), sdesProtect(0), zrtpUnprotect(0), sdesUnprotect(0), unprotectFailed(0),
-    enableZrtp(0), started(false), isStopped(false), session(NULL), tiviState(CtZrtpSession::eLookingPeer),
+    enableZrtp(0), started(false), isStopped(false), discriminatorMode(false), session(NULL), tiviState(CtZrtpSession::eLookingPeer),
     prevTiviState(CtZrtpSession::eLookingPeer), recvSrtp(NULL), recvSrtcp(NULL), sendSrtp(NULL), sendSrtcp(NULL),
     zrtpUserCallback(NULL), zrtpSendCallback(NULL), senderZrtpSeqNo(0), peerSSRC(0), zrtpHashMatch(false),
     sasVerified(false), helloReceived(false), useSdesForMedia(false), useZrtpTunnel(false), zrtpEncapSignaled(false), 
@@ -78,7 +82,6 @@ CtZrtpStream::CtZrtpStream():
 {
     synchLock = new CMutexClass();
 
-    // TODO: do we need mutex or can tivi do it
     if (staticTimeoutProvider == NULL) {
         staticTimeoutProvider = new TimeoutProvider<std::string, CtZrtpStream*>();
         staticTimeoutProvider->Event(&staticTimeoutProvider);  // Event argument is dummy, not used
@@ -120,6 +123,7 @@ void CtZrtpStream::stopStream() {
     enableZrtp = 0;
     started = false;
     isStopped = false;
+    discriminatorMode = false;
     peerSSRC = 0;
 
     zrtpUnprotect = 0;
@@ -183,6 +187,15 @@ bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *ne
             rc = sdes->outgoingRtp(buffer, length, newLength);
             sdesProtect++;
         }
+         /* In discriminator mode:
+          * No ZRTP/SRTP and no SDES/SRTP available
+          * If we would send RTP rather than SRTP for any reason, we must drop the call.
+          */
+        else if (discriminatorMode) {
+            if (zrtpUserCallback != NULL)
+                zrtpUserCallback->onDiscriminatorException(session, (char*)noLocalSrtp, index);
+            return false;
+        }
         return rc;
     }
     // At this point ZRTP/SRTP is active
@@ -210,6 +223,14 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
         if (recvSrtp == NULL) {                 // no ZRTP/SRTP available
             if (!useSdesForMedia || sdes == NULL) {  // no SDES stream available, just set length and return
                 *newLength = length;
+                /*
+                 * In discriminator mode:
+                 * If we receive RTP rather than SRTP we must silently discard the packets.
+                 * No message (discard silently)
+                 */
+                if (discriminatorMode) {
+                    return 0;                   // discards packet silently
+                }
                 return 1;
             }
             rc = sdes->incomingRtp(buffer, length, newLength);
@@ -303,6 +324,14 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
             useLength = newLength + CRC_SIZE;                  // length check assumes a ZRTP CRC
         }
         else {
+            /*
+             * In discriminator mode:
+             * If we receive a ZRTP packet not tunneled in SRTP it must be silently discarded.
+             * No message (discard silently)
+             */
+            if (discriminatorMode) {
+                return 0;
+            }
             DEBUG(char tmpBuffer[500];)
             useZrtpTunnel = false;
             // Get CRC value into crc (see above how to compute the offset)
@@ -365,6 +394,7 @@ void CtZrtpStream::setSignalingHelloHash(const char *hHash) {
     if (!found)
         peerHelloHashes.push_back(hashStr);
 
+    // Could be empty in case Hello was not yet received, will be handled in sendInfo(...) function
     std::string ph = zrtpEngine->getPeerHelloHash();
     if (ph.empty()) {
         synchLeave();
@@ -389,8 +419,16 @@ void CtZrtpStream::setSignalingHelloHash(const char *hHash) {
             break;
         }
     }
-    if (!zrtpHashMatch && zrtpUserCallback != NULL)
-        zrtpUserCallback->onZrtpWarning(session, (char*)peerHelloMismatchMsg, index);
+    /*
+     * In discriminator mode:
+     * If the received zrtp-hash value in the signaling does not match the hash of the actual received ZRTP Hello message, we must drop the call.
+     */
+    if (!zrtpHashMatch && zrtpUserCallback != NULL) {
+        if (discriminatorMode)
+            zrtpUserCallback->onDiscriminatorException(session, (char*)peerHelloMismatchMsg, index);
+        else
+            zrtpUserCallback->onZrtpWarning(session, (char*)peerHelloMismatchMsg, index);
+    }
     synchLeave();
 }
 
@@ -716,6 +754,15 @@ int32_t CtZrtpStream::sendDataZRTP(const unsigned char *data, int32_t length) {
         totalLen = newLength;
     }
     else {
+        /*
+         * In discriminator mode:
+         * If we would send a ZRTP packet not tunneled in SRTP, we must drop the call.
+         */
+        if (discriminatorMode) {
+            if (zrtpUserCallback != NULL)
+                zrtpUserCallback->onDiscriminatorException(session, (char*)noZrtpTunnel, index);
+            return 0;
+        }
         *zrtpBuffer = 0x10;                                            // invalid RTP version - refer to ZRTP spec chap 5
         crc = zrtpGenerateCksum(zrtpBuffer, totalLen-CRC_SIZE);        // Setup and compute ZRTP CRC
         crc = zrtpEndCksum(crc);                                       // convert and store CRC in ZRTP packet.
@@ -912,7 +959,6 @@ void CtZrtpStream::srtpSecretsOn(std::string cipher, std::string sas, bool verif
 
     prevTiviState = tiviState;
 
-    // TODO Discuss with Janis what else to do? Set other state, for example eSecureMitmVia or some string?
     tiviState = CtZrtpSession::eSecure;
     if (cipher.find ("SASviaMitM", cipher.size() - 10, 10) != std::string::npos) { // Found: SAS via PBX
         tiviState = CtZrtpSession::eSecureMitmVia;  //eSecureMitmVia
@@ -1006,6 +1052,8 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
                 // split the string that we get from ZRTP engine that contains
                 // the version info as well (which is the right way to do because
                 // the engine knows which version of the ZRTP protocol it uses.)
+
+                // The peer hello hash not yet known, handle it in setSignalingHelloHash(...) function
                 if (peerHelloHashes.empty())
                     break;
 
@@ -1025,8 +1073,16 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
                         break;
                     }
                 }
-                if (!zrtpHashMatch && zrtpUserCallback != NULL)
-                    zrtpUserCallback->onZrtpWarning(session, (char*)peerHelloMismatchMsg, index);
+                /*
+                 * In discriminator mode:
+                 * If the received zrtp-hash value in the signaling does not match the hash of the actual received ZRTP Hello message, we must drop the call.
+                 */
+                if (!zrtpHashMatch && zrtpUserCallback != NULL) {
+                    if (discriminatorMode)
+                        zrtpUserCallback->onDiscriminatorException(session, (char*)peerHelloMismatchMsg, index);
+                    else
+                        zrtpUserCallback->onZrtpWarning(session, (char*)peerHelloMismatchMsg, index);
+                }
                 break;
 
             case InfoSecureStateOn:
@@ -1039,6 +1095,15 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
                 // These two states correspond to going secure
             case InfoRespCommitReceived:
             case InfoInitDH1Received:
+                /*
+                 * In discriminator mode:
+                 * If we receive or would send a ZRTP Commit message, but did not receive a zrtp-hash value in the signaling, we must drop the call.
+                 */
+                if (discriminatorMode && peerHelloHashes.empty()) {
+                    if (zrtpUserCallback != NULL)
+                        zrtpUserCallback->onDiscriminatorException(session, (char*)noZrtpHashInSip, index);
+                    break;
+                }
                 prevTiviState = tiviState;
                 tiviState = CtZrtpSession::eGoingSecure;
                 if (zrtpUserCallback != NULL)
@@ -1119,7 +1184,6 @@ void CtZrtpStream::synchLeave() {
 }
 
 void CtZrtpStream::zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment  info) {
-    // TODO: Discuss with Janis
     if (zrtpUserCallback != NULL) {
         zrtpUserCallback->onNeedEnroll(session, index, (int32_t)info);
     }
