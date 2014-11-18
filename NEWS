@@ -1,3 +1,16 @@
+== GNU ZRTP 4.3.1 ==
+
+This is a bugfix release. It fixes several compiler issues in
+iOS8 Clang, Mircosoft C++ compiler (VS 2012) etc. 
+
+This release also adds a fix to address a possible problem when
+using 'memset(...)' on a memory area immediately followed by a
+'free(...)' call to free this memory area. Some compilers may
+otpimize the code and do not call 'memset(...)'. That's bad for
+software that deals with secure keys :-) . The fix removes this
+possible vulnerability.
+
+
 == GNU ZRTP 4.3.0 ==
 
 This version adds some new API that provide to set retry timer 
