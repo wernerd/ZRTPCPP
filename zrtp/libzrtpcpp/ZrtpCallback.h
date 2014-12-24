@@ -28,7 +28,7 @@
 #include <string>
 #include <stdint.h>
 #include <libzrtpcpp/ZrtpCodes.h>
-#include <common/osSpecifics.h>
+#include "common/osSpecifics.h"
 
 /**
  * This enum defines which role a ZRTP peer has.
