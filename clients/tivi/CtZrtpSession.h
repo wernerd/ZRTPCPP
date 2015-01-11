@@ -31,6 +31,7 @@ class CtZrtpStream;
 class CtZrtpCb;
 class CtZrtpSendCb;
 class ZrtpConfigure;
+class ZRtp;
 class CMutexClass;
 
 extern "C" __EXPORT const char *getZrtpBuildInfo();
@@ -712,6 +713,7 @@ private:
     std::string  clientIdString;
     std::string  multiStreamParameter;
     const uint8_t* ownZid;
+    ZRtp*    zrtpMaster;
 
     bool mitmMode;
     bool signSas;
