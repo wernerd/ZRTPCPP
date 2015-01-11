@@ -435,7 +435,6 @@ void CryptoContext::update(uint16_t newSeq)
     // update the replay shift register
     // The shift register array stores bits of newer packets (higher sequence numbers) at 
     // index 0 and shifts older packets (lower sequence numbers) left to index one
-
     if (delta > 0) {                         // We got a new packet, no yet seen
         if (delta >= REPLAY_WINDOW_SIZE) {
             replay_window[0] = 1;

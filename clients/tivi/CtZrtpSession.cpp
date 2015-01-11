@@ -667,6 +667,16 @@ bool CtZrtpSession::isDiscriminatorMode() {
     return discriminatorMode;
 }
 
+int32_t CtZrtpSession::getSrtpTraceData(SrtpErrorData* data, streamName streamNm) {
+    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return 0;
+
+    CtZrtpStream *stream = streams[streamNm];
+    return stream->getSrtpTraceData(data);
+}
+
+
+
 void CtZrtpSession::cleanCache() {
     getZidCacheInstance()->cleanup();
 }
