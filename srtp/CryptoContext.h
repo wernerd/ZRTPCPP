@@ -42,6 +42,8 @@ const int SrtpEncryptionTWOF8 = 4;
 #ifndef CRYPTOCONTEXTCTRL_H
 
 #include <stdint.h>
+#include <crypto/hmac.h>
+#include <cryptcommon/macSkein.h>
 
 class SrtpSymCrypto;
 
@@ -413,6 +415,11 @@ public:
     CryptoContext* newCryptoContextForSSRC(uint32_t ssrc, int roc, int64_t keyDerivRate);
 
 private:
+    typedef union _hmacCtx {
+        SkeinCtx_t       hmacSkeinCtx;
+        hmacSha1Context  hmacSha1Ctx;
+    } HmacCtx;
+
 
     uint32_t ssrcCtx;
     uint32_t mkiLength;
@@ -449,6 +456,7 @@ private:
     bool  seqNumSet;
 
     void*   macCtx;
+    HmacCtx hmacCtx;
 
     SrtpSymCrypto* cipher;
     SrtpSymCrypto* f8Cipher;

@@ -63,6 +63,8 @@ void sha384(unsigned char * data_chunks[],
 void* createSha384Context()
 {
     SHA512_CTX* ctx = (SHA512_CTX*)malloc(sizeof (SHA512_CTX));
+    if (ctx == NULL)
+        return NULL;
     SHA384_Init(ctx);
     return (void*)ctx;
 }

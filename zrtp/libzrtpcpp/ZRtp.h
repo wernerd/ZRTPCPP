@@ -43,6 +43,9 @@
 #include <libzrtpcpp/ZrtpCallback.h>
 #include <libzrtpcpp/ZIDCache.h>
 
+#include <cryptcommon/skeinApi.h>
+#include <zrtp/crypto/sha2.h>
+
 #ifndef SHA256_DIGEST_LENGTH
 #define SHA256_DIGEST_LENGTH 32
 #endif
@@ -663,6 +666,12 @@ class __EXPORT ZRtp {
      int getCountersZrtp(int32_t* counters);
 
 private:
+     typedef union _hashCtx {
+         SkeinCtx_t  skeinCtx;
+         sha256_ctx  sha256Ctx;
+         sha384_ctx  sha384Ctx;
+     } HashCtx;
+
      friend class ZrtpStateClass;
 
     /**
@@ -833,6 +842,8 @@ private:
     uint8_t zrtpKeyI[MAX_DIGEST_LENGTH];
     uint8_t zrtpKeyR[MAX_DIGEST_LENGTH];
 
+    HashCtx hashCtx;
+
     /**
      * Pointers to negotiated hash and HMAC functions
      */
@@ -852,7 +863,7 @@ private:
                            uint8_t* data[], uint32_t data_length[],
                            uint8_t* mac, uint32_t* mac_length );
 
-    void* (*createHashCtx)();
+    void* (*createHashCtx)(void* ctx);
 
     void (*closeHashCtx)(void* ctx, unsigned char* digest);
 

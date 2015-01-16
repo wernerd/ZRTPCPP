@@ -63,6 +63,8 @@ void sha256(unsigned char * data_chunks[],
 void* createSha256Context()
 {
     SHA256_CTX* ctx = (SHA256_CTX*)malloc(sizeof (SHA256_CTX));
+    if (ctx == NULL)
+        return NULL;
     SHA256_Init(ctx);
     return (void*)ctx;
 }

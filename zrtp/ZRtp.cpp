@@ -427,7 +427,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     // hash first messages to produce overall message hash
     // First the Responder's Hello message, second the Commit (always Initator's).
     // Must use negotiated hash.
-    msgShaContext = createHashCtx();
+    msgShaContext = createHashCtx(msgShaContext);
     hashCtxFunction(msgShaContext, (unsigned char*)hello->getHeaderBase(), helloLen);
     hashCtxFunction(msgShaContext, (unsigned char*)zrtpCommit.getHeaderBase(), len);
 
@@ -466,7 +466,7 @@ ZrtpPacketCommit* ZRtp::prepareCommitMultiStream(ZrtpPacketHello *hello) {
     // First the Responder's Hello message, second the Commit
     // (always Initator's).
     // Must use the negotiated hash.
-    msgShaContext = createHashCtx();
+    msgShaContext = createHashCtx(msgShaContext);
 
     int32_t helloLen = hello->getLength() * ZRTP_WORD_SIZE;
     hashCtxFunction(msgShaContext, (unsigned char*)hello->getHeaderBase(), helloLen);
@@ -625,7 +625,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     if (msgShaContext != NULL) {
         closeHashCtx(msgShaContext, NULL);
     }
-    msgShaContext = createHashCtx();
+    msgShaContext = createHashCtx(msgShaContext);
 
     // Hash messages to produce overall message hash:
     // First the Responder's (my) Hello message, second the Commit (always Initator's), 
@@ -905,7 +905,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
     if (msgShaContext != NULL) {
         closeHashCtx(msgShaContext, NULL);
     }
-    msgShaContext = createHashCtx();
+    msgShaContext = createHashCtx(msgShaContext);
 
     // Hash messages to produce overall message hash:
     // First the Responder's (my) Hello message, second the Commit
@@ -2413,8 +2413,9 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hash) {
         hmacFunction = hmac_sha256;
         hmacListFunction = hmac_sha256;
 
-        createHashCtx = createSha256Context;
-        closeHashCtx = closeSha256Context;
+        createHashCtx = initializeSha256Context;
+        msgShaContext = &hashCtx.sha256Ctx;
+        closeHashCtx = finalizeSha256Context;
         hashCtxFunction = sha256Ctx;
         hashCtxListFunction = sha256Ctx;
         break;
@@ -2427,8 +2428,9 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hash) {
         hmacFunction = hmac_sha384;
         hmacListFunction = hmac_sha384;
 
-        createHashCtx = createSha384Context;
-        closeHashCtx = closeSha384Context;
+        createHashCtx = initializeSha384Context;
+        msgShaContext = &hashCtx.sha384Ctx;
+        closeHashCtx = finalizeSha384Context;
         hashCtxFunction = sha384Ctx;
         hashCtxListFunction = sha384Ctx;
         break;
@@ -2441,8 +2443,9 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hash) {
         hmacFunction = macSkein256;
         hmacListFunction = macSkein256;
 
-        createHashCtx = createSkein256Context;
-        closeHashCtx = closeSkein256Context;
+        createHashCtx = initializeSkein256Context;
+        msgShaContext = &hashCtx.skeinCtx;
+        closeHashCtx = finalizeSkein256Context;
         hashCtxFunction = skein256Ctx;
         hashCtxListFunction = skein256Ctx;
         break;
@@ -2455,8 +2458,9 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hash) {
         hmacFunction = macSkein384;
         hmacListFunction = macSkein384;
 
-        createHashCtx = createSkein384Context;
-        closeHashCtx = closeSkein384Context;
+        createHashCtx = initializeSkein384Context;
+        msgShaContext = &hashCtx.skeinCtx;
+        closeHashCtx = finalizeSkein384Context;
         hashCtxFunction = skein384Ctx;
         hashCtxListFunction = skein384Ctx;
         break;
