@@ -13,10 +13,10 @@ cmake_minimum_required(VERSION 2.6)
 PROJECT(libzrtpcpp)
 
 SET(CPACK_PACKAGE_VERSION_MAJOR 4)
-SET(CPACK_PACKAGE_VERSION_MINOR 3)
-SET(CPACK_PACKAGE_VERSION_PATCH 1)
+SET(CPACK_PACKAGE_VERSION_MINOR 4)
+SET(CPACK_PACKAGE_VERSION_PATCH 0)
 
-set (VERSION 4.3.1)
+set (VERSION 4.4.0)
 set (SOVERSION 4)
 
 # Define supported command line parameters.
@@ -29,7 +29,7 @@ option(CORE_LIB "Build core library only, no spcific client support." OFF)
 option(CRYPTO_STANDALONE "Use embedded crypto and big number modules." ON)
 option(TIVI "Build library for the tivi client, implies '-DCRYPTO_STNDALONE=true'." OFF)
 option(SQLITE "Use SQLite DB as backend for ZRTP cache." OFF)
-option(SDES "Include SDES when not building for CCRTP." ON)
+option(SDES "Include SDES when not building for CCRTP." OFF)
 
 option(ANDROID "Generate Android makefiles (Android.mk)" ON)
 option(JAVA "Generate Java support files (requires JDK and SWIG)" OFF)
@@ -42,7 +42,7 @@ option(JAVA "Generate Java support files (requires JDK and SWIG)" OFF)
 
 # **** Check what and how to build ****
 #
-if (CCRTP AND TIVI)
+if (CCRTP AND TIVI AND CORE_LIB)
     MESSAGE(FATAL_ERROR "Cannot build more than one client at once. Use different build directories.")
 endif()
 
@@ -54,6 +54,7 @@ elseif (TIVI)
     set(zrtplibName zrtptivi)
     set(CRYPTO_STANDALONE true)
     set(SQLITE true)
+    set(SDES true) 
 elseif (CORE_LIB)
     set (PACKAGE libzrtpcore)
     set(zrtplibName zrtpcppcore)
@@ -78,8 +79,6 @@ endif()
 execute_process(COMMAND git rev-parse --short HEAD OUTPUT_VARIABLE GIT_COMMIT)
 STRING(REGEX REPLACE "(\r?\n)+$" "" GIT_COMMIT "${GIT_COMMIT}")
 
-MESSAGE( STATUS "Configuring GNU ${PROJECT_NAME} ${VERSION} for ${PACKAGE}, commit: ${GIT_COMMIT} ...")
-
 # include most of the fine stuff we need
 include(FindPkgConfig)
 include(CheckLibraryExists)
@@ -98,6 +97,9 @@ else()
     set(LIBDIRNAME "lib${LIB_SUFFIX}")
 endif()
 
+MESSAGE(STATUS "Configuring GNU ${PROJECT_NAME} ${VERSION} for ${PACKAGE}, commit: ${GIT_COMMIT} ...")
+
+
 check_include_files(stdlib.h HAVE_STDLIB_H)
 check_include_files(string.h HAVE_STRING_H)
 
@@ -113,7 +115,9 @@ if (NOT CRYPTO_STANDALONE)
       set(CRYPTOBACKEND "libcrypto >= 0.9.8")
       set(BUILD_REQ "libopenssl-devel >= 0.9.8")
       set(PACKAGE_REQ "libopenssl >= 0.9.8")
+      add_definitions(-DZRTP_OPENSSL)
       include_directories(${OPENSSL_INCLUDE_DIRS}) #update includes directory from pkg-config
+      MESSAGE(STATUS "Using OpenSSL crypto backend")
   else()
       message(FATAL_ERROR "No crypto library found")
   endif()
@@ -141,6 +145,8 @@ else()
 
     # necessary and required modules checked, ready to generate config.h
     configure_file(${CMAKE_SOURCE_DIR}/bnlib/bnconfig.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/bnconfig.h)
+    MESSAGE(STATUS "Using internal (standalone) crypto functions")
+
 endif()
 
 if (SQLITE)
@@ -148,9 +154,12 @@ if (SQLITE)
     if (SQLITE3_FOUND)
         check_include_files(sqlite3.h HAVE_SQLITE_H)
         set(LIBS ${LIBS} -lsqlite3)
+        MESSAGE(STATUS "Using SQLite based ZRTP cache")
     else()
       message(FATAL_ERROR "SQLite3 library not found")
     endif()
+else()
+    MESSAGE(STATUS "Using file based ZRTP cache")
 endif()
 
 # necessary and required modules checked, ready to generate config.h in top-level build directory

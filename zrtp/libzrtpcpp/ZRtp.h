@@ -44,7 +44,12 @@
 #include <libzrtpcpp/ZIDCache.h>
 
 #include <cryptcommon/skeinApi.h>
+#ifdef ZRTP_OPENSSL
+#include <openssl/crypto.h>
+#include <openssl/sha.h>
+#else
 #include <zrtp/crypto/sha2.h>
+#endif
 
 #ifndef SHA256_DIGEST_LENGTH
 #define SHA256_DIGEST_LENGTH 32
@@ -668,8 +673,13 @@ class __EXPORT ZRtp {
 private:
      typedef union _hashCtx {
          SkeinCtx_t  skeinCtx;
+#ifdef ZRTP_OPENSSL
+         SHA256_CTX  sha256Ctx;
+         SHA512_CTX  sha384Ctx;
+#else
          sha256_ctx  sha256Ctx;
          sha384_ctx  sha384Ctx;
+#endif
      } HashCtx;
 
      friend class ZrtpStateClass;

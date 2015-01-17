@@ -73,10 +73,25 @@ void closeSha256Context(void* ctx, unsigned char* digest)
 {
     SHA256_CTX* hd = (SHA256_CTX*)ctx;
 
-    if (digest != NULL) {
+    if (digest != NULL && hd != NULL) {
         SHA256_Final(digest, hd);
     }
     free(hd);
+}
+
+void* initializeSha256Context(void* ctx) 
+{
+    SHA256_CTX* hd = (SHA256_CTX*)ctx;
+    SHA256_Init(hd);
+    return (void*)hd;
+}
+
+void finalizeSha256Context(void* ctx, unsigned char* digest)
+{
+    SHA256_CTX* hd = (SHA256_CTX*)ctx;
+    if (digest != NULL && hd != NULL) {
+        SHA256_Final(digest, hd);
+    }
 }
 
 void sha256Ctx(void* ctx, unsigned char* data, 

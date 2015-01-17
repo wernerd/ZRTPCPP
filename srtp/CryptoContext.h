@@ -42,7 +42,11 @@ const int SrtpEncryptionTWOF8 = 4;
 #ifndef CRYPTOCONTEXTCTRL_H
 
 #include <stdint.h>
+#ifdef ZRTP_OPENSSL
+#include <openssl/hmac.h>
+#else
 #include <crypto/hmac.h>
+#endif
 #include <cryptcommon/macSkein.h>
 
 class SrtpSymCrypto;
@@ -417,7 +421,11 @@ public:
 private:
     typedef union _hmacCtx {
         SkeinCtx_t       hmacSkeinCtx;
+#ifdef ZRTP_OPENSSL
+        HMAC_CTX         hmacSha1Ctx;
+#else
         hmacSha1Context  hmacSha1Ctx;
+#endif
     } HmacCtx;
 
 
