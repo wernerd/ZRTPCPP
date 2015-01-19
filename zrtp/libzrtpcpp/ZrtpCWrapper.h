@@ -829,6 +829,29 @@ extern "C"
     char* zrtp_getPeerHelloHash(ZrtpContext* zrtpContext);
 
     /**
+     * Get the peer's previously associated name.
+     *
+     * @param zrtpContext
+     *    Pointer to the opaque ZrtpContext structure.
+     * @return
+     *    a heap allocated char array that contains the name.
+     *    If ZRTP was not started or there was no name set the method
+     *    returns NULL. The user is responsible for freeing the returned
+     *    memory.
+     */
+    char* zrtp_getPeerName(ZrtpContext* zrtpContext);
+
+    /**
+     * Associate a name with the peer.
+     *
+     * @param zrtpContext
+     *    Pointer to the opaque ZrtpContext structure.
+     * @param name
+     *    Char array containing the name to be associated.
+     */
+    void zrtp_putPeerName(ZrtpContext* zrtpContext, const char* name);
+
+    /**
      * Get Multi-stream parameters.
      *
      * Use this method to get the Multi-stream parameters that were computed
