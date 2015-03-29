@@ -24,7 +24,7 @@ const char *getZrtpBuildInfo()
 {
     return zrtpBuildInfo;
 }
-CtZrtpSession::CtZrtpSession() : mitmMode(false), signSas(false), enableParanoidMode(false), isReady(false),
+CtZrtpSession::CtZrtpSession() : zrtpMaster(NULL), mitmMode(false), signSas(false), enableParanoidMode(false), isReady(false),
     zrtpEnabled(true), sdesEnabled(true), discriminatorMode(false) {
 
     clientIdString = clientId;
@@ -300,10 +300,10 @@ void CtZrtpSession::masterStreamSecure(CtZrtpStream *masterStream) {
     // Here we know that the AudioStream is the master and VideoStream the slave.
     // Otherwise we need to loop and find the Master stream and the Slave streams.
 
-    multiStreamParameter = masterStream->zrtpEngine->getMultiStrParams();
+    multiStreamParameter = masterStream->zrtpEngine->getMultiStrParams(&zrtpMaster);
     CtZrtpStream *strm = streams[VideoStream];
     if (strm->enableZrtp) {
-        strm->zrtpEngine->setMultiStrParams(multiStreamParameter);
+        strm->zrtpEngine->setMultiStrParams(multiStreamParameter, zrtpMaster);
         strm->zrtpEngine->startZrtpEngine();
         strm->started = true;
         strm->tiviState = eLookingPeer;
@@ -342,7 +342,7 @@ void CtZrtpSession::start(unsigned int uiSSRC, CtZrtpSession::streamName streamN
     }
     // Process a Slave stream.
     if (!multiStreamParameter.empty()) {        // Multi-stream parameters available
-        stream->zrtpEngine->setMultiStrParams(multiStreamParameter);
+        stream->zrtpEngine->setMultiStrParams(multiStreamParameter, zrtpMaster);
         stream->zrtpEngine->startZrtpEngine();
         stream->started = true;
         stream->tiviState = eLookingPeer;
@@ -361,6 +361,7 @@ void CtZrtpSession::stop(streamName streamNm) {
 void CtZrtpSession::release() {
     release(AudioStream);
     release(VideoStream);
+    zrtpMaster = NULL;
 }
 
 void CtZrtpSession::release(streamName streamNm) {
@@ -665,6 +666,16 @@ void CtZrtpSession::setDiscriminatorMode ( bool on ) {
 bool CtZrtpSession::isDiscriminatorMode() {
     return discriminatorMode;
 }
+
+int32_t CtZrtpSession::getSrtpTraceData(SrtpErrorData* data, streamName streamNm) {
+    if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != NULL))
+        return 0;
+
+    CtZrtpStream *stream = streams[streamNm];
+    return stream->getSrtpTraceData(data);
+}
+
+
 
 void CtZrtpSession::cleanCache() {
     getZidCacheInstance()->cleanup();

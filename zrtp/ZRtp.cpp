@@ -79,7 +79,7 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* conf
         callback(cb), dhContext(NULL), DHss(NULL), auxSecret(NULL), auxSecretLength(0), rs1Valid(false),
         rs2Valid(false), msgShaContext(NULL), hash(NULL), cipher(NULL), pubKey(NULL), sasType(NULL), authLength(NULL),
         multiStream(false), multiStreamAvailable(false), peerIsEnrolled(false), mitmSeen(false), pbxSecretTmp(NULL),
-        enrollmentMode(false), configureAlgos(*config), zidRec(NULL), saveZidRecord(true) {
+        enrollmentMode(false), configureAlgos(*config), zidRec(NULL), saveZidRecord(true), masterStream(NULL) {
 
 #ifdef ZRTP_SAS_RELAY_SUPPORT
     enableMitmEnrollment = config->isTrustedMitM();
@@ -191,6 +191,8 @@ ZRtp::~ZRtp() {
     memset(srtpSaltR, 0, MAX_DIGEST_LENGTH);
 
     memset(zrtpSession, 0, MAX_DIGEST_LENGTH);
+
+    peerNonces.clear();
 }
 
 void ZRtp::processZrtpMessage(uint8_t *message, uint32_t pSSRC, size_t length) {
@@ -425,7 +427,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     // hash first messages to produce overall message hash
     // First the Responder's Hello message, second the Commit (always Initator's).
     // Must use negotiated hash.
-    msgShaContext = createHashCtx();
+    msgShaContext = createHashCtx(msgShaContext);
     hashCtxFunction(msgShaContext, (unsigned char*)hello->getHeaderBase(), helloLen);
     hashCtxFunction(msgShaContext, (unsigned char*)zrtpCommit.getHeaderBase(), len);
 
@@ -464,7 +466,7 @@ ZrtpPacketCommit* ZRtp::prepareCommitMultiStream(ZrtpPacketHello *hello) {
     // First the Responder's Hello message, second the Commit
     // (always Initator's).
     // Must use the negotiated hash.
-    msgShaContext = createHashCtx();
+    msgShaContext = createHashCtx(msgShaContext);
 
     int32_t helloLen = hello->getLength() * ZRTP_WORD_SIZE;
     hashCtxFunction(msgShaContext, (unsigned char*)hello->getHeaderBase(), helloLen);
@@ -623,7 +625,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     if (msgShaContext != NULL) {
         closeHashCtx(msgShaContext, NULL);
     }
-    msgShaContext = createHashCtx();
+    msgShaContext = createHashCtx(msgShaContext);
 
     // Hash messages to produce overall message hash:
     // First the Responder's (my) Hello message, second the Commit (always Initator's), 
@@ -856,6 +858,10 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
         return NULL;
     }
 
+    if (!checkAndSetNonce(commit->getNonce())) {
+        *errMsg = NonceReused;
+        return NULL;
+    }
     // check if Commit contains "Mult" as pub key type
     AlgorithmEnum* cp = &zrtpPubKeys.getByName((const char*)commit->getPubKeysType());
     if (!cp->isValid() || *(int32_t*)(cp->getName()) != *(int32_t*)mult) {
@@ -899,7 +905,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
     if (msgShaContext != NULL) {
         closeHashCtx(msgShaContext, NULL);
     }
-    msgShaContext = createHashCtx();
+    msgShaContext = createHashCtx(msgShaContext);
 
     // Hash messages to produce overall message hash:
     // First the Responder's (my) Hello message, second the Commit
@@ -2407,8 +2413,9 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hash) {
         hmacFunction = hmac_sha256;
         hmacListFunction = hmac_sha256;
 
-        createHashCtx = createSha256Context;
-        closeHashCtx = closeSha256Context;
+        createHashCtx = initializeSha256Context;
+        msgShaContext = &hashCtx.sha256Ctx;
+        closeHashCtx = finalizeSha256Context;
         hashCtxFunction = sha256Ctx;
         hashCtxListFunction = sha256Ctx;
         break;
@@ -2421,8 +2428,9 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hash) {
         hmacFunction = hmac_sha384;
         hmacListFunction = hmac_sha384;
 
-        createHashCtx = createSha384Context;
-        closeHashCtx = closeSha384Context;
+        createHashCtx = initializeSha384Context;
+        msgShaContext = &hashCtx.sha384Ctx;
+        closeHashCtx = finalizeSha384Context;
         hashCtxFunction = sha384Ctx;
         hashCtxListFunction = sha384Ctx;
         break;
@@ -2435,8 +2443,9 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hash) {
         hmacFunction = macSkein256;
         hmacListFunction = macSkein256;
 
-        createHashCtx = createSkein256Context;
-        closeHashCtx = closeSkein256Context;
+        createHashCtx = initializeSkein256Context;
+        msgShaContext = &hashCtx.skeinCtx;
+        closeHashCtx = finalizeSkein256Context;
         hashCtxFunction = skein256Ctx;
         hashCtxListFunction = skein256Ctx;
         break;
@@ -2449,8 +2458,9 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hash) {
         hmacFunction = macSkein384;
         hmacListFunction = macSkein384;
 
-        createHashCtx = createSkein384Context;
-        closeHashCtx = closeSkein384Context;
+        createHashCtx = initializeSkein384Context;
+        msgShaContext = &hashCtx.skeinCtx;
+        closeHashCtx = finalizeSkein384Context;
         hashCtxFunction = skein384Ctx;
         hashCtxListFunction = skein384Ctx;
         break;
@@ -2625,7 +2635,7 @@ std::string ZRtp::getPeerHelloHash() {
     return stm.str();
 }
 
-std::string ZRtp::getMultiStrParams() {
+std::string ZRtp::getMultiStrParams(ZRtp **zrtpMaster) {
 
     // the string will hold binary data - it's opaque to the application
     std::string str("");
@@ -2638,11 +2648,13 @@ std::string ZRtp::getMultiStrParams() {
         tmp[2] = zrtpSymCiphers.getOrdinal(*cipher);
         memcpy(tmp+3, zrtpSession, hashLength);
         str.assign(tmp, hashLength + 1 + 1 + 1); // set chars (bytes) to the string
+        if (zrtpMaster != NULL)
+            *zrtpMaster = this;
     }
     return str;
 }
 
-void ZRtp::setMultiStrParams(std::string parameters) {
+void ZRtp::setMultiStrParams(std::string parameters, ZRtp *zrtpMaster) {
 
     char tmp[MAX_DIGEST_LENGTH + 1 + 1 + 1]; // max. hash length + cipher + authLength + hash
 
@@ -2663,6 +2675,8 @@ void ZRtp::setMultiStrParams(std::string parameters) {
     // after setting zrtpSession, cipher, and auth-length set multi-stream to true
     multiStream = true;
     stateEngine->setMultiStream(true);
+    if (zrtpMaster != NULL)
+        masterStream = zrtpMaster;
 }
 
 bool ZRtp::isMultiStream() {
@@ -2841,6 +2855,24 @@ int ZRtp::getNumberOfCountersZrtp() {
 
 int ZRtp::getCountersZrtp(int32_t* counters) {
     return stateEngine->getRetryCounters(counters);
+}
+
+bool ZRtp::checkAndSetNonce(uint8_t* nonce) {
+    // This is for backward compatibility if an applications uses the old
+    // get- and setMultiStrParams functions
+    if (masterStream == NULL)
+        return true;
+
+    for (std::vector<std::string>::iterator it = masterStream->peerNonces.begin() ; it != masterStream->peerNonces.end(); ++it) {
+        if (memcmp((*it).data(), nonce, ZRTP_WORD_SIZE * 4) == 0) {
+            return false;
+        }
+    }
+    // the string holds the binary nonce
+    std::string str("");
+    str.assign((char *)nonce, ZRTP_WORD_SIZE * 4);
+    masterStream->peerNonces.push_back(str);
+    return true;
 }
 
 /** EMACS **

@@ -15,7 +15,6 @@
 #include <libzrtpcpp/ZrtpCrc32.h>
 #include <srtp/CryptoContext.h>
 #include <srtp/CryptoContextCtrl.h>
-#include <srtp/SrtpHandler.h>
 
 #include <CtZrtpStream.h>
 #include <CtZrtpCallback.h>
@@ -78,7 +77,7 @@ CtZrtpStream::CtZrtpStream():
     zrtpUserCallback(NULL), zrtpSendCallback(NULL), senderZrtpSeqNo(0), peerSSRC(0), zrtpHashMatch(false),
     sasVerified(false), helloReceived(false), useSdesForMedia(false), useZrtpTunnel(false), zrtpEncapSignaled(false), 
     sdes(NULL), supressCounter(0), srtpAuthErrorBurst(0), srtpReplayErrorBurst(0), srtpDecodeErrorBurst(0), 
-    zrtpCrcErrors(0), role(NoRole)
+    zrtpCrcErrors(0), role(NoRole), errorInfoIndex(0), numErrorArrayWrap(0)
 {
     synchLock = new CMutexClass();
 
@@ -89,6 +88,7 @@ CtZrtpStream::CtZrtpStream():
     initStrings();
     ZrtpRandom::getRandomData((uint8_t*)&senderZrtpSeqNo, 2);
     senderZrtpSeqNo &= 0x7fff;
+    memset((void*)srtpErrorInfo, 0, sizeof(srtpErrorInfo));
 }
 
 void CtZrtpStream::setUserCallback(CtZrtpCb* ucb) {
@@ -104,7 +104,7 @@ CtZrtpStream::~CtZrtpStream() {
     delete synchLock;
     synchLock = NULL;
 }
-//
+
 void CtZrtpStream::stopStream() {
 
     // If we got only a small amout of valid SRTP packets after ZRTP negotiation then
@@ -165,6 +165,9 @@ void CtZrtpStream::stopStream() {
 
     delete sdes;
     sdes = NULL;
+
+    memset((void*)srtpErrorInfo, 0, sizeof(srtpErrorInfo));
+    numErrorArrayWrap = 0;
 
     // Don't delete the next classes, we don't own them.
     zrtpUserCallback = NULL;
@@ -233,7 +236,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
                 }
                 return 1;
             }
-            rc = sdes->incomingRtp(buffer, length, newLength);
+            rc = sdes->incomingRtp(buffer, length, newLength, srtpErrorElement());
             if (rc == 1) {                      // SDES unprotect OK, do some statistics and return success
                 sdesUnprotect++;
                 if (*sdesTempBuffer != 0)       // clear SDES crypto string if not already done
@@ -242,7 +245,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
         }
         else {
             // At this point we have an active ZRTP/SRTP context, unprotect with ZRTP/SRTP first
-            rc = SrtpHandler::unprotect(recvSrtp, buffer, length, newLength);
+            rc = SrtpHandler::unprotect(recvSrtp, buffer, length, newLength, srtpErrorElement());
             if (rc == 1) {
                 zrtpUnprotect++;
                 // Got a good SRTP, check state and if in WaitConfAck (an Initiator state)
@@ -251,11 +254,11 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
                     zrtpEngine->conf2AckSecure();
                 }
                 if (useSdesForMedia && sdes != NULL) {    // We still have a SDES - other client did not send matching zrtp-hash
-                    rc = sdes->incomingRtp(buffer, *newLength, newLength);
+                    rc = sdes->incomingRtp(buffer, *newLength, newLength, srtpErrorElement());
                 }
             }
             else if (sdes != NULL) {
-                rc = sdes->incomingRtp(buffer, length, newLength);
+                rc = sdes->incomingRtp(buffer, length, newLength, srtpErrorElement());
             }
         }
         if (rc == 1) {
@@ -265,12 +268,18 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
             return 1;
         }
         // We come to this point only if we have some problems during SRTP unprotect
-        else if (rc == 0) 
-            srtpDecodeErrorBurst++;
-        else if (rc == -1)
+        else if (rc == 0) {
+            srtpDecodeErrorBurst++; 
+            errorInfoIndex++;
+        }
+        else if (rc == -1) {
             srtpAuthErrorBurst++;
-        else if (rc == -2)
+            errorInfoIndex++;
+        }
+        else if (rc == -2) {
             srtpReplayErrorBurst++;
+            errorInfoIndex++;
+        }
 
         unprotectFailed++;
         if (supressCounter >= supressWarn) {
@@ -287,7 +296,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
         return rc;
     }
 
-    // At this point we assume the packet is not an RTP packet. Check if it is a ZRTP packet.
+    // At this point we assume the packet is not a RTP packet. Check if it is a ZRTP packet.
     // Process it if ZRTP processing is started. In any case, let the application drop
     // the packet.
     if (started) {
@@ -307,15 +316,16 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
         if (useZrtpTunnel) {
             size_t newLength;
             *buffer = 0x80;                                    // make it look like a real RTP packet
-            rc = sdes->incomingZrtpTunnel(buffer, length, &newLength);
+            rc = sdes->incomingZrtpTunnel(buffer, length, &newLength, srtpErrorElement());
             if (rc < 0) {
+                errorInfoIndex++;
                 if (rc == -1) {
                     zrtp_log("CtZrtpStream", "Receiving tunneled ZRTP - SRTP failure -1");
-                    sendInfo(Warning, WarningSRTPauthError);
+                    sendInfo(Warning, WarningSRTPauthError*-1);
                 }
                 else {
                     zrtp_log("CtZrtpStream", "Receiving tunneled ZRTP - SRTP failure -2");
-                    sendInfo(Warning, WarningSRTPreplayError);
+                    sendInfo(Warning, WarningSRTPreplayError*-1);
                 }
                 return 0;
             }
@@ -1117,6 +1127,11 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
         return;
     }
     if (severity == Warning) {
+        bool tunnel = false;
+        if (subCode < 0) {
+            subCode *= -1;
+            tunnel = true;
+        }
         switch (subCode) {
             case WarningNoRSMatch:
                 return;
@@ -1124,6 +1139,8 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
 
             default:
                 msg = warningMap[subCode];
+                if (tunnel)
+                    msg->append(" (ZRTP tunnel)");
                 if (zrtpUserCallback != NULL)
                     zrtpUserCallback->onZrtpWarning(session, (char*)msg->c_str(), index);
                 return;
@@ -1207,6 +1224,32 @@ bool CtZrtpStream::checkSASSignature(uint8_t* sasHash) {
 //         return zrtpUserCallback->checkSASSignature(sasHash);
 //     }
      return false;
+}
+
+SrtpErrorData* CtZrtpStream::srtpErrorElement() {
+    if (errorInfoIndex >= NumSrtpErrorData) {
+        numErrorArrayWrap++;
+        errorInfoIndex %= NumSrtpErrorData;
+    }
+    return &srtpErrorInfo[errorInfoIndex];
+}
+
+int32_t CtZrtpStream::getSrtpTraceData(SrtpErrorData* data) {
+    if (errorInfoIndex == 0)
+        return 0;
+
+    int32_t index = errorInfoIndex;    // get the index for this run, other threads may change errorInfoIndex
+
+    // If the error index wrapped then the oldest data element is at errorInfoIndex, the newer elements
+    // start at index zero. The output array receives the data in chroncological order thus we need two
+    // memcpy call to make it right.
+    if (numErrorArrayWrap > 0) {
+        memcpy((void*)data, (void*)&srtpErrorInfo[index], (NumSrtpErrorData - index) * sizeof(SrtpErrorData));
+        memcpy((void*)&data[NumSrtpErrorData - index], (void*)srtpErrorInfo, index * sizeof(SrtpErrorData));
+        return NumSrtpErrorData;
+    }
+    memcpy((void*)data, (void*)srtpErrorInfo, index * sizeof(SrtpErrorData));
+    return index;
 }
 
 void CtZrtpStream::initStrings() {

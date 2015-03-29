@@ -43,6 +43,14 @@
 #include <libzrtpcpp/ZrtpCallback.h>
 #include <libzrtpcpp/ZIDCache.h>
 
+#include <cryptcommon/skeinApi.h>
+#ifdef ZRTP_OPENSSL
+#include <openssl/crypto.h>
+#include <openssl/sha.h>
+#else
+#include <zrtp/crypto/sha2.h>
+#endif
+
 #ifndef SHA256_DIGEST_LENGTH
 #define SHA256_DIGEST_LENGTH 32
 #endif
@@ -62,6 +70,7 @@
 
 class __EXPORT ZrtpStateClass;
 class ZrtpDH;
+class ZRtp;
 
 /**
  * The main ZRTP class.
@@ -276,6 +285,8 @@ class __EXPORT ZRtp {
     /**
      * Get Multi-stream parameters.
      *
+     * Deprecated - use  getMultiStrParams(ZRtp **zrtpMaster);
+     * 
      * Use this method to get the Multi-stream that were computed during
      * the ZRTP handshake. An application may use these parameters to
      * enable multi-stream processing for an associated SRTP session.
@@ -291,7 +302,48 @@ class __EXPORT ZRtp {
      *    If ZRTP was not started or ZRTP is not yet in secure state the method
      *    returns an empty string.
      */
-    std::string getMultiStrParams();
+    DEPRECATED std::string getMultiStrParams() {return getMultiStrParams(NULL); }
+
+    /**
+     * Set Multi-stream parameters.
+     *
+     * Deprecated - use setMultiStrParams(std::string parameters, ZRtp* zrtpMaster);
+     * 
+     * Use this method to set the parameters required to enable Multi-stream
+     * processing of ZRTP. The multi-stream parameters must be set before the
+     * application starts the ZRTP protocol engine.
+     *
+     * Refer to chapter 4.4.2 in the ZRTP specification for further details
+     * of multi-stream mode.
+     *
+     * @param parameters
+     *     A string that contains the multi-stream parameters that this
+     *     new ZrtpQueue instanace shall use. See also
+     *     <code>getMultiStrParams()</code>
+     */
+    DEPRECATED void setMultiStrParams(std::string parameters) { setMultiStrParams(parameters, NULL);}
+
+    /**
+     * Get Multi-stream parameters.
+     *
+     * Use this method to get the Multi-stream that were computed during
+     * the ZRTP handshake. An application may use these parameters to
+     * enable multi-stream processing for an associated SRTP session.
+     *
+     * Refer to chapter 4.4.2 in the ZRTP specification for further details
+     * and restriction how and when to use multi-stream mode.
+     *
+     * @param zrtpMaster
+     *     Where the function returns the pointer of the ZRTP master stream.
+     * @return
+     *    a string that contains the multi-stream parameters. The application
+     *    must not modify the contents of this string, it is opaque data. The
+     *    application may hand over this string to a new ZrtpQueue instance
+     *    to enable multi-stream processing for this ZrtpQueue.
+     *    If ZRTP was not started or ZRTP is not yet in secure state the method
+     *    returns an empty string.
+     */
+    std::string getMultiStrParams(ZRtp **zrtpMaster);
 
     /**
      * Set Multi-stream parameters.
@@ -306,9 +358,11 @@ class __EXPORT ZRtp {
      * @param parameters
      *     A string that contains the multi-stream parameters that this
      *     new ZrtpQueue instanace shall use. See also
-     *     <code>getMultiStrParams()</code>
+     *     <code>getMultiStrParams(ZRtp **zrtpMaster)</code>
+     * @param zrtpMaster
+     *     The pointer of the ZRTP master stream.
      */
-    void setMultiStrParams(std::string parameters);
+    void setMultiStrParams(std::string parameters, ZRtp* zrtpMaster);
 
     /**
      * Check if this ZRTP session is a Multi-stream session.
@@ -617,6 +671,17 @@ class __EXPORT ZRtp {
      int getCountersZrtp(int32_t* counters);
 
 private:
+     typedef union _hashCtx {
+         SkeinCtx_t  skeinCtx;
+#ifdef ZRTP_OPENSSL
+         SHA256_CTX  sha256Ctx;
+         SHA512_CTX  sha384Ctx;
+#else
+         sha256_ctx  sha256Ctx;
+         sha384_ctx  sha384Ctx;
+#endif
+     } HashCtx;
+
      friend class ZrtpStateClass;
 
     /**
@@ -787,6 +852,8 @@ private:
     uint8_t zrtpKeyI[MAX_DIGEST_LENGTH];
     uint8_t zrtpKeyR[MAX_DIGEST_LENGTH];
 
+    HashCtx hashCtx;
+
     /**
      * Pointers to negotiated hash and HMAC functions
      */
@@ -806,7 +873,7 @@ private:
                            uint8_t* data[], uint32_t data_length[],
                            uint8_t* mac, uint32_t* mac_length );
 
-    void* (*createHashCtx)();
+    void* (*createHashCtx)(void* ctx);
 
     void (*closeHashCtx)(void* ctx, unsigned char* digest);
 
@@ -955,6 +1022,9 @@ private:
 
     std::string peerClientId;    // store the peer's client Id
 
+    ZRtp* masterStream;                    // This is the master stream in case this is a multi-stream
+    std::vector<std::string> peerNonces;   // Store nonces we got from our partner. Using std::string
+                                           // just simplifies memnory management, nonces are binary data, not strings :-)
     /**
      * Enable or disable paranoid mode.
      *
@@ -1545,6 +1615,20 @@ private:
       *     Pointer to hello packet version structure.
       */
      void setClientId(std::string id, HelloPacketVersion* hpv);
+     
+     /**
+      * Check and set a nonce.
+      * 
+      * The function first checks if the nonce is already in use (was seen) in this ZRTP
+      * session. Refer to 4.4.3.1.
+      * 
+      * @param nonce
+      *     The nonce to check and to store if not already seen.
+      * 
+      * @return
+      *     True if the the nonce was stroed, thus not yet seen.
+      */
+     bool checkAndSetNonce(uint8_t* nonce);
 };
 
 /**
