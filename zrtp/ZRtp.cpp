@@ -1796,7 +1796,6 @@ void ZRtp:: computeSharedSecretSet(ZIDRecord *zidRec) {
     uint8_t randBuf[RS_LENGTH];
     uint32_t macLen;
 
-    fprintf(stderr, "Compute shared secrets\n");
     detailInfo.secretsCached = 0;
     if (!zidRec->isRs1Valid()) {
         randomZRTP(randBuf, RS_LENGTH);
