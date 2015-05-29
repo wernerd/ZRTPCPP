@@ -30,6 +30,7 @@ option(CRYPTO_STANDALONE "Use embedded crypto and big number modules." ON)
 option(TIVI "Build library for the tivi client, implies '-DCRYPTO_STNDALONE=true'." OFF)
 option(SQLITE "Use SQLite DB as backend for ZRTP cache." OFF)
 option(SDES "Include SDES when not building for CCRTP." OFF)
+option(AXO "Include Axolotl support when not building for CCRTP." OFF)
 
 option(ANDROID "Generate Android makefiles (Android.mk)" ON)
 option(JAVA "Generate Java support files (requires JDK and SWIG)" OFF)
@@ -173,6 +174,10 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -pedantic -std=c99")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -std=c++11")
     add_definitions(-DNEW_STDCPP)
+endif()
+
+if (AXO)
+    add_definitions(-DAXO_SUPPORT)
 endif()
 
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
