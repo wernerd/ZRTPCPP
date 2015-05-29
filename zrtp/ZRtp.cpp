@@ -90,6 +90,7 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* conf
 
     signatureData = NULL;
     paranoidMode = config->isParanoidMode();
+    sasSignSupport = config->isSasSignature();
 
     // setup the implicit hash function pointers and length
     hashLengthImpl = SHA256_DIGEST_LENGTH;
@@ -380,6 +381,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
 #endif
 
     signSasSeen = hello->isSasSign();
+
     // Construct a DHPart2 message (Initiator's DH message). This packet
     // is required to compute the HVI (Hash Value Initiator), refer to
     // chapter 5.4.1.1.
@@ -978,6 +980,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
         return NULL;
     }
     signatureLength = confirm1->getSignatureLength();
+
     if (signSasSeen && signatureLength > 0 && confirm1->isSignatureLengthOk()) {
         signatureData = confirm1->getSignatureData();
         callback->checkSASSignature(sasHash);
@@ -2324,6 +2327,8 @@ void ZRtp::computeSRTPKeys() {
         // Compute the ZRTP Session Key
         KDF(s0, hashLength, (unsigned char*)zrtpSessionKey, strlen(zrtpSessionKey)+1, KDFcontext, kdfSize, hashLength*8, zrtpSession);
 
+        // Compute the exported Key
+        KDF(s0, hashLength, (unsigned char*)zrtpExportedKey, strlen(zrtpExportedKey)+1, KDFcontext, kdfSize, hashLength*8, zrtpExport);
         // perform  generation according to chapter 5.5 and 8.
         // we don't need a speciai sasValue filed. sasValue are the first
         // (leftmost) 32 bits (4 bytes) of sasHash
@@ -2345,7 +2350,7 @@ void ZRtp::computeSRTPKeys() {
         }
 
         if (signSasSeen)
-            callback->signSAS(sasHash);
+             callback->signSAS(sasHash);
 
         detailInfo.pubKey = pubKey->getReadable();
         detailInfo.sasType = sasType->getReadable();
@@ -2854,6 +2859,12 @@ int ZRtp::getNumberOfCountersZrtp() {
 
 int ZRtp::getCountersZrtp(int32_t* counters) {
     return stateEngine->getRetryCounters(counters);
+}
+
+uint8_t* ZRtp::getExportedKey(int32_t *length) {
+    if (length != NULL)
+        *length = hashLength;
+    return zrtpExport;
 }
 
 bool ZRtp::checkAndSetNonce(uint8_t* nonce) {

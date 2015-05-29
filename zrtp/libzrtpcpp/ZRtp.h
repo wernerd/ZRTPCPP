@@ -669,6 +669,22 @@ class __EXPORT ZRtp {
       * @return number of 32-bit counters returned in buffer or < 0 on error
       */
      int getCountersZrtp(int32_t* counters);
+     
+     /**
+      * @brief Get the computed ZRTP exported key.
+      * 
+      * Returns a pointer to the computed exported key. The application should copy
+      * the data it needs.
+      * 
+      * @param length pointer to an int, gets the length of the exported key.
+      * @return pointer to the exported key data.
+      */
+     uint8_t* getExportedKey(int32_t *length);
+
+     /**
+      * @brief Return either Initiator or Responder.
+      */
+     int32_t getZrtpRole() { return myRole; }
 
 private:
      typedef union _hashCtx {
@@ -906,9 +922,15 @@ private:
 
     /**
      * The ZRTP Session Key
-     * Refer to chapter 5.4.1.4
+     * Refer to chapter 4.5.2
      */
     uint8_t zrtpSession[MAX_DIGEST_LENGTH];
+
+    /**
+     * The ZRTP export Key
+     * Refer to chapter 4.5.2
+     */
+    uint8_t zrtpExport[MAX_DIGEST_LENGTH];
 
     /**
      * True if this ZRTP instance uses multi-stream mode.
