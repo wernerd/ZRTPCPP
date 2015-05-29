@@ -30,6 +30,12 @@ static char debBuf[500];
 #define DEBUG(deb)
 #endif
 
+#if !defined (_WITHOUT_TIVI_ENV) && defined AXO_SUPPORT
+void setAxoExportedKey(const std::string& ownUser, const std::string& user, const std::string& deviceId, const std::string& exportedKey);
+const std::string getAxoPublicKeyData(const std::string& ownUser, const std::string& user, const std::string& deviceId);
+void setAxoPublicKeyData(const std::string& ownUser, const std::string& user, const std::string& deviceId, const std::string& pubKeyData);
+#endif
+
 static TimeoutProvider<std::string, CtZrtpStream*>* staticTimeoutProvider = NULL;
 
 static std::map<int32_t, std::string*> infoMap;
@@ -1098,6 +1104,25 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
             case InfoSecureStateOn:
                 if (type == CtZrtpSession::Master) {               // Master stream entered secure mode (security done)
                     session->masterStreamSecure(this);
+#if !defined (_WITHOUT_TIVI_ENV) && defined AXO_SUPPORT
+                    int32_t length;
+                    uint8_t* keyData = zrtpEngine->getExportedKey(&length);
+                    int32_t callId = session->getTiviCallId();
+                    /* TODO
+                     *
+                     * Use a engine function to get the own account name, caller's name (AssertedId) and caller's device id
+                     * 
+                     */
+                    std::string ownUser("meAndMySelf");
+                    std::string data((const char*)keyData, length);
+
+                    std::string userResp("responder");
+                    std::string deviceIdResp("responderdevid");
+
+                    std::string userInit("initiator");
+                    std::string deviceIdInit("initiatordevid");
+                    setAxoExportedKey(ownUser, role==Responder? userResp : userInit, role==Responder? deviceIdResp : deviceIdInit, data);
+#endif
                 }
                 // Tivi client does not expect a status change information on this
                 break;
@@ -1214,16 +1239,73 @@ void CtZrtpStream::zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment  info) {
 }
 
 void CtZrtpStream::signSAS(uint8_t* sasHash) {
+#if !defined (_WITHOUT_TIVI_ENV) && defined AXO_SUPPORT
+    int32_t callId = session->getTiviCallId();
+    /* TODO
+     *
+     * Use a engine function to get the own account name, caller's name (AssertedId) and caller's device id
+     * 
+     */
+    std::string ownUser("meAndMySelf");
+    std::string user("responder");
+    std::string deviceId("responderdevid");
+
+    std::string keyData = getAxoPublicKeyData(ownUser, user, deviceId);
+    int32_t keyLength = keyData.size();
+    if (keyLength == 0)
+        return;
+
+    uint32_t typeLength = 100 << 16 | (keyLength & 0x7fff);
+    typeLength = zrtpHtonl(typeLength);
+
+    int32_t sigLen = (sizeof(int32_t) + keyLength + 3) & ~3;  // must be modulo 4 == 0
+
+    uint8_t* sigData = new uint8_t[sigLen];
+
+    // First is the signature type word
+    *(uint32_t*)sigData = typeLength;
+    memcpy(sigData+4, (const char*)keyData.data(), keyData.size());
+
+    zrtpEngine->setSignatureData(sigData, sigLen);
+    delete[] sigData;
+#endif
 //     if (zrtpUserCallback != NULL) {
 //         zrtpUserCallback->signSAS(sasHash);
 //     }
 }
 
 bool CtZrtpStream::checkSASSignature(uint8_t* sasHash) {
+#if !defined (_WITHOUT_TIVI_ENV) && defined AXO_SUPPORT
+    int32_t callId = session->getTiviCallId();
+    /* TODO
+     *
+     * Use a engine function to get the own account name, caller's name (AssertedId) and caller's device id
+     * 
+     */
+    std::string ownUser("meAndMySelf");
+    std::string user("initiator");
+    std::string deviceId("initiatordevid");
+
+    // Get the data from ZRTP and hand it over to Axolotl
+    int32_t sigLen = zrtpEngine->getSignatureLength();
+    const uint8_t* zrtpSigData = zrtpEngine->getSignatureData();
+
+    uint8_t* sigData = new uint8_t[sigLen];
+    memcpy(sigData, zrtpSigData, sigLen);
+
+    int32_t typeLength = *(uint32_t*)(sigData);
+    typeLength = zrtpNtohl(typeLength);
+    int32_t length = typeLength & 0x7fff;
+
+    std::string pubKeyData((const char*)sigData+4, length);
+    setAxoPublicKeyData(ownUser, user, deviceId, pubKeyData);
+
+    delete[] sigData;
+#endif
+    return true;
 //     if (zrtpUserCallback != NULL) {
 //         return zrtpUserCallback->checkSASSignature(sasHash);
 //     }
-     return false;
 }
 
 SrtpErrorData* CtZrtpStream::srtpErrorElement() {

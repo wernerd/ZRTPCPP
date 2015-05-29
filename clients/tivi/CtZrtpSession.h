@@ -123,6 +123,9 @@ public:
      *
      * @param video
      *     set to @c true if video stream shoud be initialized.
+     * 
+     * @param callId
+     *     The Tivi engine's call id.
      *
      * @param config
      *     this parameter points to ZRTP configuration data. If it is
@@ -133,7 +136,7 @@ public:
      *     ZRTP processing disabled.
      *
      */
-    int init(bool audio, bool video, ZrtpConfigure* config = NULL);
+    int init(bool audio, bool video, int32_t callId = 0, ZrtpConfigure* config = NULL);
 
     /**
      * @brief Fills a ZrtpConfiguration based on selected algorithms.
@@ -709,6 +712,11 @@ public:
      */
     int32_t getSrtpTraceData(SrtpErrorData* data, streamName streamNm);
 
+    /**
+     * @brief Get the Tivi engine's call id.
+     */
+    int32_t getTiviCallId() { return callId_; }
+
 
 protected:
     friend class CtZrtpStream;
@@ -735,6 +743,7 @@ private:
     std::string  multiStreamParameter;
     const uint8_t* ownZid;
     ZRtp*    zrtpMaster;
+    int32_t callId_;
 
     bool mitmMode;
     bool signSas;

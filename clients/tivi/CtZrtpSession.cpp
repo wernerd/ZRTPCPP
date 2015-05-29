@@ -50,7 +50,7 @@ int CtZrtpSession::initCache(const char *zidFilename) {
     return 1;
 }
 
-int CtZrtpSession::init(bool audio, bool video, ZrtpConfigure* config)
+int CtZrtpSession::init(bool audio, bool video, int32_t callId, ZrtpConfigure* config)
 {
     int32_t ret = 1;
 
@@ -61,8 +61,12 @@ int CtZrtpSession::init(bool audio, bool video, ZrtpConfigure* config)
         config = configOwn = new ZrtpConfigure();
         setupConfiguration(config);
         config->setTrustedMitM(false);
+#if defined AXO_SUPPORT
+        config->setSasSignature(true);
+#endif
     }
     config->setParanoidMode(enableParanoidMode);
+    callId_ = callId;
 
     ZIDCache* zf = getZidCacheInstance();
     if (!zf->isOpen()) {
