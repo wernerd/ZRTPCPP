@@ -1110,10 +1110,16 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
                     int32_t callId = session->getTiviCallId();
                     /* TODO
                      *
+<<<<<<< HEAD
                      * Use a engine function to get the own account name, caller's name (AssertedId) and caller's device id
                      * 
                      */
                     std::string ownUser("meAndMySelf");
+=======
+                     * Use a engine function to get the caller's name (AssertedId) and caller's device id
+                     * 
+                     */
+>>>>>>> 59cef581d231d58e91a32430826fa27d3573f616
                     std::string data((const char*)keyData, length);
 
                     std::string userResp("responder");
@@ -1121,7 +1127,11 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
 
                     std::string userInit("initiator");
                     std::string deviceIdInit("initiatordevid");
+<<<<<<< HEAD
                     setAxoExportedKey(ownUser, role==Responder? userResp : userInit, role==Responder? deviceIdResp : deviceIdInit, data);
+=======
+                    axoExportedKey(role==Responder? userResp : userInit, role==Responder? deviceIdResp : deviceIdInit, data, role);
+>>>>>>> 59cef581d231d58e91a32430826fa27d3573f616
 #endif
                 }
                 // Tivi client does not expect a status change information on this
@@ -1240,6 +1250,7 @@ void CtZrtpStream::zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment  info) {
 
 void CtZrtpStream::signSAS(uint8_t* sasHash) {
 #if !defined (_WITHOUT_TIVI_ENV) && defined AXO_SUPPORT
+<<<<<<< HEAD
     int32_t callId = session->getTiviCallId();
     /* TODO
      *
@@ -1257,6 +1268,25 @@ void CtZrtpStream::signSAS(uint8_t* sasHash) {
 
     uint32_t typeLength = 100 << 16 | (keyLength & 0x7fff);
     typeLength = zrtpHtonl(typeLength);
+=======
+    if (zrtpEngine->getZrtpRole() != Responder)
+        return;
+
+    int32_t callId = session->getTiviCallId();
+    /* TODO
+     *
+     * Use engine functions to get the caller's name (AssertedId) and caller's device id
+     *
+     */
+    std::string user("responder");
+    std::string deviceId("responderdevid");
+
+    std::string keyData = getAxoPublicKeyData(user, deviceId);
+    int32_t keyLength = keyData.size();
+
+    uint32_t typeLength = 100 << 16 | (keyLength & 0x7fff);
+    typeLength = zrtpNtohl(typeLength);
+>>>>>>> 59cef581d231d58e91a32430826fa27d3573f616
 
     int32_t sigLen = (sizeof(int32_t) + keyLength + 3) & ~3;  // must be modulo 4 == 0
 
@@ -1276,6 +1306,7 @@ void CtZrtpStream::signSAS(uint8_t* sasHash) {
 
 bool CtZrtpStream::checkSASSignature(uint8_t* sasHash) {
 #if !defined (_WITHOUT_TIVI_ENV) && defined AXO_SUPPORT
+<<<<<<< HEAD
     int32_t callId = session->getTiviCallId();
     /* TODO
      *
@@ -1283,6 +1314,16 @@ bool CtZrtpStream::checkSASSignature(uint8_t* sasHash) {
      * 
      */
     std::string ownUser("meAndMySelf");
+=======
+    if (zrtpEngine->getZrtpRole() != Initiator)
+        return true;
+    int32_t callId = session->getTiviCallId();
+    /* TODO
+     *
+     * Use engine functions to get the caller's name (AssertedId) and caller's device id
+     *
+     */
+>>>>>>> 59cef581d231d58e91a32430826fa27d3573f616
     std::string user("initiator");
     std::string deviceId("initiatordevid");
 
@@ -1294,11 +1335,19 @@ bool CtZrtpStream::checkSASSignature(uint8_t* sasHash) {
     memcpy(sigData, zrtpSigData, sigLen);
 
     int32_t typeLength = *(uint32_t*)(sigData);
+<<<<<<< HEAD
     typeLength = zrtpNtohl(typeLength);
     int32_t length = typeLength & 0x7fff;
 
     std::string pubKeyData((const char*)sigData+4, length);
     setAxoPublicKeyData(ownUser, user, deviceId, pubKeyData);
+=======
+    typeLength = zrtpHtonl(typeLength);
+    int32_t length = typeLength & 0x7fff;
+
+    std::string pubKeyData((const char*)sigData+4, length);
+    axoPublicKeyData(user, deviceId, pubKeyData);
+>>>>>>> 59cef581d231d58e91a32430826fa27d3573f616
 
     delete[] sigData;
 #endif
