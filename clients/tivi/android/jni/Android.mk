@@ -28,6 +28,8 @@ LOCAL_C_INCLUDES += $(ROOT_SRC_PATH) $(ROOT_SRC_PATH)/srtp $(ROOT_SRC_PATH)/zrtp
                     $(ROOT_SRC_PATH)/clients/tivi $(ROOT_SRC_PATH)/clients/tivi/android/jni/@sql_include@
 
 LOCAL_CFLAGS := -DSUPPORT_NON_NIST @sql_cipher_define@
+LOCAL_CFLAGS += @axo_support@
+
 LOCAL_SRC_FILES := buildinfo_$(TARGET_ARCH_ABI).c
 LOCAL_SRC_FILES += @sqlite_src@
 LOCAL_SRC_FILES += @zrtpcpp_src_spc@

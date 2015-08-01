@@ -147,6 +147,7 @@ if(ANDROID)
     endif()
 
     set(TIVI_ENV "-D_WITHOUT_TIVI_ENV")
+    set(axo_support -DAXO_SUPPORT)
 
     foreach(loop ${zrtpcpp_src})
         string(REPLACE "${CMAKE_SOURCE_DIR}/" "" o ${loop})

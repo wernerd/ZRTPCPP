@@ -30,12 +30,12 @@ static char debBuf[500];
 #define DEBUG(deb)
 #endif
 
-// #define AXO_SUPPORT
-// #undef _WITHOUT_TIVI_ENV
+using namespace GnuZrtpCodes;
+using namespace std;
+
 #if !defined (_WITHOUT_TIVI_ENV) && defined AXO_SUPPORT
-void setAxoExportedKey(const std::string& ownUser, const std::string& user, const std::string& deviceId, const std::string& exportedKey);
-const std::string getAxoPublicKeyData(const std::string& ownUser, const std::string& user, const std::string& deviceId);
-void setAxoPublicKeyData(const std::string& ownUser, const std::string& user, const std::string& deviceId, const std::string& pubKeyData);
+const string getOwnAxoIdKey();
+void checkRemoteAxoIdKey(const string user, const string devId, const string pubKey, int32_t verifyState);
 int getCallInfo(int iCallID, const char *key, char *p, int iMax);
 #endif
 
@@ -56,7 +56,6 @@ static const char* noLocalSrtp          = "s3_c103: Local SRTP not enabled.";
 static const char* noZrtpTunnel         = "s3_c104: ZRTP tunneling not enabled.";
 static const char* noZrtpHashInSip      = "s3_c105: No ZRTP-hash received in SIP.";
 
-using namespace GnuZrtpCodes;
 
 /**
  * The following code is for internal logging only
@@ -1107,35 +1106,6 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
             case InfoSecureStateOn:
                 if (type == CtZrtpSession::Master) {               // Master stream entered secure mode (security done)
                     session->masterStreamSecure(this);
-#if !defined (_WITHOUT_TIVI_ENV) && defined AXO_SUPPORT
-                    int32_t length;
-                    uint8_t* keyData = zrtpEngine->getExportedKey(&length);
-                    int32_t callId = session->getTiviCallId();
-                    /* TODO
-                     *
-<<<<<<< HEAD
-                     * Use a engine function to get the own account name, caller's name (AssertedId) and caller's device id
-                     * 
-                     */
-                    std::string ownUser("meAndMySelf");
-=======
-                     * Use a engine function to get the caller's name (AssertedId) and caller's device id
-                     * 
-                     */
->>>>>>> 59cef581d231d58e91a32430826fa27d3573f616
-                    std::string data((const char*)keyData, length);
-
-                    std::string userResp("responder");
-                    std::string deviceIdResp("responderdevid");
-
-                    std::string userInit("initiator");
-                    std::string deviceIdInit("initiatordevid");
-<<<<<<< HEAD
-                    setAxoExportedKey(ownUser, role==Responder? userResp : userInit, role==Responder? deviceIdResp : deviceIdInit, data);
-=======
-                    axoExportedKey(role==Responder? userResp : userInit, role==Responder? deviceIdResp : deviceIdInit, data, role);
->>>>>>> 59cef581d231d58e91a32430826fa27d3573f616
-#endif
                 }
                 // Tivi client does not expect a status change information on this
                 break;
@@ -1253,24 +1223,12 @@ void CtZrtpStream::zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment  info) {
 
 void CtZrtpStream::signSAS(uint8_t* sasHash) {
 #if !defined (_WITHOUT_TIVI_ENV) && defined AXO_SUPPORT
-    int32_t callId = session->getTiviCallId();
-    /* TODO
-     *
-     * Use a engine function to get the own account name, caller's name (AssertedId) and caller's device id
-     * 
-     */
-    //The best way how to get info about calls, it does not require iEngineID.
-    int getCallInfo(int iCallID, const char *key, char *p, int iMax);
 
-    char buf[128];
-    int len = getCallInfo(iCallID, "AssertedId", &buf[0], sizeof(buf));
-    std::string user(buf);
+//    zrtp_log("CTStream", "++++ sign sasHash");
 
-    std::string ownUser("meAndMySelf");
-    std::string deviceId("responderdevid");
-
-    std::string keyData = getAxoPublicKeyData(ownUser, user, deviceId);
+    string keyData = getOwnAxoIdKey();
     int32_t keyLength = keyData.size();
+
     if (keyLength == 0)
         return;
 
@@ -1288,22 +1246,23 @@ void CtZrtpStream::signSAS(uint8_t* sasHash) {
     zrtpEngine->setSignatureData(sigData, sigLen);
     delete[] sigData;
 #endif
-//     if (zrtpUserCallback != NULL) {
-//         zrtpUserCallback->signSAS(sasHash);
-//     }
 }
 
 bool CtZrtpStream::checkSASSignature(uint8_t* sasHash) {
 #if !defined (_WITHOUT_TIVI_ENV) && defined AXO_SUPPORT
     int32_t callId = session->getTiviCallId();
-    /* TODO
-     *
-     * Use a engine function to get the own account name, caller's name (AssertedId) and caller's device id
-     * 
+    /*
+     * Use a engine function to get caller's name (AssertedId) and caller's device id
      */
-    std::string ownUser("meAndMySelf");
-    std::string user("initiator");
-    std::string deviceId("initiatordevid");
+    char buf[128];
+    int len = getCallInfo(callId, "AssertedId", &buf[0], sizeof(buf));
+    string caller(buf);
+
+//    zrtp_log("CTStream", "++++ check sign sasHash:");
+
+    len = getCallInfo(callId, "xscdevid", &buf[0], sizeof(buf));
+    string callerDeviceId(buf);
+
 
     // Get the data from ZRTP and hand it over to Axolotl
     int32_t sigLen = zrtpEngine->getSignatureLength();
@@ -1316,15 +1275,14 @@ bool CtZrtpStream::checkSASSignature(uint8_t* sasHash) {
     typeLength = zrtpNtohl(typeLength);
     int32_t length = typeLength & 0x7fff;
 
-    std::string pubKeyData((const char*)sigData+4, length);
-    setAxoPublicKeyData(ownUser, user, deviceId, pubKeyData);
+    int32_t verified = zrtpEngine->isSASVerified() ? 1 : 0;
+
+    string pubKeyData((const char*)sigData+4, length);
+    checkRemoteAxoIdKey(caller, callerDeviceId, pubKeyData, verified);
 
     delete[] sigData;
 #endif
     return true;
-//     if (zrtpUserCallback != NULL) {
-//         return zrtpUserCallback->checkSASSignature(sasHash);
-//     }
 }
 
 SrtpErrorData* CtZrtpStream::srtpErrorElement() {
