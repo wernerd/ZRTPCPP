@@ -979,13 +979,6 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
         *errMsg = CriticalSWError;
         return NULL;
     }
-    signatureLength = confirm1->getSignatureLength();
-
-    if (signSasSeen && signatureLength > 0 && confirm1->isSignatureLengthOk()) {
-        signatureData = confirm1->getSignatureData();
-        callback->checkSASSignature(sasHash);
-        // TODO: error handling if checkSASSignature returns false.
-    }
     /*
      * The Confirm1 is ok, handle the Retained secret stuff and inform
      * GUI about state.
@@ -1001,6 +994,12 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
     // may not be set even if peer's flag is set in confirm1 message.
     sasFlag = zidRec->isSasVerified();
 
+    signatureLength = confirm1->getSignatureLength();
+    if (signSasSeen && signatureLength > 0 && confirm1->isSignatureLengthOk()) {
+        signatureData = confirm1->getSignatureData();
+        callback->checkSASSignature(sasHash);
+        // TODO: error handling if checkSASSignature returns false.
+    }
     // now we are ready to save the new RS1 which inherits the verified
     // flag from old RS1
     zidRec->setNewRs1((const uint8_t*)newRs1);
@@ -1178,23 +1177,22 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
             *errMsg = CriticalSWError;
             return NULL;
         }
-        signatureLength = confirm2->getSignatureLength();
-        if (signSasSeen && signatureLength > 0 && confirm2->isSignatureLengthOk() ) {
-            signatureData = confirm2->getSignatureData();
-            callback->checkSASSignature(sasHash);
-            // TODO: error handling if checkSASSignature returns false.
-        }
         /*
-        * The Confirm2 is ok, handle the Retained secret stuff and inform
-        * GUI about state.
-        */
+         * The Confirm2 is ok, handle the Retained secret stuff and inform
+         * GUI about state.
+         */
         bool sasFlag = confirm2->isSASFlag();
         // Our peer did not confirm the SAS in last session, thus reset
         // our SAS flag too. Reset the flag also if paranoidMode is true.
         if (!sasFlag || paranoidMode) {
             zidRec->resetSasVerified();
         }
-
+        signatureLength = confirm2->getSignatureLength();
+        if (signSasSeen && signatureLength > 0 && confirm2->isSignatureLengthOk() ) {
+            signatureData = confirm2->getSignatureData();
+            callback->checkSASSignature(sasHash);
+            // TODO: error handling if checkSASSignature returns false.
+        }
         // save new RS1, this inherits the verified flag from old RS1
         zidRec->setNewRs1((const uint8_t*)newRs1);
         if (saveZidRecord)
@@ -2489,6 +2487,10 @@ void ZRtp::resetSASVerified() {
 
     zidRec->resetSasVerified();
     getZidCacheInstance()->saveRecord(zidRec);
+}
+
+bool ZRtp::isSASVerified() {
+    return zidRec->isSasVerified();
 }
 
 void ZRtp::setRs2Valid() {

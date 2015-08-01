@@ -242,7 +242,13 @@ class __EXPORT ZRtp {
      */
     void resetSASVerified();
 
-    /**
+     /**
+      * Check if SAS verfied by both parties, valid after received Confirm1 or Confirm2.
+      *
+      */
+     bool isSASVerified();
+
+     /**
      * Get the ZRTP Hello Hash data.
      *
      * Use this method to get the ZRTP Hello hash data. The method
