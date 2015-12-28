@@ -94,6 +94,8 @@ const char* mandatoryPubKey = dh3k;
 
 char b32[] =  "B32 ";
 char b256[] = "B256";
+char b32e[] = "B32E";       // Use Emojis instead of letters/digits
+
 const char* mandatorySasType = b32;
 
 char hs32[] = "HS32";

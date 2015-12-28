@@ -6,13 +6,17 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <string>
+#include <memory>
 
 #include <CtZrtpSession.h>
 #include <CtZrtpCallback.h>
+
+#include <libzrtpcpp/Base32.h>
+#include <libzrtpcpp/EmojiBase32.h>
 
 struct sockaddr_in adr_inet;
 struct sockaddr_in adr_clnt;
@@ -124,7 +128,7 @@ class TestSendCallbackAudio: public CtZrtpSendCb {
 extern char zrtpBuildInfo[];
 static unsigned char recvAuxSecret[] = {1,2,3,4,5,6,7,8,9,0};
 
-
+using namespace std;
 int main(int argc,char **argv) {
     int z;
     ssize_t length;
@@ -132,6 +136,13 @@ int main(int argc,char **argv) {
     const char *srvr_addr = "127.0.0.1";
     uint8_t buffer[1300];            // Recv buffer
     uint32_t uiSSRC = 0xfeedbacc;
+
+    EmojiBase32 emoji((unsigned char*)&uiSSRC, 20);
+    shared_ptr<string> resultEmo = emoji.u32StringToUtf8(emoji.getEncoded());
+    cout << "Size: " << dec << resultEmo->size() << ", " << resultEmo->c_str() << endl;
+
+    Base32 b32((unsigned char*)&uiSSRC, 20);
+    cout << b32.getEncoded() << endl;
 
     fprintf(stderr, "Config info: %s\n", getZrtpBuildInfo());
     

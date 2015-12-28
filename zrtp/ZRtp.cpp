@@ -38,6 +38,7 @@
 #include <libzrtpcpp/ZrtpStateClass.h>
 #include <libzrtpcpp/ZIDCache.h>
 #include <libzrtpcpp/Base32.h>
+#include <libzrtpcpp/EmojiBase32.h>
 
 using namespace GnuZrtpCodes;
 
@@ -1329,6 +1330,9 @@ ZrtpPacketRelayAck* ZRtp::prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* er
         if (*(int32_t*)b32 == *(int32_t*)(renderAlgo->getName())) {
             SAS = Base32(sasBytes, 20).getEncoded();
         }
+        else if (*(int32_t*)b32e == *(int32_t*)(renderAlgo->getName())) {
+            SAS = *EmojiBase32::u32StringToUtf8(EmojiBase32(sasBytes, 20).getEncoded());
+        }
         else {
             SAS.assign(sas256WordsEven[sasBytes[0]]).append(":").append(sas256WordsOdd[sasBytes[1]]);
         }
@@ -2342,6 +2346,9 @@ void ZRtp::computeSRTPKeys() {
         sasBytes[3] = 0;
         if (*(int32_t*)b32 == *(int32_t*)(sasType->getName())) {
             SAS = Base32(sasBytes, 20).getEncoded();
+        }
+        else if (*(int32_t*)b32e == *(int32_t*)(sasType->getName())) {
+            SAS = *EmojiBase32::u32StringToUtf8(EmojiBase32(sasBytes, 20).getEncoded());
         }
         else {
             SAS.assign(sas256WordsEven[sasBytes[0]]).append(":").append(sas256WordsOdd[sasBytes[1]]);

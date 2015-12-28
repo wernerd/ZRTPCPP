@@ -252,6 +252,10 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
     if (b32sas == 1) {
         conf->addAlgo(SasType, zrtpSasTypes.getByName("B32 "));
     }
+    else if (b32sas == 2) {
+        conf->addAlgo(SasType, zrtpSasTypes.getByName("B32E"));
+        conf->addAlgo(SasType, zrtpSasTypes.getByName("B32 "));
+    }
     else {
         conf->addAlgo(SasType, zrtpSasTypes.getByName("B256"));
         conf->addAlgo(SasType, zrtpSasTypes.getByName("B32 "));
