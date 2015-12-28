@@ -1,3 +1,32 @@
+== GNU ZRTP 4.5.0 ==
+
+Added a new SAS algorithm 'B32E' that uses 32 Unicode Emoji
+code points instead of 32 ASCII characters. Application that
+are able to display Emojis may use this new SAS algorithm to
+display nice Emojis instead of 'boring' ASCII letters and
+digits.
+
+Some technical details:
+- the 32 selected emojis are easily distinguishable, known to
+  everyone, not offending etc, and use standard Unicode code
+  points
+- select colored emojis that look good on white and on black
+  backgrounds (most emojis look good on white only)
+- select emojis that are available on iOS, Android, Mac OS X
+  (Windows not checked)
+- the resulting SAS string is UTF-8 encoded, suitable for most
+  platforms except Java.
+
+To use the codes for Java the application needs to translate the
+UTF-8 encoding into UTF-16 encoding. Because most of the emojis
+are Unicode supplementary characters the UTF-8 to UTF-16 conversion
+must generate the necessary UTF-16 surrogate pairs.
+
+To support the UTF-8 / UTF-16 conversion the common directory
+contains conversion functions that I extracted from ICU C/C++
+library source.
+
+
 == GNU ZRTP 4.4.0 ==
 
 Changes the handling of HMAC and Hash contexts to avoild tool
