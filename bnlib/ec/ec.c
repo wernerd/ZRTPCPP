@@ -1042,6 +1042,11 @@ static int ecGenerateRandomNumber25519(const EcCurve *curve, BigNum *d)
     unsigned char random[32];
     _random(random, 32);
 
+    // Same as in curve25519_donna, thus a no-op there if this function generates the secret.
+    random[0] &= 248;
+    random[31] &= 127;
+    random[31] |= 64;
+
     /* No specific preparation. The curve25519_donna functions prepares the data.
      *
      * convert the random data into big numbers. the bigNumber is a container only.

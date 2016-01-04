@@ -30,6 +30,15 @@ static char debBuf[500];
 #define DEBUG(deb)
 #endif
 
+using namespace GnuZrtpCodes;
+using namespace std;
+
+#if !defined (_WITHOUT_TIVI_ENV) && defined AXO_SUPPORT
+const string getOwnAxoIdKey();
+void checkRemoteAxoIdKey(const string user, const string devId, const string pubKey, int32_t verifyState);
+int getCallInfo(int iCallID, const char *key, char *p, int iMax);
+#endif
+
 static TimeoutProvider<std::string, CtZrtpStream*>* staticTimeoutProvider = NULL;
 
 static std::map<int32_t, std::string*> infoMap;
@@ -47,7 +56,6 @@ static const char* noLocalSrtp          = "s3_c103: Local SRTP not enabled.";
 static const char* noZrtpTunnel         = "s3_c104: ZRTP tunneling not enabled.";
 static const char* noZrtpHashInSip      = "s3_c105: No ZRTP-hash received in SIP.";
 
-using namespace GnuZrtpCodes;
 
 /**
  * The following code is for internal logging only
@@ -1214,16 +1222,67 @@ void CtZrtpStream::zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment  info) {
 }
 
 void CtZrtpStream::signSAS(uint8_t* sasHash) {
-//     if (zrtpUserCallback != NULL) {
-//         zrtpUserCallback->signSAS(sasHash);
-//     }
+#if !defined (_WITHOUT_TIVI_ENV) && defined AXO_SUPPORT
+
+//    zrtp_log("CTStream", "++++ sign sasHash");
+
+    string keyData = getOwnAxoIdKey();
+    int32_t keyLength = keyData.size();
+
+    if (keyLength == 0)
+        return;
+
+    uint32_t typeLength = 100 << 16 | (keyLength & 0x7fff);
+    typeLength = zrtpHtonl(typeLength);
+
+    int32_t sigLen = (sizeof(int32_t) + keyLength + 3) & ~3;  // must be modulo 4 == 0
+
+    uint8_t* sigData = new uint8_t[sigLen];
+
+    // First is the signature type word
+    *(uint32_t*)sigData = typeLength;
+    memcpy(sigData+4, (const char*)keyData.data(), keyData.size());
+
+    zrtpEngine->setSignatureData(sigData, sigLen);
+    delete[] sigData;
+#endif
 }
 
 bool CtZrtpStream::checkSASSignature(uint8_t* sasHash) {
-//     if (zrtpUserCallback != NULL) {
-//         return zrtpUserCallback->checkSASSignature(sasHash);
-//     }
-     return false;
+#if !defined (_WITHOUT_TIVI_ENV) && defined AXO_SUPPORT
+    int32_t callId = session->getTiviCallId();
+    /*
+     * Use a engine function to get caller's name (AssertedId) and caller's device id
+     */
+    char buf[128];
+    int len = getCallInfo(callId, "AssertedId", &buf[0], sizeof(buf));
+    string caller(buf);
+
+//    zrtp_log("CTStream", "++++ check sign sasHash:");
+
+    len = getCallInfo(callId, "xscdevid", &buf[0], sizeof(buf));
+    string callerDeviceId(buf);
+
+
+    // Get the data from ZRTP and hand it over to Axolotl
+    int32_t sigLen = zrtpEngine->getSignatureLength();
+    const uint8_t* zrtpSigData = zrtpEngine->getSignatureData();
+
+    uint8_t* sigData = new uint8_t[sigLen];
+    memcpy(sigData, zrtpSigData, sigLen);
+
+    int32_t typeLength = *(uint32_t*)(sigData);
+    typeLength = zrtpNtohl(typeLength);
+    int32_t length = typeLength & 0x7fff;
+
+    int32_t verified = zrtpEngine->isSASVerified() ? 1 : 0;
+
+    string pubKeyData((const char*)sigData+4, length);
+    checkRemoteAxoIdKey(caller, callerDeviceId, pubKeyData, verified);
+
+    delete[] sigData;
+#endif
+    return true;
 }
 
 SrtpErrorData* CtZrtpStream::srtpErrorElement() {

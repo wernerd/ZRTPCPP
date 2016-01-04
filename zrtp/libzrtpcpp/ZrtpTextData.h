@@ -85,6 +85,7 @@ extern char sasString[];
 
 extern char KDFString[];
 extern char zrtpSessionKey[];
+extern char zrtpExportedKey[];
 extern char zrtpMsk[];
 extern char zrtpTrustedMitm[];
 
@@ -117,6 +118,7 @@ extern const char* mandatoryPubKey;
 
 extern char b32[];
 extern char b256[];
+extern char b32e[];
 extern const char* mandatorySasType;
 
 extern char hs32[];
