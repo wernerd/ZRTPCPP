@@ -137,13 +137,6 @@ int main(int argc,char **argv) {
     uint8_t buffer[1300];            // Recv buffer
     uint32_t uiSSRC = 0xfeedbacc;
 
-    EmojiBase32 emoji((unsigned char*)&uiSSRC, 20);
-    shared_ptr<string> resultEmo = emoji.u32StringToUtf8(emoji.getEncoded());
-    cout << "Size: " << dec << resultEmo->size() << ", " << resultEmo->c_str() << endl;
-
-    Base32 b32((unsigned char*)&uiSSRC, 20);
-    cout << b32.getEncoded() << endl;
-
     fprintf(stderr, "Config info: %s\n", getZrtpBuildInfo());
     
     CtZrtpSession::initCache("testzid.dat");        // initialize cache file
