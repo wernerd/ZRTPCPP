@@ -490,6 +490,14 @@ bool ZrtpConfigure::isParanoidMode() {
     return enableParanoidMode;
 }
 
+void ZrtpConfigure::setDisclosureFlag(bool yesNo) {
+    enableDisclosureFlag = yesNo;
+}
+
+bool ZrtpConfigure::isDisclosureFlag() {
+    return enableDisclosureFlag;
+}
+
 #if 0
 ZrtpConfigure config;
 

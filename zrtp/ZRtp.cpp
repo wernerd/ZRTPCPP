@@ -80,7 +80,8 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* conf
         callback(cb), dhContext(NULL), DHss(NULL), auxSecret(NULL), auxSecretLength(0), rs1Valid(false),
         rs2Valid(false), msgShaContext(NULL), hash(NULL), cipher(NULL), pubKey(NULL), sasType(NULL), authLength(NULL),
         multiStream(false), multiStreamAvailable(false), peerIsEnrolled(false), mitmSeen(false), pbxSecretTmp(NULL),
-        enrollmentMode(false), configureAlgos(*config), zidRec(NULL), saveZidRecord(true), masterStream(NULL) {
+        enrollmentMode(false), configureAlgos(*config), zidRec(NULL), saveZidRecord(true), signSasSeen(false),
+        masterStream(NULL), peerDisclosureFlagSeen(false) {
 
 #ifdef ZRTP_SAS_RELAY_SUPPORT
     enableMitmEnrollment = config->isTrustedMitM();
@@ -796,6 +797,9 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     if (zidRec->isSasVerified() && !paranoidMode) {
         zrtpConfirm1.setSASFlag();
     }
+    if (configureAlgos.isDisclosureFlag()) {
+        zrtpConfirm1.setDisclosureFlag();
+    }
     zrtpConfirm1.setExpTime(0xFFFFFFFF);
     zrtpConfirm1.setIv(randomIV);
     zrtpConfirm1.setHashH0(H0);
@@ -924,6 +928,9 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
 
     // Fill in Confirm1 packet.
     zrtpConfirm1.setMessageType((uint8_t*)Confirm1Msg);
+    if (configureAlgos.isDisclosureFlag()) {
+        zrtpConfirm1.setDisclosureFlag();
+    }
     zrtpConfirm1.setExpTime(0xFFFFFFFF);
     zrtpConfirm1.setIv(randomIV);
     zrtpConfirm1.setHashH0(H0);
@@ -991,6 +998,10 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
     if (!sasFlag || paranoidMode) {
         zidRec->resetSasVerified();
     }
+
+    // Store the status of the Disclosure flag
+    peerDisclosureFlagSeen = confirm1->isDisclosureFlag();
+
     // get verified flag from current RS1 before set a new RS1. This
     // may not be set even if peer's flag is set in confirm1 message.
     sasFlag = zidRec->isSasVerified();
@@ -1011,6 +1022,9 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
 
     if (sasFlag) {
         zrtpConfirm2.setSASFlag();
+    }
+    if (configureAlgos.isDisclosureFlag()) {
+        zrtpConfirm2.setDisclosureFlag();
     }
     zrtpConfirm2.setExpTime(0xFFFFFFFF);
     zrtpConfirm2.setIv(randomIV);
@@ -1122,8 +1136,14 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2MultiStream(ZrtpPacketConfirm* confirm1,
         *errMsg = CriticalSWError;
         return NULL;
     }
+    // Store the status of the Disclosure flag
+    peerDisclosureFlagSeen = confirm1->isDisclosureFlag();
+
     // now generate my Confirm2 message
     zrtpConfirm2.setMessageType((uint8_t*)Confirm2Msg);
+    if (configureAlgos.isDisclosureFlag()) {
+        zrtpConfirm2.setDisclosureFlag();
+    }
     zrtpConfirm2.setHashH0(H0);
     zrtpConfirm2.setExpTime(0xFFFFFFFF);
     zrtpConfirm2.setIv(randomIV);
@@ -1230,6 +1250,9 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
             return NULL;
         }
     }
+    // Store the status of the Disclosure flag
+    peerDisclosureFlagSeen = confirm2->isDisclosureFlag();
+
     return &zrtpConf2Ack;
 }
 

@@ -71,7 +71,7 @@ void set_zrtp_log_cb(void *pRet, void (*cb)(void *ret, const char *tag, const ch
 }
 
 // This function is static (could be global) to reduce visibility
-static void zrtp_log( const char *tag, const char *buf){
+/*static*/ void zrtp_log( const char *tag, const char *buf){
     if(_zrtp_log_cb){
         _zrtp_log_cb(pLogRet, tag, buf);
     }
@@ -495,6 +495,7 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
         secState |= 0x100;
 
     T_ZRTP_I("sec_state", secState);
+    T_ZRTP_I("peerDisclosureFlag", zrtpEngine->isPeerDisclosureFlag()? 1 : 0);
     T_ZRTP_LB("buildInfo",  zrtpBuildInfo);
 
     // Compute Hello-hash info string
