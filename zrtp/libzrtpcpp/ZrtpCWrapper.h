@@ -843,7 +843,7 @@ extern "C"
      * and restriction how and when to use multi-stream mode.
      *
      * @param zrtpContext
-     *    Pointer to the opaque ZrtpContext structure.
+     *    Pointer to the opaque ZrtpContext structure of the master ZRTP session.
      * @param length
      *    Pointer to an integer that receives the length of the char array
      * @return
