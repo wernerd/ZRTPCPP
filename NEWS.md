@@ -1,3 +1,9 @@
+## GNU ZRTP 4.6.2 ##
+
+A small fix in the ZrtpCWrapper to fix an issue within 4.6.1
+;-)
+
+
 ## GNU ZRTP 4.6.1 ##
 
 A small fix in the ZrtpCWrapper to initialize and use the ZRTP 
