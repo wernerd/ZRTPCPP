@@ -212,8 +212,8 @@ char* zrtp_getMultiStrParams(ZrtpContext* zrtpContext, int32_t *length) {
     return retval;
 }
 
-void zrtp_setMultiStrParams(ZrtpContext* zrtpContext, char* parameters, int32_t length, ZrtpContext* master) {
-    if (!zrtpContext || !zrtpContext->zrtpEngine)
+void zrtp_setMultiStrParams(ZrtpContext* zrtpContext, char* parameters, int32_t length) {
+    if (!zrtpContext || !zrtpContext->zrtpEngine || !zrtpContext->zrtpMaster)
         return;
 
     if (parameters == NULL)
@@ -222,7 +222,7 @@ void zrtp_setMultiStrParams(ZrtpContext* zrtpContext, char* parameters, int32_t 
     std::string str("");
     str.assign(parameters, length); // set chars (bytes) to the string
 
-    zrtpContext->zrtpEngine->setMultiStrParams(str, master->zrtpMaster);
+    zrtpContext->zrtpEngine->setMultiStrParams(str, zrtpContext->zrtpMaster);
 }
 
 int32_t zrtp_isMultiStream(ZrtpContext* zrtpContext) {
