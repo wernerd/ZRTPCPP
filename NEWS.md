@@ -1,3 +1,14 @@
+## GNU ZRTP 4.6.1 ##
+
+A small fix in the ZrtpCWrapper to initialize and use the ZRTP 
+master instance in case of multi-stream usage. Does not affect
+the main ZRTP usage, only projects that use the wrapper such
+as PJSIP or Gstreamer projects.
+
+These project should re-compile if they use the multi-stream
+feature.
+
+
 ## GNU ZRTP 4.6.0 ##
 
 Only a small add-on to the code to implement handling of the
