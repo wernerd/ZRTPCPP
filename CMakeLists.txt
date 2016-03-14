@@ -1,4 +1,4 @@
-# Copyright (C) 2009 Werner Dittman
+# Copyright (C) 2009 - 2016 Werner Dittman
 #
 # This file is free software; as a special exception the author gives
 # unlimited permission to copy and/or distribute it, with or without
@@ -14,9 +14,9 @@ PROJECT(libzrtpcpp)
 
 SET(CPACK_PACKAGE_VERSION_MAJOR 4)
 SET(CPACK_PACKAGE_VERSION_MINOR 6)
-SET(CPACK_PACKAGE_VERSION_PATCH 2)
+SET(CPACK_PACKAGE_VERSION_PATCH 3)
 
-set (VERSION 4.6.2)
+set (VERSION 4.6.3)
 set (SOVERSION 4)
 
 # Define supported command line parameters.

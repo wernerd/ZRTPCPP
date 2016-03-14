@@ -1,3 +1,9 @@
+## GNU ZRTP 4.6.3 ##
+
+A small fix inside the ZRTP main module to ignore malformed
+DH1 packets and avoid an NULL pointer access. 
+
+
 ## GNU ZRTP 4.6.2 ##
 
 A small fix in the ZrtpCWrapper to fix an issue within 4.6.1
