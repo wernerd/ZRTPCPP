@@ -394,7 +394,7 @@ bool CryptoContext::checkReplay(uint16_t newSeq)
         }
 
         delta = -delta;
-        int idx = delta / 64;
+        int idx = (int)delta / 64;
         uint64_t bit = 1UL << (delta % 64);
         if ((replay_window[idx] & bit) == bit) {
             return false;  /* Packet already received ! */
@@ -442,7 +442,7 @@ void CryptoContext::update(uint16_t newSeq)
     }
     else {
         delta = -delta;
-        int idx = delta / 64;
+        int idx = (int)delta / 64;
         uint64_t bit = 1UL << (delta % 64);
         replay_window[idx] |= bit;
     }

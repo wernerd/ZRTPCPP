@@ -1179,11 +1179,11 @@ extern "C"
     *
     * The standard configuration consists of the following algorithms:
     * <ul>
-    * <li> Hash: SHA256 </li>
-    * <li> Symmetric Cipher: AES 128, AES 256 </li>
-    * <li> Public Key Algorithm: DH2048, DH3027, MultiStream </li>
+    * <li> Hash: SHA384, SHA256 </li>
+    * <li> Symmetric Cipher: Twofish 256, , AES 256, Twofish 128, AES 128, </li>
+    * <li> Public Key Algorithm: EC-DH256, DH3072, EC-DH384, DH2048, MultiStream </li>
     * <li> SAS type: libase 32 </li>
-    * <li> SRTP Authentication lengths: 32, 80 </li>
+    * <li> SRTP Authentication lengths: SK32, SK64, 32, 80 </li>
     *</ul>
     *
     * @param zrtpContext

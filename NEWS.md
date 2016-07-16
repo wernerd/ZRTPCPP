@@ -1,3 +1,9 @@
+## GNU ZRTP 4.6.4 ##
+
+Some fixes to slience Windows C/C++ compiler, fix a few include
+statements when using openSSL
+
+
 ## GNU ZRTP 4.6.3 ##
 
 A small fix inside the ZRTP main module to ignore malformed
