@@ -135,7 +135,7 @@ enum zrtp_WarningCodes {
     zrtp_WarningCRCmismatch,             /*!< Internal ZRTP packet checksum mismatch - packet dropped */
     zrtp_WarningSRTPauthError,           /*!< Dropping packet because SRTP authentication failed! */
     zrtp_WarningSRTPreplayError,         /*!< Dropping packet because SRTP replay check failed! */
-    zrtp_WarningNoExpectedRSMatch        /*!< Valid retained shared secrets availabe but no matches found - must verify SAS */
+    zrtp_WarningNoExpectedRSMatch,       /*!< Valid retained shared secrets availabe but no matches found - must verify SAS */
     zrtp_WarningNoExpectedAuxMatch       /*!< Our AUX secret was set but the other peer's AUX secret does not match ours */
 };
 
