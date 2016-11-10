@@ -1,3 +1,11 @@
+## GNU ZRTP 4.6.4 ##
+
+Some fixes to slience Windows C/C++ compiler, fix a few include
+statements when using openSSL, small fixes to check disclosure
+flag. Reset valid flags when adding a new cache record to avoid
+wrong security message. 
+
+
 ## GNU ZRTP 4.6.3 ##
 
 A small fix inside the ZRTP main module to ignore malformed
