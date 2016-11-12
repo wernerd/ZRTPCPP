@@ -41,6 +41,9 @@ fi
 
 cp obj/local/armeabi-v7a/libzrtpcpp.a ${WORKSPACE}/silentphone2/jni/armeabi-v7a/
 
+popd
+popd
+
 # cleanup build directory
 rm -rf buildTiviAndroid
 exit 0
