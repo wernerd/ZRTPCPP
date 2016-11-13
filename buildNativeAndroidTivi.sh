@@ -24,7 +24,10 @@ fi
 #   echo "*** building release configuration"
 #fi
 
+# remove old build dir and files that may hang around after an unsuccessful build
 rm -rf buildTiviAndroid
+rm -f buildinfo_*.c
+
 mkdir buildTiviAndroid
 pushd buildTiviAndroid
 
@@ -44,6 +47,8 @@ cp obj/local/armeabi-v7a/libzrtpcpp.a ${WORKSPACE}/silentphone2/jni/armeabi-v7a/
 popd
 popd
 
-# cleanup build directory
+# remove build dir and generated temporary files
 rm -rf buildTiviAndroid
+rm buildinfo_*.c
+
 exit 0
