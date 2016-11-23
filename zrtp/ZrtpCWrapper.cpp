@@ -194,6 +194,42 @@ char* zrtp_getPeerHelloHash(ZrtpContext* zrtpContext) {
     return retval;
 }
 
+char* zrtp_getPeerName(ZrtpContext* zrtpContext) {
+    uint8_t peerZid[IDENTIFIER_LEN];
+    std::string ret;
+
+    if (zrtpContext && zrtpContext->zrtpEngine) {
+        if (!zrtpContext->zrtpEngine->getPeerZid(peerZid))
+            return NULL;
+        if (!getZidCacheInstance()->getPeerName(peerZid, &ret))
+            return NULL;
+    } else {
+        return NULL;
+    }
+
+    if (ret.size() == 0)
+        return NULL;
+
+    char* retval = (char*)malloc(ret.size()+1);
+    strcpy(retval, ret.c_str());
+    return retval;
+}
+
+void zrtp_putPeerName(ZrtpContext* zrtpContext, const char* name) {
+    uint8_t peerZid[IDENTIFIER_LEN];
+    std::string ret;
+
+    if (!name)
+        return;
+
+    if (zrtpContext && zrtpContext->zrtpEngine)
+        if (!zrtpContext->zrtpEngine->getPeerZid(peerZid))
+            return;
+
+        std::string str(name);
+        getZidCacheInstance()->putPeerName(peerZid, str);
+}
+
 char* zrtp_getMultiStrParams(ZrtpContext* zrtpContext, int32_t *length) {
     std::string ret;
 
