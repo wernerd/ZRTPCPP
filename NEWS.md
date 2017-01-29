@@ -1,3 +1,10 @@
+## GNU ZRTP 4.6.5 ##
+
+Cleanup compiler flags, reduce visibility for Android build,
+check some buffer length. No functional enhancements, no changes
+in API.
+
+
 ## GNU ZRTP 4.6.4 ##
 
 Some fixes to slience Windows C/C++ compiler, fix a few include
