@@ -42,18 +42,19 @@
  */
 #define ZRTP_MAGIC       0x5a525450
 
-#define ZRTP_WORD_SIZE   4
-#define CRC_SIZE         4
+//#define ZRTP_WORD_SIZE   4
+static const uint32_t ZRTP_WORD_SIZE = 4;
+static const uint32_t CRC_SIZE =       4;
 
-#define TYPE_SIZE        (2*ZRTP_WORD_SIZE)
-#define CLIENT_ID_SIZE   (4*ZRTP_WORD_SIZE)
-#define HASH_IMAGE_SIZE  (8*ZRTP_WORD_SIZE)
-#define ZID_SIZE         (3*ZRTP_WORD_SIZE)
-#define HVI_SIZE         (8*ZRTP_WORD_SIZE)
-#define HMAC_SIZE        (2*ZRTP_WORD_SIZE)
-#define ID_SIZE          (2*ZRTP_WORD_SIZE)
-#define IV_SIZE          (4*ZRTP_WORD_SIZE)
-#define PING_HASH_SIZE   (2*ZRTP_WORD_SIZE)
+static const uint32_t TYPE_SIZE =       (2*ZRTP_WORD_SIZE);
+static const uint32_t CLIENT_ID_SIZE =  (4*ZRTP_WORD_SIZE);
+static const uint32_t HASH_IMAGE_SIZE = (8*ZRTP_WORD_SIZE);
+static const uint32_t ZID_SIZE =        (3*ZRTP_WORD_SIZE);
+static const uint32_t HVI_SIZE =        (8*ZRTP_WORD_SIZE);
+static const uint32_t HMAC_SIZE =       (2*ZRTP_WORD_SIZE);
+static const uint32_t ID_SIZE =         (2*ZRTP_WORD_SIZE);
+static const uint32_t IV_SIZE =         (4*ZRTP_WORD_SIZE);
+static const uint32_t PING_HASH_SIZE =  (2*ZRTP_WORD_SIZE);
 
 
 /**

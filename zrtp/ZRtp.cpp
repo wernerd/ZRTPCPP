@@ -31,12 +31,8 @@
 #include <crypto/skeinMac384.h>
 #include <crypto/skein384.h>
 
-#include <crypto/aesCFB.h>
-#include <crypto/twoCFB.h>
-
 #include <libzrtpcpp/ZRtp.h>
 #include <libzrtpcpp/ZrtpStateClass.h>
-#include <libzrtpcpp/ZIDCache.h>
 #include <libzrtpcpp/Base32.h>
 #include <libzrtpcpp/EmojiBase32.h>
 
@@ -94,13 +90,14 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* conf
     paranoidMode = config->isParanoidMode();
     sasSignSupport = config->isSasSignature();
 
-    // setup the implicit hash function pointers and length
+    // setup the implicit hash function pointers and length. The cast are added to show that we use different
+    // functions
     hashLengthImpl = SHA256_DIGEST_LENGTH;
-    hashFunctionImpl = sha256;
-    hashListFunctionImpl = sha256;
+    hashFunctionImpl = static_cast<void (*)(unsigned char*, unsigned int, unsigned char*)>(sha256);
+    hashListFunctionImpl = static_cast<void (*) (unsigned char*[], unsigned int[], unsigned char *)>(sha256);
 
-    hmacFunctionImpl = hmac_sha256;
-    hmacListFunctionImpl = hmac_sha256;
+    hmacFunctionImpl = static_cast<void (*)(uint8_t*, uint32_t, uint8_t *, int32_t, uint8_t *c, uint32_t *)>(hmac_sha256);
+    hmacListFunctionImpl = static_cast<void (*)(uint8_t*, uint32_t, uint8_t *[], uint32_t[], uint8_t *, uint32_t *)>(hmac_sha256);
 
     memcpy(ownZid, myZid, ZID_SIZE);        // save the ZID
 
@@ -307,7 +304,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     }
     memcpy(peerH3, hello->getH3(), HASH_IMAGE_SIZE);
 
-    int32_t helloLen = hello->getLength() * ZRTP_WORD_SIZE;
+    uint32_t helloLen = hello->getLength() * ZRTP_WORD_SIZE;
 
     // calculate hash over the received Hello packet - is peer's hello hash.
     // Use implicit hash algorithm
@@ -1285,6 +1282,58 @@ ZrtpPacketPingAck* ZRtp::preparePingAck(ZrtpPacketPing* ppkt) {
     return &zrtpPingAck;
 }
 
+
+static const uint32_t MaxSasValue = 0xfffffed8;     // 4294967000 decimal
+static string sasDigit(const uint8_t* sasHash)
+{
+    // Make sure the compiler properly aligns the byte array to an int boundary and
+    // we can use it as an int
+    union alignmentUnion{
+        uint32_t toAlign;
+        uint8_t bytes[4];
+    };
+
+    int32_t found = 0;
+    int32_t sasDigits[2];
+
+    // Treat the sasHash as a big endian value: the most significant byte is on lowest address.
+    // Keep that order while looping over the data.
+    // The loop creates and checks at most 28 values
+    //
+    // Set index 0
+    // Loop:
+    // - Take 4 bytes, create an unsigned int, check against the max value and use it if it fits
+    // - If it does not fit continue
+    // - increment byte index by one
+    // - if not found 2 values and more data available try next value
+    // - terminate loop if 2 values found or data exhausted
+    for (int32_t i = 0; i < SHA256_DIGEST_LENGTH - 4 && found < 2; i++) {
+        alignmentUnion data;
+        data.bytes[0] = sasHash[i];
+        data.bytes[1] = sasHash[i+1];
+        data.bytes[2] = sasHash[i+2];
+        data.bytes[3] = sasHash[i+3];
+
+        // For comparing and further processing we need the host order
+        uint32_t value = zrtpNtohl(*reinterpret_cast<uint32_t*>(data.bytes));
+
+        if (value > MaxSasValue) {
+            continue;
+        }
+        sasDigits[found] = value % 1000;
+        found++;
+    }
+
+    if (found != 2) {
+        return string();
+    }
+
+    char strngBuffer[10];
+    snprintf(strngBuffer, 9, "%d%d", sasDigits[0], sasDigits[1]);
+    string sas(strngBuffer);
+    return sas;
+}
+
 ZrtpPacketRelayAck* ZRtp::prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* errMsg) {
 
 #ifdef ZRTP_SAS_RELAY_SUPPORT
@@ -1359,6 +1408,12 @@ ZrtpPacketRelayAck* ZRtp::prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* er
         }
         else if (*(int32_t*)b32e == *(int32_t*)(renderAlgo->getName())) {
             SAS = *EmojiBase32::u32StringToUtf8(EmojiBase32(sasBytes, 20).getEncoded());
+        }
+        else if (*(int32_t*)b10d == *(int32_t*)(renderAlgo->getName())) {
+            SAS = sasDigit(sasHash);
+            if (SAS.empty()) {
+                // report fatal error
+            }
         }
         else {
             SAS.assign(sas256WordsEven[sasBytes[0]]).append(":").append(sas256WordsOdd[sasBytes[1]]);
@@ -2179,7 +2234,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
 
     // Next the fixed string "ZRTP-HMAC-KDF"
     data[pos] = (unsigned char*)KDFString;
-    length[pos++] = strlen(KDFString);
+    length[pos++] = static_cast<uint32_t>(strlen(KDFString));
 
     // Next is Initiator's id (ZIDi), in this case as Responder
     // it is peerZid
@@ -2203,7 +2258,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
      * length. NOTE: if implementing auxSecret and/or pbxSecret -> check
      * this length stuff again.
      */
-    int secretHashLen = RS_LENGTH;
+    uint32_t secretHashLen = RS_LENGTH;
     secretHashLen = zrtpHtonl(secretHashLen);        // prepare 32 bit big-endian number
 
     for (int32_t i = 0; i < 3; i++) {
@@ -2234,8 +2289,8 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
 }
 
 
-void ZRtp::KDF(uint8_t* key, uint32_t keyLength, uint8_t* label, int32_t labelLength,
-               uint8_t* context, int32_t contextLength, int32_t L, uint8_t* output) {
+void ZRtp::KDF(uint8_t* key, size_t keyLength, uint8_t* label, size_t labelLength,
+               uint8_t* context, size_t contextLength, size_t L, uint8_t* output) {
 
     unsigned char* data[6];
     uint32_t length[6];
@@ -2250,21 +2305,21 @@ void ZRtp::KDF(uint8_t* key, uint32_t keyLength, uint8_t* label, int32_t labelLe
 
     // Next element is the label, null terminated, labelLength includes null byte.
     data[pos] = label;
-    length[pos++] = labelLength;
+    length[pos++] = static_cast<uint32_t>(labelLength);
 
     // Next is the KDF context
     data[pos] = context;
-    length[pos++] = contextLength;
+    length[pos++] = static_cast<uint32_t>(contextLength);
 
     // last element is HMAC length in bits, big endian
-    uint32_t len = zrtpHtonl(L);
+    uint32_t len = zrtpHtonl(static_cast<uint32_t>(L));
     data[pos] = (unsigned char*)&len;
     length[pos++] = sizeof(uint32_t);
 
     data[pos] = NULL;
 
     // Use negotiated hash.
-    hmacListFunction(key, keyLength, data, length, output, &maclen);
+    hmacListFunction(key, static_cast<uint32_t>(keyLength), data, length, output, &maclen);
 }
 
 // Compute the Multi Stream mode s0
@@ -2272,7 +2327,7 @@ void ZRtp::generateKeysMultiStream() {
 
     // allocate the maximum size, compute real size to use
     uint8_t KDFcontext[sizeof(peerZid)+sizeof(ownZid)+sizeof(messageHash)];
-    int32_t kdfSize = sizeof(peerZid)+sizeof(ownZid)+hashLength;
+    size_t kdfSize = sizeof(peerZid)+sizeof(ownZid)+hashLength;
 
     if (myRole == Responder) {
         memcpy(KDFcontext, peerZid, sizeof(peerZid));
@@ -2318,9 +2373,9 @@ void ZRtp::computeSRTPKeys() {
 
     // allocate the maximum size, compute real size to use
     uint8_t KDFcontext[sizeof(peerZid)+sizeof(ownZid)+sizeof(messageHash)];
-    int32_t kdfSize = sizeof(peerZid)+sizeof(ownZid)+hashLength;
+    size_t kdfSize = sizeof(peerZid)+sizeof(ownZid)+hashLength;
 
-    int32_t keyLen = cipher->getKeylen() * 8;
+    size_t keyLen = cipher->getKeylen() * 8UL;
 
     if (myRole == Responder) {
         memcpy(KDFcontext, peerZid, sizeof(peerZid));
@@ -2369,13 +2424,19 @@ void ZRtp::computeSRTPKeys() {
         // base 32 (5 bits per character)
         sasBytes[0] = sasHash[0];
         sasBytes[1] = sasHash[1];
-        sasBytes[2] = sasHash[2] & 0xf0;
+        sasBytes[2] = sasHash[2] & static_cast<uint8_t>(0xf0);
         sasBytes[3] = 0;
         if (*(int32_t*)b32 == *(int32_t*)(sasType->getName())) {
             SAS = Base32(sasBytes, 20).getEncoded();
         }
         else if (*(int32_t*)b32e == *(int32_t*)(sasType->getName())) {
             SAS = *EmojiBase32::u32StringToUtf8(EmojiBase32(sasBytes, 20).getEncoded());
+        }
+        else if (*(int32_t*)b10d == *(int32_t*)(sasType->getName())) {
+            SAS = sasDigit(sasHash);
+            if (SAS.empty()) {
+                // report fatal error
+            }
         }
         else {
             SAS.assign(sas256WordsEven[sasBytes[0]]).append(":").append(sas256WordsOdd[sasBytes[1]]);

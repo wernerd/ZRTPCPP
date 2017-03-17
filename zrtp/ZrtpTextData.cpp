@@ -93,6 +93,7 @@ const char* mandatoryPubKey = dh3k;
 char b32[] =  "B32 ";
 char b256[] = "B256";
 char b32e[] = "B32E";       // Use Emojis instead of letters/digits
+char b10d[] = "B10D";       // Use 6 digits, this may be used for international SAS values
 
 const char* mandatorySasType = b32;
 

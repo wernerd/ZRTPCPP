@@ -104,7 +104,7 @@ public:
      *
      * @return Size in bytes.
      */
-    int32_t getDhSize() const;
+    uint32_t getDhSize() const;
 
     /**
      * Returns the size in bytes of computed public key.

@@ -386,7 +386,7 @@ int32_t ZrtpDH::generatePublicKey()
     return 0;
 }
 
-int32_t ZrtpDH::getDhSize() const
+uint32_t ZrtpDH::getDhSize() const
 {
     switch (pkType) {
     case DH2K:

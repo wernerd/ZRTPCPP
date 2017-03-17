@@ -83,7 +83,7 @@ public:
      *
      * @see AlgoTypes
      */
-    AlgorithmEnum(const AlgoTypes type, const char* name, int32_t klen,
+    AlgorithmEnum(const AlgoTypes type, const char* name, uint32_t klen,
                   const char* ra, encrypt_t en, decrypt_t de, SrtpAlgorithms alId);
 
     /**
@@ -113,9 +113,9 @@ public:
      * Get the algorihm's key length.
      *
      * @returns
-     *    An integer definig the key length in bytes.
+     *    An integer defining the key length in bytes.
      */
-    int getKeylen();
+    uint32_t getKeylen();
 
     /**
      * Get the algorihm's integer id.
@@ -161,7 +161,7 @@ public:
 private:
     AlgoTypes algoType;
     std::string algoName;
-    int32_t   keyLen;
+    uint32_t   keyLen;
     std::string readable;
     encrypt_t encrypt;
     decrypt_t decrypt;
@@ -209,7 +209,7 @@ public:
      * @return
      *    The number of currently stored AlgorithmEnums
      */
-    int getSize();
+    size_t getSize();
 
     /**
      * Get the AlgoTypes to which this EnumBase belongs.
@@ -246,7 +246,7 @@ protected:
     EnumBase(AlgoTypes algo);
     ~EnumBase();
     void insert(const char* name);
-    void insert(const char* name, int32_t klen,
+    void insert(const char* name, uint32_t klen,
                 const char* ra, encrypt_t en, decrypt_t de, SrtpAlgorithms alId);
 
 private:

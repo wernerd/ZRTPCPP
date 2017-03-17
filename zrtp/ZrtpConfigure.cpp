@@ -25,7 +25,7 @@
 #include <libzrtpcpp/ZrtpTextData.h>
 
 AlgorithmEnum::AlgorithmEnum(const AlgoTypes type, const char* name, 
-                             int32_t klen, const char* ra, encrypt_t en, 
+                             uint32_t klen, const char* ra, encrypt_t en,
                              decrypt_t de, SrtpAlgorithms alId):
     algoType(type) , algoName(name), keyLen(klen), readable(ra), encrypt(en),
     decrypt(de), algoId(alId) {
@@ -43,7 +43,7 @@ const char* AlgorithmEnum::getReadable() {
     return readable.c_str();
 }
     
-int AlgorithmEnum::getKeylen() {
+uint32_t AlgorithmEnum::getKeylen() {
     return keyLen;
 }
 
@@ -92,7 +92,7 @@ void EnumBase::insert(const char* name) {
     algos.push_back(e);
 }
 
-void EnumBase::insert(const char* name, int32_t klen, const char* ra,
+void EnumBase::insert(const char* name, uint32_t klen, const char* ra,
                       encrypt_t enc, decrypt_t dec, SrtpAlgorithms alId) {
     if (!name)
         return;
@@ -100,7 +100,7 @@ void EnumBase::insert(const char* name, int32_t klen, const char* ra,
     algos.push_back(e);
 }
 
-int EnumBase::getSize() {
+size_t EnumBase::getSize() {
     return algos.size(); 
 }
 
@@ -208,6 +208,7 @@ SasTypeEnum::SasTypeEnum() : EnumBase(SasType) {
     insert(b32);
     insert(b256);
     insert(b32e);
+    insert(b10d);
 }
 
 SasTypeEnum::~SasTypeEnum() {}
@@ -442,23 +443,18 @@ std::vector<AlgorithmEnum* >& ZrtpConfigure::getEnum(AlgoTypes algoType) {
     switch(algoType) {
         case HashAlgorithm:
             return hashes;
-            break;
 
         case CipherAlgorithm:
             return symCiphers;
-            break;
 
         case PubKeyAlgorithm:
             return publicKeyAlgos;
-            break;
 
         case SasType:
             return sasTypes;
-            break;
 
         case AuthLength:
             return authLengths;
-            break;
 
         default:
             break;

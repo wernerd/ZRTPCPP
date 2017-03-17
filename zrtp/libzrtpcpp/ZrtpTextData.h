@@ -119,6 +119,7 @@ extern const char* mandatoryPubKey;
 extern char b32[];
 extern char b256[];
 extern char b32e[];
+extern char b10d[];
 extern const char* mandatorySasType;
 
 extern char hs32[];

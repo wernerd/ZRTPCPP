@@ -306,7 +306,7 @@ int32_t ZrtpDH::generatePublicKey()
     return 0;
 }
 
-int32_t ZrtpDH::getDhSize() const
+uint32_t ZrtpDH::getDhSize() const
 {
     if (pkType == DH2K || pkType == DH3K)
         return DH_size(static_cast<DH*>(ctx));

@@ -782,7 +782,7 @@ private:
      * pointers to aux secret storage and length of aux secret
      */
     uint8_t* auxSecret;
-    int32_t auxSecretLength;
+    uint32_t auxSecretLength;
 
     /**
      * Record if valid rs1 and/or rs1 were found in the
@@ -910,7 +910,7 @@ private:
     void (*hashCtxListFunction)(void* ctx, unsigned char* dataChunks[],
            unsigned int dataChunkLength[]);
 
-    int32_t hashLength;
+    uint32_t hashLength;
 
     // Funtion pointers to implicit hash and hmac functions
     void (*hashFunctionImpl)(unsigned char *data,
@@ -1271,8 +1271,8 @@ private:
 
     void computeSRTPKeys();
 
-    void KDF(uint8_t* key, uint32_t keyLength, uint8_t* label, int32_t labelLength,
-               uint8_t* context, int32_t contextLength, int32_t L, uint8_t* output);
+    void KDF(uint8_t* key, size_t keyLength, uint8_t* label, size_t labelLength,
+               uint8_t* context, size_t contextLength, size_t L, uint8_t* output);
 
     void generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec);
 
