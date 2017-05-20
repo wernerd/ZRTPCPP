@@ -417,7 +417,7 @@ protected:
      * @param secret the secret data
      * @param length the length of the secret data in bytes
      */
-    void setAuxSecret(const unsigned char *secret, int length);
+    void setAuxSecret(const unsigned char *secret, uint32_t length);
 
     /**
      * @brief Get SRTP error trace data.

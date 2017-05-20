@@ -731,7 +731,7 @@ void CtZrtpStream::setZrtpEncapAttribute(const char *attribute) {
     }
 }
 
-void CtZrtpStream::setAuxSecret(const unsigned char *secret, int length) {
+void CtZrtpStream::setAuxSecret(const unsigned char *secret, uint32_t length) {
     zrtpEngine->setAuxSecret((unsigned char*)secret, length);
 }
 

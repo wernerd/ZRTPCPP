@@ -216,7 +216,7 @@ class __EXPORT ZRtp {
      * @param length
      *     Length of the auxilliary secrect in bytes
      */
-    void setAuxSecret(uint8_t* data, int32_t length);
+    void setAuxSecret(uint8_t* data, uint32_t length);
 
     /**
      * Check current state of the ZRTP state engine
@@ -491,7 +491,7 @@ class __EXPORT ZRtp {
      * @return
      *    True if the method stored the data, false otherwise.
      */
-    bool setSignatureData(uint8_t* data, int32_t length);
+    bool setSignatureData(uint8_t* data, uint32_t length);
 
     /**
      * Get signature data.

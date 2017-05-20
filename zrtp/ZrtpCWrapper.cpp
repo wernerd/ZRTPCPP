@@ -142,7 +142,7 @@ void zrtp_processTimeout(ZrtpContext* zrtpContext) {
 //    return 0;
 //}
 
-void zrtp_setAuxSecret(ZrtpContext* zrtpContext, uint8_t* data, int32_t length) {
+void zrtp_setAuxSecret(ZrtpContext* zrtpContext, uint8_t* data, uint32_t length) {
     if (zrtpContext && zrtpContext->zrtpEngine)
         zrtpContext->zrtpEngine->setAuxSecret(data, length);
 }
@@ -293,7 +293,7 @@ uint8_t* zrtp_getSasHash(ZrtpContext* zrtpContext) {
     return NULL;
 }
 
-int32_t zrtp_setSignatureData(ZrtpContext* zrtpContext, uint8_t* data, int32_t length) {
+int32_t zrtp_setSignatureData(ZrtpContext* zrtpContext, uint8_t* data, uint32_t length) {
     if (zrtpContext && zrtpContext->zrtpEngine)
         return zrtpContext->zrtpEngine->setSignatureData(data, length) ? 1 : 0;
 

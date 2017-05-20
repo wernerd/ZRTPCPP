@@ -21,3 +21,5 @@ aclocal.m4
 ._buildmac
 .directory
 helper/
+docLocal/
+.idea/
