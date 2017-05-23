@@ -217,7 +217,7 @@ void ZRtp::processTimeout() {
     }
 }
 
-#ifdef oldgoclear
+#if 0
 bool ZRtp::handleGoClear(uint8_t *message)
 {
     char *msg, first, last;
@@ -714,7 +714,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
     delete dhContext;
     dhContext = NULL;
 
-    // TODO: at initiator we can call signSAS at this point, don't dealy until confirm1 reveived
+    // TODO: at initiator we can call signSAS at this point, don't delay until confirm1 received
     // store DHPart1 data temporarily until we can check HMAC after receiving Confirm1
     storeMsgTemp(dhPart1);
     return &zrtpDH2;
@@ -969,7 +969,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
 
     // Use the Responder's keys here because we are Initiator here and
     // receive packets from Responder
-    uint32_t hmlen = (confirm1->getLength() - 9) * ZRTP_WORD_SIZE;
+    uint32_t hmlen = (confirm1->getLength() - (uint)9) * ZRTP_WORD_SIZE;
 
     // Use negotiated HMAC (hash)
     hmacFunction(hmacKeyR, hashLength, confirm1->getHashH0(), hmlen, confMac, &macLen);
@@ -1055,7 +1055,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
         getZidCacheInstance()->saveRecord(zidRec);
 
     // Encrypt and HMAC with Initiator's key - we are Initiator here
-    hmlen = (zrtpConfirm2.getLength() - 9) * ZRTP_WORD_SIZE;
+    hmlen = (zrtpConfirm2.getLength() - (uint)9) * ZRTP_WORD_SIZE;
     cipher->getEncrypt()(zrtpKeyI, cipher->getKeylen(), randomIV, zrtpConfirm2.getHashH0(), hmlen);
 
     // Use negotiated HMAC (hash)
@@ -1176,7 +1176,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
 
     // Use the Initiator's keys here because we are Responder here and
     // reveice packets from Initiator
-    uint32_t hmlen = (confirm2->getLength() - 9) * ZRTP_WORD_SIZE;
+    uint32_t hmlen = (confirm2->getLength() - (uint)9) * ZRTP_WORD_SIZE;
 
     // Use negotiated HMAC (hash)
     hmacFunction(hmacKeyI, hashLength, confirm2->getHashH0(), hmlen, confMac, &macLen);
@@ -1427,6 +1427,7 @@ ZrtpPacketRelayAck* ZRtp::prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* er
 }
 
 // TODO Implement GoClear handling
+#if 0
 ZrtpPacketClearAck* ZRtp::prepareClearAck(ZrtpPacketGoClear* gpkt) {
     sendInfo(Warning, WarningGoClearReceived);
     return &zrtpClearAck;
@@ -1437,12 +1438,12 @@ ZrtpPacketGoClear* ZRtp::prepareGoClear(uint32_t errMsg) {
     gclr->clrClearHmac();
     return gclr;
 }
-
+#endif
 /*
  * The next functions look up and return a prefered algorithm. These
  * functions work as follows:
  * - If the Hello packet does not contain an algorithm (number of algorithms
-*    is zero) then return the mandatory algorithm.
+ *   is zero) then return the mandatory algorithm.
  * - Build a list of algorithm names and ids from configuration data. If
  *   the configuration data does not contain a mandatory algorithm append
  *   the mandatory algorithm to the list and ids.
@@ -2882,7 +2883,7 @@ bool ZRtp::sendSASRelayPacket(uint8_t* sh, std::string render) {
     zrtpSasRelay.setTrustedSas(sh);
     zrtpSasRelay.setSasAlgo((uint8_t*)render.c_str());
 
-    uint32_t hmlen = (zrtpSasRelay.getLength() - 9) * ZRTP_WORD_SIZE;
+    uint32_t hmlen = (zrtpSasRelay.getLength() - (uint)9) * ZRTP_WORD_SIZE;
     cipher->getEncrypt()(ekey, cipher->getKeylen(), randomIV, (uint8_t*)zrtpSasRelay.getFiller(), hmlen);
 
     // Use negotiated HMAC (hash)

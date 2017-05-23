@@ -190,7 +190,7 @@ class __EXPORT ZRtp {
      *
      */
     void processTimeout();
-
+#if 0
     /**
      * Check for and handle GoClear ZRTP packet header.
      *
@@ -204,7 +204,7 @@ class __EXPORT ZRtp {
      *    False if not a GoClear, true otherwise.
      */
     bool handleGoClear(uint8_t *extHeader);
-
+#endif
     /**
      * Set the auxilliary secret.
      *
@@ -745,7 +745,7 @@ private:
     /**
      * My computed public key
      */
-    uint8_t pubKeyBytes[400];
+    uint8_t pubKeyBytes[1000];
     /**
      * Length off public key
      */
@@ -1000,7 +1000,7 @@ private:
 
     ZrtpPacketHelloAck zrtpHelloAck;
     ZrtpPacketConf2Ack zrtpConf2Ack;
-    ZrtpPacketClearAck zrtpClearAck;
+//    ZrtpPacketClearAck zrtpClearAck;
     ZrtpPacketGoClear  zrtpGoClear;
     ZrtpPacketError    zrtpError;
     ZrtpPacketErrorAck zrtpErrorAck;
@@ -1062,7 +1062,7 @@ private:
      * Enable or disable paranoid mode.
      *
      * The Paranoid mode controls the behaviour and handling of the SAS verify flag. If
-     * Panaoid mode is set to flase then ZRtp applies the normal handling. If Paranoid
+     * Paranoid mode is set to flase then ZRtp applies the normal handling. If Paranoid
      * mode is set to true then the handling is:
      *
      * <ul>
@@ -1077,7 +1077,7 @@ private:
      *      but do not process the relayed data. This protects the user from a malicious
      *      "trusted PBX".</li>
      * </ul>
-     * ZRtp performs alls other steps during the ZRTP negotiations as usual, in particular it
+     * ZRtp performs calls other steps during the ZRTP negotiations as usual, in particular it
      * computes, compares, uses, and stores the retained secrets. This avoids unnecessary warning
      * messages. The user may enable or disable the Paranoid mode on a call-by-call basis without
      * breaking the key continuity data.
@@ -1085,7 +1085,7 @@ private:
      * <b>Implementation note:</b></br>
      * An application shall always display the SAS code if the SAS verify flag is <code>false</code>.
      * The application shall also use mechanisms to remind the user to compare the SAS code, for
-     * example useing larger fonts, different colours and other display features.
+     * example using larger fonts, different colours and other display features.
      */
     bool paranoidMode;
 
@@ -1103,7 +1103,7 @@ private:
      * @param hello
      *    The Hello packet.
      * @return
-     *    The Enum that identifies the best offered Hash algortihm. Return
+     *    The Enum that identifies the best offered Hash algorithm. Return
      *    mandatory algorithm if no match was found.
      */
     AlgorithmEnum* findBestHash(ZrtpPacketHello *hello);
@@ -1142,7 +1142,7 @@ private:
      * Find the best SAS algorithm that is offered in Hello.
      *
      * Find the best, that is the strongest, SAS algorithm that our peer
-     * offers in its Hello packet. The method works as definied in RFC 6189,
+     * offers in its Hello packet. The method works as defined in RFC 6189,
      * chapter 4.1.2.
      *
      * The list of own supported public key algorithms must follow the rules
@@ -1187,7 +1187,7 @@ private:
     /**
      * Checks if Hello packet contains a strong (384bit) hash based on selection policy.
      * 
-     * The function currently implements the nonNist policy only:
+     * The function currently implements the non-NIST policy only:
      * If the public key algorithm is a non-NIST ECC algorithm this function prefers
      * non-NIST HASH algorithms (Skein etc).
      * 
@@ -1401,7 +1401,7 @@ private:
      * Prepare the Confirm1 packet.
      *
      * This method prepare the Confirm1 packet. The input to this method is the
-     * DHPart2 packect received from our peer. The peer sends the DHPart2 packet
+     * DHPart2 packet received from our peer. The peer sends the DHPart2 packet
      * as response of our DHPart1. Here we are in the role of the Responder
      *
      */
@@ -1463,6 +1463,7 @@ private:
      */
     ZrtpPacketError* prepareError(uint32_t errMsg);
 
+#if 0
     /**
      * Prepare a ClearAck packet.
      *
@@ -1476,7 +1477,7 @@ private:
      *     otherwise.
      */
     ZrtpPacketClearAck* prepareClearAck(ZrtpPacketGoClear* gpkt);
-
+#endif
     /**
      * Prepare the ErrorAck packet.
      *
@@ -1492,7 +1493,7 @@ private:
      * SASrelay packet received from the peer.
      */
     ZrtpPacketRelayAck* prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* errMsg);
-    
+#if 0
     /**
      * Prepare a GoClearAck packet w/o HMAC
      *
@@ -1504,7 +1505,7 @@ private:
      *     A goClear packet without HMAC
      */
     ZrtpPacketGoClear* prepareGoClear(uint32_t errMsg = 0);
-
+#endif
     /**
      * Compare the hvi values.
      *

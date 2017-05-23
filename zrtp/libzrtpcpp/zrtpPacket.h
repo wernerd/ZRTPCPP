@@ -43,7 +43,7 @@
 #define ZRTP_MAGIC       0x5a525450
 
 //#define ZRTP_WORD_SIZE   4
-static const uint32_t ZRTP_WORD_SIZE = 4;
+static const uint16_t ZRTP_WORD_SIZE = 4;
 static const uint32_t CRC_SIZE =       4;
 
 static const uint32_t TYPE_SIZE =       (2*ZRTP_WORD_SIZE);
@@ -67,7 +67,7 @@ static const uint32_t PING_HASH_SIZE =  (2*ZRTP_WORD_SIZE);
 typedef struct zrtpPacketHeader {
     uint16_t    zrtpId;         ///< Id to identify the message, always 0x505a
     uint16_t    length;         ///< Length of the ZRTP message in words
-    uint8_t     messageType[TYPE_SIZE]; ///< 2 word (8 octest) message type in ASCII
+    uint8_t     messageType[TYPE_SIZE]; ///< 2 word (8 octets) message type in ASCII
 } zrtpPacketHeader_t;
 
 /**
