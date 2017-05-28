@@ -289,6 +289,8 @@ ZrtpDH::~ZrtpDH() {
         ecFreeCurvesCurve(&tmpCtx->curve);
         break;
     }
+    delete ctx;
+    ctx = nullptr;
 }
 
 int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
