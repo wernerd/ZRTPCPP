@@ -27,6 +27,7 @@ set (SOVERSION 4)
 option(CCRTP "Build library to use with GNU ccRTP." OFF)
 option(CORE_LIB "Build core library only, no spcific client support." OFF)
 option(CRYPTO_STANDALONE "Use embedded crypto and big number modules." ON)
+option(WEBRTC "Create static lib for webRTC, with SIDH support." OFF)
 option(TIVI "Build library for the tivi client, implies '-DCRYPTO_STNDALONE=true'." OFF)
 option(SQLITE "Use SQLite DB as backend for ZRTP cache." OFF)
 option(SQLCIPHER "Use SQLCipher DB as backend for ZRTP cache." OFF)
@@ -36,6 +37,15 @@ option(AXO "Include Axolotl support when not building for CCRTP." OFF)
 option(ANDROID "Generate Android makefiles (Android.mk)" OFF)
 option(JAVA "Generate Java support files (requires JDK and SWIG)" OFF)
 
+## The foolowing option are used for SIDH mainly
+option(SIDH "Include SIDH Port-Quantum algorithm." OFF)
+
+option(X64 "Set this to true to build for a x64 (64 bit) architecture." OFF)
+option(X86 "Set this to true to build for a x86 (32 bit) architecture." OFF)
+option(ARM "Set this to true to build for a ARM (32 bit) architecture." OFF)
+option(ARM64 "Set this to true to build for a ARM64 (64 bit) architecture." OFF)
+option(GENERIC "Set this to true to use the portable implementation." OFF)
+
 #
 # If your project needs SAS relay support (refer to RFC6189 chapter 7.3) then
 # uncomment the following add_definitiones statement. Make sure you understand
@@ -44,7 +54,19 @@ option(JAVA "Generate Java support files (requires JDK and SWIG)" OFF)
 
 # **** Check what and how to build ****
 #
-if (CCRTP AND TIVI AND CORE_LIB)
+if (CCRTP AND (TIVI OR CORE_LIB OR WEBRTC))
+    MESSAGE(FATAL_ERROR "Cannot build more than one client at once. Use different build directories.")
+endif()
+
+if (TIVI AND (CCRTP OR CORE_LIB OR WEBRTC))
+    MESSAGE(FATAL_ERROR "Cannot build more than one client at once. Use different build directories.")
+endif()
+
+if (CORE_LIB AND (CCRTP OR TIVI OR WEBRTC))
+    MESSAGE(FATAL_ERROR "Cannot build more than one client at once. Use different build directories.")
+endif()
+
+if (WEBRTC AND (CCRTP OR TIVI OR CORE_LIB))
     MESSAGE(FATAL_ERROR "Cannot build more than one client at once. Use different build directories.")
 endif()
 
@@ -64,11 +86,39 @@ elseif (TIVI)
 elseif (CORE_LIB)
     set (PACKAGE libzrtpcore)
     set(zrtplibName zrtpcppcore)
+elseif (WEBRTC)
+    set (PACKAGE libzrtpwebrtc)
+    set(zrtplibName zrtpcppwebrtc)
+    set(SQLITE true)
+    set(ANDROID true)
+    set(SIDH true)      ## For SIDH testing
 else()
     MESSAGE(WARNING "No client defined, building for GNU ccRTP.")
     set (PACKAGE libzrtpcpp)
     set(CCRTP true)
     set(zrtplibName zrtpcpp)
+endif()
+
+if (SIDH)
+    if(X64)
+        set(SIDH_ARCHITECTURE -D_AMD64_)
+        set(SIDH_X64 true)
+    elseif(X86)
+        set (SIDH_ARCHITECTURE -D_X86_)
+        set(SIDH_X86 true)
+    elseif(ARM)
+        set(SIDH_ARCHITECTURE -D_ARM_)
+        set(SIDH_ARM true)
+    elseif(ARM64)
+        set(SIDH_ARCHITECTURE -D_ARM64_)
+        set(SIDH_ARM64 true)
+    elseif()
+        message(FATAL_ERROR "No SIDH architecture selected.")
+    endif()
+    if (GENERIC OR SIDH_ARM OR SIDH_X86)        # No ASM module available for x86 and ARM, use generic
+        set (USE_GENERIC -D_GENERIC_)
+        set(SIDH_GENERIC true)
+    endif()
 endif()
 
 
@@ -189,10 +239,37 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     add_definitions(-DNEW_STDCPP)
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -std=c++11")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 if (AXO)
     add_definitions(-DAXO_SUPPORT)
+endif()
+
+if (SIDH)
+    add_definitions(${SIDH_ARCHITECTURE} ${USE_GENERIC} -D__LINUX__)
+
+    ## The common SIDH sources
+    set(sidh751_src
+            ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/ec_isogeny.c
+            ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/fpx.c
+            ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/kex.c
+            ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/SIDH.c
+            ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/SIDH_setup.c
+            ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/keymanagement/SidhKeyManagement.cpp)
+
+    ## Use generic portable variant
+    # NOTE: see client specific CMakeLists.txt setting the properties for the *.S files
+    if (SIDH_GENERIC)
+        set (sidh751_extra_src ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/generic/fp_generic.c)
+    elseif(SIDH_X64)
+        set(sidh751_extra_src ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/AMD64/fp_x64.c
+                ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/AMD64/fp_x64_asm.S)
+    elseif(SIDH_ARM64)
+        set (sidh751_extra_src ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/ARM64/fp_arm64.c
+                ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/ARM64/fp_arm64_asm.S)
+    endif()
+    set (has_sidh TRUE)
 endif()
 
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
@@ -207,7 +284,7 @@ if (SDES AND NOT CCRTP)
     set (sdes_src ${CMAKE_SOURCE_DIR}/zrtp/ZrtpSdesStream.cpp)
 endif()
 
-# **** The following source files a common for all clients ****
+# **** The following source files are common for all clients ****
 #
 set(zrtp_src_no_cache
     ${CMAKE_SOURCE_DIR}/zrtp/ZrtpCallbackWrapper.cpp
@@ -292,6 +369,10 @@ endif()
 
 if (CORE_LIB)
     add_subdirectory(clients/no_client)
+endif()
+
+if (WEBRTC)
+    add_subdirectory(clients/webrtc)
 endif()
 
 ##very usefull for macosx, specially when using gtkosx bundler

@@ -65,6 +65,9 @@ void ZrtpPacketDHPart::setPubKeyType(const char* pkt) {
     else if (*(int32_t*)pkt == *(int32_t*)e414) {
         dhLength = 104;
     }
+    else if (*(int32_t*)pkt == *(int32_t*)sdh1) {
+        dhLength = 576;
+    }
     else
         return;
 
@@ -97,6 +100,9 @@ ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t *data) {
     }
     else if (len == 47) {    // E414
         dhLength = 104;
+    }
+    else if (len == 165) {   // SDH1
+        dhLength = 576;
     }
     else {
         pv = NULL;

@@ -32,7 +32,7 @@
  * Implement the DHPart packet.
  *
  * The ZRTP message DHPart. The implementation sends this
- * to exchange the Diffie-Helman public keys and the shared
+ * to exchange the Diffie-Hellman public keys and the shared
  * secrets between the two parties.
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
@@ -43,7 +43,7 @@ class __EXPORT ZrtpPacketDHPart : public ZrtpPacketBase {
  protected:
     uint8_t *pv;                ///< points to public key value inside DH message
     DHPart_t* DHPartHeader;     ///< points to DH message structure
-    int32_t dhLength;           ///< length of DH message, DH message has variable length
+    int32_t dhLength;           ///< length of DH public key in bytes
 
  public:
     /// Creates a DHPart packet no data, must use setPubKeyType(...)
@@ -110,9 +110,9 @@ class __EXPORT ZrtpPacketDHPart : public ZrtpPacketBase {
     void initialize();
     // SupportedPubKeys pktype;
      // DHPart packet is of variable length. It maximum size is 141 words:
-     // - 13 words fixed sizze
-     // - up to 128 words variable part, depending on DH algorithm
-     //   leads to a maximum of 4*141=564 bytes.
+     // - 21 words fixed size
+     // - up to 144 words variable part, depending on DH algorithm
+     //   leads to a maximum of 4*165=660 bytes.
      uint8_t data[768];       // large enough to hold a full blown DHPart packet
 };
 

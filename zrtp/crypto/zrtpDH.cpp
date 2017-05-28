@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006, 2009 by Werner Dittmann
+  Copyright (C) 2006, 2009, 2017 by Werner Dittmann
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -29,15 +29,13 @@
  * files in the program, then also delete it here.
  */
 
-/** Copyright (C) 2006, 2009
+/** Copyright (C) 2006, 2009, 2017
  *
  * @author  Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
 #include <string.h>
 #include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
 #include <bn.h>
 #include <bnprint.h>
@@ -45,8 +43,9 @@
 #include <ec/ecdh.h>
 #include <zrtp/crypto/zrtpDH.h>
 #include <zrtp/libzrtpcpp/ZrtpTextData.h>
-#include <cryptcommon/aes.h>
 #include <cryptcommon/ZrtpRandom.h>
+#include <cryptcommon/sidhp751/keymanagement/SidhKeyManagement.h>
+#include <cryptcommon/sidhp751/SIDH.h>
 
 
 static BigNum bnP2048 = {0};
@@ -64,11 +63,12 @@ typedef struct _dhCtx {
     BigNum pubKey;
     EcCurve curve;
     EcPoint pubPoint;
+    sidh751KM::KeyPair sdh1KeyPair;
 } dhCtx;
 
 void randomZRTP(uint8_t *buf, int32_t length)
 {
-    ZrtpRandom::getRandomData(buf, length);
+    ZrtpRandom::getRandomData(buf, static_cast<uint32_t >(length));
 }
 
 static const uint8_t P2048[] =
@@ -182,7 +182,7 @@ static const uint8_t P4096[] =
 };
 *************** */
 
-ZrtpDH::ZrtpDH(const char* type) {
+ZrtpDH::ZrtpDH(const char* type, ProtocolState state) : protocolState(state) {
 
     uint8_t random[64];
 
@@ -214,7 +214,7 @@ ZrtpDH::ZrtpDH(const char* type) {
 
     randomZRTP(random, sizeof(random));
 
-    if (!dhinit) {
+    if (!dhinit && (pkType == DH2K || pkType == DH3K)) {
         bnBegin(&two);
         bnSetQ(&two, 2);
 
@@ -237,36 +237,59 @@ ZrtpDH::ZrtpDH(const char* type) {
     bnBegin(&tmpCtx->privKey);
     INIT_EC_POINT(&tmpCtx->pubPoint);
 
+    errorCode = SUCCESS;
+
     switch (pkType) {
-    case DH2K:
-    case DH3K:
-        bnInsertBigBytes(&tmpCtx->privKey, random, 0, 256/8);
-        break;
+        case DH2K:
+        case DH3K:
+            bnInsertBigBytes(&tmpCtx->privKey, random, 0, 256/8);
+            break;
 
-    case EC25:
-        ecGetCurveNistECp(NIST256P, &tmpCtx->curve);
-        ecGenerateRandomNumber(&tmpCtx->curve, &tmpCtx->privKey);
-        break;
+        case EC25:
+            ecGetCurveNistECp(NIST256P, &tmpCtx->curve);
+            ecGenerateRandomNumber(&tmpCtx->curve, &tmpCtx->privKey);
+            break;
 
-    case EC38:
-        ecGetCurveNistECp(NIST384P, &tmpCtx->curve);
-        ecGenerateRandomNumber(&tmpCtx->curve, &tmpCtx->privKey);
-        break;
+        case EC38:
+            ecGetCurveNistECp(NIST384P, &tmpCtx->curve);
+            ecGenerateRandomNumber(&tmpCtx->curve, &tmpCtx->privKey);
+            break;
 
-    case E255:
-        ecGetCurvesCurve(Curve25519, &tmpCtx->curve);
-        ecGenerateRandomNumber(&tmpCtx->curve, &tmpCtx->privKey);
-        break;
+        case E255:
+            ecGetCurvesCurve(Curve25519, &tmpCtx->curve);
+            ecGenerateRandomNumber(&tmpCtx->curve, &tmpCtx->privKey);
+            break;
 
-    case E414:
-        ecGetCurvesCurve(Curve3617, &tmpCtx->curve);
-        ecGenerateRandomNumber(&tmpCtx->curve, &tmpCtx->privKey);
-        break;
+        case E414:
+            ecGetCurvesCurve(Curve3617, &tmpCtx->curve);
+            ecGenerateRandomNumber(&tmpCtx->curve, &tmpCtx->privKey);
+            break;
+
+        case SDH1:
+            if (!sidh751KM::SidhKeyManagement::initialize()) {
+                errorCode = SDH1_INIT_FAILED;
+                break;
+            }
+            if (protocolState == Commit) {
+                if (!sidh751KM::SidhKeyManagement::getKeyPairA(&tmpCtx->sdh1KeyPair)) {
+                    errorCode = SDH1_KEY_A_FAILED;
+                }
+            }
+            else if (protocolState == DhPart1){
+                if (!sidh751KM::SidhKeyManagement::getKeyPairB(&tmpCtx->sdh1KeyPair)) {
+                    errorCode = SDH1_KEY_B_FAILED;
+                }
+            }
+            break;
+
+        default:
+            errorCode = ILLEGAL_ARGUMENT;
+            break;
     }
 }
 
 ZrtpDH::~ZrtpDH() {
-    if (ctx == NULL)
+    if (ctx == nullptr)
         return;
 
     dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
@@ -274,20 +297,26 @@ ZrtpDH::~ZrtpDH() {
     bnEnd(&tmpCtx->privKey);
 
     switch (pkType) {
-    case DH2K:
-    case DH3K:
-        bnEnd(&tmpCtx->pubKey);
-        break;
+        case DH2K:
+        case DH3K:
+            bnEnd(&tmpCtx->pubKey);
+            break;
 
-    case EC25:
-    case EC38:
-        ecFreeCurveNistECp(&tmpCtx->curve);
-        break;
+        case EC25:
+        case EC38:
+            ecFreeCurveNistECp(&tmpCtx->curve);
+            break;
 
-    case E255:
-    case E414:
-        ecFreeCurvesCurve(&tmpCtx->curve);
-        break;
+        case E255:
+        case E414:
+            ecFreeCurvesCurve(&tmpCtx->curve);
+            break;
+
+        case SDH1:
+            break;
+
+        default:
+            break;
     }
     delete tmpCtx;
     ctx = nullptr;
@@ -297,7 +326,7 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
 
     dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
 
-    int32_t length = getDhSize();
+    int32_t length = getSharedSecretSize();
 
     BigNum sec;
     if (pkType == DH2K || pkType == DH3K) {
@@ -305,7 +334,7 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
         bnBegin(&pubKeyOther);
         bnBegin(&sec);
 
-        bnInsertBigBytes(&pubKeyOther, pubKeyBytes, 0, length);
+        bnInsertBigBytes(&pubKeyOther, pubKeyBytes, 0, static_cast<uint32_t >(length));
 
         if (pkType == DH2K) {
             bnExpMod(&sec, &pubKeyOther, &tmpCtx->privKey, &bnP2048);
@@ -317,7 +346,7 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
             return 0;
         }
         bnEnd(&pubKeyOther);
-        bnExtractBigBytes(&sec, secret, 0, length);
+        bnExtractBigBytes(&sec, secret, 0, static_cast<uint32_t >(length));
         bnEnd(&sec);
 
         return length;
@@ -331,12 +360,12 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
         INIT_EC_POINT(&pub);
         bnSetQ(pub.z, 1);               // initialze Z to one, these are affine coords
 
-        bnInsertBigBytes(pub.x, pubKeyBytes, 0, len);
-        bnInsertBigBytes(pub.y, pubKeyBytes+len, 0, len);
+        bnInsertBigBytes(pub.x, pubKeyBytes, 0, static_cast<uint32_t >(len));
+        bnInsertBigBytes(pub.y, pubKeyBytes+len, 0, static_cast<uint32_t >(len));
 
         /* Generate agreement for responder: sec = pub * privKey */
         ecdhComputeAgreement(&tmpCtx->curve, &sec, &pub, &tmpCtx->privKey);
-        bnExtractBigBytes(&sec, secret, 0, length);
+        bnExtractBigBytes(&sec, secret, 0, static_cast<uint32_t >(length));
         bnEnd(&sec);
         FREE_EC_POINT(&pub);
 
@@ -349,15 +378,27 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
         bnBegin(&sec);
         INIT_EC_POINT(&pub);
 
-        bnInsertLittleBytes(pub.x, pubKeyBytes, 0, len);
+        bnInsertLittleBytes(pub.x, pubKeyBytes, 0, static_cast<uint32_t >(len));
 
         /* Generate agreement for responder: sec = pub * privKey */
         ecdhComputeAgreement(&tmpCtx->curve, &sec, &pub, &tmpCtx->privKey);
-        bnExtractLittleBytes(&sec, secret, 0, length);
+        bnExtractLittleBytes(&sec, secret, 0, static_cast<uint32_t >(length));
         bnEnd(&sec);
         FREE_EC_POINT(&pub);
 
         return length;
+    }
+    if (pkType == SDH1) {
+        int32_t status;
+        if (protocolState == Commit) {
+            status = sidh751KM::SidhKeyManagement::secretAgreement_A(tmpCtx->sdh1KeyPair.privateKey, pubKeyBytes, secret);
+            errorCode = status == CRYPTO_SUCCESS ? SUCCESS : SDH1_KEY_A_SECRET_FAILED;
+        }
+        else {
+            status = sidh751KM::SidhKeyManagement::secretAgreement_B(tmpCtx->sdh1KeyPair.privateKey, pubKeyBytes, secret);
+            errorCode = status == CRYPTO_SUCCESS ? SUCCESS : SDH1_KEY_A_SECRET_FAILED;
+        }
+        return getSharedSecretSize();
     }
     return -1;
 }
@@ -368,49 +409,56 @@ int32_t ZrtpDH::generatePublicKey()
 
     bnBegin(&tmpCtx->pubKey);
     switch (pkType) {
-    case DH2K:
-        bnExpMod(&tmpCtx->pubKey, &two, &tmpCtx->privKey, &bnP2048);
-        break;
+        case DH2K:
+            bnExpMod(&tmpCtx->pubKey, &two, &tmpCtx->privKey, &bnP2048);
+            break;
 
-    case DH3K:
-        bnExpMod(&tmpCtx->pubKey, &two, &tmpCtx->privKey, &bnP3072);
-        break;
+        case DH3K:
+            bnExpMod(&tmpCtx->pubKey, &two, &tmpCtx->privKey, &bnP3072);
+            break;
 
-    case EC25:
-    case EC38:
-    case E255:
-    case E414:
-        while (!ecdhGeneratePublic(&tmpCtx->curve, &tmpCtx->pubPoint, &tmpCtx->privKey))
-            ecGenerateRandomNumber(&tmpCtx->curve, &tmpCtx->privKey);
+        case EC25:
+        case EC38:
+        case E255:
+        case E414:
+            while (!ecdhGeneratePublic(&tmpCtx->curve, &tmpCtx->pubPoint, &tmpCtx->privKey))
+                ecGenerateRandomNumber(&tmpCtx->curve, &tmpCtx->privKey);
+            break;
+
+        default:
+        case SDH1:          // Runs in background, started/filled in constructor
+            break;
     }
     return 0;
 }
 
-uint32_t ZrtpDH::getDhSize() const
+uint32_t ZrtpDH::getSharedSecretSize() const
 {
     switch (pkType) {
-    case DH2K:
-        return 2048/8;
-        break;
-    case DH3K:
-        return 3072/8;
-        break;
+        case DH2K:
+            return 2048/8;
 
-    case EC25:
-        return 32;
-        break;
-    case EC38:
-        return 48;
-        break;
+        case DH3K:
+            return 3072/8;
 
-    case E255:
-        return 32;
-        break;
-    case E414:
-        return 52;
-        break;
+        case EC25:
+            return 32;
+
+        case EC38:
+            return 48;
+
+        case E255:
+            return 32;
+
+        case E414:
+            return 52;
+
+        case SDH1:
+            return sidh751KM::SHARED_SECRET_LENGTH;
+
+        default:
+            return 0;
     }
-    return 0;
 }
 
 int32_t ZrtpDH::getPubKeySize() const
@@ -424,6 +472,10 @@ int32_t ZrtpDH::getPubKeySize() const
 
     if (pkType == E255)
         return bnBytes(tmpCtx->curve.p);
+
+    if (pkType == SDH1) {
+        return sidh751KM::PUBLIC_KEY_LENGTH_BYTES;
+    }
     return 0;
 
 }
@@ -435,24 +487,29 @@ int32_t ZrtpDH::getPubKeyBytes(uint8_t *buf) const
     if (pkType == DH2K || pkType == DH3K) {
         // get len of pub_key, prepend with zeros to DH size
         int size = getPubKeySize();
-        int32_t prepend = getDhSize() - size;
+        int32_t prepend = getSharedSecretSize() - size;
         if (prepend > 0) {
-            memset(buf, 0, prepend);
+            memset(buf, 0, static_cast<size_t>(prepend));
         }
-        bnExtractBigBytes(&tmpCtx->pubKey, buf + prepend, 0, size);
+        bnExtractBigBytes(&tmpCtx->pubKey, buf + prepend, 0, static_cast<uint32_t >(size));
         return size;
     }
 
     if (pkType == EC25 || pkType == EC38 || pkType == E414) {
         int32_t len = getPubKeySize() / 2;
 
-        bnExtractBigBytes(tmpCtx->pubPoint.x, buf, 0, len);
-        bnExtractBigBytes(tmpCtx->pubPoint.y, buf+len, 0, len);
+        bnExtractBigBytes(tmpCtx->pubPoint.x, buf, 0, static_cast<uint32_t >(len));
+        bnExtractBigBytes(tmpCtx->pubPoint.y, buf+len, 0, static_cast<uint32_t >(len));
         return len * 2;
     }
     if (pkType == E255) {
         int32_t len = getPubKeySize();
-        bnExtractLittleBytes(tmpCtx->pubPoint.x, buf, 0, len);
+        bnExtractLittleBytes(tmpCtx->pubPoint.x, buf, 0, static_cast<uint32_t >(len));
+        return len;
+    }
+    if (pkType == SDH1) {
+        int32_t len = static_cast<int32_t>(getPubKeySize());
+        memcpy(buf, tmpCtx->sdh1KeyPair.publicKey, static_cast<size_t>(len));
         return len;
     }
     return 0;
@@ -470,8 +527,8 @@ int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
         INIT_EC_POINT(&pub);
         int32_t len = getPubKeySize() / 2;
 
-        bnInsertBigBytes(pub.x, pubKeyBytes, 0, len);
-        bnInsertBigBytes(pub.y, pubKeyBytes+len, 0, len);
+        bnInsertBigBytes(pub.x, pubKeyBytes, 0, static_cast<uint32_t >(len));
+        bnInsertBigBytes(pub.y, pubKeyBytes+len, 0, static_cast<uint32_t >(len));
 
         return ecCheckPubKey(&tmpCtx->curve, &pub);
     }
@@ -480,9 +537,13 @@ int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
         return 1;
     }
 
+    if (pkType == SDH1) {
+        return 1;
+    }
+
     BigNum pubKeyOther;
     bnBegin(&pubKeyOther);
-    bnInsertBigBytes(&pubKeyOther, pubKeyBytes, 0, getDhSize());
+    bnInsertBigBytes(&pubKeyOther, pubKeyBytes, 0, getSharedSecretSize());
 
     if (pkType == DH2K) {
         if (bnCmp(&bnP2048MinusOne, &pubKeyOther) == 0) {
@@ -509,20 +570,23 @@ int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
 const char* ZrtpDH::getDHtype()
 {
     switch (pkType) {
-    case DH2K:
-        return dh2k;
-    case DH3K:
-        return dh3k;
-    case EC25:
-        return ec25;
-    case EC38:
-        return ec38;
-    case E255:
-        return e255;
-    case E414:
-        return e414;
+        case DH2K:
+            return dh2k;
+        case DH3K:
+            return dh3k;
+        case EC25:
+            return ec25;
+        case EC38:
+            return ec38;
+        case E255:
+            return e255;
+        case E414:
+            return e414;
+        case SDH1:
+            return sdh1;
+        default:
+            return nullptr;
     }
-    return NULL;
 }
 
 /** EMACS **

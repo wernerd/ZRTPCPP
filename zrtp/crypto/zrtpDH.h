@@ -55,13 +55,6 @@ void randomZRTP(uint8_t *buf, int32_t length);
 
 #include <libzrtpcpp/ZrtpConfigure.h>
 
-const int32_t DH2K = 0;
-const int32_t DH3K = 1;
-const int32_t EC25 = 2;
-const int32_t EC38 = 3;
-const int32_t E255 = 4;
-const int32_t E414 = 5;
-
 
 /**
  * Implementation of Diffie-Helman for ZRTP
@@ -76,18 +69,34 @@ const int32_t E414 = 5;
 
 class ZrtpDH {
 
-private:
-    void* ctx;      ///< Context the DH
-    int pkType;     ///< Which type of DH to use
-
 public:
+
+    enum ProtocolState {
+        Commit,
+        DhPart1
+    };
+
+    enum ErrorCode {
+        SUCCESS = 0,
+        ILLEGAL_ARGUMENT = -5,
+
+        SDH1_INIT_FAILED = -10,
+        SDH1_KEY_A_FAILED = -11,
+        SDH1_KEY_B_FAILED = -12,
+        SDH1_KEY_A_SECRET_FAILED = -13,
+        SDH1_KEY_B_SECRET_FAILED = -14,
+
+    };
+
     /**
-     * Create a Diffie-Helman key agreement algorithm
+     * Create a Diffie-Hellman key agreement algorithm
      * 
      * @param type
      *     Name of the DH algorithm to use
+     * @param state
+     *     At which protocol state ZRTP needs a new DH
      */
-    ZrtpDH(const char* type);
+    ZrtpDH(const char* type, ProtocolState state);
     
     ~ZrtpDH();
 
@@ -100,11 +109,11 @@ public:
     int32_t generatePublicKey();
 
     /**
-     * Returns the size in bytes of the DH parameter p.
+     * Returns the size in bytes of the DH parameter p which is the size of the shared secret.
      *
      * @return Size in bytes.
      */
-    uint32_t getDhSize() const;
+    uint32_t getSharedSecretSize() const;
 
     /**
      * Returns the size in bytes of computed public key.
@@ -163,6 +172,24 @@ public:
      *     Pointer to DH algorithm name
      */
     const char* getDHtype();
+
+private:
+
+    enum Algorithm {
+        DH2K,
+        DH3K,
+        EC25,
+        EC38,
+        E255,
+        E414,
+        SDH1
+    };
+
+    void* ctx;                      ///< Context the DH
+    int pkType;                     ///< Which type of DH to use
+    ProtocolState protocolState;    ///< Create DH for this protocol state
+    int32_t errorCode;
+
 };
 #endif /*__cpluscplus */
 #endif

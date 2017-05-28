@@ -47,7 +47,7 @@ static void * (*volatile memset_volatile)(void *, int, size_t) = memset;
  * per block, until we have produced the desired quantity of data.
  */
 /*----------------------------------------------------------------------------*/
-int ZrtpRandom::getRandomData(uint8_t* buffer, uint32_t length) {
+uint32_t ZrtpRandom::getRandomData(uint8_t* buffer, uint32_t length) {
 
     AESencrypt aesCtx;
     sha512_ctx randCtx2;

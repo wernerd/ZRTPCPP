@@ -354,7 +354,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
 
     // Modify here when introducing new DH key agreement, for example
     // elliptic curves.
-    dhContext = new ZrtpDH(pubKey->getName());
+    dhContext = new ZrtpDH(pubKey->getName(), ZrtpDH::Commit);
     dhContext->generatePublicKey();
 
     dhContext->getPubKeyBytes(pubKeyBytes);
@@ -587,7 +587,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     // The algorithm names are 4 chars only, thus we can cast to int32_t
     if (*(int32_t*)(dhContext->getDHtype()) != *(int32_t*)(pubKey->getName())) {
         delete dhContext;
-        dhContext = new ZrtpDH(pubKey->getName());
+        dhContext = new ZrtpDH(pubKey->getName(), ZrtpDH::DhPart1);
         dhContext->generatePublicKey();
     }
     sendInfo(Info, InfoDH1DHGenerated);
@@ -679,7 +679,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
     }
 
     // get memory to store DH result TODO: make it fixed memory
-    DHss = new uint8_t[dhContext->getDhSize()];
+    DHss = new uint8_t[dhContext->getSharedSecretSize()];
     if (DHss == NULL) {
         *errMsg = CriticalSWError;
         return NULL;
@@ -760,7 +760,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
         *errMsg = DHErrorWrongHVI;
         return NULL;
     }
-    DHss = new uint8_t[dhContext->getDhSize()];
+    DHss = new uint8_t[dhContext->getSharedSecretSize()];
     if (DHss == NULL) {
         *errMsg = CriticalSWError;
         return NULL;
@@ -2061,7 +2061,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
 
     // Next is the DH result itself
     data[pos] = DHss;
-    length[pos++] = dhContext->getDhSize();
+    length[pos++] = dhContext->getSharedSecretSize();
 
     // Next the fixed string "ZRTP-HMAC-KDF"
     data[pos] = (unsigned char*)KDFString;
@@ -2111,7 +2111,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
     hashListFunction(data, length, s0);
 //  hexdump("S0 I", s0, hashLength);
 
-    memset_volatile(DHss, 0, dhContext->getDhSize());
+    memset_volatile(DHss, 0, dhContext->getSharedSecretSize());
     delete[] DHss;
     DHss = NULL;
 
@@ -2228,7 +2228,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
 
     // Next is the DH result itself
     data[pos] = DHss;
-    length[pos++] = dhContext->getDhSize();
+    length[pos++] = dhContext->getSharedSecretSize();
 
     // Next the fixed string "ZRTP-HMAC-KDF"
     data[pos] = (unsigned char*)KDFString;
@@ -2278,7 +2278,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
     hashListFunction(data, length, s0);
 //  hexdump("S0 R", s0, hashLength);
 
-    memset_volatile(DHss, 0, dhContext->getDhSize());
+    memset_volatile(DHss, 0, dhContext->getSharedSecretSize());
     delete[] DHss;
     DHss = NULL;
 

@@ -42,7 +42,15 @@ set(crypto_src_srtp
    ${CMAKE_SOURCE_DIR}/srtp/crypto/SrtpSymCrypto.cpp
    ${CMAKE_SOURCE_DIR}/srtp/crypto/sha1.c)
 
-set(zrtpcpp_src ${zrtp_src} ${zrtp_tivi_src} ${zrtp_crypto_src} ${zrtp_skein_src} ${bnlib_src} ${srtp_src} ${crypto_src_srtp} ${cryptcommon_srcs})
+if(SIDH_X64)
+    # From Cmake doc: SOURCE scope may name zero or more source files. Note that source file properties are visible only
+    # to targets added in the same directory (CMakeLists.txt).
+    set_property(SOURCE ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/AMD64/fp_x64_asm.S PROPERTY LANGUAGE C)
+elseif(SIDH_ARM64)
+    set_property(SOURCE ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/ARM64/fp_arm_asm.S PROPERTY LANGUAGE C)
+endif()
+
+set(zrtpcpp_src ${zrtp_src} ${zrtp_tivi_src} ${zrtp_crypto_src} ${zrtp_skein_src} ${bnlib_src} ${srtp_src} ${crypto_src_srtp} ${cryptcommon_srcs} ${sidh751_src})
 
 # for the Thread classes etc. - remove D_WITHOUT_TIVI_ENV if you compile for/with Tivi modules, maybe build static
 # and iclude this into Tivi shared lib in the second step. Need to cross-check with Java build in case of static build.
@@ -98,7 +106,7 @@ endif()
 add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/buildinfo.c 
                    COMMAND ${CMAKE_COMMAND} -E echo \"char zrtpBuildInfo[] = \\\"${VERSION}:${GIT_COMMIT}:${CMAKE_SYSTEM_PROCESSOR}\\\"\;\" > ${CMAKE_BINARY_DIR}/buildinfo.c)
 
-add_library(${zrtplibName} ${LIBRARY_BUILD_TYPE} ${zrtpcpp_src} ${CMAKE_BINARY_DIR}/buildinfo.c)
+add_library(${zrtplibName} ${LIBRARY_BUILD_TYPE} ${zrtpcpp_src} ${sidh751_extra_src} ${CMAKE_BINARY_DIR}/buildinfo.c)
 set_target_properties(${zrtplibName} PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
 target_link_libraries(${zrtplibName} ${LIBS})
 
