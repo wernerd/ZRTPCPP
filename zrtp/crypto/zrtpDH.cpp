@@ -186,8 +186,8 @@ ZrtpDH::ZrtpDH(const char* type) {
 
     uint8_t random[64];
 
-    ctx = static_cast<void*>(new dhCtx);
-    dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
+    dhCtx* tmpCtx = new dhCtx;
+    ctx = static_cast<void*>(tmpCtx);
 
     // Well - the algo type is only 4 char thus cast to int32 and compare
     if (*(int32_t*)type == *(int32_t*)dh2k) {
@@ -289,7 +289,7 @@ ZrtpDH::~ZrtpDH() {
         ecFreeCurvesCurve(&tmpCtx->curve);
         break;
     }
-    delete ctx;
+    delete tmpCtx;
     ctx = nullptr;
 }
 
