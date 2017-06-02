@@ -1,3 +1,8 @@
+## GNU ZRTP 4.6.6 ##
+
+Small fix in zrtp/crypto/zrtpDh.cpp to fix a small memory leak.
+
+
 ## GNU ZRTP 4.6.5 ##
 
 Cleanup compiler flags, reduce visibility for Android build,
