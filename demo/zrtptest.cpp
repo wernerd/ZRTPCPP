@@ -20,6 +20,9 @@
 #include <map>
 #include <zrtpccrtp.h>
 #include <libzrtpcpp/ZrtpUserCallback.h>
+#include <logging/ZrtpLogging.h>
+#include <cryptcommon/sidhp751/keymanagement/SidhKeyManagement.h>
+#include <common/osSpecifics.h>
 
 using namespace ost;
 using namespace std;
@@ -485,11 +488,13 @@ public:
 //         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));
 
         // This ordering prefers NIST
-        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
-        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));
+        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("SDH1"));
 
-        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC25"));
-        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E255"));
+//        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
+//        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));
+//
+//        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC25"));
+//        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E255"));
 
         config.addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
         config.addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN3"));
@@ -567,8 +572,9 @@ public:
 //        config.setStandardConfig();
 //         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));
 
-         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));
-         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
+        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("SDH1"));
+//         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));
+//         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
 
          config.addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
          config.addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN3"));
@@ -652,7 +658,7 @@ int main(int argc, char *argv[])
             cerr << "Wrong Arguments, only -s and -r are accepted" << endl;
         }
     }
-
+    sidh751KM::SidhKeyManagement::initialize();
     if (send || recv) {
         if (send) {
             cout << "Running as sender" << endl;
@@ -662,7 +668,7 @@ int main(int argc, char *argv[])
         }
     }
     else {
-        cerr << "No send or receive argument specificied" << endl;
+        cerr << "No send or receive argument specified" << endl;
         exit(1);
     }
 
@@ -700,6 +706,7 @@ int main(int argc, char *argv[])
     ZrtpRecvPacketTransmissionTestCB *zrxcb;
     ZrtpSendPacketTransmissionTestCB *ztxcb;
 
+    setZrtpLogLevel(DEBUGGING);
     if ( send ) {
         ztxcb = new ZrtpSendPacketTransmissionTestCB();
         ztxcb->start();

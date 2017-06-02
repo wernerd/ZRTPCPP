@@ -54,7 +54,7 @@ endif
 
 # For this Android build we can set the visibility to hidden. Access to ZRTP is only inside
 # the shared lib that we build later for Silent Phone.
-LOCAL_CFLAGS += @axo_support@ -fvisibility=hidden -fvisibility-inlines-hidden
+LOCAL_CFLAGS += @axo_support@ @LOG_MAX_LEVEL@ -fvisibility=hidden -fvisibility-inlines-hidden
 
 LOCAL_SRC_FILES += @sqlite_src@
 LOCAL_SRC_FILES += @zrtpcpp_src_spc@

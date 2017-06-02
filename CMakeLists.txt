@@ -33,12 +33,13 @@ option(SQLITE "Use SQLite DB as backend for ZRTP cache." OFF)
 option(SQLCIPHER "Use SQLCipher DB as backend for ZRTP cache." OFF)
 option(SDES "Include SDES when not building for CCRTP." OFF)
 option(AXO "Include Axolotl support when not building for CCRTP." OFF)
+option(UNITTESTS "Build unit tests and/or test logging." OFF)
 
 option(ANDROID "Generate Android makefiles (Android.mk)" OFF)
 option(JAVA "Generate Java support files (requires JDK and SWIG)" OFF)
 
 ## The foolowing option are used for SIDH mainly
-option(SIDH "Include SIDH Port-Quantum algorithm." OFF)
+option(SIDH "Include SIDH Post-Quantum algorithm." OFF)
 
 option(X64 "Set this to true to build for a x64 (64 bit) architecture." OFF)
 option(X86 "Set this to true to build for a x86 (32 bit) architecture." OFF)
@@ -82,7 +83,8 @@ elseif (TIVI)
     set(zrtplibName zrtptivi)
     set(CRYPTO_STANDALONE true)
     set(SQLCIPHER true)
-    set(SDES true) 
+    set(SQLITE false)
+    set(SDES true)
 elseif (CORE_LIB)
     set (PACKAGE libzrtpcore)
     set(zrtplibName zrtpcppcore)
@@ -127,6 +129,15 @@ if(MSVC60)
     MARK_AS_ADVANCED(BUILD_STATIC)
 else()
     option(BUILD_STATIC "Set to OFF to build shared libraries" OFF)
+endif()
+
+string(TOLOWER "${CMAKE_BUILD_TYPE}" build_type)
+if ("debug" STREQUAL build_type)
+    set (LOG_MAX_LEVEL "-DLOG_MAX_LEVEL=VERBOSE")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DLOG_MAX_LEVEL=VERBOSE")
+else()
+    set (LOG_MAX_LEVEL "-DLOG_MAX_LEVEL=WARNING")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DLOG_MAX_LEVEL=WARNING")
 endif()
 
 # set to true for debug and trace during CMakeLists development
@@ -234,11 +245,14 @@ endif()
 # necessary and required modules checked, ready to generate config.h in top-level build directory
 configure_file(config.h.cmake ${CMAKE_BINARY_DIR}/config.h)
 
-add_definitions(-g -O2 -fno-strict-aliasing)
+add_definitions(-g -O2 -fno-strict-aliasing ${LOG_MAX_LEVEL})
 if(CMAKE_COMPILER_IS_GNUCXX)
     add_definitions(-DNEW_STDCPP)
 endif()
 
+if (UNITTESTS)
+    add_definitions(-DUNITTESTS)
+endif()
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -std=c++11")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
@@ -313,7 +327,10 @@ set(zrtp_src_no_cache
     ${CMAKE_SOURCE_DIR}/zrtp/zrtpB64Encode.c
     ${CMAKE_SOURCE_DIR}/zrtp/zrtpB64Decode.c
     ${CMAKE_SOURCE_DIR}/common/icuUtf8.c
-    ${CMAKE_SOURCE_DIR}/common/osSpecifics.c ${sdes_src})
+    ${CMAKE_SOURCE_DIR}/common/osSpecifics.c
+    ${CMAKE_SOURCE_DIR}/logging/Logger.cpp
+    ${CMAKE_SOURCE_DIR}/logging/ZrtpLogging.cpp
+    ${sdes_src})
 
 set(bnlib_src
     ${CMAKE_SOURCE_DIR}/bnlib/bn00.c

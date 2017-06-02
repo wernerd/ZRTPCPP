@@ -45,8 +45,8 @@ static void displayError(const char *what) {
 
 static void sendData(uint8_t *buffer, unsigned int length)
 {
-    int z = sendto(s, buffer, length, 0,  (struct sockaddr *)&adr_clnt, lenClnt);
-    if ( z < 0 ) {
+    ssize_t z = sendto(s, buffer, length, 0,  (struct sockaddr *)&adr_clnt, lenClnt);
+    if ( z == -1 ) {
         displayError("sendto(2)");
     }
 }

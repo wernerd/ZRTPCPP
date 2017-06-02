@@ -36,7 +36,7 @@ ifeq "$(SIDH)" "TRUE"
   SIDH_armeabi-v7a := -D_ARM_ -D_GENERIC_ -D__LINUX__
   SIDH_EXTRA_armeabi-v7a := cryptcommon/sidhp751/generic/fp_generic.c
 
-  SIDH_x86 := -D_ARM_ -D_GENERIC_ -D__LINUX__
+  SIDH_x86 := -D_X86_ -D_GENERIC_ -D__LINUX__
   SIDH_EXTRA_x86 := cryptcommon/sidhp751/generic/fp_generic.c
 
   SIDH_arm64-v8a := -D_ARM64_ -D__LINUX__
@@ -51,7 +51,7 @@ endif
 
 # For this Android build we can set the visibility to hidden. Access to ZRTP is only inside
 # the shared lib that we build later for Silent Phone.
-LOCAL_CFLAGS += @axo_support@ -fvisibility=hidden -fvisibility-inlines-hidden
+LOCAL_CFLAGS += @axo_support@ @LOG_MAX_LEVEL@ -fPIC -fvisibility=hidden -fvisibility-inlines-hidden
 
 LOCAL_SRC_FILES += @sqlite_src@
 LOCAL_SRC_FILES += @zrtpcpp_src_spc@

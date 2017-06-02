@@ -54,7 +54,15 @@ void randomZRTP(uint8_t *buf, int32_t length);
 #if defined(__cplusplus)
 
 #include <libzrtpcpp/ZrtpConfigure.h>
+#include <cryptcommon/sidhp751/keymanagement/SidhKeyManagement.h>
 
+static const uint DH2K_LENGTH_BYTES = 2048 / 8;
+static const uint DH3K_LENGTH_BYTES = 3072 / 8;
+static const uint EC25_LENGTH_BYTES = 2*(256 / 8);
+static const uint EC38_LENGTH_BYTES = 2*(384 / 8);
+static const uint E255_LENGTH_BYTES = 32 ;
+static const uint E414_LENGTH_BYTES = 2*((414+7) / 8);
+static const uint SDH1_LENGTH_BYTES = sidh751KM::PUBLIC_KEY_LENGTH_BYTES;
 
 /**
  * Implementation of Diffie-Helman for ZRTP
@@ -79,6 +87,7 @@ public:
     enum ErrorCode {
         SUCCESS = 0,
         ILLEGAL_ARGUMENT = -5,
+        UNKNOWN_ALGORITHM = -6,
 
         SDH1_INIT_FAILED = -10,
         SDH1_KEY_A_FAILED = -11,
@@ -173,6 +182,8 @@ public:
      */
     const char* getDHtype();
 
+    ErrorCode getErrorCode() const { return errorCode; }
+
 private:
 
     enum Algorithm {
@@ -188,7 +199,7 @@ private:
     void* ctx;                      ///< Context the DH
     int pkType;                     ///< Which type of DH to use
     ProtocolState protocolState;    ///< Create DH for this protocol state
-    int32_t errorCode;
+    ErrorCode errorCode;
 
 };
 #endif /*__cpluscplus */

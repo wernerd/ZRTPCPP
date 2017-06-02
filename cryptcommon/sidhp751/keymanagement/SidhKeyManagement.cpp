@@ -19,16 +19,17 @@ limitations under the License.
 //
 #include <condition_variable>
 #include <thread>
+#include <logging/ZrtpLogging.h>
 
 #include "../SIDH_api.h"
 #include "SidhKeyManagement.h"
 
 #include "../../ZrtpRandom.h"
 
-static CRYPTO_STATUS getRandomBytes(unsigned int nbytes, unsigned char* random_array)
+static CRYPTO_STATUS getRandomBytes(unsigned int numBytes, unsigned char* random_array)
 {
-    uint32_t length = ZrtpRandom::getRandomData(random_array, nbytes);
-    return (length == nbytes) ? CRYPTO_SUCCESS : CRYPTO_ERROR;
+    uint32_t length = ZrtpRandom::getRandomData(random_array, numBytes);
+    return (length == numBytes) ? CRYPTO_SUCCESS : CRYPTO_ERROR;
 }
 
 using namespace std;
@@ -69,8 +70,8 @@ namespace sidh751KM {
         }
     };
 
-    static KeyEntry keyEntriesA[5];
-    static KeyEntry keyEntriesB[5];
+    static KeyEntry keyEntriesA[KEY_ENTRIES];
+    static KeyEntry keyEntriesB[KEY_ENTRIES];
 
     static PCurveIsogenyStruct CurveIsogeny = nullptr;
 
@@ -120,6 +121,14 @@ namespace sidh751KM {
         entriesArrayCv.notify_one();
     }
 
+    static void clearAllEntries() {
+        unique_lock<mutex> arrayLock(keyEntriesLockGenerating);
+        for (int i = 0; i < KEY_ENTRIES; i++) {
+            keyEntriesA[i].status = Empty;
+            keyEntriesB[i].status = Empty;
+        }
+    }
+
     static void generateKeys() {
         unique_lock<mutex> arrayLock(keyEntriesLockGenerating);
         while (threadRunning) {
@@ -128,26 +137,29 @@ namespace sidh751KM {
             while ((entry = getEmptyEntry()) == nullptr && threadRunning) {
                 entriesArrayCv.wait(arrayLock);
             }
+            if (!threadRunning) {
+                return;
+            }
             entry->status = Generating;
             arrayLock.unlock();
 
             if (entry->type == KeyA) {
-                printf("Generate type A\n");
+                LOGGER(INFO, " Generate type A");
                 CRYPTO_STATUS status = EphemeralKeyGeneration_A(entry->keyPair.privateKey, entry->keyPair.publicKey,
                                                                 CurveIsogeny);
                 if (status != CRYPTO_SUCCESS) {
-                    printf("Key generation (A) failed: %d\n", status);
+                    LOGGER(ERROR, " Key generation (A) failed: ", status);
                     entry->status = Empty;
                 } else {
                     entry->status = Ready;
                     entriesArrayACv.notify_one();
                 }
             } else {
-                printf("Generate type B\n");
+                LOGGER(INFO, " Generate type B");
                 CRYPTO_STATUS status = EphemeralKeyGeneration_B(entry->keyPair.privateKey, entry->keyPair.publicKey,
                                                                 CurveIsogeny);
                 if (status != CRYPTO_SUCCESS) {
-                    printf("Key generation (B) failed: %d\n", status);
+                    LOGGER(ERROR, "Key generation (B) failed: ", status);
                     entry->status = Empty;
                 } else {
                     entry->status = Ready;
@@ -159,6 +171,7 @@ namespace sidh751KM {
     }
 
     bool SidhKeyManagement::initialize() {
+        LOGGER(DEBUGGING, __func__, " -->");
 
         if (!threadRunning) {
             unique_lock<mutex> lck(threadLock);
@@ -170,7 +183,7 @@ namespace sidh751KM {
                 }
                 CRYPTO_STATUS status = SIDH_curve_initialize(CurveIsogeny, getRandomBytes, &CurveIsogeny_SIDHp751);
                 if (status != CRYPTO_SUCCESS) {
-                    printf("SIDH curve initialization failed: %d\n", status);
+                    LOGGER(ERROR, "SIDH curve initialization failed: ", status);
                     SIDH_curve_free(CurveIsogeny);
                     return false;
                 }
@@ -179,10 +192,12 @@ namespace sidh751KM {
             }
             lck.unlock();
         }
+        LOGGER(DEBUGGING, __func__, " <--");
         return true;
     }
 
     bool SidhKeyManagement::getKeyPair(KeyEntryType type, KeyPair *keyPair) {
+        LOGGER(DEBUGGING, __func__, " -->");
         if (keyPair == nullptr || !threadRunning) {
             return false;
         }
@@ -204,10 +219,12 @@ namespace sidh751KM {
         memcpy(keyPair->publicKey, entry->keyPair.publicKey, sizeof(PublicKey));
         entry->keyPair.clearKeys();
         setEntryEmpty(entry);
+        LOGGER(DEBUGGING, __func__, " <--");
         return true;
     }
 
     void SidhKeyManagement::stopKeyGeneration() {
+        LOGGER(DEBUGGING, __func__, " -->");
         unique_lock<mutex> lck(threadLock);
         if (!threadRunning) {
             return;
@@ -215,38 +232,23 @@ namespace sidh751KM {
         threadRunning = false;
         entriesArrayCv.notify_one();
         generatingThread.join();
+
+        clearAllEntries();
+        SIDH_curve_free(CurveIsogeny);
+        LOGGER(DEBUGGING, __func__, " <--");
     }
 
     int32_t SidhKeyManagement::secretAgreement_A(const unsigned char* pPrivateKeyA, const unsigned char* pPublicKeyB, unsigned char* pSharedSecretA) {
-        return EphemeralSecretAgreement_A(pPrivateKeyA, pPublicKeyB, pSharedSecretA, CurveIsogeny);
+        LOGGER(DEBUGGING, __func__, " -->");
+        CRYPTO_STATUS status = EphemeralSecretAgreement_A(pPrivateKeyA, pPublicKeyB, pSharedSecretA, CurveIsogeny);
+        LOGGER(DEBUGGING, __func__, " <--");
+        return status;
     }
 
     int32_t SidhKeyManagement::secretAgreement_B(const unsigned char* pPrivateKeyB, const unsigned char* pPublicKeyA, unsigned char* pSharedSecretB) {
-        return EphemeralSecretAgreement_B(pPrivateKeyB, pPublicKeyA, pSharedSecretB, CurveIsogeny);
+        LOGGER(DEBUGGING, __func__, " -->");
+        CRYPTO_STATUS status = EphemeralSecretAgreement_B(pPrivateKeyB, pPublicKeyA, pSharedSecretB, CurveIsogeny);
+        LOGGER(DEBUGGING, __func__, " <--");
+        return status;
     }
-
 }
-#ifdef UNITTESTS
-int main(int argc, char *argv[]) {
-    printf("Key Management main\n");
-    if (!sidh751KM::SidhKeyManagement::initialize()) {
-        printf("SIDH initialization failed.\n");
-        return 1;
-    }
-    printf("Get a B key pair, start at: %ld\n", time(nullptr));
-    sidh751KM::KeyPair bKey;
-    if (!sidh751KM::SidhKeyManagement::getKeyPairB(&bKey)) {
-        printf("getting a B key pair failed.\n");
-        return 2;
-    }
-    printf("Got a B key pair, end at: %ld\n", time(nullptr));
-
-    sidh751KM::SidhKeyManagement::stopKeyGeneration();
-
-    if (sidh751KM::SidhKeyManagement::getKeyPairB(&bKey)) {
-        printf("Get a B key pair must failed now.\n");
-        return 3;
-    }
-    return 0;
-}
-#endif

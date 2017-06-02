@@ -44,8 +44,8 @@
 #include <zrtp/crypto/zrtpDH.h>
 #include <zrtp/libzrtpcpp/ZrtpTextData.h>
 #include <cryptcommon/ZrtpRandom.h>
-#include <cryptcommon/sidhp751/keymanagement/SidhKeyManagement.h>
 #include <cryptcommon/sidhp751/SIDH.h>
+#include <logging/ZrtpLogging.h>
 
 
 static BigNum bnP2048 = {0};
@@ -183,6 +183,7 @@ static const uint8_t P4096[] =
 *************** */
 
 ZrtpDH::ZrtpDH(const char* type, ProtocolState state) : protocolState(state) {
+    LOGGER(DEBUGGING, __func__, " --> ", state);
 
     uint8_t random[64];
 
@@ -208,7 +209,12 @@ ZrtpDH::ZrtpDH(const char* type, ProtocolState state) : protocolState(state) {
     else if (*(int32_t*)type == *(int32_t*)e414) {
         pkType = E414;
     }
+    else if (*(int32_t*)type == *(int32_t*)sdh1) {
+        pkType = SDH1;
+    }
     else {
+        LOGGER(ERROR, __func__, " Unknown DH algorithm:", type);
+        errorCode = UNKNOWN_ALGORITHM;
         return;
     }
 
@@ -283,14 +289,17 @@ ZrtpDH::ZrtpDH(const char* type, ProtocolState state) : protocolState(state) {
             break;
 
         default:
-            errorCode = ILLEGAL_ARGUMENT;
+            errorCode = UNKNOWN_ALGORITHM;
             break;
     }
+    LOGGER(DEBUGGING, __func__, " <--");
 }
 
 ZrtpDH::~ZrtpDH() {
     if (ctx == nullptr)
         return;
+
+    LOGGER(DEBUGGING, __func__, " -->");
 
     dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
     FREE_EC_POINT(&tmpCtx->pubPoint);
@@ -320,10 +329,12 @@ ZrtpDH::~ZrtpDH() {
     }
     delete tmpCtx;
     ctx = nullptr;
+    LOGGER(DEBUGGING, __func__, " <--");
 }
 
 int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
 
+    LOGGER(DEBUGGING, __func__, " -->");
     dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
 
     int32_t length = getSharedSecretSize();
@@ -343,12 +354,15 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
             bnExpMod(&sec, &pubKeyOther, &tmpCtx->privKey, &bnP3072);
         }
         else {
+            errorCode = UNKNOWN_ALGORITHM;
+            LOGGER(ERROR, __func__, " Unknown finite field DH algorithm: ", pkType);
             return 0;
         }
         bnEnd(&pubKeyOther);
         bnExtractBigBytes(&sec, secret, 0, static_cast<uint32_t >(length));
         bnEnd(&sec);
 
+        LOGGER(DEBUGGING, __func__, " <-- DH");
         return length;
     }
 
@@ -369,6 +383,7 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
         bnEnd(&sec);
         FREE_EC_POINT(&pub);
 
+        LOGGER(DEBUGGING, __func__, " <-- EC/E414");
         return length;
     }
     if (pkType == E255) {
@@ -386,6 +401,7 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
         bnEnd(&sec);
         FREE_EC_POINT(&pub);
 
+        LOGGER(DEBUGGING, __func__, " <-- E255");
         return length;
     }
     if (pkType == SDH1) {
@@ -396,8 +412,12 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
         }
         else {
             status = sidh751KM::SidhKeyManagement::secretAgreement_B(tmpCtx->sdh1KeyPair.privateKey, pubKeyBytes, secret);
-            errorCode = status == CRYPTO_SUCCESS ? SUCCESS : SDH1_KEY_A_SECRET_FAILED;
+            errorCode = status == CRYPTO_SUCCESS ? SUCCESS : SDH1_KEY_B_SECRET_FAILED;
         }
+        if (errorCode != SUCCESS) {
+            LOGGER(ERROR, __func__, " SIDH1 key agreement failed: ", errorCode);
+        }
+        LOGGER(DEBUGGING, __func__, " <-- SDH1");
         return getSharedSecretSize();
     }
     return -1;
@@ -405,6 +425,7 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
 
 int32_t ZrtpDH::generatePublicKey()
 {
+    LOGGER(DEBUGGING, __func__, " -->");
     dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
 
     bnBegin(&tmpCtx->pubKey);
@@ -429,11 +450,14 @@ int32_t ZrtpDH::generatePublicKey()
         case SDH1:          // Runs in background, started/filled in constructor
             break;
     }
+    LOGGER(DEBUGGING, __func__, " <--");
     return 0;
 }
 
 uint32_t ZrtpDH::getSharedSecretSize() const
 {
+    LOGGER(DEBUGGING, __func__, " -->");
+
     switch (pkType) {
         case DH2K:
             return 2048/8;
@@ -463,6 +487,8 @@ uint32_t ZrtpDH::getSharedSecretSize() const
 
 int32_t ZrtpDH::getPubKeySize() const
 {
+    LOGGER(DEBUGGING, __func__, " -->");
+
     dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
     if (pkType == DH2K || pkType == DH3K)
         return bnBytes(&tmpCtx->pubKey);
@@ -476,12 +502,15 @@ int32_t ZrtpDH::getPubKeySize() const
     if (pkType == SDH1) {
         return sidh751KM::PUBLIC_KEY_LENGTH_BYTES;
     }
+    LOGGER(DEBUGGING, __func__, " <-- Error return");
+
     return 0;
 
 }
 
 int32_t ZrtpDH::getPubKeyBytes(uint8_t *buf) const
 {
+    LOGGER(DEBUGGING, __func__, " -->");
     dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
 
     if (pkType == DH2K || pkType == DH3K) {
@@ -512,11 +541,18 @@ int32_t ZrtpDH::getPubKeyBytes(uint8_t *buf) const
         memcpy(buf, tmpCtx->sdh1KeyPair.publicKey, static_cast<size_t>(len));
         return len;
     }
+    LOGGER(DEBUGGING, __func__, " <-- Error return");
     return 0;
 }
 
 int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
 {
+    LOGGER(DEBUGGING, __func__, " -->");
+
+    if (pkType == E255 || pkType == SDH1) {
+        LOGGER(DEBUGGING, __func__, " <-- E255/SDH1");
+        return 1;
+    }
 
     /* ECC validation (partial), NIST SP800-56A, section 5.6.2.6 */
     if (pkType == EC25 || pkType == EC38 || pkType == E414) {
@@ -530,15 +566,8 @@ int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
         bnInsertBigBytes(pub.x, pubKeyBytes, 0, static_cast<uint32_t >(len));
         bnInsertBigBytes(pub.y, pubKeyBytes+len, 0, static_cast<uint32_t >(len));
 
+        LOGGER(DEBUGGING, __func__, " <-- EC/E414");
         return ecCheckPubKey(&tmpCtx->curve, &pub);
-    }
-
-    if (pkType == E255) {
-        return 1;
-    }
-
-    if (pkType == SDH1) {
-        return 1;
     }
 
     BigNum pubKeyOther;
@@ -564,11 +593,13 @@ int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
     }
 
     bnEnd(&pubKeyOther);
+    LOGGER(DEBUGGING, __func__, " <-- DH");
     return 1;
 }
 
 const char* ZrtpDH::getDHtype()
 {
+    LOGGER(DEBUGGING, __func__, " -->");
     switch (pkType) {
         case DH2K:
             return dh2k;

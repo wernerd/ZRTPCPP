@@ -67,7 +67,15 @@ endif()
 set(zrtp_ccrtp_src
     ${CMAKE_CURRENT_SOURCE_DIR}/ZrtpQueue.cpp)
 
-set(zrtpcpp_src ${zrtp_src} ${zrtp_ccrtp_src} ${crypto_src} ${cryptcommon_srcs})
+if(SIDH_X64)
+    # From Cmake doc: SOURCE scope may name zero or more source files. Note that source file properties are visible only
+    # to targets added in the same directory (CMakeLists.txt).
+    set_property(SOURCE ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/AMD64/fp_x64_asm.S PROPERTY LANGUAGE C)
+elseif(SIDH_ARM64)
+    set_property(SOURCE ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/ARM64/fp_arm_asm.S PROPERTY LANGUAGE C)
+endif()
+
+set(zrtpcpp_src ${zrtp_src} ${zrtp_ccrtp_src} ${crypto_src} ${cryptcommon_srcs} ${sidh751_src})
 
 if(BUILD_STATIC AND NOT BUILD_SHARED)
     set(LIBRARY_BUILD_TYPE STATIC)
@@ -75,7 +83,7 @@ else()
     set(LIBRARY_BUILD_TYPE SHARED)
 endif()
 
-add_library(${zrtplibName} ${LIBRARY_BUILD_TYPE} ${zrtpcpp_src})
+add_library(${zrtplibName} ${LIBRARY_BUILD_TYPE} ${zrtpcpp_src} ${sidh751_extra_src})
 set_target_properties(${zrtplibName} PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
 target_link_libraries(${zrtplibName} ${LIBS})
 

@@ -35,27 +35,32 @@
 #include <libzrtpcpp/ZrtpStateClass.h>
 #include <libzrtpcpp/Base32.h>
 #include <libzrtpcpp/EmojiBase32.h>
+#include <logging/ZrtpLogging.h>
 
 using namespace GnuZrtpCodes;
 
-/* disabled...but used in testing and debugging, probably should have a
-   controlling #define...
-   *
-static void hexdump(const char* title, const unsigned char *s, int l) {
-    int n=0;
-
+#ifdef UNITTESTS
+// Used in testing and debugging to do in-depth checks
+static char hexBuffer[2000] = {0};
+static void hexdump(const char* title, const unsigned char *s, size_t l) {
+    size_t n = 0;
     if (s == NULL) return;
 
-    fprintf(stderr, "%s",title);
+    memset(hexBuffer, 0, 2000);
+    int len = sprintf(hexBuffer, "%s",title);
     for( ; n < l ; ++n)
     {
         if((n%16) == 0)
-            fprintf(stderr, "\n%04x",n);
-        fprintf(stderr, " %02x",s[n]);
+            len += sprintf(hexBuffer+len, "\n%04x", static_cast<int>(n));
+        len += sprintf(hexBuffer+len, " %02x",s[n]);
     }
-    fprintf(stderr, "\n");
+    sprintf(hexBuffer+len, "\n");
 }
- * */
+static void hexdump(const char* title, const string& in)
+{
+    hexdump(title, (uint8_t*)in.data(), in.size());
+}
+#endif
 
 /*
  * This method simplifies detection of libzrtpcpp inside Automake, configure
@@ -149,9 +154,9 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* conf
 
 ZRtp::~ZRtp() {
     stopZrtp();
-    if (DHss != NULL) {
+    if (DHss != nullptr) {
         delete DHss;
-        DHss = NULL;
+        DHss = nullptr;
     }
     if (stateEngine != NULL) {
         delete stateEngine;
@@ -314,7 +319,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
 
     /*
      * The Following section extracts the algorithm from the peer's Hello
-     * packet. Always the preferend offered algorithms are
+     * packet. Always the prefered offered algorithms are
      * used. If the received Hello does not contain algo specifiers
      * or offers only unsupported optional algos then replace
      * these with mandatory algos and put them into the Commit packet.
@@ -585,7 +590,13 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     // check if we can use the dhContext prepared by prepareCommit(),
     // if not delete old DH context and generate new one
     // The algorithm names are 4 chars only, thus we can cast to int32_t
-    if (*(int32_t*)(dhContext->getDHtype()) != *(int32_t*)(pubKey->getName())) {
+
+    // For Post-quantum SIDH we always need to generate a new key pair. The
+    // Initiator uses a Key-A type key pair (created during prepareCommit) and
+    // the Responder (that's the case here) uses a Key-B type key pair. SIDH
+    // keys are precomputed, thus it's a fast operation at this point
+    if (*(int32_t*)(dhContext->getDHtype()) != *(int32_t*)(pubKey->getName()) ||
+            *(int32_t*)(pubKey->getName()) == *(int32_t*)sdh1) {
         delete dhContext;
         dhContext = new ZrtpDH(pubKey->getName(), ZrtpDH::DhPart1);
         dhContext->generatePublicKey();
@@ -680,9 +691,9 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
 
     // get memory to store DH result TODO: make it fixed memory
     DHss = new uint8_t[dhContext->getSharedSecretSize()];
-    if (DHss == NULL) {
+    if (DHss == nullptr) {
         *errMsg = CriticalSWError;
-        return NULL;
+        return nullptr;
     }
 
     // get and check Responder's public value, see chap. 5.4.3 in the spec
@@ -696,6 +707,10 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
         return NULL;
     }
     dhContext->computeSecretKey(pvr, DHss);
+#ifdef UNITTESTS
+    hexdump("DHSS I", DHss, dhContext->getSharedSecretSize() > 300 ? 300 : dhContext->getSharedSecretSize()); LOGGER(VERBOSE, hexBuffer);
+#endif
+
 
     // We are Initiator: the Responder's Hello and the Initiator's (our) Commit
     // are already hashed in the context. Now hash the Responder's DH1 and then
@@ -707,7 +722,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
     // Compute the message Hash
     closeHashCtx(msgShaContext, messageHash);
     msgShaContext = NULL;
-    // Now compute the S0, all dependend keys and the new RS1. The function
+    // Now compute the S0, all dependent keys and the new RS1. The function
     // also performs sign SAS callback if it's active.
     generateKeysInitiator(dhPart1, zidRec);
 
@@ -731,7 +746,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
 
     if (!dhPart2->isLengthOk()) {
         *errMsg = CriticalSWError;
-        return NULL;
+        return nullptr;
     }
     // Because we are responder we received a Commit and stored its H2.
     // Now re-compute H2 from received H1 and compare with stored peer's H2.
@@ -740,7 +755,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     hashFunctionImpl(dhPart2->getH1(), HASH_IMAGE_SIZE, tmpHash);
     if (memcmp(tmpHash, peerH2, HASH_IMAGE_SIZE) != 0) {
         *errMsg = IgnorePacket;
-        return NULL;
+        return nullptr;
     }
 
     // Check HMAC of Commit packet stored in temporary buffer. The
@@ -749,7 +764,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     if (!checkMsgHmac(dhPart2->getH1())) {
         sendInfo(Severe, SevereCommitHMACFailed);
         *errMsg = CriticalSWError;
-        return NULL;
+        return nullptr;
     }
     // Now we have the peer's pvi. Because we are responder re-compute my hvi
     // using my Hello packet and the Initiator's DHPart2 and compare with
@@ -758,27 +773,30 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     computeHvi(dhPart2, currentHelloPacket);
     if (memcmp(hvi, peerHvi, HVI_SIZE) != 0) {
         *errMsg = DHErrorWrongHVI;
-        return NULL;
+        return nullptr;
     }
     DHss = new uint8_t[dhContext->getSharedSecretSize()];
-    if (DHss == NULL) {
+    if (DHss == nullptr) {
         *errMsg = CriticalSWError;
-        return NULL;
+        return nullptr;
     }
     // Get and check the Initiator's public value, see chap. 5.4.2 of the spec
     pvi = dhPart2->getPv();
     if (!dhContext->checkPubKey(pvi)) {
         *errMsg = DHErrorWrongPV;
-        return NULL;
+        return nullptr;
     }
     dhContext->computeSecretKey(pvi, DHss);
+#ifdef UNITTESTS
+    hexdump("DHSS R", DHss, dhContext->getSharedSecretSize() > 300 ? 300 : dhContext->getSharedSecretSize()); LOGGER(VERBOSE, hexBuffer);
+#endif
 
     // Hash the Initiator's DH2 into the message Hash (other messages already prepared, see method prepareDHPart1().
-    // Use neotiated hash function
+    // Use negotiated hash function
     hashCtxFunction(msgShaContext, (unsigned char*)dhPart2->getHeaderBase(), dhPart2->getLength() * ZRTP_WORD_SIZE);
 
     closeHashCtx(msgShaContext, messageHash);
-    msgShaContext = NULL;
+    msgShaContext = nullptr;
     /*
      * The expected shared secret Ids were already computed when we built the
      * DHPart1 packet. Generate s0, all depended keys, and the new RS1 value
@@ -788,7 +806,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     generateKeysResponder(dhPart2, zidRec);
 
     delete dhContext;
-    dhContext = NULL;
+    dhContext = nullptr;
 
     // Fill in Confirm1 packet.
     zrtpConfirm1.setMessageType((uint8_t*)Confirm1Msg);
@@ -1549,13 +1567,14 @@ AlgorithmEnum* ZRtp::findBestCipher(ZrtpPacketHello *hello, AlgorithmEnum* pk) {
 // does not include the non-NIST curves also works without problems.
 //
 AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
+    LOGGER(DEBUGGING, __func__, " -->");
 
     AlgorithmEnum* peerIntersect[ZrtpConfigure::maxNoOfAlgos+1];
     AlgorithmEnum* ownIntersect[ZrtpConfigure::maxNoOfAlgos+1];
 
     // Build list of own pubkey algorithm names, must follow the order
     // defined in RFC 6189, chapter 4.1.2.
-    const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38};
+    const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38, sdh1};
     int numOrderedAlgos = sizeof(orderedAlgos) / sizeof(const char*);
 
     int numAlgosPeer = hello->getNumPubKeys();
@@ -1563,9 +1582,9 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
         hash = findBestHash(hello);                    // find a hash algorithm
         return &zrtpPubKeys.getByName(mandatoryPubKey);
     }
-    // Build own list of intersecting algos, keep own order or algorithms
-    // The list must include real public key algorithms only, so skip mult-stream mode, 
-    // preshared and alike.
+    // Build own list of intersecting algos, keep own order of algorithms
+    // The list must include real public key algorithms only, so skip multi-stream mode,
+    // pre-shared and alike.
     int numAlgosOwn = configureAlgos.getNumConfiguredAlgos(PubKeyAlgorithm);
     int numOwnIntersect = 0;
     for (int i = 0; i < numAlgosOwn; i++) {
@@ -1629,7 +1648,7 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
     int32_t algoName = *(int32_t*)(useAlgo->getName());
 
     // select a corresponding strong hash if necessary.
-    if (algoName == *(int32_t*)ec38 || algoName == *(int32_t*)e414) {
+    if (algoName == *(int32_t*)ec38 || algoName == *(int32_t*)e414 || algoName == *(int32_t*)sdh1) {
         hash = getStrongHashOffered(hello, algoName);
         cipher = getStrongCipherOffered(hello, algoName);
     }
@@ -1638,6 +1657,8 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
         cipher = getCipherOffered(hello, algoName);
     }
     authLength = getAuthLenOffered(hello, algoName);
+    LOGGER(DEBUGGING, __func__, " <--");
+
     return useAlgo;
 }
 
@@ -2109,11 +2130,11 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
 
     data[pos] = NULL;
     hashListFunction(data, length, s0);
-//  hexdump("S0 I", s0, hashLength);
+//    hexdump("S0 I", s0, hashLength); LOGGER(VERBOSE, hexBuffer);
 
     memset_volatile(DHss, 0, dhContext->getSharedSecretSize());
     delete[] DHss;
-    DHss = NULL;
+    DHss = nullptr;
 
     computeSRTPKeys();
     memset(s0, 0, MAX_DIGEST_LENGTH);

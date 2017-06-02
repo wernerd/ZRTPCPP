@@ -32,6 +32,8 @@ limitations under the License.
 #include <cstring>
 #include <cstdio>
 
+#include <common/osSpecifics.h>
+
 namespace sidh751KM {
     static const uint16_t KEY_ENTRIES = 2;          //!< Number of precomputed A and B key pairs
 
@@ -75,7 +77,7 @@ namespace sidh751KM {
 
     class SidhKeyManagement {
     public:
-        static bool initialize();
+        static __EXPORT bool initialize();
 
         static bool getKeyPairA(KeyPair* keyPair) { return getKeyPair(KeyA, keyPair); }
         static bool getKeyPairB(KeyPair* keyPair) { return getKeyPair(KeyB, keyPair); }

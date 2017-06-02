@@ -85,36 +85,81 @@ fpadd751_asm:
     adcs x14, x14, x18
     
     //  subtract 2xp751 to the resut in x3 - x14
-    ldr x16, p751x2
+    // ldr x16, p751x2
+    adrp x16, p751x2
+    ldr  x16, [x16, #:lo12:p751x2]
+
     subs x3, x3, x16
-    ldr x15, p751x2 + 8
+
+//    ldr x15, p751x2 + 8
+    adrp x15, p751x2
+    ldr  x15, [x15, #:lo12:p751x2 + 8]
+
     sbcs x4, x4, x15
     sbcs x5, x5, x15
     sbcs x6, x6, x15
     sbcs x7, x7, x15
-    ldr x16, p751x2 + 16
-    ldr x17, p751x2 + 24
+
+//    ldr x16, p751x2 + 16
+    adrp x16, p751x2
+    ldr  x16, [x16, #:lo12:p751x2 + 16]
+
+//    ldr x17, p751x2 + 24
+    adrp x17, p751x2
+    ldr  x17, [x17, #:lo12:p751x2 + 24]
+
     sbcs x8, x8, x16
-    ldr x18, p751x2 + 32
+
+//    ldr x18, p751x2 + 32
+    adrp x18, p751x2
+    ldr  x18, [x18, #:lo12:p751x2 + 32]
+
     sbcs x9, x9, x17
-    ldr x16, p751x2 + 40
+
+//    ldr x16, p751x2 + 40
+    adrp x16, p751x2
+    ldr  x16, [x16, #:lo12:p751x2 + 40]
+
     sbcs x10, x10, x18
-    ldr x17, p751x2 + 48
+
+//    ldr x17, p751x2 + 48
+    adrp x17, p751x2
+    ldr  x17, [x17, #:lo12:p751x2 + 48]
+
     sbcs x11, x11, x16
-    ldr x18, p751x2 + 56
+
+//    ldr x18, p751x2 + 56
+    adrp x18, p751x2
+    ldr  x18, [x18, #:lo12:p751x2 + 56]
+
     sbcs x12, x12, x17
-    ldr x15, p751x2 + 64
+
+//    ldr x15, p751x2 + 64
+    adrp x15, p751x2
+    ldr  x15, [x15, #:lo12:p751x2 + 64]
+
     sbcs x13, x13, x18
     sbcs x14, x14, x15
     sbc x15, xzr, xzr
 
     //  add 2xp751 back but anded with the mask in x15
-    ldr x16, p751x2
+//    ldr x16, p751x2
+    adrp x16, p751x2
+    ldr  x16, [x16, #:lo12:p751x2]
+
     and x16, x16, x15
-    ldr x17, p751x2 + 8
+
+//    ldr x17, p751x2 + 8
+    adrp x17, p751x2
+    ldr  x17, [x17, #:lo12:p751x2 + 8]
+
     and x17, x17, x15
-    ldr x18, p751x2 + 16
-    and x18, x18, x15    
+
+//    ldr x18, p751x2 + 16
+    adrp x18, p751x2
+    ldr  x18, [x18, #:lo12:p751x2 + 16]
+
+    and x18, x18, x15
 
     adds x3, x3, x16
     adcs x4, x4, x17
@@ -123,24 +168,45 @@ fpadd751_asm:
     adcs x7, x7, x17
     adcs x8, x8, x18
 
-    ldr x16, p751x2 + 24
+//    ldr x16, p751x2 + 24
+    adrp x16, p751x2
+    ldr  x16, [x16, #:lo12:p751x2 + 24]
+
     and x16, x16, x15  
     adcs x9, x9, x16
 
-    ldr x16, p751x2 + 32
+//    ldr x16, p751x2 + 32
+    adrp x16, p751x2
+    ldr  x16, [x16, #:lo12:p751x2 + 32]
+
     and x16, x16, x15
-    ldr x17, p751x2 + 40
+
+//    ldr x17, p751x2 + 40
+    adrp x17, p751x2
+    ldr  x17, [x17, #:lo12:p751x2 + 40]
+
     and x17, x17, x15
-    ldr x18, p751x2 + 48
+
+//    ldr x18, p751x2 + 48
+    adrp x18, p751x2
+    ldr  x18, [x18, #:lo12:p751x2 + 48]
+
     and x18, x18, x15 
 
     adcs x10, x10, x16   
     adcs x11, x11, x17   
     adcs x12, x12, x18   
 
-    ldr x16, p751x2 + 56
+//    ldr x16, p751x2 + 56
+    adrp x16, p751x2
+    ldr  x16, [x16, #:lo12:p751x2 + 56]
+
     and x16, x16, x15
-    ldr x17, p751x2 + 64
+
+//    ldr x17, p751x2 + 64
+    adrp x17, p751x2
+    ldr  x17, [x17, #:lo12:p751x2 + 64]
+
     and x17, x17, x15
 
     adcs x13, x13, x16
@@ -188,11 +254,22 @@ fpsub751_asm:
     sbcs x14, x14, x16
     sbc x17, xzr, xzr
     
-    ldr x15, p751x2
+//    ldr x15, p751x2
+    adrp x15, p751x2
+    ldr  x15, [x15, #:lo12:p751x2]
+
     and x15, x15, x17
-    ldr x16, p751x2 + 8
+
+//    ldr x16, p751x2 + 8
+    adrp x16, p751x2
+    ldr  x16, [x16, #:lo12:p751x2 + 8]
+
     and x16, x16, x17
-    ldr x18, p751x2 + 16
+
+//    ldr x18, p751x2 + 16
+    adrp x18, p751x2
+    ldr  x18, [x18, #:lo12:p751x2 + 16]
+
     and x18, x18, x17
 
     adds x3, x3, x15
@@ -202,25 +279,46 @@ fpsub751_asm:
     adcs x7, x7, x16
     adcs x8, x8, x18
 
-    ldr x15, p751x2 + 24
+//    ldr x15, p751x2 + 24
+    adrp x15, p751x2
+    ldr  x15, [x15, #:lo12:p751x2 + 24]
+
     and x15, x15, x17    
-    ldr x16, p751x2 + 32
+
+//    ldr x16, p751x2 + 32
+    adrp x16, p751x2
+    ldr  x16, [x16, #:lo12:p751x2 + 32]
+
     and x16, x16, x17
 
     adcs x9, x9, x15
     adcs x10, x10, x16   
 
-    ldr x15, p751x2 + 40
+//    ldr x15, p751x2 + 40
+    adrp x15, p751x2
+    ldr  x15, [x15, #:lo12:p751x2 + 40]
+
     and x15, x15, x17
-    ldr x16, p751x2 + 48
+
+//    ldr x16, p751x2 + 48
+    adrp x16, p751x2
+    ldr  x16, [x16, #:lo12:p751x2 + 48]
+
     and x16, x16, x17 
 
     adcs x11, x11, x15   
     adcs x12, x12, x16   
 
-    ldr x15, p751x2 + 56
+//    ldr x15, p751x2 + 56
+    adrp x15, p751x2
+    ldr  x15, [x15, #:lo12:p751x2 + 56]
+
     and x15, x15, x17
-    ldr x16, p751x2 + 64
+
+//    ldr x16, p751x2 + 64
+    adrp x16, p751x2
+    ldr  x16, [x16, #:lo12:p751x2 + 64]
+
     and x16, x16, x17
 
     adcs x13, x13, x15
@@ -1527,13 +1625,34 @@ rdc751_asm:
     stp x27, x28, [sp, #64]
 
     //  load the prime values into x14 through x20
-    ldr x14, p751p1 + 0
-    ldr x15, p751p1 + 8
-    ldr x16, p751p1 + 16
-    ldr x17, p751p1 + 24
-    ldr x18, p751p1 + 32
-    ldr x19, p751p1 + 40
-    ldr x20, p751p1 + 48
+//    ldr x14, p751p1 + 0
+    adrp x14, p751p1
+    ldr  x14, [x14, #:lo12:p751p1]
+
+//    ldr x15, p751p1 + 8
+    adrp x15, p751p1
+    ldr  x15, [x15, #:lo12:p751p1 + 8]
+
+//    ldr x16, p751p1 + 16
+    adrp x16, p751p1
+    ldr  x16, [x16, #:lo12:p751p1 + 16]
+
+//    ldr x17, p751p1 + 24
+    adrp x17, p751p1
+    ldr  x17, [x17, #:lo12:p751p1 + 24]
+
+//    ldr x18, p751p1 + 32
+    adrp x18, p751p1
+    ldr  x18, [x18, #:lo12:p751p1 + 32]
+
+//    ldr x19, p751p1 + 40
+    adrp x19, p751p1
+    ldr  x19, [x19, #:lo12:p751p1 + 40]
+
+//    ldr x20, p751p1 + 48
+    adrp x20, p751p1
+    ldr  x20, [x20, #:lo12:p751p1 + 48]
+
 
     //  the values mc[0] through mc[11] will be held in x2 through x13
     //  until the very end when they will be stored
@@ -1553,6 +1672,7 @@ rdc751_asm:
     //  ma[6] iteration
 
     ldr x21, [x0, #48]
+
 
     mul x22, x2, x15
     umulh x23, x2, x15
