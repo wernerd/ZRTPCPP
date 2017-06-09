@@ -139,8 +139,11 @@ endif()
 #
 if(${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
     include(${CMAKE_SOURCE_DIR}/cmake/Modules/GeneratePackage.cmake)
+    set(exclude
+            "/clients/webrtc/"
+            "/clients/ccrtp")
 
-    GENERATE_PACKAGING(${PACKAGE} ${VERSION})
+    GENERATE_PACKAGING(${PACKAGE} ${VERSION} "${exclude}")
 endif()
 
 #
