@@ -23,10 +23,10 @@ CRYPTO_STATUS EphemeralKeyGeneration_A(unsigned char* PrivateKeyA, unsigned char
   // CurveIsogeny must be set up in advance using SIDH_curve_initialize().
     unsigned int owords = NBITS_TO_NWORDS(CurveIsogeny->owordbits), pwords = NBITS_TO_NWORDS(CurveIsogeny->pwordbits);
     point_basefield_t P;
-    point_proj_t R, phiP = {0}, phiQ = {0}, phiD = {0}, pts[MAX_INT_POINTS_ALICE];
+    point_proj_t R, phiP = {}, phiQ = {}, phiD = {}, pts[MAX_INT_POINTS_ALICE];
     publickey_t* PublicKey = (publickey_t*)PublicKeyA;
     unsigned int i, row, m, index = 0, pts_index[MAX_INT_POINTS_ALICE], npts = 0; 
-    f2elm_t coeff[5], A = {0}, C = {0}, Aout, Cout;
+    f2elm_t coeff[5], A = {}, C = {}, Aout, Cout;
     CRYPTO_STATUS Status = CRYPTO_ERROR_UNKNOWN; 
 
     if (PrivateKeyA == NULL || PublicKey == NULL || is_CurveIsogenyStruct_null(CurveIsogeny)) {
@@ -129,10 +129,10 @@ CRYPTO_STATUS EphemeralKeyGeneration_B(unsigned char* PrivateKeyB, unsigned char
   // CurveIsogeny must be set up in advance using SIDH_curve_initialize().
     unsigned int owords = NBITS_TO_NWORDS(CurveIsogeny->owordbits), pwords = NBITS_TO_NWORDS(CurveIsogeny->pwordbits);
     point_basefield_t P;
-    point_proj_t R, phiP = {0}, phiQ = {0}, phiD = {0}, pts[MAX_INT_POINTS_BOB];
+    point_proj_t R, phiP = {}, phiQ = {}, phiD = {}, pts[MAX_INT_POINTS_BOB];
     publickey_t* PublicKey = (publickey_t*)PublicKeyB;
     unsigned int i, row, m, index = 0, pts_index[MAX_INT_POINTS_BOB], npts = 0; 
-    f2elm_t A = {0}, C = {0};
+    f2elm_t A = {}, C = {};
     CRYPTO_STATUS Status = CRYPTO_ERROR_UNKNOWN;  
 
     if (PrivateKeyB == NULL || PublicKey == NULL || is_CurveIsogenyStruct_null(CurveIsogeny)) {
@@ -232,7 +232,7 @@ CRYPTO_STATUS EphemeralSecretAgreement_A(const unsigned char* PrivateKeyA, const
     unsigned int i, row, m, index = 0, pts_index[MAX_INT_POINTS_ALICE], npts = 0; 
     point_proj_t R, pts[MAX_INT_POINTS_ALICE];
     publickey_t* PublicKey = (publickey_t*)PublicKeyB;
-    f2elm_t jinv, coeff[5], PKB[3], A, C = {0};
+    f2elm_t jinv, coeff[5], PKB[3], A, C = {};
     CRYPTO_STATUS Status = CRYPTO_ERROR_UNKNOWN; 
 
     if (PrivateKeyA == NULL || PublicKey == NULL || SharedSecretA == NULL || is_CurveIsogenyStruct_null(CurveIsogeny)) {
@@ -303,7 +303,7 @@ CRYPTO_STATUS EphemeralSecretAgreement_B(const unsigned char* PrivateKeyB, const
     unsigned int i, row, m, index = 0, pts_index[MAX_INT_POINTS_BOB], npts = 0; 
     point_proj_t R, pts[MAX_INT_POINTS_BOB];
     publickey_t* PublicKey = (publickey_t*)PublicKeyA;
-    f2elm_t jinv, A, PKA[3], C = {0};
+    f2elm_t jinv, A, PKA[3], C = {};
     CRYPTO_STATUS Status = CRYPTO_ERROR_UNKNOWN;  
 
     if (PrivateKeyB == NULL || PublicKey == NULL || SharedSecretB == NULL || is_CurveIsogenyStruct_null(CurveIsogeny)) {
@@ -445,9 +445,9 @@ void PublicKeyADecompression_B(const unsigned char* SecretKeyB, const unsigned c
     point_full_proj_t P, Q;
     digit_t* comp = (digit_t*)CompressedPKA;
     digit_t* SKin = (digit_t*)SecretKeyB;
-    f2elm_t A24, vec[2], invs[2], one = {0};
+    f2elm_t A24, vec[2], invs[2], one = {};
     felm_t* A = (felm_t*)param_A;
-    digit_t t1[NWORDS_ORDER], t2[NWORDS_ORDER], t3[NWORDS_ORDER], t4[NWORDS_ORDER], vone[NWORDS_ORDER] = {0};
+    digit_t t1[NWORDS_ORDER], t2[NWORDS_ORDER], t3[NWORDS_ORDER], t4[NWORDS_ORDER], vone[NWORDS_ORDER] = {};
     uint64_t Montgomery_Rprime[NWORDS64_ORDER] = {0x1A55482318541298, 0x070A6370DFA12A03, 0xCB1658E0E3823A40, 0xB3B7384EB5DEF3F9, 0xCBCA952F7006EA33, 0x00569EF8EC94864C}; // Value (2^384)^2 mod 3^239
     uint64_t Montgomery_rprime[NWORDS64_ORDER] = {0x48062A91D3AB563D, 0x6CE572751303C2F5, 0x5D1319F3F160EC9D, 0xE35554E8C2D5623A, 0xCA29300232BC79A5, 0x8AAD843D646D78C5}; // Value -(3^239)^-1 mod 2^384
     unsigned int bit;
@@ -514,7 +514,7 @@ CRYPTO_STATUS EphemeralSecretAgreement_Compression_A(const unsigned char* Privat
     unsigned int pwords = NBITS_TO_NWORDS(CurveIsogeny->pwordbits);
     unsigned int i, row, m, index = 0, pts_index[MAX_INT_POINTS_ALICE], npts = 0; 
     point_proj_t R, pts[MAX_INT_POINTS_ALICE];
-    f2elm_t jinv, coeff[5], A, C = {0};
+    f2elm_t jinv, coeff[5], A, C = {};
 
     if (PrivateKeyA == NULL || SharedSecretA == NULL || is_CurveIsogenyStruct_null(CurveIsogeny)) {
         return CRYPTO_ERROR_INVALID_PARAMETER;
@@ -642,9 +642,9 @@ void PublicKeyBDecompression_A(const unsigned char* SecretKeyA, const unsigned c
     point_proj_t* R = (point_proj_t*)point_R;
     point_full_proj_t P, Q;
     digit_t* comp = (digit_t*)CompressedPKB;
-    f2elm_t A24, vec[2], invs[2], one = {0};
+    f2elm_t A24, vec[2], invs[2], one = {};
     felm_t* A = (felm_t*)param_A;
-    digit_t tmp1[2*NWORDS_ORDER], tmp2[2*NWORDS_ORDER], vone[2*NWORDS_ORDER] = {0}, mask = (digit_t)(-1);
+    digit_t tmp1[2*NWORDS_ORDER], tmp2[2*NWORDS_ORDER], vone[2*NWORDS_ORDER] = {}, mask = (digit_t)(-1);
     unsigned int bit;
 
     mask >>= (CurveIsogeny->owordbits - CurveIsogeny->oAbits);  
@@ -707,7 +707,7 @@ CRYPTO_STATUS EphemeralSecretAgreement_Compression_B(const unsigned char* Privat
     unsigned int pwords = NBITS_TO_NWORDS(CurveIsogeny->pwordbits);
     unsigned int i, row, m, index = 0, pts_index[MAX_INT_POINTS_BOB], npts = 0; 
     point_proj_t R, pts[MAX_INT_POINTS_BOB];
-    f2elm_t jinv, A, C = {0};
+    f2elm_t jinv, A, C = {};
 
     if (PrivateKeyB == NULL || SharedSecretB == NULL || is_CurveIsogenyStruct_null(CurveIsogeny)) {
         return CRYPTO_ERROR_INVALID_PARAMETER;

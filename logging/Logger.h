@@ -126,9 +126,10 @@ namespace logging {
     /**
      * Virtual logging policy
      */
-    class LogPolicy
+    class __EXPORT LogPolicy
     {
     public:
+        virtual ~LogPolicy() {};
         virtual void openStream(const std::string& name) = 0;
         virtual void closeStream() = 0;
         virtual void write(LoggingLogLevel level, const std::string& tag, const std::string& msg) = 0;
@@ -143,13 +144,13 @@ namespace logging {
         std::unique_ptr<std::ofstream> outStream;
 
     public:
-        FileLogPolicy() : outStream(new std::ofstream()) {}
-        ~FileLogPolicy();
+        FileLogPolicy();
+        ~FileLogPolicy() override;
 
-        void openStream(const std::string& name);
-        void closeStream();
-        void write(LoggingLogLevel level, const std::string& tag, const std::string& msg);
-        LoggingLogType getLoggingLogType() { return FULL; }
+        void openStream(const std::string& name) override;
+        void closeStream() override;
+        void write(LoggingLogLevel level, const std::string& tag, const std::string& msg) override;
+        LoggingLogType getLoggingLogType() override;
     };
 
     /**
@@ -159,14 +160,12 @@ namespace logging {
     {
     public:
         CerrLogPolicy() {}
-        ~CerrLogPolicy() {};
+        ~CerrLogPolicy() override {};
 
-        void openStream(const std::string& name) {};
-        void closeStream() {};
-        void write(LoggingLogLevel level, const std::string& tag, const std::string& msg) {
-            std::cerr << msg << std::endl;
-        };
-        LoggingLogType getLoggingLogType() { return FULL; }
+        void openStream(const std::string& name) override {};
+        void closeStream() override {};
+        void write(LoggingLogLevel level, const std::string& tag, const std::string& msg) override;
+        LoggingLogType getLoggingLogType() override;
     };
 
 #ifdef ANDROID_LOGGER
@@ -177,12 +176,12 @@ namespace logging {
     {
     public:
         AndroidLogPolicy() {}
-        ~AndroidLogPolicy() {};
+        ~AndroidLogPolicy() override {};
 
-        void openStream(const std::string& name) {};
-        void closeStream() {};
-        void write(LoggingLogLevel level, const std::string& tag, const std::string& msg);
-        LoggingLogType getLoggingLogType() { return RAW; }
+        void openStream(const std::string& name) override {};
+        void closeStream() override {};
+        void write(LoggingLogLevel level, const std::string& tag, const std::string& msg) override;
+        LoggingLogType getLoggingLogType() override { return RAW; }
     };
 #endif
 
@@ -193,16 +192,13 @@ namespace logging {
     class __EXPORT IosLogPolicy : public LogPolicy
     {
     public:
-        IosLogPolicy() {}
-        ~IosLogPolicy() {};
+        IosLogPolicy() override {}
+        ~IosLogPolicy() override {};
 
-        void openStream(const std::string& name) {};
-        void closeStream() {};
-        void write(LoggingLogLevel level, const std::string& tag, const std::string& msg)  {
-            void zrtp_log(const char *t, const char *buf);
-            zrtp_log(tag.c_str(), msg.c_str());
-        };
-        LoggingLogType getLoggingLogType() { return RAW; }
+        void openStream(const std::string& name) override {};
+        void closeStream() override {};
+        void write(LoggingLogLevel level, const std::string& tag, const std::string& msg) override;
+        LoggingLogType getLoggingLogType() override;
     };
 #endif
 
@@ -363,9 +359,9 @@ return 0;
                                                            tag("Logger"), logLineNumber(0)
     {
         policy = new log_policy;
-        if (!policy) {
-            throw std::runtime_error("LOGGER: Unable to create the logger instance");
-        }
+//        if (!policy) {
+//            throw std::runtime_error("LOGGER: Unable to create the logger instance");
+//        }
         logType = policy->getLoggingLogType();
         policy->openStream( name );
     }
@@ -376,9 +372,9 @@ return 0;
                                                                                      logLineNumber(0)
     {
         policy = new log_policy;
-        if (!policy) {
-            throw std::runtime_error("LOGGER: Unable to create the logger instance");
-        }
+//        if (!policy) {
+//            throw std::runtime_error("LOGGER: Unable to create the logger instance");
+//        }
         logType = policy->getLoggingLogType();
         policy->openStream( name );
     }

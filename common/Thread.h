@@ -175,7 +175,7 @@ public:
 	}
 
 	CTask(){m_state=TaskStatusNotSubmitted; memset(&m_dwThread,0,sizeof(ThreadId_t)); }
-	~CTask(){}
+	virtual ~CTask(){}
 	virtual BOOL Task()=0;
 };
 
@@ -236,7 +236,7 @@ public:
 	virtual BOOL OnTask();                   // called when a time interval has elapsed
 
 	CThread(void);
-	~CThread(void);
+	virtual ~CThread(void);
 #ifdef WINDOWS
 #ifdef USE_BEGIN_THREAD
 	friend unsigned __stdcall _THKERNEL(LPVOID lpvData);

@@ -314,6 +314,8 @@ public:
     ZrtpConfigure();         /* Creates Configuration data */
     ~ZrtpConfigure();
 
+    ZrtpConfigure(const ZrtpConfigure& other);
+
     /**
      * Define the algorithm selection policies.
      */

@@ -44,7 +44,7 @@ class __EXPORT ZrtpPacketErrorAck : public ZrtpPacketBase {
 
     /// Creates a ErrorAck packet from received data
     ZrtpPacketErrorAck(uint8_t* data);
-    virtual ~ZrtpPacketErrorAck();
+    ~ZrtpPacketErrorAck() override;
 
  private:
      ErrorAckPacket_t data;

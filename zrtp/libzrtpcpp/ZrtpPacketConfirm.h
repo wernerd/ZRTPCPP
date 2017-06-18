@@ -55,16 +55,16 @@ class __EXPORT ZrtpPacketConfirm : public ZrtpPacketBase {
         ZrtpPacketConfirm(uint8_t* d);
 
         /// Normal destructor
-        virtual ~ZrtpPacketConfirm();
+        ~ZrtpPacketConfirm() override;
 
         /// Check if SAS verify flag is set
-        const bool isSASFlag()            { return (confirmHeader->flags & 0x4) == 0x4; }
+        bool isSASFlag()            { return (confirmHeader->flags & 0x4) == 0x4; }
 
         /// Check if Disclosure flag is set
-        const bool isDisclosureFlag()     { return (confirmHeader->flags & 0x1) == 0x1; }
+        bool isDisclosureFlag()     { return (confirmHeader->flags & 0x1) == 0x1; }
 
         /// Check if PBXEnrollment flag is set
-        const bool isPBXEnrollment()      { return (confirmHeader->flags & 0x8) == 0x8; }
+        bool isPBXEnrollment()      { return (confirmHeader->flags & 0x8) == 0x8; }
 
         /// Get pointer to filler bytes (contains one bit of signature length)
         const uint8_t* getFiller()        { return confirmHeader->filler; }
@@ -76,7 +76,7 @@ class __EXPORT ZrtpPacketConfirm : public ZrtpPacketBase {
         const uint8_t* getHmac()          { return confirmHeader->hmac; }
 
         /// Get Expiration time data
-        const uint32_t getExpTime()       { return zrtpNtohl(confirmHeader->expTime); }
+        uint32_t getExpTime()       { return zrtpNtohl(confirmHeader->expTime); }
 
         /// Get pointer to initial hash chain (H0) data, fixed byte array
         uint8_t* getHashH0()              { return confirmHeader->hashH0; }

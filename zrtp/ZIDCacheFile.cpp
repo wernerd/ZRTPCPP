@@ -255,3 +255,16 @@ int32_t ZIDCacheFile::getPeerName(const uint8_t *peerZid, std::string *name) {
 void ZIDCacheFile::putPeerName(const uint8_t *peerZid, const std::string name) {
     return;
 }
+
+
+bool ZIDCacheFile::isOpen() { return (zidFile != NULL); };
+
+const unsigned char* ZIDCacheFile::getZid() { return associatedZid; };
+
+void ZIDCacheFile::cleanup() {};
+
+void* ZIDCacheFile::prepareReadAll() { return NULL; };
+
+void* ZIDCacheFile::readNextRecord(void *stmt, std::string *output) { return NULL; };
+
+void  ZIDCacheFile::closeOpenStatment(void *stmt) {}

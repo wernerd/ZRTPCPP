@@ -16,15 +16,17 @@
  */
 
 #include <fcntl.h>
+#include <mutex>
 
 #include <cryptcommon/ZrtpRandom.h>
 #include <cryptcommon/aescpp.h>
-#include <common/Thread.h>
 #include <zrtp/crypto/sha2.h>
+
+using namespace std;
 
 static sha512_ctx mainCtx;
 
-static CMutexClass lockRandom;
+static mutex lockRandom;
 
 static bool initialized = false;
 
@@ -62,13 +64,13 @@ uint32_t ZrtpRandom::getRandomData(uint8_t* buffer, uint32_t length) {
      */
     ZrtpRandom::addEntropy(buffer, length);
 
-    lockRandom.Lock();
+    lockRandom.lock();
 
     /* Copy the mainCtx and finalize it into the md buffer */
     memcpy(&randCtx2, &mainCtx, sizeof(sha512_ctx));
     sha512_end(md, &randCtx2);
 
-    lockRandom.Unlock();
+    lockRandom.unlock();
 
     /* Key an AES context from this buffer */
     aesCtx.key256(md);
@@ -116,7 +118,7 @@ int ZrtpRandom::addEntropy(const uint8_t *buffer, uint32_t length)
     uint8_t newSeed[64];
     size_t len = getSystemSeed(newSeed, sizeof(newSeed));
 
-    lockRandom.Lock();
+    lockRandom.lock();
     initialize();
 
     if (buffer && length) {
@@ -126,7 +128,7 @@ int ZrtpRandom::addEntropy(const uint8_t *buffer, uint32_t length)
         sha512_hash(newSeed, len, &mainCtx);
         length += len;
     }
-    lockRandom.Unlock();
+    lockRandom.unlock();
     return length;
 }
 

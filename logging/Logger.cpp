@@ -19,6 +19,8 @@
 using namespace std;
 using namespace logging;
 
+FileLogPolicy::FileLogPolicy() : outStream(new std::ofstream()) {}
+
 FileLogPolicy::~FileLogPolicy()
 {
     if (outStream) {
@@ -29,9 +31,9 @@ FileLogPolicy::~FileLogPolicy()
 void FileLogPolicy::openStream(const std::string& name)
 {
     outStream->open(name.c_str(), std::ios_base::binary|std::ios_base::out);
-    if (!outStream->is_open()) {
-        throw(std::runtime_error("LOGGER: Unable to open an output stream"));
-    }
+//    if (!outStream->is_open()) {
+//        throw(std::runtime_error("LOGGER: Unable to open an output stream"));
+//    }
 }
 
 void FileLogPolicy::closeStream()
@@ -47,6 +49,20 @@ void FileLogPolicy::write(LoggingLogLevel level, const std::string& tag, const s
     (void)tag;
 
     (*outStream) << msg << std::endl;
+}
+
+LoggingLogType FileLogPolicy::getLoggingLogType() {
+    return FULL;
+}
+
+
+// Stderr (cerr) log output policy
+void CerrLogPolicy::write(LoggingLogLevel level, const std::string& tag, const std::string& msg) {
+    std::cerr << msg << std::endl;
+}
+
+LoggingLogType CerrLogPolicy::getLoggingLogType() {
+    return FULL;
 }
 
 #ifdef ANDROID_LOGGER
@@ -75,5 +91,20 @@ void AndroidLogPolicy::write(LoggingLogLevel level, const std::string& tag, cons
     }
     if (priority != ANDROID_LOG_UNKNOWN)
         __android_log_print(priority, tag.c_str(), "%s", msg.c_str());
+}
+
+LoggingLogType AndroidLogPolicy::getLoggingLogType() {
+    return RAW;
+}
+#endif
+
+#ifdef APPLE_LOGGER
+void IosLogPolicy::write(LoggingLogLevel level, const std::string& tag, const std::string& msg) {
+            void zrtp_log(const char *t, const char *buf);
+            zrtp_log(tag.c_str(), msg.c_str());
+        }
+
+LoggingLogType IosLogPolicy::getLoggingLogType() {
+    return RAW;
 }
 #endif

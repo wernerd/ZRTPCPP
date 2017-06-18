@@ -55,10 +55,10 @@ class __EXPORT ZrtpPacketSASrelay : public ZrtpPacketBase {
         ZrtpPacketSASrelay(uint8_t* d);
 
         /// Normal destructor
-        virtual ~ZrtpPacketSASrelay();
+        ~ZrtpPacketSASrelay() override;
 
         /// Check is SAS verify flag is set
-        const bool isSASFlag()            { return (sasRelayHeader->flags & 0x4) == 0x4 ? true : false; }
+        bool isSASFlag()            { return (sasRelayHeader->flags & 0x4) == 0x4; }
 
         /// Get pointer to filler bytes (contains one bit of signature length)
         const uint8_t* getFiller()        { return sasRelayHeader->filler; }

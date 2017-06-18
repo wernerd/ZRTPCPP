@@ -137,6 +137,9 @@ endif()
 
 # **** Setup packing environment ****
 #
+# The difference is that CMAKE_PROJECT_NAME is the name from the last project call from the root
+# CMakeLists.txt, while PROJECT_NAME is from the last project call, regardless from the location
+# of the file containing the command.
 if(${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
     include(${CMAKE_SOURCE_DIR}/cmake/Modules/GeneratePackage.cmake)
     set(exclude

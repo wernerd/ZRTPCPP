@@ -60,6 +60,19 @@
 #define DEPRECATED_ZRTP
 #endif
 
+#ifndef __has_cpp_attribute         // Optional of course.
+#define __has_cpp_attribute(x) 0  // Compatibility with non-clang compilers.
+#endif
+
+#ifndef FALLTHROUGH
+  #if __has_cpp_attribute(clang::fallthrough)
+    #define FALLTHROUGH [[clang::fallthrough]]
+  #else
+    #define FALLTHROUGH
+  #endif
+#endif
+
+
 #if defined(__cplusplus)
 extern "C"
 {

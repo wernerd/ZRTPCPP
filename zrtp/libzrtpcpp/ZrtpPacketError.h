@@ -49,7 +49,7 @@ class __EXPORT ZrtpPacketError : public ZrtpPacketBase {
     /// Creates a Error packet from received data
     ZrtpPacketError(uint8_t* data);
 
-    virtual ~ZrtpPacketError();
+    ~ZrtpPacketError() override;
 
     /// Get the error code from Error message
     uint32_t getErrorCode() { return zrtpNtohl(errorHeader->errorCode); };

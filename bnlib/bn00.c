@@ -7,13 +7,13 @@
 
 #include "bnsize00.h"
 
-#if BNSIZE64
+#if defined(BNSIZE64)
 
 /* Include all of the C source file by reference */
 #include "bn64.c"
 #include "bninit64.c"
 
-#elif BNSIZE32
+#elif defined(BNSIZE32)
 
 /* Include all of the C source file by reference */
 #include "bn32.c"

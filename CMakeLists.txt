@@ -375,9 +375,6 @@ else()
 
 endif()
 
-### Settings for CPACK
-set (CPACK_SOURCE_IGNORE_FILES ${CPACK_SOURCE_IGNORE_FILES} "/cmake-build-debug/")
-
 if (CCRTP)
     add_subdirectory(clients/ccrtp)
     add_subdirectory(demo)

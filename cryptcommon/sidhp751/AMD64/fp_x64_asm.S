@@ -45,6 +45,10 @@
 #define p751x2_11  0x0000DFCBAA83EE38
 
 
+// Seems to be an issue with clang: instead of 'movq' to load a 64-bit immediate into a register use 'movabs'
+// GCC seems to be happy with it also
+#define movq    movabs
+
 .text
 //***********************************************************************
 //  Field addition

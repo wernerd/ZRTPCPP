@@ -4,6 +4,7 @@ MACRO(GENERATE_PACKAGING PACKAGE VERSION EXCLUDE_FILES)
     # The following components are regex's to match anywhere (unless anchored)
     # in absolute path + filename to find files or directories to be excluded
     # from source tarball.
+    # The caller may specify additional files to exclude
     SET(CPACK_SOURCE_IGNORE_FILES
             #svn files
             "\\\\.svn/"
@@ -45,6 +46,7 @@ MACRO(GENERATE_PACKAGING PACKAGE VERSION EXCLUDE_FILES)
             "Makefile\\\\.in$"
             "\\\\.directory$"
             "\\\\._.DS_Store$"
+            "\\\\.DS_Store$"
             "\\\\._buildmac$"
             ${EXCLUDE_FILES})
 

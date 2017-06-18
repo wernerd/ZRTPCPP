@@ -40,7 +40,6 @@
 #include <string>
 #include <memory>
 
-using namespace std;
 
 extern int divceil(int a, int b);
 
@@ -73,7 +72,7 @@ public:
      * @return
      *     The string containing the base32 encoded data.
      */
-    const u32string& getEncoded() { return encoded; }
+    const std::u32string& getEncoded() { return encoded; }
 
     /**
      * Compute the number of base32 encoded characters given the
@@ -84,7 +83,7 @@ public:
      * @return
      *      The length of the base-32 encoding of the data in characters
      */
-    static size_t const b2alen(const size_t lengthInBits) {
+    static size_t b2alen(const size_t lengthInBits) {
         return divceil(lengthInBits, 5);
     }
 
@@ -92,16 +91,16 @@ public:
      * @brief Convert an UTF-32 encoded string to an UTF-8 encoded string.
      *
      */
-    static shared_ptr<string> u32StringToUtf8(const u32string& in);
+    static std::shared_ptr<std::string> u32StringToUtf8(const std::u32string& in);
 
 private:
 
-    void b2a_l(const unsigned char* cs, size_t len, const size_t noOfBits);
+    void b2a_l(const unsigned char* cs, size_t len, size_t noOfBits);
 
     /**
      * The string containing the base32 encoded u32string data.
      */
-    u32string encoded;
+    std::u32string encoded;
 };
 
 

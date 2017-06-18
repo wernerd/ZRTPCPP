@@ -56,7 +56,7 @@ class __EXPORT ZrtpPacketDHPart : public ZrtpPacketBase {
     ZrtpPacketDHPart(uint8_t* data);
 
     /// Standard destructor
-    virtual ~ZrtpPacketDHPart();
+    ~ZrtpPacketDHPart() override;
 
     /// Get pointer to public key value, variable length byte array
     uint8_t* getPv()             { return pv; }

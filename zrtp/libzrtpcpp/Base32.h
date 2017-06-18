@@ -43,8 +43,6 @@
 #include <assert.h>
 #include <stddef.h>
 
-using namespace std;
-
 extern int divceil(int a, int b);
 
 class Base32 {
@@ -60,7 +58,7 @@ class Base32 {
      * @param encoded
      *     The string that contains the base32 encoded data.
      */
-    Base32(const string encoded);
+    Base32(const std::string encoded);
 
     /**
      * A Constructor that decodes from base32 into binary.
@@ -75,7 +73,7 @@ class Base32 {
      * @param noOfBits
      *     How many bits to decode into binary data.
      */
-    Base32(const string encoded, int noOfBits);
+    Base32(const std::string encoded, int noOfBits);
 
     /**
      * A Constructor that encodes binary data.
@@ -124,7 +122,7 @@ class Base32 {
      * @return
      *     The string containing the base32 encoded data.
      */
-    const string getEncoded() { return encoded; };
+    const std::string getEncoded() { return encoded; };
 
     /**
      * Compute the number of base32 encoded characters given the
@@ -135,7 +133,7 @@ class Base32 {
      * @return
      *      The length of the base-32 encoding of the data in characters
      */
-    static size_t const b2alen(const size_t lengthInBits) {
+    static size_t b2alen(const size_t lengthInBits) {
 	return divceil(lengthInBits, 5); };
 
  private:
@@ -166,7 +164,7 @@ class Base32 {
      * @param lengthinbits
      *    The number of bits of data in <code>cs</code> to be decoded
      */
-    void a2b_l(const string cs, size_t size, const size_t lengthinbits);
+    void a2b_l(const std::string cs, size_t size, const size_t lengthinbits);
 
     /**
      * Encodes binary to to base32 presentation.
@@ -202,7 +200,7 @@ class Base32 {
      * @param noOfBits
      *    The number of bits of data in encoded into `cs'
      */
-    void b2a_l(const unsigned char* cs, int len, const size_t noOfBits);
+    void b2a_l(const unsigned char* cs, int len, size_t noOfBits);
 
     /**
      * Holds the pointer to decoded binary data
@@ -217,7 +215,7 @@ class Base32 {
     /**
      * The string containing the base32 encoded data.
      */
-    string encoded;
+    std::string encoded;
 
     unsigned char smallBuffer[128];
 };

@@ -38,6 +38,7 @@
 #include <logging/ZrtpLogging.h>
 
 using namespace GnuZrtpCodes;
+using namespace std;
 
 #ifdef UNITTESTS
 // Used in testing and debugging to do in-depth checks
@@ -3002,6 +3003,9 @@ bool ZRtp::checkAndSetNonce(uint8_t* nonce) {
     masterStream->peerNonces.push_back(str);
     return true;
 }
+
+srtpSecrets::srtpSecrets() {}
+srtpSecrets::~srtpSecrets() {}
 
 /** EMACS **
  * Local variables:

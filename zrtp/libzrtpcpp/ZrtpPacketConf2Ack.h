@@ -47,7 +47,7 @@ class __EXPORT ZrtpPacketConf2Ack : public ZrtpPacketBase {
     ZrtpPacketConf2Ack(char* data);
 
     /// Normal destructor
-    virtual ~ZrtpPacketConf2Ack();
+    ~ZrtpPacketConf2Ack() override;
 
  private:
      Conf2AckPacket_t data;

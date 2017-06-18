@@ -270,7 +270,7 @@ int testF8();
 #include <cstdio>
 #include <common/osSpecifics.h>
 
-using namespace std;
+// using namespace std;
 
 static void hexdump(const char* title, const unsigned char *s, int l)
 {
@@ -353,7 +353,7 @@ int testF8()
     int32_t pad = 0;
 
     if (memcmp(iv, derivedIv, 16) != 0) {
-        cerr << "Wrong IV constructed" << endl;
+        std::cerr << "Wrong IV constructed" << std::endl;
         hexdump("derivedIv", derivedIv, 16);
         hexdump("test vector Iv", iv, 16);
         return -1;
@@ -367,7 +367,7 @@ int testF8()
 
     // compare with test vector cipher data
     if (memcmp(rtpPacket+12, cipherText, sizeof(rtpPacket)-12+pad) != 0) {
-        cerr << "cipher data mismatch" << endl;
+        std::cerr << "cipher data mismatch" << std::endl;
         hexdump("computed cipher data", rtpPacket+12, sizeof(rtpPacket)-12+pad);
         hexdump("Test vcetor cipher data", cipherText, sizeof(cipherText));
         return -1;
@@ -378,7 +378,7 @@ int testF8()
 
     // compare decrypted data with test vector payload data
     if (memcmp(rtpPacket+12, payload, sizeof(rtpPacket)-12+pad) != 0) {
-        cerr << "payload data mismatch" << endl;
+        std::cerr << "payload data mismatch" << std::endl;
         hexdump("computed payload data", rtpPacket+12, sizeof(rtpPacket)-12+pad);
         hexdump("Test vector payload data", payload, sizeof(payload));
         return -1;

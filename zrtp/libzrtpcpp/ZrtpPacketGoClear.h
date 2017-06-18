@@ -50,7 +50,7 @@ class __EXPORT ZrtpPacketGoClear : public ZrtpPacketBase {
     /// Creates a GoClear packet from received data
     ZrtpPacketGoClear(uint8_t* data);
 
-    virtual ~ZrtpPacketGoClear();
+    ~ZrtpPacketGoClear() override;
 
     /// Not used
     const uint8_t* getClearHmac() { return clearHeader->clearHmac; };

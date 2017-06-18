@@ -34,6 +34,8 @@
  *
  * @stable ICU 4.4
  */
+#define U_SIZEOF_WCHAR_T 0
+
 #if defined(UCHAR_TYPE)
 typedef UCHAR_TYPE UChar;
 /* Not #elif U_HAVE_CHAR16_T -- because that is type-incompatible with pre-C++11 callers

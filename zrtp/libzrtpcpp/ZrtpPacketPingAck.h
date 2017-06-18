@@ -46,7 +46,7 @@ class __EXPORT ZrtpPacketPingAck : public ZrtpPacketBase {
     /// Creates a PingAck message from received data
     ZrtpPacketPingAck(uint8_t* data);
 
-    virtual ~ZrtpPacketPingAck();
+    ~ZrtpPacketPingAck() override;
 
     /// Get SSRC from PingAck message
     uint32_t getSSRC() { return zrtpNtohl(pingAckHeader->ssrc); };

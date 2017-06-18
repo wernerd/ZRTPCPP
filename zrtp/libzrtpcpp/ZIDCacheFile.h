@@ -59,29 +59,29 @@ public:
 
     ZIDCacheFile(): zidFile(NULL) {};
 
-    ~ZIDCacheFile();
+    ~ZIDCacheFile() override;
 
-    int open(char *name);
+    int open(char *name) override;
 
-    bool isOpen() { return (zidFile != NULL); };
+    bool isOpen() override;
 
-    void close();
+    void close() override;
 
-    ZIDRecord *getRecord(unsigned char *zid);
+    ZIDRecord *getRecord(unsigned char *zid) override;
 
-    unsigned int saveRecord(ZIDRecord *zidRecord);
+    unsigned int saveRecord(ZIDRecord *zidRecord) override;
 
-    const unsigned char* getZid() { return associatedZid; };
+    const unsigned char* getZid() override;
 
-    int32_t getPeerName(const uint8_t *peerZid, std::string *name);
+    int32_t getPeerName(const uint8_t *peerZid, std::string *name) override;
 
-    void putPeerName(const uint8_t *peerZid, const std::string name);
+    void putPeerName(const uint8_t *peerZid, const std::string name) override;
 
     // Not implemented for file based cache
-    void cleanup() {};
-    void *prepareReadAll() { return NULL; };
-    void *readNextRecord(void *stmt, std::string *output) { return NULL; };
-    void closeOpenStatment(void *stmt) {}
+    void cleanup() override;
+    void *prepareReadAll() override;
+    void *readNextRecord(void *stmt, std::string *output) override;
+    void closeOpenStatment(void *stmt) override;
 
 
 };

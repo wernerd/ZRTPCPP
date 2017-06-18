@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #include <libzrtpcpp/EmojiBase32.h>
+#include <common/osSpecifics.h>
 
 // I used the information on this Unicode page http://unicode.org/emoji/charts/full-emoji-list.html
 /*
@@ -98,17 +99,23 @@ void EmojiBase32::b2a_l(const unsigned char* os, size_t len, const size_t length
                 x = *--osp;
                 result[--resp] = emojis[x % 32]; /* The least sig 5 bits go into the final quintet. */
                 x /= 32;	/* ... now we have 3 bits worth in x... */
+
+                FALLTHROUGH;
                 case 4:
                     x |= ((unsigned long)(*--osp)) << 3; /* ... now we have 11 bits worth in x... */
                     result[--resp] = emojis[x % 32];
                     x /= 32; /* ... now we have 6 bits worth in x... */
                     result[--resp] = emojis[x % 32];
                     x /= 32; /* ... now we have 1 bits worth in x... */
+
+                FALLTHROUGH;
                 case 3:
                     x |= ((unsigned long)(*--osp)) << 1; /* The 8 bits from the 2-indexed octet.
 							    So now we have 9 bits worth in x... */
                     result[--resp] = emojis[x % 32];
                     x /= 32; /* ... now we have 4 bits worth in x... */
+
+                FALLTHROUGH;
                 case 2:
                     x |= ((unsigned long)(*--osp)) << 4; /* The 8 bits from the 1-indexed octet.
 							    So now we have 12 bits worth in x... */
@@ -116,6 +123,8 @@ void EmojiBase32::b2a_l(const unsigned char* os, size_t len, const size_t length
                     x /= 32; /* ... now we have 7 bits worth in x... */
                     result[--resp] = emojis[x%32];
                     x /= 32; /* ... now we have 2 bits worth in x... */
+
+                FALLTHROUGH;
                 case 1:
                     x |= ((unsigned long)(*--osp)) << 2; /* The 8 bits from the 0-indexed octet.
 							    So now we have 10 bits worth in x... */

@@ -65,7 +65,7 @@ class __EXPORT ZrtpPacketCommit : public ZrtpPacketBase {
     ZrtpPacketCommit(uint8_t* data);
 
     /// Normal destructor
-    virtual ~ZrtpPacketCommit();
+    ~ZrtpPacketCommit() override;
 
     /// Get pointer to hash algorithm type field, a fixed length character array
     uint8_t* getHashType()    { return commitHeader->hash; };

@@ -47,7 +47,7 @@ class __EXPORT ZrtpPacketPing : public ZrtpPacketBase {
     /// Creates a Ping message from received data
     ZrtpPacketPing(uint8_t* data);
 
-    virtual ~ZrtpPacketPing();
+    ~ZrtpPacketPing() override;
 
     /// Set ZRTP protocol version field, fixed ASCII character array
     void setVersion(uint8_t *text)     { memcpy(pingHeader->version, text,ZRTP_WORD_SIZE ); }

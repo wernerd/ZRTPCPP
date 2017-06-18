@@ -67,7 +67,7 @@ class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
     /// Creates a Hello packet from received data
     ZrtpPacketHello(uint8_t *data);
 
-    virtual ~ZrtpPacketHello();
+    ~ZrtpPacketHello() override;
 
     /**
      * Set configure data and populate Hello message data.

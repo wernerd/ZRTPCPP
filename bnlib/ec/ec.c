@@ -245,7 +245,7 @@ static int ecMulPointScalar25519(const EcCurve *curve, EcPoint *R, const EcPoint
 
 /* Forward declaration of new modulo functions for the EC curves */
 static int newMod192(BigNum *r, const BigNum *a, const BigNum *modulo);
-static int newMod256(BigNum *r, const BigNum *a, const BigNum *modulo);
+// static int newMod256(BigNum *r, const BigNum *a, const BigNum *modulo);
 static int newMod384(BigNum *r, const BigNum *a, const BigNum *modulo);
 static int newMod521(BigNum *r, const BigNum *a, const BigNum *modulo);
 
@@ -1291,6 +1291,7 @@ static int newMod192(BigNum *r, const BigNum *a, const BigNum *modulo)
 #undef A
 
 /* new modulo for 256bit curve */
+#if 0
 static int newMod256(BigNum *r, const BigNum *a, const BigNum *modulo)
 {
     unsigned char buffer[200] = {0};
@@ -1455,7 +1456,7 @@ static int newMod256(BigNum *r, const BigNum *a, const BigNum *modulo)
     return 0;
 }
 #undef A
-
+#endif // 0
 
 /* new modulo for 384bit curve */
 static int newMod384(BigNum *r, const BigNum *a, const BigNum *modulo)

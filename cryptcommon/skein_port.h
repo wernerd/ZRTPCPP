@@ -28,6 +28,8 @@ typedef uint_64t        u64b_t;             /* 64-bit unsigned integer */
 #define RotL_64(x,N)    (((x) << (N)) | ((x) >> (64-(N))))
 #endif
 
+#define PLATFORM_MUST_ALIGN 0
+
 /*
  * Skein is "natively" little-endian (unlike SHA-xxx), for optimal
  * performance on x86 CPUs.  The Skein code requires the following

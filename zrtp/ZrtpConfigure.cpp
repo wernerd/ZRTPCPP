@@ -243,6 +243,8 @@ selectionPolicy(Standard){}
 
 ZrtpConfigure::~ZrtpConfigure() {}
 
+ZrtpConfigure::ZrtpConfigure(const ZrtpConfigure& other) = default;
+
 void ZrtpConfigure::setStandardConfig() {
     clear();
 
