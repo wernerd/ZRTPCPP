@@ -43,7 +43,7 @@
  *    @c true if the CRC32 checksum matches the computed checksum of the
  *    buffer, @c false otherwise.
  */
-bool zrtpCheckCksum(uint8_t *buffer, uint16_t length, uint32_t crc32);
+bool zrtpCheckCksum(const uint8_t *buffer, uint16_t length, uint32_t crc32);
 
 /**
  * Generate a CRC32 checksum of a data buffer
@@ -56,7 +56,7 @@ bool zrtpCheckCksum(uint8_t *buffer, uint16_t length, uint32_t crc32);
  * @return
  *    A preliminary CRC32 checksum
  */
-uint32_t zrtpGenerateCksum(uint8_t *buffer, uint16_t length);
+uint32_t zrtpGenerateCksum(const uint8_t *buffer, uint16_t length);
 
 /**
  * Close CRC32 computation.
