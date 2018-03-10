@@ -55,8 +55,8 @@
  * @param mac_length
  *    Point to an integer that receives the length of the computed HMAC.
  */
-void hmac_sha384(uint8_t* key, uint32_t key_length,
-                 uint8_t* data, int32_t data_length,
+void hmac_sha384(const uint8_t* key, uint64_t key_length,
+                 const uint8_t* data, uint64_t data_length,
                  uint8_t* mac, uint32_t* mac_length );
 
 /**
@@ -80,9 +80,9 @@ void hmac_sha384(uint8_t* key, uint32_t key_length,
  *    Point to an integer that receives the length of the computed HMAC.
  */
 
-void hmacSha384(uint8_t* key, uint32_t key_length,
+void hmacSha384(const uint8_t* key, uint64_t key_length,
                 const std::vector<const uint8_t*>& data,
-                const std::vector<uint32_t>& dataLength,
+                const std::vector<uint64_t>& dataLength,
                 uint8_t* mac, uint32_t* mac_length );
 /**
  * @}

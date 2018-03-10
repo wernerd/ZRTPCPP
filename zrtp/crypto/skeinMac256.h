@@ -20,6 +20,8 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
 #ifndef HMAC_SKEIN256_H
 #define HMAC_SKEIN256_H
 
@@ -51,15 +53,15 @@
  *    Lneght of the MAC key in bytes
  * @param data
  *    Points to the data chunk.
- * @param data_length
+ * @param dataLength
  *    Length of the data in bytes
  * @param mac
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 32 bytes (SKEIN256_DIGEST_LENGTH).
- * @param mac_length
+ * @param macLength
  *    Point to an integer that receives the length of the computed HMAC.
  */
-void macSkein256(uint8_t* key, uint32_t key_length, uint8_t* data, int32_t data_length, uint8_t* mac, uint32_t* mac_length );
+void macSkein256(const uint8_t* key, uint64_t key_length, const uint8_t* data, uint64_t dataLength, uint8_t* mac, uint32_t* macLength);
 
 /**
  * Compute Skein256 HMAC over several data cunks.
@@ -77,13 +79,15 @@ void macSkein256(uint8_t* key, uint32_t key_length, uint8_t* data, int32_t data_
  * @param mac
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 32 bytes (SKEIN256_DIGEST_LENGTH).
- * @param mac_length
+ * @param macLength
  *    Point to an integer that receives the length of the computed HMAC.
  */
 
-void macSkein256(uint8_t* key, uint32_t key_length, const std::vector<const uint8_t*>& data,
-                 const std::vector<uint32_t>& dataLength, uint8_t* mac, uint32_t* mac_length);
+void macSkein256(const uint8_t* key, uint64_t key_length, const std::vector<const uint8_t*>& data,
+                 const std::vector<uint64_t>& dataLength, uint8_t* mac, uint32_t* macLength);
 /**
  * @}
  */
 #endif
+
+#pragma clang diagnostic pop

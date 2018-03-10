@@ -24,13 +24,16 @@
 #include "zrtp/crypto/sha2.h"
 #include "zrtp/crypto/hmac256.h"
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
+
 typedef struct _hmacSha256Context {
     sha256_ctx ctx;
     sha256_ctx innerCtx;
     sha256_ctx outerCtx;
 } hmacSha256Context;
 
-static int32_t hmacSha256Init(hmacSha256Context *ctx, const uint8_t *key, uint32_t kLength)
+static int32_t hmacSha256Init(hmacSha256Context *ctx, const uint8_t *key, uint64_t kLength)
 {
     int32_t i;
     uint8_t localPad[SHA256_BLOCK_SIZE] = {0};
@@ -78,7 +81,7 @@ static void hmacSha256Reset(hmacSha256Context *ctx)
     memcpy(&ctx->ctx, &ctx->innerCtx, sizeof(sha256_ctx));
 }
 
-static void hmacSha256Update(hmacSha256Context *ctx, const uint8_t *data, uint32_t dLength)
+static void hmacSha256Update(hmacSha256Context *ctx, const uint8_t *data, uint64_t dLength)
 {
     /* hash new data to work hash context */
     sha256_hash(data, dLength, &ctx->ctx);
@@ -102,7 +105,7 @@ static void hmacSha256Final(hmacSha256Context *ctx, uint8_t *mac)
 }
 
 
-void hmac_sha256(uint8_t *key, uint32_t keyLength, uint8_t* data, int32_t dataLength, uint8_t* mac, uint32_t* macLength)
+void hmac_sha256(const uint8_t *key, uint64_t keyLength, const uint8_t* data, uint64_t dataLength, uint8_t* mac, uint32_t* macLength)
 {
     hmacSha256Context ctx = {};
 
@@ -112,9 +115,10 @@ void hmac_sha256(uint8_t *key, uint32_t keyLength, uint8_t* data, int32_t dataLe
     *macLength = SHA256_DIGEST_SIZE;
 }
 
-void hmacSha256(uint8_t* key, uint32_t keyLength, const std::vector<const uint8_t*>& dataChunks,
-                 const std::vector<uint32_t>& dataChunkLength,
-                 uint8_t* mac, uint32_t* macLength )
+void hmacSha256(const uint8_t* key, uint64_t keyLength,
+                const std::vector<const uint8_t*>& dataChunks,
+                const std::vector<uint64_t>& dataChunkLength,
+                uint8_t* mac, uint32_t* macLength )
 {
     hmacSha256Context ctx= {};
 
@@ -127,7 +131,7 @@ void hmacSha256(uint8_t* key, uint32_t keyLength, const std::vector<const uint8_
     *macLength = SHA256_DIGEST_SIZE;
 }
 
-void* createSha256HmacContext(uint8_t* key, int32_t keyLength)
+void* createSha256HmacContext(uint8_t* key, uint64_t keyLength)
 {
     auto* ctx = reinterpret_cast<hmacSha256Context*>(malloc(sizeof(hmacSha256Context)));
 
@@ -137,8 +141,8 @@ void* createSha256HmacContext(uint8_t* key, int32_t keyLength)
     return ctx;
 }
 
-void hmacSha256Ctx(void* ctx, const uint8_t* data, uint32_t dataLength,
-                uint8_t* mac, int32_t* macLength)
+void hmacSha256Ctx(void* ctx, const uint8_t* data, uint64_t dataLength,
+                uint8_t* mac, uint32_t* macLength)
 {
     auto *pctx = (hmacSha256Context*)ctx;
 
@@ -150,8 +154,8 @@ void hmacSha256Ctx(void* ctx, const uint8_t* data, uint32_t dataLength,
 
 void hmacSha256Ctx(void* ctx,
                    const std::vector<const uint8_t*>& data,
-                   const std::vector<uint32_t>& dataLength,
-                   uint8_t* mac, int32_t* macLength )
+                   const std::vector<uint64_t>& dataLength,
+                   uint8_t* mac, uint32_t* macLength )
 {
     auto *pctx = (hmacSha256Context*)ctx;
 
@@ -170,3 +174,4 @@ void freeSha256HmacContext(void* ctx)
         free(ctx);
     }
 }
+#pragma clang diagnostic pop

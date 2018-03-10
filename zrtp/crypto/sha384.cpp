@@ -21,7 +21,7 @@
 #include <zrtp/crypto/sha2.h>
 #include <zrtp/crypto/sha384.h>
 
-void sha384(unsigned char *data, unsigned int dataLength, unsigned char *digest )
+void sha384(const uint_8t *data, uint64_t dataLength, uint_8t *digest )
 {
     sha384_ctx ctx = {};
 
@@ -30,7 +30,7 @@ void sha384(unsigned char *data, unsigned int dataLength, unsigned char *digest 
     sha384_end(digest, &ctx);
 }
 
-void sha384(const std::vector<const uint8_t*>& data, const std::vector<uint_32t>& dataLength, unsigned char *digest)
+void sha384(const std::vector<const uint8_t*>& data, const std::vector<uint_64t>& dataLength, uint_8t *digest)
 {
     sha384_ctx ctx = {};
 
@@ -50,7 +50,7 @@ void* createSha384Context()
     return (void*)ctx;
 }
 
-void closeSha384Context(void* ctx, unsigned char* digest)
+void closeSha384Context(void* ctx, uint_8t* digest)
 {
     auto* hd = reinterpret_cast<sha384_ctx*>(ctx);
 
@@ -70,7 +70,7 @@ void* initializeSha384Context(void* ctx)
     return (void*)hd;
 }
 
-void finalizeSha384Context(void* ctx, unsigned char* digest)
+void finalizeSha384Context(void* ctx, uint_8t* digest)
 {
     auto* hd = reinterpret_cast<sha384_ctx*>(ctx);
 
@@ -79,14 +79,14 @@ void finalizeSha384Context(void* ctx, unsigned char* digest)
     }
 }
 
-void sha384Ctx(void* ctx, unsigned char* data, unsigned int dataLength)
+void sha384Ctx(void* ctx, const uint_8t* data, uint64_t dataLength)
 {
     auto* hd = reinterpret_cast<sha384_ctx*>(ctx);
 
     sha384_hash(data, dataLength, hd);
 }
 
-void sha384Ctx(void* ctx, const std::vector<const uint8_t*>& data, const std::vector<uint32_t>& dataLength)
+void sha384Ctx(void* ctx, const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength)
 {
     auto* hd = reinterpret_cast<sha384_ctx*>(ctx);
 

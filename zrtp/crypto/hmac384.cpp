@@ -18,9 +18,9 @@
  * Authors: Werner Dittmann
  */
 
-#include <stdint.h>
-#include <string.h>
-#include <stdio.h>
+#include <cstdint>
+#include <cstring>
+#include <cstdio>
 #include "zrtp/crypto/sha2.h"
 #include "zrtp/crypto/hmac384.h"
 
@@ -30,7 +30,7 @@ typedef struct _hmacSha384Context {
     sha384_ctx outerCtx;
 } hmacSha384Context;
 
-static int32_t hmacSha384Init(hmacSha384Context *ctx, const uint8_t *key, uint32_t kLength)
+static int32_t hmacSha384Init(hmacSha384Context *ctx, const uint8_t *key, uint64_t kLength)
 {
     int32_t i;
     uint8_t localPad[SHA384_BLOCK_SIZE] = {0};
@@ -78,7 +78,7 @@ static void hmacSha384Reset(hmacSha384Context *ctx)
     memcpy(&ctx->ctx, &ctx->innerCtx, sizeof(sha384_ctx));
 }
 
-static void hmacSha384Update(hmacSha384Context *ctx, const uint8_t *data, uint32_t dLength)
+static void hmacSha384Update(hmacSha384Context *ctx, const uint8_t *data, uint64_t dLength)
 {
     /* hash new data to work hash context */
     sha384_hash(data, dLength, &ctx->ctx);
@@ -102,7 +102,7 @@ static void hmacSha384Final(hmacSha384Context *ctx, uint8_t *mac)
 }
 
 
-void hmac_sha384(uint8_t *key, uint32_t keyLength, uint8_t* data, int32_t dataLength, uint8_t* mac, uint32_t* macLength)
+void hmac_sha384(const uint8_t *key, uint64_t keyLength, const uint8_t* data, uint64_t dataLength, uint8_t* mac, uint32_t* macLength)
 {
     hmacSha384Context ctx = {};
 
@@ -112,9 +112,9 @@ void hmac_sha384(uint8_t *key, uint32_t keyLength, uint8_t* data, int32_t dataLe
     *macLength = SHA384_DIGEST_SIZE;
 }
 
-void hmacSha384(uint8_t* key, uint32_t keyLength,
+void hmacSha384(const uint8_t* key, uint64_t keyLength,
                 const std::vector<const uint8_t*>& data,
-                const std::vector<uint32_t>& dataLength,
+                const std::vector<uint64_t>& dataLength,
                 uint8_t* mac, uint32_t* macLength )
 {
     hmacSha384Context ctx = {};
@@ -128,7 +128,7 @@ void hmacSha384(uint8_t* key, uint32_t keyLength,
     *macLength = SHA384_DIGEST_SIZE;
 }
 
-void* createSha384HmacContext(uint8_t* key, int32_t keyLength)
+void* createSha384HmacContext(const uint8_t* key, uint64_t keyLength)
 {
     auto *ctx = reinterpret_cast<hmacSha384Context*>(malloc(sizeof(hmacSha384Context)));
 
@@ -138,8 +138,8 @@ void* createSha384HmacContext(uint8_t* key, int32_t keyLength)
     return ctx;
 }
 
-void hmacSha384Ctx(void* ctx, const uint8_t* data, uint32_t dataLength,
-                uint8_t* mac, int32_t* macLength)
+void hmacSha384Ctx(void* ctx, const uint8_t* data, uint64_t dataLength,
+                uint8_t* mac, uint32_t* macLength)
 {
     auto* pctx = (hmacSha384Context*)ctx;
 
@@ -151,8 +151,8 @@ void hmacSha384Ctx(void* ctx, const uint8_t* data, uint32_t dataLength,
 
 void hmacSha384Ctx(void* ctx,
                    const std::vector<const uint8_t*>& data,
-                   const std::vector<uint32_t>& dataLength,
-                   uint8_t* mac, int32_t* macLength )
+                   const std::vector<uint64_t>& dataLength,
+                   uint8_t* mac, uint32_t* macLength )
 {
     auto* pctx = (hmacSha384Context*)ctx;
 

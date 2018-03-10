@@ -20,6 +20,8 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
 #ifndef HMAC_SKEIN384_H
 #define HMAC_SKEIN384_H
 
@@ -51,15 +53,15 @@
  *    Lneght of the MAC key in bytes
  * @param data
  *    Points to the data chunk.
- * @param data_length
+ * @param dataLength
  *    Length of the data in bytes
  * @param mac
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 48 bytes (SKEIN384_DIGEST_LENGTH).
- * @param mac_length
- *    Point to an integer that receives the length of the computed HMAC.
+ * @param macLength
+ *    Point to an uint32_t that receives the length of the computed HMAC.
  */
-void macSkein384(uint8_t* key, uint32_t key_length, uint8_t* data, int32_t data_length, uint8_t* mac, uint32_t* mac_length);
+void macSkein384(const uint8_t* key, uint64_t key_length, const uint8_t* data, uint64_t dataLength, uint8_t* mac, uint32_t* macLength);
 
 /**
  * Compute Skein384 HMAC over several data cunks.
@@ -68,7 +70,7 @@ void macSkein384(uint8_t* key, uint32_t key_length, uint8_t* data, int32_t data_
  *
  * @param key
  *    The MAC key.
- * @param key_length
+ * @param keyLength
  *    Lneght of the MAC key in bytes
  * @param data
  *    Vector of pointers that point to the data chunks. A NULL
@@ -78,16 +80,16 @@ void macSkein384(uint8_t* key, uint32_t key_length, uint8_t* data, int32_t data_
  * @param mac
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 48 bytes (SKEIN384_DIGEST_LENGTH).
- * @param mac_length
- *    Point to an integer that receives the length of the computed HMAC.
+ * @param macLength
+ *    Pointer to an uint32_t that receives the length of the computed HMAC.
  */
-
-
-void macSkein384(uint8_t* key, uint32_t key_length,
+void macSkein384(const uint8_t* key, uint64_t keyLength,
                  const std::vector<const uint8_t*>& data,
-                 const std::vector<uint32_t>& dataLength,
+                 const std::vector<uint64_t>& dataLength,
                  uint8_t* mac, uint32_t* mac_length);
 /**
  * @}
  */
 #endif
+
+#pragma clang diagnostic pop

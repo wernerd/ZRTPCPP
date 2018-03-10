@@ -21,9 +21,9 @@
 #include <cryptcommon/skeinApi.h>
 #include <zrtp/crypto/skein256.h>
 
-#include <stdlib.h>
+#include <cstdlib>
 
-void skein256(unsigned char *data, unsigned int dataLength, unsigned char *digest )
+void skein256(const uint8_t *data, uint64_t dataLength, uint8_t *digest )
 {
     SkeinCtx_t ctx = {};
 
@@ -34,7 +34,7 @@ void skein256(unsigned char *data, unsigned int dataLength, unsigned char *diges
     skeinFinal(&ctx, digest);
 }
 
-void skein256(const std::vector<const uint_8t*>& dataChunks, const std::vector<uint_32t>& dataChunkLength, unsigned char *digest)
+void skein256(const std::vector<const uint8_t*>& dataChunks, const std::vector<uint64_t>& dataChunkLength, uint8_t *digest)
 {
     SkeinCtx_t ctx = {};
 
@@ -54,7 +54,7 @@ void* createSkein256Context()
     return (void*)ctx;
 }
 
-void closeSkein256Context(void* ctx, unsigned char* digest)
+void closeSkein256Context(void* ctx, uint8_t* digest)
 {
     auto* hd = reinterpret_cast<SkeinCtx_t*>(ctx);
 
@@ -74,7 +74,7 @@ void* initializeSkein256Context(void* ctx)
     return (void*)hd;
 }
 
-void finalizeSkein256Context(void* ctx, unsigned char* digest)
+void finalizeSkein256Context(void* ctx, uint8_t* digest)
 {
     auto* hd = reinterpret_cast<SkeinCtx_t*>(ctx);
 
@@ -83,14 +83,14 @@ void finalizeSkein256Context(void* ctx, unsigned char* digest)
     }
 }
 
-void skein256Ctx(void* ctx, unsigned char* data, unsigned int dataLength)
+void skein256Ctx(void* ctx, const uint8_t* data, uint64_t dataLength)
 {
     auto* hd = reinterpret_cast<SkeinCtx_t*>(ctx);
 
     skeinUpdate(hd, data, dataLength);
 }
 
-void skein256Ctx(void* ctx, const std::vector<const uint8_t*>& data, const std::vector<uint32_t>& dataLength)
+void skein256Ctx(void* ctx, const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength)
 {
     auto* hd = reinterpret_cast<SkeinCtx_t*>(ctx);
 

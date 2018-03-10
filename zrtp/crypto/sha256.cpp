@@ -21,7 +21,7 @@
 #include <zrtp/crypto/sha2.h>
 #include <zrtp/crypto/sha256.h>
 
-void sha256(unsigned char *data, unsigned int dataLength, unsigned char *digest )
+void sha256(const uint_8t *data, uint64_t dataLength, uint8_t *digest )
 {
     sha256_ctx ctx = {};
 
@@ -30,7 +30,7 @@ void sha256(unsigned char *data, unsigned int dataLength, unsigned char *digest 
     sha256_end(digest, &ctx);
 }
 
-void sha256(const std::vector<const uint8_t*>& data, const std::vector<uint_32t>& dataLength, unsigned char *digest)
+void sha256(const std::vector<const uint8_t*>& data, const std::vector<uint_64t>& dataLength, uint8_t *digest)
 {
     sha256_ctx ctx  = {};
 
@@ -48,7 +48,7 @@ void* createSha256Context()
     return (void*)ctx;
 }
 
-void closeSha256Context(void* ctx, unsigned char* digest)
+void closeSha256Context(void* ctx, uint8_t * digest)
 {
     auto* hd = reinterpret_cast<sha256_ctx*>(ctx);
 
@@ -68,7 +68,7 @@ void* initializeSha256Context(void* ctx)
     return (void*)hd;
 }
 
-void finalizeSha256Context(void* ctx, unsigned char* digest)
+void finalizeSha256Context(void* ctx, uint8_t * digest)
 {
     auto* hd = reinterpret_cast<sha256_ctx*>(ctx);
 
@@ -77,14 +77,14 @@ void finalizeSha256Context(void* ctx, unsigned char* digest)
     }
 }
 
-void sha256Ctx(void* ctx, unsigned char* data, unsigned int dataLength)
+void sha256Ctx(void* ctx, const uint8_t* data, uint64_t dataLength)
 {
     auto* hd = reinterpret_cast<sha256_ctx*>(ctx);
 
     sha256_hash(data, dataLength, hd);
 }
 
-void sha256Ctx(void* ctx, const std::vector<const uint8_t*>& data, const std::vector<uint32_t>& dataLength)
+void sha256Ctx(void* ctx, const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength)
 {
     auto* hd = reinterpret_cast<sha256_ctx*>(ctx);
 

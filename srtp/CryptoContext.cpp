@@ -217,12 +217,12 @@ void CryptoContext::srtpAuthenticate(uint8_t* pkt, uint32_t pktlen, uint32_t roc
     if (aalg == SrtpAuthenticationNull) {
         return;
     }
-    int32_t macL;
+    uint32_t macL;
 
     unsigned char temp[20];
 
     std::vector<const uint8_t*>chunks;
-    std::vector<uint32_t> chunkLength;
+    std::vector<uint64_t> chunkLength;
     uint32_t beRoc = zrtpHtonl(roc);
 
     chunks.push_back(pkt);

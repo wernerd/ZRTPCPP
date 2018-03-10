@@ -49,15 +49,13 @@
  *
  * @param data
  *    Points to the data chunk.
- * @param data_length
+ * @param dataLength
  *    Length of the data in bytes
  * @param digest
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 32 bytes (Skein256_DIGEST_LENGTH).
  */
-void skein256(unsigned char *data,
-            unsigned int data_length,
-            unsigned char *digest);
+void skein256(const uint8_t *data, uint64_t dataLength, uint8_t *digest);
 
 /**
  * Compute Skein256 digest over several data cunks.
@@ -74,8 +72,8 @@ void skein256(unsigned char *data,
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 32 bytes (Skein256_DIGEST_LENGTH).
  */
-void skein256(const std::vector<const uint8_t*>& data, const std::vector<uint32_t>& dataLength,
-              unsigned char *digest);
+void skein256(const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength,
+              uint8_t *digest);
 /**
  * Create and initialize a Skein256 context.
  *
@@ -100,8 +98,7 @@ void* createSkein256Context();
  *    pointer is NULL then the functions does not compute the digest but
  *    closes the context only. The context cannot be used anymore.
  */
-void closeSkein256Context(void* ctx,
-                        unsigned char* digest);
+void closeSkein256Context(void* ctx, uint8_t* digest);
 
 /**
  * Initialize a Skein256 context.
@@ -127,7 +124,7 @@ void* initializeSkein256Context(void* ctx);
  *    is big enough to hold the Skei256 digest (256 bit = 32 Bytes). If this
  *    pointer is NULL then the functions does not compute the digest.
  */
-void finalizeSkein256Context(void* ctx, unsigned char* digest);
+void finalizeSkein256Context(void* ctx, uint8_t* digest);
 
 /**
  * Update the Skein256 context with data.
@@ -142,8 +139,7 @@ void finalizeSkein256Context(void* ctx, unsigned char* digest);
  * @param dataLength
  *    The length of the data in bytes.
  */
-void skein256Ctx(void* ctx, unsigned char* data, 
-               unsigned int dataLength);
+void skein256Ctx(void* ctx, const uint8_t* data, uint64_t dataLength);
 
 /**
  * Update the Skein256 context with several data chunks.
@@ -160,7 +156,7 @@ void skein256Ctx(void* ctx, unsigned char* data,
  *    Vector of integers that hold the length of each data chunk.
  *
  */
-void skein256Ctx(void* ctx, const std::vector<const uint8_t*>& data, const std::vector<uint32_t>& dataLength);
+void skein256Ctx(void* ctx, const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength);
 
 /**
  * @}

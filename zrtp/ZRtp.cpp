@@ -92,11 +92,11 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* conf
     // setup the implicit hash function pointers and length. The casts show that we use different
     // functions
     hashLengthImpl = SHA256_DIGEST_LENGTH;
-    hashFunctionImpl = static_cast<void (*)(unsigned char*, unsigned int, unsigned char*)>(sha256);
-    hashListFunctionImpl = static_cast<void (*) (const std::vector<const uint8_t*>&, const std::vector<uint32_t>&, unsigned char *)>(sha256);
+    hashFunctionImpl = static_cast<void (*)(const uint_8t *, uint64_t, uint_8t *)>(sha256);
+    hashListFunctionImpl = static_cast<void (*) (const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, unsigned char *)>(sha256);
 
-    hmacFunctionImpl = static_cast<void (*)(uint8_t*, uint32_t, uint8_t *, int32_t, uint8_t *c, uint32_t *)>(hmac_sha256);
-    hmacListFunctionImpl = static_cast<void (*)(uint8_t*, uint32_t, const std::vector<const uint8_t*>&, const std::vector<uint32_t>&, uint8_t *, uint32_t *)>(hmacSha256);
+    hmacFunctionImpl = static_cast<void (*)(const uint8_t*, uint64_t, const uint8_t *, uint64_t,  uint8_t *c, uint32_t *)>(hmac_sha256);
+    hmacListFunctionImpl = static_cast<void (*)(const uint8_t*, uint64_t, const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, uint8_t *, uint32_t *)>(hmacSha256);
 
     memcpy(ownZid, myZid, ZID_SIZE);        // save the ZID
 
@@ -821,10 +821,10 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     uint8_t confMac[MAX_DIGEST_LENGTH];
     uint32_t macLen;
 
-    // Encrypt and HMAC with Responder's key - we are Respondere here
-    int hmlen = (zrtpConfirm1.getLength() - 9) * ZRTP_WORD_SIZE;
-    cipher->getEncrypt()(zrtpKeyR, cipher->getKeylen(), randomIV, zrtpConfirm1.getHashH0(), hmlen);
-    hmacFunction(hmacKeyR, hashLength, zrtpConfirm1.getHashH0(), hmlen, confMac, &macLen);
+    // Encrypt and HMAC with Responder's key - we are Responder here
+    uint32_t hmLen = (zrtpConfirm1.getLength() - 9U) * ZRTP_WORD_SIZE;
+    cipher->getEncrypt()(zrtpKeyR, cipher->getKeylen(), randomIV, zrtpConfirm1.getHashH0(), hmLen);
+    hmacFunction(hmacKeyR, hashLength, zrtpConfirm1.getHashH0(), hmLen, confMac, &macLen);
 
     zrtpConfirm1.setHmac(confMac);
 
@@ -939,11 +939,11 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
     uint32_t macLen;
 
     // Encrypt and HMAC with Responder's key - we are Respondere here
-    int32_t hmlen = (zrtpConfirm1.getLength() - 9) * ZRTP_WORD_SIZE;
-    cipher->getEncrypt()(zrtpKeyR, cipher->getKeylen(), randomIV, zrtpConfirm1.getHashH0(), hmlen);
+    uint32_t hmLen = (zrtpConfirm1.getLength() - 9U) * ZRTP_WORD_SIZE;
+    cipher->getEncrypt()(zrtpKeyR, cipher->getKeylen(), randomIV, zrtpConfirm1.getHashH0(), hmLen);
 
     // Use negotiated HMAC (hash)
-    hmacFunction(hmacKeyR, hashLength, zrtpConfirm1.getHashH0(), hmlen, confMac, &macLen);
+    hmacFunction(hmacKeyR, hashLength, zrtpConfirm1.getHashH0(), hmLen, confMac, &macLen);
 
     zrtpConfirm1.setHmac(confMac);
 
@@ -1106,17 +1106,17 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2MultiStream(ZrtpPacketConfirm* confirm1,
 
     // Use the Responder's keys here because we are Initiator here and
     // receive packets from Responder
-    int32_t hmlen = (confirm1->getLength() - 9) * ZRTP_WORD_SIZE;
+    uint32_t hmLen = (confirm1->getLength() - 9U) * ZRTP_WORD_SIZE;
 
     // Use negotiated HMAC (hash)
-    hmacFunction(hmacKeyR, hashLength, confirm1->getHashH0(), hmlen, confMac, &macLen);
+    hmacFunction(hmacKeyR, hashLength, confirm1->getHashH0(), hmLen, confMac, &macLen);
 
     if (memcmp(confMac, confirm1->getHmac(), HMAC_SIZE) != 0) {
         *errMsg = ConfirmHMACWrong;
         return nullptr;
     }
     // Cast away the const for the IV - the standalone AES CFB modifies IV on return
-    cipher->getDecrypt()(zrtpKeyR, cipher->getKeylen(), (uint8_t*)confirm1->getIv(), confirm1->getHashH0(), hmlen);
+    cipher->getDecrypt()(zrtpKeyR, cipher->getKeylen(), (uint8_t*)confirm1->getIv(), confirm1->getHashH0(), hmLen);
 
     // Because we are initiator the protocol engine didn't receive Commit and
     // because we are using multi-stream mode here we also did not receive a DHPart1 and
@@ -1149,11 +1149,11 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2MultiStream(ZrtpPacketConfirm* confirm1,
     zrtpConfirm2.setIv(randomIV);
 
     // Encrypt and HMAC with Initiator's key - we are Initiator here
-    hmlen = (zrtpConfirm2.getLength() - 9) * ZRTP_WORD_SIZE;
-    cipher->getEncrypt()(zrtpKeyI, cipher->getKeylen(), randomIV, zrtpConfirm2.getHashH0(), hmlen);
+    hmLen = (zrtpConfirm2.getLength() - 9U) * ZRTP_WORD_SIZE;
+    cipher->getEncrypt()(zrtpKeyI, cipher->getKeylen(), randomIV, zrtpConfirm2.getHashH0(), hmLen);
 
     // Use negotiated HMAC (hash)
-    hmacFunction(hmacKeyI, hashLength, zrtpConfirm2.getHashH0(), hmlen, confMac, &macLen);
+    hmacFunction(hmacKeyI, hashLength, zrtpConfirm2.getHashH0(), hmLen, confMac, &macLen);
 
     zrtpConfirm2.setHmac(confMac);
     return &zrtpConfirm2;
@@ -1855,7 +1855,7 @@ bool ZRtp::verifyH2(ZrtpPacketCommit *commit) {
 void ZRtp::computeHvi(ZrtpPacketDHPart* dh, ZrtpPacketHello *hello) {
 
     std::vector<const uint_8t *>data;
-    std::vector<uint_32t >length;
+    std::vector<uint64_t >length;
     /*
      * populate the vector to compute the HVI hash according to the
      * ZRTP specification.
@@ -2042,8 +2042,8 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
      * hashed to create S0.  According to the formula the max number of
      * elements to hash is 12, add one for the terminating "nullptr"
      */
-    std::vector<const uint_8t *>data;
-    std::vector<uint_32t >length;
+    std::vector<const uint_8t*> data;
+    std::vector<uint64_t> length;
 
     // we need a number of length data items, so define them here
     uint32_t counter, sLen[3];
@@ -2204,8 +2204,8 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
      * These arrays hold the pointers and lengths of the data that must be
      * hashed to create S0.
      */
-    std::vector<const uint_8t *>data;
-    std::vector<uint_32t >length;
+    std::vector<const uint_8t*> data;
+    std::vector<uint64_t> length;
 
     // we need a number of length data items, so define them here
     uint32_t counter, sLen[3];
@@ -2279,7 +2279,7 @@ void ZRtp::KDF(uint8_t* key, size_t keyLength, uint8_t* label, size_t labelLengt
                uint8_t* context, size_t contextLength, size_t L, uint8_t* output) {
 
     std::vector<const uint8_t*>data;
-    std::vector<uint32_t> length;
+    std::vector<uint64_t> length;
     uint32_t macLen = 0;
 
     // Very first element is a fixed counter, big endian
@@ -2290,11 +2290,11 @@ void ZRtp::KDF(uint8_t* key, size_t keyLength, uint8_t* label, size_t labelLengt
 
     // Next element is the label, null terminated, labelLength includes null byte.
     data.push_back(label);
-    length.push_back(static_cast<uint32_t>(labelLength));
+    length.push_back(labelLength);
 
     // Next is the KDF context
     data.push_back(context);
-    length.push_back(static_cast<uint32_t>(contextLength));
+    length.push_back(contextLength);
 
     // last element is HMAC length in bits, big endian
     uint32_t len = zrtpHtonl(static_cast<uint32_t>(L));
@@ -2302,7 +2302,7 @@ void ZRtp::KDF(uint8_t* key, size_t keyLength, uint8_t* label, size_t labelLengt
     length.push_back(sizeof(uint32_t));
 
     // Use negotiated hash.
-    hmacListFunction(key, static_cast<uint32_t>(keyLength), data, length, output, &macLen);
+    hmacListFunction(key, keyLength, data, length, output, &macLen);
 }
 
 // Compute the Multi Stream mode s0
@@ -2486,64 +2486,67 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hash) {
     switch (zrtpHashes.getOrdinal(*hash)) {
     case 0:
         hashLength = SHA256_DIGEST_LENGTH;
-        hashFunction = static_cast<void (*)(unsigned char*, unsigned int, unsigned char*)>(sha256);
-        hashListFunction = static_cast<void (*) (const std::vector<const uint8_t*>&, const std::vector<uint32_t>&, unsigned char *)>(sha256);;
+        hashFunction = static_cast<void (*)(const uint_8t *, uint64_t, unsigned char*)>(sha256);
+        hashListFunction = static_cast<void (*) (const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, unsigned char *)>(sha256);;
 
-        hmacFunction = static_cast<void (*)(uint8_t*, uint32_t, uint8_t *, int32_t, uint8_t *c, uint32_t *)>(hmac_sha256);
-        hmacListFunction = static_cast<void (*)(uint8_t*, uint32_t, const std::vector<const uint8_t*>&,
-                                                const std::vector<uint32_t>&, uint8_t *, uint32_t *)>(hmacSha256);
+        hmacFunction = static_cast<void (*)(const uint8_t*, uint64_t, const uint8_t *, uint64_t, uint8_t *c, uint32_t *)>(hmac_sha256);
+        hmacListFunction = static_cast<void (*)(const uint8_t*, uint64_t, const std::vector<const uint8_t*>&,
+                                                const std::vector<uint64_t>&, uint8_t *, uint32_t *)>(hmacSha256);
 
         createHashCtx = initializeSha256Context;
         msgShaContext = &hashCtx.sha256Ctx;
         closeHashCtx = finalizeSha256Context;
         hashCtxFunction = sha256Ctx;
-        hashCtxListFunction = static_cast<void (*)(void*, const std::vector<const uint8_t*>&, const std::vector<uint32_t>&)>(sha256Ctx);
+        hashCtxListFunction = static_cast<void (*)(void*, const std::vector<const uint8_t*>&, const std::vector<uint64_t>&)>(sha256Ctx);
         break;
 
     case 1:
         hashLength = SHA384_DIGEST_LENGTH;
         hashFunction = sha384;
-        hashListFunction = static_cast<void (*) (const std::vector<const uint8_t*>&, const std::vector<uint32_t>&, unsigned char *)>(sha384);
+        hashListFunction = static_cast<void (*) (const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, unsigned char *)>(sha384);
 
         hmacFunction = hmac_sha384;
-        hmacListFunction = static_cast<void (*)(uint8_t*, uint32_t, const std::vector<const uint8_t*>&,
-                                                const std::vector<uint32_t>&, uint8_t *, uint32_t *)>(hmacSha384);
+        hmacListFunction = static_cast<void (*)(const uint8_t*, uint64_t, const std::vector<const uint8_t*>&,
+                                                const std::vector<uint64_t>&, uint8_t *, uint32_t *)>(hmacSha384);
 
         createHashCtx = initializeSha384Context;
         msgShaContext = &hashCtx.sha384Ctx;
         closeHashCtx = finalizeSha384Context;
         hashCtxFunction = sha384Ctx;
-        hashCtxListFunction = static_cast<void (*)(void*, const std::vector<const uint8_t*>&, const std::vector<uint32_t>&)>(sha384Ctx);
+        hashCtxListFunction = static_cast<void (*)(void*, const std::vector<const uint8_t*>&, const std::vector<uint64_t>&)>(sha384Ctx);
         break;
 
     case 2:
         hashLength = SKEIN256_DIGEST_LENGTH;
         hashFunction = skein256;
-        hashListFunction = static_cast<void (*) (const std::vector<const uint8_t*>&, const std::vector<uint32_t>&, unsigned char *)>(skein256);
+        hashListFunction = static_cast<void (*) (const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, uint_8t *)>(skein256);
 
         hmacFunction = macSkein256;
-        hmacListFunction = static_cast<void (*)(uint8_t*, uint32_t, const std::vector<const uint8_t*>&, const std::vector<uint32_t>&, uint8_t *, uint32_t *)>(macSkein256);
+        hmacListFunction = static_cast<void (*)(const uint8_t*, uint64_t, const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, uint8_t *, uint32_t *)>(macSkein256);
 
         createHashCtx = initializeSkein256Context;
         msgShaContext = &hashCtx.skeinCtx;
         closeHashCtx = finalizeSkein256Context;
         hashCtxFunction = skein256Ctx;
-        hashCtxListFunction = static_cast<void (*)(void*, const std::vector<const uint8_t*>&, const std::vector<uint32_t>&)>(skein256Ctx);
+        hashCtxListFunction = static_cast<void (*)(void*, const std::vector<const uint8_t*>&, const std::vector<uint64_t>&)>(skein256Ctx);
         break;
 
     case 3:
         hashLength = SKEIN384_DIGEST_LENGTH;
         hashFunction = skein384;
-        hashListFunction = static_cast<void (*) (const std::vector<const uint8_t*>&, const std::vector<uint32_t>&, unsigned char *)>(skein384);
+        hashListFunction = static_cast<void (*) (const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, uint_8t *)>(skein384);
 
         hmacFunction = macSkein384;
-        hmacListFunction = static_cast<void (*)(uint8_t*, uint32_t, const std::vector<const uint8_t*>&, const std::vector<uint32_t>&, uint8_t *, uint32_t *)>(macSkein384);
+        hmacListFunction = static_cast<void (*)(const uint8_t*, uint64_t, const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, uint8_t *, uint32_t *)>(macSkein384);
 
         createHashCtx = initializeSkein384Context;
         msgShaContext = &hashCtx.skeinCtx;
         closeHashCtx = finalizeSkein384Context;
         hashCtxFunction = skein384Ctx;
-        hashCtxListFunction = static_cast<void (*)(void*, const std::vector<const uint8_t*>&, const std::vector<uint32_t>&)>(skein384Ctx);
+        hashCtxListFunction = static_cast<void (*)(void*, const std::vector<const uint8_t*>&, const std::vector<uint64_t>&)>(skein384Ctx);
+        break;
+
+    default:
         break;
     }
 }
@@ -2672,7 +2675,7 @@ void ZRtp::storeMsgTemp(ZrtpPacketBase* pkt) {
 bool ZRtp::checkMsgHmac(uint8_t* key) {
     uint8_t hmac[IMPL_MAX_DIGEST_LENGTH];
     uint32_t macLen;
-    int32_t len = lengthOfMsgData-(HMAC_SIZE);  // compute HMAC, but exlude the stored HMAC :-)
+    uint32_t len = lengthOfMsgData-(HMAC_SIZE);  // compute HMAC, but exclude the stored HMAC :-)
 
     // Use the implicit hash function
     hmacFunctionImpl(key, HASH_IMAGE_SIZE, tempMsgBuffer, len, hmac, &macLen);

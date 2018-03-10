@@ -226,7 +226,7 @@ public:
      * @return Length of algorithm names (excluding nul byte) or zero if crypto mix not supported or
      *         enabled.
      */
-    int getCryptoMixAttribute(char *algoNames, size_t length);
+    size_t getCryptoMixAttribute(char *algoNames, size_t length);
 
     /**
      * @brief Set Crypto Mix attribute string
@@ -533,25 +533,25 @@ private:
     CryptoContext     *recvZrtpTunnel;     //!< The SRTP context for sender ZRTP tunnel
     CryptoContext     *sendZrtpTunnel;     //!< The SRTP context for receiver ZRTP tunnel
 
-    int32_t cryptoMixHashLength;
+    uint32_t cryptoMixHashLength;
     sdesHmacTypeMix cryptoMixHashType;
 
     // Variables for crypto that this client creates and sends to the other client, filled during SDES create
     uint8_t localKeySalt[((MAX_KEY_LEN + MAX_SALT_LEN + 3)/4)*4];  //!< Some buffer for key and salt, multiple of 4
-    int localKeyLenBytes;
-    int localSaltLenBytes;
-    int localCipher;
-    int localAuthn;
-    int localAuthKeyLen;
-    int localTagLength;
+    uint32_t localKeyLenBytes;
+    uint32_t localSaltLenBytes;
+    uint32_t localCipher;
+    uint32_t localAuthn;
+    uint32_t localAuthKeyLen;
+    uint32_t localTagLength;
 
     // Variables for crypto that this client receives from the other client, filled during SDES parse
     uint8_t remoteKeySalt[((MAX_KEY_LEN + MAX_SALT_LEN + 3)/4)*4];  //!< Some buffer for key and salt, multiple of 4
-    int remoteKeyLenBytes;
-    int remoteSaltLenBytes;
-    int remoteCipher;
-    int remoteAuthn;
-    int remoteAuthKeyLen;
-    int remoteTagLength;
+    uint32_t remoteKeyLenBytes;
+    uint32_t remoteSaltLenBytes;
+    uint32_t remoteCipher;
+    uint32_t remoteAuthn;
+    uint32_t remoteAuthKeyLen;
+    uint32_t remoteTagLength;
 };
 #endif

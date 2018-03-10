@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
 
 #include <string>
 #include <sstream>
 
 #include <libzrtpcpp/ZrtpSdesStream.h>
 #include <libzrtpcpp/ZrtpTextData.h>
-#include <libzrtpcpp/ZrtpConfigure.h>
 #include <libzrtpcpp/zrtpB64Decode.h>
 #include <libzrtpcpp/zrtpB64Encode.h>
 #include <srtp/CryptoContext.h>
@@ -105,7 +104,7 @@ static const int minElementsKeyParam = 1;
 
 typedef struct _cryptoMix {
     const char* name;
-    int32_t hashLength;
+    uint32_t hashLength;
     ZrtpSdesStream::sdesHmacTypeMix hashType;
 } cryptoMix;
 
@@ -113,15 +112,15 @@ static const size_t MIX_HMAC_STRING_MIN_LEN = sizeof("HMAC-SHA-384");
 
 static cryptoMix knownMixAlgos[] = {
     {"HMAC-SHA-384", 384, ZrtpSdesStream::MIX_HMAC_SHA},
-    {NULL, 0, ZrtpSdesStream::MIX_NONE}
+    {nullptr, 0, ZrtpSdesStream::MIX_NONE}
 };
 
 typedef struct _suite {
     ZrtpSdesStream::sdesSuites suite;
     const char *name;
-    int32_t    keyLength;             // key length in bits
-    int32_t    saltLength;            // salt lenght in bits
-    int32_t    authKeyLength;         // authentication key length in bits
+    uint32_t    keyLength;             // key length in bits
+    uint32_t    saltLength;            // salt lenght in bits
+    uint32_t    authKeyLength;         // authentication key length in bits
     const char *tagLength;            // tag type hs80 or hs32
     const char *cipher;               // aes1 or aes3
     uint32_t   b64length;             // length of b64 encoded key/saltstring
@@ -137,12 +136,12 @@ static suiteParam knownSuites[] = {
     {ZrtpSdesStream::AES_CM_128_HMAC_SHA1_80, "AES_CM_128_HMAC_SHA1_80", 128, 112, 160,
      hs80, "AES-128", 40, (uint64_t)1<<48, (uint64_t)1<<31
     },
-    {(ZrtpSdesStream::sdesSuites)0, NULL, 0, 0, 0, 0, 0, 0, 0, 0}
+    {(ZrtpSdesStream::sdesSuites)0, nullptr, 0, 0, 0, nullptr, nullptr, 0, 0, 0}
 };
 
 ZrtpSdesStream::ZrtpSdesStream(const sdesSuites s) :
-    state(STREAM_INITALIZED), suite(s), recvSrtp(NULL), recvSrtcp(NULL), sendSrtp(NULL),
-    sendSrtcp(NULL), srtcpIndex(0), recvZrtpTunnel(0), sendZrtpTunnel(0), cryptoMixHashLength(0), 
+    state(STREAM_INITALIZED), suite(s), recvSrtp(nullptr), recvSrtcp(nullptr), sendSrtp(nullptr),
+    sendSrtcp(nullptr), srtcpIndex(0), recvZrtpTunnel(nullptr), sendZrtpTunnel(nullptr), cryptoMixHashLength(0),
     cryptoMixHashType(MIX_NONE)  {
 }
 
@@ -152,22 +151,22 @@ ZrtpSdesStream::~ZrtpSdesStream() {
 
 void ZrtpSdesStream::close() {
     delete sendSrtp;
-    sendSrtp = NULL;
+    sendSrtp = nullptr;
 
     delete recvSrtp;
-    recvSrtp = NULL;
+    recvSrtp = nullptr;
 
     delete sendSrtcp;
-    sendSrtp = NULL;
+    sendSrtp = nullptr;
 
     delete recvSrtcp;
-    recvSrtp = NULL;
+    recvSrtp = nullptr;
 
     delete recvZrtpTunnel;
-    recvZrtpTunnel = NULL;
+    recvZrtpTunnel = nullptr;
 
     delete sendZrtpTunnel;
-    sendZrtpTunnel = NULL;
+    sendZrtpTunnel = nullptr;
 }
 
 bool ZrtpSdesStream::createSdes(char *cryptoString, size_t *maxLen, bool sipInvite) {
@@ -231,7 +230,7 @@ bool ZrtpSdesStream::parseSdes(const char *cryptoString, size_t length, bool sip
 
 bool ZrtpSdesStream::outgoingRtp(uint8_t *packet, size_t length, size_t *newLength) {
 
-    if (state != SDES_SRTP_ACTIVE || sendSrtp == NULL) {
+    if (state != SDES_SRTP_ACTIVE || sendSrtp == nullptr) {
         *newLength = length;
         return true;
     }
@@ -242,7 +241,7 @@ bool ZrtpSdesStream::outgoingRtp(uint8_t *packet, size_t length, size_t *newLeng
 }
 
 int ZrtpSdesStream::incomingRtp(uint8_t *packet, size_t length, size_t *newLength, SrtpErrorData* errorData) {
-    if (state != SDES_SRTP_ACTIVE || recvSrtp == NULL) {    // SRTP inactive, just return with newLength set
+    if (state != SDES_SRTP_ACTIVE || recvSrtp == nullptr) {    // SRTP inactive, just return with newLength set
         *newLength = length;
         return 1;
     }
@@ -259,7 +258,7 @@ int ZrtpSdesStream::incomingRtp(uint8_t *packet, size_t length, size_t *newLengt
 
 bool ZrtpSdesStream::outgoingZrtpTunnel(uint8_t *packet, size_t length, size_t *newLength) {
 
-    if (state != SDES_SRTP_ACTIVE || sendZrtpTunnel == NULL) {
+    if (state != SDES_SRTP_ACTIVE || sendZrtpTunnel == nullptr) {
         *newLength = length;
         return true;
     }
@@ -270,7 +269,7 @@ bool ZrtpSdesStream::outgoingZrtpTunnel(uint8_t *packet, size_t length, size_t *
 }
 
 int ZrtpSdesStream::incomingZrtpTunnel(uint8_t *packet, size_t length, size_t *newLength, SrtpErrorData* errorData) {
-    if (state != SDES_SRTP_ACTIVE || recvZrtpTunnel == NULL) {    // SRTP inactive, just return with newLength set
+    if (state != SDES_SRTP_ACTIVE || recvZrtpTunnel == nullptr) {    // SRTP inactive, just return with newLength set
         *newLength = length;
         return 1;
     }
@@ -311,7 +310,7 @@ const char* ZrtpSdesStream::getAuthAlgo() {
         return "HMAC-SHA1 32 bit";
 }
 
-int ZrtpSdesStream::getCryptoMixAttribute(char *algoNames, size_t length) {
+size_t ZrtpSdesStream::getCryptoMixAttribute(char *algoNames, size_t length) {
 
     if (length < MIX_HMAC_STRING_MIN_LEN)
         return 0;
@@ -319,7 +318,7 @@ int ZrtpSdesStream::getCryptoMixAttribute(char *algoNames, size_t length) {
     // In case we support more than one MIX profile select the correct one if the
     // application called setCryptoMixAttribute(...) and we already selected the one to use.
     if (cryptoMixHashType != MIX_NONE) {
-        for (cryptoMix* cp = knownMixAlgos; cp->name != NULL; cp++) {
+        for (cryptoMix* cp = knownMixAlgos; cp->name != nullptr; cp++) {
             if (cp->hashLength == cryptoMixHashLength && cp->hashType == cryptoMixHashType) {
                 strcpy(algoNames, cp->name);
                 return strlen(cp->name);
@@ -336,8 +335,8 @@ int ZrtpSdesStream::getCryptoMixAttribute(char *algoNames, size_t length) {
 
 bool ZrtpSdesStream::setCryptoMixAttribute(const char *algoNames) {
 
-    int len = strlen(algoNames);
-    if (len <= 0)
+    size_t len = strlen(algoNames);
+    if (len == 0)
         return false;
 
     std::string algoIn(algoNames);
@@ -347,18 +346,19 @@ bool ZrtpSdesStream::setCryptoMixAttribute(const char *algoNames) {
     // We take the first match.
     std::string delimiters = " ";
     size_t current;
-    size_t next = -1;
+    size_t next = 0;
 
     do {
-        current = next + 1;
+        current = next;
         next = algoIn.find_first_of(delimiters, current);
         if (next == std::string::npos)
             break;
 
-        std::string tmps = algoIn.substr(current, next - current );
+        std::string tmps = algoIn.substr(current, next - current);
+        next++;                             // Skip delimiter
         const char* nm = tmps.c_str();
 
-        for (cryptoMix* cp = knownMixAlgos; cp->name != NULL; cp++) {
+        for (cryptoMix* cp = knownMixAlgos; cp->name != nullptr; cp++) {
             if (strncmp(cp->name, nm, strlen(cp->name)) == 0) {
                 cryptoMixHashLength = cp->hashLength;
                 cryptoMixHashType = cp->hashType;
@@ -386,7 +386,7 @@ static int _random(unsigned char *output, size_t len)
     return( 0 );
 }
 #else
-#include <cryptcommon/ZrtpRandom.h>
+
 static int _random(unsigned char *output, size_t len)
 {
     return ZrtpRandom::getRandomData(output, len);
@@ -395,7 +395,7 @@ static int _random(unsigned char *output, size_t len)
 
 static int b64Encode(const uint8_t *binData, int32_t binLength, char *b64Data, int32_t b64Length)
 {
-    base64_encodestate _state;
+    base64_encodestate _state = {};
     int codelength;
 
     base64_init_encodestate(&_state, 0);
@@ -407,7 +407,7 @@ static int b64Encode(const uint8_t *binData, int32_t binLength, char *b64Data, i
 
 static int b64Decode(const char *b64Data, int32_t b64length, uint8_t *binData, int32_t binLength)
 {
-    base64_decodestate _state;
+    base64_decodestate _state = {};
     int codelength;
 
     base64_init_decodestate(&_state);
@@ -415,24 +415,23 @@ static int b64Decode(const char *b64Data, int32_t b64length, uint8_t *binData, i
     return codelength;
 }
 
-void* createSha384HmacContext(uint8_t* key, int32_t keyLength);
+void* createSha384HmacContext(const uint8_t* key, uint64_t keyLength);
 void freeSha384HmacContext(void* ctx);
 void hmacSha384Ctx(void* ctx, const std::vector<const uint8_t*>& data,
-                   const std::vector<uint32_t>& dataLength,
-                   uint8_t* mac, int32_t* macLength );
+                   const std::vector<uint64_t>& dataLength,
+                   uint8_t* mac, uint32_t* macLength );
 
-static int expand(uint8_t* prk, uint32_t prkLen, uint8_t* info, int32_t infoLen, int32_t L, uint32_t hashLen, uint8_t* outbuffer)
+static int expand(uint8_t* prk, uint32_t prkLen, uint8_t* info, uint32_t infoLen, int32_t L, uint32_t hashLen, uint8_t* outbuffer)
 {
     int32_t n;
     uint8_t *T;
     void* hmacCtx;
 
     std::vector<const uint8_t*>data;
-    std::vector<uint32_t> dataLen;
-    int32_t dataIdx = 0;
+    std::vector<uint64_t> dataLen;
 
     uint8_t counter;
-    int32_t macLength;
+    uint32_t macLength;
 
     if (prkLen < hashLen)
         return -1;
@@ -452,24 +451,22 @@ static int expand(uint8_t* prk, uint32_t prkLen, uint8_t* info, int32_t infoLen,
     // Prepare first HMAC. T(0) has zero length, thus we ignore it in first run.
     // After first run use its output (T(1)) as first data in next HMAC run.
     for (int i = 1; i <= n; i++) {
-        if (infoLen > 0 && info != NULL) {
-            data[dataIdx] = info;
-            dataLen[dataIdx++] = infoLen;
+        if (infoLen > 0 && info != nullptr) {
+            data.push_back(info);
+            dataLen.push_back(infoLen);
         }
-        counter = i & 0xff;
-        data[dataIdx] = &counter;
-        dataLen[dataIdx++] = 1;
-
-        data[dataIdx] = NULL;
-        dataLen[dataIdx++] = 0;
+        counter = static_cast<uint8_t >(i & 0xff);
+        data.push_back(&counter);
+        dataLen.push_back(1);
 
         if (hashLen == 384/8)
             hmacSha384Ctx(hmacCtx, data, dataLen, T + ((i-1) * hashLen), &macLength);
 
         // Use output of previous hash run as first input of next hash run
-        dataIdx = 0;
-        data[dataIdx] = T + ((i-1) * hashLen);
-        dataLen[dataIdx++] = hashLen;
+        data.clear();
+        dataLen.clear();
+        data.push_back(T + ((i-1) * hashLen));
+        dataLen.push_back(hashLen);
     }
     freeSha384HmacContext(hmacCtx);
     memcpy(outbuffer, T, L);
@@ -520,7 +517,7 @@ void ZrtpSdesStream::computeMixedKeys(bool sipInvite) {
     }
 
     uint8_t T[(MAX_SALT_LEN + MAX_KEY_LEN)*2] = {0};
-    expand(prk, prkLen, NULL, 0, L, cryptoMixHashLength/8, T);
+    expand(prk, prkLen, nullptr, 0U, L, cryptoMixHashLength/8, T);
 
     // We have a new set of SRTP key data now, replace the old with the new.
     int32_t offset = 0;
@@ -625,7 +622,7 @@ bool ZrtpSdesStream::createSdesProfile(char *cryptoString, size_t *maxLen) {
     uint32_t sidx;
     int32_t b64Len;
 
-    for (sidx = 0; knownSuites[sidx].name != NULL; sidx++) {  // Lookup crypto suite parameters
+    for (sidx = 0; knownSuites[sidx].name != nullptr; sidx++) {  // Lookup crypto suite parameters
         if (knownSuites[sidx].suite == suite)
             break;
     }
@@ -637,7 +634,7 @@ bool ZrtpSdesStream::createSdesProfile(char *cryptoString, size_t *maxLen) {
 
     AlgorithmEnum& auth = zrtpAuthLengths.getByName(pSuite->tagLength);
     localAuthn = SrtpAuthenticationSha1Hmac;
-    localAuthKeyLen = pSuite->authKeyLength / 8;
+    localAuthKeyLen = pSuite->authKeyLength / 8u;
     localTagLength = auth.getKeylen() / 8;
 
     // If SDES will support other encryption algos - get it here based on
@@ -689,7 +686,7 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
         return false;
     }
 
-    for (sidx = 0; knownSuites[sidx].name != NULL; sidx++) {  // Lookup crypto suite
+    for (sidx = 0; knownSuites[sidx].name != nullptr; sidx++) {  // Lookup crypto suite
         if (!strcmp(knownSuites[sidx].name, suiteName))
             break;
     }

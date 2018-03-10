@@ -50,15 +50,15 @@
  *
  * @param data
  *    Points to the data chunk.
- * @param data_length
+ * @param dataLength
  *    Length of the data in bytes
  * @param digest
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 48 bytes (Skein384_DIGEST_LENGTH).
  */
-void skein384(unsigned char *data,
-            unsigned int data_length,
-            unsigned char *digest);
+void skein384(const uint8_t *data,
+              uint64_t dataLength,
+              uint8_t *digest);
 
 /**
  * Compute Skein384 digest over several data cunks.
@@ -75,8 +75,9 @@ void skein384(unsigned char *data,
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 48 bytes (Skein384_DIGEST_LENGTH).
  */
-void skein384(const std::vector<const uint8_t*>& data, const std::vector<uint32_t>& dataLength,
-              unsigned char *digest);
+void skein384(const std::vector<const uint8_t*>& data,
+              const std::vector<uint64_t>& dataLength,
+              uint8_t *digest);
 /**
  * Create and initialize a Skein384 context.
  *
@@ -101,7 +102,7 @@ void* createSkein384Context();
  *    pointer is NULL then the functions does not compute the digest but
  *    closes the context only. The context cannot be used anymore.
  */
-void closeSkein384Context(void* ctx, unsigned char* digest);
+void closeSkein384Context(void* ctx, uint8_t* digest);
 
 /**
  * Initialize a Skein384 context.
@@ -127,7 +128,7 @@ void* initializeSkein384Context(void* ctx);
  *    is big enough to hold the Skei384 digest (384 bit = 48 Bytes). If this
  *    pointer is NULL then the functions does not compute the digest.
  */
-void finalizeSkein384Context(void* ctx, unsigned char* digest);
+void finalizeSkein384Context(void* ctx, uint8_t* digest);
 
 /**
  * Update the Skein384 context with data.
@@ -142,7 +143,7 @@ void finalizeSkein384Context(void* ctx, unsigned char* digest);
  * @param dataLength
  *    The length of the data in bytes.
  */
-void skein384Ctx(void* ctx, unsigned char* data, unsigned int dataLength);
+void skein384Ctx(void* ctx, const uint8_t* data, uint64_t dataLength);
 
 /**
  * Update the Skein384 context with several data chunks.
@@ -159,7 +160,9 @@ void skein384Ctx(void* ctx, unsigned char* data, unsigned int dataLength);
  *    Vector of integers that hold the length of each data chunk.
  *
  */
-void skein384Ctx(void* ctx, const std::vector<const uint8_t*>& data, const std::vector<uint32_t>& dataLength);
+void skein384Ctx(void* ctx,
+                 const std::vector<const uint8_t*>& data,
+                 const std::vector<uint64_t>& dataLength);
 
 /**
  * @}

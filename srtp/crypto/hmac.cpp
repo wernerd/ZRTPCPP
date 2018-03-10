@@ -18,12 +18,11 @@
  * Authors: Werner Dittmann
  */
 
-#include <stdint.h>
-#include <string.h>
-#include <stdio.h>
 #include "crypto/hmac.h"
+#include <cstring>
+#include <cstdio>
 
-static int32_t hmacSha1Init(hmacSha1Context *ctx, const uint8_t *key, uint32_t kLength)
+static int32_t hmacSha1Init(hmacSha1Context *ctx, const uint8_t *key, uint64_t kLength)
 {
     int32_t i;
     uint8_t localPad[SHA1_BLOCK_SIZE] = {0};
@@ -71,7 +70,7 @@ static void hmacSha1Reset(hmacSha1Context *ctx)
     memcpy(&ctx->ctx, &ctx->innerCtx, sizeof(sha1_ctx));
 }
 
-static void hmacSha1Update(hmacSha1Context *ctx, const uint8_t *data, uint32_t dLength)
+static void hmacSha1Update(hmacSha1Context *ctx, const uint8_t *data, uint64_t dLength)
 {
     /* hash new data to work hash context */
     sha1_hash(data, dLength, &ctx->ctx);
@@ -95,7 +94,7 @@ static void hmacSha1Final(hmacSha1Context *ctx, uint8_t *mac)
 }
 
 
-void hmac_sha1(uint8_t *key, int32_t keyLength, const uint8_t* data, uint32_t dataLength, uint8_t* mac, int32_t* macLength)
+void hmac_sha1(const uint8_t *key, uint64_t keyLength, const uint8_t* data, uint32_t dataLength, uint8_t* mac, int32_t* macLength)
 {
     hmacSha1Context ctx = {};
 
@@ -105,10 +104,10 @@ void hmac_sha1(uint8_t *key, int32_t keyLength, const uint8_t* data, uint32_t da
     *macLength = SHA1_BLOCK_SIZE;
 }
 
-void hmac_sha1( uint8_t* key, int32_t keyLength,
-                const std::vector<const uint8_t*>& data,
-                const std::vector<uint32_t>& dataLength,
-                uint8_t* mac, int32_t* macLength )
+void hmac_sha1(const uint8_t* key, uint64_t keyLength,
+               const std::vector<const uint8_t*>& data,
+               const std::vector<uint64_t>& dataLength,
+               uint8_t* mac, uint32_t* macLength )
 {
     hmacSha1Context ctx = {};
 
@@ -121,7 +120,7 @@ void hmac_sha1( uint8_t* key, int32_t keyLength,
     *macLength = SHA1_BLOCK_SIZE;
 }
 
-void* createSha1HmacContext(uint8_t* key, int32_t keyLength)
+void* createSha1HmacContext(const uint8_t* key, uint64_t keyLength)
 {
     auto *ctx = reinterpret_cast<hmacSha1Context*>(malloc(sizeof(hmacSha1Context)));
     if (ctx == nullptr)
@@ -131,7 +130,7 @@ void* createSha1HmacContext(uint8_t* key, int32_t keyLength)
     return ctx;
 }
 
-void* initializeSha1HmacContext(void* ctx, uint8_t* key, int32_t keyLength)
+void* initializeSha1HmacContext(void* ctx, uint8_t* key, uint64_t keyLength)
 {
     auto *pctx = (hmacSha1Context*)ctx;
 
@@ -139,8 +138,8 @@ void* initializeSha1HmacContext(void* ctx, uint8_t* key, int32_t keyLength)
     return pctx;
 }
 
-void hmacSha1Ctx(void* ctx, const uint8_t* data, uint32_t dataLength,
-                uint8_t* mac, int32_t* macLength)
+void hmacSha1Ctx(void* ctx, const uint8_t* data, uint64_t dataLength,
+                uint8_t* mac, uint32_t* macLength)
 {
     auto *pctx = (hmacSha1Context*)ctx;
 
@@ -152,8 +151,8 @@ void hmacSha1Ctx(void* ctx, const uint8_t* data, uint32_t dataLength,
 
 void hmacSha1Ctx(void* ctx,
                  const std::vector<const uint8_t*>& data,
-                 const std::vector<uint32_t>& dataLength,
-                 uint8_t* mac, int32_t* macLength )
+                 const std::vector<uint64_t>& dataLength,
+                 uint8_t* mac, uint32_t* macLength )
 {
     auto *pctx = (hmacSha1Context*)ctx;
 

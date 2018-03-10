@@ -47,15 +47,15 @@
  *
  * @param data
  *    Points to the data chunk.
- * @param data_length
+ * @param dataLength
  *    Length of the data in bytes
  * @param digest
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 48 bytes (SHA384_DIGEST_LENGTH).
  */
-void sha384(unsigned char *data,
-            unsigned int data_length,
-            unsigned char *digest);
+void sha384(const uint8_t *data,
+            uint64_t dataLength,
+            uint8_t *digest);
 
 /**
  * Compute SHA384 digest over several data cunks.
@@ -73,7 +73,7 @@ void sha384(unsigned char *data,
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 48 bytes (SHA384_DIGEST_LENGTH).
  */
-void sha384(const std::vector<const uint8_t*>& data, const std::vector<uint32_t>& dataLength, unsigned char *digest);
+void sha384(const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength, uint8_t* digest);
 
 /**
  * Create and initialize a SHA384 context.
@@ -99,7 +99,7 @@ void* createSha384Context();
  *    pointer is NULL then the functions does not compute the digest but
  *    closes the context only. The context cannot be used anymore.
  */
-void closeSha384Context(void* ctx, unsigned char* digest);
+void closeSha384Context(void* ctx, uint8_t* digest);
 
 /**
  * Initialize a SHA384 context.
@@ -125,7 +125,7 @@ void* initializeSha384Context(void* ctx);
  *    is big enough to hold the SHA384 digest (384 bit = 48 Bytes). If this
  *    pointer is NULL then the functions does not compute the digest.
  */
-void finalizeSha384Context(void* ctx, unsigned char* digest);
+void finalizeSha384Context(void* ctx, uint8_t* digest);
 
 /**
  * Update the SHA384 context with data.
@@ -140,8 +140,7 @@ void finalizeSha384Context(void* ctx, unsigned char* digest);
  * @param dataLength
  *    The length of the data in bytes.
  */
-void sha384Ctx(void* ctx, unsigned char* data, 
-               unsigned int dataLength);
+void sha384Ctx(void* ctx, const uint8_t* data, uint64_t dataLength);
 
 /**
  * Update the SHA384 context with several data chunks.
@@ -158,7 +157,7 @@ void sha384Ctx(void* ctx, unsigned char* data,
  *    Vector of integers that hold the length of each data chunk.
  *
  */
-void sha384Ctx(void* ctx, const std::vector<const uint8_t*>& data, const std::vector<uint32_t>& dataLength);
+void sha384Ctx(void* ctx, const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength);
 
 /**
  * @}

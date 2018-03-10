@@ -230,11 +230,11 @@ void CryptoContextCtrl::srtcpAuthenticate(uint8_t* rtp, int32_t len, uint32_t in
     if (aalg == SrtpAuthenticationNull) {
         return;
     }
-    int32_t macL;
+    uint32_t macL;
 
     unsigned char temp[20];
     std::vector<const uint8_t*>chunks;
-    std::vector<uint32_t> chunkLength;
+    std::vector<uint64_t> chunkLength;
     uint32_t beIndex = zrtpHtonl(index);
 
     chunks.push_back(rtp);

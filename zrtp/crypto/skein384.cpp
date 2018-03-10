@@ -27,7 +27,7 @@
 #define SKEIN_SIZE Skein512
 #define SKEIN384_DIGEST_LENGTH  48
 
-void skein384(unsigned char *data, unsigned int dataLength, unsigned char *digest )
+void skein384(const uint8_t *data, uint64_t dataLength, uint8_t *digest )
 {
     SkeinCtx_t ctx = {};
 
@@ -38,7 +38,7 @@ void skein384(unsigned char *data, unsigned int dataLength, unsigned char *diges
     skeinFinal(&ctx, digest);
 }
 
-void skein384(const std::vector<const uint_8t *>& dataChunks, const std::vector<uint_32t>& dataChunkLength, unsigned char *digest)
+void skein384(const std::vector<const uint_8t *>& dataChunks, const std::vector<uint64_t>& dataChunkLength, uint8_t *digest)
 {
     SkeinCtx_t ctx = {};
 
@@ -60,7 +60,7 @@ void* createSkein384Context()
     return (void*)ctx;
 }
 
-void closeSkein384Context(void* ctx, unsigned char* digest)
+void closeSkein384Context(void* ctx, uint8_t* digest)
 {
     auto* hd = reinterpret_cast<SkeinCtx_t*>(ctx);
 
@@ -80,7 +80,7 @@ void* initializeSkein384Context(void* ctx)
     return (void*)hd;
 }
 
-void finalizeSkein384Context(void* ctx, unsigned char* digest)
+void finalizeSkein384Context(void* ctx, uint8_t* digest)
 {
     auto* hd = reinterpret_cast<SkeinCtx_t*>(ctx);
 
@@ -89,15 +89,16 @@ void finalizeSkein384Context(void* ctx, unsigned char* digest)
     }
 }
 
-void skein384Ctx(void* ctx, unsigned char* data, unsigned int dataLength)
+void skein384Ctx(void* ctx, const uint8_t* data, uint64_t dataLength)
 {
     auto* hd = reinterpret_cast<SkeinCtx_t*>(ctx);
 
     skeinUpdate(hd, data, dataLength);
 }
 
-void skein384Ctx(void* ctx, const std::vector<const uint8_t*>& data,
-                 const std::vector<uint32_t>& dataLength)
+void skein384Ctx(void* ctx,
+                 const std::vector<const uint8_t*>& data,
+                 const std::vector<uint64_t>& dataLength)
 {
     auto* hd = reinterpret_cast<SkeinCtx_t*>(ctx);
 
