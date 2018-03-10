@@ -1,20 +1,18 @@
 /*
-  Copyright (C) 2006 - 2012 Werner Dittmann
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 /*
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
@@ -222,16 +220,16 @@ void CryptoContext::srtpAuthenticate(uint8_t* pkt, uint32_t pktlen, uint32_t roc
     int32_t macL;
 
     unsigned char temp[20];
-    const unsigned char* chunks[3];
-    unsigned int chunkLength[3];
+
+    std::vector<const uint8_t*>chunks;
+    std::vector<uint32_t> chunkLength;
     uint32_t beRoc = zrtpHtonl(roc);
 
-    chunks[0] = pkt;
-    chunkLength[0] = pktlen;
+    chunks.push_back(pkt);
+    chunkLength.push_back(pktlen);
 
-    chunks[1] = (unsigned char *)&beRoc;
-    chunkLength[1] = 4;
-    chunks[2] = NULL;
+    chunks.push_back((unsigned char *)&beRoc);
+    chunkLength.push_back(4);
 
     switch (aalg) {
     case SrtpAuthenticationSha1Hmac:

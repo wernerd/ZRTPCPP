@@ -39,8 +39,8 @@
 #include <crypto/hmac256.h>
 
 void hmac_sha256(uint8_t* key, uint32_t key_length,
-		uint8_t* data, int32_t data_length,
-                uint8_t* mac, uint32_t* mac_length)
+                 uint8_t* data, int32_t data_length,
+                 uint8_t* mac, uint32_t* mac_length)
 {
     unsigned int tmp;
     HMAC( EVP_sha256(), key, key_length, data, data_length, mac, &tmp );

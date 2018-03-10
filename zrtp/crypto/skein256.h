@@ -1,19 +1,18 @@
 /*
-  Copyright (C) 2013 Werner Dittmann
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 /**
  * Functions to compute Skein256 digest.
@@ -32,7 +31,8 @@
  * @{
  */
 
-#include <stdint.h>
+#include <cstdint>
+#include <vector>
 
 #ifndef SKEIN256_DIGEST_LENGTH
 #define SKEIN256_DIGEST_LENGTH  32
@@ -67,17 +67,15 @@ void skein256(unsigned char *data,
  * Skein256 operations.
  *
  * @param data
- *    Points to an array of pointers that point to the data chunks. A NULL
- *    pointer in an array element terminates the data chunks.
- * @param data_length
- *    Points to an array of integers that hold the length of each data chunk.
+ *    Vector of pointers that point to the data chunks.
+ * @param dataLength
+ *    Vector of integers that hold the length of each data chunk.
  * @param digest
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 32 bytes (Skein256_DIGEST_LENGTH).
  */
-void skein256(unsigned char *data[],
-            unsigned int data_length[],
-            unsigned char *digest);
+void skein256(const std::vector<const uint8_t*>& data, const std::vector<uint32_t>& dataLength,
+              unsigned char *digest);
 /**
  * Create and initialize a Skein256 context.
  *
@@ -155,15 +153,14 @@ void skein256Ctx(void* ctx, unsigned char* data,
  *
  * @param ctx
  *    Points to the Skein256 context.
- * @param dataChunks
- *    Points to an array of pointers that point to the data chunks. A NULL
+ * @param data
+ *    Vector of pointers that point to the data chunks. A NULL
  *    pointer in an array element terminates the data chunks.
- * @param dataChunkLength
- *    Points to an array of integers that hold the length of each data chunk.
+ * @param dataLength
+ *    Vector of integers that hold the length of each data chunk.
  *
  */
-void skein256Ctx(void* ctx, unsigned char* dataChunks[],
-               unsigned int dataChunkLength[]);
+void skein256Ctx(void* ctx, const std::vector<const uint8_t*>& data, const std::vector<uint32_t>& dataLength);
 
 /**
  * @}

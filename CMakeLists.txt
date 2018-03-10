@@ -1,12 +1,17 @@
-# Copyright (C) 2009 - 2016 Werner Dittman
 #
-# This file is free software; as a special exception the author gives
-# unlimited permission to copy and/or distribute it, with or without
-# modifications, as long as this notice is preserved.
+# Copyright 2006 - 2018, Werner Dittmann
 #
-# This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
-# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 cmake_minimum_required(VERSION 2.6)
 
@@ -211,6 +216,7 @@ endif()
 #
 set(zrtp_src_no_cache
     ${CMAKE_SOURCE_DIR}/zrtp/ZrtpCallbackWrapper.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZRtp.h
     ${CMAKE_SOURCE_DIR}/zrtp/ZRtp.cpp
     ${CMAKE_SOURCE_DIR}/zrtp/ZrtpCrc32.cpp
     ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketCommit.cpp
@@ -227,6 +233,7 @@ set(zrtp_src_no_cache
     ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketPing.cpp
     ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketSASrelay.cpp
     ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketRelayAck.cpp
+    ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpStateClass.h
     ${CMAKE_SOURCE_DIR}/zrtp/ZrtpStateClass.cpp
     ${CMAKE_SOURCE_DIR}/zrtp/ZrtpTextData.cpp
     ${CMAKE_SOURCE_DIR}/zrtp/ZrtpConfigure.cpp
@@ -257,6 +264,19 @@ set(zrtp_skein_src
     ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein256.cpp
     ${CMAKE_SOURCE_DIR}/zrtp/crypto/skeinMac384.cpp
     ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein384.cpp)
+
+set(zrtp_crypto_includes
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/aesCFB.h
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/hmac256.h
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/hmac384.h
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha2.h
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha256.h
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha384.h
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein256.h
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein384.h
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.h
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/zrtpDH.h
+        )
 
 set(zrtp_crypto_src
     ${CMAKE_SOURCE_DIR}/zrtp/crypto/zrtpDH.cpp

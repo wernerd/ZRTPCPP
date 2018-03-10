@@ -20,6 +20,7 @@
 #define MAC_SKEIN_H
 
 #include <cryptcommon/skeinApi.h>
+#include <vector>
 /**
  * @file macSkein.h
  * @brief Function that provide Skein MAC support
@@ -65,10 +66,10 @@ void macSkein( uint8_t* key, int32_t key_length,
  * @param key_length
  *    Lneght of the MAC key in bytes
  * @param data
- *    Points to an array of pointers that point to the data chunks. A NULL
+ *    A Vector of pointers that point to the data chunks. A NULL
  *    pointer in an array element terminates the data chunks.
  * @param data_length
- *    Points to an array of integers that hold the length of each data chunk.
+ *    A vector of integers that hold the length of each data chunk.
  * @param mac
  *    Points to a buffer that receives the computed digest.
  * @param mac_length
@@ -77,8 +78,9 @@ void macSkein( uint8_t* key, int32_t key_length,
  *    The Skein size to use.
  */
 void macSkein( uint8_t* key, int32_t key_length,
-                const uint8_t* data[], uint32_t data_length[],
-                uint8_t* mac, int32_t mac_length, SkeinSize_t skeinSize);
+               std::vector<const uint8_t*> data,
+               std::vector<uint32_t> dataLength,
+               uint8_t* mac, int32_t mac_length, SkeinSize_t skeinSize);
 
 /**
  * Create and initialize a Skein MAC context.
@@ -146,13 +148,14 @@ void macSkeinCtx(void* ctx, const uint8_t* data, uint32_t data_length,
  * @param data
  *    Points to an array of pointers that point to the data chunks. A NULL
  *    pointer in an array element terminates the data chunks.
- * @param data_length
+ * @param dataLength
  *    Points to an array of integers that hold the length of each data chunk.
  * @param mac
  *    Points to a buffer that receives the computed digest.
  */
-void macSkeinCtx(void* ctx, const uint8_t* data[], uint32_t data_length[],
-                uint8_t* mac);
+void macSkeinCtx(void* ctx, const std::vector<const uint8_t*>& data,
+                 const std::vector<uint32_t>& dataLength,
+                 uint8_t* mac);
 
 /**
  * Free Skein MAC context.

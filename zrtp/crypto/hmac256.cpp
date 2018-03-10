@@ -1,41 +1,26 @@
 /*
-  Copyright (C) 2012-2013 Werner Dittmann
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
- * In addition, as a special exception, the copyright holders give
- * permission to link the code of portions of this program with the
- * OpenSSL library under certain conditions as described in each
- * individual source file, and distribute linked combinations
- * including the two.
- * You must obey the GNU General Public License in all respects
- * for all of the code used other than OpenSSL.  If you modify
- * file(s) with this exception, you may extend this exception to your
- * version of the file(s), but you are not obligated to do so.  If you
- * do not wish to do so, delete this exception statement from your
- * version.  If you delete this exception statement from all source
- * files in the program, then also delete it here.
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /*
  * Authors: Werner Dittmann
  */
 
-#include <stdint.h>
-#include <string.h>
-#include <stdio.h>
+#include <cstdint>
+#include <cstring>
+#include <cstdio>
 #include "zrtp/crypto/sha2.h"
 #include "zrtp/crypto/hmac256.h"
 
@@ -51,7 +36,7 @@ static int32_t hmacSha256Init(hmacSha256Context *ctx, const uint8_t *key, uint32
     uint8_t localPad[SHA256_BLOCK_SIZE] = {0};
     uint8_t localKey[SHA256_BLOCK_SIZE] = {0};
 
-    if (key == NULL)
+    if (key == nullptr)
         return 0;
 
     memset(ctx, 0, sizeof(hmacSha256Context));
@@ -67,14 +52,14 @@ static int32_t hmacSha256Init(hmacSha256Context *ctx, const uint8_t *key, uint32
     }
     /* prepare inner hash and hold the context */
     for (i = 0; i < SHA256_BLOCK_SIZE; i++)
-        localPad[i] = localKey[i] ^ 0x36;
+        localPad[i] = static_cast<uint_8t >(localKey[i] ^ 0x36);
 
     sha256_begin(&ctx->innerCtx);
     sha256_hash(localPad, SHA256_BLOCK_SIZE, &ctx->innerCtx);
 
     /* prepare outer hash and hold the context */
     for (i = 0; i < SHA256_BLOCK_SIZE; i++)
-        localPad[i] = localKey[i] ^ 0x5c;
+        localPad[i] = static_cast<uint_8t >(localKey[i] ^ 0x5c);
 
     sha256_begin(&ctx->outerCtx);
     sha256_hash(localPad, SHA256_BLOCK_SIZE, &ctx->outerCtx);
@@ -119,7 +104,7 @@ static void hmacSha256Final(hmacSha256Context *ctx, uint8_t *mac)
 
 void hmac_sha256(uint8_t *key, uint32_t keyLength, uint8_t* data, int32_t dataLength, uint8_t* mac, uint32_t* macLength)
 {
-    hmacSha256Context ctx;
+    hmacSha256Context ctx = {};
 
     hmacSha256Init(&ctx, key, keyLength);
     hmacSha256Update(&ctx, data, dataLength);
@@ -127,17 +112,16 @@ void hmac_sha256(uint8_t *key, uint32_t keyLength, uint8_t* data, int32_t dataLe
     *macLength = SHA256_DIGEST_SIZE;
 }
 
-void hmac_sha256(uint8_t* key, uint32_t keyLength, uint8_t* dataChunks[], uint32_t dataChunckLength[],
-                uint8_t* mac, uint32_t* macLength )
+void hmacSha256(uint8_t* key, uint32_t keyLength, const std::vector<const uint8_t*>& dataChunks,
+                 const std::vector<uint32_t>& dataChunkLength,
+                 uint8_t* mac, uint32_t* macLength )
 {
-    hmacSha256Context ctx;
+    hmacSha256Context ctx= {};
 
     hmacSha256Init(&ctx, key, keyLength);
 
-    while (*dataChunks) {
-        hmacSha256Update(&ctx, *dataChunks, *dataChunckLength);
-        dataChunks ++;
-        dataChunckLength ++;
+    for (size_t i = 0, size = dataChunks.size(); i < size; i++) {
+        hmacSha256Update(&ctx, dataChunks[i], dataChunkLength[i]);
     }
     hmacSha256Final(&ctx, mac);
     *macLength = SHA256_DIGEST_SIZE;
@@ -145,9 +129,9 @@ void hmac_sha256(uint8_t* key, uint32_t keyLength, uint8_t* dataChunks[], uint32
 
 void* createSha256HmacContext(uint8_t* key, int32_t keyLength)
 {
-    hmacSha256Context *ctx = reinterpret_cast<hmacSha256Context*>(malloc(sizeof(hmacSha256Context)));
+    auto* ctx = reinterpret_cast<hmacSha256Context*>(malloc(sizeof(hmacSha256Context)));
 
-    if (ctx != NULL) {
+    if (ctx != nullptr) {
         hmacSha256Init(ctx, key, keyLength);
     }
     return ctx;
@@ -156,7 +140,7 @@ void* createSha256HmacContext(uint8_t* key, int32_t keyLength)
 void hmacSha256Ctx(void* ctx, const uint8_t* data, uint32_t dataLength,
                 uint8_t* mac, int32_t* macLength)
 {
-    hmacSha256Context *pctx = (hmacSha256Context*)ctx;
+    auto *pctx = (hmacSha256Context*)ctx;
 
     hmacSha256Reset(pctx);
     hmacSha256Update(pctx, data, dataLength);
@@ -164,16 +148,16 @@ void hmacSha256Ctx(void* ctx, const uint8_t* data, uint32_t dataLength,
     *macLength = SHA256_DIGEST_SIZE;
 }
 
-void hmacSha256Ctx(void* ctx, const uint8_t* data[], uint32_t dataLength[],
-                uint8_t* mac, int32_t* macLength )
+void hmacSha256Ctx(void* ctx,
+                   const std::vector<const uint8_t*>& data,
+                   const std::vector<uint32_t>& dataLength,
+                   uint8_t* mac, int32_t* macLength )
 {
-    hmacSha256Context *pctx = (hmacSha256Context*)ctx;
+    auto *pctx = (hmacSha256Context*)ctx;
 
     hmacSha256Reset(pctx);
-    while (*data) {
-        hmacSha256Update(pctx, *data, *dataLength);
-        data++;
-        dataLength++;
+    for (size_t i = 0, size = data.size(); i < size; i++) {
+        hmacSha256Update(pctx, data[i], dataLength[i]);
     }
     hmacSha256Final(pctx, mac);
     *macLength = SHA256_DIGEST_SIZE;

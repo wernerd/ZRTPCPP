@@ -3,7 +3,7 @@
 //
 #include <iostream>
 // stdlib.h required for Android NDK builds, not included within the above includes
-#include <stdlib.h>
+#include <cstdlib>
 
 #include <libzrtpcpp/EmojiBase32.h>
 

@@ -1,19 +1,18 @@
 /*
-  Copyright (C) 2006-2013 Werner Dittmann
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef _ZRTP_H_
 #define _ZRTP_H_
@@ -856,7 +855,7 @@ private:
     uint8_t newRs1[MAX_DIGEST_LENGTH];
 
     /**
-     * The GoClear HMAC keys and confirm HMAC key
+     * The confirm HMAC key
      */
     uint8_t hmacKeyI[MAX_DIGEST_LENGTH];
     uint8_t hmacKeyR[MAX_DIGEST_LENGTH];
@@ -888,46 +887,45 @@ private:
             unsigned int data_length,
             unsigned char *digest);
 
-    void (*hashListFunction)(unsigned char *data[],
-            unsigned int data_length[],
-            unsigned char *digest);
+    void (*hashListFunction)(const std::vector<const uint8_t*>& data,
+                             const std::vector<uint32_t>& data_length,
+                             unsigned char *digest);
 
     void (*hmacFunction)(uint8_t* key, uint32_t key_length,
                 uint8_t* data, int32_t data_length,
                 uint8_t* mac, uint32_t* mac_length);
 
-    void (*hmacListFunction)( uint8_t* key, uint32_t key_length,
-                           uint8_t* data[], uint32_t data_length[],
-                           uint8_t* mac, uint32_t* mac_length );
+    void (*hmacListFunction)(uint8_t* key, uint32_t key_length,
+                             const std::vector<const uint8_t*>& data,
+                             const std::vector<uint32_t>& data_length,
+                             uint8_t* mac, uint32_t* mac_length );
 
     void* (*createHashCtx)(void* ctx);
 
     void (*closeHashCtx)(void* ctx, unsigned char* digest);
 
     void (*hashCtxFunction)(void* ctx, unsigned char* data,
-           unsigned int dataLength);
+                            unsigned int dataLength);
 
-    void (*hashCtxListFunction)(void* ctx, unsigned char* dataChunks[],
-           unsigned int dataChunkLength[]);
+    void (*hashCtxListFunction)(void* ctx, const std::vector<const uint8_t*>&, const std::vector<uint32_t>&);
 
     uint32_t hashLength;
 
-    // Funtion pointers to implicit hash and hmac functions
+    // Function pointers to implicit hash and hmac functions
     void (*hashFunctionImpl)(unsigned char *data,
-            unsigned int data_length,
-            unsigned char *digest);
+                             unsigned int data_length,
+                             unsigned char *digest);
 
-    void (*hashListFunctionImpl)(unsigned char *data[],
-            unsigned int data_length[],
-            unsigned char *digest);
+    void (*hashListFunctionImpl)(const std::vector<const uint8_t*>& data, const std::vector<uint32_t>& dataLength,
+                                 unsigned char *digest);
 
     void (*hmacFunctionImpl)(uint8_t* key, uint32_t key_length,
-                uint8_t* data, int32_t data_length,
-                uint8_t* mac, uint32_t* mac_length);
+                             uint8_t* data, int32_t data_length,
+                             uint8_t* mac, uint32_t* mac_length);
 
-    void (*hmacListFunctionImpl)( uint8_t* key, uint32_t key_length,
-                           uint8_t* data[], uint32_t data_length[],
-                           uint8_t* mac, uint32_t* mac_length );
+    void (*hmacListFunctionImpl)(uint8_t* key, uint32_t key_length,
+                                 const std::vector<const uint8_t*>& data, const std::vector<uint32_t>& dataLength,
+                                 uint8_t* mac, uint32_t* mac_length );
 
     int32_t hashLengthImpl;
 
@@ -1492,7 +1490,7 @@ private:
      * This method prepares the RelayAck packet. The input to this method is the
      * SASrelay packet received from the peer.
      */
-    ZrtpPacketRelayAck* prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* errMsg);
+    ZrtpPacketRelayAck* prepareRelayAck(ZrtpPacketSASrelay* srly, const uint32_t* errMsg);
 #if 0
     /**
      * Prepare a GoClearAck packet w/o HMAC

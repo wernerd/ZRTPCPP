@@ -1,19 +1,18 @@
 /*
-  Copyright (C) 2012-2013 Werner Dittmann
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include <stdio.h>
 #include <stdint.h>
@@ -418,7 +417,9 @@ static int b64Decode(const char *b64Data, int32_t b64length, uint8_t *binData, i
 
 void* createSha384HmacContext(uint8_t* key, int32_t keyLength);
 void freeSha384HmacContext(void* ctx);
-void hmacSha384Ctx(void* ctx, const uint8_t* data[], uint32_t dataLength[], uint8_t* mac, int32_t* macLength );
+void hmacSha384Ctx(void* ctx, const std::vector<const uint8_t*>& data,
+                   const std::vector<uint32_t>& dataLength,
+                   uint8_t* mac, int32_t* macLength );
 
 static int expand(uint8_t* prk, uint32_t prkLen, uint8_t* info, int32_t infoLen, int32_t L, uint32_t hashLen, uint8_t* outbuffer)
 {
@@ -426,8 +427,8 @@ static int expand(uint8_t* prk, uint32_t prkLen, uint8_t* info, int32_t infoLen,
     uint8_t *T;
     void* hmacCtx;
 
-    const uint8_t* data[4];      // 3 data pointers for HMAC data plus terminating NULL
-    uint32_t dataLen[4];
+    std::vector<const uint8_t*>data;
+    std::vector<uint32_t> dataLen;
     int32_t dataIdx = 0;
 
     uint8_t counter;
