@@ -18,16 +18,16 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <string.h>
-#include <stdio.h>
-#include <stdint.h>
+#include <cstring>
+#include <cstdio>
+#include <cstdint>
 
 #include <common/osSpecifics.h>
 
-#include <CryptoContextCtrl.h>
-#include <CryptoContext.h>
+#include "srtp/CryptoContextCtrl.h"
+#include "srtp/CryptoContext.h"
 
-#include <crypto/SrtpSymCrypto.h>
+#include "srtp/crypto/SrtpSymCrypto.h"
 
 
 CryptoContextCtrl::CryptoContextCtrl(uint32_t ssrc,

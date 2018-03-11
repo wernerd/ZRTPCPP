@@ -58,7 +58,7 @@
  */
 void hmac_sha256(const uint8_t* key, uint64_t key_length,
                  const uint8_t* data, uint64_t data_length,
-                 uint8_t* mac, uint32_t* mac_length );
+                 uint8_t* mac, uint32_t* mac_length);
 
 /**
  * Compute SHA256 HMAC over several data chunks.
@@ -71,10 +71,10 @@ void hmac_sha256(const uint8_t* key, uint64_t key_length,
  * @param key_length
  *    Length of the MAC key in bytes
  * @param data
- *    Points to an array of pointers that point to the data chunks. A NULL
+ *    Vector of pointers that point to the data chunks. A NULL
  *    pointer in an array element terminates the data chunks.
- * @param data_length
- *    Points to an array of integers that hold the length of each data chunk.
+ * @param dataLength
+ *    Vector of integers that hold the length of each data chunk.
  * @param mac
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 32 bytes (SHA256_DIGEST_LENGTH).
@@ -84,8 +84,8 @@ void hmac_sha256(const uint8_t* key, uint64_t key_length,
 
 void hmacSha256(const uint8_t* key, uint64_t key_length,
                 const std::vector<const uint8_t*>& data,
-                const std::vector<uint64_t>& data_length,
-                uint8_t* mac, uint32_t* mac_length );
+                const std::vector<uint64_t>& dataLength,
+                uint8_t* mac, uint32_t* mac_length);
 /**
  * @}
  */

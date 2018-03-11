@@ -25,8 +25,8 @@
  * @{
  */
 
-#include <crypto/hmac.h>
-#include <cryptcommon/macSkein.h>
+#include "crypto/hmac.h"
+#include "cryptcommon/macSkein.h"
 
 class SrtpSymCrypto;
 

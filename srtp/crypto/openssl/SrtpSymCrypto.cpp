@@ -20,25 +20,22 @@
 
 #define MAKE_F8_TEST
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <openssl/aes.h>                // the include of openSSL
-#include <crypto/SrtpSymCrypto.h>
+#include <srtp/crypto/SrtpSymCrypto.h>
 #include <cryptcommon/twofish.h>
-#include <string.h>
-#include <stdio.h>
-#include <common/osSpecifics.h>
 
-SrtpSymCrypto::SrtpSymCrypto(int algo):key(NULL), algorithm(algo) {
+SrtpSymCrypto::SrtpSymCrypto(int algo):key(nullptr), algorithm(algo) {
 }
 
 SrtpSymCrypto::SrtpSymCrypto( uint8_t* k, int32_t keyLength, int algo ):
-    key(NULL), algorithm(algo) {
+    key(nullptr), algorithm(algo) {
 
     setNewKey(k, keyLength);
 }
 
 SrtpSymCrypto::~SrtpSymCrypto() {
-    if (key != NULL) {
+    if (key != nullptr) {
         if (algorithm == SrtpEncryptionAESCM || algorithm == SrtpEncryptionAESF8) {
             memset(key, 0, sizeof(AES_KEY) );
         }
@@ -46,7 +43,7 @@ SrtpSymCrypto::~SrtpSymCrypto() {
             memset(key, 0, sizeof(Twofish_key));
         }
         delete[] (uint8_t*)key;
-        key = NULL;
+        key = nullptr;
     }
 }
 
@@ -54,7 +51,7 @@ static int twoFishInit = 0;
 
 bool SrtpSymCrypto::setNewKey(const uint8_t* k, int32_t keyLength) {
     // release an existing key before setting a new one
-    if (key != NULL)
+    if (key != nullptr)
         delete[] (uint8_t*)key;
 
     if (!(keyLength == 16 || keyLength == 32)) {
@@ -116,7 +113,7 @@ void SrtpSymCrypto::get_ctr_cipher_stream(uint8_t* output, uint32_t length,
 void SrtpSymCrypto::ctr_encrypt(const uint8_t* input, uint32_t input_length,
                            uint8_t* output, uint8_t* iv ) {
 
-    if (key == NULL)
+    if (key == nullptr)
         return;
 
     uint16_t ctr = 0;
@@ -148,7 +145,7 @@ void SrtpSymCrypto::ctr_encrypt(const uint8_t* input, uint32_t input_length,
 
 void SrtpSymCrypto::ctr_encrypt( uint8_t* data, uint32_t data_length, uint8_t* iv ) {
 
-    if (key == NULL)
+    if (key == nullptr)
         return;
 
     uint16_t ctr = 0;
@@ -233,7 +230,7 @@ void SrtpSymCrypto::f8_encrypt(const uint8_t* in, uint32_t in_length, uint8_t* o
 
     F8_CIPHER_CTX f8ctx;
 
-    if (key == NULL)
+    if (key == nullptr)
         return;
     /*
      * Get memory for the derived IV (IV')

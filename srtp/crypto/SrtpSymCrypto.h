@@ -26,7 +26,7 @@
  */
 
 #include <stdint.h>
-#include <CryptoContext.h>
+#include <srtp/CryptoContext.h>
 
 #ifndef SRTP_BLOCK_SIZE
 #define SRTP_BLOCK_SIZE 16

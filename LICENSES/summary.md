@@ -1,3 +1,7 @@
+This file contains a summary of files that ZRTP includes but do not use the Apache V2
+license. If files are missing please in this summary send me a short notice, anyway
+consult the file to see its license statement. 
+
 
 ### Files with Copyright (c) 1998-2010, Brian Gladman
 
@@ -16,6 +20,8 @@ Files in the `cryptocommon` directory:
 Files in the `srtp/crypto` directory:
 * sha1.c
 * sha1.h
+
+Files in the `zrtp/crypto` directory:
 * sha2.c
 * sha2.h
 

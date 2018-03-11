@@ -18,16 +18,16 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cstdint>
 
 #include <common/osSpecifics.h>
 
-#include <SrtpHandler.h>
-#include <CryptoContext.h>
-#include <CryptoContextCtrl.h>
+#include "srtp/SrtpHandler.h"
+#include "srtp/CryptoContext.h"
+#include "srtp/CryptoContextCtrl.h"
 
 bool SrtpHandler::decodeRtp(uint8_t* buffer, int32_t length, uint32_t *ssrc, uint16_t *seq, uint8_t** payload, int32_t *payloadlen)
 {

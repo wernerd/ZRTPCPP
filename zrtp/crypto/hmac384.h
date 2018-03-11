@@ -57,7 +57,7 @@
  */
 void hmac_sha384(const uint8_t* key, uint64_t key_length,
                  const uint8_t* data, uint64_t data_length,
-                 uint8_t* mac, uint32_t* mac_length );
+                 uint8_t* mac, uint32_t* mac_length);
 
 /**
  * Compute SHA384 HMAC over several data cunks.
@@ -83,7 +83,7 @@ void hmac_sha384(const uint8_t* key, uint64_t key_length,
 void hmacSha384(const uint8_t* key, uint64_t key_length,
                 const std::vector<const uint8_t*>& data,
                 const std::vector<uint64_t>& dataLength,
-                uint8_t* mac, uint32_t* mac_length );
+                uint8_t* mac, uint32_t* mac_length);
 /**
  * @}
  */

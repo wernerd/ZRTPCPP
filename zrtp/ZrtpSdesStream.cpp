@@ -66,7 +66,7 @@
  */
 static const char parseCrypto[] = "%d %99s %99s %n";
 
-static const int64_t maxTagValue = 999999999;
+// static const int64_t maxTagValue = 999999999; For some later use
 
 static const int minElementsCrypto = 3;
 
@@ -95,7 +95,7 @@ static const int minElementsCrypto = 3;
  * - the fixed separator character '|'
  * - %[0-9]:%d - parses and strore MKI value and MKI length, separated by ':'
  *
- * If the key parameter string does not contain the operional fields lifetime
+ * If the key parameter string does not contain the optional fields lifetime
  * and MKI information the respective parameters are not filled.
  */
 static const char parseKeyParam[] = " inline:%[A-Za-z0-9+/=]|%[0-9^]|%[0-9]:%d";

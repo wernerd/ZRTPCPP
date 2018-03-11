@@ -13,7 +13,7 @@ include_directories(BEFORE ${CMAKE_BINARY_DIR})
 include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/zrtp ${CMAKE_SOURCE_DIR}/bnlib)
 
 # **** setup the various crypto interface implementations ***
-# Twofish is a special case: its always a standalone modlue and thus
+# Twofish is a special case: its always a standalone module and thus
 # not specific to a library. Same is true for Skein hash.
 # NOTE: the standalone modules live in the 'crypto'
 
@@ -23,28 +23,27 @@ set(cryptcommon_srcs
     ${CMAKE_SOURCE_DIR}/cryptcommon/skein_block.c
     ${CMAKE_SOURCE_DIR}/cryptcommon/skeinApi.c
     ${CMAKE_SOURCE_DIR}/cryptcommon/twofish.c
-    ${CMAKE_SOURCE_DIR}/cryptcommon/twofish_cfb.c ${zrtp_skein_src})
+    ${CMAKE_SOURCE_DIR}/cryptcommon/twofish_cfb.c
+        ${zrtp_skein_src})
 
 if (OPENSSL_FOUND)
     set(crypto_src
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/zrtpDH.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/hmac256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/sha256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/hmac384.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/sha384.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/aesCFB.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/InitializeOpenSSL.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.cpp)
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/zrtpDH.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/hmac256.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/sha256.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/hmac384.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/sha384.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/aesCFB.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/InitializeOpenSSL.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.cpp
+            ${zrtp_crypto_includes})
 
 endif()
 
 if (CRYPTO_STANDALONE)
     set(crypto_src
         ${CMAKE_SOURCE_DIR}/cryptcommon/ZrtpRandom.cpp
-        ${CMAKE_SOURCE_DIR}/common/Thread.cpp
-        ${CMAKE_SOURCE_DIR}/common/MutexClass.cpp
-        ${CMAKE_SOURCE_DIR}/common/EventClass.cpp
-        ${zrtp_crypto_src} ${bnlib_src})
+        ${zrtp_standalone_crypto_src} ${bnlib_src})
 
     set(cryptcommon_srcs ${cryptcommon_srcs}
         ${CMAKE_SOURCE_DIR}/cryptcommon/aescrypt.c
@@ -64,7 +63,31 @@ if (SDES)
        ${CMAKE_SOURCE_DIR}/srtp/crypto/SrtpSymCrypto.cpp)
 endif()
 
-set(zrtpcpp_src ${zrtp_src} ${crypto_src} ${cryptcommon_srcs} ${zrtp_srtp_src})
+set(srtp_src
+        ${CMAKE_SOURCE_DIR}/srtp/CryptoContext.cpp
+        ${CMAKE_SOURCE_DIR}/srtp/CryptoContextCtrl.cpp
+        ${CMAKE_SOURCE_DIR}/srtp/SrtpHandler.cpp
+        ${CMAKE_SOURCE_DIR}/srtp/crypto/hmac.h
+        ${CMAKE_SOURCE_DIR}/srtp/crypto/sha1.h
+        ${CMAKE_SOURCE_DIR}/srtp/crypto/SrtpSymCrypto.h)
+
+if (CRYPTO_STANDALONE)
+    set(crypto_src_srtp
+            ${CMAKE_SOURCE_DIR}/srtp/crypto/hmac.cpp
+            ${CMAKE_SOURCE_DIR}/srtp/crypto/SrtpSymCrypto.cpp
+            ${CMAKE_SOURCE_DIR}/srtp/crypto/sha1.c)
+endif()
+
+if (OPENSSL_FOUND)
+    set(crypto_src_srtp
+            ${CMAKE_SOURCE_DIR}/srtp/crypto/openssl/hmac.cpp
+            ${CMAKE_SOURCE_DIR}/srtp/crypto/openssl/SrtpSymCrypto.cpp
+            ${CMAKE_SOURCE_DIR}/srtp/crypto/sha1.c)
+endif()
+
+
+set(zrtpcpp_src ${zrtp_src} ${crypto_src} ${cryptcommon_srcs} ${zrtp_srtp_src}
+        ${crypto_src_srtp} ${srtp_src})
 
 if(BUILD_STATIC AND NOT BUILD_SHARED)
     set(LIBRARY_BUILD_TYPE STATIC)

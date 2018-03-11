@@ -33,7 +33,7 @@
 
 #include <cstdint>
 #include <vector>
-#include "crypto/sha1.h"
+#include "srtp/crypto/sha1.h"
 
 #ifndef SHA1_DIGEST_LENGTH
 #define SHA1_DIGEST_LENGTH 20
@@ -68,7 +68,7 @@ typedef struct _hmacSha1Context {
 
 void hmac_sha1(const uint8_t* key, int64_t keyLength,
                const uint8_t* data, uint64_t dataLength,
-               uint8_t* mac, int32_t* macLength );
+               uint8_t* mac, int32_t* macLength);
 
 /**
  * Compute SHA1 HMAC over several data cunks.
@@ -93,7 +93,7 @@ void hmac_sha1(const uint8_t* key, int64_t keyLength,
 void hmac_sha1(const uint8_t* key, uint64_t keyLength,
                const std::vector<const uint8_t*>& data,
                const std::vector<uint64_t>& dataLength,
-               uint8_t* mac, int32_t* macLength );
+               uint8_t* mac, int32_t* macLength);
 
 /**
  * Create and initialize a SHA1 HMAC context.
@@ -142,7 +142,7 @@ void* initializeSha1HmacContext(void* ctx, uint8_t* key, uint64_t key_length);
  *    Point to an integer that receives the length of the computed HMAC.
  */
 void hmacSha1Ctx(void* ctx, const uint8_t* data, uint64_t data_length,
-                 uint8_t* mac, int32_t* mac_length );
+                 uint8_t* mac, int32_t* mac_length);
 
 /**
  * Compute SHA1 HMAC over several data cunks.
@@ -166,7 +166,7 @@ void hmacSha1Ctx(void* ctx, const uint8_t* data, uint64_t data_length,
 void hmacSha1Ctx(void* ctx,
                  const std::vector<const uint8_t*>& data,
                  const std::vector<uint64_t>& dataLength,
-                 uint8_t* mac, uint32_t* macLength );
+                 uint8_t* mac, uint32_t* macLength);
 
 /**
  * Free SHA1 HMAC context.

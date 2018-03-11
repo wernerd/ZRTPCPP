@@ -18,75 +18,74 @@
  * Authors: Werner Dittmann
  */
 
-#include <stdint.h>
+#include <cstdint>
 #include <openssl/hmac.h>
-#include <crypto/hmac.h>
+#include <srtp/crypto/hmac.h>
+#include <vector>
 
-void hmac_sha1(uint8_t * key, int32_t key_length,
-               const uint8_t* data, uint32_t data_length,
-               uint8_t* mac, int32_t* mac_length )
+void hmac_sha1(const uint8_t* key, int64_t keyLength,
+               const uint8_t* data, uint64_t dataLength,
+               uint8_t* mac, int32_t* macLength)
 {
-    HMAC(EVP_sha1(), key, key_length,
-         data, data_length, mac,
-         reinterpret_cast<uint32_t*>(mac_length) );
+    HMAC(EVP_sha1(), key, static_cast<int>(keyLength),
+         data, dataLength, mac,
+         reinterpret_cast<uint32_t*>(macLength));
 }
 
-void hmac_sha1( uint8_t* key, int32_t key_length,
-                const uint8_t* data_chunks[],
-                uint32_t data_chunck_length[],
-                uint8_t* mac, int32_t* mac_length ) {
-    HMAC_CTX ctx;
+void hmac_sha1(const uint8_t* key, uint64_t keyLength,
+               const std::vector<const uint8_t*>& data,
+               const std::vector<uint64_t>& dataLength,
+               uint8_t* mac, int32_t* macLength) {
+    HMAC_CTX ctx = {};
     HMAC_CTX_init(&ctx);
-    HMAC_Init_ex(&ctx, key, key_length, EVP_sha1(), NULL);
-    while (*data_chunks) {
-        HMAC_Update(&ctx, *data_chunks, *data_chunck_length);
-        data_chunks ++;
-        data_chunck_length ++;
+    HMAC_Init_ex(&ctx, key, static_cast<int>(keyLength), EVP_sha1(), NULL);
+    for (size_t i = 0, size = data.size(); i < size; i++) {
+        HMAC_Update(&ctx, data[i], dataLength[i]);
     }
-    HMAC_Final(&ctx, mac, reinterpret_cast<uint32_t*>(mac_length));
+    HMAC_Final(&ctx, mac, reinterpret_cast<uint32_t*>(macLength));
     HMAC_CTX_cleanup(&ctx);
 }
 
-void* createSha1HmacContext(uint8_t* key, int32_t key_length)
+void* createSha1HmacContext(const uint8_t* key, uint64_t keyLength)
 {
-    HMAC_CTX* ctx = (HMAC_CTX*)malloc(sizeof(HMAC_CTX));
+    auto* ctx = (HMAC_CTX*)malloc(sizeof(HMAC_CTX));
 
     HMAC_CTX_init(ctx);
-    HMAC_Init_ex(ctx, key, key_length, EVP_sha1(), NULL);
+    HMAC_Init_ex(ctx, key, static_cast<int>(keyLength), EVP_sha1(), nullptr);
     return ctx;
 }
 
-void* initializeSha1HmacContext(void* ctx, uint8_t* key, int32_t keyLength)
+void* initializeSha1HmacContext(void* ctx, uint8_t* key, uint64_t keyLength)
 {
-    HMAC_CTX *pctx = (HMAC_CTX*)ctx;
+    auto *pctx = (HMAC_CTX*)ctx;
 
     HMAC_CTX_init(pctx);
-    HMAC_Init_ex(pctx, key, keyLength, EVP_sha1(), NULL);
+    HMAC_Init_ex(pctx, key, static_cast<int>(keyLength), EVP_sha1(), nullptr);
     return pctx;
 }
 
-void hmacSha1Ctx(void* ctx, const uint8_t* data, uint32_t data_length,
-                uint8_t* mac, int32_t* mac_length)
+void hmacSha1Ctx(void* ctx, const uint8_t* data, uint64_t data_length,
+                 uint8_t* mac, int32_t* mac_length)
 {
-    HMAC_CTX* pctx = (HMAC_CTX*)ctx;
+    auto* pctx = (HMAC_CTX*)ctx;
 
-    HMAC_Init_ex(pctx, NULL, 0, NULL, NULL );
+    HMAC_Init_ex(pctx, nullptr, 0, nullptr, nullptr);
     HMAC_Update(pctx, data, data_length );
     HMAC_Final(pctx, mac, reinterpret_cast<uint32_t*>(mac_length) );
 }
 
-void hmacSha1Ctx(void* ctx, const uint8_t* data[], uint32_t data_length[],
-                uint8_t* mac, int32_t* mac_length )
+void hmacSha1Ctx(void* ctx,
+                 const std::vector<const uint8_t*>& data,
+                 const std::vector<uint64_t>& dataLength,
+                 uint8_t* mac, uint32_t* macLength)
 {
-    HMAC_CTX* pctx = (HMAC_CTX*)ctx;
+    auto* pctx = (HMAC_CTX*)ctx;
 
-    HMAC_Init_ex(pctx, NULL, 0, NULL, NULL );
-    while (*data) {
-        HMAC_Update(pctx, *data, *data_length);
-        data++;
-        data_length++;
+    HMAC_Init_ex(pctx, nullptr, 0, nullptr, nullptr);
+    for (size_t i = 0, size = data.size(); i < size; i++) {
+        HMAC_Update(pctx, data[i], dataLength[i]);
     }
-    HMAC_Final(pctx, mac, reinterpret_cast<uint32_t*>(mac_length) );
+    HMAC_Final(pctx, mac, reinterpret_cast<uint32_t*>(macLength) );
 }
 
 void freeSha1HmacContext(void* ctx)

@@ -18,14 +18,14 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <string.h>
-#include <stdio.h>
-#include <stdint.h>
+#include <cstring>
+#include <cstdio>
+#include <cstdint>
 
 #include <common/osSpecifics.h>
 
-#include <CryptoContext.h>
-#include <crypto/SrtpSymCrypto.h>
+#include "srtp/CryptoContext.h"
+#include "crypto/SrtpSymCrypto.h"
 
 CryptoContext::CryptoContext( uint32_t ssrc,
                               int32_t roc,
