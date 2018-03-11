@@ -18,7 +18,7 @@
 
 #include <cryptcommon/ZrtpRandom.h>
 #include <cryptcommon/aescpp.h>
-#include <common/Thread.h>
+#include <clients/tivi/timeoutHelper/Thread.h>
 #include <zrtp/crypto/sha2.h>
 
 static sha512_ctx mainCtx;

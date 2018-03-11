@@ -3,7 +3,7 @@
 // that do not (yet) support the full Unicode functions.
 //
 // The license for ICU code is available at:
-// http://source.icu-project.org/repos/icu/icu/trunk/license.html
+// https://www.unicode.org/copyright.html#License
 
 //
 // @author Werner Dittmann <Werner.Dittmann@t-online.de>

@@ -28,9 +28,9 @@ set(cryptcommon_srcs
 set(zrtp_tivi_src
     ${CMAKE_CURRENT_SOURCE_DIR}/CtZrtpSession.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/CtZrtpStream.cpp
-    ${CMAKE_SOURCE_DIR}/common/Thread.cpp
-    ${CMAKE_SOURCE_DIR}/common/MutexClass.cpp
-    ${CMAKE_SOURCE_DIR}/common/EventClass.cpp)
+        ${CMAKE_CURRENT_SOURCE_DIR}/timeoutHelper/Thread.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/timeoutHelper/MutexClass.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/timeoutHelper/EventClass.cpp)
 
 set(srtp_src
     ${CMAKE_SOURCE_DIR}/srtp/CryptoContext.cpp
