@@ -133,26 +133,13 @@ if (NOT CRYPTO_STANDALONE)
       message(FATAL_ERROR "No crypto library found")
   endif()
 else()
-    # For crypto standalone mode we need to configure the bnlib. In a first step
-    # without the tests and demos.
+    # For crypto standalone mode we need to configure the bnlib.
     check_include_files(stdint.h HAVE_STDINT_H)
     check_include_files(stdint.h HAVE_ASSERT_H)
     check_include_files(limits.h HAVE_LIMITS_H)
 
     check_function_exists(memmove HAVE_MEMMOVE)
     check_function_exists(memcpy HAVE_MEMCPY)
-
-    # TODO: check if we compile the tests for bnlib
-    #
-    # check_function_exists(clock_gettime HAVE_CLOCK_GETTIME)
-    # check_function_exists(getrusage HAVE_GETRUSAGE)
-    # check_function_exists(clock HAVE_CLOCK)
-    # check_function_exists(time HAVE_TIME)
-
-    # Check if Solaris-style gethrvtime() is available
-    # check_function_exists(gethrvtime HAVE_GETHRVTIME)
-    #
-    # until here
 
     # necessary and required modules checked, ready to generate config.h
     configure_file(${CMAKE_SOURCE_DIR}/bnlib/bnconfig.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/bnconfig.h)

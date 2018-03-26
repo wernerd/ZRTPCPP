@@ -1,5 +1,5 @@
 This file contains a summary of files that ZRTP includes but do not use the Apache V2
-license. If files are missing please in this summary send me a short notice, anyway
+license. If files are missing in this summary send me a short notice. In this case
 consult the file to see its license statement. 
 
 
@@ -138,9 +138,9 @@ The license is:
 
 #### Files in the `client` directory
 
-As already stated in the README file these files do not belong to the core ZRTP
+As already stated in the README these files do not belong to the core ZRTP
 implementation. They are examples how to use the ZRTP library and usually belong
-to other project which have their own license policy.
+to other projects which have their own license policy.
 
 Refer to the copyright statements of the source code in these directories, in
 particular the sqlite3 sources which have their own license.
