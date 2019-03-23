@@ -617,7 +617,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     hmacFunctionImpl(H0, HASH_IMAGE_SIZE, (uint8_t*)zrtpDH1.getHeaderBase(), len-(HMAC_SIZE), hmac, &macLen);
     zrtpDH1.setHMAC(hmac);
 
-    // We are definitly responder. Save the peer's hvi for later compare.
+    // We are definitely responder. Save the peer's hvi for later compare.
     memcpy(peerHvi, commit->getHvi(), HVI_SIZE);
 
     // We are responder. Release the pre-computed SHA context because it was prepared for Initiator.
@@ -677,7 +677,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
         return nullptr;
     }
 
-    // get memory to store DH result TODO: make it fixed memory
+    // get memory to store DH result
     DHss = new uint8_t[dhContext->getDhSize()];
     if (DHss == nullptr) {
         *errMsg = CriticalSWError;
@@ -706,14 +706,13 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
     // Compute the message Hash
     closeHashCtx(msgShaContext, messageHash);
     msgShaContext = nullptr;
-    // Now compute the S0, all dependend keys and the new RS1. The function
+    // Now compute the S0, all dependent keys and the new RS1. The function
     // also performs sign SAS callback if it's active.
     generateKeysInitiator(dhPart1, zidRec);
 
     delete dhContext;
     dhContext = nullptr;
 
-    // TODO: at initiator we can call signSAS at this point, don't delay until confirm1 received
     // store DHPart1 data temporarily until we can check HMAC after receiving Confirm1
     storeMsgTemp(dhPart1);
     return &zrtpDH2;
@@ -773,7 +772,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     dhContext->computeSecretKey(pvi, DHss);
 
     // Hash the Initiator's DH2 into the message Hash (other messages already prepared, see method prepareDHPart1().
-    // Use neotiated hash function
+    // Use negotiated hash function
     hashCtxFunction(msgShaContext, (unsigned char*)dhPart2->getHeaderBase(), dhPart2->getLength() * ZRTP_WORD_SIZE);
 
     closeHashCtx(msgShaContext, messageHash);
@@ -792,7 +791,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     // Fill in Confirm1 packet.
     zrtpConfirm1.setMessageType((uint8_t*)Confirm1Msg);
 
-    // Check if user verfied the SAS in a previous call and thus verfied
+    // Check if user verified the SAS in a previous call and thus verfied
     // the retained secret. Don't set the verified flag if paranoidMode is true.
     if (zidRec->isSasVerified() && !paranoidMode) {
         zrtpConfirm1.setSASFlag();
@@ -1010,7 +1009,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
     if (signSasSeen && signatureLength > 0 && confirm1->isSignatureLengthOk()) {
         signatureData = confirm1->getSignatureData();
         callback->checkSASSignature(sasHash);
-        // TODO: error handling if checkSASSignature returns false.
+        // error handling if checkSASSignature returns false? -> app (callback) should deal with this IMHO.
     }
     // now we are ready to save the new RS1 which inherits the verified
     // flag from old RS1
@@ -1210,7 +1209,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
         if (signSasSeen && signatureLength > 0 && confirm2->isSignatureLengthOk() ) {
             signatureData = confirm2->getSignatureData();
             callback->checkSASSignature(sasHash);
-            // TODO: error handling if checkSASSignature returns false.
+            // error handling if checkSASSignature returns false? -> app (callback) should deal with this IMHO.
         }
         // save new RS1, this inherits the verified flag from old RS1
         zidRec->setNewRs1((const uint8_t*)newRs1);
@@ -1364,7 +1363,7 @@ ZrtpPacketRelayAck* ZRtp::prepareRelayAck(ZrtpPacketSASrelay* srly, const uint32
 
     if (memcmp(confMac, srly->getHmac(), HMAC_SIZE) != 0) {
         *errMsg = ConfirmHMACWrong;
-        return nullptr;                // TODO - check error handling
+        return nullptr;
     }
     // Cast away the const for the IV - the standalone AES CFB modifies IV on return
     cipher->getDecrypt()(ekey, cipher->getKeylen(), (uint8_t*)srly->getIv(), (uint8_t*)srly->getFiller(), hmlen);
@@ -1425,7 +1424,7 @@ ZrtpPacketRelayAck* ZRtp::prepareRelayAck(ZrtpPacketSASrelay* srly, const uint32
     return &zrtpRelayAck;
 }
 
-// TODO Implement GoClear handling
+// NO GoClear handling
 #if 0
 ZrtpPacketClearAck* ZRtp::prepareClearAck(ZrtpPacketGoClear* gpkt) {
     sendInfo(Warning, WarningGoClearReceived);
@@ -1854,8 +1853,8 @@ bool ZRtp::verifyH2(ZrtpPacketCommit *commit) {
 
 void ZRtp::computeHvi(ZrtpPacketDHPart* dh, ZrtpPacketHello *hello) {
 
-    std::vector<const uint_8t *>data;
-    std::vector<uint64_t >length;
+    std::vector<const uint_8t *>data(3);
+    std::vector<uint64_t >length(3);
     /*
      * populate the vector to compute the HVI hash according to the
      * ZRTP specification.
@@ -1966,7 +1965,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
     /*
      * Select the real secrets into setD. The dhPart is DHpart1 message
      * received from responder. rs1IDr and rs2IDr are the expected ids using
-     * the initator's cached retained secrets.
+     * the initiator's cached retained secrets.
      */
     // Check which RS we shall use for first place (s1)
     detailInfo.secretsMatched = 0;
@@ -2028,7 +2027,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
     }
     /*
      * Ready to generate s0 here.
-     * The formular to compute S0 (Refer to ZRTP specification 5.4.4):
+     * The formula to compute S0 (Refer to ZRTP specification 5.4.4):
      *
       s0 = hash( counter | DHResult | "ZRTP-HMAC-KDF" | ZIDi | ZIDr | \
       total_hash | len(s1) | s1 | len(s2) | s2 | len(s3) | s3)
@@ -2038,12 +2037,12 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
      */
 
     /*
-     * These arrays hold the pointers and lengths of the data that must be
+     * These vectors hold the pointers and lengths of the data that must be
      * hashed to create S0.  According to the formula the max number of
      * elements to hash is 12, add one for the terminating "nullptr"
      */
-    std::vector<const uint_8t*> data;
-    std::vector<uint64_t> length;
+    std::vector<const uint_8t*> data(15);
+    std::vector<uint64_t> length(15);
 
     // we need a number of length data items, so define them here
     uint32_t counter, sLen[3];
@@ -2191,7 +2190,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
 
     /*
      * ready to generate s0 here.
-     * The formular to compute S0 (Refer to ZRTP specification 5.4.4):
+     * The formula to compute S0 (Refer to ZRTP specification 5.4.4):
      *
       s0 = hash( counter | DHResult | "ZRTP-HMAC-KDF" | ZIDi | ZIDr | \
       total_hash | len(s1) | s1 | len(s2) | s2 | len(s3) | s3)
@@ -2201,11 +2200,11 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
      */
 
     /*
-     * These arrays hold the pointers and lengths of the data that must be
+     * These vectors hold the pointers and lengths of the data that must be
      * hashed to create S0.
      */
-    std::vector<const uint_8t*> data;
-    std::vector<uint64_t> length;
+    std::vector<const uint_8t*> data(15);
+    std::vector<uint64_t> length(15);
 
     // we need a number of length data items, so define them here
     uint32_t counter, sLen[3];
@@ -2278,8 +2277,8 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
 void ZRtp::KDF(uint8_t* key, size_t keyLength, uint8_t* label, size_t labelLength,
                uint8_t* context, size_t contextLength, size_t L, uint8_t* output) {
 
-    std::vector<const uint8_t*>data;
-    std::vector<uint64_t> length;
+    std::vector<const uint8_t*>data(5);
+    std::vector<uint64_t> length(5);
     uint32_t macLen = 0;
 
     // Very first element is a fixed counter, big endian
@@ -2370,7 +2369,7 @@ void ZRtp::computeSRTPKeys() {
     }
     memcpy(KDFcontext+sizeof(ownZid)+sizeof(peerZid), messageHash, hashLength);
 
-    // Inititiator key and salt
+    // Initiator key and salt
     KDF(s0, hashLength, (unsigned char*)iniMasterKey, strlen(iniMasterKey)+1, KDFcontext, kdfSize, keyLen, srtpKeyI);
     KDF(s0, hashLength, (unsigned char*)iniMasterSalt, strlen(iniMasterSalt)+1, KDFcontext, kdfSize, 112, srtpSaltI);
 
@@ -2826,7 +2825,7 @@ void ZRtp::conf2AckSecure() {
 }
 
 int32_t ZRtp::compareCommit(ZrtpPacketCommit *commit) {
-    // TODO: enhance to compare according to rules defined in chapter 4.2,
+    // enhance to compare according to rules defined in chapter 4.2,
     // but we don't support Preshared.
     uint32_t len = 0;
     len = !multiStream ? HVI_SIZE : (4 * ZRTP_WORD_SIZE);
@@ -2851,21 +2850,21 @@ bool ZRtp::isPeerEnrolled() {
 }
 
 bool ZRtp::sendSASRelayPacket(uint8_t* sh, std::string render) {
-
+#ifdef ZRTP_SAS_RELAY_SUPPORT
     uint8_t confMac[MAX_DIGEST_LENGTH];
     uint32_t macLen;
     uint8_t* hkey, *ekey;
 
-    // If we are responder then the PBX used it's Initiator keys
+    // If we are responder then the PBX used its Initiator keys
     if (myRole == Responder) {
         hkey = hmacKeyR;
         ekey = zrtpKeyR;
-        // TODO: check signature length in zrtpConfirm1 and if not zero copy Signature data
+        // check signature length in zrtpConfirm1 and if not zero copy Signature data
     }
     else {
         hkey = hmacKeyI;
         ekey = zrtpKeyI;
-        // TODO: check signature length in zrtpConfirm2 and if not zero copy Signature data
+        //  check signature length in zrtpConfirm2 and if not zero copy Signature data
     }
     // Prepare IV data that we will use during confirm packet encryption.
     randomZRTP(randomIV, sizeof(randomIV));
@@ -2883,6 +2882,9 @@ bool ZRtp::sendSASRelayPacket(uint8_t* sh, std::string render) {
 
     stateEngine->sendSASRelay(&zrtpSasRelay);
     return true;
+#else
+    return false;
+#endif // ZRTP_SAS_RELAY_SUPPORT
 }
 
 std::string ZRtp::getSasType() {

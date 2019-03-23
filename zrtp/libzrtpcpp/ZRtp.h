@@ -453,9 +453,9 @@ class __EXPORT ZRtp {
     bool sendSASRelayPacket(uint8_t* sh, std::string render);
 
     /**
-     * Get the commited SAS rendering algorithm for this ZRTP session.
+     * Get the committed SAS rendering algorithm for this ZRTP session.
      * 
-     * @return the commited SAS rendering algorithm
+     * @return the committed SAS rendering algorithm
      */
     std::string getSasType();
  
@@ -556,7 +556,7 @@ class __EXPORT ZRtp {
       * Returns a pointer to the gather detailed information structure.
       *
       * This structure contains some detailed information about the negotiated
-      * algorithms, the chached and matched shared secrets.
+      * algorithms, the cached and matched shared secrets.
       */
      const zrtpInfo *getDetailInfo();
 
