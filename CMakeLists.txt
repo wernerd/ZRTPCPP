@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.0)
 
 PROJECT(libzrtpcpp)
 
@@ -110,6 +110,7 @@ endif()
 
 MESSAGE(STATUS "Configuring GNU ${PROJECT_NAME} ${VERSION} for ${PACKAGE}, commit: ${GIT_COMMIT} ...")
 
+set(CMAKE_MACOSX_RPATH 1)
 
 check_include_files(stdlib.h HAVE_STDLIB_H)
 check_include_files(string.h HAVE_STRING_H)
