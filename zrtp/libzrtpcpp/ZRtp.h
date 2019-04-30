@@ -139,7 +139,7 @@ class __EXPORT ZRtp {
      * engine.
      */
     ZRtp(uint8_t* myZid, ZrtpCallback* cb, std::string id,
-         ZrtpConfigure* config, bool mitmm= false, bool sasSignSupport= false);
+         ZrtpConfigure* config, bool mitm = false, bool sasSignSupport= false);
 
     /**
      * Destructor cleans up.

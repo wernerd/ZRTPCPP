@@ -37,25 +37,6 @@
 
 using namespace GnuZrtpCodes;
 
-/* disabled...but used in testing and debugging, probably should have a
-   controlling #define...
-   *
-static void hexdump(const char* title, const unsigned char *s, int l) {
-    int n=0;
-
-    if (s == nullptr) return;
-
-    fprintf(stderr, "%s",title);
-    for( ; n < l ; ++n)
-    {
-        if((n%16) == 0)
-            fprintf(stderr, "\n%04x",n);
-        fprintf(stderr, " %02x",s[n]);
-    }
-    fprintf(stderr, "\n");
-}
- * */
-
 /*
  * This method simplifies detection of libzrtpcpp inside Automake, configure
  * and friends
@@ -71,7 +52,7 @@ extern "C" {
 }
 #endif
 
-ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* config, bool mitmm, bool sasSignSupport):
+ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* config, bool mitm, bool sasSignSupport):
         callback(cb), dhContext(nullptr), DHss(nullptr), auxSecret(nullptr), auxSecretLength(0), rs1Valid(false),
         rs2Valid(false), msgShaContext(nullptr), hash(nullptr), cipher(nullptr), pubKey(nullptr), sasType(nullptr), authLength(nullptr),
         multiStream(false), multiStreamAvailable(false), peerIsEnrolled(false), mitmSeen(false), pbxSecretTmp(nullptr),
@@ -119,7 +100,7 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* conf
     zrtpHello_12.setZid(ownZid);
     zrtpHello_12.setVersion((uint8_t*)zrtpVersion_12);
 
-    if (mitmm) {                            // this session acts for a trusted MitM (PBX)
+    if (mitm) {                             // this session acts for a trusted MitM (PBX)
         zrtpHello_11.setMitmMode();
         zrtpHello_12.setMitmMode();
     }
