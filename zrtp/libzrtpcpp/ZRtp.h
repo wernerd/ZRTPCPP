@@ -883,11 +883,9 @@ private:
     /**
      * Pointers to negotiated hash and HMAC functions
      */
-    void (*hashFunction)(const uint8_t* data, uint64_t data_length, uint_8t *digest);
-
     void (*hashListFunction)(const std::vector<const uint8_t*>& data,
-                             const std::vector<uint64_t>& data_length,
-                             uint8_t* digest);
+                             const std::vector<uint64_t>& dataLength,
+                             uint8_t *digest);
 
     void (*hmacFunction)(const uint8_t* key, uint64_t key_length,
                          const uint8_t* data, uint64_t data_length,
@@ -904,25 +902,16 @@ private:
 
     void (*hashCtxFunction)(void* ctx, const uint8_t* data, uint64_t dataLength);
 
-    void (*hashCtxListFunction)(void* ctx, const std::vector<const uint8_t*>&, const std::vector<uint64_t>&);
-
     uint32_t hashLength;
 
     // Function pointers to implicit hash and hmac functions
-    void (*hashFunctionImpl)(const uint_8t *data,
+    void (*hashFunctionImpl)(const uint8_t *data,
                              uint64_t data_length,
-                             uint_8t *digest);
-
-    void (*hashListFunctionImpl)(const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength,
-                                 unsigned char *digest);
+                             uint8_t *digest);
 
     void (*hmacFunctionImpl)(const uint8_t* key, uint64_t key_length,
                              const uint8_t* data, uint64_t data_length,
                              uint8_t* mac, uint32_t* mac_length);
-
-    void (*hmacListFunctionImpl)(const uint8_t* key, uint64_t key_length,
-                                 const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength,
-                                 uint8_t* mac, uint32_t* mac_length );
 
     int32_t hashLengthImpl;
 

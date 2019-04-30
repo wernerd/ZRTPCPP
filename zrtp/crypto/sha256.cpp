@@ -21,7 +21,7 @@
 #include <zrtp/crypto/sha2.h>
 #include <zrtp/crypto/sha256.h>
 
-void sha256(const uint_8t *data, uint64_t dataLength, uint8_t *digest )
+void sha256(const uint8_t *data, uint64_t dataLength, uint8_t *digest )
 {
     sha256_ctx ctx = {};
 
@@ -30,7 +30,7 @@ void sha256(const uint_8t *data, uint64_t dataLength, uint8_t *digest )
     sha256_end(digest, &ctx);
 }
 
-void sha256(const std::vector<const uint8_t*>& data, const std::vector<uint_64t>& dataLength, uint8_t *digest)
+void sha256(const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength, uint8_t *digest)
 {
     sha256_ctx ctx  = {};
 
