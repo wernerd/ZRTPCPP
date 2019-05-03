@@ -135,11 +135,11 @@ class __EXPORT ZRtp {
     } HelloPacketVersion;
 
     /**
-     * Constructor intializes all relevant data but does not start the
+     * Constructor initializes all relevant data but does not start the
      * engine.
      */
-    ZRtp(uint8_t* myZid, ZrtpCallback* cb, std::string id,
-         ZrtpConfigure* config, bool mitm = false, bool sasSignSupport= false);
+    ZRtp(uint8_t* myZid, ZrtpCallback* cb, const std::string& id,
+         std::shared_ptr<ZrtpConfigure>& config, bool mitm = false, bool sasSignSupport= false);
 
     /**
      * Destructor cleans up.
@@ -290,47 +290,6 @@ class __EXPORT ZRtp {
     /**
      * Get Multi-stream parameters.
      *
-     * Deprecated - use  getMultiStrParams(ZRtp **zrtpMaster);
-     * 
-     * Use this method to get the Multi-stream that were computed during
-     * the ZRTP handshake. An application may use these parameters to
-     * enable multi-stream processing for an associated SRTP session.
-     *
-     * Refer to chapter 4.4.2 in the ZRTP specification for further details
-     * and restriction how and when to use multi-stream mode.
-     *
-     * @return
-     *    a string that contains the multi-stream parameters. The application
-     *    must not modify the contents of this string, it is opaque data. The
-     *    application may hand over this string to a new ZrtpQueue instance
-     *    to enable multi-stream processing for this ZrtpQueue.
-     *    If ZRTP was not started or ZRTP is not yet in secure state the method
-     *    returns an empty string.
-     */
-    DEPRECATED_ZRTP std::string getMultiStrParams() {return getMultiStrParams(NULL); }
-
-    /**
-     * Set Multi-stream parameters.
-     *
-     * Deprecated - use setMultiStrParams(std::string parameters, ZRtp* zrtpMaster);
-     * 
-     * Use this method to set the parameters required to enable Multi-stream
-     * processing of ZRTP. The multi-stream parameters must be set before the
-     * application starts the ZRTP protocol engine.
-     *
-     * Refer to chapter 4.4.2 in the ZRTP specification for further details
-     * of multi-stream mode.
-     *
-     * @param parameters
-     *     A string that contains the multi-stream parameters that this
-     *     new ZrtpQueue instanace shall use. See also
-     *     <code>getMultiStrParams()</code>
-     */
-    DEPRECATED_ZRTP void setMultiStrParams(std::string parameters) { setMultiStrParams(parameters, NULL);}
-
-    /**
-     * Get Multi-stream parameters.
-     *
      * Use this method to get the Multi-stream that were computed during
      * the ZRTP handshake. An application may use these parameters to
      * enable multi-stream processing for an associated SRTP session.
@@ -361,8 +320,7 @@ class __EXPORT ZRtp {
      * of multi-stream mode.
      *
      * @param parameters
-     *     A string that contains the multi-stream parameters that this
-     *     new ZrtpQueue instanace shall use. See also
+     *     A string that contains the multi-stream parameters. See also
      *     <code>getMultiStrParams(ZRtp **zrtpMaster)</code>
      * @param zrtpMaster
      *     The pointer of the ZRTP master stream.
@@ -450,7 +408,7 @@ class __EXPORT ZRtp {
      * @param sh the full SAS hash value, 32 bytes
      * @param render the SAS rendering algorithm
      */
-    bool sendSASRelayPacket(uint8_t* sh, std::string render);
+    bool sendSASRelayPacket(uint8_t* sh, const std::string& render);
 
     /**
      * Get the commited SAS rendering algorithm for this ZRTP session.
@@ -568,18 +526,18 @@ class __EXPORT ZRtp {
      std::string getPeerClientId();
 
      /**
-      * Get peer's protocl version string.
+      * Get peer's protocol version string.
       *
       * @return the peer's protocol version or an empty @c string if not set.
       */
-     std::string getPeerProtcolVersion();
+     std::string getPeerProtocolVersion();
 
      /**
       * Get number of supported ZRTP protocol versions.
       *
       * @return the number of supported ZRTP protocol versions.
       */
-     int32_t getNumberSupportedVersions() {return SUPPORTED_ZRTP_VERSIONS;}
+     static int32_t getNumberSupportedVersions() {return SUPPORTED_ZRTP_VERSIONS;}
 
      /**
       * Get negotiated ZRTP protocol version.
@@ -695,6 +653,10 @@ class __EXPORT ZRtp {
       * @brief Get status of our peer's disclosure flag
       */
      bool isPeerDisclosureFlag(){ return peerDisclosureFlagSeen; }
+
+     ZIDCache& getZidCache() { return configureAlgos->getZidCache(); }
+
+     std::shared_ptr<ZrtpConfigure> getZrtpConfigure() { return configureAlgos; }
 
 private:
      typedef union _hashCtx {
@@ -834,8 +796,6 @@ private:
     uint8_t peerHelloVersion[ZRTP_WORD_SIZE + 1];   // +1 for nul byte
 
     // We get the peer's H? from the message where length is defined as 8 words
-    uint8_t peerH0[8*ZRTP_WORD_SIZE];
-    uint8_t peerH1[8*ZRTP_WORD_SIZE];
     uint8_t peerH2[8*ZRTP_WORD_SIZE];
     uint8_t peerH3[8*ZRTP_WORD_SIZE];
 
@@ -975,7 +935,8 @@ private:
     /**
      * Configuration data which algorithms to use.
      */
-    ZrtpConfigure configureAlgos;
+    std::shared_ptr<ZrtpConfigure> configureAlgos;
+
     /**
      * Pre-initialized packets.
      */
@@ -985,7 +946,7 @@ private:
     ZrtpPacketHelloAck zrtpHelloAck;
     ZrtpPacketConf2Ack zrtpConf2Ack;
 //    ZrtpPacketClearAck zrtpClearAck;
-    ZrtpPacketGoClear  zrtpGoClear;
+//    ZrtpPacketGoClear  zrtpGoClear;
     ZrtpPacketError    zrtpError;
     ZrtpPacketErrorAck zrtpErrorAck;
     ZrtpPacketDHPart   zrtpDH1;
@@ -998,7 +959,6 @@ private:
     ZrtpPacketRelayAck zrtpRelayAck;
 
     HelloPacketVersion helloPackets[MAX_ZRTP_VERSIONS + 1];
-    int32_t highestZrtpVersion;
 
     /// Pointer to Hello packet sent to partner, initialized in ZRtp, modified by ZrtpStateClass
     ZrtpPacketHello* currentHelloPacket;
@@ -1041,7 +1001,7 @@ private:
 
     ZRtp* masterStream;                    // This is the master stream in case this is a multi-stream
     std::vector<std::string> peerNonces;   // Store nonces we got from our partner. Using std::string
-                                           // just simplifies memnory management, nonces are binary data, not strings :-)
+                                           // just simplifies memory management, nonces are binary data, not strings :-)
     /**
      * Enable or disable paranoid mode.
      *
@@ -1249,7 +1209,7 @@ private:
      */
     void computeHvi(ZrtpPacketDHPart* dh, ZrtpPacketHello *hello);
 
-    void computeSharedSecretSet(ZIDRecord *zidRec);
+    void computeSharedSecretSet(ZIDRecord *zidRecord);
 
     void computeAuxSecretIds();
 
@@ -1258,9 +1218,9 @@ private:
     void KDF(uint8_t* key, size_t keyLength, uint8_t* label, size_t labelLength,
                uint8_t* context, size_t contextLength, size_t L, uint8_t* output);
 
-    void generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec);
+    void generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRecord);
 
-    void generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec);
+    void generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRecord);
 
     void generateKeysMultiStream();
 
@@ -1637,7 +1597,7 @@ private:
       * @param hpv
       *     Pointer to hello packet version structure.
       */
-     void setClientId(std::string id, HelloPacketVersion* hpv);
+     void setClientId(const std::string& id, HelloPacketVersion* hpv);
      
      /**
       * Check and set a nonce.

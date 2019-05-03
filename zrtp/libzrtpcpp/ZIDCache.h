@@ -25,7 +25,7 @@
  * @file ZIDCache.h
  * @brief ZID cache management
  *
- * A ZID file stores (caches) some data that helps ZRTP to achives its
+ * A ZID file stores (caches) some data that helps ZRTP to achieve its
  * key continuity feature. See @c ZIDRecord for further info which data
  * the ZID file contains.
  *
@@ -43,26 +43,27 @@
 
 class ZIDCache;
 
-__EXPORT ZIDCache* getZidCacheInstance();
-
-
 class __EXPORT ZIDCache {
 
 public:
+
+    typedef enum _CacheTypes {
+        File = 1,
+        Database = 2,
+        NoCache = 4
+    } CacheTypes;
 
     /**
      * @brief Destructor.
      * Define a virtual destructor to enable cleanup in derived classes.
      */
-    virtual ~ZIDCache() {};
+    virtual ~ZIDCache() = default;
 
     /**
      * @brief Open the named ZID file and return a ZID file class.
      *
      * This static function either opens an existing ZID file or
-     * creates a new ZID file with the given name. The ZIDCache is a
-     * singleton, thus only <em>one</em> ZID file can be open at one
-     * time.
+     * creates a new ZID file with the given name.
      *
      * To open another ZID file you must close the active ZID file
      * first.
@@ -155,7 +156,7 @@ public:
      * @param name the name string
      *
      */
-    virtual void putPeerName(const uint8_t *peerZid, const std::string name) =0;
+    virtual void putPeerName(const uint8_t *peerZid, const std::string& name) =0;
 
     /**
      * @brief Clean the cache - only for ZID cache with Sqlite3 backend.
@@ -228,7 +229,7 @@ public:
      */
     virtual void *readNextRecord(void *stmt, std::string *output) =0;
 
-    virtual void closeOpenStatment(void *stmt) =0;
+    virtual void closeOpenStatement(void *stmt) =0;
 
 };
 

@@ -79,7 +79,7 @@ class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
      * @param config
      *    Pointer to ZrtpConfigure data.
      */
-    void configureHello(ZrtpConfigure* config);
+    void configureHello(ZrtpConfigure& config);
 
     /// Get version number from Hello message, fixed ASCII character array
     uint8_t* getVersion()  { return helloHeader->version; };

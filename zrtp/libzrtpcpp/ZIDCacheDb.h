@@ -50,46 +50,45 @@ class __EXPORT ZIDCacheDb: public ZIDCache {
 private:
 
     void *zidFile;
-    unsigned char associatedZid[IDENTIFIER_LEN];
+    unsigned char associatedZid[IDENTIFIER_LEN] = {0};
 
-    dbCacheOps_t cacheOps;
+    dbCacheOps_t cacheOps = { nullptr };
 
-    char errorBuffer[DB_CACHE_ERR_BUFF_SIZE];
+    char errorBuffer[DB_CACHE_ERR_BUFF_SIZE] = {'\0'};
 
-    void createZIDFile(char* name);
     void formatOutput(remoteZidRecord_t *remZid, const char *nameBuffer, std::string *output);
 
 public:
 
-    ZIDCacheDb(): zidFile(NULL) {
+    ZIDCacheDb(): zidFile(nullptr) {
         getDbCacheOps(&cacheOps);
     };
 
-    ~ZIDCacheDb();
+    ~ZIDCacheDb() override;
 
-    int open(char *name);
+    int open(char *name) override;
 
-    bool isOpen() { return (zidFile != NULL); };
+    bool isOpen() override { return (zidFile != nullptr); };
 
-    void close();
+    void close() override;
 
-    ZIDRecord *getRecord(unsigned char *zid);
+    ZIDRecord *getRecord(unsigned char *zid) override;
 
-    unsigned int saveRecord(ZIDRecord *zidRecord);
+    unsigned int saveRecord(ZIDRecord *zidRecord) override;
 
-    const unsigned char* getZid() { return associatedZid; };
+    const unsigned char* getZid() override { return associatedZid; };
 
-    int32_t getPeerName(const uint8_t *peerZid, std::string *name);
+    int32_t getPeerName(const uint8_t *peerZid, std::string *name) override;
 
-    void putPeerName(const uint8_t *peerZid, const std::string name);
+    void putPeerName(const uint8_t *peerZid, const std::string& name) override;
 
-    void cleanup();
+    void cleanup() override;
 
-    void *prepareReadAll();
+    void *prepareReadAll() override;
 
-    void *readNextRecord(void *stmt, std::string *name);
+    void *readNextRecord(void *stmt, std::string *name) override;
 
-    void closeOpenStatment(void *stmt);
+    void closeOpenStatement(void *stmt) override;
 };
 
 /**

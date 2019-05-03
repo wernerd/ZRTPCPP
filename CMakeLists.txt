@@ -38,6 +38,7 @@ option(NO_CACHE "Use an always empty cache ZRTP - for testing mainly." OFF)
 option(SQLCIPHER "Use SQLCipher DB as backend for ZRTP cache." OFF)
 option(SDES "Include SDES when not building for CCRTP." OFF)
 option(AXO "Include Axolotl support when not building for CCRTP." OFF)
+option(TESTS "Generate Unit test which use Catch2 framework." OFF)
 
 option(ANDROID "Generate Android makefiles (Android.mk)" OFF)
 option(JAVA "Generate Java support files (requires JDK and SWIG)" OFF)
@@ -168,23 +169,19 @@ if (NOT ANDROID)
         if (SQLCIPHER_FOUND)
             set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES} ${SQLCIPHER_INCLUDE_DIRS})
             check_include_files(sqlite3.h HAVE_SQLCIPHER_H)
-            set(LIBS ${LIBS} -lsqlcipher)
-            MESSAGE(STATUS "Using SQlCipher based ZRTP cache")
+            set(LIBS ${LIBS} ${SQLCIPHER_LDFLAGS})
+            MESSAGE(STATUS "Using SQlCipher based ZRTP cache: ${SQLCIPHER_LIBRARIES} ${SQLCIPHER_LIBRARY_DIRS} ${SQLCIPHER_LDFLAGS}")
             add_definitions(-DSQL_CIPHER -DSQLITE_HAS_CODEC)
         else()
             message(FATAL_ERROR "SQLCipher library not found")
         endif()
-    elseif(NO_CACHE)
-        MESSAGE(STATUS "Building with always empty cache backend")
-    else()
-        MESSAGE(STATUS "Using file based ZRTP cache")
     endif()
 endif()
 
 # necessary and required modules checked, ready to generate config.h in top-level build directory
 configure_file(config.h.cmake ${CMAKE_BINARY_DIR}/config.h)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -std=c++11 -g -O2 -fno-strict-aliasing -Wno-unknown-pragmas")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -std=c++14 -g -O2 -fno-strict-aliasing -Wno-unknown-pragmas")
 
 if(CMAKE_COMPILER_IS_GNUCXX)
     add_definitions(-DNEW_STDCPP)
@@ -331,23 +328,18 @@ set(zrtp_standalone_crypto_src
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha2.c
         ${zrtp_crypto_includes})
 
-if (NOT SQLITE AND NOT SQLCIPHER)
-    if (NO_CACHE)
-        set(zrtp_src ${zrtp_src_no_cache}
-                ${CMAKE_SOURCE_DIR}/zrtp/ZIDCacheEmpty.cpp
-                ${CMAKE_SOURCE_DIR}/zrtp/ZIDRecordEmpty.cpp)
+set(zrtp_src ${zrtp_src_no_cache}
+        ${CMAKE_SOURCE_DIR}/zrtp/ZIDCacheEmpty.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/ZIDRecordEmpty.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/ZIDCacheFile.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/ZIDRecordFile.cpp)
 
-    else()
-        set(zrtp_src ${zrtp_src_no_cache}
-                ${CMAKE_SOURCE_DIR}/zrtp/ZIDCacheFile.cpp
-                ${CMAKE_SOURCE_DIR}/zrtp/ZIDRecordFile.cpp)
-    endif()
-else()
-    set(zrtp_src ${zrtp_src_no_cache}
-            ${CMAKE_SOURCE_DIR}/zrtp/ZIDCacheDb.cpp
-            ${CMAKE_SOURCE_DIR}/zrtp/ZIDRecordDb.cpp
-            ${CMAKE_SOURCE_DIR}/zrtp/zrtpCacheSqliteBackend.c)
-
+if (SQLITE OR SQLCIPHER)
+    add_definitions(-DZID_DATABASE)
+    set(zrtp_src ${zrtp_src}
+        ${CMAKE_SOURCE_DIR}/zrtp/ZIDCacheDb.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/ZIDRecordDb.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/zrtpCacheSqliteBackend.c)
 endif()
 
 if (CCRTP)
@@ -361,6 +353,10 @@ endif()
 
 if (CORE_LIB)
     add_subdirectory(clients/no_client)
+endif()
+
+if (TESTS)
+    add_subdirectory(unittests)
 endif()
 
 ##very usefull for macosx, specially when using gtkosx bundler

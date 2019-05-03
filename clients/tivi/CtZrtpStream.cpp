@@ -471,7 +471,7 @@ int CtZrtpStream::isSecure() {
 #if __WORDSIZE == 64
 #define T_ZRTP_L(_K,_I)                                                \
         if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0){              \
-            return snprintf(p, maxLen, "%ld", _I);}
+            return snprintf(p, maxLen, "%lld", _I);}
 #else
 #define T_ZRTP_L(_K,_I)                                                \
         if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0){              \
@@ -513,7 +513,7 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
 
     T_ZRTP_L("sec_since", zrtpEngine->getSecureSince());
 
-    std::string client = zrtpEngine->getPeerProtcolVersion();
+    std::string client = zrtpEngine->getPeerProtocolVersion();
     if (role != NoRole) {
         if (useZrtpTunnel)
             client.append(role == Initiator ? "(IT)" : "(RT)");
@@ -589,10 +589,10 @@ int CtZrtpStream::enrollAccepted(char *p) {
     std::string name;
 
     zrtpEngine->getPeerZid(peerZid);
-    int32_t nmLen = getZidCacheInstance()->getPeerName(peerZid, &name);
+    int32_t nmLen = zrtpEngine->getZidCache().getPeerName(peerZid, &name);
 
     if (nmLen == 0)
-        getZidCacheInstance()->putPeerName(peerZid, std::string(p));
+        zrtpEngine->getZidCache().putPeerName(peerZid, std::string(p));
     return CtZrtpSession::ok;
 }
 
@@ -603,10 +603,10 @@ int CtZrtpStream::enrollDenied() {
     std::string name;
 
     zrtpEngine->getPeerZid(peerZid);
-    int32_t nmLen = getZidCacheInstance()->getPeerName(peerZid, &name);
+    int32_t nmLen = zrtpEngine->getZidCache().getPeerName(peerZid, &name);
 
     if (nmLen == 0)
-        getZidCacheInstance()->putPeerName(peerZid, std::string(""));
+        zrtpEngine->getZidCache().putPeerName(peerZid, std::string(""));
     return CtZrtpSession::ok;
 }
 
@@ -998,7 +998,7 @@ void CtZrtpStream::srtpSecretsOn(std::string cipher, std::string sas, bool verif
             std::string name;
 
             zrtpEngine->getPeerZid(peerZid);
-            getZidCacheInstance()->getPeerName(peerZid, &name);
+            zrtpEngine->getZidCache().getPeerName(peerZid, &name);
             zrtpUserCallback->onPeer(session, (char*)name.c_str(), (int)verified, index);
 
             // If SAS does not contain a : then it's a short SAS

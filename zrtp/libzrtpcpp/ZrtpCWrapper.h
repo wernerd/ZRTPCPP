@@ -22,7 +22,7 @@
  * @file ZrtpCWrapper.h
  * @brief The GNU ZRTP C-to-C++ wrapper.
  *
- * To avoid any include of C++ header files some structure, defines, and
+ * To avoid any include of C++ header files some structures, defines, and
  * enumerations are repeated in this file. Refer to the inline comments if
  * you modify the file.
  *
@@ -599,17 +599,39 @@ extern "C"
      * @param mitmMode
      *     A trusted Mitm (PBX) must set this to true. The ZRTP engine sets
      *     the M Flag in the Hello packet to announce a trusted MitM.
+     * @param config
+     *     Optional, an initialized ZrtpConfiguration, default: nullptr. If the caller does not
+     *     set this parameter the functions initializes the configuration with
+     *     standard values which provide a high degree of security.
+     *
+     *     If the caller initializes an own ZrtpConfigure object then the caller should not call
+     *     ZrtpConfigure::setZidCache() to initialize/set the ZID cache file field. The function
+     *     initializes the ZID cache backend according to the parameters @c filename and @c cacheType.
+     * @param cacheType
+     *     Optional, which cache backend to use, default: @c File. Either a @c File, a @c Database
+     *     or @c NoCache.
+     *
+     *     In case of a database cache backend the caller shall check the C-macro @c ZID_DATABASE to
+     *     see if the database backend was configured during build (cmake). This could be either
+     *     a @c Sqlite or a @c SqlCipher backend.
+     *
+     *     Note: There is only one backend for Sqlite and SqlCipher. It's just to avoid two database
+     *     libraries if the app already uses SqlCipher. There is no need to really encrypt the ZRTP
+     *     cache data.
      * @returns
-     *      Pointer to the ZrtpContext
+     *      @ true if initialization was successful, @c false if it failed. Usually because
+     *      ZIDCache file could not initialized.
      *
      * @see zrtp_InitializeConfig
      */
-    void zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext,
+    bool zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext,
                                    zrtp_Callbacks *cb,
                                    const char* id,
                                    const char* zidFilename,
                                    void* userData,
-                                   int32_t mitmMode);
+                                   int32_t mitmMode,
+                                   ZIDCache::CacheTypes cacheType = ZIDCache::File,
+                                   std::shared_ptr<ZrtpConfigure> config = nullptr);
 
     /**
      * Destroy the ZRTP wrapper and its underlying objects.
@@ -975,13 +997,10 @@ extern "C"
      * 
      * @param zrtpContext
      *    Pointer to the opaque ZrtpContext structure.
-     * @return the commited SAS rendering algorithm. The caller must @c free() the buffer
+     * @return the committed SAS rendering algorithm. The caller must @c free() the buffer
      *    if it does not use the string anymore.
      */
     const char* zrtp_getSasType(ZrtpContext* zrtpContext);
-#ifdef  __GNUC__ 
-#warning zrtp_getSasType(...) API changed - caller shall free() returned data
-#endif
 
     /**
      * Get the computed SAS hash for this ZRTP session.
@@ -1091,13 +1110,10 @@ extern "C"
      /**
       * Get number of supported ZRTP protocol versions.
       *
-      * @param zrtpContext
-      *    Pointer to the opaque ZrtpContext structure.
-      *
       * @return the number of supported ZRTP protocol versions or -1 in case
       *         of an error, for example non-initialized data.
       */
-     int32_t zrtp_getNumberSupportedVersions(ZrtpContext* zrtpContext);
+     int32_t zrtp_getNumberSupportedVersions();
 
      /**
       * Get negotiated ZRTP protocol versions.

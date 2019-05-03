@@ -40,6 +40,17 @@
 #define FILE_TYPE_RECORD    1
 #define SQLITE_TYPE_RECORD  2
 
+/*
+ * The flag field stores the following bitflags
+ */
+static const uint32_t Valid            = 0x1;
+static const uint32_t SASVerified      = 0x2;
+static const uint32_t RS1Valid         = 0x4;
+static const uint32_t RS2Valid         = 0x8;
+static const uint32_t MITMKeyAvailable = 0x10;
+static const uint32_t OwnZIDRecord     = 0x20;
+
+
 #if defined(__cplusplus)
 /**
  * Interface for classes that implement a ZID cache record.
@@ -57,7 +68,7 @@ public:
      * @brief Destructor.
      * Define a virtual destructor to enable cleanup in derived classes.
      */
-    virtual ~ZIDRecord() {};
+    virtual ~ZIDRecord() = default;
 
     /**
      * @brief Set the @c ZID in the record.

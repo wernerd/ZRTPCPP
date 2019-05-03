@@ -36,6 +36,7 @@
 #include <libzrtpcpp/EmojiBase32.h>
 
 using namespace GnuZrtpCodes;
+using namespace std;
 
 /*
  * This method simplifies detection of libzrtpcpp inside Automake, configure
@@ -52,11 +53,11 @@ extern "C" {
 }
 #endif
 
-ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* config, bool mitm, bool sasSignSupport):
+ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, const string& id, shared_ptr<ZrtpConfigure>& config, bool mitm, bool sasSignSupport):
         callback(cb), dhContext(nullptr), DHss(nullptr), auxSecret(nullptr), auxSecretLength(0), rs1Valid(false),
         rs2Valid(false), msgShaContext(nullptr), hash(nullptr), cipher(nullptr), pubKey(nullptr), sasType(nullptr), authLength(nullptr),
         multiStream(false), multiStreamAvailable(false), peerIsEnrolled(false), mitmSeen(false), pbxSecretTmp(nullptr),
-        enrollmentMode(false), configureAlgos(*config), zidRec(nullptr), saveZidRecord(true), signSasSeen(false),
+        enrollmentMode(false), configureAlgos(config), zidRec(nullptr), saveZidRecord(true), signSasSeen(false),
         masterStream(nullptr), peerDisclosureFlagSeen(false) {
 
 #ifdef ZRTP_SAS_RELAY_SUPPORT
@@ -89,13 +90,13 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* conf
     sha256(H2, HASH_IMAGE_SIZE, H3);        // H3
 
     // configure all supported Hello packet versions
-    zrtpHello_11.configureHello(&configureAlgos);
+    zrtpHello_11.configureHello(*configureAlgos);
     zrtpHello_11.setH3(H3);                    // set H3 in Hello, included in helloHash
     zrtpHello_11.setZid(ownZid);
     zrtpHello_11.setVersion((uint8_t*)zrtpVersion_11);
 
 
-    zrtpHello_12.configureHello(&configureAlgos);
+    zrtpHello_12.configureHello(*configureAlgos);
     zrtpHello_12.setH3(H3);                 // set H3 in Hello, included in helloHash
     zrtpHello_12.setZid(ownZid);
     zrtpHello_12.setVersion((uint8_t*)zrtpVersion_12);
@@ -347,7 +348,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
      * To create this DH packet we have to compute the retained secret ids,
      * thus get our peer's retained secret data first.
      */
-    zidRec = getZidCacheInstance()->getRecord(peerZid);
+    zidRec = getZidCache().getRecord(peerZid);
 
     //Compute the Initiator's and Responder's retained secret ids.
     computeSharedSecretSet(zidRec);
@@ -776,7 +777,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     if (zidRec->isSasVerified() && !paranoidMode) {
         zrtpConfirm1.setSASFlag();
     }
-    if (configureAlgos.isDisclosureFlag()) {
+    if (configureAlgos->isDisclosureFlag()) {
         zrtpConfirm1.setDisclosureFlag();
     }
     zrtpConfirm1.setExpTime(0xFFFFFFFF);
@@ -907,7 +908,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
 
     // Fill in Confirm1 packet.
     zrtpConfirm1.setMessageType((uint8_t*)Confirm1Msg);
-    if (configureAlgos.isDisclosureFlag()) {
+    if (configureAlgos->isDisclosureFlag()) {
         zrtpConfirm1.setDisclosureFlag();
     }
     zrtpConfirm1.setExpTime(0xFFFFFFFF);
@@ -1002,7 +1003,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
     if (sasFlag) {
         zrtpConfirm2.setSASFlag();
     }
-    if (configureAlgos.isDisclosureFlag()) {
+    if (configureAlgos->isDisclosureFlag()) {
         zrtpConfirm2.setDisclosureFlag();
     }
     zrtpConfirm2.setExpTime(0xFFFFFFFF);
@@ -1030,7 +1031,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
     }
 #endif
     if (saveZidRecord)
-        getZidCacheInstance()->saveRecord(zidRec);
+        getZidCache().saveRecord(zidRec);
 
     // Encrypt and HMAC with Initiator's key - we are Initiator here
     hmlen = (zrtpConfirm2.getLength() - (uint)9) * ZRTP_WORD_SIZE;
@@ -1120,7 +1121,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2MultiStream(ZrtpPacketConfirm* confirm1,
 
     // now generate my Confirm2 message
     zrtpConfirm2.setMessageType((uint8_t*)Confirm2Msg);
-    if (configureAlgos.isDisclosureFlag()) {
+    if (configureAlgos->isDisclosureFlag()) {
         zrtpConfirm2.setDisclosureFlag();
     }
     zrtpConfirm2.setHashH0(H0);
@@ -1194,7 +1195,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
         // save new RS1, this inherits the verified flag from old RS1
         zidRec->setNewRs1((const uint8_t*)newRs1);
         if (saveZidRecord)
-            getZidCacheInstance()->saveRecord(zidRec);
+            getZidCache().saveRecord(zidRec);
 
 #ifdef ZRTP_SAS_RELAY_SUPPORT
         // Ask for enrollment only if enabled via configuration and the
@@ -1356,7 +1357,7 @@ ZrtpPacketRelayAck* ZRtp::prepareRelayAck(ZrtpPacketSASrelay* srly, const uint32
             break;
         }
     }
-    std::string cs(cipher->getReadable());
+    string cs(cipher->getReadable());
     cs.append("/").append(pubKey->getName());
 
     // Check if new SAS is null or a trusted MitM relationship doesn't exist.
@@ -1457,9 +1458,9 @@ AlgorithmEnum* ZRtp::findBestHash(ZrtpPacketHello *hello) {
         return &zrtpHashes.getByName(mandatoryHash);
     }
     // Build list of configured hash algorithm names.
-    numAlgosConf = configureAlgos.getNumConfiguredAlgos(HashAlgorithm);
+    numAlgosConf = configureAlgos->getNumConfiguredAlgos(HashAlgorithm);
     for (i = 0; i < numAlgosConf; i++) {
-        algosConf[i] = &configureAlgos.getAlgoAt(HashAlgorithm, i);
+        algosConf[i] = &configureAlgos->getAlgoAt(HashAlgorithm, i);
     }
 
     // Build list of offered known algos in Hello, append mandatory algos if necessary
@@ -1498,9 +1499,9 @@ AlgorithmEnum* ZRtp::findBestCipher(ZrtpPacketHello *hello, AlgorithmEnum* pk) {
     }
 
     // Build list of configured cipher algorithm names.
-    numAlgosConf = configureAlgos.getNumConfiguredAlgos(CipherAlgorithm);
+    numAlgosConf = configureAlgos->getNumConfiguredAlgos(CipherAlgorithm);
     for (i = 0; i < numAlgosConf; i++) {
-        algosConf[i] = &configureAlgos.getAlgoAt(CipherAlgorithm, i);
+        algosConf[i] = &configureAlgos->getAlgoAt(CipherAlgorithm, i);
     }
     // Build list of offered known algos names in Hello.
     for (numAlgosOffered = 0, i = 0; i < num; i++) {
@@ -1544,10 +1545,10 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
     // Build own list of intersecting algos, keep own order or algorithms
     // The list must include real public key algorithms only, so skip mult-stream mode, 
     // preshared and alike.
-    int numAlgosOwn = configureAlgos.getNumConfiguredAlgos(PubKeyAlgorithm);
+    int numAlgosOwn = configureAlgos->getNumConfiguredAlgos(PubKeyAlgorithm);
     int numOwnIntersect = 0;
     for (int i = 0; i < numAlgosOwn; i++) {
-        ownIntersect[numOwnIntersect] = &configureAlgos.getAlgoAt(PubKeyAlgorithm, i);
+        ownIntersect[numOwnIntersect] = &configureAlgos->getAlgoAt(PubKeyAlgorithm, i);
         if (*(int32_t*)(ownIntersect[numOwnIntersect]->getName()) == *(int32_t*)mult) {
             continue;                               // skip multi-stream mode
         }
@@ -1634,9 +1635,9 @@ AlgorithmEnum* ZRtp::findBestSASType(ZrtpPacketHello *hello) {
         return &zrtpSasTypes.getByName(mandatorySasType);
     }
     // Build list of configured SAS algorithm names
-    numAlgosConf = configureAlgos.getNumConfiguredAlgos(SasType);
+    numAlgosConf = configureAlgos->getNumConfiguredAlgos(SasType);
     for (i = 0; i < numAlgosConf; i++) {
-        algosConf[i] = &configureAlgos.getAlgoAt(SasType, i);
+        algosConf[i] = &configureAlgos->getAlgoAt(SasType, i);
     }
     // Build list of offered known algos in Hello,
     for (numAlgosOffered = 0, i = 0; i < num; i++) {
@@ -1673,9 +1674,9 @@ AlgorithmEnum* ZRtp::findBestAuthLen(ZrtpPacketHello *hello) {
     }
 
     // Build list of configured Authentication tag length algorithm names.
-    numAlgosConf = configureAlgos.getNumConfiguredAlgos(AuthLength);
+    numAlgosConf = configureAlgos->getNumConfiguredAlgos(AuthLength);
     for (i = 0; i < numAlgosConf; i++) {
-        algosConf[i] = &configureAlgos.getAlgoAt(AuthLength, i);
+        algosConf[i] = &configureAlgos->getAlgoAt(AuthLength, i);
     }
 
     // Build list of offered known algos in Hello.
@@ -1714,7 +1715,7 @@ AlgorithmEnum* ZRtp::findBestAuthLen(ZrtpPacketHello *hello) {
 AlgorithmEnum* ZRtp::getStrongHashOffered(ZrtpPacketHello *hello, int32_t algoName) {
 
     int numHash = hello->getNumHashes();
-    bool nonNist = (algoName == *(int32_t*)e414 || algoName == *(int32_t*)e255) && configureAlgos.getSelectionPolicy() == ZrtpConfigure::PreferNonNist;
+    bool nonNist = (algoName == *(int32_t*)e414 || algoName == *(int32_t*)e255) && configureAlgos->getSelectionPolicy() == ZrtpConfigure::PreferNonNist;
 
     if (nonNist) {
         for (int i = 0; i < numHash; i++) {
@@ -1736,7 +1737,7 @@ AlgorithmEnum* ZRtp::getStrongHashOffered(ZrtpPacketHello *hello, int32_t algoNa
 AlgorithmEnum* ZRtp::getStrongCipherOffered(ZrtpPacketHello *hello, int32_t algoName) {
 
     int num = hello->getNumCiphers();
-    bool nonNist = (algoName == *(int32_t*)e414 || algoName == *(int32_t*)e255) && configureAlgos.getSelectionPolicy() == ZrtpConfigure::PreferNonNist;
+    bool nonNist = (algoName == *(int32_t*)e414 || algoName == *(int32_t*)e255) && configureAlgos->getSelectionPolicy() == ZrtpConfigure::PreferNonNist;
 
     if (nonNist) {
         for (int i = 0; i < num; i++) {
@@ -1758,7 +1759,7 @@ AlgorithmEnum* ZRtp::getStrongCipherOffered(ZrtpPacketHello *hello, int32_t algo
 AlgorithmEnum* ZRtp::getHashOffered(ZrtpPacketHello *hello, int32_t algoName) {
 
     int num = hello->getNumHashes();
-    bool nonNist = (algoName == *(int32_t*)e414 || algoName == *(int32_t*)e255) && configureAlgos.getSelectionPolicy() == ZrtpConfigure::PreferNonNist;
+    bool nonNist = (algoName == *(int32_t*)e414 || algoName == *(int32_t*)e255) && configureAlgos->getSelectionPolicy() == ZrtpConfigure::PreferNonNist;
 
     if (nonNist) {
         for (int i = 0; i < num; i++) {
@@ -1774,7 +1775,7 @@ AlgorithmEnum* ZRtp::getHashOffered(ZrtpPacketHello *hello, int32_t algoName) {
 AlgorithmEnum* ZRtp::getCipherOffered(ZrtpPacketHello *hello, int32_t algoName) {
 
     int num = hello->getNumCiphers();
-    bool nonNist = (algoName == *(int32_t*)e414 || algoName == *(int32_t*)e255) && configureAlgos.getSelectionPolicy() == ZrtpConfigure::PreferNonNist;
+    bool nonNist = (algoName == *(int32_t*)e414 || algoName == *(int32_t*)e255) && configureAlgos->getSelectionPolicy() == ZrtpConfigure::PreferNonNist;
 
     if (nonNist) {
         for (int i = 0; i < num; i++) {
@@ -1790,7 +1791,7 @@ AlgorithmEnum* ZRtp::getCipherOffered(ZrtpPacketHello *hello, int32_t algoName) 
 AlgorithmEnum* ZRtp::getAuthLenOffered(ZrtpPacketHello *hello, int32_t algoName) {
 
     int num = hello->getNumAuth();
-    bool nonNist = (algoName == *(int32_t*)e414 || algoName == *(int32_t*)e255) && configureAlgos.getSelectionPolicy() == ZrtpConfigure::PreferNonNist;
+    bool nonNist = (algoName == *(int32_t*)e414 || algoName == *(int32_t*)e255) && configureAlgos->getSelectionPolicy() == ZrtpConfigure::PreferNonNist;
 
     if (nonNist) {
         for (int i = 0; i < num; i++) {
@@ -1833,8 +1834,8 @@ bool ZRtp::verifyH2(ZrtpPacketCommit *commit) {
 
 void ZRtp::computeHvi(ZrtpPacketDHPart* dh, ZrtpPacketHello *hello) {
 
-    std::vector<const uint_8t *>data;
-    std::vector<uint64_t >length;
+    vector<const uint_8t *>data;
+    vector<uint64_t >length;
     /*
      * populate the vector to compute the HVI hash according to the
      * ZRTP specification.
@@ -1847,49 +1848,49 @@ void ZRtp::computeHvi(ZrtpPacketDHPart* dh, ZrtpPacketHello *hello) {
     hashListFunction(data, length, hvi);
 }
 
-void ZRtp:: computeSharedSecretSet(ZIDRecord *zidRec) {
+void ZRtp:: computeSharedSecretSet(ZIDRecord *zidRecord) {
 
     /*
-     * Compute the Initiator's and Reponder's retained shared secret Ids.
+     * Compute the Initiator's and Responder's retained shared secret Ids.
      * Use negotiated HMAC.
      */
     uint8_t randBuf[RS_LENGTH];
     uint32_t macLen;
 
     detailInfo.secretsCached = 0;
-    if (!zidRec->isRs1Valid()) {
+    if (!zidRecord->isRs1Valid()) {
         randomZRTP(randBuf, RS_LENGTH);
         hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator, static_cast<uint32_t>(strlen(initiator)), rs1IDi, &macLen);
         hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder, static_cast<uint32_t>(strlen(responder)), rs1IDr, &macLen);
     }
     else {
         rs1Valid = true;
-        hmacFunction((unsigned char*)zidRec->getRs1(), RS_LENGTH, (unsigned char*)initiator, static_cast<uint32_t>(strlen(initiator)), rs1IDi, &macLen);
-        hmacFunction((unsigned char*)zidRec->getRs1(), RS_LENGTH, (unsigned char*)responder, static_cast<uint32_t>(strlen(responder)), rs1IDr, &macLen);
+        hmacFunction((unsigned char*)zidRecord->getRs1(), RS_LENGTH, (unsigned char*)initiator, static_cast<uint32_t>(strlen(initiator)), rs1IDi, &macLen);
+        hmacFunction((unsigned char*)zidRecord->getRs1(), RS_LENGTH, (unsigned char*)responder, static_cast<uint32_t>(strlen(responder)), rs1IDr, &macLen);
         detailInfo.secretsCached = Rs1;
     }
 
-    if (!zidRec->isRs2Valid()) {
+    if (!zidRecord->isRs2Valid()) {
         randomZRTP(randBuf, RS_LENGTH);
         hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator, static_cast<uint32_t>(strlen(initiator)), rs2IDi, &macLen);
         hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder, static_cast<uint32_t>(strlen(responder)), rs2IDr, &macLen);
     }
     else {
         rs2Valid = true;
-        hmacFunction((unsigned char*)zidRec->getRs2(), RS_LENGTH, (unsigned char*)initiator, static_cast<uint32_t>(strlen(initiator)), rs2IDi, &macLen);
-        hmacFunction((unsigned char*)zidRec->getRs2(), RS_LENGTH, (unsigned char*)responder, static_cast<uint32_t>(strlen(responder)), rs2IDr, &macLen);
+        hmacFunction((unsigned char*)zidRecord->getRs2(), RS_LENGTH, (unsigned char*)initiator, static_cast<uint32_t>(strlen(initiator)), rs2IDi, &macLen);
+        hmacFunction((unsigned char*)zidRecord->getRs2(), RS_LENGTH, (unsigned char*)responder, static_cast<uint32_t>(strlen(responder)), rs2IDr, &macLen);
         detailInfo.secretsCached |= Rs2;
     }
 
-    if (!zidRec->isMITMKeyAvailable()) {
+    if (!zidRecord->isMITMKeyAvailable()) {
         randomZRTP(randBuf, RS_LENGTH);
         hmacFunction(randBuf, RS_LENGTH, (unsigned char*)initiator, static_cast<uint32_t>(strlen(initiator)), pbxSecretIDi, &macLen);
         hmacFunction(randBuf, RS_LENGTH, (unsigned char*)responder, static_cast<uint32_t>(strlen(responder)), pbxSecretIDr, &macLen);
 
     }
     else {
-        hmacFunction((unsigned char*)zidRec->getMiTMData(), RS_LENGTH, (unsigned char*)initiator, static_cast<uint32_t>(strlen(initiator)), pbxSecretIDi, &macLen);
-        hmacFunction((unsigned char*)zidRec->getMiTMData(), RS_LENGTH, (unsigned char*)responder, static_cast<uint32_t>(strlen(responder)), pbxSecretIDr, &macLen);
+        hmacFunction((unsigned char*)zidRecord->getMiTMData(), RS_LENGTH, (unsigned char*)initiator, static_cast<uint32_t>(strlen(initiator)), pbxSecretIDi, &macLen);
+        hmacFunction((unsigned char*)zidRecord->getMiTMData(), RS_LENGTH, (unsigned char*)responder, static_cast<uint32_t>(strlen(responder)), pbxSecretIDr, &macLen);
         detailInfo.secretsCached |= Pbx;
     }
     computeAuxSecretIds();
@@ -1931,7 +1932,7 @@ static void * (*volatile memset_volatile)(void *, int, size_t) = memset;
  * to chapter 5.3 in the specification).
  * When using this method then we are in Initiator role.
  */
-void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
+void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRecord) {
     const uint8_t* setD[3];
     int32_t rsFound = 0;
 
@@ -1950,28 +1951,27 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
     // Check which RS we shall use for first place (s1)
     detailInfo.secretsMatched = 0;
     if (memcmp(rs1IDr, dhPart->getRs1Id(), HMAC_SIZE) == 0) {
-        setD[0] = zidRec->getRs1();
+        setD[0] = zidRecord->getRs1();
         rsFound = 0x1;
         detailInfo.secretsMatched = Rs1;
     }
     else if (memcmp(rs1IDr, dhPart->getRs2Id(), HMAC_SIZE) == 0) {
-        setD[0] = zidRec->getRs1();
+        setD[0] = zidRecord->getRs1();
         rsFound = 0x2;
         detailInfo.secretsMatched = Rs1;
     }
     else if (memcmp(rs2IDr, dhPart->getRs1Id(), HMAC_SIZE) == 0) {
-        setD[0] = zidRec->getRs2();
+        setD[0] = zidRecord->getRs2();
         rsFound = 0x4;
         detailInfo.secretsMatched = Rs2;
     }
     else if (memcmp(rs2IDr, dhPart->getRs2Id(), HMAC_SIZE) == 0) {
-        setD[0] = zidRec->getRs2();
+        setD[0] = zidRecord->getRs2();
         rsFound = 0x8;
         detailInfo.secretsMatched = Rs2;
     }
 
     if (memcmp(auxSecretIDr, dhPart->getAuxSecretId(), 8) == 0) {
-        DEBUGOUT((fprintf(stdout, "Initiator: Match for aux secret found\n")));
         setD[1] = auxSecret;
         detailInfo.secretsMatched |= Aux;
         detailInfo.secretsMatchedDH |= Aux;
@@ -1984,7 +1984,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
     // check if we have a matching PBX secret and place it third (s3)
     if (memcmp(pbxSecretIDr, dhPart->getPbxSecretId(), HMAC_SIZE) == 0) {
         DEBUGOUT((fprintf(stdout, "%c: Match for Other_secret found\n", zid[0])));
-        setD[2] = zidRec->getMiTMData();
+        setD[2] = zidRecord->getMiTMData();
         detailInfo.secretsMatched |= Pbx;
         detailInfo.secretsMatchedDH |= Pbx;
         // Flag to record that fact that we have a MitM key of the other peer.
@@ -1995,7 +1995,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
     if (rsFound == 0) {                        // no RS matches found
         if (rs1Valid || rs2Valid) {            // but valid RS records in cache
             sendInfo(Warning, WarningNoExpectedRSMatch);
-            zidRec->resetSasVerified();
+            zidRecord->resetSasVerified();
             saveZidRecord = false;             // Don't save RS until user verfied/confirmed SAS
         }
         else {                                 // No valid RS record in cache
@@ -2021,8 +2021,8 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
      * hashed to create S0.  According to the formula the max number of
      * elements to hash is 12, add one for the terminating "nullptr"
      */
-    std::vector<const uint_8t*> data;
-    std::vector<uint64_t> length;
+    vector<const uint_8t*> data;
+    vector<uint64_t> length;
 
     // we need a number of length data items, so define them here
     uint32_t counter, sLen[3];
@@ -2095,7 +2095,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
  * retained secret ids. Compare them with the expected secret ids (refer
  * to chapter 5.3.1 in the specification).
  */
-void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
+void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRecord) {
     const uint8_t* setD[3];
     int32_t rsFound = 0;
 
@@ -2113,28 +2113,27 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
     // Check which RS we shall use for first place (s1)
     detailInfo.secretsMatched = 0;
     if (memcmp(rs1IDi, dhPart->getRs1Id(), HMAC_SIZE) == 0) {
-        setD[0] = zidRec->getRs1();
+        setD[0] = zidRecord->getRs1();
         rsFound = 0x1;
         detailInfo.secretsMatched = Rs1;
     }
     else if (memcmp(rs1IDi, dhPart->getRs2Id(), HMAC_SIZE) == 0) {
-        setD[0] = zidRec->getRs1();
+        setD[0] = zidRecord->getRs1();
         rsFound = 0x2;
         detailInfo.secretsMatched = Rs1;
     }
     else if (memcmp(rs2IDi, dhPart->getRs1Id(), HMAC_SIZE) == 0) {
-        setD[0] = zidRec->getRs2();
+        setD[0] = zidRecord->getRs2();
         rsFound |= 0x4;
         detailInfo.secretsMatched = Rs2;
     }
     else if (memcmp(rs2IDi, dhPart->getRs2Id(), HMAC_SIZE) == 0) {
-        setD[0] = zidRec->getRs2();
+        setD[0] = zidRecord->getRs2();
         rsFound |= 0x8;
         detailInfo.secretsMatched = Rs2;
     }
 
     if (memcmp(auxSecretIDi, dhPart->getAuxSecretId(), 8) == 0) {
-        DEBUGOUT((fprintf(stdout, "Responder: Match for aux secret found\n")));
         setD[1] = auxSecret;
         detailInfo.secretsMatched |= Aux;
         detailInfo.secretsMatchedDH |= Aux;
@@ -2147,7 +2146,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
 #ifdef ZRTP_SAS_RELAY_SUPPORT
     if (memcmp(pbxSecretIDi, dhPart->getPbxSecretId(), 8) == 0) {
         DEBUGOUT((fprintf(stdout, "%c: Match for PBX secret found\n", ownZid[0])));
-        setD[2] = zidRec->getMiTMData();
+        setD[2] = zidRecord->getMiTMData();
         detailInfo.secretsMatched |= Pbx;
         detailInfo.secretsMatchedDH |= Pbx;
         peerIsEnrolled = true;
@@ -2157,7 +2156,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
     if (rsFound == 0) {                        // no RS matches found
         if (rs1Valid || rs2Valid) {            // but valid RS records in cache
             sendInfo(Warning, WarningNoExpectedRSMatch);
-            zidRec->resetSasVerified();
+            zidRecord->resetSasVerified();
             saveZidRecord = false;             // Don't save RS until user verfied/confirmed SAS
         }
         else {                                 // No valid RS record in cache
@@ -2183,8 +2182,8 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
      * These arrays hold the pointers and lengths of the data that must be
      * hashed to create S0.
      */
-    std::vector<const uint_8t*> data;
-    std::vector<uint64_t> length;
+    vector<const uint_8t*> data;
+    vector<uint64_t> length;
 
     // we need a number of length data items, so define them here
     uint32_t counter, sLen[3];
@@ -2257,8 +2256,8 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec) {
 void ZRtp::KDF(uint8_t* key, size_t keyLength, uint8_t* label, size_t labelLength,
                uint8_t* context, size_t contextLength, size_t L, uint8_t* output) {
 
-    std::vector<const uint8_t*>data;
-    std::vector<uint64_t> length;
+    vector<const uint8_t*>data;
+    vector<uint64_t> length;
     uint32_t macLen = 0;
 
     // Very first element is a fixed counter, big endian
@@ -2444,7 +2443,7 @@ bool ZRtp::srtpSecretsReady(EnableSecurity part) {
 
     // The call state engine calls ForSender always after ForReceiver.
     if (part == ForSender) {
-        std::string cs(cipher->getReadable());
+        string cs(cipher->getReadable());
         if (!multiStream) {
             cs.append("/").append(pubKey->getName());
             if (mitmSeen)
@@ -2452,7 +2451,7 @@ bool ZRtp::srtpSecretsReady(EnableSecurity part) {
             callback->srtpSecretsOn(cs, SAS, zidRec->isSasVerified());
         }
         else {
-            std::string cs1;
+            string cs1;
             if (mitmSeen)
                 cs.append("/EndAtMitM");
             callback->srtpSecretsOn(cs, cs1, true);
@@ -2461,15 +2460,15 @@ bool ZRtp::srtpSecretsReady(EnableSecurity part) {
     return rc;
 }
 
-void ZRtp::setNegotiatedHash(AlgorithmEnum* hash) {
-    switch (zrtpHashes.getOrdinal(*hash)) {
+void ZRtp::setNegotiatedHash(AlgorithmEnum* hashNegotiated) {
+    switch (zrtpHashes.getOrdinal(*hashNegotiated)) {
     case 0:
         hashLength = SHA256_DIGEST_LENGTH;
-        hashListFunction = sha256; // static_cast<void (*)(const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, uint8_t *)>(sha256);;
+        hashListFunction = sha256; // static_cast<void (*)(const vector<const uint8_t*>&, const vector<uint64_t>&, uint8_t *)>(sha256);;
 
         hmacFunction = static_cast<void (*)(const uint8_t*, uint64_t, const uint8_t *, uint64_t, uint8_t *c, uint32_t *)>(hmac_sha256);
-        hmacListFunction = static_cast<void (*)(const uint8_t*, uint64_t, const std::vector<const uint8_t*>&,
-                                                const std::vector<uint64_t>&, uint8_t *, uint32_t *)>(hmacSha256);
+        hmacListFunction = static_cast<void (*)(const uint8_t*, uint64_t, const vector<const uint8_t*>&,
+                                                const vector<uint64_t>&, uint8_t *, uint32_t *)>(hmacSha256);
 
         createHashCtx = initializeSha256Context;
         msgShaContext = &hashCtx.sha256Ctx;
@@ -2479,11 +2478,11 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hash) {
 
     case 1:
         hashLength = SHA384_DIGEST_LENGTH;
-        hashListFunction = sha384; // static_cast<void (*) (const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, uint8_t *)>(sha384);
+        hashListFunction = sha384; // static_cast<void (*) (const vector<const uint8_t*>&, const vector<uint64_t>&, uint8_t *)>(sha384);
 
         hmacFunction = hmac_sha384;
-        hmacListFunction = static_cast<void (*)(const uint8_t*, uint64_t, const std::vector<const uint8_t*>&,
-                                                const std::vector<uint64_t>&, uint8_t *, uint32_t *)>(hmacSha384);
+        hmacListFunction = static_cast<void (*)(const uint8_t*, uint64_t, const vector<const uint8_t*>&,
+                                                const vector<uint64_t>&, uint8_t *, uint32_t *)>(hmacSha384);
 
         createHashCtx = initializeSha384Context;
         msgShaContext = &hashCtx.sha384Ctx;
@@ -2493,10 +2492,10 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hash) {
 
     case 2:
         hashLength = SKEIN256_DIGEST_LENGTH;
-        hashListFunction = static_cast<void (*) (const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, uint8_t *)>(skein256);
+        hashListFunction = static_cast<void (*) (const vector<const uint8_t*>&, const vector<uint64_t>&, uint8_t *)>(skein256);
 
         hmacFunction = macSkein256;
-        hmacListFunction = static_cast<void (*)(const uint8_t*, uint64_t, const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, uint8_t *, uint32_t *)>(macSkein256);
+        hmacListFunction = static_cast<void (*)(const uint8_t*, uint64_t, const vector<const uint8_t*>&, const vector<uint64_t>&, uint8_t *, uint32_t *)>(macSkein256);
 
         createHashCtx = initializeSkein256Context;
         msgShaContext = &hashCtx.skeinCtx;
@@ -2506,10 +2505,10 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hash) {
 
     case 3:
         hashLength = SKEIN384_DIGEST_LENGTH;
-        hashListFunction = static_cast<void (*) (const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, uint8_t *)>(skein384);
+        hashListFunction = static_cast<void (*) (const vector<const uint8_t*>&, const vector<uint64_t>&, uint8_t *)>(skein384);
 
         hmacFunction = macSkein384;
-        hmacListFunction = static_cast<void (*)(const uint8_t*, uint64_t, const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, uint8_t *, uint32_t *)>(macSkein384);
+        hmacListFunction = static_cast<void (*)(const uint8_t*, uint64_t, const vector<const uint8_t*>&, const vector<uint64_t>&, uint8_t *, uint32_t *)>(macSkein384);
 
         createHashCtx = initializeSkein384Context;
         msgShaContext = &hashCtx.skeinCtx;
@@ -2533,13 +2532,13 @@ void ZRtp::SASVerified() {
 
     zidRec->setSasVerified();
     saveZidRecord = true;
-    getZidCacheInstance()->saveRecord(zidRec);
+    getZidCache().saveRecord(zidRec);
 }
 
 void ZRtp::resetSASVerified() {
 
     zidRec->resetSasVerified();
-    getZidCacheInstance()->saveRecord(zidRec);
+    getZidCache().saveRecord(zidRec);
 }
 
 bool ZRtp::isSASVerified() {
@@ -2551,7 +2550,7 @@ void ZRtp::setRs2Valid() {
     if (zidRec != nullptr) {
         zidRec->setRs2Valid();
         if (saveZidRecord)
-            getZidCacheInstance()->saveRecord(zidRec);
+            getZidCache().saveRecord(zidRec);
     }
 }
 
@@ -2612,7 +2611,7 @@ void ZRtp::setAuxSecret(uint8_t* data, uint32_t length) {
     }
 }
 
-void ZRtp::setClientId(std::string id, HelloPacketVersion* hpv) {
+void ZRtp::setClientId(const string& id, HelloPacketVersion* hpv) {
 
     unsigned char tmp[CLIENT_ID_SIZE +1] = {' '};
     memcpy(tmp, id.c_str(), id.size() > CLIENT_ID_SIZE ? CLIENT_ID_SIZE : id.size());
@@ -2653,11 +2652,11 @@ bool ZRtp::checkMsgHmac(uint8_t* key) {
     return memcmp(hmac, tempMsgBuffer + len, (HMAC_SIZE)) == 0;
 }
 
-std::string ZRtp::getHelloHash(int32_t index) {
-    std::ostringstream stm;
+string ZRtp::getHelloHash(int32_t index) {
+    ostringstream stm;
 
     if (index < 0 || index >= MAX_ZRTP_VERSIONS)
-        return std::string();
+        return string();
 
     uint8_t* hp = helloPackets[index].helloHash;
 
@@ -2675,11 +2674,11 @@ std::string ZRtp::getHelloHash(int32_t index) {
     return stm.str();
 }
 
-std::string ZRtp::getPeerHelloHash() {
-    std::ostringstream stm;
+string ZRtp::getPeerHelloHash() {
+    ostringstream stm;
 
     if (peerHelloVersion[0] == 0)
-        return std::string();
+        return string();
 
     uint8_t* hp = peerHelloHash;
 
@@ -2694,10 +2693,10 @@ std::string ZRtp::getPeerHelloHash() {
     return stm.str();
 }
 
-std::string ZRtp::getMultiStrParams(ZRtp **zrtpMaster) {
+string ZRtp::getMultiStrParams(ZRtp **zrtpMaster) {
 
     // the string will hold binary data - it's opaque to the application
-    std::string str;
+    string str;
     char tmp[MAX_DIGEST_LENGTH + 1 + 1 + 1]; // hash length + cipher + authLength + hash
 
     if (inState(SecureState) && !multiStream) {
@@ -2713,7 +2712,7 @@ std::string ZRtp::getMultiStrParams(ZRtp **zrtpMaster) {
     return str;
 }
 
-void ZRtp::setMultiStrParams(std::string parameters, ZRtp *zrtpMaster) {
+void ZRtp::setMultiStrParams(string parameters, ZRtp *zrtpMaster) {
 
     char tmp[MAX_DIGEST_LENGTH + 1 + 1 + 1]; // max. hash length + cipher + authLength + hash
 
@@ -2821,7 +2820,7 @@ bool ZRtp::isPeerEnrolled() {
     return peerIsEnrolled;
 }
 
-bool ZRtp::sendSASRelayPacket(uint8_t* sh, std::string render) {
+bool ZRtp::sendSASRelayPacket(uint8_t* sh, const string& render) {
 
     uint8_t confMac[MAX_DIGEST_LENGTH];
     uint32_t macLen;
@@ -2856,8 +2855,8 @@ bool ZRtp::sendSASRelayPacket(uint8_t* sh, std::string render) {
     return true;
 }
 
-std::string ZRtp::getSasType() {
-    std::string sasT(sasType->getName());
+string ZRtp::getSasType() {
+    string sasT(sasType->getName());
     return sasT;
 }
 
@@ -2874,16 +2873,16 @@ const ZRtp::zrtpInfo* ZRtp::getDetailInfo() {
     return &detailInfo;
 }
 
-std::string ZRtp::getPeerClientId() {
+string ZRtp::getPeerClientId() {
     if (peerClientId.empty())
-        return std::string();
+        return string();
     return peerClientId;
 }
 
-std::string ZRtp::getPeerProtcolVersion() {
+string ZRtp::getPeerProtocolVersion() {
     if (peerHelloVersion[0] == 0)
-        return std::string();
-    return std::string((char*)peerHelloVersion);
+        return string();
+    return string((char*)peerHelloVersion);
 }
 
 void ZRtp::setT1Resend(int32_t counter) {
@@ -2937,7 +2936,7 @@ bool ZRtp::checkAndSetNonce(uint8_t* nonce) {
         }
     }
     // the string holds the binary nonce
-    std::string str;
+    string str;
     str.assign((char *)nonce, ZRTP_WORD_SIZE * 4);
     masterStream->peerNonces.push_back(str);
     return true;

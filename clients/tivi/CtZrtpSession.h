@@ -84,20 +84,6 @@ public:
 
     ~CtZrtpSession();
 
-    /**
-     * @brief Intialize the cache file singleton.
-     *
-     * Opens and initializes the cache file instance.
-     *
-     * @param zidFilename
-     *     The name of the ZID file, can be a relative or absolut
-     *     filename.
-     *
-     * @return
-     *     1 on success, -1 on failure
-     */
-    static int initCache(const char *zidFilename);
-
     /** @brief Initialize CtZrtpSession.
      *
      * Before an application can use ZRTP it has to initialize the
@@ -129,14 +115,19 @@ public:
      *
      * @param config
      *     this parameter points to ZRTP configuration data. If it is
-     *     NULL then ZrtpQueue uses a default setting. Default is NULL.
+     *     not set (empty shared_ptr) then the function sets up a default setting.
+     *
+     * @param zidFilename
+     *     The name of the ZID file, can be a relative or absolute
+     *     filename. Can be a @c nullptr. In this case the function
+     *     uses a standard name and path
      *
      * @return
      *     1 on success, ZRTP processing enabled, -1 on failure,
      *     ZRTP processing disabled.
      *
      */
-    int init(bool audio, bool video, int32_t callId = 0, ZrtpConfigure* config = NULL);
+    int init(bool audio, bool video, int32_t callId, const char *zidFilename, std::shared_ptr<ZrtpConfigure>& config);
 
     /**
      * @brief Fills a ZrtpConfiguration based on selected algorithms.

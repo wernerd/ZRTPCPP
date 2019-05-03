@@ -17,6 +17,7 @@
 #include <CtZrtpSession.h>
 
 #include <clients/tivi/timeoutHelper/Thread.h>
+#include <zrtp/libzrtpcpp/ZIDCacheDb.h>
 
 static CMutexClass sessionLock;
 
@@ -32,77 +33,89 @@ CtZrtpSession::CtZrtpSession() : zrtpMaster(NULL), mitmMode(false), signSas(fals
     streams[VideoStream] = NULL;
 }
 
-int CtZrtpSession::initCache(const char *zidFilename) {
-    ZIDCache* zf = getZidCacheInstance();
-    if (!zf->isOpen()) {
-        std::string fname;
-        if (zidFilename == NULL) {
-            char *home = getenv("HOME");
-            std::string baseDir = (home != NULL) ? (std::string(home) + std::string("/."))
-                                                    : std::string(".");
-            fname = baseDir + std::string("GNUZRTP.zid");
-            zidFilename = fname.c_str();
-        }
-        if (zf->open((char *)zidFilename) < 0) {
-            return -1;
-        }
+static std::unique_ptr<ZIDCache>
+initCache(const char *zidFilename) {
+
+    std::unique_ptr<ZIDCache> zf = std::make_unique<ZIDCacheDb>();
+
+    std::string fname;
+    if (!zidFilename) {
+        char *home = getenv("HOME");
+        std::string baseDir = (home) ? (std::string(home) + std::string("/."))
+                                             : std::string(".");
+        fname = baseDir + std::string("GNUZRTP.zid");
+        zidFilename = fname.c_str();
     }
-    return 1;
+    if (zf->open((char *)zidFilename) < 0) {
+        return std::unique_ptr<ZIDCache>();
+    }
+    return zf;
 }
 
-int CtZrtpSession::init(bool audio, bool video, int32_t callId, ZrtpConfigure* config)
-{
+int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidFilename, std::shared_ptr<ZrtpConfigure>& config) {
     int32_t ret = 1;
+    CtZrtpStream *stream;
 
     synchEnter();
 
-    ZrtpConfigure* configOwn = NULL;
-    if (config == NULL) {
-        config = configOwn = new ZrtpConfigure();
-        setupConfiguration(config);
-        config->setTrustedMitM(false);
+    std::shared_ptr<ZrtpConfigure> configOwn;
+
+    // Audio if the master stream, thus initialize ZID cache and ZRTP configure for it. Each Session has _one_
+    // audio (master) which can have it's own configuration and own ZID cache.
+    // The caller must make sure to initialize the audio stream before  the video stream (or at the same time with
+    // both boolean parameters set to true).
+    if (audio) {
+        auto zf = initCache(zidFilename);
+        if (!zf) {
+            return -1;
+        }
+        if (!config) {
+            configOwn = std::make_unique<ZrtpConfigure>();
+            setupConfiguration(configOwn.get());
+        }
+        else {
+            configOwn = config;
+        }
+
+        const uint8_t* ownZidFromCache = zf->getZid();
+
+        configOwn->setZidCache(move(zf));
+        configOwn->setTrustedMitM(false);
 #if defined AXO_SUPPORT
-        config->setSasSignature(true);
+        configOwn->setSasSignature(true);
 #endif
+        configOwn->setParanoidMode(enableParanoidMode);
+
+        // Create CTZrtpStream object only once, they are available for the whole lifetime of the session.
+        if (streams[AudioStream] == nullptr)
+            streams[AudioStream] = new CtZrtpStream();
+        stream = streams[AudioStream];
+        stream->zrtpEngine = new ZRtp((uint8_t*)ownZidFromCache, stream, clientIdString, configOwn, mitmMode, signSas);
+        stream->type = Master;
+        stream->index = AudioStream;
+        stream->session = this;
+        stream->discriminatorMode = discriminatorMode;
     }
-    config->setParanoidMode(enableParanoidMode);
+    if (video) {
+        if (streams[VideoStream] == nullptr)
+            streams[VideoStream] = new CtZrtpStream();
+
+        // Get the ZRTP Configure from master and forward it to the slave stream. Slave stream should have the same
+        // configuration and cache as the master stream. ZRTP configuration is managed via shared_ptr.
+        auto videoConfig = streams[AudioStream]->zrtpEngine->getZrtpConfigure();
+        const uint8_t* ownZidFromCache = videoConfig->getZidCache().getZid();
+
+        stream = streams[VideoStream];
+        stream->zrtpEngine = new ZRtp((uint8_t*)ownZidFromCache, stream, clientIdString, videoConfig);
+        stream->type = Slave;
+        stream->index = VideoStream;
+        stream->session = this;
+        stream->discriminatorMode = discriminatorMode;
+    }
     callId_ = callId;
 
-    ZIDCache* zf = getZidCacheInstance();
-    if (!zf->isOpen()) {
-        ret = -1;
-    }
-    if (ret > 0) {
-        const uint8_t* ownZid = zf->getZid();
-        CtZrtpStream *stream;
+    isReady = true;
 
-        // Create CTZrtpStream object only once, they are availbe for the whole
-        // lifetime of the session.
-        if (audio) {
-            if (streams[AudioStream] == NULL)
-                streams[AudioStream] = new CtZrtpStream();
-            stream = streams[AudioStream];
-            stream->zrtpEngine = new ZRtp((uint8_t*)ownZid, stream, clientIdString, config, mitmMode, signSas);
-            stream->type = Master;
-            stream->index = AudioStream;
-            stream->session = this;
-            stream->discriminatorMode = discriminatorMode;
-        }
-        if (video) {
-            if (streams[VideoStream] == NULL)
-                streams[VideoStream] = new CtZrtpStream();
-            stream = streams[VideoStream];
-            stream->zrtpEngine = new ZRtp((uint8_t*)ownZid, stream, clientIdString, config);
-            stream->type = Slave;
-            stream->index = VideoStream;
-            stream->session = this;
-            stream->discriminatorMode = discriminatorMode;
-        }
-        isReady = true;
-    }
-    if (configOwn != NULL) {
-        delete configOwn;
-    }
     synchLeave();
     return ret;
 }
@@ -394,7 +407,7 @@ void CtZrtpSession::setLastPeerNameVerify(const char *name, int iIsMitm) {
     uint8_t peerZid[IDENTIFIER_LEN];
     std::string nm(name);
     stream->zrtpEngine->getPeerZid(peerZid);
-    getZidCacheInstance()->putPeerName(peerZid, nm);
+    stream->zrtpEngine->getZidCache().putPeerName(peerZid, nm);
     setVerify(1);
 }
 
@@ -662,7 +675,7 @@ void CtZrtpSession::setZrtpEncapAttribute(const char *attribute, streamName stre
 }
 
 void CtZrtpSession::setAuxSecret(const unsigned char *secret, int length) {
-    if (!isReady || !(streams[AudioStream] != NULL))
+    if (!isReady || streams[AudioStream] == nullptr)
         return;
 
     CtZrtpStream *stream = streams[AudioStream];
@@ -691,7 +704,7 @@ int32_t CtZrtpSession::getSrtpTraceData(SrtpErrorData* data, streamName streamNm
 
 
 void CtZrtpSession::cleanCache() {
-    getZidCacheInstance()->cleanup();
+// TODO    getZidCacheInstance()->cleanup();
 }
 
 void CtZrtpSession::synchEnter() {

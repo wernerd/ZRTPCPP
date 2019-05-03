@@ -66,13 +66,13 @@ public:
 
     int32_t getPeerName(const uint8_t *peerZid, std::string *name) override ;
 
-    void putPeerName(const uint8_t *peerZid, std::string name) override ;
+    void putPeerName(const uint8_t *peerZid, const std::string& name) override ;
 
     // Not implemented for file based cache
     void cleanup() override {};
     void *prepareReadAll() override { return nullptr; };
     void *readNextRecord(void *stmt, std::string *output) override { return nullptr; };
-    void closeOpenStatment(void *stmt) override {}
+    void closeOpenStatement(void *stmt) override {}
 
 
 };

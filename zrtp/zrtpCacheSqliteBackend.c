@@ -27,7 +27,7 @@
 #ifndef SQL_CIPHER
 #include <sqlite3.h>
 #else
-#include <sqlcipher/sqlite3.h>
+#include <sqlite3.h>
 #endif
 
 

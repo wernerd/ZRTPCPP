@@ -64,16 +64,6 @@ typedef struct {
     uint32_t  preshCounter;
 } remoteZidRecord_t;
 
-/*
- * The flag field stores the following bitflags
- */
-static const uint32_t Valid            = 0x1;
-static const uint32_t SASVerified      = 0x2;
-static const uint32_t RS1Valid         = 0x4;
-static const uint32_t RS2Valid         = 0x8;
-static const uint32_t MITMKeyAvailable = 0x10;
-static const uint32_t inUse            = 0x20;
-
 /**
  * Internal structure that holds the non-key data of a ZID name record.
  *

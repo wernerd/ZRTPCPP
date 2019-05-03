@@ -26,25 +26,6 @@
 #include <libzrtpcpp/ZIDCacheDb.h>
 #include <cryptcommon/aes.h>
 
-
-static ZIDCacheDb* instance;
-
-/**
- * A poor man's factory.
- *
- * The build process must not allow to implementation classes linked
- * into the same library.
- */
-
-ZIDCache* getZidCacheInstance() {
-
-    if (instance == nullptr) {
-        instance = new ZIDCacheDb();
-    }
-    return instance;
-}
-
-
 ZIDCacheDb::~ZIDCacheDb() {
     close();
 }
@@ -56,25 +37,25 @@ int ZIDCacheDb::open(char* name) {
         return 0;
     }
     if (cacheOps.openCache(name, &zidFile, errorBuffer) == 0)
-        cacheOps.readLocalZid(zidFile, associatedZid, NULL, errorBuffer);
+        cacheOps.readLocalZid(zidFile, associatedZid, nullptr, errorBuffer);
     else {
         cacheOps.closeCache(zidFile);
-        zidFile = NULL;
+        zidFile = nullptr;
     }
 
-    return ((zidFile == NULL) ? -1 : 1);
+    return ((zidFile == nullptr) ? -1 : 1);
 }
 
 void ZIDCacheDb::close() {
 
-    if (zidFile != NULL) {
+    if (zidFile != nullptr) {
         cacheOps.closeCache(zidFile);
-        zidFile = NULL;
+        zidFile = nullptr;
     }
 }
 
 ZIDRecord *ZIDCacheDb::getRecord(unsigned char *zid) {
-    ZIDRecordDb *zidRecord = new ZIDRecordDb();
+    auto *zidRecord = new ZIDRecordDb();
 
     cacheOps.readRemoteZidRecord(zidFile, zid, associatedZid, zidRecord->getRecordData(), errorBuffer);
 
@@ -83,14 +64,14 @@ ZIDRecord *ZIDCacheDb::getRecord(unsigned char *zid) {
     // We need to create a new ZID record.
     if (!zidRecord->isValid()) {
         zidRecord->setValid();
-        zidRecord->getRecordData()->secureSince = (int64_t)time(NULL);
+        zidRecord->getRecordData()->secureSince = (int64_t)time(nullptr);
         cacheOps.insertRemoteZidRecord(zidFile, zid, associatedZid, zidRecord->getRecordData(), errorBuffer);
     }
     return zidRecord;
 }
 
 unsigned int ZIDCacheDb::saveRecord(ZIDRecord *zidRec) {
-    ZIDRecordDb *zidRecord = reinterpret_cast<ZIDRecordDb *>(zidRec);
+    auto *zidRecord = reinterpret_cast<ZIDRecordDb *>(zidRec);
 
     cacheOps.updateRemoteZidRecord(zidFile, zidRecord->getIdentifier(), associatedZid, zidRecord->getRecordData(), errorBuffer);
     return 1;
@@ -102,7 +83,7 @@ int32_t ZIDCacheDb::getPeerName(const uint8_t *peerZid, std::string *name) {
 
     nameRec.name = buffer;
     nameRec.nameLength = 200;
-    cacheOps.readZidNameRecord(zidFile, peerZid, associatedZid, NULL, &nameRec, errorBuffer);
+    cacheOps.readZidNameRecord(zidFile, peerZid, associatedZid, nullptr, &nameRec, errorBuffer);
     if ((nameRec.flags & Valid) != Valid) {
         return 0;
     }
@@ -110,30 +91,29 @@ int32_t ZIDCacheDb::getPeerName(const uint8_t *peerZid, std::string *name) {
     return name->length();
 }
 
-void ZIDCacheDb::putPeerName(const uint8_t *peerZid, const std::string name) {
+void ZIDCacheDb::putPeerName(const uint8_t *peerZid, const std::string& name) {
     zidNameRecord_t nameRec;
     char buffer[201] = {'\0'};
 
     nameRec.name = buffer;
     nameRec.nameLength = 200;
-    cacheOps.readZidNameRecord(zidFile, peerZid, associatedZid, NULL, &nameRec, errorBuffer);
+    cacheOps.readZidNameRecord(zidFile, peerZid, associatedZid, nullptr, &nameRec, errorBuffer);
 
     nameRec.name = (char*)name.c_str();
     nameRec.nameLength = name.length();
     nameRec.nameLength = nameRec.nameLength > 200 ? 200 : nameRec.nameLength;
     if ((nameRec.flags & Valid) != Valid) {
         nameRec.flags = Valid;
-        cacheOps.insertZidNameRecord(zidFile, peerZid, associatedZid, NULL, &nameRec, errorBuffer);
+        cacheOps.insertZidNameRecord(zidFile, peerZid, associatedZid, nullptr, &nameRec, errorBuffer);
     }
-    else
-        cacheOps.updateZidNameRecord(zidFile, peerZid, associatedZid, NULL, &nameRec, errorBuffer);
-
-    return;
+    else {
+        cacheOps.updateZidNameRecord(zidFile, peerZid, associatedZid, nullptr, &nameRec, errorBuffer);
+    }
 }
 
 void ZIDCacheDb::cleanup() {
     cacheOps.cleanCache(zidFile, errorBuffer);
-    cacheOps.readLocalZid(zidFile, associatedZid, NULL, errorBuffer);
+    cacheOps.readLocalZid(zidFile, associatedZid, nullptr, errorBuffer);
 }
 
 void *ZIDCacheDb::prepareReadAll() {
@@ -146,7 +126,6 @@ static void formatHex(std::ostringstream &stm, uint8_t *hexBuffer, int32_t lengt
         stm.width(2);
         stm << static_cast<uint32_t>(*hexBuffer++);
     }
-
 }
 
 void ZIDCacheDb::formatOutput(remoteZidRecord_t *remZid, const char *nameBuffer, std::string *output) {
@@ -155,7 +134,7 @@ void ZIDCacheDb::formatOutput(remoteZidRecord_t *remZid, const char *nameBuffer,
     stm.fill('0');
     formatHex(stm, associatedZid, IDENTIFIER_LEN); stm << '|';
     formatHex(stm, remZid->identifier, IDENTIFIER_LEN); stm << '|';
-    uint_8t flag = remZid->flags & 0xff;
+    uint_8t flag = remZid->flags & 0xffU;
     formatHex(stm, &flag, 1); stm << '|';
 
     formatHex(stm, remZid->rs1, RS_LENGTH); stm << '|';
@@ -178,26 +157,26 @@ void ZIDCacheDb::formatOutput(remoteZidRecord_t *remZid, const char *nameBuffer,
 }
 
 void *ZIDCacheDb::readNextRecord(void *stmt, std::string *output) {
-    void *iStmnt = stmt;
+    void *iStmnt;
     zidNameRecord_t nameRec;
     ZIDRecordDb zidRec;
     char buffer[201] = {'\0'};
 
     nameRec.name = buffer;
     nameRec.nameLength = 200;
-    while ((iStmnt = cacheOps.readNextZidRecord(zidFile, stmt, zidRec.getRecordData(), errorBuffer)) != NULL) {
+    while ((iStmnt = cacheOps.readNextZidRecord(zidFile, stmt, zidRec.getRecordData(), errorBuffer)) != nullptr) {
         if (!zidRec.isValid())
             continue;
-        cacheOps.readZidNameRecord(zidFile, zidRec.getIdentifier(), associatedZid, NULL, &nameRec, errorBuffer);
+        cacheOps.readZidNameRecord(zidFile, zidRec.getIdentifier(), associatedZid, nullptr, &nameRec, errorBuffer);
         if ((nameRec.flags & Valid) != Valid)
             formatOutput(zidRec.getRecordData(), "", output);
         else
             formatOutput(zidRec.getRecordData(), buffer, output);
         return iStmnt;
     }
-    return NULL;
+    return nullptr;
 }
 
-void ZIDCacheDb::closeOpenStatment(void *stmt) {
+void ZIDCacheDb::closeOpenStatement(void *stmt) {
     cacheOps.closeStatement(stmt);
 }

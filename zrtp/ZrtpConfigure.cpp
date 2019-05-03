@@ -30,10 +30,6 @@ AlgorithmEnum::AlgorithmEnum(const AlgoTypes type, const char* name,
     decrypt(de), algoId(alId) {
 }
 
-AlgorithmEnum::~AlgorithmEnum()
-{
-}
-
 const char* AlgorithmEnum::getName() {
     return algoName.c_str(); 
 }
@@ -66,28 +62,21 @@ bool AlgorithmEnum::isValid() {
     return (algoType != Invalid); 
 }
 
-static AlgorithmEnum invalidAlgo(Invalid, "", 0, "", NULL, NULL, None);
+static AlgorithmEnum invalidAlgo(Invalid, "", 0, "", nullptr, nullptr, None);
 
 
-EnumBase::EnumBase(AlgoTypes a) : algoType(a) {
-}
-
+EnumBase::EnumBase(AlgoTypes a) : algoType(a) {}
 
 EnumBase::~EnumBase() {
-    std::vector<AlgorithmEnum* >::iterator b = algos.begin();
-    std::vector<AlgorithmEnum* >::iterator e = algos.end();
-
-    for (; b != e; b++) {
-        if (*b) {
-            delete *b;
-        }
+    for (auto b : algos) {
+        delete b;
     }
 }
 
 void EnumBase::insert(const char* name) {
     if (!name)
         return;
-    AlgorithmEnum* e = new AlgorithmEnum(algoType, name, 0, "", NULL, NULL, None);
+    auto* e = new AlgorithmEnum(algoType, name, 0, "", nullptr, nullptr, None);
     algos.push_back(e);
 }
 
@@ -95,7 +84,7 @@ void EnumBase::insert(const char* name, uint32_t klen, const char* ra,
                       encrypt_t enc, decrypt_t dec, SrtpAlgorithms alId) {
     if (!name)
         return;
-    AlgorithmEnum* e = new AlgorithmEnum(algoType, name, klen, ra, enc, dec, alId);
+    auto* e = new AlgorithmEnum(algoType, name, klen, ra, enc, dec, alId);
     algos.push_back(e);
 }
 
@@ -108,24 +97,19 @@ AlgoTypes EnumBase::getAlgoType() {
 }
 
 AlgorithmEnum& EnumBase::getByName(const char* name) {
-    std::vector<AlgorithmEnum* >::iterator b = algos.begin();
-    std::vector<AlgorithmEnum* >::iterator e = algos.end();
-
-    for (; b != e; b++) {
-        if (strncmp((*b)->getName(), name, 4) == 0) {
-            return *(*b);
+    for (auto b : algos) {
+        if (strncmp(b->getName(), name, 4) == 0) {
+            return *b;
         }
     }
     return invalidAlgo;
 }
 
 AlgorithmEnum& EnumBase::getByOrdinal(int ord) {
-    std::vector<AlgorithmEnum* >::iterator b = algos.begin();
-    std::vector<AlgorithmEnum* >::iterator e = algos.end();
-
-    for (int i = 0; b != e; ++b) {
+    int i = 0;
+    for (auto b : algos) {
         if (i == ord) {
-            return *(*b);
+            return *b;
         }
         i++;
     }
@@ -133,11 +117,9 @@ AlgorithmEnum& EnumBase::getByOrdinal(int ord) {
 }
 
 int EnumBase::getOrdinal(AlgorithmEnum& algo) {
-    std::vector<AlgorithmEnum* >::iterator b = algos.begin();
-    std::vector<AlgorithmEnum* >::iterator e = algos.end();
-
-    for (int i = 0; b != e; ++b) {
-        if (strncmp((*b)->getName(), algo.getName(), 4) == 0) {
+    int i = 0;
+    for (auto b : algos) {
+        if (strncmp(b->getName(), algo.getName(), 4) == 0) {
             return i;
         }
         i++;
@@ -145,14 +127,12 @@ int EnumBase::getOrdinal(AlgorithmEnum& algo) {
     return -1;
 }
 
-std::list<std::string>* EnumBase::getAllNames() {
-    std::vector<AlgorithmEnum* >::iterator b = algos.begin();
-    std::vector<AlgorithmEnum* >::iterator e = algos.end();
+std::unique_ptr<std::list<std::string>>
+EnumBase::getAllNames() {
+    auto strg = std::make_unique<std::list<std::string>>();
 
-    std::list<std::string>* strg = new std::list<std::string>();
-
-    for (; b != e; b++) {
-        std::string s((*b)->getName());
+    for (auto b : algos) {
+        std::string s(b->getName());
         strg->push_back(s);
     }
     return strg;
@@ -163,13 +143,11 @@ std::list<std::string>* EnumBase::getAllNames() {
  * Set up the enumeration list for available hash algorithms
  */
 HashEnum::HashEnum() : EnumBase(HashAlgorithm) {
-    insert(s256, 0, "SHA-256", NULL, NULL, None);
-    insert(s384, 0, "SHA-384", NULL, NULL, None);
-    insert(skn2, 0, "Skein-256", NULL, NULL, None);
-    insert(skn3, 0, "Skein-384", NULL, NULL, None);
+    insert(s256, 0, "SHA-256", nullptr, nullptr, None);
+    insert(s384, 0, "SHA-384", nullptr, nullptr, None);
+    insert(skn2, 0, "Skein-256", nullptr, nullptr, None);
+    insert(skn3, 0, "Skein-384", nullptr, nullptr, None);
 }
-
-HashEnum::~HashEnum() {}
 
 /**
  * Set up the enumeration list for available symmetric cipher algorithms
@@ -181,24 +159,20 @@ SymCipherEnum::SymCipherEnum() : EnumBase(CipherAlgorithm) {
     insert(two1, 16, "TwoFish-128", twoCfbEncrypt, twoCfbDecrypt, TwoFish);
 }
 
-SymCipherEnum::~SymCipherEnum() {}
-
 /**
  * Set up the enumeration list for available public key algorithms
  */
 PubKeyEnum::PubKeyEnum() : EnumBase(PubKeyAlgorithm) {
-    insert(dh2k, 0, "DH-2048", NULL, NULL, None);
-    insert(ec25, 0, "NIST ECDH-256", NULL, NULL, None);
-    insert(dh3k, 0, "DH-3072", NULL, NULL, None);
-    insert(ec38, 0, "NIST ECDH-384", NULL, NULL, None);
-    insert(mult, 0, "Multi-stream",  NULL, NULL, None);
+    insert(dh2k, 0, "DH-2048", nullptr, nullptr, None);
+    insert(ec25, 0, "NIST ECDH-256", nullptr, nullptr, None);
+    insert(dh3k, 0, "DH-3072", nullptr, nullptr, None);
+    insert(ec38, 0, "NIST ECDH-384", nullptr, nullptr, None);
+    insert(mult, 0, "Multi-stream",  nullptr, nullptr, None);
 #ifdef SUPPORT_NON_NIST
-    insert(e255, 0, "ECDH-255", NULL, NULL, None);
-    insert(e414, 0, "ECDH-414", NULL, NULL, None);
+    insert(e255, 0, "ECDH-255", nullptr, nullptr, None);
+    insert(e414, 0, "ECDH-414", nullptr, nullptr, None);
 #endif
 }
-
-PubKeyEnum::~PubKeyEnum() {}
 
 /**
  * Set up the enumeration list for available SAS algorithms
@@ -210,19 +184,15 @@ SasTypeEnum::SasTypeEnum() : EnumBase(SasType) {
     insert(b10d);
 }
 
-SasTypeEnum::~SasTypeEnum() {}
-
 /**
  * Set up the enumeration list for available SRTP authentications
  */
 AuthLengthEnum::AuthLengthEnum() : EnumBase(AuthLength) {
-    insert(hs32, 32, "HMAC-SHA1 32 bit", NULL, NULL, Sha1);
-    insert(hs80, 80, "HMAC-SHA1 80 bit", NULL, NULL, Sha1);
-    insert(sk32, 32, "Skein-MAC 32 bit", NULL, NULL, Skein);
-    insert(sk64, 64, "Skein-MAC 64 bit", NULL, NULL, Skein);
+    insert(hs32, 32, "HMAC-SHA1 32 bit", nullptr, nullptr, Sha1);
+    insert(hs80, 80, "HMAC-SHA1 80 bit", nullptr, nullptr, Sha1);
+    insert(sk32, 32, "Skein-MAC 32 bit", nullptr, nullptr, Skein);
+    insert(sk64, 64, "Skein-MAC 64 bit", nullptr, nullptr, Skein);
 }
-
-AuthLengthEnum::~AuthLengthEnum() {}
 
 /*
  * Here the global accessible enumerations for all implemented algorithms.
@@ -237,9 +207,12 @@ AuthLengthEnum zrtpAuthLengths;
  * The public methods are mainly a facade to the private methods.
  */
 ZrtpConfigure::ZrtpConfigure(): enableTrustedMitM(false), enableSasSignature(false), enableParanoidMode(false),
-selectionPolicy(Standard){}
+                                enableDisclosureFlag(false), selectionPolicy(Standard)
+{
+    setMandatoryOnly();
+}
 
-ZrtpConfigure::~ZrtpConfigure() {}
+ZrtpConfigure::~ZrtpConfigure() = default;
 
 void ZrtpConfigure::setStandardConfig() {
     clear();
@@ -335,12 +308,10 @@ AlgorithmEnum& ZrtpConfigure::getAlgoAt(std::vector<AlgorithmEnum* >& a, int32_t
     if (index >= (int)a.size())
         return invalidAlgo;
 
-    std::vector<AlgorithmEnum* >::iterator b = a.begin();
-    std::vector<AlgorithmEnum* >::iterator e = a.end();
-
-    for (int i = 0; b != e; ++b) {
+    int i = 0;
+    for (auto algo : a) {
         if (i == index) {
-            return *(*b);
+            return *algo;
         }
         i++;
     }
@@ -371,14 +342,12 @@ int32_t ZrtpConfigure::addAlgoAt(std::vector<AlgorithmEnum* >& a, AlgorithmEnum&
     if (!algo.isValid())
         return -1;
 
-//    a[index] = &algo;
-
     if (index >= size) {
         a.push_back(&algo);
         return maxNoOfAlgos - (int)a.size();
     }
-    std::vector<AlgorithmEnum* >::iterator b = a.begin();
-    std::vector<AlgorithmEnum* >::iterator e = a.end();
+    auto b = a.begin();
+    auto e = a.end();
 
     for (int i = 0; b != e; ++b) {
         if (i == index) {
@@ -395,8 +364,8 @@ int32_t ZrtpConfigure::removeAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum
     if ((int)a.size() == 0 || !algo.isValid())
         return maxNoOfAlgos;
 
-    std::vector<AlgorithmEnum* >::iterator b = a.begin();
-    std::vector<AlgorithmEnum* >::iterator e = a.end();
+    auto b = a.begin();
+    auto e = a.end();
 
     for (; b != e; ++b) {
         if (strcmp((*b)->getName(), algo.getName()) == 0) {
@@ -416,11 +385,8 @@ bool ZrtpConfigure::containsAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum&
     if ((int)a.size() == 0 || !algo.isValid())
         return false;
 
-    std::vector<AlgorithmEnum* >::iterator b = a.begin();
-    std::vector<AlgorithmEnum* >::iterator e = a.end();
-
-    for (; b != e; ++b) {
-        if (strcmp((*b)->getName(), algo.getName()) == 0) {
+    for (auto b : a) {
+        if (strcmp(b->getName(), algo.getName()) == 0) {
             return true;
         }
     }
@@ -429,11 +395,8 @@ bool ZrtpConfigure::containsAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum&
 
 void ZrtpConfigure::printConfiguredAlgos(std::vector<AlgorithmEnum* >& a) {
 
-    std::vector<AlgorithmEnum* >::iterator b = a.begin();
-    std::vector<AlgorithmEnum* >::iterator e = a.end();
-
-    for (; b != e; ++b) {
-        printf("print configured: name: %s\n", (*b)->getName());
+    for (auto b : a) {
+        printf("print configured: name: %s\n", b->getName());
     }
 }
 
@@ -493,43 +456,6 @@ bool ZrtpConfigure::isDisclosureFlag() {
     return enableDisclosureFlag;
 }
 
-#if 0
-ZrtpConfigure config;
-
-main() {
-    printf("Start\n");
-    printf("size: %d\n", zrtpHashes.getSize());
-    AlgorithmEnum e = zrtpHashes.getByName("S256");
-    printf("algo name: %s\n", e.getName());
-    printf("algo type: %d\n", e.getAlgoType());
-
-    std::list<std::string>* names = zrtpHashes.getAllNames();
-    printf("size of name list: %d\n", names->size());
-    printf("first name: %s\n", names->front().c_str());
-    printf("last name: %s\n", names->back().c_str());
-
-    printf("free slots: %d (expected 6)\n", config.addAlgo(HashAlgorithm, e));
-
-    AlgorithmEnum e1(HashAlgorithm, "SHA384");
-    printf("free slots: %d (expected 5)\n", config.addAlgoAt(HashAlgorithm, e1, 0));
-    AlgorithmEnum e2 = config.getAlgoAt(HashAlgorithm, 0);
-    printf("algo name: %s (expected SHA384)\n", e2.getName());
-    printf("Num of configured algos: %d (expected 2)\n", config.getNumConfiguredAlgos(HashAlgorithm));
-    config.printConfiguredAlgos(HashAlgorithm);
-    printf("free slots: %d (expected 6)\n", config.removeAlgo(HashAlgorithm, e2));
-    e2 = config.getAlgoAt(HashAlgorithm, 0);
-    printf("algo name: %s (expected SHA256)\n", e2.getName());
-    
-    printf("clearing config\n");
-    config.clear();
-    printf("size: %d\n", zrtpHashes.getSize());
-    e = zrtpHashes.getByName("S256");
-    printf("algo name: %s\n", e.getName());
-    printf("algo type: %d\n", e.getAlgoType());
-
-}
-
-#endif
 /** EMACS **
  * Local variables:
  * mode: c++

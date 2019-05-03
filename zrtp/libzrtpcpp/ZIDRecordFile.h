@@ -66,13 +66,6 @@ typedef struct zidrecord2 {
     unsigned char mitmKey[RS_LENGTH];         ///< MiTM key if available
 } zidrecord2_t;
 
-static const int Valid            = 0x1;
-static const int SASVerified      = 0x2;
-static const int RS1Valid         = 0x4;
-static const int RS2Valid         = 0x8;
-static const int MITMKeyAvailable = 0x10;
-static const int OwnZIDRecord     = 0x20;
-
 /**
  * This class implements the ZID record.
  *

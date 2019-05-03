@@ -17,7 +17,6 @@
 /*
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
-// #define UNIT_TEST
 
 #include <string>
 #include <stdlib.h>
@@ -31,24 +30,6 @@
 #include <crypto/zrtpDH.h>
 
 #include <libzrtpcpp/ZIDCacheEmpty.h>
-
-
-static ZIDCacheEmpty* instance;
-
-/**
- * A poor man's factory.
- *
- * The build process must not allow two cache file implementation classes linked
- * into the same library.
- */
-
-ZIDCache* getZidCacheInstance() {
-
-    if (instance == nullptr) {
-        instance = new ZIDCacheEmpty();
-    }
-    return instance;
-}
 
 int ZIDCacheEmpty::open(char* name) {
     (void) name;
@@ -72,7 +53,7 @@ int32_t ZIDCacheEmpty::getPeerName(const uint8_t *peerZid, std::string *name) {
     return 0;
 }
 
-void ZIDCacheEmpty::putPeerName(const uint8_t *peerZid, const std::string name) {
+void ZIDCacheEmpty::putPeerName(const uint8_t *peerZid, const std::string& name) {
     (void) peerZid;
     (void) name;
 }

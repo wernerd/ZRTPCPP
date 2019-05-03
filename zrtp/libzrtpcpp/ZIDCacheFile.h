@@ -49,38 +49,38 @@ class __EXPORT ZIDCacheFile: public ZIDCache {
 private:
 
     FILE* zidFile;
-    unsigned char associatedZid[IDENTIFIER_LEN];
+    unsigned char associatedZid[IDENTIFIER_LEN] = {0};
 
     void createZIDFile(char* name);
     void checkDoMigration(char* name);
 
 public:
 
-    ZIDCacheFile(): zidFile(NULL) {};
+    ZIDCacheFile(): zidFile(nullptr) {};
 
-    ~ZIDCacheFile();
+    ~ZIDCacheFile() override;
 
-    int open(char *name);
+    int open(char *name) override;
 
-    bool isOpen() { return (zidFile != NULL); };
+    bool isOpen() override { return (zidFile != nullptr); };
 
-    void close();
+    void close() override;
 
-    ZIDRecord *getRecord(unsigned char *zid);
+    ZIDRecord *getRecord(unsigned char *zid) override;
 
-    unsigned int saveRecord(ZIDRecord *zidRecord);
+    unsigned int saveRecord(ZIDRecord *zidRecord) override;
 
-    const unsigned char* getZid() { return associatedZid; };
+    const unsigned char* getZid() override { return associatedZid; };
 
-    int32_t getPeerName(const uint8_t *peerZid, std::string *name);
+    int32_t getPeerName(const uint8_t *peerZid, std::string *name) override;
 
-    void putPeerName(const uint8_t *peerZid, const std::string name);
+    void putPeerName(const uint8_t *peerZid, const std::string& name) override;
 
     // Not implemented for file based cache
-    void cleanup() {};
-    void *prepareReadAll() { return NULL; };
-    void *readNextRecord(void *stmt, std::string *output) { return NULL; };
-    void closeOpenStatment(void *stmt) {}
+    void cleanup() override {};
+    void *prepareReadAll() override { return nullptr; };
+    void *readNextRecord(void *stmt, std::string *output) override { return nullptr; };
+    void closeOpenStatement(void *stmt) override {}
 
 
 };
