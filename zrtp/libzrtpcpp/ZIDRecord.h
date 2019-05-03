@@ -17,8 +17,13 @@
 #ifndef _ZIDRECORD_H_
 #define _ZIDRECORD_H_
 
+#if defined(__cplusplus)
+#include <cstdint>
+#else
 #include <stdint.h>
+#endif
 #include <common/osSpecifics.h>
+
 /**
  * @file ZIDRecord.h
  * @brief ZID cache record management

@@ -18,7 +18,6 @@
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <ctype.h>
 #include <libzrtpcpp/ZrtpPacketHello.h>
 
 

@@ -34,13 +34,13 @@
 #include <cryptcommon/ZrtpRandom.h>
 
 
-static BigNum bnP2048 = {0};
-static BigNum bnP3072 = {0};
+static BigNum bnP2048;
+static BigNum bnP3072;
 
-static BigNum bnP2048MinusOne = {0};
-static BigNum bnP3072MinusOne = {0};
+static BigNum bnP2048MinusOne;
+static BigNum bnP3072MinusOne;
 
-static BigNum two = {0};
+static BigNum two;
 
 static uint8_t dhinit = 0;
 
@@ -171,7 +171,7 @@ ZrtpDH::ZrtpDH(const char* type) {
 
     uint8_t random[64];
 
-    dhCtx* tmpCtx = new dhCtx;
+    auto* tmpCtx = new dhCtx;
     ctx = static_cast<void*>(tmpCtx);
 
     // Well - the algo type is only 4 char thus cast to int32 and compare
@@ -220,7 +220,7 @@ ZrtpDH::ZrtpDH(const char* type) {
     }
 
     bnBegin(&tmpCtx->privKey);
-    INIT_EC_POINT(&tmpCtx->pubPoint);
+    INIT_EC_POINT(&tmpCtx->pubPoint)
 
     switch (pkType) {
     case DH2K:
@@ -251,11 +251,11 @@ ZrtpDH::ZrtpDH(const char* type) {
 }
 
 ZrtpDH::~ZrtpDH() {
-    if (ctx == NULL)
+    if (ctx == nullptr)
         return;
 
-    dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
-    FREE_EC_POINT(&tmpCtx->pubPoint);
+    auto* tmpCtx = static_cast<dhCtx*>(ctx);
+    FREE_EC_POINT(&tmpCtx->pubPoint)
     bnEnd(&tmpCtx->privKey);
 
     switch (pkType) {
@@ -280,7 +280,7 @@ ZrtpDH::~ZrtpDH() {
 
 int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
 
-    dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
+    auto* tmpCtx = static_cast<dhCtx*>(ctx);
 
     int32_t length = getDhSize();
 
@@ -313,8 +313,8 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
         EcPoint pub;
 
         bnBegin(&sec);
-        INIT_EC_POINT(&pub);
-        bnSetQ(pub.z, 1);               // initialze Z to one, these are affine coords
+        INIT_EC_POINT(&pub)
+        bnSetQ(pub.z, 1);               // initialize Z to one, these are affine coords
 
         bnInsertBigBytes(pub.x, pubKeyBytes, 0, len);
         bnInsertBigBytes(pub.y, pubKeyBytes+len, 0, len);
@@ -323,7 +323,7 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
         ecdhComputeAgreement(&tmpCtx->curve, &sec, &pub, &tmpCtx->privKey);
         bnExtractBigBytes(&sec, secret, 0, length);
         bnEnd(&sec);
-        FREE_EC_POINT(&pub);
+        FREE_EC_POINT(&pub)
 
         return length;
     }
@@ -332,7 +332,7 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
         EcPoint pub;
 
         bnBegin(&sec);
-        INIT_EC_POINT(&pub);
+        INIT_EC_POINT(&pub)
 
         bnInsertLittleBytes(pub.x, pubKeyBytes, 0, len);
 
@@ -340,7 +340,7 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
         ecdhComputeAgreement(&tmpCtx->curve, &sec, &pub, &tmpCtx->privKey);
         bnExtractLittleBytes(&sec, secret, 0, length);
         bnEnd(&sec);
-        FREE_EC_POINT(&pub);
+        FREE_EC_POINT(&pub)
 
         return length;
     }
@@ -349,7 +349,7 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
 
 int32_t ZrtpDH::generatePublicKey()
 {
-    dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
+    auto* tmpCtx = static_cast<dhCtx*>(ctx);
 
     bnBegin(&tmpCtx->pubKey);
     switch (pkType) {
@@ -376,31 +376,28 @@ uint32_t ZrtpDH::getDhSize() const
     switch (pkType) {
     case DH2K:
         return 2048/8;
-        break;
+
     case DH3K:
         return 3072/8;
-        break;
 
     case EC25:
         return 32;
-        break;
+
     case EC38:
         return 48;
-        break;
 
     case E255:
         return 32;
-        break;
+
     case E414:
         return 52;
-        break;
     }
     return 0;
 }
 
 int32_t ZrtpDH::getPubKeySize() const
 {
-    dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
+    auto* tmpCtx = static_cast<dhCtx*>(ctx);
     if (pkType == DH2K || pkType == DH3K)
         return bnBytes(&tmpCtx->pubKey);
 
@@ -415,7 +412,7 @@ int32_t ZrtpDH::getPubKeySize() const
 
 int32_t ZrtpDH::getPubKeyBytes(uint8_t *buf) const
 {
-    dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
+    auto* tmpCtx = static_cast<dhCtx*>(ctx);
 
     if (pkType == DH2K || pkType == DH3K) {
         // get len of pub_key, prepend with zeros to DH size
@@ -449,10 +446,10 @@ int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
     /* ECC validation (partial), NIST SP800-56A, section 5.6.2.6 */
     if (pkType == EC25 || pkType == EC38 || pkType == E414) {
 
-        dhCtx* tmpCtx = static_cast<dhCtx*>(ctx);
+        auto* tmpCtx = static_cast<dhCtx*>(ctx);
         EcPoint pub;
 
-        INIT_EC_POINT(&pub);
+        INIT_EC_POINT(&pub)
         int32_t len = getPubKeySize() / 2;
 
         bnInsertBigBytes(pub.x, pubKeyBytes, 0, len);
@@ -507,7 +504,7 @@ const char* ZrtpDH::getDHtype()
     case E414:
         return e414;
     }
-    return NULL;
+    return nullptr;
 }
 
 /** EMACS **

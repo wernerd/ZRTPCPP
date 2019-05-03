@@ -18,7 +18,7 @@
  * @author  Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <string.h>
+#include <string>
 
 #include <zrtp/crypto/aesCFB.h>
 #include <cryptcommon/aescpp.h>

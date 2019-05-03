@@ -55,14 +55,14 @@ static int32_t hmacSha256Init(hmacSha256Context *ctx, const uint8_t *key, uint64
     }
     /* prepare inner hash and hold the context */
     for (i = 0; i < SHA256_BLOCK_SIZE; i++)
-        localPad[i] = static_cast<uint_8t >(localKey[i] ^ 0x36);
+        localPad[i] = static_cast<uint_8t >(localKey[i] ^ 0x36U);
 
     sha256_begin(&ctx->innerCtx);
     sha256_hash(localPad, SHA256_BLOCK_SIZE, &ctx->innerCtx);
 
     /* prepare outer hash and hold the context */
     for (i = 0; i < SHA256_BLOCK_SIZE; i++)
-        localPad[i] = static_cast<uint_8t >(localKey[i] ^ 0x5c);
+        localPad[i] = static_cast<uint_8t >(localKey[i] ^ 0x5cU);
 
     sha256_begin(&ctx->outerCtx);
     sha256_hash(localPad, SHA256_BLOCK_SIZE, &ctx->outerCtx);
@@ -144,11 +144,11 @@ void* createSha256HmacContext(uint8_t* key, uint64_t keyLength)
 void hmacSha256Ctx(void* ctx, const uint8_t* data, uint64_t dataLength,
                 uint8_t* mac, uint32_t* macLength)
 {
-    auto *pctx = (hmacSha256Context*)ctx;
+    auto *pCtx = (hmacSha256Context*)ctx;
 
-    hmacSha256Reset(pctx);
-    hmacSha256Update(pctx, data, dataLength);
-    hmacSha256Final(pctx, mac);
+    hmacSha256Reset(pCtx);
+    hmacSha256Update(pCtx, data, dataLength);
+    hmacSha256Final(pCtx, mac);
     *macLength = SHA256_DIGEST_SIZE;
 }
 
@@ -157,13 +157,13 @@ void hmacSha256Ctx(void* ctx,
                    const std::vector<uint64_t>& dataLength,
                    uint8_t* mac, uint32_t* macLength )
 {
-    auto *pctx = (hmacSha256Context*)ctx;
+    auto *pCtx = (hmacSha256Context*)ctx;
 
-    hmacSha256Reset(pctx);
+    hmacSha256Reset(pCtx);
     for (size_t i = 0, size = data.size(); i < size; i++) {
-        hmacSha256Update(pctx, data[i], dataLength[i]);
+        hmacSha256Update(pCtx, data[i], dataLength[i]);
     }
-    hmacSha256Final(pctx, mac);
+    hmacSha256Final(pCtx, mac);
     *macLength = SHA256_DIGEST_SIZE;
 }
 

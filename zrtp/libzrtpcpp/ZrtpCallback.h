@@ -25,7 +25,7 @@
  */
 
 #include <string>
-#include <stdint.h>
+#include <cstdint>
 #include <libzrtpcpp/ZrtpCodes.h>
 #include <common/osSpecifics.h>
 

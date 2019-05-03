@@ -18,29 +18,26 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#define MAKE_F8_TEST
+// #define MAKE_F8_TEST
 
-#include <stdlib.h>
 #include <crypto/SrtpSymCrypto.h>
 #include <cryptcommon/twofish.h>
 #include <cryptcommon/aesopt.h>
-#include <string.h>
-#include <stdio.h>
 #include <common/osSpecifics.h>
 
-SrtpSymCrypto::SrtpSymCrypto(int algo):key(NULL), algorithm(algo) {
+SrtpSymCrypto::SrtpSymCrypto(int algo):key(nullptr), algorithm(algo) {
 }
 
 SrtpSymCrypto::SrtpSymCrypto( uint8_t* k, int32_t keyLength, int algo):
-    key(NULL), algorithm(algo) {
+    key(nullptr), algorithm(algo) {
 
     setNewKey(k, keyLength);
 }
 
 SrtpSymCrypto::~SrtpSymCrypto() {
-    if (key != NULL) {
+    if (key != nullptr) {
         if (algorithm == SrtpEncryptionAESCM || algorithm == SrtpEncryptionAESF8) {
-            AESencrypt *saAes = reinterpret_cast<AESencrypt*>(key);
+            auto *saAes = reinterpret_cast<AESencrypt*>(key);
             memset(saAes->cx, 0, sizeof(aes_encrypt_ctx));
             delete saAes;
         }
@@ -48,7 +45,7 @@ SrtpSymCrypto::~SrtpSymCrypto() {
             memset(key, 0, sizeof(Twofish_key));
             delete[] (uint8_t*)key;
         }
-        key = NULL;
+        key = nullptr;
     }
 }
 
@@ -56,9 +53,9 @@ static int twoFishInit = 0;
 
 bool SrtpSymCrypto::setNewKey(const uint8_t* k, int32_t keyLength) {
     // release an existing key before setting a new one
-    if (key != NULL) {
+    if (key != nullptr) {
         if (algorithm == SrtpEncryptionAESCM || algorithm == SrtpEncryptionAESF8) {
-            AESencrypt *saAes = reinterpret_cast<AESencrypt*>(key);
+            auto *saAes = reinterpret_cast<AESencrypt*>(key);
             memset(saAes->cx, 0, sizeof(aes_encrypt_ctx));
             delete saAes;
         }
@@ -66,14 +63,14 @@ bool SrtpSymCrypto::setNewKey(const uint8_t* k, int32_t keyLength) {
             memset(key, 0, sizeof(Twofish_key));
             delete[] (uint8_t*)key;
         }
-        key = NULL;
+        key = nullptr;
     }
 
     if (!(keyLength == 16 || keyLength == 32)) {
         return false;
     }
     if (algorithm == SrtpEncryptionAESCM || algorithm == SrtpEncryptionAESF8) {
-        AESencrypt *saAes = new AESencrypt();
+        auto *saAes = new AESencrypt();
         if (keyLength == 16)
             saAes->key128(k);
         else
@@ -97,7 +94,7 @@ bool SrtpSymCrypto::setNewKey(const uint8_t* k, int32_t keyLength) {
 
 void SrtpSymCrypto::encrypt(const uint8_t* input, uint8_t* output) {
     if (algorithm == SrtpEncryptionAESCM || algorithm == SrtpEncryptionAESF8) {
-        AESencrypt *saAes = reinterpret_cast<AESencrypt*>(key);
+        auto *saAes = reinterpret_cast<AESencrypt*>(key);
         saAes->encrypt(input, output);
     }
     else if (algorithm == SrtpEncryptionTWOCM || algorithm == SrtpEncryptionTWOF8) {
@@ -112,15 +109,15 @@ void SrtpSymCrypto::get_ctr_cipher_stream(uint8_t* output, uint32_t length, uint
 
     for(ctr = 0; ctr < length/SRTP_BLOCK_SIZE; ctr++) {
         //compute the cipher stream
-        iv[14] = (uint8_t)((ctr & 0xFF00) >>  8);
-        iv[15] = (uint8_t)((ctr & 0x00FF));
+        iv[14] = (uint8_t)((ctr & 0xFF00U) >>  8U);
+        iv[15] = (uint8_t)((ctr & 0x00FFU));
 
         encrypt(iv, &output[ctr*SRTP_BLOCK_SIZE]);
     }
     if ((length % SRTP_BLOCK_SIZE) > 0) {
-        // Treat the last bytes:
-        iv[14] = (uint8_t)((ctr & 0xFF00) >>  8);
-        iv[15] = (uint8_t)((ctr & 0x00FF));
+        // handle the last bytes:
+        iv[14] = (uint8_t)((ctr & 0xFF00U) >>  8U);
+        iv[15] = (uint8_t)((ctr & 0x00FFU));
 
         encrypt(iv, temp);
         memcpy(&output[ctr*SRTP_BLOCK_SIZE], temp, length % SRTP_BLOCK_SIZE );
@@ -129,7 +126,7 @@ void SrtpSymCrypto::get_ctr_cipher_stream(uint8_t* output, uint32_t length, uint
 
 void SrtpSymCrypto::ctr_encrypt(const uint8_t* input, uint32_t input_length, uint8_t* output, uint8_t* iv) {
 
-    if (key == NULL)
+    if (key == nullptr)
         return;
 
     uint16_t ctr = 0;
@@ -137,20 +134,20 @@ void SrtpSymCrypto::ctr_encrypt(const uint8_t* input, uint32_t input_length, uin
 
     int l = input_length/SRTP_BLOCK_SIZE;
     for (ctr = 0; ctr < l; ctr++ ) {
-        iv[14] = (uint8_t)((ctr & 0xFF00) >>  8);
-        iv[15] = (uint8_t)((ctr & 0x00FF));
+        iv[14] = (uint8_t)((ctr & 0xFF00U) >>  8U);
+        iv[15] = (uint8_t)((ctr & 0x00FFU));
 
         encrypt(iv, temp);
-        for (int i = 0; i < SRTP_BLOCK_SIZE; i++ ) {
-            *output++ = temp[i] ^ *input++;
-        }
 
+        for (const auto& t : temp) {
+            *output++ = t ^ *input++;
+        }
     }
     l = input_length % SRTP_BLOCK_SIZE;
     if (l > 0) {
         // Treat the last bytes:
-        iv[14] = (uint8_t)((ctr & 0xFF00) >>  8);
-        iv[15] = (uint8_t)((ctr & 0x00FF));
+        iv[14] = (uint8_t)((ctr & 0xFF00U) >>  8U);
+        iv[15] = (uint8_t)((ctr & 0x00FFU));
 
         encrypt(iv, temp);
         for (int i = 0; i < l; i++ ) {
@@ -161,7 +158,7 @@ void SrtpSymCrypto::ctr_encrypt(const uint8_t* input, uint32_t input_length, uin
 
 void SrtpSymCrypto::ctr_encrypt( uint8_t* data, uint32_t data_length, uint8_t* iv ) {
 
-    if (key == NULL)
+    if (key == nullptr)
         return;
 
     uint16_t ctr = 0;
@@ -169,20 +166,20 @@ void SrtpSymCrypto::ctr_encrypt( uint8_t* data, uint32_t data_length, uint8_t* i
 
     int l = data_length/SRTP_BLOCK_SIZE;
     for (ctr = 0; ctr < l; ctr++ ) {
-        iv[14] = (uint8_t)((ctr & 0xFF00) >>  8);
-        iv[15] = (uint8_t)((ctr & 0x00FF));
+        iv[14] = (uint8_t)((ctr & 0xFF00U) >>  8U);
+        iv[15] = (uint8_t)((ctr & 0x00FFU));
 
         encrypt(iv, temp);
-        for (int i = 0; i < SRTP_BLOCK_SIZE; i++ ) {
-            *data++ ^= temp[i];
+        for (const auto& t : temp) {
+            *data++ ^= t;
         }
 
     }
     l = data_length % SRTP_BLOCK_SIZE;
     if (l > 0) {
         // Treat the last bytes:
-        iv[14] = (uint8_t)((ctr & 0xFF00) >>  8);
-        iv[15] = (uint8_t)((ctr & 0x00FF));
+        iv[14] = (uint8_t)((ctr & 0xFF00U) >>  8U);
+        iv[15] = (uint8_t)((ctr & 0x00FFU));
 
         encrypt(iv, temp);
         for (int i = 0; i < l; i++ ) {
@@ -199,7 +196,7 @@ void SrtpSymCrypto::f8_encrypt(const uint8_t* data, uint32_t data_length,
 
 #define MAX_KEYLEN 32
 
-void SrtpSymCrypto::f8_deriveForIV(SrtpSymCrypto* f8Cipher, uint8_t* key, int32_t keyLen,
+void SrtpSymCrypto::f8_deriveForIV(SrtpSymCrypto* f8Cipher, uint8_t* keyIn, int32_t keyLen,
              uint8_t* salt, int32_t saltLen) {
 
     unsigned char *cp_in, *cp_in1, *cp_out;
@@ -224,7 +221,7 @@ void SrtpSymCrypto::f8_deriveForIV(SrtpSymCrypto* f8Cipher, uint8_t* key, int32_
      * get the special key.
      */
     cp_out = maskedKey;
-    cp_in = key;
+    cp_in = keyIn;
     cp_in1 = saltMask;
     for (int i = 0; i < keyLen; i++) {
         *cp_out++ = *cp_in++ ^ *cp_in1++;
@@ -246,7 +243,7 @@ void SrtpSymCrypto::f8_encrypt(const uint8_t* in, uint32_t in_length, uint8_t* o
 
     F8_CIPHER_CTX f8ctx;
 
-    if (key == NULL)
+    if (key == nullptr)
         return;
     /*
      * Get memory for the derived IV (IV')
@@ -300,7 +297,7 @@ int SrtpSymCrypto::processBlock(F8_CIPHER_CTX *f8ctx, const uint8_t* in, int32_t
     encrypt(f8ctx->S, f8ctx->S);
     /*
      * as the last step XOR the plain text with the key stream to produce
-     * the ciphertext.
+     * the cipher text.
      */
     cp_out = out;
     cp_in = in;

@@ -7,7 +7,7 @@
  */
 
 #include <string>
-#include <stdio.h>
+#include <cstdio>
 
 #include <libzrtpcpp/ZIDCache.h>
 #include <libzrtpcpp/ZRtp.h>

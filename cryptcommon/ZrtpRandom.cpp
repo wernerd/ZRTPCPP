@@ -156,6 +156,8 @@ size_t ZrtpRandom::getSystemSeed(uint8_t *seed, size_t length)
     }
     else
         return num;
+#else
+#error "No random soure defined"
 #endif
     return num;
 }

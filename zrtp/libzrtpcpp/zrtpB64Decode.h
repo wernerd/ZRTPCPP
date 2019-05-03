@@ -30,7 +30,7 @@ void base64_init_decodestate(base64_decodestate* state_in);
 
 int base64_decode_value(char value_in);
 
-int base64_decode_block(const char* code_in, const int length_in, uint8_t *plaintext_out, base64_decodestate* state_in);
+int base64_decode_block(const char* code_in, int length_in, uint8_t *plaintext_out, base64_decodestate* state_in);
 
 #if defined(__cplusplus)
 }

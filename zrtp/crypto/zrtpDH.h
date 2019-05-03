@@ -21,11 +21,10 @@
 #ifndef _ZRTPDH_H__
 #define _ZRTPDH_H__
 
-#include <stdint.h>
 
 /**
  * @file zrtpDH.h
- * @brief Class that implemets Diffie-Helman key agreement for ZRTP
+ * @brief Class that implements Diffie-Hellman key agreement for ZRTP
  * 
  * @ingroup GNU_ZRTP
  * @{
@@ -42,14 +41,18 @@
  *    Number of random bytes to produce.
  */
 #if defined(__cplusplus)
+#include <cstdint>
 extern "C"
 {
+#else
+#include <stdint.h>
 #endif
 void randomZRTP(uint8_t *buf, int32_t length);
 #if defined(__cplusplus)
 }
 #endif
 
+// Exclude the whole code if not compile with c++ - needed for C-wrapper code.
 #if defined(__cplusplus)
 
 #include <libzrtpcpp/ZrtpConfigure.h>
@@ -81,12 +84,12 @@ private:
 
 public:
     /**
-     * Create a Diffie-Helman key agreement algorithm
+     * Create a Diffie-Hellman key agreement algorithm
      * 
      * @param type
      *     Name of the DH algorithm to use
      */
-    ZrtpDH(const char* type);
+    explicit ZrtpDH(const char* type);
     
     ~ZrtpDH();
 

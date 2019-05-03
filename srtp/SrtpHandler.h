@@ -17,7 +17,7 @@
 #ifndef _SRTPHANDLER_H_
 #define _SRTPHANDLER_H_
 
-#include <stdint.h>
+#include <cstdint>
 #include <libzrtpcpp/ZrtpCodes.h>
 
 class CryptoContext;

@@ -25,7 +25,7 @@
  * @{
  */
 
-#include <stdint.h>
+#include <cstdint>
 #include <srtp/CryptoContext.h>
 
 #ifndef SRTP_BLOCK_SIZE
@@ -66,7 +66,7 @@ public:
      *    SrtpEncryptionTWOCM, SrtpEncryptionTWOF8</code>. See chapter 4.1.1
      *    for CM (Counter mode) and 4.1.2 for F8 mode.
      */
-    SrtpSymCrypto(int algo = SrtpEncryptionAESCM);
+    explicit SrtpSymCrypto(int algo = SrtpEncryptionAESCM);
 
     /**
      * @brief Constructor that initializes key data
@@ -176,7 +176,7 @@ public:
      * @param f8Cipher
      *    Pointer to the cipher context that will be used to encrypt IV to IV'
      *
-     * @param key
+     * @param keyIn
      *    The master key
      *
      * @param keyLen
@@ -188,7 +188,7 @@ public:
      * @param saltLen
      *   length of master salt.
      */
-    void f8_deriveForIV(SrtpSymCrypto* f8Cipher, uint8_t* key, int32_t keyLen, uint8_t* salt, int32_t saltLen);
+    void f8_deriveForIV(SrtpSymCrypto* f8Cipher, uint8_t* keyIn, int32_t keyLen, uint8_t* salt, int32_t saltLen);
 
     /**
      * @brief F8 mode encryption, in place.
@@ -241,10 +241,6 @@ private:
     int32_t algorithm;
 };
 
-#pragma GCC visibility push(default)
-int testF8();
-#pragma GCC visibility pop
-
 /* Only SrtpSymCrypto functions defines the MAKE_F8_TEST */
 #ifdef MAKE_F8_TEST
 
@@ -259,7 +255,7 @@ static void hexdump(const char* title, const unsigned char *s, int l)
 {
     int n=0;
 
-    if (s == NULL) return;
+    if (s == nullptr) return;
 
     fprintf(stderr, "%s",title);
     for( ; n < l ; ++n) {
@@ -311,8 +307,8 @@ static uint32_t ROC = 0xd462564a;
 
 int testF8()
 {
-    SrtpSymCrypto* aesCipher = new SrtpSymCrypto(SrtpEncryptionAESF8);
-    SrtpSymCrypto* f8AesCipher = new SrtpSymCrypto(SrtpEncryptionAESF8);
+    auto* aesCipher = new SrtpSymCrypto(SrtpEncryptionAESF8);
+    auto* f8AesCipher = new SrtpSymCrypto(SrtpEncryptionAESF8);
 
     aesCipher->setNewKey(key, sizeof(key));
 
@@ -325,7 +321,7 @@ int testF8()
      */
 
     unsigned char derivedIv[16];
-    uint32_t* ui32p = (uint32_t*)derivedIv;
+    auto* ui32p = (uint32_t*)derivedIv;
 
     memcpy(derivedIv, rtpPacket, 12);
     derivedIv[0] = 0;

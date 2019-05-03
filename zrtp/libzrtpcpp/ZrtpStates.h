@@ -30,9 +30,9 @@
  */
 
 #include <stdlib.h>
-#include <string.h>
+#include <string>
 #include <assert.h>
-#include <stdint.h>
+#include <cstdint>
 
 class __EXPORT ZrtpStateClass;
 /**

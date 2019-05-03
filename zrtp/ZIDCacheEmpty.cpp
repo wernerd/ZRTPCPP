@@ -1,5 +1,5 @@
 /*
- * Copyright 2006 - 2018, Werner Dittmann
+ * Copyright 2019, Werner Dittmann
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,18 +18,8 @@
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <string>
-#include <stdlib.h>
-
-#ifdef _MSC_VER
-#include <io.h>
-#else
-#include <unistd.h>
-#endif
-
-#include <crypto/zrtpDH.h>
-
 #include <libzrtpcpp/ZIDCacheEmpty.h>
+#include <libzrtpcpp/ZIDRecordEmpty.h>
 
 int ZIDCacheEmpty::open(char* name) {
     (void) name;

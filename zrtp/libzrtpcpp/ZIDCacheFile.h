@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <libzrtpcpp/ZIDCache.h>
 #include <libzrtpcpp/ZIDRecordFile.h>

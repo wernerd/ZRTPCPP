@@ -24,11 +24,16 @@
  * @{
  */
 
+#ifdef __cplusplus
+#include <string>
+#include <cstdint>
+#else
 #include <string.h>
+#include <stdint.h>
+#endif
 #if !(defined(_WIN32) || defined(_WIN64))
 #include <unistd.h>
 #endif
-#include <stdint.h>
 #include <sys/types.h>
 
 #ifdef __cplusplus

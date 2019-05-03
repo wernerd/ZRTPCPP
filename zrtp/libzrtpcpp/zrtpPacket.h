@@ -34,7 +34,7 @@
  * @{
  */
 
-#include <stdio.h>
+#include <cstdint>
 
 /**
  * The following defines match the ZRTP specification, chapter 5

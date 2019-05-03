@@ -1,5 +1,5 @@
 /*
- * Copyright 2006 - 2018, Werner Dittmann
+ * Copyright 2019, Werner Dittmann
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
-
 #include <libzrtpcpp/ZIDCache.h>
-#include <libzrtpcpp/ZIDRecordEmpty.h>
 
 #ifndef _ZIDCACHEEMPTY_H_
 #define _ZIDCACHEEMPTY_H_

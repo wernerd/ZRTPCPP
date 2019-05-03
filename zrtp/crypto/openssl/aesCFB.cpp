@@ -16,7 +16,7 @@
 
 #include <openssl/crypto.h>
 #include <openssl/aes.h>
-#include <string.h>
+#include <string>
 
 #include <zrtp/crypto/aesCFB.h>
 

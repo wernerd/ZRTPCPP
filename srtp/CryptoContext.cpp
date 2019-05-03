@@ -177,10 +177,10 @@ void CryptoContext::srtpEncrypt(uint8_t* pkt, uint8_t* payload, uint32_t paylen,
 
         int i;
         for (i = 4; i < 8; i++ ) {
-            iv[i] = (0xFF & (ssrc >> ((7-i)*8))) ^ k_s[i];
+            iv[i] = (0xFFU & (ssrc >> ((7-i)*8U))) ^ k_s[i];
         }
         for (i = 8; i < 14; i++ ) {
-            iv[i] = (0xFF & (unsigned char)(index >> ((13-i)*8) ) ) ^ k_s[i];
+            iv[i] = (0xFFU & (unsigned char)(index >> ((13-i)*8U) ) ) ^ k_s[i];
         }
         iv[14] = iv[15] = 0;
 

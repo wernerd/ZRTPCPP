@@ -19,7 +19,7 @@
  * @author  Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <string.h>
+#include <string>
 
 #include <zrtp/crypto/twoCFB.h>
 #include <cryptcommon/twofish.h>

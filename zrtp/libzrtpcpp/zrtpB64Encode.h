@@ -30,7 +30,7 @@ typedef struct
 
 void base64_init_encodestate(base64_encodestate* state_in, int lineLength);
 
-char base64_encode_value(const int8_t value_in);
+char base64_encode_value(int8_t value_in);
 
 int base64_encode_block(const uint8_t *plaintext_in, int length_in, char* code_out, base64_encodestate* state_in);
 

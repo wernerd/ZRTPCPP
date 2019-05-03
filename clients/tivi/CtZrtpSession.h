@@ -9,7 +9,7 @@
 #define _CTZRTPSESSION_H_
 
 #include <stdio.h>
-#include <stdint.h>
+#include <cstdint>
 #include <string>
 #include <string.h>
 

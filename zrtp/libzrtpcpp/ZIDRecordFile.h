@@ -30,8 +30,8 @@
  * @{
  */
 
-#include <string.h>
-#include <stdint.h>
+#include <string>
+#include <cstdint>
 #include <libzrtpcpp/ZIDRecord.h>
 
 #define TIME_LENGTH      8      // 64 bit, can hold time on 64 bit systems

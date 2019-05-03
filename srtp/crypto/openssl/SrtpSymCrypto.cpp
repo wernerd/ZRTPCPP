@@ -18,7 +18,7 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#define MAKE_F8_TEST
+// #define MAKE_F8_TEST
 
 #include <cstdlib>
 #include <openssl/aes.h>                // the include of openSSL

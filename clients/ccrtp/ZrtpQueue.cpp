@@ -20,7 +20,7 @@
  */
 
 #include <string>
-#include <stdio.h>
+#include <cstdio>
 
 #include <ZrtpQueue.h>
 #include <libzrtpcpp/ZIDCache.h>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2006 - 2018, Werner Dittmann
+ * Copyright 2019, Werner Dittmann
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,6 @@
  * @{
  */
 
-#include <string.h>
-#include <stdint.h>
 #include <libzrtpcpp/ZIDRecord.h>
 
 #define TIME_LENGTH      8      // 64 bit, can hold time on 64 bit systems

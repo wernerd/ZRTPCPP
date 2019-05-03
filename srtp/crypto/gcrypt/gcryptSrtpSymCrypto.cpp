@@ -37,7 +37,7 @@
 
 extern void initializeGcrypt();
 
-#define MAKE_F8_TEST
+// #define MAKE_F8_TEST
 
 #include <gcrypt.h>            // the include of gcrypt
 #include <stdlib.h>

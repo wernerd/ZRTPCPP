@@ -45,7 +45,7 @@
  * @param key
  *    The MAC key.
  * @param key_length
- *    Lneght of the MAC key in bytes
+ *    Length of the MAC key in bytes
  * @param data
  *    Points to the data chunk.
  * @param data_length
@@ -63,8 +63,8 @@ void hmac_sha256(const uint8_t* key, uint64_t key_length,
 /**
  * Compute SHA256 HMAC over several data chunks.
  *
- * This functions takes several data chunk and computes the SHA256 HAMAC. It
- * uses the openSSL HAMAC SHA256 implementation.
+ * This functions takes several data chunk and computes the SHA256 HMAC. It
+ * uses the openSSL HMAC SHA256 implementation.
  *
  * @param key
  *    The MAC key.

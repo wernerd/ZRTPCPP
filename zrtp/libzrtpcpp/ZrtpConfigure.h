@@ -28,12 +28,10 @@
  * @{
  */
 
-#include <stdio.h>
-#include <stdint.h>
+#include <cstdint>
 #include <list>
 #include <string>
 #include <vector>
-#include <string.h>
 #include <memory>
 
 #include <libzrtpcpp/ZrtpCallback.h>
