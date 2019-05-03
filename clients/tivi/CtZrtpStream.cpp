@@ -39,7 +39,7 @@ void checkRemoteAxoIdKey(const string user, const string devId, const string pub
 int getCallInfo(int iCallID, const char *key, char *p, int iMax);
 #endif
 
-static TimeoutProvider<std::string, CtZrtpStream*>* staticTimeoutProvider = NULL;
+static TimeoutProvider<std::string, CtZrtpStream*>* staticTimeoutProvider = nullptr;
 
 static std::map<int32_t, std::string*> infoMap;
 static std::map<int32_t, std::string*> warningMap;
@@ -61,8 +61,8 @@ static const char* noZrtpHashInSip      = "s3_c105: No ZRTP-hash received in SIP
  * The following code is for internal logging only
  *
  */
-static void (*_zrtp_log_cb)(void *ret, const char *tag, const char *buf) = NULL;
-static void *pLogRet=NULL;
+static void (*_zrtp_log_cb)(void *ret, const char *tag, const char *buf) = nullptr;
+static void *pLogRet=nullptr;
 
 // this function must be public. Tivi C++ code set its internal log function
 void set_zrtp_log_cb(void *pRet, void (*cb)(void *ret, const char *tag, const char *buf)){
@@ -78,24 +78,24 @@ void set_zrtp_log_cb(void *pRet, void (*cb)(void *ret, const char *tag, const ch
 }
 
 CtZrtpStream::CtZrtpStream():
-    index(CtZrtpSession::AudioStream), type(CtZrtpSession::NoStream), zrtpEngine(NULL),
+    index(CtZrtpSession::AudioStream), type(CtZrtpSession::NoStream), zrtpEngine(nullptr),
     ownSSRC(0), zrtpProtect(0), sdesProtect(0), zrtpUnprotect(0), sdesUnprotect(0), unprotectFailed(0),
-    enableZrtp(0), started(false), isStopped(false), discriminatorMode(false), session(NULL), tiviState(CtZrtpSession::eLookingPeer),
-    prevTiviState(CtZrtpSession::eLookingPeer), recvSrtp(NULL), recvSrtcp(NULL), sendSrtp(NULL), sendSrtcp(NULL),
-    zrtpUserCallback(NULL), zrtpSendCallback(NULL), senderZrtpSeqNo(0), peerSSRC(0), zrtpHashMatch(false),
+    enableZrtp(false), started(false), isStopped(false), discriminatorMode(false), session(nullptr), tiviState(CtZrtpSession::eLookingPeer),
+    prevTiviState(CtZrtpSession::eLookingPeer), recvSrtp(nullptr), recvSrtcp(nullptr), sendSrtp(nullptr), sendSrtcp(nullptr),
+    zrtpUserCallback(nullptr), zrtpSendCallback(nullptr), senderZrtpSeqNo(0), peerSSRC(0), zrtpHashMatch(false),
     sasVerified(false), helloReceived(false), useSdesForMedia(false), useZrtpTunnel(false), zrtpEncapSignaled(false), 
-    sdes(NULL), supressCounter(0), srtpAuthErrorBurst(0), srtpReplayErrorBurst(0), srtpDecodeErrorBurst(0), 
+    sdes(nullptr), supressCounter(0), srtpAuthErrorBurst(0), srtpReplayErrorBurst(0), srtpDecodeErrorBurst(0),
     zrtpCrcErrors(0), role(NoRole), errorInfoIndex(0), numErrorArrayWrap(0)
 {
     synchLock = new CMutexClass();
 
-    if (staticTimeoutProvider == NULL) {
+    if (staticTimeoutProvider == nullptr) {
         staticTimeoutProvider = new TimeoutProvider<std::string, CtZrtpStream*>();
         staticTimeoutProvider->Event(&staticTimeoutProvider);  // Event argument is dummy, not used
     }
     initStrings();
     ZrtpRandom::getRandomData((uint8_t*)&senderZrtpSeqNo, 2);
-    senderZrtpSeqNo &= 0x7fff;
+    senderZrtpSeqNo &= 0x7fffU;
     memset((void*)srtpErrorInfo, 0, sizeof(srtpErrorInfo));
 }
 
@@ -110,7 +110,7 @@ void CtZrtpStream::setSendCallback(CtZrtpSendCb* scb) {
 CtZrtpStream::~CtZrtpStream() {
     stopStream();
     delete synchLock;
-    synchLock = NULL;
+    synchLock = nullptr;
 }
 
 void CtZrtpStream::stopStream() {
@@ -119,7 +119,7 @@ void CtZrtpStream::stopStream() {
     // assume that our peer couldn't store the RS data, thus make sure we have a second
     // retained shared secret available. Refer to RFC 6189bis, chapter 4.6.1
     // 50 packets are about 1 second of audio data
-    if (zrtpEngine != NULL && zrtpUnprotect < 10 && !zrtpEngine->isMultiStream()) {
+    if (zrtpEngine != nullptr && zrtpUnprotect < 10 && !zrtpEngine->isMultiStream()) {
         zrtpEngine->setRs2Valid();
     }
 
@@ -128,7 +128,7 @@ void CtZrtpStream::stopStream() {
     tiviState = CtZrtpSession::eLookingPeer;
     prevTiviState = CtZrtpSession::eLookingPeer;
     ownSSRC = 0;
-    enableZrtp = 0;
+    enableZrtp = false;
     started = false;
     isStopped = false;
     discriminatorMode = false;
@@ -141,7 +141,7 @@ void CtZrtpStream::stopStream() {
     unprotectFailed = 0;
 
     ZrtpRandom::getRandomData((uint8_t*)&senderZrtpSeqNo, 2);
-    senderZrtpSeqNo &= 0x7fff;
+    senderZrtpSeqNo &= 0x7fffU;
     zrtpHashMatch= false;
     sasVerified = false;
     useSdesForMedia = false;
@@ -157,35 +157,35 @@ void CtZrtpStream::stopStream() {
     peerHelloHashes.clear();
 
     delete zrtpEngine;
-    zrtpEngine = NULL;
+    zrtpEngine = nullptr;
 
     delete recvSrtp;
-    recvSrtp = NULL;
+    recvSrtp = nullptr;
 
     delete recvSrtcp;
-    recvSrtcp = NULL;
+    recvSrtcp = nullptr;
 
     delete sendSrtp;
-    sendSrtp = NULL;
+    sendSrtp = nullptr;
 
     delete sendSrtcp;
-    sendSrtcp = NULL;
+    sendSrtcp = nullptr;
 
     delete sdes;
-    sdes = NULL;
+    sdes = nullptr;
 
     memset((void*)srtpErrorInfo, 0, sizeof(srtpErrorInfo));
     numErrorArrayWrap = 0;
 
     // Don't delete the next classes, we don't own them.
-    zrtpUserCallback = NULL;
-    zrtpSendCallback = NULL;
-    session = NULL;
+    zrtpUserCallback = nullptr;
+    zrtpSendCallback = nullptr;
+    session = nullptr;
 }
 
 bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *newLength) {
     bool rc = true;
-    if (sendSrtp == NULL) {                 // ZRTP/SRTP inactive
+    if (sendSrtp == nullptr) {                 // ZRTP/SRTP inactive
         *newLength = length;
         // Check if ZRTP engine is started and check states to determine if we should send the RTP packet.
         // Do not send in states: CommitSent, WaitDHPart2, WaitConfirm1, WaitConfirm2, WaitConfAck
@@ -194,7 +194,7 @@ bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *ne
 //            ZrtpRandom::addEntropy(buffer, length);
 //             return false;
 //         }
-        if (useSdesForMedia && sdes != NULL) {   // SDES stream available, let SDES protect if necessary
+        if (useSdesForMedia && sdes != nullptr) {   // SDES stream available, let SDES protect if necessary
             rc = sdes->outgoingRtp(buffer, length, newLength);
             sdesProtect++;
         }
@@ -203,14 +203,14 @@ bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *ne
           * If we would send RTP rather than SRTP for any reason, we must drop the call.
           */
         else if (discriminatorMode) {
-            if (zrtpUserCallback != NULL)
+            if (zrtpUserCallback != nullptr)
                 zrtpUserCallback->onDiscriminatorException(session, (char*)noLocalSrtp, index);
             return false;
         }
         return rc;
     }
     // At this point ZRTP/SRTP is active
-    if (useSdesForMedia && sdes != NULL) {       // We still have a SDES - other client did not send zrtp-hash thus we protect twice
+    if (useSdesForMedia && sdes != nullptr) {       // We still have a SDES - other client did not send zrtp-hash thus we protect twice
         rc = sdes->outgoingRtp(buffer, length, newLength);
         if (!rc) {
             return rc;
@@ -227,12 +227,12 @@ bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *ne
 int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, size_t *newLength) {
     int32_t rc = 0;
     // check if this could be a real RTP/SRTP packet.
-    if ((*buffer & 0xc0) == 0x80) {             // A real RTP, check if we are in secure mode
+    if ((*buffer & 0xc0U) == 0x80) {            // A real RTP, check if we are in secure mode
         if (supressCounter < supressWarn)       // Don't report SRTP problems while in startup mode
             supressCounter++;
 
-        if (recvSrtp == NULL) {                 // no ZRTP/SRTP available
-            if (!useSdesForMedia || sdes == NULL) {  // no SDES stream available, just set length and return
+        if (recvSrtp == nullptr) {                 // no ZRTP/SRTP available
+            if (!useSdesForMedia || sdes == nullptr) {  // no SDES stream available, just set length and return
                 *newLength = length;
                 /*
                  * In discriminator mode:
@@ -261,11 +261,11 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
                 if (zrtpEngine->inState(WaitConfAck)) {
                     zrtpEngine->conf2AckSecure();
                 }
-                if (useSdesForMedia && sdes != NULL) {    // We still have a SDES - other client did not send matching zrtp-hash
+                if (useSdesForMedia && sdes != nullptr) {    // We still have a SDES - other client did not send matching zrtp-hash
                     rc = sdes->incomingRtp(buffer, *newLength, newLength, srtpErrorElement());
                 }
             }
-            else if (sdes != NULL) {
+            else if (sdes != nullptr) {
                 rc = sdes->incomingRtp(buffer, length, newLength, srtpErrorElement());
             }
         }
@@ -291,7 +291,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
 
         unprotectFailed++;
         if (supressCounter >= supressWarn) {
-            if (rc == 0 && srtpDecodeErrorBurst > srtpErrorBurstThreshold && zrtpUserCallback != NULL) {
+            if (rc == 0 && srtpDecodeErrorBurst > srtpErrorBurstThreshold && zrtpUserCallback != nullptr) {
                 zrtpUserCallback->onZrtpWarning(session, (char*)srtpDecodeFailedMsg, index);
             }
             if (rc == -1 && srtpAuthErrorBurst >= srtpErrorBurstThreshold) {
@@ -322,9 +322,9 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
             return 0;
         }
         if (useZrtpTunnel) {
-            size_t newLength;
+            size_t newLengthTunnel;
             *buffer = 0x80;                                    // make it look like a real RTP packet
-            rc = sdes->incomingZrtpTunnel(buffer, length, &newLength, srtpErrorElement());
+            rc = sdes->incomingZrtpTunnel(buffer, length, &newLengthTunnel, srtpErrorElement());
             if (rc < 0) {
                 errorInfoIndex++;
                 if (rc == -1) {
@@ -339,7 +339,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
             }
             if (*sdesTempBuffer != 0)                          // clear SDES crypto string if not already done
                 memset(sdesTempBuffer, 0, maxSdesString);
-            useLength = newLength + CRC_SIZE;                  // length check assumes a ZRTP CRC
+            useLength = newLengthTunnel + CRC_SIZE;                  // length check assumes a ZRTP CRC
         }
         else {
             /*
@@ -380,13 +380,13 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
     return 0;
 }
 
-int CtZrtpStream::getSignalingHelloHash(char *hHash, int32_t index) {
+int CtZrtpStream::getSignalingHelloHash(char *hHash, int32_t idx) {
 
-    if (hHash == NULL)
+    if (hHash == nullptr)
         return 0;
 
     std::string hash;
-    hash = zrtpEngine->getHelloHash(index);
+    hash = zrtpEngine->getHelloHash(idx);
     strcpy(hHash, hash.c_str());
     return hash.size();
 }
@@ -394,7 +394,7 @@ int CtZrtpStream::getSignalingHelloHash(char *hHash, int32_t index) {
 void CtZrtpStream::setSignalingHelloHash(const char *hHash) {
     synchEnter();
 
-    // set new timer values for ZRTP restransmission
+    // set new timer values for ZRTP retransmission
     zrtpEngine->setT1Resend(100);
     zrtpEngine->setT1ResendExtend(200);
     zrtpEngine->setT2Resend(-1);
@@ -403,8 +403,8 @@ void CtZrtpStream::setSignalingHelloHash(const char *hHash) {
     hashStr.assign(hHash);
 
     bool found = false;
-    for (std::vector<std::string>::iterator it = peerHelloHashes.begin() ; it != peerHelloHashes.end(); ++it) {
-        if ((*it).compare(hashStr) == 0) {
+    for (const auto& it : peerHelloHashes) {
+        if (it == hashStr) {
             found = true;
             break;
         }
@@ -421,17 +421,17 @@ void CtZrtpStream::setSignalingHelloHash(const char *hHash) {
     size_t hexStringStart = ph.find_last_of(' ');
     std::string hexString = ph.substr(hexStringStart+1);
 
-    for (std::vector<std::string>::iterator it = peerHelloHashes.begin() ; it != peerHelloHashes.end(); ++it) {
-        int match;
-        if ((*it).size() > SHA256_DIGEST_LENGTH*2)      // got the full string incl. version prefix, compare with full peer hash string
-            match = (*it).compare(ph);
+    for (const auto& it : peerHelloHashes) {
+        bool match;
+        if (it.size() > SHA256_DIGEST_LENGTH*2)      // got the full string incl. version prefix, compare with full peer hash string
+            match = it == ph;
         else
-            match = (*it).compare(hexString);
-        if (match == 0) {
+            match = it == hexString;
+        if (match) {
             zrtpHashMatch = true;
             // We have a matching zrtp-hash. If ZRTP/SRTP is active we may need to release
-            // an existig SDES stream.
-            if (sdes != NULL && sendSrtp != NULL && recvSrtp != NULL) {
+            // an existing SDES stream.
+            if (sdes != nullptr && sendSrtp != nullptr && recvSrtp != nullptr) {
                 useSdesForMedia = false;
             }
             break;
@@ -441,7 +441,7 @@ void CtZrtpStream::setSignalingHelloHash(const char *hHash) {
      * In discriminator mode:
      * If the received zrtp-hash value in the signaling does not match the hash of the actual received ZRTP Hello message, we must drop the call.
      */
-    if (!zrtpHashMatch && zrtpUserCallback != NULL) {
+    if (!zrtpHashMatch && zrtpUserCallback != nullptr) {
         if (discriminatorMode)
             zrtpUserCallback->onDiscriminatorException(session, (char*)peerHelloMismatchMsg, index);
         else
@@ -480,26 +480,26 @@ int CtZrtpStream::isSecure() {
 
 int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
 
-//     if ((sdes == NULL /*&& !started*/) || isStopped || !isSecure())
+//     if ((sdes == nullptr /*&& !started*/) || isStopped || !isSecure())
 //         return 0;
 
     memset(p, 0, maxLen);
-    const ZRtp::zrtpInfo *info = NULL;
+    const ZRtp::zrtpInfo *info = nullptr;
     ZRtp::zrtpInfo tmpInfo;
 
     int iLen = strlen(key);
 
     // set the security state as a combination of tivi state and stateflags
-    int secState = tiviState & 0xff;
+    int secState = tiviState & 0xffU;
     if (useSdesForMedia)
-        secState |= 0x100;
+        secState |= 0x100U;
 
-    T_ZRTP_I("sec_state", secState);
-    T_ZRTP_I("peerDisclosureFlag", zrtpEngine->isPeerDisclosureFlag()? 1 : 0);
-    T_ZRTP_LB("buildInfo",  zrtpBuildInfo);
+    T_ZRTP_I("sec_state", secState)
+    T_ZRTP_I("peerDisclosureFlag", zrtpEngine->isPeerDisclosureFlag()? 1 : 0)
+    T_ZRTP_LB("buildInfo",  zrtpBuildInfo)
 
     // Compute Hello-hash info string
-    const char *strng = NULL;
+    const char *strng = nullptr;
     if (peerHelloHashes.empty()) {
         strng = "None";
     }
@@ -509,9 +509,9 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
     else {
         strng = !sdes || helloReceived ? "Bad" : "No hello";
     }
-    T_ZRTP_LB("sdp_hash", strng);
+    T_ZRTP_LB("sdp_hash", strng)
 
-    T_ZRTP_L("sec_since", zrtpEngine->getSecureSince());
+    T_ZRTP_L("sec_since", zrtpEngine->getSecureSince())
 
     std::string client = zrtpEngine->getPeerProtocolVersion();
     if (role != NoRole) {
@@ -520,10 +520,10 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
         else
             client.append(role == Initiator ? "(I)" : "(R)");
     }
-    T_ZRTP_LB("lbClient",  zrtpEngine->getPeerClientId().c_str());
-    T_ZRTP_LB("lbVersion", client.c_str());
+    T_ZRTP_LB("lbClient",  zrtpEngine->getPeerClientId().c_str())
+    T_ZRTP_LB("lbVersion", client.c_str())
 
-    if (recvSrtp != NULL || sendSrtp != NULL) {
+    if (recvSrtp != nullptr || sendSrtp != nullptr) {
         info = zrtpEngine->getDetailInfo();
 
         if (iLen == 1 && key[0] == 'v') {
@@ -539,9 +539,9 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
             return snprintf(p, maxLen, "%d", v);
         }
     }
-    else if (useSdesForMedia && sdes != NULL) {
-        T_ZRTP_LB("lbClient",      (const char*)"SDP/S");
-        T_ZRTP_LB("lbVersion",     (const char*)"");
+    else if (useSdesForMedia && sdes != nullptr) {
+        T_ZRTP_LB("lbClient",      (const char*)"SDP/S")
+        T_ZRTP_LB("lbVersion",     (const char*)"")
 
         tmpInfo.secretsMatched = 0;
         tmpInfo.secretsCached = 0;
@@ -561,15 +561,15 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
     else
         return 0;
 
-    T_ZRTP_F("rs1",ZRtp::Rs1);
-    T_ZRTP_F("rs2",ZRtp::Rs2);
-    T_ZRTP_F("aux",ZRtp::Aux);
-    T_ZRTP_F("pbx",ZRtp::Pbx);
+    T_ZRTP_F("rs1",ZRtp::Rs1)
+    T_ZRTP_F("rs2",ZRtp::Rs2)
+    T_ZRTP_F("aux",ZRtp::Aux)
+    T_ZRTP_F("pbx",ZRtp::Pbx)
 
-    T_ZRTP_LB("lbChiper",      info->cipher);
-    T_ZRTP_LB("lbAuthTag",     info->authLength);
-    T_ZRTP_LB("lbHash",        info->hash);
-    T_ZRTP_LB("lbKeyExchange", info->pubKey);
+    T_ZRTP_LB("lbChiper",      info->cipher)
+    T_ZRTP_LB("lbAuthTag",     info->authLength)
+    T_ZRTP_LB("lbHash",        info->hash)
+    T_ZRTP_LB("lbKeyExchange", info->pubKey)
 
     return 0;
 }
@@ -615,12 +615,12 @@ bool CtZrtpStream::createSdes(char *cryptoString, size_t *maxLen, const ZrtpSdes
     if (isSecure() || isSdesActive())   // don't take action if we are already secure or SDES already in active state
         return false;
 
-    if (sdes == NULL)
+    if (sdes == nullptr)
         sdes = new ZrtpSdesStream(sdesSuite);
 
-    if (sdes == NULL || !sdes->createSdes(cryptoString, maxLen, true)) {
+    if (sdes == nullptr || !sdes->createSdes(cryptoString, maxLen, true)) {
         delete sdes;
-        sdes = NULL;
+        sdes = nullptr;
         return false;
     }
     return true;
@@ -631,15 +631,15 @@ bool CtZrtpStream::parseSdes(char *recvCryptoStr, size_t recvLength, char *sendC
         return false;
 
     // The ZrtpSdesStream determines its suite by parsing the crypto string.
-    if (sdes == NULL)
+    if (sdes == nullptr)
         sdes = new ZrtpSdesStream();
 
-    if (sdes == NULL || !sdes->parseSdes(recvCryptoStr, recvLength, sipInvite))
+    if (sdes == nullptr || !sdes->parseSdes(recvCryptoStr, recvLength, sipInvite))
         goto cleanup;
 
     if (!sipInvite) {
         size_t len;
-        if (sendCryptoStr == NULL) {
+        if (sendCryptoStr == nullptr) {
             sendCryptoStr = sdesTempBuffer;
             len = maxSdesString;
             sendLength = &len;
@@ -649,8 +649,8 @@ bool CtZrtpStream::parseSdes(char *recvCryptoStr, size_t recvLength, char *sendC
     }
     if (sdes->getState() == ZrtpSdesStream::SDES_SRTP_ACTIVE) {
         tiviState = CtZrtpSession::eSecureSdes;
-        if (zrtpUserCallback != NULL) {
-            zrtpUserCallback->onNewZrtpStatus(session, NULL, index);    // Inform client about new state
+        if (zrtpUserCallback != nullptr) {
+            zrtpUserCallback->onNewZrtpStatus(session, nullptr, index);    // Inform client about new state
         }
         useSdesForMedia = true;
         if (zrtpEncapSignaled) {
@@ -663,7 +663,7 @@ bool CtZrtpStream::parseSdes(char *recvCryptoStr, size_t recvLength, char *sendC
     useSdesForMedia = false;
     useZrtpTunnel = false;
     delete sdes;
-    sdes = NULL;
+    sdes = nullptr;
     return false;
 }
 
@@ -677,18 +677,18 @@ bool CtZrtpStream::getSavedSdes(char *sendCryptoStr, size_t *sendLength) {
     strcpy(sendCryptoStr, sdesTempBuffer);
     *sendLength = len;
 
-    if (zrtpUserCallback != NULL)
-        zrtpUserCallback->onNewZrtpStatus(session, NULL, index);
+    if (zrtpUserCallback != nullptr)
+        zrtpUserCallback->onNewZrtpStatus(session, nullptr, index);
     return true;
 }
 
 bool CtZrtpStream::isSdesActive() {
-    return (sdes != NULL && sdes->getState() == ZrtpSdesStream::SDES_SRTP_ACTIVE);
+    return (sdes != nullptr && sdes->getState() == ZrtpSdesStream::SDES_SRTP_ACTIVE);
 }
 
 int CtZrtpStream::getCryptoMixAttribute(char *algoNames, size_t length) {
 
-    if (sdes == NULL)
+    if (sdes == nullptr)
         sdes = new ZrtpSdesStream();
 
     return sdes->getCryptoMixAttribute(algoNames, length);
@@ -699,7 +699,7 @@ void CtZrtpStream::resetSdesContext(bool force) {
         useSdesForMedia = false;
         useZrtpTunnel = false;
         delete sdes;
-        sdes = NULL;
+        sdes = nullptr;
     }
 }
 
@@ -707,7 +707,7 @@ bool  CtZrtpStream::setCryptoMixAttribute(const char *algoNames) {
     if (isSecure() || isSdesActive())   // don't take action if we are already secure or SDES already in active state
         return false;
 
-    if (sdes == NULL)
+    if (sdes == nullptr)
         sdes = new ZrtpSdesStream();
 
     return sdes->setCryptoMixAttribute(algoNames);
@@ -715,7 +715,7 @@ bool  CtZrtpStream::setCryptoMixAttribute(const char *algoNames) {
 
 int32_t CtZrtpStream::getNumberSupportedVersions() {
 
-    return zrtpEngine->getNumberSupportedVersions();
+    return ZRtp::getNumberSupportedVersions();
 }
 
 const char* CtZrtpStream::getZrtpEncapAttribute() {
@@ -723,7 +723,7 @@ const char* CtZrtpStream::getZrtpEncapAttribute() {
 }
 
 void CtZrtpStream::setZrtpEncapAttribute(const char *attribute) {
-    if (attribute != NULL && strncmp(attribute, zrtpEncap, 4) == 0) {
+    if (attribute != nullptr && strncmp(attribute, zrtpEncap, 4) == 0) {
         zrtpEncapSignaled = true;
         if (useSdesForMedia) {
             useZrtpTunnel = true;
@@ -778,7 +778,7 @@ int32_t CtZrtpStream::sendDataZRTP(const unsigned char *data, int32_t length) {
          * If we would send a ZRTP packet not tunneled in SRTP, we must drop the call.
          */
         if (discriminatorMode) {
-            if (zrtpUserCallback != NULL)
+            if (zrtpUserCallback != nullptr)
                 zrtpUserCallback->onDiscriminatorException(session, (char*)noZrtpTunnel, index);
             return 0;
         }
@@ -789,7 +789,7 @@ int32_t CtZrtpStream::sendDataZRTP(const unsigned char *data, int32_t length) {
     }
 
     /* Send the ZRTP packet using callback */
-    if (zrtpSendCallback != NULL) {
+    if (zrtpSendCallback != nullptr) {
         zrtpSendCallback->sendRtp(session, zrtpBuffer, totalLen, index);
         return 1;
     }
@@ -803,9 +803,9 @@ bool CtZrtpStream::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
     CryptoContextCtrl* recvCryptoContextCtrl;
     CryptoContextCtrl* senderCryptoContextCtrl;
 
-    int cipher;
-    int authn;
-    int authKeyLen;
+    int cipher = SrtpEncryptionNull;
+    int authn = SrtpAuthenticationNull;
+    int authKeyLen = 0;
 
     if (secrets->authAlgorithm == Sha1) {
         authn = SrtpAuthenticationSha1Hmac;
@@ -886,9 +886,6 @@ bool CtZrtpStream::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
                                       secrets->respSaltLen / 8,                  // session salt len
                                       secrets->srtpAuthTagLen / 8);              // authentication tag len
         }
-        if (senderCryptoContext == NULL) {
-            return false;
-        }
         senderCryptoContext->deriveSrtpKeys(0L);
         sendSrtp = senderCryptoContext;
 
@@ -955,9 +952,6 @@ bool CtZrtpStream::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
                                       secrets->initSaltLen / 8,                  // session salt len
                                       secrets->srtpAuthTagLen / 8);              // authentication tag len
         }
-        if (recvCryptoContext == NULL) {
-            return false;
-        }
         recvCryptoContext->deriveSrtpKeys(0L);
         recvSrtp = recvCryptoContext;
 
@@ -966,7 +960,7 @@ bool CtZrtpStream::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
 
         supressCounter = 0;         // supress SRTP warnings for some packets after we switch to SRTP
     }
-    if (peerHelloHashes.size() > 0 && recvSrtp != NULL && sendSrtp != NULL) {
+    if (!peerHelloHashes.empty() && recvSrtp != nullptr && sendSrtp != nullptr) {
         useSdesForMedia = false;
     }
     return true;
@@ -989,8 +983,8 @@ void CtZrtpStream::srtpSecretsOn(std::string cipher, std::string sas, bool verif
         tiviState = CtZrtpSession::eSecureMitm;
     }
     sasVerified = verified;
-    if (zrtpUserCallback != NULL) {
-        char *strng = NULL;
+    if (zrtpUserCallback != nullptr) {
+        char *strng = nullptr;
         std::string sasTmp;
 
         if (!sas.empty()) {                 // Multi-stream mode streams don't have SAS, no reporting
@@ -1020,20 +1014,20 @@ void CtZrtpStream::srtpSecretsOff(EnableSecurity part) {
     if (part == ForSender) {
         delete sendSrtp;
         delete sendSrtcp;
-        sendSrtp = NULL;
-        sendSrtcp = NULL;
+        sendSrtp = nullptr;
+        sendSrtcp = nullptr;
     }
     if (part == ForReceiver) {
         delete recvSrtp;
         delete recvSrtcp;
-        recvSrtp = NULL;
-        recvSrtcp = NULL;
+        recvSrtp = nullptr;
+        recvSrtcp = nullptr;
     }
 }
 
 int32_t CtZrtpStream::activateTimer(int32_t time) {
     std::string s("ZRTP");
-    if (staticTimeoutProvider != NULL) {
+    if (staticTimeoutProvider != nullptr) {
         staticTimeoutProvider->requestTimeout(time, this, s);
     }
     return 1;
@@ -1041,14 +1035,14 @@ int32_t CtZrtpStream::activateTimer(int32_t time) {
 
 int32_t CtZrtpStream::cancelTimer() {
     std::string s("ZRTP");
-    if (staticTimeoutProvider != NULL) {
+    if (staticTimeoutProvider != nullptr) {
         staticTimeoutProvider->cancelRequest(this, s);
     }
     return 1;
 }
 
 void CtZrtpStream::handleTimeout(const std::string &c) {
-    if (zrtpEngine != NULL) {
+    if (zrtpEngine != nullptr) {
         zrtpEngine->processTimeout();
     }
 }
@@ -1081,13 +1075,13 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
                 hexString = peerHash.substr(hexStringStart+1);
                 helloReceived = true;
 
-                for (std::vector<std::string>::iterator it = peerHelloHashes.begin() ; it != peerHelloHashes.end(); ++it) {
-                    int match;
-                    if ((*it).size() > SHA256_DIGEST_LENGTH*2)      // got the full string incl. version prefix, compare with full peer hash string
-                        match = (*it).compare(peerHash);
+                for (const auto& it : peerHelloHashes) {
+                    bool match;
+                    if (it.size() > SHA256_DIGEST_LENGTH*2)      // got the full string incl. version prefix, compare with full peer hash string
+                        match = it == peerHash;
                     else
-                        match = (*it).compare(hexString);
-                    if (match == 0) {
+                        match = it == hexString;
+                    if (match) {
                         zrtpHashMatch = true;
                         break;
                     }
@@ -1096,7 +1090,7 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
                  * In discriminator mode:
                  * If the received zrtp-hash value in the signaling does not match the hash of the actual received ZRTP Hello message, we must drop the call.
                  */
-                if (!zrtpHashMatch && zrtpUserCallback != NULL) {
+                if (!zrtpHashMatch && zrtpUserCallback != nullptr) {
                     if (discriminatorMode)
                         zrtpUserCallback->onDiscriminatorException(session, (char*)peerHelloMismatchMsg, index);
                     else
@@ -1119,14 +1113,14 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
                  * If we receive or would send a ZRTP Commit message, but did not receive a zrtp-hash value in the signaling, we must drop the call.
                  */
                 if (discriminatorMode && peerHelloHashes.empty()) {
-                    if (zrtpUserCallback != NULL)
+                    if (zrtpUserCallback != nullptr)
                         zrtpUserCallback->onDiscriminatorException(session, (char*)noZrtpHashInSip, index);
                     break;
                 }
                 prevTiviState = tiviState;
                 tiviState = CtZrtpSession::eGoingSecure;
-                if (zrtpUserCallback != NULL)
-                    zrtpUserCallback->onNewZrtpStatus(session, NULL, index);
+                if (zrtpUserCallback != nullptr)
+                    zrtpUserCallback->onNewZrtpStatus(session, nullptr, index);
                 break;
 
                 // other information states are not handled by tivi client
@@ -1141,20 +1135,15 @@ void CtZrtpStream::sendInfo(MessageSeverity severity, int32_t subCode) {
             subCode *= -1;
             tunnel = true;
         }
-        switch (subCode) {
-            case WarningNoRSMatch:
-                return;
-                break;                          // supress this warning message
-
-            default:
-                msg = warningMap[subCode];
-                if (tunnel)
-                    msg->append(" (ZRTP tunnel)");
-                if (zrtpUserCallback != NULL)
-                    zrtpUserCallback->onZrtpWarning(session, (char*)msg->c_str(), index);
-                return;
-                break;
+        if (subCode == WarningNoRSMatch) {
+            return;
         }
+        msg = warningMap[subCode];
+        if (tunnel)
+            msg->append(" (ZRTP tunnel)");
+        if (zrtpUserCallback != nullptr)
+            zrtpUserCallback->onZrtpWarning(session, (char*)msg->c_str(), index);
+        return;
     }
     // handle severe and ZRTP errors
     zrtpNegotiationFailed(severity, subCode);
@@ -1174,7 +1163,7 @@ void CtZrtpStream::zrtpNegotiationFailed(MessageSeverity severity, int32_t subCo
             inOut = "(-->)";
         }
         strng = zrtpMap[subCode];
-        if (strng != NULL)
+        if (strng != nullptr)
             cs.assign(*strng);
         else
             cs.assign("s4_c255: ZRTP protocol: Unkown ZRTP error packet.");
@@ -1186,7 +1175,7 @@ void CtZrtpStream::zrtpNegotiationFailed(MessageSeverity severity, int32_t subCo
 
     prevTiviState = tiviState;
     tiviState = CtZrtpSession::eError;
-    if (zrtpUserCallback != NULL) {
+    if (zrtpUserCallback != nullptr) {
         zrtpUserCallback->onNewZrtpStatus(session, (char*)cs.c_str(), index);
     }
 }
@@ -1196,8 +1185,8 @@ void CtZrtpStream::zrtpNotSuppOther() {
     // if other party does not support ZRTP but we have SDES active set SDES state,
     // otherwise inform client about failed ZRTP negotiation.
     tiviState = isSdesActive() ? CtZrtpSession::eSecureSdes : CtZrtpSession::eNoPeer;
-    if (zrtpUserCallback != NULL) {
-        zrtpUserCallback->onNewZrtpStatus(session, NULL, index);
+    if (zrtpUserCallback != nullptr) {
+        zrtpUserCallback->onNewZrtpStatus(session, nullptr, index);
     }
 }
 
@@ -1210,21 +1199,21 @@ void CtZrtpStream::synchLeave() {
 }
 
 void CtZrtpStream::zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment  info) {
-    if (zrtpUserCallback != NULL) {
+    if (zrtpUserCallback != nullptr) {
         zrtpUserCallback->onNeedEnroll(session, index, (int32_t)info);
     }
 }
 
 void CtZrtpStream::zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment  info) {
+    (void)info;
 // Tivi does not use this information event
-//     if (zrtpUserCallback != NULL) {
+//     if (zrtpUserCallback != nullptr) {
 //         zrtpUserCallback->zrtpInformEnrollment(info);
 //     }
 }
 
 void CtZrtpStream::signSAS(uint8_t* sasHash) {
 #if !defined (_WITHOUT_TIVI_ENV) && defined AXO_SUPPORT
-
 //    zrtp_log("CTStream", "++++ sign sasHash");
 
     string keyData = getOwnAxoIdKey();
@@ -1246,6 +1235,8 @@ void CtZrtpStream::signSAS(uint8_t* sasHash) {
 
     zrtpEngine->setSignatureData(sigData, sigLen);
     delete[] sigData;
+#else
+    (void)sasHash;
 #endif
 }
 
@@ -1282,6 +1273,8 @@ bool CtZrtpStream::checkSASSignature(uint8_t* sasHash) {
     checkRemoteAxoIdKey(caller, callerDeviceId, pubKeyData, verified);
 
     delete[] sigData;
+#else
+    (void)sasHash;
 #endif
     return true;
 }
@@ -1298,18 +1291,18 @@ int32_t CtZrtpStream::getSrtpTraceData(SrtpErrorData* data) {
     if (errorInfoIndex == 0)
         return 0;
 
-    int32_t index = errorInfoIndex;    // get the index for this run, other threads may change errorInfoIndex
+    int32_t idx = errorInfoIndex;    // get the index for this run, other threads may change errorInfoIndex
 
     // If the error index wrapped then the oldest data element is at errorInfoIndex, the newer elements
-    // start at index zero. The output array receives the data in chroncological order thus we need two
+    // start at index zero. The output array receives the data in chronological order thus we need two
     // memcpy call to make it right.
     if (numErrorArrayWrap > 0) {
-        memcpy((void*)data, (void*)&srtpErrorInfo[index], (NumSrtpErrorData - index) * sizeof(SrtpErrorData));
-        memcpy((void*)&data[NumSrtpErrorData - index], (void*)srtpErrorInfo, index * sizeof(SrtpErrorData));
+        memcpy((void*)data, (void*)&srtpErrorInfo[idx], (NumSrtpErrorData - idx) * sizeof(SrtpErrorData));
+        memcpy((void*)&data[NumSrtpErrorData - idx], (void*)srtpErrorInfo, idx * sizeof(SrtpErrorData));
         return NumSrtpErrorData;
     }
-    memcpy((void*)data, (void*)srtpErrorInfo, index * sizeof(SrtpErrorData));
-    return index;
+    memcpy((void*)data, (void*)srtpErrorInfo, idx * sizeof(SrtpErrorData));
+    return idx;
 }
 
 void CtZrtpStream::initStrings() {

@@ -71,7 +71,7 @@ protected:
     friend class TimeoutProvider<std::string, CtZrtpStream*>;
 
 
-    virtual ~CtZrtpStream();
+    ~CtZrtpStream() override;
     /**
      * Handle timeout event forwarded by the TimeoutProvider.
      *
@@ -163,12 +163,12 @@ protected:
      *                  The method fills it with the hex string part of the ZRTP hello hash and
      *                  terminates it with a @c nul byte.
      *
-     * @param index  Hello hash of the Hello packet identfied by index. Index must 
+     * @param idx  Hello hash of the Hello packet identfied by index. Index must
      *               be 0 <= index < getNumberSupportedVersions().
      *
      * @return the number of characters in the @c helloHash buffer.
      */
-    int getSignalingHelloHash(char *helloHash, int32_t index);
+    int getSignalingHelloHash(char *helloHash, int32_t idx);
 
     /**
      * @brief Set the ZRTP Hello hash from signaling
@@ -258,7 +258,7 @@ protected:
      *
      * @return @c true if data could be created, @c false otherwise.
      */
-    bool createSdes(char *cryptoString, size_t *maxLen, const ZrtpSdesStream::sdesSuites suite =ZrtpSdesStream::AES_CM_128_HMAC_SHA1_32);
+    bool createSdes(char *cryptoString, size_t *maxLen, ZrtpSdesStream::sdesSuites suite=ZrtpSdesStream::AES_CM_128_HMAC_SHA1_32);
 
     /**
      * @brief Parses an SDES crypto string for the SDES/ZRTP stream.
@@ -381,7 +381,7 @@ protected:
      *
      * @return the number of supported ZRTP protocol versions.
      */
-    int32_t getNumberSupportedVersions();
+    static int32_t getNumberSupportedVersions();
 
     /**
      * @brief Get the supported ZRTP encapsulation attribute.
@@ -390,7 +390,7 @@ protected:
      *
      * @return the pointer to the attribute cC-string or @c NULL if encapsulation is not supported.
      */
-    const char* getZrtpEncapAttribute();
+    static const char* getZrtpEncapAttribute();
 
     /**
      * @brief Set the ZRTP encapsulation attribute.
@@ -440,37 +440,37 @@ protected:
      * The following methods implement the GNU ZRTP callback interface.
      * For detailed documentation refer to file ZrtpCallback.h
      */
-    int32_t sendDataZRTP(const unsigned char* data, int32_t length);
+    int32_t sendDataZRTP(const unsigned char* data, int32_t length) override;
 
-    int32_t activateTimer(int32_t time);
+    int32_t activateTimer(int32_t time) override;
 
-    int32_t cancelTimer();
+    int32_t cancelTimer() override;
 
-    void sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t subCode);
+    void sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) override;
 
-    bool srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part);
+    bool srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part) override;
 
-    void srtpSecretsOff(EnableSecurity part);
+    void srtpSecretsOff(EnableSecurity part) override;
 
-    void srtpSecretsOn(std::string c, std::string s, bool verified);
+    void srtpSecretsOn(std::string c, std::string s, bool verified) override;
 
-    void handleGoClear();
+    void handleGoClear() override;
 
-    void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode);
+    void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) override;
 
-    void zrtpNotSuppOther();
+    void zrtpNotSuppOther() override;
 
-    void synchEnter();
+    void synchEnter() override;
 
-    void synchLeave();
+    void synchLeave() override;
 
-    void zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info);
+    void zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info) override;
 
-    void zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment  info);
+    void zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment  info) override;
 
-    void signSAS(uint8_t* sasHash);
+    void signSAS(uint8_t* sasHash) override;
 
-    bool checkSASSignature(uint8_t* sasHash);
+    bool checkSASSignature(uint8_t* sasHash) override;
 
     /*
      * End of ZrtpCallback functions.
@@ -486,8 +486,8 @@ private:
     CtZrtpCb          *zrtpUserCallback;
     CtZrtpSendCb      *zrtpSendCallback;
 
-    uint8_t zrtpBuffer[maxZrtpSize];
-    char sdesTempBuffer[maxSdesString];
+    uint8_t zrtpBuffer[maxZrtpSize] = {0};
+    char sdesTempBuffer[maxSdesString] = {'\0'};
     uint16_t senderZrtpSeqNo;
     uint32_t peerSSRC;
     std::vector<std::string> peerHelloHashes;
@@ -507,11 +507,11 @@ private:
 
     CMutexClass *synchLock;
 
-    char mixAlgoName[20];                   //!< stores name in during getInfo() call
+    char mixAlgoName[20] = {'\0'};          //!< stores name in during getInfo() call
 
     int role;                               //!< Initiator or Responder role
 
-    SrtpErrorData srtpErrorInfo[NumSrtpErrorData];
+    SrtpErrorData srtpErrorInfo[NumSrtpErrorData] = {};
     int32_t errorInfoIndex;
     uint32_t numErrorArrayWrap;
 

@@ -26,6 +26,9 @@
   #endif
 #endif
 
+#ifndef ZID_DATABASE
+#error "CtZrtpSession requires a database backend (Sqlite or SqlCipher) - check cmake build options (-DSQLCIPHER=ON)"
+#endif
 
 class CtZrtpStream;
 class CtZrtpCb;
@@ -95,7 +98,7 @@ public:
      * If one application requires several ZRTP sessions all
      * sessions use the same timeout thread and use the same ZID
      * file. Therefore an application does not need to do any
-     * synchronisation regading ZID files or timeouts. This is
+     * synchronisation regarding timeouts. This is
      * managed by the ZRTP implementation.
      *
      * The application may specify its own ZID file name. If no
@@ -105,10 +108,10 @@ public:
      * directory is used.
      *
      * @param audio
-     *     set to @c true if audio stream shout be initialized
+     *     set to @c true to initialize the audio (master) stream.
      *
      * @param video
-     *     set to @c true if video stream shoud be initialized.
+     *     set to @c true to initialize the video stream.
      * 
      * @param callId
      *     The Tivi engine's call id.
@@ -479,7 +482,7 @@ public:
      *
      * @return @c true if data could be created, @c false otherwise.
      */
-    bool createSdes(char *cryptoString, size_t *maxLen, streamName streamNm, const sdesSuites suite =AES_CM_128_HMAC_SHA1_32);
+    bool createSdes(char *cryptoString, size_t *maxLen, streamName streamNm, sdesSuites suite =AES_CM_128_HMAC_SHA1_32);
 
     /**
      * @brief Parses an SDES crypto string for the SDES/ZRTP stream.
@@ -729,12 +732,12 @@ private:
     void synchEnter();
     void synchLeave();
 
-    CtZrtpStream *streams[AllStreams];
+    CtZrtpStream* streams[AllStreams] = { nullptr };
     std::string  clientIdString;
     std::string  multiStreamParameter;
-    const uint8_t* ownZid;
+    const uint8_t* ownZid = nullptr;
     ZRtp*    zrtpMaster;
-    int32_t callId_;
+    int32_t callId_ = 0;
 
     bool mitmMode;
     bool signSas;
