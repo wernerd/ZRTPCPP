@@ -41,7 +41,7 @@ class __EXPORT ZrtpStateClass;
  */
 typedef struct  {
     int32_t stateName;                      ///< The state number
-    void (ZrtpStateClass::* handler)(void); ///< The state handler
+    void (ZrtpStateClass::* handler)();     ///< The state handler
 } state_t;
 
 /**
@@ -55,12 +55,10 @@ typedef struct  {
 
 class __EXPORT ZrtpStates {
  public:
+    ZrtpStates() = delete;
 
     /// Create an initialize state switching
-    ZrtpStates(state_t* const zstates,
-           const int32_t numStates,
-           const int32_t initialState):
-    numStates(numStates), states(zstates), state(initialState) {}
+    ZrtpStates(state_t* const zrtpStates, const int32_t initialState): states(zrtpStates), state(initialState) {}
 
     /// Call a state handler
     int32_t processEvent(ZrtpStateClass& zsc) {
@@ -72,14 +70,11 @@ class __EXPORT ZrtpStates {
     bool inState(const int32_t s) { return ((s == state)); }
 
     /// Set the next state
-    void nextState(int32_t s)        { state = s; }
+    void nextState(int32_t s)     { state = s; }
 
  private:
-    const int32_t numStates;
     const state_t* states;
     int32_t  state;
-
-    ZrtpStates();
 };
 
 /**

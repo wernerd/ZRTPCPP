@@ -52,11 +52,6 @@ enum zrtpStates {
     numberOfStates      ///< Gives total number of protocol states
 };
 
-enum EventReturnCodes {
-    Fail = 0,           ///< ZRTP event processing failed.
-    Done = 1            ///< Event processing ok.
-};
-
 enum EventDataType {
     NoEvent = 0,
     ZrtpInitial = 1,    ///< Initial event, enter Initial state
@@ -78,7 +73,7 @@ struct Event {
 
     EventDataType type; ///< Type of event
     size_t   length;    ///< length of the message data
-    uint8_t* packet;    ///< Event data if availabe, usually a ZRTP message
+    uint8_t* packet;    ///< Event data if available, usually a ZRTP message
 };
 
 
@@ -120,8 +115,8 @@ class __EXPORT ZrtpStateClass {
 
 private:
     ZRtp* parent;           ///< The ZRTP implementation
-    ZrtpStates* engine;     ///< The state switching engine
-    Event* event;           ///< Current event to process
+    ZrtpStates* engine = nullptr;     ///< The state switching engine
+    Event* event = nullptr;           ///< Current event to process
 
     /**
      * The last packet that was sent.
@@ -129,15 +124,15 @@ private:
      * If we are <code>Initiator</code> then resend this packet in case of
      * timeout.
      */
-    ZrtpPacketBase* sentPacket;
+    ZrtpPacketBase* sentPacket = nullptr;
 
     /**
      * Points to prepared Commit packet after receiving a Hello packet
      */
     ZrtpPacketCommit* commitPkt;
 
-    zrtpTimer_t T1;         ///< The Hello message timeout timer
-    zrtpTimer_t T2;         ///< Timeout timer for other messages
+    zrtpTimer_t T1 = {};         ///< The Hello message timeout timer
+    zrtpTimer_t T2 = {};         ///< Timeout timer for other messages
 
     int32_t t1Resend;       ///< configurable resend counter for T1 (Hello packets)
     int32_t t1ResendExtend; ///< configurable extended resend counter for T1 (Hello packets)
@@ -173,11 +168,11 @@ private:
      */
     int32_t sentVersion;
     
-    int32_t retryCounters[ErrorRetry+1];  // TODO adjust
+    int32_t retryCounters[ErrorRetry+1] = {0};  // TODO adjust
 
 public:
     /// Create a ZrtpStateClass
-    ZrtpStateClass(ZRtp *p);
+    explicit ZrtpStateClass(ZRtp *p);
     ~ZrtpStateClass();
 
     /// Check if in a specified state

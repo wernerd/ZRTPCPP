@@ -28,6 +28,7 @@
 #include <cstdint>
 #include <string>
 
+#include <common/osSpecifics.h>
 #include <libzrtpcpp/ZrtpCodes.h>
 
 /**
@@ -54,10 +55,10 @@ class __EXPORT ZrtpUserCallback {
 
     public:
 
-        /// Create the stadard user callback class.
-        ZrtpUserCallback() {}
+        /// Create the standard user callback class.
+        ZrtpUserCallback() = default
 
-        virtual ~ZrtpUserCallback() {};
+        virtual ~ZrtpUserCallback() = default;
 
         /**
          * Inform user interface that security is active now.
@@ -68,9 +69,7 @@ class __EXPORT ZrtpUserCallback {
          * @param cipher
          *    Name and mode of cipher used to encrypt the SRTP stream
          */
-        virtual void secureOn(std::string cipher) {
-            return;
-        }
+        virtual void secureOn(std::string cipher) {}
         /**
          * Inform user interface that security is not active any more.
          *
@@ -78,9 +77,7 @@ class __EXPORT ZrtpUserCallback {
          * left secure mode.
          *
          */
-        virtual void secureOff() {
-            return;
-        }
+        virtual void secureOff() {}
 
         /**
          * Show the Short Authentication String (SAS) on user interface.
@@ -96,9 +93,7 @@ class __EXPORT ZrtpUserCallback {
          *    If <code>verified</code> is true then SAS was verified by both
          *    parties during a previous call, otherwise it is set to false.
          */
-        virtual void showSAS(std::string sas, bool verified) {
-            return;
-        }
+        virtual void showSAS(std::string sas, bool verified) {}
 
         /**
          * Inform the user that ZRTP received "go clear" message from its peer.
@@ -107,9 +102,7 @@ class __EXPORT ZrtpUserCallback {
          * a switch to unsecure (clear) modus. Until the user confirms ZRTP
          * (and the underlying RTP) does not send any data.
          */
-        virtual void confirmGoClear() {
-            return;
-        }
+        virtual void confirmGoClear() {}
 
         /**
          * Show some information to user.
@@ -125,9 +118,7 @@ class __EXPORT ZrtpUserCallback {
          * @param subCode
          *     The subcode identifying the reason.
          */
-        virtual void showMessage(GnuZrtpCodes::MessageSeverity sev, int32_t subCode) {
-            return;
-        }
+        virtual void showMessage(GnuZrtpCodes::MessageSeverity sev, int32_t subCode) {}
 
         /**
          * ZRTPQueue calls this if the negotiation failed.
@@ -141,10 +132,7 @@ class __EXPORT ZrtpUserCallback {
          * @param subCode
          *     The subcode identifying the reason.
          */
-        virtual void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity,
-                                           int32_t subCode) {
-            return;
-        }
+        virtual void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) {}
 
         /**
          * ZRTPQueue calls this method if the other side does not support ZRTP.
@@ -153,9 +141,7 @@ class __EXPORT ZrtpUserCallback {
          * ZRTP calls this method.
          *
          */
-        virtual void zrtpNotSuppOther() {
-            return;
-        }
+        virtual void zrtpNotSuppOther() {}
 
         /**
          * ZRTPQueue calls this method to inform about a PBX enrollment request.
@@ -168,9 +154,7 @@ class __EXPORT ZrtpUserCallback {
          *    enrollment.
          *
          */
-        virtual void zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info) {
-            return;
-        }
+        virtual void zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info) {}
 
         /**
          * ZRTPQueue calls this method to inform about PBX enrollment result.
@@ -183,9 +167,7 @@ class __EXPORT ZrtpUserCallback {
          *    enrollment.
          *
          */
-        virtual void zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment info) {
-            return;
-        }
+        virtual void zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment info) {}
 
         /**
          * ZRTPQueue calls this method to request a SAS signature.
@@ -202,9 +184,7 @@ class __EXPORT ZrtpUserCallback {
          * @see ZrtpQueue#setSignatureData
          *
          */
-        virtual void signSAS(uint8_t* sasHash) {
-            return;
-        }
+        virtual void signSAS(uint8_t* sasHash) {}
 
         /**
          * ZRTPQueue calls this method to request a SAS signature check.
