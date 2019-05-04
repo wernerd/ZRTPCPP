@@ -60,7 +60,7 @@ class Base32 {
      * @param encoded
      *     The string that contains the base32 encoded data.
      */
-    Base32(const string encoded);
+    explicit Base32(const string& encoded);
 
     /**
      * A Constructor that decodes from base32 into binary.
@@ -75,7 +75,7 @@ class Base32 {
      * @param noOfBits
      *     How many bits to decode into binary data.
      */
-    Base32(const string encoded, int noOfBits);
+    Base32(const string& encoded, int noOfBits);
 
     /**
      * A Constructor that encodes binary data.
@@ -166,7 +166,7 @@ class Base32 {
      * @param lengthinbits
      *    The number of bits of data in <code>cs</code> to be decoded
      */
-    void a2b_l(const string cs, size_t size, const size_t lengthinbits);
+    void a2b_l(const string& cs, size_t size, size_t lengthinbits);
 
     /**
      * Encodes binary to to base32 presentation.
@@ -202,7 +202,7 @@ class Base32 {
      * @param noOfBits
      *    The number of bits of data in encoded into `cs'
      */
-    void b2a_l(const unsigned char* cs, int len, const size_t noOfBits);
+    void b2a_l(const unsigned char* cs, int len, size_t noOfBits);
 
     /**
      * Holds the pointer to decoded binary data
@@ -219,7 +219,7 @@ class Base32 {
      */
     string encoded;
 
-    unsigned char smallBuffer[128];
+    unsigned char smallBuffer[128] = {'\0'};
 };
 
 /**
