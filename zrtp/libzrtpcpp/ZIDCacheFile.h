@@ -66,9 +66,9 @@ public:
 
     void close() override;
 
-    ZIDRecord *getRecord(unsigned char *zid) override;
+    std::unique_ptr<ZIDRecord> getRecord(unsigned char *zid) override;
 
-    unsigned int saveRecord(ZIDRecord *zidRecord) override;
+    unsigned int saveRecord(ZIDRecord& zidRecord) override;
 
     const unsigned char* getZid() override { return associatedZid; };
 

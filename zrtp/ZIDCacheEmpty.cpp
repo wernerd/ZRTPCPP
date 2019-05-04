@@ -28,11 +28,11 @@ int ZIDCacheEmpty::open(char* name) {
 
 void ZIDCacheEmpty::close() {}
 
-ZIDRecord *ZIDCacheEmpty::getRecord(unsigned char *zid) {
-    return new ZIDRecordEmpty();
+std::unique_ptr<ZIDRecord> ZIDCacheEmpty::getRecord(unsigned char *zid) {
+    return std::make_unique<ZIDRecordEmpty>();
 }
 
-unsigned int ZIDCacheEmpty::saveRecord(ZIDRecord *zidRec) {
+unsigned int ZIDCacheEmpty::saveRecord(ZIDRecord& zidRec) {
     (void) zidRec;
     return 1;
 }

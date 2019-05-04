@@ -102,7 +102,7 @@ public:
      * @return pointer to the ZID record. The call must @c delete the
      *         record if it is not longer used.
      */
-    virtual ZIDRecord *getRecord(unsigned char *zid) =0;
+    virtual std::unique_ptr<ZIDRecord> getRecord(unsigned char *zid) =0;
 
     /**
      * @brief Save a ZID record into the active ZID file.
@@ -116,7 +116,7 @@ public:
      * @return
      *    1 on success
      */
-    virtual unsigned int saveRecord(ZIDRecord *zidRecord) =0;
+    virtual unsigned int saveRecord(ZIDRecord& zidRecord) =0;
 
     /**
      * @brief Get the ZID associated with this ZID file.

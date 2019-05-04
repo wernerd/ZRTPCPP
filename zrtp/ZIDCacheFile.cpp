@@ -180,11 +180,12 @@ void ZIDCacheFile::close() {
     }
 }
 
-ZIDRecord *ZIDCacheFile::getRecord(unsigned char *zid) {
+std::unique_ptr<ZIDRecord>
+ZIDCacheFile::getRecord(unsigned char *zid) {
     unsigned long pos;
     int numRead;
     //    ZIDRecordFile rec;
-    auto *zidRecord = new ZIDRecordFile();
+    auto zidRecord = std::make_unique<ZIDRecordFile>();
 
     // set read pointer behind first record (
     fseek(zidFile, zidRecord->getRecordLength(), SEEK_SET);
@@ -208,8 +209,7 @@ ZIDRecord *ZIDCacheFile::getRecord(unsigned char *zid) {
     // found. We need to create a new ZID record.
     if (numRead == 0) {
         // create new record
-        delete(zidRecord);
-        zidRecord = new ZIDRecordFile();
+        zidRecord = std::make_unique<ZIDRecordFile>();
         zidRecord->setZid(zid);
         zidRecord->setValid();
         if (fwrite(zidRecord->getRecordData(), zidRecord->getRecordLength(), 1, zidFile) < 1)
@@ -220,11 +220,11 @@ ZIDRecord *ZIDCacheFile::getRecord(unsigned char *zid) {
     return zidRecord;
 }
 
-unsigned int ZIDCacheFile::saveRecord(ZIDRecord *zidRec) {
-    auto *zidRecord = reinterpret_cast<ZIDRecordFile *>(zidRec);
+unsigned int ZIDCacheFile::saveRecord(ZIDRecord& zidRec) {
+    auto zidRecord = reinterpret_cast<ZIDRecordFile&>(zidRec);
 
-    fseek(zidFile, zidRecord->getPosition(), SEEK_SET);
-    if (fwrite(zidRecord->getRecordData(), zidRecord->getRecordLength(), 1, zidFile) < 1)
+    fseek(zidFile, zidRecord.getPosition(), SEEK_SET);
+    if (fwrite(zidRecord.getRecordData(), zidRecord.getRecordLength(), 1, zidFile) < 1)
         ++errors;
     fflush(zidFile);
     return 1;

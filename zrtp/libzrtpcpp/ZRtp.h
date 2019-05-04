@@ -115,9 +115,9 @@ class __EXPORT ZRtp {
     } secrets;
 
     typedef struct _zrtpInfo {
-        int32_t secretsCached;
-        int32_t secretsMatched;
-        int32_t secretsMatchedDH;
+        uint32_t secretsCached;
+        uint32_t secretsMatched;
+        uint32_t secretsMatchedDH;
         const char *hash;
         const char *cipher;
         const char *pubKey;
@@ -675,17 +675,17 @@ private:
     /**
      * The state engine takes care of protocol processing.
      */
-    ZrtpStateClass* stateEngine;
+    std::unique_ptr<ZrtpStateClass> stateEngine;
 
     /**
      * This is my ZID that I send to the peer.
      */
-    uint8_t ownZid[IDENTIFIER_LEN];
+    uint8_t ownZid[IDENTIFIER_LEN] = {0};
 
     /**
      * The peer's ZID
      */
-    uint8_t peerZid[IDENTIFIER_LEN];
+    uint8_t peerZid[IDENTIFIER_LEN]  = {0};
 
     /**
      * The callback class provides me with the interface to send
@@ -696,17 +696,17 @@ private:
     /**
      * My active Diffie-Helman context
      */
-    ZrtpDH* dhContext;
+    std::unique_ptr<ZrtpDH> dhContext;
 
     /**
      * The computed DH shared secret
      */
-    uint8_t* DHss;
+    std::unique_ptr<uint8_t[]> DHss;
 
     /**
      * My computed public key
      */
-    uint8_t pubKeyBytes[1000];
+    uint8_t pubKeyBytes[1000] = {0};
     /**
      * Length off public key
      */
@@ -714,7 +714,7 @@ private:
     /**
      * My Role in the game
      */
-    Role myRole;
+    Role myRole = NoRole;
 
     /**
      * The human readable SAS value
@@ -725,24 +725,24 @@ private:
      * The SAS hash for signaling and alike. Refer to chapters
      * 4.5 and 7 how sasHash, sasValue and the SAS string are derived.
      */
-    uint8_t sasHash[MAX_DIGEST_LENGTH];
+    uint8_t sasHash[MAX_DIGEST_LENGTH] = {0};
     /**
      * The ids for the retained and other shared secrets
      */
-    uint8_t rs1IDr[MAX_DIGEST_LENGTH];
-    uint8_t rs2IDr[MAX_DIGEST_LENGTH];
-    uint8_t auxSecretIDr[MAX_DIGEST_LENGTH];
-    uint8_t pbxSecretIDr[MAX_DIGEST_LENGTH];
+    uint8_t rs1IDr[MAX_DIGEST_LENGTH] = {0};
+    uint8_t rs2IDr[MAX_DIGEST_LENGTH] = {0};
+    uint8_t auxSecretIDr[MAX_DIGEST_LENGTH] = {0};
+    uint8_t pbxSecretIDr[MAX_DIGEST_LENGTH] = {0};
 
-    uint8_t rs1IDi[MAX_DIGEST_LENGTH];
-    uint8_t rs2IDi[MAX_DIGEST_LENGTH];
-    uint8_t auxSecretIDi[MAX_DIGEST_LENGTH];
-    uint8_t pbxSecretIDi[MAX_DIGEST_LENGTH];
+    uint8_t rs1IDi[MAX_DIGEST_LENGTH] = {0};
+    uint8_t rs2IDi[MAX_DIGEST_LENGTH] = {0};
+    uint8_t auxSecretIDi[MAX_DIGEST_LENGTH] = {0};
+    uint8_t pbxSecretIDi[MAX_DIGEST_LENGTH] = {0};
 
     /**
      * pointers to aux secret storage and length of aux secret
      */
-    uint8_t* auxSecret;
+    std::unique_ptr<uint8_t[]> auxSecret;
     uint32_t auxSecretLength;
 
     /**
@@ -754,12 +754,12 @@ private:
     /**
      * My hvi
      */
-    uint8_t hvi[MAX_DIGEST_LENGTH];
+    uint8_t hvi[MAX_DIGEST_LENGTH]  = {0};
 
     /**
      * The peer's hvi
      */
-    uint8_t peerHvi[8*ZRTP_WORD_SIZE];
+    uint8_t peerHvi[8*ZRTP_WORD_SIZE]  = {0};
 
     /**
      * Context to compute the SHA256 hash of selected messages.
@@ -787,105 +787,105 @@ private:
      * not stored here). Need full SHA 256 lenght to store hash value but
      * only the leftmost 128 bits are used in computations and comparisons.
      */
-    uint8_t H0[IMPL_MAX_DIGEST_LENGTH];
-    uint8_t H1[IMPL_MAX_DIGEST_LENGTH];
-    uint8_t H2[IMPL_MAX_DIGEST_LENGTH];
-    uint8_t H3[IMPL_MAX_DIGEST_LENGTH];
+    uint8_t H0[IMPL_MAX_DIGEST_LENGTH] = {0};
+    uint8_t H1[IMPL_MAX_DIGEST_LENGTH] = {0};
+    uint8_t H2[IMPL_MAX_DIGEST_LENGTH] = {0};
+    uint8_t H3[IMPL_MAX_DIGEST_LENGTH] = {0};
 
-    uint8_t peerHelloHash[IMPL_MAX_DIGEST_LENGTH];
-    uint8_t peerHelloVersion[ZRTP_WORD_SIZE + 1];   // +1 for nul byte
+    uint8_t peerHelloHash[IMPL_MAX_DIGEST_LENGTH] = {0};
+    uint8_t peerHelloVersion[ZRTP_WORD_SIZE + 1] = {0};   // +1 for nul byte
 
     // We get the peer's H? from the message where length is defined as 8 words
-    uint8_t peerH2[8*ZRTP_WORD_SIZE];
-    uint8_t peerH3[8*ZRTP_WORD_SIZE];
+    uint8_t peerH2[8*ZRTP_WORD_SIZE] = {0};
+    uint8_t peerH3[8*ZRTP_WORD_SIZE] = {0};
 
     /**
      * The SHA256 hash over selected messages
      */
-    uint8_t messageHash[MAX_DIGEST_LENGTH];
+    uint8_t messageHash[MAX_DIGEST_LENGTH] = {0};
 
     /**
      * The s0
      */
-    uint8_t s0[MAX_DIGEST_LENGTH];
+    uint8_t s0[MAX_DIGEST_LENGTH] = {0};
 
     /**
      * The new Retained Secret
      */
-    uint8_t newRs1[MAX_DIGEST_LENGTH];
+    uint8_t newRs1[MAX_DIGEST_LENGTH] = {0};
 
     /**
      * The confirm HMAC key
      */
-    uint8_t hmacKeyI[MAX_DIGEST_LENGTH];
-    uint8_t hmacKeyR[MAX_DIGEST_LENGTH];
+    uint8_t hmacKeyI[MAX_DIGEST_LENGTH] = {0};
+    uint8_t hmacKeyR[MAX_DIGEST_LENGTH] = {0};
 
     /**
      * The Initiator's srtp key and salt
      */
-    uint8_t srtpKeyI[MAX_DIGEST_LENGTH];
-    uint8_t srtpSaltI[MAX_DIGEST_LENGTH];
+    uint8_t srtpKeyI[MAX_DIGEST_LENGTH] = {0};
+    uint8_t srtpSaltI[MAX_DIGEST_LENGTH] = {0};
 
     /**
      * The Responder's srtp key and salt
      */
-    uint8_t srtpKeyR[MAX_DIGEST_LENGTH];
-    uint8_t srtpSaltR[MAX_DIGEST_LENGTH];
+    uint8_t srtpKeyR[MAX_DIGEST_LENGTH] = {0};
+    uint8_t srtpSaltR[MAX_DIGEST_LENGTH] = {0};
 
     /**
      * The keys used to encrypt/decrypt the confirm message
      */
-    uint8_t zrtpKeyI[MAX_DIGEST_LENGTH];
-    uint8_t zrtpKeyR[MAX_DIGEST_LENGTH];
+    uint8_t zrtpKeyI[MAX_DIGEST_LENGTH] = {0};
+    uint8_t zrtpKeyR[MAX_DIGEST_LENGTH] = {0};
 
-    HashCtx hashCtx;
+    HashCtx hashCtx = {};
 
     /**
      * Pointers to negotiated hash and HMAC functions
      */
     void (*hashListFunction)(const std::vector<const uint8_t*>& data,
                              const std::vector<uint64_t>& dataLength,
-                             uint8_t *digest);
+                             uint8_t *digest) = nullptr;
 
     void (*hmacFunction)(const uint8_t* key, uint64_t key_length,
                          const uint8_t* data, uint64_t data_length,
-                         uint8_t* mac, uint32_t* mac_length);
+                         uint8_t* mac, uint32_t* mac_length) = nullptr;
 
     void (*hmacListFunction)(const uint8_t* key, uint64_t key_length,
                              const std::vector<const uint8_t*>& data,
                              const std::vector<uint64_t>& data_length,
-                             uint8_t* mac, uint32_t* mac_length );
+                             uint8_t* mac, uint32_t* mac_length) = nullptr;
 
-    void* (*createHashCtx)(void* ctx);
+    void* (*createHashCtx)(void* ctx) = nullptr;
 
-    void (*closeHashCtx)(void* ctx, uint_8t* digest);
+    void (*closeHashCtx)(void* ctx, uint_8t* digest) = nullptr;
 
-    void (*hashCtxFunction)(void* ctx, const uint8_t* data, uint64_t dataLength);
+    void (*hashCtxFunction)(void* ctx, const uint8_t* data, uint64_t dataLength) = nullptr;
 
-    uint32_t hashLength;
+    uint32_t hashLength = 0;
 
     // Function pointers to implicit hash and hmac functions
     void (*hashFunctionImpl)(const uint8_t *data,
                              uint64_t data_length,
-                             uint8_t *digest);
+                             uint8_t *digest) = nullptr;
 
     void (*hmacFunctionImpl)(const uint8_t* key, uint64_t key_length,
                              const uint8_t* data, uint64_t data_length,
-                             uint8_t* mac, uint32_t* mac_length);
+                             uint8_t* mac, uint32_t* mac_length) = nullptr;
 
-    int32_t hashLengthImpl;
+    int32_t hashLengthImpl = 0;
 
     /**
      * The ZRTP Session Key
      * Refer to chapter 4.5.2
      */
-    uint8_t zrtpSession[MAX_DIGEST_LENGTH];
+    uint8_t zrtpSession[MAX_DIGEST_LENGTH] = {0};
 
     /**
      * The ZRTP export Key
      * Refer to chapter 4.5.2
      */
-    uint8_t zrtpExport[MAX_DIGEST_LENGTH];
+    uint8_t zrtpExport[MAX_DIGEST_LENGTH] = {0};
 
     /**
      * True if this ZRTP instance uses multi-stream mode.
@@ -923,7 +923,7 @@ private:
      * it will copied to our ZID record of the PBX (MitM)  
      */
     uint8_t* pbxSecretTmp;
-    uint8_t  pbxSecretTmpBuffer[MAX_DIGEST_LENGTH];
+    uint8_t  pbxSecretTmpBuffer[MAX_DIGEST_LENGTH] = {0};
 
     /**
      * If true then we will set the enrollment flag (E) in the confirm
@@ -958,7 +958,7 @@ private:
     ZrtpPacketSASrelay zrtpSasRelay;
     ZrtpPacketRelayAck zrtpRelayAck;
 
-    HelloPacketVersion helloPackets[MAX_ZRTP_VERSIONS + 1];
+    HelloPacketVersion helloPackets[MAX_ZRTP_VERSIONS + 1] = {};
 
     /// Pointer to Hello packet sent to partner, initialized in ZRtp, modified by ZrtpStateClass
     ZrtpPacketHello* currentHelloPacket;
@@ -966,7 +966,7 @@ private:
     /**
      * ZID cache record
      */
-    ZIDRecord *zidRec;
+    std::unique_ptr<ZIDRecord> zidRec;
 
     /**
      * Save record
@@ -977,25 +977,25 @@ private:
     /**
      * Random IV data to encrypt the confirm data, 128 bit for AES
      */
-    uint8_t randomIV[16];
+    uint8_t randomIV[16] = {0};
 
-    uint8_t tempMsgBuffer[1024];
-    uint32_t lengthOfMsgData;
+    uint8_t tempMsgBuffer[1024] = {0};
+    uint32_t lengthOfMsgData = 0;
 
     /**
      * Variables to store signature data. Includes the signature type block
      */
-    const uint8_t* signatureData;       // will be set when needed
-    int32_t  signatureLength;     // overall length in bytes
+    const uint8_t* signatureData = nullptr;       // will be set when needed
+    int32_t  signatureLength = 0;     // overall length in bytes
 
     /**
      * Is true if the other peer signaled SAS signature support in its Hello packet.
      */
     bool signSasSeen;
 
-    uint32_t peerSSRC;           // peer's SSRC, required to setup PingAck packet
+    uint32_t peerSSRC = 0;           // peer's SSRC, required to setup PingAck packet
 
-    zrtpInfo detailInfo;         // filled with some more detailded information if application would like to know
+    zrtpInfo detailInfo = {};         // filled with some more detailded information if application would like to know
 
     std::string peerClientId;    // store the peer's client Id
 
@@ -1126,7 +1126,7 @@ private:
      * @return
      *    True if multi stream mode is available, false otherwise.
      */
-    bool checkMultiStream(ZrtpPacketHello* hello);
+    static bool checkMultiStream(ZrtpPacketHello* hello);
 
     /**
      * Checks if Hello packet contains a strong (384bit) hash based on selection policy.
@@ -1209,7 +1209,7 @@ private:
      */
     void computeHvi(ZrtpPacketDHPart* dh, ZrtpPacketHello *hello);
 
-    void computeSharedSecretSet(ZIDRecord *zidRecord);
+    void computeSharedSecretSet(ZIDRecord& zidRecord);
 
     void computeAuxSecretIds();
 
@@ -1218,9 +1218,9 @@ private:
     void KDF(uint8_t* key, size_t keyLength, uint8_t* label, size_t labelLength,
                uint8_t* context, size_t contextLength, size_t L, uint8_t* output);
 
-    void generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRecord);
+    void generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord);
 
-    void generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRecord);
+    void generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord);
 
     void generateKeysMultiStream();
 

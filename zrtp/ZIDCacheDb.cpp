@@ -54,8 +54,8 @@ void ZIDCacheDb::close() {
     }
 }
 
-ZIDRecord *ZIDCacheDb::getRecord(unsigned char *zid) {
-    auto *zidRecord = new ZIDRecordDb();
+std::unique_ptr<ZIDRecord> ZIDCacheDb::getRecord(unsigned char *zid) {
+    auto zidRecord = std::make_unique<ZIDRecordDb>();
 
     cacheOps.readRemoteZidRecord(zidFile, zid, associatedZid, zidRecord->getRecordData(), errorBuffer);
 
@@ -70,10 +70,10 @@ ZIDRecord *ZIDCacheDb::getRecord(unsigned char *zid) {
     return zidRecord;
 }
 
-unsigned int ZIDCacheDb::saveRecord(ZIDRecord *zidRec) {
-    auto *zidRecord = reinterpret_cast<ZIDRecordDb *>(zidRec);
+unsigned int ZIDCacheDb::saveRecord(ZIDRecord& zidRec) {
+    auto zidRecord = reinterpret_cast<ZIDRecordDb&>(zidRec);
 
-    cacheOps.updateRemoteZidRecord(zidFile, zidRecord->getIdentifier(), associatedZid, zidRecord->getRecordData(), errorBuffer);
+    cacheOps.updateRemoteZidRecord(zidFile, zidRecord.getIdentifier(), associatedZid, zidRecord.getRecordData(), errorBuffer);
     return 1;
 }
 
