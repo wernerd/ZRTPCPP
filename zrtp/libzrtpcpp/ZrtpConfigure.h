@@ -427,7 +427,7 @@ public:
      *    The number of configured algorithms (used configuration
      *    data slots)
      */
-    int32_t getNumConfiguredAlgos(AlgoTypes algoType);
+    uint32_t getNumConfiguredAlgos(AlgoTypes algoType);
 
     /**
      * Returns the identifier of the algorithm at index.
@@ -566,7 +566,7 @@ public:
     static int32_t addAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo);
     static int32_t addAlgoAt(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo, int32_t index);
     static int32_t removeAlgo(std::vector<AlgorithmEnum* >& a,  AlgorithmEnum& algo);
-    static int32_t getNumConfiguredAlgos(std::vector<AlgorithmEnum* >& a);
+    static uint32_t getNumConfiguredAlgos(std::vector<AlgorithmEnum* >& a);
     static bool containsAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo);
     std::vector<AlgorithmEnum* >& getEnum(AlgoTypes algoType);
 

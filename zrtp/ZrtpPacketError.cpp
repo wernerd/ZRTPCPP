@@ -22,7 +22,6 @@
 #include <libzrtpcpp/ZrtpPacketError.h>
 
 ZrtpPacketError::ZrtpPacketError() {
-    DEBUGOUT((fprintf(stdout, "Creating Error packet without data\n")));
 
     zrtpHeader = &data.hdr;	// the standard header
     errorHeader = &data.error;
@@ -32,14 +31,8 @@ ZrtpPacketError::ZrtpPacketError() {
     setMessageType((uint8_t*)ErrorMsg);
 }
 
-ZrtpPacketError::ZrtpPacketError(uint8_t *data) {
-    DEBUGOUT((fprintf(stdout, "Creating Error packet from data\n")));
-
-    allocated = NULL;
+ZrtpPacketError::ZrtpPacketError(const uint8_t *data) {
     zrtpHeader = (zrtpPacketHeader_t *)&((ErrorPacket_t *)data)->hdr;	// the standard header
     errorHeader = (Error_t *)&((ErrorPacket_t *)data)->error;
 }
 
-ZrtpPacketError::~ZrtpPacketError() {
-    DEBUGOUT((fprintf(stdout, "Deleting Error packet: alloc: %x\n", allocated)));
-}

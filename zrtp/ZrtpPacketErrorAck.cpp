@@ -21,8 +21,6 @@
 #include <libzrtpcpp/ZrtpPacketErrorAck.h>
 
 ZrtpPacketErrorAck::ZrtpPacketErrorAck() {
-    DEBUGOUT((fprintf(stdout, "Creating ErrorAck packet without data\n")));
-
     zrtpHeader = &data.hdr;	// the standard header
 
     setZrtpId();
@@ -30,12 +28,6 @@ ZrtpPacketErrorAck::ZrtpPacketErrorAck() {
     setMessageType((uint8_t*)ErrorAckMsg);
 }
 
-ZrtpPacketErrorAck::ZrtpPacketErrorAck(uint8_t *data) {
-    DEBUGOUT((fprintf(stdout, "Creating ErrorAck packet from data\n")));
-
+ZrtpPacketErrorAck::ZrtpPacketErrorAck(const uint8_t *data) {
     zrtpHeader = (zrtpPacketHeader_t *)&((ErrorAckPacket_t*)data)->hdr;	// the standard header
-}
-
-ZrtpPacketErrorAck::~ZrtpPacketErrorAck() {
-    DEBUGOUT((fprintf(stdout, "Deleting ErrorAck packet: alloc: %x\n", allocated)));
 }

@@ -39,11 +39,11 @@ class __EXPORT ZrtpPacketClearAck : public ZrtpPacketBase {
 
  public:
     ZrtpPacketClearAck();       /// Creates a ClearAck packet with default data
-    ZrtpPacketClearAck(uint8_t* data);  /// Creates a ClearAck packet from received data
-    virtual ~ZrtpPacketClearAck();
+    explicit ZrtpPacketClearAck(const uint8_t* data);  /// Creates a ClearAck packet from received data
+    ~ZrtpPacketClearAck() override = default;
 
  private:
-     ClearAckPacket_t data;
+     ClearAckPacket_t data = {};
 };
 
 /**

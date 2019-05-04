@@ -43,12 +43,12 @@ class __EXPORT ZrtpPacketHelloAck : public ZrtpPacketBase {
     ZrtpPacketHelloAck();
 
     /// Creates a HelloAck packet from received data
-    ZrtpPacketHelloAck(uint8_t* data);
+    explicit ZrtpPacketHelloAck(const uint8_t* data);
 
-    virtual ~ZrtpPacketHelloAck();
+    ~ZrtpPacketHelloAck() override = default;
 
  private:
-     HelloAckPacket_t data;
+     HelloAckPacket_t data = {};
 };
 
 /**

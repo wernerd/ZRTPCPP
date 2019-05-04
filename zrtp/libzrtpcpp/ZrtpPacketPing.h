@@ -36,17 +36,14 @@
  */
 class __EXPORT ZrtpPacketPing : public ZrtpPacketBase {
 
- protected:
-    Ping_t* pingHeader;     ///< Point the the Ping message
-
  public:
     /// Creates a Ping message with default data
     ZrtpPacketPing();
 
     /// Creates a Ping message from received data
-    ZrtpPacketPing(uint8_t* data);
+    explicit ZrtpPacketPing(const uint8_t* data);
 
-    virtual ~ZrtpPacketPing();
+    ~ZrtpPacketPing() override = default;
 
     /// Set ZRTP protocol version field, fixed ASCII character array
     void setVersion(uint8_t *text)     { memcpy(pingHeader->version, text,ZRTP_WORD_SIZE ); }
@@ -55,7 +52,8 @@ class __EXPORT ZrtpPacketPing : public ZrtpPacketBase {
     uint8_t* getEpHash()               { return pingHeader->epHash; }
 
  private:
-     PingPacket_t data;
+     Ping_t* pingHeader = nullptr;     ///< Point the the Ping message
+     PingPacket_t data = {};
 };
 
 /**

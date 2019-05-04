@@ -40,23 +40,22 @@
 class __EXPORT ZrtpPacketSASrelay : public ZrtpPacketBase {
 
     private:
-        SASrelay_t* sasRelayHeader;   ///< Point to the Confirm message part
 
     public:
         /// Creates a Confirm packet with default data
         ZrtpPacketSASrelay();
 
         /// Creates a Confirm packet with default data and a given signature length
-        ZrtpPacketSASrelay(uint32_t sl);
+        explicit ZrtpPacketSASrelay(uint32_t sl);
 
         /// Creates a Confirm packet from received data
-        ZrtpPacketSASrelay(uint8_t* d);
+        explicit ZrtpPacketSASrelay(const uint8_t* d);
 
         /// Normal destructor
-        virtual ~ZrtpPacketSASrelay();
+        ~ZrtpPacketSASrelay() override = default;
 
         /// Check is SAS verify flag is set
-        const bool isSASFlag()            { return (sasRelayHeader->flags & 0x4) == 0x4 ? true : false; }
+        const bool isSASFlag()            { return (sasRelayHeader->flags & 0x4U) == 0x4; }
 
         /// Get pointer to filler bytes (contains one bit of signature length)
         const uint8_t* getFiller()        { return sasRelayHeader->filler; }
@@ -80,7 +79,7 @@ class __EXPORT ZrtpPacketSASrelay : public ZrtpPacketBase {
         bool isLengthOk()                 {return (getLength() >= 19);}
 
         /// set SAS verified flag
-        void setSASFlag()            { sasRelayHeader->flags |= 0x4; }
+        void setSASFlag()            { sasRelayHeader->flags |= 0x4U; }
 
         /// Set MAC data, fixed length byte array
         void setHmac(uint8_t* text)  { memcpy(sasRelayHeader->hmac, text, sizeof(sasRelayHeader->hmac)); }
@@ -99,11 +98,12 @@ class __EXPORT ZrtpPacketSASrelay : public ZrtpPacketBase {
 
     private:
         void initialize();
+        SASrelay_t* sasRelayHeader = nullptr;   ///< Point to the Confirm message part
      // Confirm packet is of variable length. It maximum size is 524 words:
      // - 11 words fixed size
      // - up to 513 words variable part, depending if signature is present and its length.
      // This leads to a maximum of 4*524=2096 bytes.
-        uint8_t data[2100];       // large enough to hold a full blown Confirm packet
+        uint8_t data[2100] = {};       // large enough to hold a full blown Confirm packet
 
 };
 

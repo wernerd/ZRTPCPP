@@ -21,8 +21,6 @@
 #include <libzrtpcpp/ZrtpPacketRelayAck.h>
 
 ZrtpPacketRelayAck::ZrtpPacketRelayAck() {
-    DEBUGOUT((fprintf(stdout, "Creating RelayAck packet without data\n")));
-
     zrtpHeader = &data.hdr;	// the standard header
 
     setZrtpId();
@@ -30,12 +28,6 @@ ZrtpPacketRelayAck::ZrtpPacketRelayAck() {
     setMessageType((uint8_t*)RelayAckMsg);
 }
 
-ZrtpPacketRelayAck::ZrtpPacketRelayAck(uint8_t *data) {
-    DEBUGOUT((fprintf(stdout, "Creating RelayAck packet from data\n")));
-
+ZrtpPacketRelayAck::ZrtpPacketRelayAck(const uint8_t *data) {
     zrtpHeader = (zrtpPacketHeader_t *)&((RelayAckPacket_t*)data)->hdr;	// the standard header
-}
-
-ZrtpPacketRelayAck::~ZrtpPacketRelayAck() {
-    DEBUGOUT((fprintf(stdout, "Deleting RelayAck packet: alloc: %x\n", allocated)));
 }

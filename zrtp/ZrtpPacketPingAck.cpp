@@ -21,8 +21,6 @@
 #include <libzrtpcpp/ZrtpPacketPingAck.h>
 
 ZrtpPacketPingAck::ZrtpPacketPingAck() {
-    DEBUGOUT((fprintf(stdout, "Creating PingAck packet without data\n")));
-
     zrtpHeader = &data.hdr;	// the standard header
     pingAckHeader = &data.pingAck;
 
@@ -32,13 +30,7 @@ ZrtpPacketPingAck::ZrtpPacketPingAck() {
     setVersion((uint8_t*)zrtpVersion_11);  // TODO: fix version string after clarification
 }
 
-ZrtpPacketPingAck::ZrtpPacketPingAck(uint8_t *data) {
-    DEBUGOUT((fprintf(stdout, "Creating PingAck packet from data\n")));
-
+ZrtpPacketPingAck::ZrtpPacketPingAck(const uint8_t *data) {
     zrtpHeader = (zrtpPacketHeader_t *)&((PingAckPacket_t*)data)->hdr; // the standard header
     pingAckHeader = (PingAck_t *)&((PingAckPacket_t *)data)->pingAck;
-}
-
-ZrtpPacketPingAck::~ZrtpPacketPingAck() {
-    DEBUGOUT((fprintf(stdout, "Deleting PingAck packet: alloc: %x\n", allocated)));
 }

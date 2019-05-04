@@ -70,14 +70,13 @@ class __EXPORT ZrtpPacketBase {
   private:
 
   protected:
-      void* allocated;                  ///< Pointer to ZRTP message data
-      zrtpPacketHeader_t* zrtpHeader;   ///< points to the fixed ZRTP header structure
+      zrtpPacketHeader_t* zrtpHeader = nullptr;     ///< points to the fixed ZRTP header structure
 
   public:
     /**
      * Destructor is empty
      */
-    virtual ~ZrtpPacketBase() {};
+    virtual ~ZrtpPacketBase() = default ;
 
     /**
      * Get pointer to ZRTP header

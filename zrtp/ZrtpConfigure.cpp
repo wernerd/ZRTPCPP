@@ -284,7 +284,7 @@ int32_t ZrtpConfigure::removeAlgo(AlgoTypes algoType, AlgorithmEnum& algo) {
     return removeAlgo(getEnum(algoType), algo);
 }
 
-int32_t ZrtpConfigure::getNumConfiguredAlgos(AlgoTypes algoType) {
+uint32_t ZrtpConfigure::getNumConfiguredAlgos(AlgoTypes algoType) {
 
     return getNumConfiguredAlgos(getEnum(algoType));
 }
@@ -376,8 +376,8 @@ int32_t ZrtpConfigure::removeAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum
     return (maxNoOfAlgos - (int)a.size());
 }
 
-int32_t ZrtpConfigure::getNumConfiguredAlgos(std::vector<AlgorithmEnum* >& a) {
-    return (int32_t)a.size();
+uint32_t ZrtpConfigure::getNumConfiguredAlgos(std::vector<AlgorithmEnum* >& a) {
+    return a.size() & 0x7U;
 }
 
 bool ZrtpConfigure::containsAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo) {

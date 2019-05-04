@@ -21,8 +21,6 @@
 #include <libzrtpcpp/ZrtpPacketConf2Ack.h>
 
 ZrtpPacketConf2Ack::ZrtpPacketConf2Ack() {
-    DEBUGOUT((fprintf(stdout, "Creating Conf2Ack packet without data\n")));
-
     zrtpHeader = &data.hdr;	// the standard header
 
     setZrtpId();
@@ -30,12 +28,6 @@ ZrtpPacketConf2Ack::ZrtpPacketConf2Ack() {
     setMessageType((uint8_t*)Conf2AckMsg);
 }
 
-ZrtpPacketConf2Ack::ZrtpPacketConf2Ack(char *data) {
-    DEBUGOUT((fprintf(stdout, "Creating Conf2Ack packet from data\n")));
-
+ZrtpPacketConf2Ack::ZrtpPacketConf2Ack(const char *data) {
     zrtpHeader = (zrtpPacketHeader_t *)&((Conf2AckPacket_t*)data)->hdr;	// the standard header
-}
-
-ZrtpPacketConf2Ack::~ZrtpPacketConf2Ack() {
-    DEBUGOUT((fprintf(stdout, "Deleting Conf2Ack packet: alloc: %x\n", allocated)));
 }

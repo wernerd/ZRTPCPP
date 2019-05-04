@@ -42,11 +42,11 @@ class __EXPORT ZrtpPacketRelayAck : public ZrtpPacketBase {
     ZrtpPacketRelayAck();
 
     /// Creates a RelayAck packet from received data
-    ZrtpPacketRelayAck(uint8_t* data);
-    virtual ~ZrtpPacketRelayAck();
+    explicit ZrtpPacketRelayAck(const uint8_t* data);
+    ~ZrtpPacketRelayAck() override = default;
 
  private:
-     RelayAckPacket_t data;
+     RelayAckPacket_t data = {};
 };
 
 /**

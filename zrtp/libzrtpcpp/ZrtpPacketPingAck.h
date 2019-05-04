@@ -35,17 +35,14 @@
  */
 class __EXPORT ZrtpPacketPingAck : public ZrtpPacketBase {
 
- protected:
-    PingAck_t* pingAckHeader;   ///< Points to PingAck message
-
  public:
     /// Creates a PingAck message with default data
     ZrtpPacketPingAck();
 
     /// Creates a PingAck message from received data
-    ZrtpPacketPingAck(uint8_t* data);
+    explicit ZrtpPacketPingAck(const uint8_t* data);
 
-    virtual ~ZrtpPacketPingAck();
+    ~ZrtpPacketPingAck() override = default;
 
     /// Get SSRC from PingAck message
     uint32_t getSSRC() { return zrtpNtohl(pingAckHeader->ssrc); };
@@ -54,7 +51,7 @@ class __EXPORT ZrtpPacketPingAck : public ZrtpPacketBase {
     void setVersion(uint8_t *text)      { memcpy(pingAckHeader->version, text, ZRTP_WORD_SIZE ); }
 
     /// Set SSRC in PingAck message
-    void setSSRC(uint32_t data)         {pingAckHeader->ssrc = zrtpHtonl(data); };
+    void setSSRC(uint32_t dataIn)         {pingAckHeader->ssrc = zrtpHtonl(dataIn); };
 
     /// Set remote endpoint hash, fixed byte array
     void setRemoteEpHash(uint8_t *hash) { memcpy(pingAckHeader->remoteEpHash, hash, sizeof(pingAckHeader->remoteEpHash)); }
@@ -63,7 +60,8 @@ class __EXPORT ZrtpPacketPingAck : public ZrtpPacketBase {
     void setLocalEpHash(uint8_t *hash)  { memcpy(pingAckHeader->localEpHash, hash, sizeof(pingAckHeader->localEpHash)); }
 
  private:
-     PingAckPacket_t data;
+     PingAck_t* pingAckHeader = nullptr;   ///< Points to PingAck message
+     PingAckPacket_t data = {};
 };
 
 /**

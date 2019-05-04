@@ -33,7 +33,6 @@
 // PRSH here only for completeness. We don't support PRSH in the other ZRTP parts.
 #define COMMIT_DH_EX      29
 #define COMMIT_MULTI      25
-#define COMMIT_PRSH       27
 
 /**
  * Implement the Commit packet.
@@ -48,9 +47,6 @@
 
 class __EXPORT ZrtpPacketCommit : public ZrtpPacketBase {
 
- protected:
-    Commit_t* commitHeader;     ///< Points to Commit message part
-
  public:
     typedef enum _commitType {
         DhExchange =  1,
@@ -61,10 +57,10 @@ class __EXPORT ZrtpPacketCommit : public ZrtpPacketBase {
     ZrtpPacketCommit();
 
     /// Creates a Commit packet from received data
-    ZrtpPacketCommit(uint8_t* data);
+    explicit ZrtpPacketCommit(const uint8_t* data);
 
     /// Normal destructor
-    virtual ~ZrtpPacketCommit();
+    ~ZrtpPacketCommit() override = default;
 
     /// Get pointer to hash algorithm type field, a fixed length character array
     uint8_t* getHashType()    { return commitHeader->hash; };
@@ -124,7 +120,7 @@ class __EXPORT ZrtpPacketCommit : public ZrtpPacketBase {
     /// Set HVI field, a fixed length byte array
     void setHvi(uint8_t* text)         { memcpy(commitHeader->hvi, text, sizeof(commitHeader->hvi)); };
 
-    /// Set conce field, a fixed length byte array, overlapping HVI field
+    /// Set Nonce field, a fixed length byte array, overlapping HVI field
     void setNonce(uint8_t* text);
 
     /// Set hashH2 field, a fixed length byte array
@@ -137,7 +133,8 @@ class __EXPORT ZrtpPacketCommit : public ZrtpPacketBase {
     void setHMACMulti(uint8_t* hash)   { memcpy(commitHeader->hmac-4*ZRTP_WORD_SIZE, hash, sizeof(commitHeader->hmac)); };
 
  private:
-     CommitPacket_t data;
+     Commit_t* commitHeader;     ///< Points to Commit message part
+     CommitPacket_t data = {};
 };
 
 /**

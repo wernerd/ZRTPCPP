@@ -21,8 +21,6 @@
 #include <libzrtpcpp/ZrtpPacketHelloAck.h>
 
 ZrtpPacketHelloAck::ZrtpPacketHelloAck() {
-    DEBUGOUT((fprintf(stdout, "Creating HelloAck packet without data\n")));
-
     zrtpHeader = &data.hdr;	// the standard header
 
     setZrtpId();
@@ -30,14 +28,7 @@ ZrtpPacketHelloAck::ZrtpPacketHelloAck() {
     setMessageType((uint8_t*)HelloAckMsg);
 }
 
-ZrtpPacketHelloAck::ZrtpPacketHelloAck(uint8_t *data) {
-    DEBUGOUT((fprintf(stdout, "Creating HelloAck packet from data\n")));
-
+ZrtpPacketHelloAck::ZrtpPacketHelloAck(const uint8_t *data) {
     zrtpHeader = (zrtpPacketHeader_t *)&((HelloAckPacket_t *)data)->hdr;	// the standard header
-
-}
-
-ZrtpPacketHelloAck::~ZrtpPacketHelloAck() {
-    DEBUGOUT((fprintf(stdout, "Deleting HelloAck packet: alloc: %x\n", allocated)));
 }
 

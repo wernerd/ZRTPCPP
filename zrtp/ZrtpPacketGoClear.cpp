@@ -22,8 +22,6 @@
 #include <libzrtpcpp/ZrtpPacketGoClear.h>
 
 ZrtpPacketGoClear::ZrtpPacketGoClear() {
-    DEBUGOUT((fprintf(stdout, "Creating GoClear packet without data\n")));
-
     zrtpHeader = &data.hdr;	// the standard header
     clearHeader = &data.goClear;
 
@@ -32,13 +30,7 @@ ZrtpPacketGoClear::ZrtpPacketGoClear() {
     setMessageType((uint8_t*)GoClearMsg);
 }
 
-ZrtpPacketGoClear::ZrtpPacketGoClear(uint8_t *data) {
-    DEBUGOUT((fprintf(stdout, "Creating GoClear packet from data\n")));
-
+ZrtpPacketGoClear::ZrtpPacketGoClear(const uint8_t *data) {
     zrtpHeader = (zrtpPacketHeader_t *)&((GoClearPacket_t *)data)->hdr;	// the standard header
     clearHeader = (GoClear_t *)&((GoClearPacket_t *)data)->goClear;
-}
-
-ZrtpPacketGoClear::~ZrtpPacketGoClear() {
-    DEBUGOUT((fprintf(stdout, "Deleting GoClear packet: alloc: %x\n", allocated)));
 }

@@ -42,11 +42,11 @@ class __EXPORT ZrtpPacketErrorAck : public ZrtpPacketBase {
     ZrtpPacketErrorAck();
 
     /// Creates a ErrorAck packet from received data
-    ZrtpPacketErrorAck(uint8_t* data);
-    virtual ~ZrtpPacketErrorAck();
+    explicit ZrtpPacketErrorAck(const uint8_t* data);
+    ~ZrtpPacketErrorAck() override = default;
 
  private:
-     ErrorAckPacket_t data;
+     ErrorAckPacket_t data = {};
 };
 
 /**

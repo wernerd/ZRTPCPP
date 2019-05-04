@@ -39,17 +39,14 @@
 
 class __EXPORT ZrtpPacketGoClear : public ZrtpPacketBase {
 
- protected:
-    GoClear_t* clearHeader;
-
  public:
     /// Creates a GoCLear packet with default data
     ZrtpPacketGoClear();
 
     /// Creates a GoClear packet from received data
-    ZrtpPacketGoClear(uint8_t* data);
+    explicit ZrtpPacketGoClear(const uint8_t* data);
 
-    virtual ~ZrtpPacketGoClear();
+    ~ZrtpPacketGoClear() override = default;
 
     /// Not used
     const uint8_t* getClearHmac() { return clearHeader->clearHmac; };
@@ -61,7 +58,8 @@ class __EXPORT ZrtpPacketGoClear : public ZrtpPacketBase {
     void clrClearHmac()              { memset(clearHeader->clearHmac, 0, 32); };
 
  private:
-     GoClearPacket_t data;
+     GoClear_t* clearHeader = nullptr;
+     GoClearPacket_t data = {};
 };
 
 /**

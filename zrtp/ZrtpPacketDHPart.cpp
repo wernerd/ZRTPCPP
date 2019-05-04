@@ -67,18 +67,15 @@ void ZrtpPacketDHPart::setPubKeyType(const char* pkt) {
     else
         return;
 
-    uint16_t length = static_cast<uint16_t>(sizeof(DHPartPacket_t) + dhLength + (2 * ZRTP_WORD_SIZE)); // HMAC field is 2*ZRTP_WORD_SIZE
+    auto length = static_cast<uint16_t>(sizeof(DHPartPacket_t) + dhLength + (2 * ZRTP_WORD_SIZE)); // HMAC field is 2*ZRTP_WORD_SIZE
     setLength(static_cast<uint16_t>(length / ZRTP_WORD_SIZE));
 }
 
 ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t *data) {
-    DEBUGOUT((fprintf(stdout, "Creating DHPart packet from data\n")));
-
     zrtpHeader = &((DHPartPacket_t *)data)->hdr;  // the standard header
     DHPartHeader = &((DHPartPacket_t *)data)->dhPart;
 
     int16_t len = getLength();
-    DEBUGOUT((fprintf(stdout, "DHPart length: %d\n", len)));
     if (len == 85) {         // Dh2k
         dhLength = 256;
     }
@@ -98,12 +95,8 @@ ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t *data) {
         dhLength = 104;
     }
     else {
-        pv = NULL;
+        pv = nullptr;
         return;
     }
     pv = data + sizeof(DHPartPacket_t);    // point to the public key value
-}
-
-ZrtpPacketDHPart::~ZrtpPacketDHPart() {
-    DEBUGOUT((fprintf(stdout, "Deleting DHPart packet: alloc: %x\n", allocated)));
 }

@@ -21,8 +21,6 @@
 #include <libzrtpcpp/ZrtpPacketPing.h>
 
 ZrtpPacketPing::ZrtpPacketPing() {
-    DEBUGOUT((fprintf(stdout, "Creating Ping packet without data\n")));
-
     zrtpHeader = &data.hdr;	// the standard header
     pingHeader = &data.ping;
 
@@ -32,13 +30,7 @@ ZrtpPacketPing::ZrtpPacketPing() {
     setVersion((uint8_t*)zrtpVersion_11);  // TODO: fix version string after clarification
 }
 
-ZrtpPacketPing::ZrtpPacketPing(uint8_t *data) {
-    DEBUGOUT((fprintf(stdout, "Creating Ping packet from data\n")));
-
+ZrtpPacketPing::ZrtpPacketPing(const uint8_t *data) {
     zrtpHeader = (zrtpPacketHeader_t *)&((PingPacket_t*)data)->hdr;	// the standard header
     pingHeader = (Ping_t *)&((PingPacket_t *)data)->ping;
-}
-
-ZrtpPacketPing::~ZrtpPacketPing() {
-    DEBUGOUT((fprintf(stdout, "Deleting Ping packet: alloc: %x\n", allocated)));
 }

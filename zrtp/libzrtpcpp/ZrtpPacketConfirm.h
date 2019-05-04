@@ -39,30 +39,27 @@
 
 class __EXPORT ZrtpPacketConfirm : public ZrtpPacketBase {
 
-    private:
-        Confirm_t* confirmHeader;   ///< Point to the Confirm message part
-
     public:
         /// Creates a Confirm packet with default data
         ZrtpPacketConfirm();
 
         /// Creates a Confirm packet with default data and a given signature length
-        ZrtpPacketConfirm(uint32_t sl);
+        explicit ZrtpPacketConfirm(uint32_t sl);
 
         /// Creates a Confirm packet from received data
-        ZrtpPacketConfirm(uint8_t* d);
+        explicit ZrtpPacketConfirm(const uint8_t* d);
 
         /// Normal destructor
-        virtual ~ZrtpPacketConfirm();
+        ~ZrtpPacketConfirm() override = default;
 
         /// Check if SAS verify flag is set
-        const bool isSASFlag()            { return (confirmHeader->flags & 0x4) == 0x4; }
+        const bool isSASFlag()            { return (confirmHeader->flags & 0x4U) == 0x4; }
 
         /// Check if Disclosure flag is set
-        const bool isDisclosureFlag()     { return (confirmHeader->flags & 0x1) == 0x1; }
+        const bool isDisclosureFlag()     { return (confirmHeader->flags & 0x1U) == 0x1; }
 
         /// Check if PBXEnrollment flag is set
-        const bool isPBXEnrollment()      { return (confirmHeader->flags & 0x8) == 0x8; }
+        const bool isPBXEnrollment()      { return (confirmHeader->flags & 0x8U) == 0x8; }
 
         /// Get pointer to filler bytes (contains one bit of signature length)
         const uint8_t* getFiller()        { return confirmHeader->filler; }
@@ -91,13 +88,13 @@ class __EXPORT ZrtpPacketConfirm : public ZrtpPacketBase {
         bool isSignatureLengthOk();
 
         /// set SAS verified flag
-        void setSASFlag()            { confirmHeader->flags |= 0x4; }
+        void setSASFlag()            { confirmHeader->flags |= 0x4U; }
 
         /// set Disclosure flag
-        void setDisclosureFlag()     { confirmHeader->flags |= 0x1; }
+        void setDisclosureFlag()     { confirmHeader->flags |= 0x1U; }
 
         /// set setPBXEnrollment flag
-        void setPBXEnrollment()      { confirmHeader->flags |= 0x8; }
+        void setPBXEnrollment()      { confirmHeader->flags |= 0x8U; }
 
         /// Set MAC data, fixed length byte array
         void setHmac(uint8_t* text)  { memcpy(confirmHeader->hmac, text, sizeof(confirmHeader->hmac)); }
@@ -112,18 +109,20 @@ class __EXPORT ZrtpPacketConfirm : public ZrtpPacketBase {
         void setHashH0(uint8_t* t)   { memcpy(confirmHeader->hashH0, t, sizeof(confirmHeader->hashH0)); }
 
         /// Set signature data, length of the signature data in bytes and must be a multiple of 4.
-        bool setSignatureData(uint8_t* data, int32_t length);
+        bool setSignatureData(const uint8_t* dataIn, int32_t length);
 
         /// Set signature length in words
         bool setSignatureLength(uint32_t sl);
 
     private:
         void initialize();
-     // Confirm packet is of variable length. It maximum size is 524 words:
-     // - 11 words fixed size
-     // - up to 513 words variable part, depending if signature is present and its length.
-     // This leads to a maximum of 4*524=2096 bytes.
-        uint8_t data[2100];       // large enough to hold a full blown Confirm packet
+        Confirm_t* confirmHeader = nullptr;   ///< Point to the Confirm message part
+
+        // Confirm packet is of variable length. It maximum size is 524 words:
+        // - 11 words fixed size
+        // - up to 513 words variable part, depending if signature is present and its length.
+        // This leads to a maximum of 4*524=2096 bytes.
+        uint8_t data[2100] = {0};       // large enough to hold a full blown Confirm packet
 
 };
 

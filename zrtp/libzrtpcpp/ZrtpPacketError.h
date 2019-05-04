@@ -39,16 +39,15 @@
 class __EXPORT ZrtpPacketError : public ZrtpPacketBase {
 
  protected:
-    Error_t* errorHeader;   ///< Points to Error message
 
  public:
     /// Creates a Error packet with default data
     ZrtpPacketError();
 
     /// Creates a Error packet from received data
-    ZrtpPacketError(uint8_t* data);
+    explicit ZrtpPacketError(const uint8_t* data);
 
-    virtual ~ZrtpPacketError();
+    ~ZrtpPacketError() override = default;
 
     /// Get the error code from Error message
     uint32_t getErrorCode() { return zrtpNtohl(errorHeader->errorCode); };
@@ -57,7 +56,8 @@ class __EXPORT ZrtpPacketError : public ZrtpPacketBase {
     void setErrorCode(uint32_t code) {errorHeader->errorCode = zrtpHtonl(code); };
 
  private:
-     ErrorPacket_t data;
+     Error_t* errorHeader = nullptr;   ///< Points to Error message
+     ErrorPacket_t data = {};
 };
 
 /**

@@ -39,23 +39,18 @@
 
 class __EXPORT ZrtpPacketDHPart : public ZrtpPacketBase {
 
- protected:
-    uint8_t *pv;                ///< points to public key value inside DH message
-    DHPart_t* DHPartHeader;     ///< points to DH message structure
-    int32_t dhLength;           ///< length of DH message, DH message has variable length
-
  public:
     /// Creates a DHPart packet no data, must use setPubKeyType(...)
     ZrtpPacketDHPart();
 
     /// Creates a DHPart packet with default data and a give public key type
-    ZrtpPacketDHPart(const char* pkt);
+    explicit ZrtpPacketDHPart(const char* pkt);
 
     /// Creates a DHPart packet from received data
-    ZrtpPacketDHPart(uint8_t* data);
+    explicit ZrtpPacketDHPart(uint8_t* data);
 
     /// Standard destructor
-    virtual ~ZrtpPacketDHPart();
+    ~ZrtpPacketDHPart() override = default;
 
     /// Get pointer to public key value, variable length byte array
     uint8_t* getPv()             { return pv; }
@@ -63,13 +58,13 @@ class __EXPORT ZrtpPacketDHPart : public ZrtpPacketBase {
     /// Get pointer to first retained secretd id, fixed length byte array
     uint8_t* getRs1Id()          { return DHPartHeader->rs1Id; };
 
-    /// Get pointer to second retained secretd id, fixed length byte array
+    /// Get pointer to second retained secret id, fixed length byte array
     uint8_t* getRs2Id()          { return DHPartHeader->rs2Id; };
 
-    /// Get pointer to additional retained secretd id, fixed length byte array
+    /// Get pointer to additional retained secret id, fixed length byte array
     uint8_t* getAuxSecretId()    { return DHPartHeader->auxSecretId; };
 
-    /// Get pointer to PBX retained secretd id, fixed length byte array
+    /// Get pointer to PBX retained secret id, fixed length byte array
     uint8_t* getPbxSecretId()    { return DHPartHeader->pbxSecretId; };
 
     /// Get pointer to first hash (H1) for hash chain, fixed length byte array
@@ -84,16 +79,16 @@ class __EXPORT ZrtpPacketDHPart : public ZrtpPacketBase {
     /// Setpublic key value, variable length byte array
     void setPv(uint8_t* text)         { memcpy(pv, text, dhLength); };
 
-    /// Set first retained secretd id, fixed length byte array
+    /// Set first retained secret id, fixed length byte array
     void setRs1Id(uint8_t* text)      { memcpy(DHPartHeader->rs1Id, text, sizeof(DHPartHeader->rs1Id)); };
 
-    /// Set second retained secretd id, fixed length byte array
+    /// Set second retained secret id, fixed length byte array
     void setRs2Id(uint8_t* text)      { memcpy(DHPartHeader->rs2Id, text, sizeof(DHPartHeader->rs2Id)); };
 
-    /// Set additional retained secretd id, fixed length byte array
+    /// Set additional retained secret id, fixed length byte array
     void setAuxSecretId(uint8_t* t)   { memcpy(DHPartHeader->auxSecretId, t, sizeof(DHPartHeader->auxSecretId)); };
 
-    /// Set PBX retained secretd id, fixed length byte array
+    /// Set PBX retained secret id, fixed length byte array
     void setPbxSecretId(uint8_t* t)   { memcpy(DHPartHeader->pbxSecretId,t, sizeof(DHPartHeader->pbxSecretId)); };
 
     /// Set first hash (H1) of hash chain, fixed length byte array
@@ -107,12 +102,16 @@ class __EXPORT ZrtpPacketDHPart : public ZrtpPacketBase {
 
  private:
     void initialize();
-    // SupportedPubKeys pktype;
+    uint8_t *pv = nullptr;                ///< points to public key value inside DH message
+    DHPart_t* DHPartHeader = nullptr;     ///< points to DH message structure
+    int32_t dhLength = 0;                 ///< length of DH message, DH message has variable length
+
+     // SupportedPubKeys pktype;
      // DHPart packet is of variable length. It maximum size is 141 words:
      // - 13 words fixed sizze
      // - up to 128 words variable part, depending on DH algorithm
      //   leads to a maximum of 4*141=564 bytes.
-     uint8_t data[768];       // large enough to hold a full blown DHPart packet
+     uint8_t data[768] = {0};       // large enough to hold a full blown DHPart packet
 };
 
 /**

@@ -21,13 +21,11 @@
 #include <libzrtpcpp/ZrtpPacketSASrelay.h>
 
 ZrtpPacketSASrelay::ZrtpPacketSASrelay() {
-    DEBUGOUT((fprintf(stdout, "Creating SASrelay packet without data, no sl data\n")));
     initialize();
     setSignatureLength(0);
 }
 
 ZrtpPacketSASrelay::ZrtpPacketSASrelay(uint32_t sl) {
-    DEBUGOUT((fprintf(stdout, "Creating SASrelay packet without data\n")));
     initialize();
     setSignatureLength(sl);
 }
@@ -44,10 +42,10 @@ void ZrtpPacketSASrelay::initialize() {
 }
 
 void ZrtpPacketSASrelay::setSignatureLength(uint32_t sl) {
-    sl &= 0x1ff;                                                       // make sure it is max 9 bits
+    sl &= 0x1ffU;                                                       // make sure it is max 9 bits
     int32_t length = sizeof(ConfirmPacket_t) + (sl * ZRTP_WORD_SIZE);
     sasRelayHeader->sigLength = sl;                                     // sigLength is a uint byte
-    if (sl & 0x100) {                                                  // check the 9th bit
+    if (sl & 0x100U) {                                                  // check the 9th bit
         sasRelayHeader->filler[1] = 1;                                  // and set it if necessary
     }
     setLength(length / 4);
@@ -56,19 +54,13 @@ void ZrtpPacketSASrelay::setSignatureLength(uint32_t sl) {
 uint32_t ZrtpPacketSASrelay::getSignatureLength() {
     uint32_t sl = sasRelayHeader->sigLength;
     if (sasRelayHeader->filler[1] == 1) {                              // do we have a 9th bit
-        sl |= 0x100;
+        sl |= 0x100U;
     }
     return sl;
 }
 
-ZrtpPacketSASrelay::ZrtpPacketSASrelay(uint8_t* data) {
-    DEBUGOUT((fprintf(stdout, "Creating SASrelay packet from data\n")));
+ZrtpPacketSASrelay::ZrtpPacketSASrelay(const uint8_t* data) {
 
-    allocated = NULL;
     zrtpHeader = (zrtpPacketHeader_t *)&((SASrelayPacket_t *)data)->hdr;	// the standard header
     sasRelayHeader = (SASrelay_t *)&((SASrelayPacket_t *)data)->sasrelay;
-}
-
-ZrtpPacketSASrelay::~ZrtpPacketSASrelay() {
-    DEBUGOUT((fprintf(stdout, "Deleting SASrelay packet: alloc: %x\n", allocated)));
 }

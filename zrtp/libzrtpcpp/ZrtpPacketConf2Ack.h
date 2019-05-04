@@ -43,13 +43,13 @@ class __EXPORT ZrtpPacketConf2Ack : public ZrtpPacketBase {
     ZrtpPacketConf2Ack();
 
     ///Creates a Conf2Ack packet from received data
-    ZrtpPacketConf2Ack(char* data);
+    explicit ZrtpPacketConf2Ack(const char* data);
 
     /// Normal destructor
-    virtual ~ZrtpPacketConf2Ack();
+    ~ZrtpPacketConf2Ack() override = default;
 
  private:
-     Conf2AckPacket_t data;
+     Conf2AckPacket_t data = {};
 };
 
 /**

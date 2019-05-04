@@ -21,8 +21,6 @@
 #include <libzrtpcpp/ZrtpPacketCommit.h>
 
 ZrtpPacketCommit::ZrtpPacketCommit() {
-    DEBUGOUT((fprintf(stdout, "Creating commit packet without data\n")));
-
     zrtpHeader = &data.hdr;	// the standard header
     commitHeader = &data.commit;
 
@@ -38,12 +36,7 @@ void ZrtpPacketCommit::setNonce(uint8_t* text) {
     setLength(len);
 }
 
-ZrtpPacketCommit::ZrtpPacketCommit(uint8_t *data) {
-    DEBUGOUT((fprintf(stdout, "Creating commit packet from data\n")));
+ZrtpPacketCommit::ZrtpPacketCommit(const uint8_t *data) {
     zrtpHeader = (zrtpPacketHeader_t *)&((CommitPacket_t *)data)->hdr;	// the standard header
     commitHeader = (Commit_t *)&((CommitPacket_t *)data)->commit;
-}
-
-ZrtpPacketCommit::~ZrtpPacketCommit() {
-    DEBUGOUT((fprintf(stdout, "Deleting commit packet: alloc: %x\n", allocated)));
 }

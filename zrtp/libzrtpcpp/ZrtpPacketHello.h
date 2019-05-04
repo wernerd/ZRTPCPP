@@ -43,30 +43,14 @@
 
 class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
 
- protected:
-    Hello_t* helloHeader;   ///< Point to the Hello message part
-
-    int32_t nHash,          ///< number of hash algorithms offered
-    nCipher,                ///< number of cipher algorithms offered
-    nPubkey,                ///< number of key agreement algorithms offered
-    nSas,                   ///< number of SAS algorithms offered
-    nAuth;                  ///< number of SRTP authentication algorithms offered
-
-    int32_t oHash,          ///< offsets in bytes to hash algorithm names
-    oCipher,                ///< offsets in bytes to cipher algorithm names
-    oPubkey,                ///< offsets in bytes to key agreement algorithm names
-    oSas,                   ///< offsets in bytes to SAS algorithm names
-    oAuth,                  ///< offsets in bytes to SRTP authentication algorithm names
-    oHmac;                  ///< offsets in bytes to MAC of Hello message
-
  public:
     /// Creates a Hello packet with default data
-    ZrtpPacketHello();
+    ZrtpPacketHello() = default;
 
     /// Creates a Hello packet from received data
-    ZrtpPacketHello(uint8_t *data);
+    explicit ZrtpPacketHello(const uint8_t *data);
 
-    virtual ~ZrtpPacketHello();
+    ~ZrtpPacketHello() override = default;
 
     /**
      * Set configure data and populate Hello message data.
@@ -109,13 +93,13 @@ class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
     void setZid(uint8_t *text)         { memcpy(helloHeader->zid, text, sizeof(helloHeader->zid)); }
 
     /// Check passive mode (mode not implemented)
-    bool isPassive()       { return (helloHeader->flags & 0x10) == 0x10 ? true : false; };
+    bool isPassive()       { return (helloHeader->flags & 0x10U) == 0x10 ; };
 
     /// Check if MitM flag is set
-    bool isMitmMode()       { return (helloHeader->flags & 0x20) == 0x20 ? true : false; };
+    bool isMitmMode()       { return (helloHeader->flags & 0x20U) == 0x20; };
 
     /// Check if SAS sign flag is set
-    bool isSasSign()       { return (helloHeader->flags & 0x40) == 0x40 ? true : false; };
+    bool isSasSign()       { return (helloHeader->flags & 0x40U) == 0x40; };
 
     /// Get hash algorithm name at position n, fixed ASCII character array
     uint8_t* getHashType(int32_t n)   { return ((uint8_t*)helloHeader)+oHash+(n*ZRTP_WORD_SIZE); }
@@ -175,21 +159,37 @@ class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
     int32_t getNumAuth()     {return nAuth; }
 
     /// set MitM flag
-    void setMitmMode()       {helloHeader->flags |= 0x20; }
+    void setMitmMode()       {helloHeader->flags |= 0x20U; }
 
     /// set SAS sign flag
-    void setSasSign()        {helloHeader->flags |= 0x40; }
+    void setSasSign()        {helloHeader->flags |= 0x40U; }
 
     /// Check if packet length matches
     bool isLengthOk()        {return (computedLength == getLength());}
 
  private:
-     uint32_t computedLength;
+    Hello_t* helloHeader = nullptr;   ///< Point to the Hello message part
+
+    uint32_t nHash = 0,                 ///< number of hash algorithms offered
+            nCipher = 0,                ///< number of cipher algorithms offered
+            nPubkey = 0,                ///< number of key agreement algorithms offered
+            nSas = 0,                   ///< number of SAS algorithms offered
+            nAuth = 0;                  ///< number of SRTP authentication algorithms offered
+
+    int32_t oHash = 0,                  ///< offsets in bytes to hash algorithm names
+            oCipher = 0,                ///< offsets in bytes to cipher algorithm names
+            oPubkey = 0,                ///< offsets in bytes to key agreement algorithm names
+            oSas = 0,                   ///< offsets in bytes to SAS algorithm names
+            oAuth = 0,                  ///< offsets in bytes to SRTP authentication algorithm names
+            oHmac = 0;                  ///< offsets in bytes to MAC of Hello message
+
+     uint32_t computedLength = 0;
+
      // Hello packet is of variable length. It maximum size is 46 words:
-     // - 20 words fixed sizze
+     // - 20 words fixed size
      // - up to 35 words variable part, depending on number of algorithms
      // leads to a maximum of 4*55=220 bytes.
-     uint8_t data[256];       // large enough to hold a full blown Hello packet
+     uint8_t data[256] = {0};       // large enough to hold a full blown Hello packet
 };
 
 /**

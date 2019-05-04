@@ -21,8 +21,6 @@
 #include <libzrtpcpp/ZrtpPacketClearAck.h>
 
 ZrtpPacketClearAck::ZrtpPacketClearAck() {
-    DEBUGOUT((fprintf(stdout, "Creating ClearAck packet without data\n")));
-
     zrtpHeader = &data.hdr;	// the standard header
 
     setZrtpId();
@@ -30,12 +28,6 @@ ZrtpPacketClearAck::ZrtpPacketClearAck() {
     setMessageType((uint8_t*)ClearAckMsg);
 }
 
-ZrtpPacketClearAck::ZrtpPacketClearAck(uint8_t *data) {
-    DEBUGOUT((fprintf(stdout, "Creating Conf2Ack packet from data\n")));
-
+ZrtpPacketClearAck::ZrtpPacketClearAck(const uint8_t *data) {
     zrtpHeader = (zrtpPacketHeader_t *)&((ClearAckPacket_t*)data)->hdr;	// the standard header
-}
-
-ZrtpPacketClearAck::~ZrtpPacketClearAck() {
-    DEBUGOUT((fprintf(stdout, "Deleting ClearAck packet: alloc: %x\n", allocated)));
 }
