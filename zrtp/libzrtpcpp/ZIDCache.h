@@ -33,6 +33,8 @@
  * @{
  */
 
+class ZIDCache;
+
 /**
  * Interface for classes that implements a ZID (ZRTP Identifiers) file.
  *
@@ -40,9 +42,6 @@
  *
  * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
-
-class ZIDCache;
-
 class __EXPORT ZIDCache {
 
 public:
@@ -92,6 +91,14 @@ public:
     virtual void close() =0;
 
     /**
+     * @brief Get the cache type.
+     *
+     * @return
+     *    Cache type enumeration
+     */
+    virtual CacheTypes getCacheType() =0;
+
+    /**
      * @brief Get a ZID record from ZID cache or create a new record.
      *
      * The method tries to read a ZRTP cache record for the ZID.
@@ -125,6 +132,14 @@ public:
      *    Pointer to the ZID
      */
     virtual const unsigned char* getZid() =0;
+
+    /**
+     * @brief Set the ZID associated with this ZID file - implemented for Empty cache only.
+     *
+     * @return
+     *    Pointer to the ZID
+     */
+    virtual void setZid(const uint8_t *zid) =0;
 
     /**
      * @brief Get peer name from database.

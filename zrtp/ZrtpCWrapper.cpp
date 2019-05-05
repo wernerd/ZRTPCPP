@@ -29,22 +29,22 @@
 #endif
 
 static std::unique_ptr<ZIDCache>
-zrtp_initZidFile(const char* zidFilename, ZIDCache::CacheTypes cacheType) {
+zrtp_initZidFile(const char* zidFilename, CacheTypes cacheType) {
 
     auto zf = std::unique_ptr<ZIDCache>();
 
     switch (cacheType) {
-        case ZIDCache::NoCache:
-            zf = std::make_unique<ZIDCacheEmpty>();
-            break;
-        case ZIDCache::Database:
+        case NoCache:
+            return std::make_unique<ZIDCacheEmpty>();
+
+        case Database:
 #ifdef ZID_DATABASE
             zf = std::make_unique<ZIDCacheDb>();
             break;
 #else
             return nullptr;
 #endif
-        case ZIDCache::File:
+        case File:
             zf = std::make_unique<ZIDCacheFile>();
             break;
     }
@@ -63,52 +63,75 @@ zrtp_initZidFile(const char* zidFilename, ZIDCache::CacheTypes cacheType) {
     return zf;
 }
 
-ZrtpContext* zrtp_CreateWrapper() 
+ZrtpContext* zrtp_CreateWrapper()
 {
     auto* zc = new ZrtpContext;
-    zc->configure = nullptr;
+    // Set a raw pointer in wrapper context, never delete this pointer.
+    // Functions zrtp_initializeZrtpEngine takes ownership of the raw pointer and manages it
+    // with a shared_pointer. Thus only clear the raw pointer in zrtp_DestroyWrapper() below.
+    // Kids, don't do this at home ;-)
+    zc->configure = new ZrtpConfigure();
+    zc->configure->setStandardConfig();
     zc->zrtpEngine = nullptr;
     zc->zrtpCallback = nullptr;
+    zc->userData = nullptr;
 
     return zc;
 }
 
-bool zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext,
-                               zrtp_Callbacks *cb, const char* id,
-                               const char* zidFilename,
-                               void* userData,
-                               int32_t mitmMode,
-                               ZIDCache::CacheTypes cacheType,
-                               std::shared_ptr<ZrtpConfigure> config)
-{
+int32_t zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext,
+                                  zrtp_Callbacks *cb, const char* id,
+                                  const char* zidFilename,
+                                  void* userData,
+                                  int32_t mitmMode,
+                                  CacheTypes cacheType,
+                                  ZrtpContext* copyConfigFrom) {
     std::string clientIdString(id);
+
+    std::shared_ptr<ZrtpConfigure> configOwn;
 
     zrtpContext->zrtpCallback = new ZrtpCallbackWrapper(cb, zrtpContext);
     zrtpContext->userData = userData;
 
-    std::shared_ptr<ZrtpConfigure> configOwn;
-    if (!config) {
-        config = std::make_shared<ZrtpConfigure>();
-        config->setStandardConfig();
+    // If not set take over ZrtpConfigure rwa pointer, set up ZID cache
+    if (!copyConfigFrom) {
+        // Take ownership of ZrtpConfigure raw pointer
+        configOwn = std::shared_ptr<ZrtpConfigure>(zrtpContext->configure);
+
+        // Initialize ZID file (cache) and get my own ZID
+        auto zf = zrtp_initZidFile(zidFilename, cacheType);
+
+        if (!zf) {
+            return false;
+        }
+        configOwn->setZidCache(move(zf));
     }
-    // Save a raw pointer in wrapper context, never delete this pointer. It's done via the
-    // unique_ptr in ZrtpConfigure when ZRtp gets destroyed and in turn ZrtpConfigure. Thus
-    // only clear the raw pointer in zrtp_DestroyWrapper() below.
-    // Kids, don't do this at home ;-)
-    zrtpContext->configure = config.get();
+    else {
+        // use ZrtpConfigure of another, existing ZRTP stream
+        delete zrtpContext->configure;              // delete initialized stream, not needed anymore
+        configOwn = copyConfigFrom->zrtpEngine->getZrtpConfigure(); // get pointer to ZrtpConfigure from other stream
+        zrtpContext->configure = configOwn.get();   // set raw pointer in ZrtpContext
+    }
 
-    // Initialize ZID file (cache) and get my own ZID
-    auto zf = zrtp_initZidFile(zidFilename, cacheType);
-
-    if (!zf) {
+    const unsigned char *myZid = configOwn->getZidCache().getZid();
+    if (!myZid) {
         return false;
     }
-    const unsigned char* myZid = zf->getZid();
-    config->setZidCache(move(zf));
 
     zrtpContext->zrtpEngine = new ZRtp((uint8_t*)myZid, zrtpContext->zrtpCallback,
-                              clientIdString, config, mitmMode != 0);
+                                       clientIdString, configOwn, mitmMode != 0);
     return true;
+}
+
+void zrtp_setZidForEmptyCache(ZrtpContext* zrtpContext, uint8_t const * zid) {
+
+    if (zrtpContext && zrtpContext->configure) {
+        auto type = zrtpContext->configure->getZidCache().getCacheType();
+        if (type != ZIDCache::NoCache) {
+            return;
+        }
+        zrtpContext->configure->getZidCache().setZid(zid);
+    }
 }
 
 void zrtp_DestroyWrapper(ZrtpContext* zrtpContext) {
@@ -122,7 +145,7 @@ void zrtp_DestroyWrapper(ZrtpContext* zrtpContext) {
     delete zrtpContext->zrtpCallback;
     zrtpContext->zrtpCallback = nullptr;
 
-    // See comments above.
+    // Don't delete ZrtpConfigure, see comments above.
     zrtpContext->configure = nullptr;
 
     delete zrtpContext;
@@ -237,7 +260,7 @@ char* zrtp_getMultiStrParams(ZrtpContext* zrtpContext, int32_t *length) {
     else
         return nullptr;
 
-    if (ret.size() == 0)
+    if (ret.empty())
         return nullptr;
 
     *length = ret.size();
@@ -309,7 +332,7 @@ int32_t zrtp_sendSASRelayPacket(ZrtpContext* zrtpContext, uint8_t* sh, char* ren
 const char* zrtp_getSasType(ZrtpContext* zrtpContext) {
     if (zrtpContext && zrtpContext->zrtpEngine) {
         std::string rn = zrtpContext->zrtpEngine->getSasType();
-        if (rn.size() == 0)
+        if (rn.empty())
             return nullptr;
 
         char* retval = (char*)malloc(rn.size()+1);
@@ -372,37 +395,24 @@ int32_t zrtp_getCurrentProtocolVersion(ZrtpContext* zrtpContext) {
         return zrtpContext->zrtpEngine->getCurrentProtocolVersion();
     return -1;
 }
-/*
- * The following methods wrap the ZRTP Configure functions
- */
-int32_t zrtp_InitializeConfig (ZrtpContext* zrtpContext)
-{
-    zrtpContext->configure = new ZrtpConfigure();
-    return 1;
-}
 
 static EnumBase* getEnumBase(zrtp_AlgoTypes type)
 {
         switch(type) {
         case zrtp_HashAlgorithm:
             return &zrtpHashes;
-            break;
 
         case zrtp_CipherAlgorithm:
             return &zrtpSymCiphers;
-            break;
 
         case zrtp_PubKeyAlgorithm:
             return &zrtpPubKeys;
-            break;
 
         case zrtp_SasType:
             return &zrtpSasTypes;
-            break;
 
         case zrtp_AuthLength:
             return &zrtpAuthLengths;
-            break;
 
         default:
             return nullptr;
@@ -411,7 +421,7 @@ static EnumBase* getEnumBase(zrtp_AlgoTypes type)
 
 char** zrtp_getAlgorithmNames(ZrtpContext* zrtpContext, Zrtp_AlgoTypes type) 
 {
-    EnumBase* base = getEnumBase(type);
+    auto* base = getEnumBase(type);
 
     if (!base)
         return nullptr;
@@ -453,11 +463,17 @@ void zrtp_setMandatoryOnly(ZrtpContext* zrtpContext)
         zrtpContext->configure->setMandatoryOnly();
 }
 
+void zrtp_confClear(ZrtpContext* zrtpContext)
+{
+    if (zrtpContext && zrtpContext->configure)
+        zrtpContext->configure->clear();
+}
+
 int32_t zrtp_addAlgo(ZrtpContext* zrtpContext, zrtp_AlgoTypes algoType, const char* algo)
 {
-    EnumBase* base = getEnumBase(algoType);
+    auto* base = getEnumBase(algoType);
     if (base) {
-        AlgorithmEnum& a = base->getByName(algo);
+        auto& a = base->getByName(algo);
         if (zrtpContext && zrtpContext->configure)
             return zrtpContext->configure->addAlgo((AlgoTypes)algoType, a);
     }
@@ -466,9 +482,9 @@ int32_t zrtp_addAlgo(ZrtpContext* zrtpContext, zrtp_AlgoTypes algoType, const ch
 
 int32_t zrtp_addAlgoAt(ZrtpContext* zrtpContext, zrtp_AlgoTypes algoType, const char* algo, int32_t index)
 {
-    EnumBase* base = getEnumBase(algoType);
+    auto* base = getEnumBase(algoType);
     if (base) {
-        AlgorithmEnum& a = base->getByName(algo);
+        auto& a = base->getByName(algo);
         if (zrtpContext && zrtpContext->configure)
             return zrtpContext->configure->addAlgoAt((AlgoTypes)algoType, a, index);
     }
@@ -477,9 +493,9 @@ int32_t zrtp_addAlgoAt(ZrtpContext* zrtpContext, zrtp_AlgoTypes algoType, const 
 
 int32_t zrtp_removeAlgo(ZrtpContext* zrtpContext, zrtp_AlgoTypes algoType, const char* algo)
 {
-    EnumBase* base = getEnumBase(algoType);
+    auto* base = getEnumBase(algoType);
     if (base) {
-        AlgorithmEnum& a = base->getByName(algo);
+        auto& a = base->getByName(algo);
         if (zrtpContext && zrtpContext->configure)
             return zrtpContext->configure->removeAlgo((AlgoTypes)algoType, a);
     }
@@ -496,7 +512,7 @@ int32_t zrtp_getNumConfiguredAlgos(ZrtpContext* zrtpContext, zrtp_AlgoTypes algo
 const char* zrtp_getAlgoAt(ZrtpContext* zrtpContext, Zrtp_AlgoTypes algoType, int32_t index)
 {
     if (zrtpContext && zrtpContext->configure) {
-       AlgorithmEnum& a = zrtpContext->configure->getAlgoAt((AlgoTypes)algoType, index);
+        auto& a = zrtpContext->configure->getAlgoAt((AlgoTypes)algoType, index);
        return a.getName();
     }
     return nullptr;
@@ -504,9 +520,9 @@ const char* zrtp_getAlgoAt(ZrtpContext* zrtpContext, Zrtp_AlgoTypes algoType, in
 
 int32_t zrtp_containsAlgo(ZrtpContext* zrtpContext, Zrtp_AlgoTypes algoType, const char*  algo)
 {
-    EnumBase* base = getEnumBase(algoType);
+    auto* base = getEnumBase(algoType);
     if (base) {
-        AlgorithmEnum& a = base->getByName(algo);
+        auto& a = base->getByName(algo);
         if (zrtpContext && zrtpContext->configure)
             return zrtpContext->configure->containsAlgo((AlgoTypes)algoType, a) ? 1 : 0;
     }

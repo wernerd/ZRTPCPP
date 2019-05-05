@@ -41,10 +41,10 @@ static void zrtp_zrtpNegotiationFailed(ZrtpContext* ctx, int32_t severity, int32
 static void zrtp_zrtpNotSuppOther(ZrtpContext* ctx) ;
 static void zrtp_synchEnter(ZrtpContext* ctx) ;
 static void zrtp_synchLeave(ZrtpContext* ctx) ;
-static void zrtp_zrtpAskEnrollment (ZrtpContext* ctx, char* info ) ;
-static void zrtp_zrtpInformEnrollment(ZrtpContext* ctx, char* info ) ;
-static void zrtp_signSAS(ZrtpContext* ctx, char* sas) ;
-static int32_t zrtp_checkSASSignature (ZrtpContext* ctx, char* sas ) ;
+static void zrtp_zrtpAskEnrollment (ZrtpContext* ctx, int32_t info ) ;
+static void zrtp_zrtpInformEnrollment(ZrtpContext* ctx, int32_t info ) ;
+static void zrtp_signSAS(ZrtpContext* ctx, unsigned char* sas) ;
+static int32_t zrtp_checkSASSignature (ZrtpContext* ctx, unsigned char* sas ) ;
 
 /* The callback function structure for ZRTP */
 static zrtp_Callbacks c_callbacks = {
@@ -121,19 +121,19 @@ static void zrtp_synchLeave(ZrtpContext* ctx)
 {
 }
 
-static void zrtp_zrtpAskEnrollment(ZrtpContext* ctx, char* info )
+static void zrtp_zrtpAskEnrollment(ZrtpContext* ctx, int32_t info )
 {
 
 }
-static void zrtp_zrtpInformEnrollment(ZrtpContext* ctx, char* info )
+static void zrtp_zrtpInformEnrollment(ZrtpContext* ctx, int32_t info )
 {
 }
 
-static void zrtp_signSAS(ZrtpContext* ctx, char* sas)
+static void zrtp_signSAS(ZrtpContext* ctx, unsigned char* sas)
 {
 }
 
-static int32_t zrtp_checkSASSignature(ZrtpContext* ctx, char* sas )
+static int32_t zrtp_checkSASSignature(ZrtpContext* ctx, unsigned char* sas )
 {
     return 0;
 }
@@ -143,25 +143,24 @@ int main(int argc, char *argv[])
     ZrtpContext* zrtpCtx;
     char* hh;
     char** names;
-    
-    zrtpCtx = zrtp_CreateWrapper ();
-    zrtp_initializeZrtpEngine(zrtpCtx, &c_callbacks, "test", "test.zid", NULL);
-    
-    hh = zrtp_getHelloHash(zrtpCtx);
-    if (hh != 0) 
-    {
-        printf("hh: %s\n", hh);
-    }
-    else
-        printf("no hh");
 
-    zrtp_InitializeConfig(zrtpCtx);
+    zrtpCtx = zrtp_CreateWrapper();
     names = zrtp_getAlgorithmNames(zrtpCtx, zrtp_HashAlgorithm);
-    
+
     for (; *names; names++) {
         printf("name: %s\n", *names);
     }
+
+    zrtp_initializeZrtpEngine(zrtpCtx, &c_callbacks, "test", "test.zid", NULL, 0, File, NULL);
     
+    hh = zrtp_getHelloHash(zrtpCtx, 0);
+    if (hh != NULL) {
+        printf("hello hash: %s\n", hh);
+    }
+    else {
+        printf("no hello hash\n");
+    }
+
     return 0;
 }
 #ifdef __cplusplus

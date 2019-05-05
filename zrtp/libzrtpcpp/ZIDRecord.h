@@ -44,6 +44,8 @@
 
 #define FILE_TYPE_RECORD    1
 #define SQLITE_TYPE_RECORD  2
+#define EMPTY_TYPE_RECORD  3
+
 
 /*
  * The flag field stores the following bitflags

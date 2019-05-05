@@ -33,6 +33,7 @@
  */
 
 #include <stdint.h>
+#include <stddef.h>
 
 /**
  * Defines to specify the role a ZRTP peer has.
@@ -210,7 +211,7 @@ enum zrtpStates {
     numberOfStates      /*!< Gives total number of protocol states */
 };
 
-/*! The algorihms that we support in SRTP and that ZRTP can negotiate. */
+/*! The algorithms that we support in SRTP and that ZRTP can negotiate. */
 typedef enum {
     zrtp_Aes = 1,        /*!< Use AES as symmetrical cipher algorithm */
     zrtp_TwoFish,        /*!< Use TwoFish as symmetrical cipher algorithm */
@@ -242,6 +243,12 @@ typedef struct c_srtpSecrets
     char* sas;                          /*!< The SAS string */
     int32_t  role;                      /*!< ZRTP role of this client */
 } C_SrtpSecret_t;
+
+typedef enum _CacheTypes {
+    File = 1,
+    Database = 2,
+    NoCache = 4
+} CacheTypes;
 
 /*
  * Keep the following defines in sync with enum EnableSecurity in ZrtpCallback.h
@@ -487,9 +494,6 @@ extern "C"
          * Please refer to chapter 8.3 ff to get more details about PBX
          * enrollment and SAS relay.
          *
-         * <b>Note:</b> PBX enrollement is not yet fully supported by GNU
-         * ZRTP.
-         *
          * @param ctx
          *    Pointer to the opaque ZrtpContext structure.
          * @param info Give some information to the user about the PBX
@@ -518,7 +522,7 @@ extern "C"
          *
          * After ZRTP was able to compute the Short Authentication String
          * (SAS) it calls this method. The client may now use an
-         * approriate method to sign the SAS. The client may use
+         * appropriate method to sign the SAS. The client may use
          * ZrtpQueue#setSignatureData() to store the signature data and
          * enable signature transmission to the other peer. Refer to
          * chapter 8.2 of ZRTP specification.
@@ -562,13 +566,31 @@ extern "C"
     } zrtp_Callbacks;
 
     /**
-     * Create the GNU ZRTP C wrapper.
+     * Create the GNU ZRTP C wrapper and optionally set ZrtpConfigure.
      *
      * This wrapper implements the C interface to the C++ based GNU ZRTP.
+     *
+     * If an application requires a specific algorithm configuration then it
+     * must set the algorithm configuration data before it initializes the
+     * ZRTP protocol engine.
+     *
+     * The zrtp_CreateWrapper() functions initializes the ZrtpConfigure data
+     * with some sensible defaults which provide a high degree of security. The
+     * caller may use functions to modify the ZrtpConfigure data.
+     *
      * @returns
      *      Pointer to the ZrtpContext
+     *
+     * @see zrtp_setStandardConfig(ZrtpContext* zrtpContext)
+     * @see zrtp_setMandatoryOnly(ZrtpContext* zrtpContext)
+     * @see zrtp_confClear(ZrtpContext* zrtpContext)
+     * @see zrtp_containsAlgo(ZrtpContext* zrtpContext, Zrtp_AlgoTypes algoType, const char*  algo)
+     * @see zrtp_setTrustedMitM(ZrtpContext* zrtpContext, int32_t yesNo);
+     * @see zrtp_isTrustedMitM(ZrtpContext* zrtpContext);
+     * @see zrtp_setSasSignature(ZrtpContext* zrtpContext, int32_t yesNo);
+     * @see zrtp_isSasSignature(ZrtpContext* zrtpContext);
      */
-    ZrtpContext* zrtp_CreateWrapper(void);
+    ZrtpContext* zrtp_CreateWrapper();
 
     /**
      * Initialize the ZRTP protocol engine.
@@ -577,10 +599,6 @@ extern "C"
      * calls this method to actually create the ZRTP protocol engine and
      * initialize its configuration data. This method does not start the
      * protocol engine.
-     *
-     * If an application requires a specific algorithm configuration then it
-     * must set the algorithm configuration data before it initializes the
-     * ZRTP protocol engine.
      *
      * @param zrtpContext
      *    Pointer to the opaque ZrtpContext structure.
@@ -599,14 +617,6 @@ extern "C"
      * @param mitmMode
      *     A trusted Mitm (PBX) must set this to true. The ZRTP engine sets
      *     the M Flag in the Hello packet to announce a trusted MitM.
-     * @param config
-     *     Optional, an initialized ZrtpConfiguration, default: nullptr. If the caller does not
-     *     set this parameter the functions initializes the configuration with
-     *     standard values which provide a high degree of security.
-     *
-     *     If the caller initializes an own ZrtpConfigure object then the caller should not call
-     *     ZrtpConfigure::setZidCache() to initialize/set the ZID cache file field. The function
-     *     initializes the ZID cache backend according to the parameters @c filename and @c cacheType.
      * @param cacheType
      *     Optional, which cache backend to use, default: @c File. Either a @c File, a @c Database
      *     or @c NoCache.
@@ -618,20 +628,40 @@ extern "C"
      *     Note: There is only one backend for Sqlite and SqlCipher. It's just to avoid two database
      *     libraries if the app already uses SqlCipher. There is no need to really encrypt the ZRTP
      *     cache data.
+     *
+     * @param copyConfigFrom
+     *     If set the function uses the ZRTP configuration of an existing session for this new ZRTP session.
+     *
      * @returns
      *      @ true if initialization was successful, @c false if it failed. Usually because
      *      ZIDCache file could not initialized.
      *
      * @see zrtp_InitializeConfig
      */
-    bool zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext,
+    int32_t zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext,
                                    zrtp_Callbacks *cb,
                                    const char* id,
                                    const char* zidFilename,
                                    void* userData,
                                    int32_t mitmMode,
-                                   ZIDCache::CacheTypes cacheType = ZIDCache::File,
-                                   std::shared_ptr<ZrtpConfigure> config = nullptr);
+                                   CacheTypes cacheType,
+                                   ZrtpContext* copyConfigFrom);
+
+
+    /**
+     * @brief Set a ZID when using an empty cache.
+     *
+     * ZRTP requires a ZID (ZRTP identifier) to be able to identify participants of a session. When
+     * the app uses the empty cache implementation then there is no way to store the unique ZID. thus
+     * the app must set a ZID in this case.
+     *
+     * As per RFC6189 the ZID is 12byte (96bit) of random data. An app using the empty cache implementation
+     * may use different ZID for each sessions (generate new random data each time) of it may generate one
+     * ZID and reuse it. In any case the ZID shall conform to the requirements defined in RFC6189.
+     *
+     * @param zid pointer to a array of random data. Must contains at least IDENTIFIER_LEN bytes.
+     */
+    void zrtp_setZidForEmptyCache(ZrtpContext* zrtpContext, uint8_t const * zid);
 
     /**
      * Destroy the ZRTP wrapper and its underlying objects.
@@ -1137,33 +1167,7 @@ extern "C"
     } Zrtp_AlgoTypes;
 
     /**
-     * Initialize the GNU ZRTP Configure data.
-     *
-     * Initializing and setting a ZRTP configuration is optional. GNU ZRTP
-     * uses a sensible default if an application does not define its own
-     * ZRTP configuration.
-     *
-     * If an application initialize th configure data it must set the
-     * configuration data.
-     *
-     * The ZRTP specification, chapters 5.1.2 through 5.1.6 defines the
-     * algorithm names and their meaning.
-     *
-     * The current ZRTP implementation implements all mandatory algorithms
-     * plus a set of the optional algorithms. An application shall use
-     * @c zrtp_getAlgorithmNames to get the names of the available algorithms.
-     *
-     * @param zrtpContext
-     *    Pointer to the opaque ZrtpContext structure.
-     * @returns
-     *      Pointer to the ZrtpConfCtx
-     *
-     * @see zrtp_getAlgorithmNames
-     */
-    int32_t zrtp_InitializeConfig (ZrtpContext* zrtpContext);
-
-    /**
-     * Get names of all available algorithmes of a given algorithm type.
+     * Get names of all available algorithms of a given algorithm type.
      *
      * The algorithm names are as specified in the ZRTP specification, chapters
      * 5.1.2 through 5.1.6 .
@@ -1180,7 +1184,7 @@ extern "C"
     /**
      * Free storage used to store the algorithm names.
      *
-     * If an application does not longer require the algoritm names it should
+     * If an application does not longer require the algorithm names it should
      * free the space.
      *
      * @param names
@@ -1315,7 +1319,7 @@ extern "C"
      * @param algoType
      *    Specifies which algorithm type to select
      * @param index
-     *    The index in the list of the algorihm type
+     *    The index in the list of the algorithm type
      * @return
      *    A pointer to the algorithm name. If the index
      *    does not point to a configured slot then the function
@@ -1325,8 +1329,7 @@ extern "C"
     const char* zrtp_getAlgoAt(ZrtpContext* zrtpContext, Zrtp_AlgoTypes algoType, int32_t index);
 
     /**
-     * Checks if the configuration data of the algorihm type already contains
-     * a specific algorithms.
+     * Checks if the configuration data already contains a specific algorithms.
      *
      * @param zrtpContext
      *    Pointer to the opaque ZrtpContext structure.

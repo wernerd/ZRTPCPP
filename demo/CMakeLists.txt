@@ -24,8 +24,8 @@ else()
 endif()
 ########### next target ###############
 
-#add_executable(wrappertest wrappertest.c)
-#target_link_libraries(wrappertest zrtpcpp)
+add_executable(wrappertest wrappertest.c)
+target_link_libraries(wrappertest ${zrtplibName})
 
 ########### install files ###############
 # None

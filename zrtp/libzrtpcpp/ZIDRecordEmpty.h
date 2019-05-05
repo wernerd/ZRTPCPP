@@ -202,7 +202,7 @@ public:
      */
     const unsigned char* getMiTMData() override {return nullptr; }
 
-    int getRecordType() override {return FILE_TYPE_RECORD; }
+    int getRecordType() override {return EMPTY_TYPE_RECORD; }
     
     /**
      * @brief Get Secure since date.
@@ -213,5 +213,5 @@ public:
     int64_t getSecureSince() override { return 0; }
 };
 
-#endif // ZIDRECORDSMALL
+#endif // _ZIDRECORDEMPTY_H_
 

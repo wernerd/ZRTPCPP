@@ -29,6 +29,7 @@ int ZIDCacheEmpty::open(char* name) {
 void ZIDCacheEmpty::close() {}
 
 std::unique_ptr<ZIDRecord> ZIDCacheEmpty::getRecord(unsigned char *zid) {
+    (void)zid;
     return std::make_unique<ZIDRecordEmpty>();
 }
 

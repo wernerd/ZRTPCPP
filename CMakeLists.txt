@@ -352,6 +352,7 @@ endif()
 
 if (TESTS)
     add_subdirectory(unittests)
+    add_subdirectory(demo)
 endif()
 
 ##very usefull for macosx, specially when using gtkosx bundler

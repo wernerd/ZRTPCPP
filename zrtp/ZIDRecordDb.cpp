@@ -39,7 +39,7 @@ void ZIDRecordDb::setNewRs1(const unsigned char* data, int32_t expire) {
         validThru = 0;
     }
     else {
-        validThru = time(NULL) + expire;
+        validThru = time(nullptr) + expire;
     }
     record.rs1Ttl = validThru;
     resetRs2Valid();
@@ -48,7 +48,7 @@ void ZIDRecordDb::setNewRs1(const unsigned char* data, int32_t expire) {
 
 
 bool ZIDRecordDb::isRs1NotExpired() {
-    time_t current = time(NULL);
+    time_t current = time(nullptr);
     time_t validThru;
 
     validThru = record.rs1Ttl;
@@ -57,11 +57,11 @@ bool ZIDRecordDb::isRs1NotExpired() {
         return true;
     if (validThru == 0)
         return false;
-    return (current <= validThru) ? true : false;
+    return (current <= validThru);
 }
 
 bool ZIDRecordDb::isRs2NotExpired() {
-    time_t current = time(NULL);
+    time_t current = time(nullptr);
     time_t validThru;
 
     validThru = record.rs2Ttl;
@@ -70,7 +70,7 @@ bool ZIDRecordDb::isRs2NotExpired() {
         return true;
     if (validThru == 0)
         return false;
-    return (current <= validThru) ? true : false;
+    return (current <= validThru);
 }
 
 void ZIDRecordDb::setMiTMData(const unsigned char* data) {

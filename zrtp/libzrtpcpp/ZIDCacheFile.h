@@ -66,11 +66,15 @@ public:
 
     void close() override;
 
+    CacheTypes getCacheType() override { return ZIDCache::File; };
+
     std::unique_ptr<ZIDRecord> getRecord(unsigned char *zid) override;
 
     unsigned int saveRecord(ZIDRecord& zidRecord) override;
 
     const unsigned char* getZid() override { return associatedZid; };
+
+    void setZid(const uint8_t *zid) override {};
 
     int32_t getPeerName(const uint8_t *peerZid, std::string *name) override;
 

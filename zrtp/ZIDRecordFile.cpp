@@ -39,7 +39,7 @@ void ZIDRecordFile::setNewRs1(const unsigned char* data, int32_t expire) {
         validThru = 0;
     }
     else {
-        validThru = time(NULL) + expire;
+        validThru = time(nullptr) + expire;
     }
 
     if (sizeof(time_t) == 4) {
@@ -55,7 +55,7 @@ void ZIDRecordFile::setNewRs1(const unsigned char* data, int32_t expire) {
 
 
 bool ZIDRecordFile::isRs1NotExpired() {
-    time_t current = time(NULL);
+    time_t current = time(nullptr);
     time_t validThru;
 
     if (sizeof(time_t) == 4) {
@@ -71,7 +71,7 @@ bool ZIDRecordFile::isRs1NotExpired() {
         return true;
     if (validThru == 0)
         return false;
-    return (current <= validThru) ? true : false;
+    return (current <= validThru);
 }
 
 bool ZIDRecordFile::isRs2NotExpired() {
@@ -91,7 +91,7 @@ bool ZIDRecordFile::isRs2NotExpired() {
         return true;
     if (validThru == 0)
         return false;
-    return (current <= validThru) ? true : false;
+    return (current <= validThru);
 }
 
 void ZIDRecordFile::setMiTMData(const unsigned char* data) {

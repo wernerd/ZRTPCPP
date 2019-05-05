@@ -42,6 +42,8 @@
  */
 
 class __EXPORT ZIDCacheEmpty: public ZIDCache {
+private:
+    unsigned char associatedZid[IDENTIFIER_LEN] = {0};
 
 public:
 
@@ -55,11 +57,17 @@ public:
 
     void close() override ;
 
+    CacheTypes getCacheType() override { return ZIDCache::NoCache; };
+
     std::unique_ptr<ZIDRecord> getRecord(unsigned char *zid) override;
 
     unsigned int saveRecord(ZIDRecord& zidRecord) override;
 
-    const unsigned char* getZid() override { return nullptr; };
+    const unsigned char* getZid() override { return associatedZid; };
+
+    void setZid(const uint8_t *zid) override {
+        memcpy(associatedZid, zid, IDENTIFIER_LEN);
+    }
 
     int32_t getPeerName(const uint8_t *peerZid, std::string *name) override ;
 
@@ -70,8 +78,6 @@ public:
     void *prepareReadAll() override { return nullptr; };
     void *readNextRecord(void *stmt, std::string *output) override { return nullptr; };
     void closeOpenStatement(void *stmt) override {}
-
-
 };
 
 /**
