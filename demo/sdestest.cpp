@@ -128,7 +128,7 @@ static void hexdump(const char* title, const unsigned char *s, int l)
 {
     int n=0;
 
-    if (s == NULL) return;
+    if (s == nullptr) return;
 
     fprintf(stderr, "%s",title);
     for( ; n < l ; ++n) {
@@ -173,7 +173,7 @@ void freeSha256HmacContext(void* ctx);
 void hmacSha256Ctx(void* ctx, const uint8_t* data[], uint32_t dataLength[], uint8_t* mac, int32_t* macLength );
 
 
-static int expand(uint8_t* prk, uint32_t prkLen, uint8_t* info, int32_t infoLen, int32_t L, uint32_t hashLen, uint8_t* outbuffer)
+static int expand(uint8_t* prk, uint32_t prkLen, uint8_t const * info, int32_t infoLen, int32_t L, uint32_t hashLen, uint8_t* outbuffer)
 {
     int32_t n;
     uint8_t *T;
@@ -200,16 +200,16 @@ static int expand(uint8_t* prk, uint32_t prkLen, uint8_t* info, int32_t infoLen,
     // Prepare first HMAC. T(0) has zero length, thus we ignore it in first run.
     // After first run use its output (T(1)) as first data in next HMAC run.
     for (int i = 1; i <= n; i++) {
-        if (infoLen > 0 && info != NULL) {
+        if (infoLen > 0 && info != nullptr) {
             data[dataIdx] = info;
             dataLen[dataIdx++] = infoLen;
         }
-        counter = i & 0xff;
+        counter = static_cast<unsigned int>(i) & 0xffU;
         data[dataIdx] = &counter;
         dataLen[dataIdx++] = 1;
 
-        data[dataIdx] = NULL;
-        dataLen[dataIdx++] = 0;
+        data[dataIdx] = nullptr;
+        dataLen[dataIdx] = 0;
 
         hmacSha256Ctx(hmacCtx, data, dataLen, T + ((i-1) * hashLen), &macLength);
 
@@ -234,7 +234,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    expand(PRK_A3, sizeof(PRK_A3), NULL, 0, L_A3, SHA256_DIGEST_LENGTH, buffer);
+    expand(PRK_A3, sizeof(PRK_A3), nullptr, 0, L_A3, SHA256_DIGEST_LENGTH, buffer);
     if (memcmp(buffer, OKM_A3, L_A3) != 0) {
         fprintf(stderr, "ERROR: Test result A3 mismatch");
         hexdump("Computed result of expand A3", buffer, L_A3);

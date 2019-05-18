@@ -129,15 +129,17 @@ public:
      * @brief Get the ZID associated with this ZID file.
      *
      * @return
-     *    Pointer to the ZID
+     *    Pointer to the ZID or @c nullptr if ZID is not yet available or was not set.
      */
     virtual const unsigned char* getZid() =0;
 
     /**
      * @brief Set the ZID associated with this ZID file - implemented for Empty cache only.
      *
-     * @return
-     *    Pointer to the ZID
+     * If an application uses an empty cache it @b must set a ZID. For empty caches applications
+     * could use new random ZID for each session or choose to use the same ZID. However, ZIDs
+     * must bew unique for different devices using ZRTP.
+     *
      */
     virtual void setZid(const uint8_t *zid) =0;
 
@@ -154,7 +156,7 @@ public:
      * @param name string that will get the peer's name. The returned name will
      *             be truncated to 200 bytes
      *
-     * @return length og the name read or 0 if no name was previously stored.
+     * @return length of the name read or 0 if no name was previously stored.
      */
     virtual int32_t getPeerName(const uint8_t *peerZid, std::string *name) =0;
 
@@ -184,6 +186,13 @@ public:
     virtual void cleanup() =0;
 
     /**
+     * @brief Get the filename of the cache file.
+     *
+     * @return The filename or an empty string if not yet available.
+     */
+    virtual std::string& getFileName() = 0;
+
+    /**
      * @brief Prepare a SQL cursor to read all records from the remote (peer) ZID table.
      * 
      * The function creates a SQL cursor (prepares a statement in sqlite3 parlance) to
@@ -192,7 +201,7 @@ public:
      * This functions returns a pointer to the SQL cursor or @c NULL if it fails to
      * create a cursor.
      * 
-     * @return a void pointer to the sqlite3 statment (SQL cursor) or @c NULL
+     * @return a void pointer to the sqlite3 statement (SQL cursor) or @c NULL
      */
     virtual void *prepareReadAll() =0;
 

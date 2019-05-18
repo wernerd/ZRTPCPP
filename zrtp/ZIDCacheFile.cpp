@@ -149,6 +149,8 @@ int ZIDCacheFile::open(char* name) {
     if (zidFile != nullptr) {
         return 0;
     }
+    fileName = name;
+    
     if ((zidFile = fopen(name, "rb+")) == nullptr) {
         createZIDFile(name);
     } else {

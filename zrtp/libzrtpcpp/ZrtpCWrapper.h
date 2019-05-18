@@ -572,7 +572,10 @@ extern "C"
      *
      * If an application requires a specific algorithm configuration then it
      * must set the algorithm configuration data before it initializes the
-     * ZRTP protocol engine.
+     * ZRTP protocol engine. The application may also set the ZID cache file
+     * if it implements it's own cache file handling or policy. If the
+     * application does not initialize the cache then @c zrtp_initializeZrtpEngine
+     * performs some sensible initialization.
      *
      * The zrtp_CreateWrapper() functions initializes the ZrtpConfigure data
      * with some sensible defaults which provide a high degree of security. The

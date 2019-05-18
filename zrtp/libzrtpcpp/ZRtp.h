@@ -654,7 +654,7 @@ class __EXPORT ZRtp {
       */
      bool isPeerDisclosureFlag(){ return peerDisclosureFlagSeen; }
 
-     ZIDCache& getZidCache() { return configureAlgos->getZidCache(); }
+    std::shared_ptr<ZIDCache>& getZidCache() { return configureAlgos->getZidCache(); }
 
      std::shared_ptr<ZrtpConfigure> getZrtpConfigure() { return configureAlgos; }
 

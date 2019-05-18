@@ -28,24 +28,24 @@
 #include <zrtp/libzrtpcpp/ZIDCacheDb.h>
 #endif
 
-static std::unique_ptr<ZIDCache>
+static std::shared_ptr<ZIDCache>
 zrtp_initZidFile(const char* zidFilename, CacheTypes cacheType) {
 
-    auto zf = std::unique_ptr<ZIDCache>();
+    auto zf = std::shared_ptr<ZIDCache>();
 
     switch (cacheType) {
         case NoCache:
-            return std::make_unique<ZIDCacheEmpty>();
+            return std::make_shared<ZIDCacheEmpty>();
 
         case Database:
 #ifdef ZID_DATABASE
-            zf = std::make_unique<ZIDCacheDb>();
+            zf = std::make_shared<ZIDCacheDb>();
             break;
 #else
             return nullptr;
 #endif
         case File:
-            zf = std::make_unique<ZIDCacheFile>();
+            zf = std::make_shared<ZIDCacheFile>();
             break;
     }
 
@@ -58,7 +58,7 @@ zrtp_initZidFile(const char* zidFilename, CacheTypes cacheType) {
         zidFilename = fname.c_str();
     }
     if (zf->open((char *)zidFilename) < 0) {
-        return std::unique_ptr<ZIDCache>();
+        return std::shared_ptr<ZIDCache>();
     }
     return zf;
 }
@@ -93,18 +93,19 @@ int32_t zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext,
     zrtpContext->zrtpCallback = new ZrtpCallbackWrapper(cb, zrtpContext);
     zrtpContext->userData = userData;
 
-    // If not set take over ZrtpConfigure rwa pointer, set up ZID cache
+    // don't copy from another context: take over ZrtpConfigure raw pointer,  check and
+    // possibly set up ZID cache
     if (!copyConfigFrom) {
         // Take ownership of ZrtpConfigure raw pointer
         configOwn = std::shared_ptr<ZrtpConfigure>(zrtpContext->configure);
 
-        // Initialize ZID file (cache) and get my own ZID
-        auto zf = zrtp_initZidFile(zidFilename, cacheType);
-
-        if (!zf) {
-            return false;
+        if (!configOwn->getZidCache()) {        // ZID Cache not set (shared ZID cache pointer is empty)
+            auto zf = zrtp_initZidFile(zidFilename, cacheType);
+            if (!zf) {
+                return false;
+            }
+            configOwn->setZidCache(zf);
         }
-        configOwn->setZidCache(move(zf));
     }
     else {
         // use ZrtpConfigure of another, existing ZRTP stream
@@ -113,11 +114,10 @@ int32_t zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext,
         zrtpContext->configure = configOwn.get();   // set raw pointer in ZrtpContext
     }
 
-    const unsigned char *myZid = configOwn->getZidCache().getZid();
+    const unsigned char *myZid = configOwn->getZidCache()->getZid();
     if (!myZid) {
         return false;
     }
-
     zrtpContext->zrtpEngine = new ZRtp((uint8_t*)myZid, zrtpContext->zrtpCallback,
                                        clientIdString, configOwn, mitmMode != 0);
     return true;
@@ -126,11 +126,11 @@ int32_t zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext,
 void zrtp_setZidForEmptyCache(ZrtpContext* zrtpContext, uint8_t const * zid) {
 
     if (zrtpContext && zrtpContext->configure) {
-        auto type = zrtpContext->configure->getZidCache().getCacheType();
+        auto type = zrtpContext->configure->getZidCache()->getCacheType();
         if (type != ZIDCache::NoCache) {
             return;
         }
-        zrtpContext->configure->getZidCache().setZid(zid);
+        zrtpContext->configure->getZidCache()->setZid(zid);
     }
 }
 

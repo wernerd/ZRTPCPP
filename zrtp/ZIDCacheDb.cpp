@@ -36,6 +36,8 @@ int ZIDCacheDb::open(char* name) {
     if (zidFile != nullptr) {
         return 0;
     }
+    fileName = name;
+    
     if (cacheOps.openCache(name, &zidFile, errorBuffer) == 0)
         cacheOps.readLocalZid(zidFile, associatedZid, nullptr, errorBuffer);
     else {

@@ -55,6 +55,8 @@ private:
     dbCacheOps_t cacheOps = { nullptr };
 
     char errorBuffer[DB_CACHE_ERR_BUFF_SIZE] = {'\0'};
+    
+    std::string fileName;
 
     void formatOutput(remoteZidRecord_t *remZid, const char *nameBuffer, std::string *output);
 
@@ -87,6 +89,8 @@ public:
     void putPeerName(const uint8_t *peerZid, const std::string& name) override;
 
     void cleanup() override;
+
+    std::string& getFileName() override { return fileName; };
 
     void *prepareReadAll() override;
 

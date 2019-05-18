@@ -589,10 +589,10 @@ int CtZrtpStream::enrollAccepted(char *p) {
     std::string name;
 
     zrtpEngine->getPeerZid(peerZid);
-    int32_t nmLen = zrtpEngine->getZidCache().getPeerName(peerZid, &name);
+    int32_t nmLen = zrtpEngine->getZidCache()->getPeerName(peerZid, &name);
 
     if (nmLen == 0)
-        zrtpEngine->getZidCache().putPeerName(peerZid, std::string(p));
+        zrtpEngine->getZidCache()->putPeerName(peerZid, std::string(p));
     return CtZrtpSession::ok;
 }
 
@@ -603,10 +603,10 @@ int CtZrtpStream::enrollDenied() {
     std::string name;
 
     zrtpEngine->getPeerZid(peerZid);
-    int32_t nmLen = zrtpEngine->getZidCache().getPeerName(peerZid, &name);
+    int32_t nmLen = zrtpEngine->getZidCache()->getPeerName(peerZid, &name);
 
     if (nmLen == 0)
-        zrtpEngine->getZidCache().putPeerName(peerZid, std::string(""));
+        zrtpEngine->getZidCache()->putPeerName(peerZid, std::string(""));
     return CtZrtpSession::ok;
 }
 
@@ -992,7 +992,7 @@ void CtZrtpStream::srtpSecretsOn(std::string cipher, std::string sas, bool verif
             std::string name;
 
             zrtpEngine->getPeerZid(peerZid);
-            zrtpEngine->getZidCache().getPeerName(peerZid, &name);
+            zrtpEngine->getZidCache()->getPeerName(peerZid, &name);
             zrtpUserCallback->onPeer(session, (char*)name.c_str(), (int)verified, index);
 
             // If SAS does not contain a : then it's a short SAS

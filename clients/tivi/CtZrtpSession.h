@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <string>
 #include <string.h>
+#include <zrtp/libzrtpcpp/ZIDCache.h>
 
 #ifndef __EXPORT
   #if (defined _WIN32 || defined __CYGWIN__) && defined(_DLL)
@@ -746,6 +747,8 @@ private:
     bool zrtpEnabled;
     bool sdesEnabled;
     bool discriminatorMode;
+
+    static std::shared_ptr<ZIDCache> zrtpCache;     // All sessions of silent phone should use the _same_ cache file
 };
 
 #endif /* _CTZRTPSESSION_H_ */

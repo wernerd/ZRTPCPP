@@ -50,6 +50,7 @@ private:
 
     FILE* zidFile;
     unsigned char associatedZid[IDENTIFIER_LEN] = {0};
+    std::string fileName;
 
     void createZIDFile(char* name);
     void checkDoMigration(char* name);
@@ -82,6 +83,9 @@ public:
 
     // Not implemented for file based cache
     void cleanup() override {};
+
+    std::string& getFileName() override { return fileName; };
+    
     void *prepareReadAll() override { return nullptr; };
     void *readNextRecord(void *stmt, std::string *output) override { return nullptr; };
     void closeOpenStatement(void *stmt) override {}

@@ -539,9 +539,9 @@ public:
     Policy getSelectionPolicy()         {return selectionPolicy;}
     void setSelectionPolicy(Policy pol) {selectionPolicy = pol;}
 
-    void setZidCache(std::unique_ptr<ZIDCache> zf) { zidCache = move(zf); }
+    void setZidCache(std::shared_ptr<ZIDCache>& zf) { zidCache = zf; }
 
-    ZIDCache& getZidCache() { return *zidCache; }
+    std::shared_ptr<ZIDCache>& getZidCache() { return zidCache; }
 
   private:
 
@@ -560,7 +560,7 @@ public:
     bool enableDisclosureFlag;
     Policy selectionPolicy;
 
-    std::unique_ptr<ZIDCache> zidCache = std::make_unique<ZIDCacheEmpty>();
+    std::shared_ptr<ZIDCache> zidCache = std::make_shared<ZIDCacheEmpty>();
 
     static AlgorithmEnum& getAlgoAt(std::vector<AlgorithmEnum* >& a, int32_t index);
     static int32_t addAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo);

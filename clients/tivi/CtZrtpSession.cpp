@@ -25,17 +25,21 @@ const char *getZrtpBuildInfo()
 {
     return zrtpBuildInfo;
 }
+
+std::shared_ptr<ZIDCache> CtZrtpSession::zrtpCache = nullptr;
+
 CtZrtpSession::CtZrtpSession() : zrtpMaster(nullptr), mitmMode(false), signSas(false), enableParanoidMode(false), isReady(false),
     zrtpEnabled(true), sdesEnabled(true), discriminatorMode(false) {
 
     clientIdString = clientId;          // Client id is ZRTP global text data
 }
 
-static std::unique_ptr<ZIDCache>
-initCache(const char *zidFilename) {
-
-    std::unique_ptr<ZIDCache> zf = std::make_unique<ZIDCacheDb>();
-
+// Specific initialization for SilentPhone: use _one_ ZRTP cache file for _all_ sessions, even
+// for conference calls. This simplifies handling of cache data.
+// If another app likes to have different cache files (or even open the same file several times ? )
+// then just change the cache initialization at his point.
+static std::shared_ptr<ZIDCache>
+initCache(const char *zidFilename, std::shared_ptr<ZIDCache> cache) {
     std::string fname;
     if (!zidFilename) {
         char *home = getenv("HOME");
@@ -44,8 +48,24 @@ initCache(const char *zidFilename) {
         fname = baseDir + std::string("GNUZRTP.zid");
         zidFilename = fname.c_str();
     }
+
+    // Check if a cache is available.
+    // If yes and it has the same filename -> use it
+    // otherwise close file and open new cache file
+    if (cache) {
+        if (cache->getFileName() == zidFilename) {
+            return cache;
+        }
+        cache->close();
+        if (cache->open((char *)zidFilename) < 0) {
+            return std::shared_ptr<ZIDCache>();
+        }
+        return cache;
+    }
+
+    auto zf = std::make_shared<ZIDCacheDb>();
     if (zf->open((char *)zidFilename) < 0) {
-        return std::unique_ptr<ZIDCache>();
+        return std::shared_ptr<ZIDCache>();
     }
     return zf;
 }
@@ -58,17 +78,17 @@ int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidF
 
     std::shared_ptr<ZrtpConfigure> configOwn;
 
-    // Audio if the master stream, thus initialize ZID cache and ZRTP configure for it. Each Session has _one_
+    // Audio is the master stream, thus initialize ZID cache and ZRTP configure for it. Each Session has _one_
     // audio (master) which can have it's own configuration and own ZID cache.
-    // The caller must make sure to initialize the audio stream before  the video stream (or at the same time with
+    // The caller must make sure to initialize the audio stream before the video stream (or at the same time with
     // both boolean parameters set to true).
     if (audio) {
-        auto zf = initCache(zidFilename);
+        auto zf = initCache(zidFilename, zrtpCache);
         if (!zf) {
             return -1;
         }
         if (!config) {
-            configOwn = std::make_unique<ZrtpConfigure>();
+            configOwn = std::make_shared<ZrtpConfigure>();
             setupConfiguration(configOwn.get());
         }
         else {
@@ -77,7 +97,7 @@ int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidF
 
         const uint8_t* ownZidFromCache = zf->getZid();
 
-        configOwn->setZidCache(move(zf));
+        configOwn->setZidCache(zf);
         configOwn->setTrustedMitM(false);
 #if defined AXO_SUPPORT
         configOwn->setSasSignature(true);
@@ -101,7 +121,7 @@ int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidF
         // Get the ZRTP Configure from master and forward it to the slave stream. Slave stream should have the same
         // configuration and cache as the master stream. ZRTP configuration is managed via shared_ptr.
         auto videoConfig = streams[AudioStream]->zrtpEngine->getZrtpConfigure();
-        const uint8_t* ownZidFromCache = videoConfig->getZidCache().getZid();
+        const uint8_t* ownZidFromCache = videoConfig->getZidCache()->getZid();
 
         stream = streams[VideoStream];
         stream->zrtpEngine = new ZRtp((uint8_t*)ownZidFromCache, stream, clientIdString, videoConfig);
@@ -407,7 +427,7 @@ void CtZrtpSession::setLastPeerNameVerify(const char *name, int iIsMitm) {
     uint8_t peerZid[IDENTIFIER_LEN];
     std::string nm(name);
     stream->zrtpEngine->getPeerZid(peerZid);
-    stream->zrtpEngine->getZidCache().putPeerName(peerZid, nm);
+    stream->zrtpEngine->getZidCache()->putPeerName(peerZid, nm);
     setVerify(1);
 }
 
