@@ -58,28 +58,28 @@ void hmac_sha256(uint8_t* key, uint32_t key_length,
     HMAC_CTX_init( &ctx );
     HMAC_Init_ex( &ctx, key, key_length, EVP_sha256(), NULL );
 #else
-	HMAC_CTX * ctx;
-	ctx = HMAC_CTX_new();
-	HMAC_Init_ex( ctx, key, key_length, EVP_sha256(), NULL );
+    HMAC_CTX * ctx;
+    ctx = HMAC_CTX_new();
+    HMAC_Init_ex( ctx, key, key_length, EVP_sha256(), NULL );
 #endif
     while( *data_chunks ){
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-      HMAC_Update( &ctx, *data_chunks, *data_chunck_length );
+        HMAC_Update( &ctx, *data_chunks, *data_chunck_length );
 #else
-	  HMAC_Update( ctx, *data_chunks, *data_chunck_length );
+        HMAC_Update( ctx, *data_chunks, *data_chunck_length );
 #endif
-      data_chunks ++;
-      data_chunck_length ++;
+        data_chunks ++;
+        data_chunck_length ++;
     }
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
     HMAC_Final( &ctx, mac, &tmp);
 #else
-	HMAC_Final( ctx, mac, &tmp);
+    HMAC_Final( ctx, mac, &tmp);
 #endif
     *mac_length = tmp;
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
     HMAC_CTX_cleanup( &ctx );
 #else
-	HMAC_CTX_free( ctx );
+    HMAC_CTX_free( ctx );
 #endif
 }
