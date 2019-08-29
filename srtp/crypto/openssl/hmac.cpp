@@ -90,7 +90,7 @@ void* createSha1HmacContext(uint8_t* key, int32_t key_length)
     return ctx;
 }
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+
 void* initializeSha1HmacContext(void* ctx, uint8_t* key, int32_t keyLenght)
 {
     HMAC_CTX *pctx = (HMAC_CTX*)ctx;
@@ -98,7 +98,7 @@ void* initializeSha1HmacContext(void* ctx, uint8_t* key, int32_t keyLenght)
     HMAC_Init_ex(pctx, key, keyLength, EVP_sha1(), NULL);
     return pctx;
 }
-#else
+
 void* initializeSha1HmacContext(void** ctx, uint8_t* key, int32_t keyLength)
 {
     HMAC_CTX **pctx = (HMAC_CTX**)ctx;
@@ -106,7 +106,7 @@ void* initializeSha1HmacContext(void** ctx, uint8_t* key, int32_t keyLength)
     HMAC_Init_ex(*pctx, key, keyLength, EVP_sha1(), NULL);
     return *pctx;
 }
-#endif
+
 
 void hmacSha1Ctx(void* ctx, const uint8_t* data, uint32_t data_length,
                  uint8_t* mac, int32_t* mac_length)
