@@ -134,11 +134,22 @@ void* createSha1HmacContext(uint8_t* key, int32_t key_length);
  *    Lenght of the MAC key in bytes
  * @return Returns a pointer to the initialized context.
  */
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
 void* initializeSha1HmacContext(void* ctx, uint8_t* key, int32_t key_length);
-#else
+
+/**
+ * Initialize a SHA1 HMAC context.
+ *
+ * An application uses this context to create several HMAC with the same key.
+ *
+ * @param ctx
+ *     Pointer to initialized SHA1 HMAC context
+ * @param key
+ *    The MAC key.
+ * @param key_length
+ *    Lenght of the MAC key in bytes
+ * @return Returns a pointer to the initialized context.
+ */
 void* initializeSha1HmacContext(void** ctx, uint8_t* key, int32_t key_length);
-#endif
 
 /**
  * Compute SHA1 HMAC.
