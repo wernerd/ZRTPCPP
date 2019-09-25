@@ -80,6 +80,6 @@ void hmac_sha256(uint8_t* key, uint32_t key_length,
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
     HMAC_CTX_cleanup( &ctx );
 #else
-    HMAC_CTX_free( ctx );
+    HMAC_CTX_reset( ctx );
 #endif
 }
