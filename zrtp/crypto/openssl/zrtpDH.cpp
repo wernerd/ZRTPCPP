@@ -299,9 +299,9 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
         tmpCtx->pub_key = BN_bin2bn(pubKeyBytes, getDhSize(), NULL);
         return DH_compute_key(secret, tmpCtx->pub_key, tmpCtx);
 #else
-        DH_set0_key(tmpCtx, BN_bin2bn(pubKeyBytes, getDhSize(), NULL), NULL);
-        BIGNUM* pub_key;
-        DH_get0_key(tmpCtx, const_cast<const BIGNUM**>(&pub_key), NULL);
+        BIGNUM* pub_key = BN_bin2bn(pubKeyBytes, getDhSize(), NULL);
+        DH_set0_key(tmpCtx, pub_key, NULL);
+        // DH_get0_key(tmpCtx, const_cast<const BIGNUM**>(&pub_key), NULL);
         return DH_compute_key(secret, pub_key, tmpCtx);
 #endif
     }
