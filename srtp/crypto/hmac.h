@@ -134,7 +134,7 @@ void* createSha1HmacContext(uint8_t* key, int32_t key_length);
  *    Lenght of the MAC key in bytes
  * @return Returns a pointer to the initialized context.
  */
-void* initializeSha1HmacContext(void* ctx, uint8_t* key, int32_t key_length);
+// void* initializeSha1HmacContext(void* ctx, uint8_t* key, int32_t key_length);
 
 /**
  * Initialize a SHA1 HMAC context.
@@ -149,7 +149,15 @@ void* initializeSha1HmacContext(void* ctx, uint8_t* key, int32_t key_length);
  *    Lenght of the MAC key in bytes
  * @return Returns a pointer to the initialized context.
  */
+// void* initializeSha1HmacContext(void** ctx, uint8_t* key, int32_t key_length);
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+void* initializeSha1HmacContext(void* ctx, uint8_t* key, int32_t key_length);
+#else
+// We still need to provide both the double- and single-pointer functions for CryptoContext.cpp and CryptoContextCtrl.cpp
 void* initializeSha1HmacContext(void** ctx, uint8_t* key, int32_t key_length);
+void* initializeSha1HmacContext(void* ctx, uint8_t* key, int32_t key_length);
+#endif
 
 /**
  * Compute SHA1 HMAC.

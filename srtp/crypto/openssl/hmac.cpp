@@ -90,22 +90,33 @@ void* createSha1HmacContext(uint8_t* key, int32_t key_length)
     return ctx;
 }
 
-
-void* initializeSha1HmacContext(void* ctx, uint8_t* key, int32_t keyLenght)
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+void* initializeSha1HmacContext(void* ctx, uint8_t* key, int32_t key_length)
 {
     HMAC_CTX *pctx = (HMAC_CTX*)ctx;
     HMAC_CTX_init(pctx);
-    HMAC_Init_ex(pctx, key, keyLength, EVP_sha1(), NULL);
+    HMAC_Init_ex(pctx, key, key_length, EVP_sha1(), NULL);
     return pctx;
 }
 
-void* initializeSha1HmacContext(void** ctx, uint8_t* key, int32_t keyLength)
+#else
+// We still need to provide both the double- and single-pointer functions.
+void* initializeSha1HmacContext(void** ctx, uint8_t* key, int32_t key_length)
 {
     HMAC_CTX **pctx = (HMAC_CTX**)ctx;
-    *pctx = HMAC_CTX_new();
-    HMAC_Init_ex(*pctx, key, keyLength, EVP_sha1(), NULL);
+    *pctx = HMAC_CTX_new(); // correct (!)
+    HMAC_Init_ex(*pctx, key, key_length, EVP_sha1(), NULL);
     return *pctx;
 }
+
+void* initializeSha1HmacContext(void* ctx, uint8_t* key, int32_t key_length)
+{
+    HMAC_CTX *pctx = (HMAC_CTX*)ctx;
+    pctx = HMAC_CTX_new();
+    HMAC_Init_ex(pctx, key, key_length, EVP_sha1(), NULL);
+    return pctx;
+}
+#endif
 
 
 void hmacSha1Ctx(void* ctx, const uint8_t* data, uint32_t data_length,
