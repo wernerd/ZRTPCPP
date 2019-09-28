@@ -68,6 +68,8 @@ void ZIDCacheFile::createZIDFile(char* name) {
         if (fwrite(rec.getRecordData(), rec.getRecordLength(), 1, zidFile) < 1)
             ++errors;
         fflush(zidFile);
+    } else {
+        puts("ZIDCacheFile::createZIDFile error: zidFile is zero, file could not be created.");
     }
 }
 
