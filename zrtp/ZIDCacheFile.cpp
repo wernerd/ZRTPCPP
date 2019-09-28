@@ -29,6 +29,15 @@
 #include <unistd.h>
 #endif
 
+#ifdef __APPLE__
+    #if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE // iOS Simulator or iOS device
+        #include <Foundation/Foundation.h>
+    #elif TARGET_OS_MAC // Other kinds of Mac OS
+    #else
+        #error "Unknown Apple platform"
+    #endif
+#endif
+
 #include <crypto/zrtpDH.h>
 
 #include <libzrtpcpp/ZIDCacheFile.h>
@@ -55,7 +64,7 @@ ZIDCache* getZidCacheInstance() {
 
 
 void ZIDCacheFile::createZIDFile(char* name) {
-    zidFile = fopen(name, "wb+");
+    zidFile = fopen(name, "wb+"); //! This is not allowed on iOS
     // New file, generate an associated random ZID and save
     // it as first record
     if (zidFile != NULL) {
@@ -69,7 +78,8 @@ void ZIDCacheFile::createZIDFile(char* name) {
             ++errors;
         fflush(zidFile);
     } else {
-        fputs("ZIDCacheFile::createZIDFile error: zidFile is zero, file could not be created.", stderr);
+        //! This fails (zidFile == NULL)
+        fprintf(stderr, "ZIDCacheFile::createZIDFile error: zidFile is null, file could not be created\n");
     }
 }
 
