@@ -119,6 +119,7 @@ void ZIDCacheFile::checkDoMigration(char* name) {
     }
     zidFile = fopen(name, "wb+");    // create new format file in binary r/w mode
     if (zidFile == NULL) {
+        fputs("ZIDCacheFile::checkDoMigration error: zidFile fopen failed", stderr);
         fclose(fdOld);
         return;
     }

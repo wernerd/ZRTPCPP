@@ -54,7 +54,7 @@ void zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext,
     }
 
     // Initialize ZID file (cache) and get my own ZID
-    zrtp_initZidFile(zidFilename);
+    int32_t res = zrtp_initZidFile(zidFilename);
     const unsigned char* myZid = getZidCacheInstance()->getZid();
 
     zrtpContext->zrtpEngine = new ZRtp((uint8_t*)myZid, zrtpContext->zrtpCallback,

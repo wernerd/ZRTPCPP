@@ -148,6 +148,7 @@ void* createSha1HmacContext(uint8_t* key, int32_t keyLength)
 
 void* initializeSha1HmacContext(void* ctx, uint8_t* key, int32_t keyLength)
 {
+    puts("!!! Not using OpenSSL for initializeSha1HmacContext");
     hmacSha1Context *pctx = (hmacSha1Context*)ctx;
 
     hmacSha1Init(pctx, key, keyLength);
