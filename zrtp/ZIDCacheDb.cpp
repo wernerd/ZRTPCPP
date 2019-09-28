@@ -60,6 +60,7 @@ int ZIDCacheDb::open(char* name) {
         cacheOps.readLocalZid(zidFile, associatedZid, NULL, errorBuffer);
     else {
         cacheOps.closeCache(zidFile);
+        fprintf(stderr, "ZIDCacheDb::open info: zidFile set to NULL\n");
         zidFile = NULL;
     }
 
@@ -70,6 +71,7 @@ void ZIDCacheDb::close() {
 
     if (zidFile != NULL) {
         cacheOps.closeCache(zidFile);
+        fprintf(stderr, "ZIDCacheDb::close info: zidFile set to NULL\n");
         zidFile = NULL;
     }
 }

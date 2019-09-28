@@ -54,7 +54,8 @@ void zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext,
     }
 
     // Initialize ZID file (cache) and get my own ZID
-    zrtp_initZidFile(zidFilename);
+    int32_t res = zrtp_initZidFile(zidFilename);
+    fprintf(stderr, "ZrtpCWrapper.cpp void zrtp_initializeZrtpEngine() info: zrtp_initZidFile() result: %i\n", res);
     const unsigned char* myZid = getZidCacheInstance()->getZid();
 
     zrtpContext->zrtpEngine = new ZRtp((uint8_t*)myZid, zrtpContext->zrtpCallback,
@@ -90,6 +91,7 @@ static int32_t zrtp_initZidFile(const char* zidFilename) {
             fname = baseDir + std::string("GNUccRTP.zid");
             zidFilename = fname.c_str();
         }
+        fprintf(stderr, "ZrtpCWrapper.cpp: int32_t zrtp_initZidFile() info: zf->open() zidFilename: %s\n", zidFilename);
         return zf->open((char *)zidFilename);
     }
     return 0;

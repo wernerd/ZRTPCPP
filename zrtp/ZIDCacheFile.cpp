@@ -96,6 +96,7 @@ void ZIDCacheFile::checkDoMigration(char* name) {
         return;
     }
     fclose(zidFile);            // close old ZID file
+    fprintf(stderr, "ZIDCacheFile::checkDoMigration info: zidFile set to NULL\n");
     zidFile = NULL;
 
     // create save file name, rename and re-open
@@ -181,11 +182,13 @@ int ZIDCacheFile::open(char* name) {
             fseek(zidFile, 0L, SEEK_SET);
             if (fread(rec.getRecordData(), rec.getRecordLength(), 1, zidFile) != 1) {
                 fclose(zidFile);
+                fprintf(stderr, "ZIDCacheFile::open 1 info: zidFile set to NULL\n");
                 zidFile = NULL;
                 return -1;
             }
             if (!rec.isOwnZIDRecord()) {
                 fclose(zidFile);
+                fprintf(stderr, "ZIDCacheFile::open 2 info: zidFile set to NULL\n");
                 zidFile = NULL;
                 return -1;
             }
@@ -199,6 +202,7 @@ void ZIDCacheFile::close() {
 
     if (zidFile != NULL) {
         fclose(zidFile);
+        fprintf(stderr, "ZIDCacheFile::close info: zidFile set to NULL\n");
         zidFile = NULL;
     }
 }
