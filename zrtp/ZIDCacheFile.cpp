@@ -55,7 +55,7 @@ ZIDCache* getZidCacheInstance() {
 
 
 void ZIDCacheFile::createZIDFile(char* name) {
-    zidFile = fopen(name, "wb+"); //! This is not allowed on iOS
+    zidFile = fopen(name, "wb+");
     // New file, generate an associated random ZID and save
     // it as first record
     if (zidFile != NULL) {
@@ -68,9 +68,6 @@ void ZIDCacheFile::createZIDFile(char* name) {
         if (fwrite(rec.getRecordData(), rec.getRecordLength(), 1, zidFile) < 1)
             ++errors;
         fflush(zidFile);
-    } else {
-        //! This fails (zidFile == NULL)
-        fprintf(stderr, "ZIDCacheFile::createZIDFile error: zidFile is null, file could not be created\n");
     }
 }
 
@@ -97,7 +94,6 @@ void ZIDCacheFile::checkDoMigration(char* name) {
         return;
     }
     fclose(zidFile);            // close old ZID file
-    fprintf(stderr, "ZIDCacheFile::checkDoMigration info: zidFile set to NULL\n");
     zidFile = NULL;
 
     // create save file name, rename and re-open
@@ -110,8 +106,6 @@ void ZIDCacheFile::checkDoMigration(char* name) {
         return;
     }
     fdOld = fopen(fn.c_str(), "rb");    // reopen old format in read only mode
-    if (fdOld == NULL)
-        fputs("ZIDCacheFile::checkDoMigration error: fdOld fopen failed", stderr);
 
     // Get first record from old file - is the own ZID
     fseek(fdOld, 0L, SEEK_SET);
@@ -183,13 +177,11 @@ int ZIDCacheFile::open(char* name) {
             fseek(zidFile, 0L, SEEK_SET);
             if (fread(rec.getRecordData(), rec.getRecordLength(), 1, zidFile) != 1) {
                 fclose(zidFile);
-                fprintf(stderr, "ZIDCacheFile::open 1 info: zidFile set to NULL\n");
                 zidFile = NULL;
                 return -1;
             }
             if (!rec.isOwnZIDRecord()) {
                 fclose(zidFile);
-                fprintf(stderr, "ZIDCacheFile::open 2 info: zidFile set to NULL\n");
                 zidFile = NULL;
                 return -1;
             }
@@ -203,7 +195,6 @@ void ZIDCacheFile::close() {
 
     if (zidFile != NULL) {
         fclose(zidFile);
-        fprintf(stderr, "ZIDCacheFile::close info: zidFile set to NULL\n");
         zidFile = NULL;
     }
 }
@@ -215,8 +206,6 @@ ZIDRecord *ZIDCacheFile::getRecord(unsigned char *zid) {
     ZIDRecordFile *zidRecord = new ZIDRecordFile();
 
     // set read pointer behind first record (
-    fprintf(stderr, "ZIDCacheFile::getRecord info: zidFile: %p", zidFile);
-    fprintf(stderr, "ZIDCacheFile::getRecord info: zidRecord->getRecordLength(): %i", zidRecord->getRecordLength());
     fseek(zidFile, zidRecord->getRecordLength(), SEEK_SET);
 
     do {
