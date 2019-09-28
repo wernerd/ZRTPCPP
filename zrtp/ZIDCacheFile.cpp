@@ -69,7 +69,7 @@ void ZIDCacheFile::createZIDFile(char* name) {
             ++errors;
         fflush(zidFile);
     } else {
-        puts("ZIDCacheFile::createZIDFile error: zidFile is zero, file could not be created.");
+        fputs("ZIDCacheFile::createZIDFile error: zidFile is zero, file could not be created.", stderr);
     }
 }
 
@@ -108,6 +108,8 @@ void ZIDCacheFile::checkDoMigration(char* name) {
         return;
     }
     fdOld = fopen(fn.c_str(), "rb");    // reopen old format in read only mode
+    if (fdOld == NULL)
+        fputs("ZIDCacheFile::checkDoMigration error: fdOld fopen failed", stderr);
 
     // Get first record from old file - is the own ZID
     fseek(fdOld, 0L, SEEK_SET);
@@ -121,6 +123,7 @@ void ZIDCacheFile::checkDoMigration(char* name) {
     }
     zidFile = fopen(name, "wb+");    // create new format file in binary r/w mode
     if (zidFile == NULL) {
+        fputs("ZIDCacheFile::checkDoMigration error: zidFile fopen failed", stderr);
         fclose(fdOld);
         return;
     }
