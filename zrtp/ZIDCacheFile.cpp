@@ -210,6 +210,8 @@ ZIDRecord *ZIDCacheFile::getRecord(unsigned char *zid) {
     ZIDRecordFile *zidRecord = new ZIDRecordFile();
 
     // set read pointer behind first record (
+    fprintf(stderr, "ZIDCacheFile::getRecord info: zidFile: %p", zidFile);
+    fprintf(stderr, "ZIDCacheFile::getRecord info: zidRecord->getRecordLength(): %i", zidRecord->getRecordLength());
     fseek(zidFile, zidRecord->getRecordLength(), SEEK_SET);
 
     do {
