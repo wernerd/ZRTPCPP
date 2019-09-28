@@ -29,15 +29,6 @@
 #include <unistd.h>
 #endif
 
-#ifdef __APPLE__
-    #if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE // iOS Simulator or iOS device
-        #include <Foundation/Foundation.h>
-    #elif TARGET_OS_MAC // Other kinds of Mac OS
-    #else
-        #error "Unknown Apple platform"
-    #endif
-#endif
-
 #include <crypto/zrtpDH.h>
 
 #include <libzrtpcpp/ZIDCacheFile.h>
