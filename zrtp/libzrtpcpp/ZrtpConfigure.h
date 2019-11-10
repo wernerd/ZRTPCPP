@@ -560,7 +560,7 @@ public:
     bool enableDisclosureFlag;
     Policy selectionPolicy;
 
-    std::shared_ptr<ZIDCache> zidCache = std::make_shared<ZIDCacheEmpty>();
+    std::shared_ptr<ZIDCache> zidCache = nullptr;
 
     static AlgorithmEnum& getAlgoAt(std::vector<AlgorithmEnum* >& a, int32_t index);
     static int32_t addAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo);
