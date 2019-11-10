@@ -20,7 +20,6 @@
 
 #include <cstdint>
 #include <cstring>
-#include <cstdio>
 #include "zrtp/crypto/sha2.h"
 #include "zrtp/crypto/hmac256.h"
 
@@ -131,7 +130,7 @@ void hmacSha256(const uint8_t* key, uint64_t keyLength,
     *macLength = SHA256_DIGEST_SIZE;
 }
 
-void* createSha256HmacContext(uint8_t* key, uint64_t keyLength)
+void* createSha256HmacContext(const uint8_t* key, uint64_t keyLength)
 {
     auto* ctx = reinterpret_cast<hmacSha256Context*>(malloc(sizeof(hmacSha256Context)));
 

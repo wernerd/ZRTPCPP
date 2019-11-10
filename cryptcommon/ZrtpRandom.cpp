@@ -16,6 +16,7 @@
 
 #include <fcntl.h>
 #include <mutex>
+#include <cstring>
 
 #include <cryptcommon/ZrtpRandom.h>
 #include <cryptcommon/aescpp.h>
@@ -163,8 +164,8 @@ size_t ZrtpRandom::getSystemSeed(uint8_t *seed, size_t length)
     return num;
 }
 
-int zrtp_AddEntropy(const uint8_t *buffer, uint32_t length, bool isLocked) {
-    return ZrtpRandom::addEntropy(buffer, length, isLocked);
+int zrtp_AddEntropy(const uint8_t *buffer, uint32_t length, int isLocked) {
+    return ZrtpRandom::addEntropy(buffer, length, isLocked != 0);
 }
 
 int zrtp_getRandomData(uint8_t *buffer, uint32_t length) {

@@ -126,14 +126,14 @@ A.3.  Test Case 3
 
 static void hexdump(const char* title, const unsigned char *s, size_t l)
 {
-    int n=0;
+    size_t n = 0;
 
     if (s == nullptr) return;
 
     fprintf(stderr, "%s",title);
     for( ; n < l ; ++n) {
         if((n%16) == 0)
-            fprintf(stderr, "\n%04x",n);
+            fprintf(stderr, "\n%04zx",n);
         fprintf(stderr, " %02x",s[n]);
     }
     fprintf(stderr, "\n");
@@ -174,7 +174,7 @@ void hmacSha256Ctx(void* ctx, const std::vector<const uint8_t*>& data,
                    const std::vector<uint64_t>& dataLength,
                    uint8_t* mac, uint32_t* macLength );
 
-static int expand(uint8_t* prk, uint32_t prkLen, uint8_t* info, uint32_t infoLen, size_t L, uint32_t hashLen, uint8_t* outbuffer)
+static int expand(uint8_t* prk, uint32_t prkLen, uint8_t* info, uint32_t infoLen, size_t L, uint32_t hashLen, uint8_t* outBuffer)
 {
     size_t n;
     uint8_t *T;
@@ -203,16 +203,16 @@ static int expand(uint8_t* prk, uint32_t prkLen, uint8_t* info, uint32_t infoLen
 
     // Prepare first HMAC. T(0) has zero length, thus we ignore it in first run.
     // After first run use its output (T(1)) as first data in next HMAC run.
-    for (int i = 1; i <= n; i++) {
+    for (size_t i = 1; i <= n; i++) {
         if (infoLen > 0 && info != nullptr) {
             data.push_back(info);
             dataLen.push_back(infoLen);
         }
-        counter = static_cast<uint8_t >(i & 0xff);
+        counter = static_cast<uint8_t >(i & 0xffU);
         data.push_back(&counter);
         dataLen.push_back(1);
 
-        if (hashLen == 384/8)
+        if (hashLen == 256/8)
             hmacSha256Ctx(hmacCtx, data, dataLen, T + ((i-1) * hashLen), &macLength);
 
         // Use output of previous hash run as first input of next hash run
@@ -222,7 +222,7 @@ static int expand(uint8_t* prk, uint32_t prkLen, uint8_t* info, uint32_t infoLen
         dataLen.push_back(hashLen);
     }
     freeSha256HmacContext(hmacCtx);
-    memcpy(outbuffer, T, L);
+    memcpy(outBuffer, T, L);
     free(T);
     return 0;
 }

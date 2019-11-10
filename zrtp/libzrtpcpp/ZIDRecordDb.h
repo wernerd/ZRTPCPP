@@ -31,7 +31,7 @@
  */
 
 #ifdef __cplusplus
-#include <string>
+#include <cstring>
 #include <cstdint>
 #else
 #include <string.h>

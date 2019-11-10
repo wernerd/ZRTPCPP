@@ -79,7 +79,7 @@ extern "C"
 {
 #endif
 
-int zrtp_AddEntropy(const uint8_t *buffer, uint32_t length, bool isLocked);
+int zrtp_AddEntropy(const uint8_t *buffer, uint32_t length, int isLocked);
 
 int zrtp_getRandomData(uint8_t *buffer, uint32_t length);
 

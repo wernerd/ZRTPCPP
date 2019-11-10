@@ -15,6 +15,7 @@
  */
 
 #include <string>
+#include <memory>
 
 #include "ZIDRecord.h"
 

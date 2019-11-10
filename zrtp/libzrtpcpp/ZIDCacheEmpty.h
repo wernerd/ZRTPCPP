@@ -15,6 +15,8 @@
  */
 
 #include <libzrtpcpp/ZIDCache.h>
+#include <memory>
+#include <cstring>
 
 #ifndef _ZIDCACHEEMPTY_H_
 #define _ZIDCACHEEMPTY_H_

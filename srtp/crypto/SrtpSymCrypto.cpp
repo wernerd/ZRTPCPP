@@ -19,6 +19,7 @@
  */
 
 // #define MAKE_F8_TEST
+#include <cstring>
 
 #include <crypto/SrtpSymCrypto.h>
 #include <cryptcommon/twofish.h>
