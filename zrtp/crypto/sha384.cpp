@@ -21,7 +21,7 @@
 #include <zrtp/crypto/sha2.h>
 #include <zrtp/crypto/sha384.h>
 
-void sha384(const uint_8t *data, uint64_t dataLength, uint_8t *digest )
+void sha384(const uint_8t *data, uint64_t dataLength, uint8_t *digest )
 {
     sha384_ctx ctx = {};
 
@@ -30,7 +30,7 @@ void sha384(const uint_8t *data, uint64_t dataLength, uint_8t *digest )
     sha384_end(digest, &ctx);
 }
 
-void sha384(const std::vector<const uint8_t*>& data, const std::vector<uint_64t>& dataLength, uint_8t *digest)
+void sha384(const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength, uint8_t *digest)
 {
     sha384_ctx ctx = {};
 

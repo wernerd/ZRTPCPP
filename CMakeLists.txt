@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.0)
 
 PROJECT(libzrtpcpp)
 
@@ -34,6 +34,7 @@ option(CORE_LIB "Build core library only, no spcific client support." OFF)
 option(CRYPTO_STANDALONE "Use embedded crypto and big number modules." ON)
 option(TIVI "Build library for the tivi client, implies '-DCRYPTO_STNDALONE=true'." OFF)
 option(SQLITE "Use SQLite DB as backend for ZRTP cache." OFF)
+option(NO_CACHE "Use an always empty cache ZRTP - for testing mainly." OFF)
 option(SQLCIPHER "Use SQLCipher DB as backend for ZRTP cache." OFF)
 option(SDES "Include SDES when not building for CCRTP." OFF)
 option(AXO "Include Axolotl support when not building for CCRTP." OFF)
@@ -54,7 +55,11 @@ if (CCRTP AND TIVI AND CORE_LIB)
 endif()
 
 if (SQLITE AND SQLCIPHER)
-    MESSAGE(FATAL_ERROR "Cannot build with two DB backends.")
+    MESSAGE(FATAL_ERROR "Cannot build with multiple DB backends.")
+endif()
+
+if ((SQLITE OR SQLCIPHER) AND NO_CACHE)
+    MESSAGE(FATAL_ERROR "Cannot build with DB backends and empty cache backend.")
 endif()
 
 if (CCRTP)
@@ -110,6 +115,7 @@ endif()
 
 MESSAGE(STATUS "Configuring GNU ${PROJECT_NAME} ${VERSION} for ${PACKAGE}, commit: ${GIT_COMMIT} ...")
 
+set(CMAKE_MACOSX_RPATH 1)
 
 check_include_files(stdlib.h HAVE_STDLIB_H)
 check_include_files(string.h HAVE_STRING_H)
@@ -168,6 +174,8 @@ if (NOT ANDROID)
         else()
             message(FATAL_ERROR "SQLCipher library not found")
         endif()
+    elseif(NO_CACHE)
+        MESSAGE(STATUS "Building with always empty cache backend")
     else()
         MESSAGE(STATUS "Using file based ZRTP cache")
     endif()
@@ -206,10 +214,12 @@ set(zrtp_src_include
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/EmojiBase32.h
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDCacheDb.h
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDCacheFile.h
+        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDCacheEmpty.h
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDCache.h
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDRecordDb.h
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDRecordFile.h
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDRecord.h
+        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDRecordEmpty.h
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/zrtpB64Decode.h
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/zrtpB64Encode.h
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/zrtpCacheDbBackend.h
@@ -322,9 +332,16 @@ set(zrtp_standalone_crypto_src
         ${zrtp_crypto_includes})
 
 if (NOT SQLITE AND NOT SQLCIPHER)
-    set(zrtp_src ${zrtp_src_no_cache}
-            ${CMAKE_SOURCE_DIR}/zrtp/ZIDCacheFile.cpp
-            ${CMAKE_SOURCE_DIR}/zrtp/ZIDRecordFile.cpp)
+    if (NO_CACHE)
+        set(zrtp_src ${zrtp_src_no_cache}
+                ${CMAKE_SOURCE_DIR}/zrtp/ZIDCacheEmpty.cpp
+                ${CMAKE_SOURCE_DIR}/zrtp/ZIDRecordEmpty.cpp)
+
+    else()
+        set(zrtp_src ${zrtp_src_no_cache}
+                ${CMAKE_SOURCE_DIR}/zrtp/ZIDCacheFile.cpp
+                ${CMAKE_SOURCE_DIR}/zrtp/ZIDRecordFile.cpp)
+    endif()
 else()
     set(zrtp_src ${zrtp_src_no_cache}
             ${CMAKE_SOURCE_DIR}/zrtp/ZIDCacheDb.cpp

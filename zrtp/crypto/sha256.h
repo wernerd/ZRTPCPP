@@ -59,7 +59,7 @@ void sha256(const uint8_t *data,
             uint8_t *digest);
 
 /**
- * Compute SHA256 digest over several data cunks.
+ * Compute SHA256 digest over several data chunks.
  *
  * This functions takes several data chunks and computes the SHA256 digest.
  * This function creates and deletes an own SHA256 context to perform the
@@ -74,6 +74,7 @@ void sha256(const uint8_t *data,
  *    buffer must have a size of at least 32 bytes (SHA256_DIGEST_LENGTH).
  */
 void sha256(const std::vector<const uint8_t*>& data, const std::vector<uint64_t >& dataLength, uint8_t *digest);
+
 /**
  * Create and initialize a SHA256 context.
  *

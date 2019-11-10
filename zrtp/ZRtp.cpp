@@ -37,25 +37,6 @@
 
 using namespace GnuZrtpCodes;
 
-/* disabled...but used in testing and debugging, probably should have a
-   controlling #define...
-   *
-static void hexdump(const char* title, const unsigned char *s, int l) {
-    int n=0;
-
-    if (s == nullptr) return;
-
-    fprintf(stderr, "%s",title);
-    for( ; n < l ; ++n)
-    {
-        if((n%16) == 0)
-            fprintf(stderr, "\n%04x",n);
-        fprintf(stderr, " %02x",s[n]);
-    }
-    fprintf(stderr, "\n");
-}
- * */
-
 /*
  * This method simplifies detection of libzrtpcpp inside Automake, configure
  * and friends
@@ -71,7 +52,7 @@ extern "C" {
 }
 #endif
 
-ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* config, bool mitmm, bool sasSignSupport):
+ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* config, bool mitm, bool sasSignSupport):
         callback(cb), dhContext(nullptr), DHss(nullptr), auxSecret(nullptr), auxSecretLength(0), rs1Valid(false),
         rs2Valid(false), msgShaContext(nullptr), hash(nullptr), cipher(nullptr), pubKey(nullptr), sasType(nullptr), authLength(nullptr),
         multiStream(false), multiStreamAvailable(false), peerIsEnrolled(false), mitmSeen(false), pbxSecretTmp(nullptr),
@@ -92,11 +73,9 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* conf
     // setup the implicit hash function pointers and length. The casts show that we use different
     // functions
     hashLengthImpl = SHA256_DIGEST_LENGTH;
-    hashFunctionImpl = static_cast<void (*)(const uint_8t *, uint64_t, uint_8t *)>(sha256);
-    hashListFunctionImpl = static_cast<void (*) (const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, unsigned char *)>(sha256);
+    hashFunctionImpl = static_cast<void (*)(const uint8_t *, uint64_t, uint8_t *)>(sha256);
 
     hmacFunctionImpl = static_cast<void (*)(const uint8_t*, uint64_t, const uint8_t *, uint64_t,  uint8_t *c, uint32_t *)>(hmac_sha256);
-    hmacListFunctionImpl = static_cast<void (*)(const uint8_t*, uint64_t, const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, uint8_t *, uint32_t *)>(hmacSha256);
 
     memcpy(ownZid, myZid, ZID_SIZE);        // save the ZID
 
@@ -121,7 +100,7 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, std::string id, ZrtpConfigure* conf
     zrtpHello_12.setZid(ownZid);
     zrtpHello_12.setVersion((uint8_t*)zrtpVersion_12);
 
-    if (mitmm) {                            // this session acts for a trusted MitM (PBX)
+    if (mitm) {                             // this session acts for a trusted MitM (PBX)
         zrtpHello_11.setMitmMode();
         zrtpHello_12.setMitmMode();
     }
@@ -370,7 +349,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
      */
     zidRec = getZidCacheInstance()->getRecord(peerZid);
 
-    //Compute the Initator's and Responder's retained secret ids.
+    //Compute the Initiator's and Responder's retained secret ids.
     computeSharedSecretSet(zidRec);
 
 #ifdef ZRTP_SAS_RELAY_SUPPORT
@@ -1632,7 +1611,7 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
         cipher = getStrongCipherOffered(hello, algoName);
     }
     else {
-        hash = getHashOffered(hello, algoName);;
+        hash = getHashOffered(hello, algoName);
         cipher = getCipherOffered(hello, algoName);
     }
     authLength = getAuthLenOffered(hello, algoName);
@@ -2485,8 +2464,7 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hash) {
     switch (zrtpHashes.getOrdinal(*hash)) {
     case 0:
         hashLength = SHA256_DIGEST_LENGTH;
-        hashFunction = static_cast<void (*)(const uint_8t *, uint64_t, unsigned char*)>(sha256);
-        hashListFunction = static_cast<void (*) (const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, unsigned char *)>(sha256);;
+        hashListFunction = sha256; // static_cast<void (*)(const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, uint8_t *)>(sha256);;
 
         hmacFunction = static_cast<void (*)(const uint8_t*, uint64_t, const uint8_t *, uint64_t, uint8_t *c, uint32_t *)>(hmac_sha256);
         hmacListFunction = static_cast<void (*)(const uint8_t*, uint64_t, const std::vector<const uint8_t*>&,
@@ -2496,13 +2474,11 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hash) {
         msgShaContext = &hashCtx.sha256Ctx;
         closeHashCtx = finalizeSha256Context;
         hashCtxFunction = sha256Ctx;
-        hashCtxListFunction = static_cast<void (*)(void*, const std::vector<const uint8_t*>&, const std::vector<uint64_t>&)>(sha256Ctx);
         break;
 
     case 1:
         hashLength = SHA384_DIGEST_LENGTH;
-        hashFunction = sha384;
-        hashListFunction = static_cast<void (*) (const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, unsigned char *)>(sha384);
+        hashListFunction = sha384; // static_cast<void (*) (const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, uint8_t *)>(sha384);
 
         hmacFunction = hmac_sha384;
         hmacListFunction = static_cast<void (*)(const uint8_t*, uint64_t, const std::vector<const uint8_t*>&,
@@ -2512,13 +2488,11 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hash) {
         msgShaContext = &hashCtx.sha384Ctx;
         closeHashCtx = finalizeSha384Context;
         hashCtxFunction = sha384Ctx;
-        hashCtxListFunction = static_cast<void (*)(void*, const std::vector<const uint8_t*>&, const std::vector<uint64_t>&)>(sha384Ctx);
         break;
 
     case 2:
         hashLength = SKEIN256_DIGEST_LENGTH;
-        hashFunction = skein256;
-        hashListFunction = static_cast<void (*) (const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, uint_8t *)>(skein256);
+        hashListFunction = static_cast<void (*) (const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, uint8_t *)>(skein256);
 
         hmacFunction = macSkein256;
         hmacListFunction = static_cast<void (*)(const uint8_t*, uint64_t, const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, uint8_t *, uint32_t *)>(macSkein256);
@@ -2527,13 +2501,11 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hash) {
         msgShaContext = &hashCtx.skeinCtx;
         closeHashCtx = finalizeSkein256Context;
         hashCtxFunction = skein256Ctx;
-        hashCtxListFunction = static_cast<void (*)(void*, const std::vector<const uint8_t*>&, const std::vector<uint64_t>&)>(skein256Ctx);
         break;
 
     case 3:
         hashLength = SKEIN384_DIGEST_LENGTH;
-        hashFunction = skein384;
-        hashListFunction = static_cast<void (*) (const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, uint_8t *)>(skein384);
+        hashListFunction = static_cast<void (*) (const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, uint8_t *)>(skein384);
 
         hmacFunction = macSkein384;
         hmacListFunction = static_cast<void (*)(const uint8_t*, uint64_t, const std::vector<const uint8_t*>&, const std::vector<uint64_t>&, uint8_t *, uint32_t *)>(macSkein384);
@@ -2542,7 +2514,6 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hash) {
         msgShaContext = &hashCtx.skeinCtx;
         closeHashCtx = finalizeSkein384Context;
         hashCtxFunction = skein384Ctx;
-        hashCtxListFunction = static_cast<void (*)(void*, const std::vector<const uint8_t*>&, const std::vector<uint64_t>&)>(skein384Ctx);
         break;
 
     default:
