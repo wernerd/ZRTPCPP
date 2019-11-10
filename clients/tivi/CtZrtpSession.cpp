@@ -100,6 +100,10 @@ int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidF
         if (!zf) {
             return -1;
         }
+        if (!zrtpCache) {
+            zrtpCache = zf;
+        }
+
         if (!config) {
             configOwn = std::make_shared<ZrtpConfigure>();
             setupConfiguration(configOwn.get());
