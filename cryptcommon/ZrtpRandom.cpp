@@ -59,9 +59,8 @@ int ZrtpRandom::getRandomData(uint8_t* buffer, uint32_t length) {
      * Add entropy from system state
      * We will include whatever happens to be in the buffer, it can't hurt
      */
-    ZrtpRandom::addEntropy(buffer, length);
-
     lockRandom.lock();
+    ZrtpRandom::addEntropy(buffer, length, true);
 
     /* Copy the mainCtx and finalize it into the md buffer */
     memcpy(&randCtx2, &mainCtx, sizeof(sha512_ctx));
@@ -109,13 +108,14 @@ int ZrtpRandom::getRandomData(uint8_t* buffer, uint32_t length) {
 }
 
 
-int ZrtpRandom::addEntropy(const uint8_t *buffer, uint32_t length)
+int ZrtpRandom::addEntropy(const uint8_t *buffer, uint32_t length, bool isLocked)
 {
 
     uint8_t newSeed[64];
     size_t len = getSystemSeed(newSeed, sizeof(newSeed));
 
-    lockRandom.lock();
+    if (!isLocked) lockRandom.lock();
+
     initialize();
 
     if (buffer && length) {
@@ -125,7 +125,8 @@ int ZrtpRandom::addEntropy(const uint8_t *buffer, uint32_t length)
         sha512_hash(newSeed, len, &mainCtx);
         length += len;
     }
-    lockRandom.unlock();
+    if (!isLocked) lockRandom.unlock();
+
     return length;
 }
 
@@ -162,8 +163,8 @@ size_t ZrtpRandom::getSystemSeed(uint8_t *seed, size_t length)
     return num;
 }
 
-int zrtp_AddEntropy(const uint8_t *buffer, uint32_t length) {
-    return ZrtpRandom::addEntropy(buffer, length);
+int zrtp_AddEntropy(const uint8_t *buffer, uint32_t length, bool isLocked) {
+    return ZrtpRandom::addEntropy(buffer, length, isLocked);
 }
 
 int zrtp_getRandomData(uint8_t *buffer, uint32_t length) {

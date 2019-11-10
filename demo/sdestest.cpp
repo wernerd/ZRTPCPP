@@ -17,7 +17,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <string>
+#include <cstring>
 
 #include <crypto/hmac256.h>
 
@@ -124,7 +124,7 @@ A.3.  Test Case 3
 
 */
 
-static void hexdump(const char* title, const unsigned char *s, int l)
+static void hexdump(const char* title, const unsigned char *s, size_t l)
 {
     int n=0;
 
@@ -143,7 +143,7 @@ static void hexdump(const char* title, const unsigned char *s, int l)
 static uint8_t info_A1[] = {
     0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8, 0xf9};
 
-static int32_t L_A1 = 42;
+static size_t L_A1 = 42;
 
 static uint8_t PRK_A1[] = {
     0x07, 0x77, 0x09, 0x36, 0x2c, 0x2e, 0x32, 0xdf, 0x0d, 0xdc, 0x3f, 0x0d, 0xc4, 0x7b, 0xba, 0x63,
@@ -155,7 +155,7 @@ static uint8_t OKM_A1[] = {
     0x34, 0x00, 0x72, 0x08, 0xd5, 0xb8, 0x87, 0x18, 0x58, 0x65}; // (42 octets)
 
 
-static int32_t L_A3 = 42;
+static size_t L_A3 = 42;
 
 static uint8_t PRK_A3[] = {
     0x19, 0xef, 0x24, 0xa3, 0x2c, 0x71, 0x7b, 0x16, 0x7f, 0x33, 0xa9, 0x1d, 0x6f, 0x64, 0x8b, 0xdf,
@@ -167,24 +167,24 @@ static uint8_t OKM_A3[] = {
     0x9d, 0x20, 0x13, 0x95, 0xfa, 0xa4, 0xb6, 0x1a, 0x96, 0xc8};  // (42 octets)
 
 
-    
-void* createSha256HmacContext(uint8_t* key, int32_t keyLength);
+
+void* createSha256HmacContext(const uint8_t* key, uint64_t keyLength);
 void freeSha256HmacContext(void* ctx);
-void hmacSha256Ctx(void* ctx, const uint8_t* data[], uint32_t dataLength[], uint8_t* mac, int32_t* macLength );
+void hmacSha256Ctx(void* ctx, const std::vector<const uint8_t*>& data,
+                   const std::vector<uint64_t>& dataLength,
+                   uint8_t* mac, uint32_t* macLength );
 
-
-static int expand(uint8_t* prk, uint32_t prkLen, uint8_t const * info, int32_t infoLen, int32_t L, uint32_t hashLen, uint8_t* outbuffer)
+static int expand(uint8_t* prk, uint32_t prkLen, uint8_t* info, uint32_t infoLen, size_t L, uint32_t hashLen, uint8_t* outbuffer)
 {
-    int32_t n;
+    size_t n;
     uint8_t *T;
     void* hmacCtx;
 
-    const uint8_t* data[4];      // Data pointers for HMAC data, max. 3 plus terminating NULL
-    uint32_t dataLen[4];
-    int32_t dataIdx = 0;
+    std::vector<const uint8_t*>data;
+    std::vector<uint64_t> dataLen;
 
     uint8_t counter;
-    int32_t macLength;
+    uint32_t macLength;
 
     if (prkLen < hashLen)
         return -1;
@@ -194,34 +194,39 @@ static int expand(uint8_t* prk, uint32_t prkLen, uint8_t const * info, int32_t i
     // T points to buffer that holds concatenated T(1) || T(2) || ... T(N))
     T = reinterpret_cast<uint8_t*>(malloc(n * hashLen));
 
-    // Prepare the HMAC
-    hmacCtx = createSha256HmacContext(prk, prkLen);
+    if (hashLen == 256/8)
+        hmacCtx = createSha256HmacContext(prk, prkLen);
+    else {
+        free(T);
+        return -1;
+    }
 
     // Prepare first HMAC. T(0) has zero length, thus we ignore it in first run.
     // After first run use its output (T(1)) as first data in next HMAC run.
     for (int i = 1; i <= n; i++) {
         if (infoLen > 0 && info != nullptr) {
-            data[dataIdx] = info;
-            dataLen[dataIdx++] = infoLen;
+            data.push_back(info);
+            dataLen.push_back(infoLen);
         }
-        counter = static_cast<unsigned int>(i) & 0xffU;
-        data[dataIdx] = &counter;
-        dataLen[dataIdx++] = 1;
+        counter = static_cast<uint8_t >(i & 0xff);
+        data.push_back(&counter);
+        dataLen.push_back(1);
 
-        data[dataIdx] = nullptr;
-        dataLen[dataIdx] = 0;
+        if (hashLen == 384/8)
+            hmacSha256Ctx(hmacCtx, data, dataLen, T + ((i-1) * hashLen), &macLength);
 
-        hmacSha256Ctx(hmacCtx, data, dataLen, T + ((i-1) * hashLen), &macLength);
-
-        dataIdx = 0;
-        data[dataIdx] = T + ((i-1) * hashLen);
-        dataLen[dataIdx++] = hashLen;
+        // Use output of previous hash run as first input of next hash run
+        data.clear();
+        dataLen.clear();
+        data.push_back(T + ((i-1) * hashLen));
+        dataLen.push_back(hashLen);
     }
     freeSha256HmacContext(hmacCtx);
     memcpy(outbuffer, T, L);
     free(T);
     return 0;
 }
+
 
 int main(int argc, char *argv[])
 {
