@@ -96,25 +96,28 @@ int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidF
     // The caller must make sure to initialize the audio stream before the video stream (or at the same time with
     // both boolean parameters set to true).
     if (audio) {
-        auto zf = initCache(zidFilename, zrtpCache);
-        if (!zf) {
-            return -1;
-        }
-        if (!zrtpCache) {
-            zrtpCache = zf;
-        }
 
+        // If we got no config -> initialize all necessary stuff here. This is for backward compat mainly.
+        // Otherwise we expect to get a fully initialized config, including an initialized cache file instance
         if (!config) {
+            auto zf = initCache(zidFilename, zrtpCache);
+            if (!zf) {
+                return -1;
+            }
+            if (!zrtpCache) {
+                zrtpCache = zf;
+            }
+
             configOwn = std::make_shared<ZrtpConfigure>();
+            configOwn->setZidCache(zf);
             setupConfiguration(configOwn.get());
         }
         else {
             configOwn = config;
         }
 
-        const uint8_t* ownZidFromCache = zf->getZid();
+        const uint8_t* ownZidFromCache = configOwn->getZidCache()->getZid();
 
-        configOwn->setZidCache(zf);
         configOwn->setTrustedMitM(false);
 #if defined AXO_SUPPORT
         configOwn->setSasSignature(true);
