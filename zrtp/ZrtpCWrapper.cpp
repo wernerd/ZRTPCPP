@@ -118,7 +118,7 @@ int32_t zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext,
     if (!myZid) {
         return false;
     }
-    zrtpContext->zrtpEngine = new ZRtp((uint8_t*)myZid, zrtpContext->zrtpCallback,
+    zrtpContext->zrtpEngine = new ZRtp((uint8_t*)myZid, *zrtpContext->zrtpCallback,
                                        clientIdString, configOwn, mitmMode != 0);
     return true;
 }
@@ -343,9 +343,9 @@ const char* zrtp_getSasType(ZrtpContext* zrtpContext) {
 }
 
 
-uint8_t* zrtp_getSasHash(ZrtpContext* zrtpContext) {
+uint8_t const * zrtp_getSasHash(ZrtpContext* zrtpContext) {
     if (zrtpContext && zrtpContext->zrtpEngine)
-        return zrtpContext->zrtpEngine->getSasHash();
+        return &zrtpContext->zrtpEngine->getSasHash();
 
     return nullptr;
 }
@@ -357,11 +357,11 @@ int32_t zrtp_setSignatureData(ZrtpContext* zrtpContext, uint8_t* data, uint32_t 
     return 0;
 }
 
-const uint8_t* zrtp_getSignatureData(ZrtpContext* zrtpContext) {
+uint8_t const * zrtp_getSignatureData(ZrtpContext* zrtpContext) {
     if (zrtpContext && zrtpContext->zrtpEngine)
-        return zrtpContext->zrtpEngine->getSignatureData();
+        return &zrtpContext->zrtpEngine->getSignatureData();
 
-    return 0;
+    return nullptr;
 }
 
 int32_t zrtp_getSignatureLength(ZrtpContext* zrtpContext) {
