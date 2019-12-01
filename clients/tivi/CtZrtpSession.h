@@ -21,10 +21,10 @@
 #ifndef _CTZRTPSESSION_H_
 #define _CTZRTPSESSION_H_
 
-#include <stdio.h>
+#include <cstdio>
 #include <cstdint>
 #include <string>
-#include <string.h>
+#include <cstring>
 #include <zrtp/libzrtpcpp/ZIDCache.h>
 
 #ifndef __EXPORT
@@ -49,7 +49,6 @@ class CtZrtpCb;
 class CtZrtpSendCb;
 class ZrtpConfigure;
 class ZRtp;
-class CMutexClass;
 typedef struct _SrtpErrorData SrtpErrorData;
 
 extern "C" __EXPORT const char *getZrtpBuildInfo();

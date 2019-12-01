@@ -21,6 +21,7 @@
 
 #include <string>
 #include <cstdio>
+#include <mutex>
 
 #include <libzrtpcpp/ZIDCache.h>
 #include <libzrtpcpp/ZRtp.h>
@@ -32,7 +33,7 @@
 #include <clients/tivi/timeoutHelper/Thread.h>
 #include <zrtp/libzrtpcpp/ZIDCacheDb.h>
 
-static CMutexClass sessionLock;
+static std::mutex sessionLock;
 
 const char *getZrtpBuildInfo()
 {
@@ -125,7 +126,7 @@ int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidF
         if (streams[AudioStream] == nullptr)
             streams[AudioStream] = new CtZrtpStream();
         stream = streams[AudioStream];
-        stream->zrtpEngine = new ZRtp((uint8_t*)ownZidFromCache, stream, clientIdString, configOwn, mitmMode, signSas);
+        stream->zrtpEngine = new ZRtp((uint8_t*)ownZidFromCache, *stream, clientIdString, configOwn, mitmMode, signSas);
         stream->type = Master;
         stream->index = AudioStream;
         stream->session = this;
@@ -141,7 +142,7 @@ int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidF
         const uint8_t* ownZidFromCache = videoConfig->getZidCache()->getZid();
 
         stream = streams[VideoStream];
-        stream->zrtpEngine = new ZRtp((uint8_t*)ownZidFromCache, stream, clientIdString, videoConfig);
+        stream->zrtpEngine = new ZRtp((uint8_t*)ownZidFromCache, *stream, clientIdString, videoConfig);
         stream->type = Slave;
         stream->index = VideoStream;
         stream->session = this;
@@ -745,9 +746,9 @@ void CtZrtpSession::cleanCache() {
 }
 
 void CtZrtpSession::synchEnter() {
-    sessionLock.Lock();
+    sessionLock.lock();
 }
 
 void CtZrtpSession::synchLeave() {
-    sessionLock.Unlock();
+    sessionLock.unlock();
 }

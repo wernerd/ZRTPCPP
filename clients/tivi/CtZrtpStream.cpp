@@ -503,7 +503,7 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
     int iLen = strlen(key);
 
     // set the security state as a combination of tivi state and stateflags
-    int secState = tiviState & 0xffU;
+    u_int secState = tiviState & 0xffU;
     if (useSdesForMedia)
         secState |= 0x100U;
 
@@ -537,7 +537,7 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
     T_ZRTP_LB("lbVersion", client.c_str())
 
     if (recvSrtp != nullptr || sendSrtp != nullptr) {
-        info = zrtpEngine->getDetailInfo();
+        info = &zrtpEngine->getDetailInfo();
 
         if (iLen == 1 && key[0] == 'v') {
             return snprintf(p, maxLen, "%d", sasVerified);
