@@ -53,8 +53,8 @@ extern "C" {
 }
 #endif
 
-ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback *cb, const string& id, shared_ptr<ZrtpConfigure>& config, bool mitm, bool sasSignSupport):
-        callback(cb), auxSecretLength(0), rs1Valid(false),
+ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback& cb, const string& id, shared_ptr<ZrtpConfigure>& config, bool mitm, bool sasSignSupport):
+        callback(&cb), auxSecretLength(0), rs1Valid(false),
         rs2Valid(false), msgShaContext(nullptr), hash(nullptr), cipher(nullptr), pubKey(nullptr), sasType(nullptr), authLength(nullptr),
         multiStream(false), multiStreamAvailable(false), peerIsEnrolled(false), mitmSeen(false), pbxSecretTmp(nullptr),
         enrollmentMode(false), configureAlgos(config), zidRec(nullptr), saveZidRecord(true), signSasSeen(false),
@@ -2509,10 +2509,6 @@ void ZRtp::resetSASVerified() {
     getZidCache()->saveRecord(*zidRec);
 }
 
-bool ZRtp::isSASVerified() {
-    return zidRec->isSasVerified();
-}
-
 void ZRtp::setRs2Valid() {
 
     if (zidRec != nullptr) {
@@ -2521,13 +2517,6 @@ void ZRtp::setRs2Valid() {
             getZidCache()->saveRecord(*zidRec);
     }
 }
-
-int64_t ZRtp::getSecureSince() {
-    if (zidRec != nullptr)
-        return zidRec->getSecureSince();
-    return 0;
-}
-
 
 void ZRtp::sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) {
 
@@ -2744,14 +2733,6 @@ bool ZRtp::setSignatureData(uint8_t* data, uint32_t length) {
     return cfrm->setSignatureData(data, length);
 }
 
-const uint8_t* ZRtp::getSignatureData() {
-    return signatureData;
-}
-
-int32_t ZRtp::getSignatureLength() {
-    return signatureLength * ZRTP_WORD_SIZE;
-}
-
 void ZRtp::conf2AckSecure() {
     Event ev;
 
@@ -2766,7 +2747,7 @@ void ZRtp::conf2AckSecure() {
 
 int32_t ZRtp::compareCommit(ZrtpPacketCommit *commit) {
     // enhance to compare according to rules defined in chapter 4.2,
-    // but we don't support Preshared.
+    // but we don't support Pre-shared.
     uint32_t len = 0;
     len = !multiStream ? HVI_SIZE : (4 * ZRTP_WORD_SIZE);
     return (memcmp(hvi, commit->getHvi(), len));
@@ -2827,36 +2808,6 @@ bool ZRtp::sendSASRelayPacket(uint8_t* sh, const string& render) {
 #endif // ZRTP_SAS_RELAY_SUPPORT
 }
 
-string ZRtp::getSasType() {
-    string sasT(sasType->getName());
-    return sasT;
-}
-
-uint8_t* ZRtp::getSasHash() {
-    return sasHash;
-}
-
-int32_t ZRtp::getPeerZid(uint8_t* data) {
-    memcpy(data, peerZid, IDENTIFIER_LEN);
-    return IDENTIFIER_LEN;
-}
-
-const ZRtp::zrtpInfo* ZRtp::getDetailInfo() {
-    return &detailInfo;
-}
-
-string ZRtp::getPeerClientId() {
-    if (peerClientId.empty())
-        return string();
-    return peerClientId;
-}
-
-string ZRtp::getPeerProtocolVersion() {
-    if (peerHelloVersion[0] == 0)
-        return string();
-    return string((char*)peerHelloVersion);
-}
-
 void ZRtp::setT1Resend(int32_t counter) {
     if (counter < 0 || counter > 10)
         stateEngine->setT1Resend(counter);
@@ -2888,12 +2839,6 @@ int ZRtp::getNumberOfCountersZrtp() {
 
 int ZRtp::getCountersZrtp(int32_t* counters) {
     return stateEngine->getRetryCounters(counters);
-}
-
-uint8_t* ZRtp::getExportedKey(int32_t *length) {
-    if (length != nullptr)
-        *length = hashLength;
-    return zrtpExport;
 }
 
 bool ZRtp::checkAndSetNonce(uint8_t* nonce) {

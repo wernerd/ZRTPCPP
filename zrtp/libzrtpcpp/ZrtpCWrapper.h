@@ -1047,7 +1047,7 @@ extern "C"
      * @return a pointer to the byte array that contains the full 
      *         SAS hash.
      */
-    uint8_t* zrtp_getSasHash(ZrtpContext* zrtpContext);
+    uint8_t const * zrtp_getSasHash(ZrtpContext* zrtpContext);
 
     /**
      * Set signature data

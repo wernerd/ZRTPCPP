@@ -138,7 +138,7 @@ class __EXPORT ZRtp {
      * Constructor initializes all relevant data but does not start the
      * engine.
      */
-    ZRtp(uint8_t* myZid, ZrtpCallback* cb, const std::string& id,
+    ZRtp(uint8_t* myZid, ZrtpCallback& cb, const std::string& id,
          std::shared_ptr<ZrtpConfigure>& config, bool mitm = false, bool sasSignSupport= false);
 
     /**
@@ -245,7 +245,7 @@ class __EXPORT ZRtp {
       * Check if SAS verfied by both parties, valid after received Confirm1 or Confirm2.
       *
       */
-     bool isSASVerified();
+     bool isSASVerified() { return zidRec->isSasVerified(); }
 
      /**
      * Get the ZRTP Hello Hash data.
@@ -415,7 +415,7 @@ class __EXPORT ZRtp {
      * 
      * @return the committed SAS rendering algorithm
      */
-    std::string getSasType();
+    std::string getSasType() const { return sasType->getName(); }
  
     /**
      * Get the computed SAS hash for this ZRTP session.
@@ -424,10 +424,10 @@ class __EXPORT ZRtp {
      * hash of an enrolled client to construct the SAS relay packet for
      * the other client.
      *
-     * @return a pointer to the byte array that contains the full
+     * @return a reference to the byte array that contains the full
      *         SAS hash.
      */
-    uint8_t* getSasHash();
+    const uint8_t& getSasHash() const {return *sasHash;}
 
     /**
      * Set signature data.
@@ -464,9 +464,9 @@ class __EXPORT ZRtp {
      * <code>start()</code>.
      *
      * @return
-     *    Pointer to signature data.
+     *    Signature data.
      */
-    const uint8_t* getSignatureData();
+    const uint8_t& getSignatureData() const { return *signatureData; }
 
     /**
      * Get length of signature data in number of bytes.
@@ -476,9 +476,9 @@ class __EXPORT ZRtp {
      *
      * @return
      *    Length in bytes of the received signature data. The method returns
-     *    zero if no signature data is avilable.
+     *    zero if no signature data is available.
      */
-    int32_t getSignatureLength();
+    int32_t getSignatureLength() const { return signatureLength * ZRTP_WORD_SIZE; }
 
     /**
      * Emulate a Conf2Ack packet.
@@ -508,29 +508,34 @@ class __EXPORT ZRtp {
       *    Number of bytes copied into the data buffer - must be equivalent
       *    to 96 bit, usually 12 bytes.
       */
-     int32_t getPeerZid(uint8_t* data);
+     int32_t getPeerZid(uint8_t* data) {
+         memcpy(data, peerZid, IDENTIFIER_LEN);
+         return IDENTIFIER_LEN;
+     }
 
      /**
-      * Returns a pointer to the gather detailed information structure.
+      * Return gathered detailed information structure.
       *
       * This structure contains some detailed information about the negotiated
       * algorithms, the cached and matched shared secrets.
       */
-     const zrtpInfo *getDetailInfo();
+     const zrtpInfo& getDetailInfo() const { return detailInfo; }
 
      /**
       * Get peer's client id.
       *
       * @return the peer's client id or an empty @c string if not set.
       */
-     std::string getPeerClientId();
+     const std::string& getPeerClientId() const {return peerClientId;};
 
      /**
       * Get peer's protocol version string.
       *
       * @return the peer's protocol version or an empty @c string if not set.
       */
-     std::string getPeerProtocolVersion();
+     std::string getPeerProtocolVersion() const {
+         return (peerHelloVersion[0] == 0) ? std::string() : std::string((char*)peerHelloVersion);
+     };
 
      /**
       * Get number of supported ZRTP protocol versions.
@@ -560,7 +565,9 @@ class __EXPORT ZRtp {
       * Returns the secure since field or 0 if no such field is available. Secure since
       * uses the unixepoch.
       */
-     int64_t getSecureSince();
+     int64_t getSecureSince() const {
+         return (zidRec != nullptr) ? zidRec->getSecureSince() :  0;
+     }
 
      /**
       * Set the resend counter of timer T1 - T1 controls the Hello packets.
@@ -636,27 +643,31 @@ class __EXPORT ZRtp {
      /**
       * @brief Get the computed ZRTP exported key.
       * 
-      * Returns a pointer to the computed exported key. The application should copy
+      * Returns the computed exported key. The application should copy
       * the data it needs.
       * 
       * @param length pointer to an int, gets the length of the exported key.
       * @return pointer to the exported key data.
       */
-     uint8_t* getExportedKey(int32_t *length);
+     const uint8_t& getExportedKey(int32_t *length) const {
+         if (length != nullptr)
+             *length = hashLength;
+         return *zrtpExport;
+     };
 
      /**
       * @brief Return either Initiator or Responder.
       */
-     int32_t getZrtpRole() { return myRole; }
+     int32_t getZrtpRole() const { return myRole; }
 
      /**
       * @brief Get status of our peer's disclosure flag
       */
-     bool isPeerDisclosureFlag(){ return peerDisclosureFlagSeen; }
+     bool isPeerDisclosureFlag() const { return peerDisclosureFlagSeen; }
 
-     std::shared_ptr<ZIDCache>& getZidCache() { return configureAlgos->getZidCache(); }
+     std::shared_ptr<ZIDCache>& getZidCache() const { return configureAlgos->getZidCache(); }
 
-     std::shared_ptr<ZrtpConfigure> getZrtpConfigure() { return configureAlgos; }
+     std::shared_ptr<ZrtpConfigure> getZrtpConfigure() const { return configureAlgos; }
 
 private:
      typedef union _hashCtx {
@@ -691,7 +702,7 @@ private:
      * The callback class provides me with the interface to send
      * data and to deal with timer management of the hosting system.
      */
-    ZrtpCallback* callback;
+    ZrtpCallback * callback;
 
     /**
      * My active Diffie-Helman context
@@ -995,7 +1006,7 @@ private:
 
     uint32_t peerSSRC = 0;           // peer's SSRC, required to setup PingAck packet
 
-    zrtpInfo detailInfo = {};         // filled with some more detailded information if application would like to know
+    zrtpInfo detailInfo = {};         // filled with some more detailed information if application would like to know
 
     std::string peerClientId;    // store the peer's client Id
 
