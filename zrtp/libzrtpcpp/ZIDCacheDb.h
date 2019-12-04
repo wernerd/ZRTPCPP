@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <libzrtpcpp/ZIDCache.h>
 #include <libzrtpcpp/ZIDRecordDb.h>
@@ -49,7 +49,7 @@ class __EXPORT ZIDCacheDb: public ZIDCache {
 
 private:
 
-    void *zidFile;
+    void *zidFile = nullptr;
     unsigned char associatedZid[IDENTIFIER_LEN] = {0};
 
     dbCacheOps_t cacheOps = { nullptr };
@@ -62,7 +62,7 @@ private:
 
 public:
 
-    ZIDCacheDb(): zidFile(nullptr) {
+    ZIDCacheDb() {
         getDbCacheOps(&cacheOps);
     };
 

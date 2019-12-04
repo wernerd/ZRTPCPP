@@ -21,17 +21,56 @@
 
 #include <string>
 #include <cstdio>
+#include <memory>
 
 #include <ZrtpQueue.h>
-#include <libzrtpcpp/ZIDCache.h>
 #include <libzrtpcpp/ZRtp.h>
 #include <libzrtpcpp/ZrtpStateClass.h>
 #include <libzrtpcpp/ZrtpUserCallback.h>
+#include <zrtp/libzrtpcpp/ZIDCacheFile.h>
 
-static TimeoutProvider<std::string, ost::ZrtpQueue*>* staticTimeoutProvider = NULL;
+static TimeoutProvider<std::string, ost::ZrtpQueue*>* staticTimeoutProvider = nullptr;
 
 NAMESPACE_COMMONCPP
 using namespace GnuZrtpCodes;
+
+    std::shared_ptr<ZIDCache> ZrtpQueue::zrtpCache = nullptr;
+
+// Specific initialization for ccrtp: use _one_ ZRTP cache file for _all_ sessions, even
+// for conference calls. This simplifies handling of cache data.
+// If another app likes to have different cache files (or even open the same file several times ? )
+// then just change the cache initialization at his point.
+    static std::shared_ptr<ZIDCache>
+    initCache(const char *zidFilename, std::shared_ptr<ZIDCache> cache) {
+        std::string fname;
+        if (!zidFilename) {
+            char *home = getenv("HOME");
+            std::string baseDir = (home) ? (std::string(home) + std::string("/."))
+                                         : std::string(".");
+            fname = baseDir + std::string("GNUZRTP.zid");
+            zidFilename = fname.c_str();
+        }
+
+        // Check if a cache is available.
+        // If yes and it has the same filename -> use it
+        // otherwise close file and open new cache file
+        if (cache) {
+            if (cache->getFileName() == zidFilename) {
+                return cache;
+            }
+            cache->close();
+            if (cache->open((char *)zidFilename) < 0) {
+                return std::shared_ptr<ZIDCache>();
+            }
+            return cache;
+        }
+
+        auto zf = std::make_shared<ZIDCacheFile>();
+        if (zf->open((char *)zidFilename) < 0) {
+            return std::shared_ptr<ZIDCache>();
+        }
+        return zf;
+    }
 
 ZrtpQueue::ZrtpQueue(uint32 size, RTPApplication& app) :
         AVPQueue(size,app)
@@ -47,12 +86,12 @@ ZrtpQueue::ZrtpQueue(uint32 ssrc, uint32 size, RTPApplication& app) :
 
 void ZrtpQueue::init()
 {
-    zrtpUserCallback = NULL;
+    zrtpUserCallback = nullptr;
     enableZrtp = false;
     started = false;
     mitmMode = false;
     enableParanoidMode = false;
-    zrtpEngine = NULL;
+    zrtpEngine = nullptr;
     senderZrtpSeqNo = 1;
 
     clientIdString = clientId;
@@ -64,54 +103,50 @@ ZrtpQueue::~ZrtpQueue() {
     endQueue();
     stopZrtp();
 
-    if (zrtpUserCallback != NULL) {
+    if (zrtpUserCallback != nullptr) {
         delete zrtpUserCallback;
-        zrtpUserCallback = NULL;
+        zrtpUserCallback = nullptr;
     }
 }
 
 int32_t
-ZrtpQueue::initialize(const char *zidFilename, bool autoEnable, ZrtpConfigure* config)
+ZrtpQueue::initialize(const char *zidFilename, bool autoEnable, std::shared_ptr<ZrtpConfigure>& config)
 {
     int32_t ret = 1;
 
     synchEnter();
 
-    ZrtpConfigure* configOwn = NULL;
-    if (config == NULL) {
-        config = configOwn = new ZrtpConfigure();
-        config->setStandardConfig();
+    std::shared_ptr<ZrtpConfigure> configOwn;
+
+    if (!config) {
+        auto zf = initCache(zidFilename, zrtpCache);
+        if (!zf) {
+            return -1;
+        }
+        if (!zrtpCache) {
+            zrtpCache = zf;
+        }
+
+        configOwn = std::make_shared<ZrtpConfigure>();
+        configOwn->setZidCache(zf);
+        configOwn->setStandardConfig();
     }
+    else {
+        configOwn = config;
+    }
+
     enableZrtp = autoEnable;
 
-    config->setParanoidMode(enableParanoidMode);
+    configOwn->setParanoidMode(enableParanoidMode);
 
-    if (staticTimeoutProvider == NULL) {
+    if (staticTimeoutProvider == nullptr) {
         staticTimeoutProvider = new TimeoutProvider<std::string, ZrtpQueue*>();
         staticTimeoutProvider->start();
     }
-    ZIDCache* zf = getZidCacheInstance();
-    if (!zf->isOpen()) {
-        std::string fname;
-        if (zidFilename == NULL) {
-            char *home = getenv("HOME");
-            std::string baseDir = (home != NULL) ? (std::string(home) + std::string("/."))
-                                                    : std::string(".");
-            fname = baseDir + std::string("GNUZRTP.zid");
-            zidFilename = fname.c_str();
-        }
-        if (zf->open((char *)zidFilename) < 0) {
-            enableZrtp = false;
-            ret = -1;
-        }
-    }
-    if (ret > 0) {
-        const uint8_t* ownZid = zf->getZid();
-        zrtpEngine = new ZRtp((uint8_t*)ownZid, (ZrtpCallback*)this, clientIdString, config, mitmMode, signSas);
-    }
-    if (configOwn != NULL) {
-        delete configOwn;
-    }
+    const uint8_t* ownZidFromCache = configOwn->getZidCache()->getZid();
+
+    zrtpEngine = new ZRtp((uint8_t*)ownZidFromCache, *(ZrtpCallback*)this, clientIdString, configOwn, mitmMode, signSas);
+
     synchLeave();
     return ret;
 }
@@ -386,9 +421,9 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
     CryptoContextCtrl* recvCryptoContextCtrl;
     CryptoContextCtrl* senderCryptoContextCtrl;
 
-    int cipher;
-    int authn;
-    int authKeyLen;
+    int cipher = SrtpEncryptionNull;
+    int authn = SrtpAuthenticationNull;
+    int authKeyLen = 0;
 
     if (secrets->authAlgorithm == Sha1) {
         authn = SrtpAuthenticationSha1Hmac;
@@ -464,9 +499,6 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
                   authKeyLen,                                // authentication key len
                   secrets->respSaltLen / 8,                  // session salt len
                   secrets->srtpAuthTagLen / 8);              // authentication tag len
-        }
-        if (senderCryptoContext == NULL) {
-            return false;
         }
         // Insert the Crypto templates (SSRC == 0) into the queue. When we send
         // the first RTP or RTCP packet the real crypto context will be created.
@@ -736,7 +768,7 @@ std::string ZrtpQueue::getSasType() {
         return NULL;
 }
 
-uint8_t* ZrtpQueue::getSasHash() {
+uint8_t const * ZrtpQueue::getSasHash() {
     if (zrtpEngine != NULL)
         return zrtpEngine->getSasHash();
     else
@@ -845,8 +877,7 @@ uint32 IncomingZRTPPkt::getSSRC() const {
      return ntohl(getHeader()->sources[0]);
 }
 
-OutgoingZRTPPkt::OutgoingZRTPPkt(
-    const unsigned char* const hdrext, uint32 hdrextlen) :
+OutgoingZRTPPkt::OutgoingZRTPPkt(unsigned char const * hdrext, uint32 hdrextlen) :
         OutgoingRTPPkt(NULL, 0, hdrext, hdrextlen, NULL ,0, 0, NULL)
 {
     getHeader()->version = 0;

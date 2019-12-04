@@ -427,7 +427,7 @@ class __EXPORT ZRtp {
      * @return a reference to the byte array that contains the full
      *         SAS hash.
      */
-    const uint8_t& getSasHash() const {return *sasHash;}
+    const uint8_t* getSasHash() const {return sasHash;}
 
     /**
      * Set signature data.
@@ -466,7 +466,7 @@ class __EXPORT ZRtp {
      * @return
      *    Signature data.
      */
-    const uint8_t& getSignatureData() const { return *signatureData; }
+    uint8_t const * getSignatureData() const { return signatureData; }
 
     /**
      * Get length of signature data in number of bytes.

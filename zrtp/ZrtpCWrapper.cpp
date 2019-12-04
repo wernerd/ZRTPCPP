@@ -345,7 +345,7 @@ const char* zrtp_getSasType(ZrtpContext* zrtpContext) {
 
 uint8_t const * zrtp_getSasHash(ZrtpContext* zrtpContext) {
     if (zrtpContext && zrtpContext->zrtpEngine)
-        return &zrtpContext->zrtpEngine->getSasHash();
+        return zrtpContext->zrtpEngine->getSasHash();
 
     return nullptr;
 }
@@ -359,7 +359,7 @@ int32_t zrtp_setSignatureData(ZrtpContext* zrtpContext, uint8_t* data, uint32_t 
 
 uint8_t const * zrtp_getSignatureData(ZrtpContext* zrtpContext) {
     if (zrtpContext && zrtpContext->zrtpEngine)
-        return &zrtpContext->zrtpEngine->getSignatureData();
+        return zrtpContext->zrtpEngine->getSignatureData();
 
     return nullptr;
 }

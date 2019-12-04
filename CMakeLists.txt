@@ -339,7 +339,6 @@ endif()
 
 if (CCRTP)
     add_subdirectory(clients/ccrtp)
-    add_subdirectory(demo)
 endif()
 
 if (TIVI)

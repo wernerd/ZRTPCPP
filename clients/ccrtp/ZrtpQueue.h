@@ -233,8 +233,8 @@ public:
      *     ZRTP processing disabled.
      *
      */
-    int32_t initialize(const char *zidFilename, bool autoEnable = true,
-                       ZrtpConfigure* config = NULL);
+    int32_t initialize(const char *zidFilename, bool autoEnable,
+                       std::shared_ptr<ZrtpConfigure>& config);
 
     /*
      * Applications use the following methods to control ZRTP, for example
@@ -545,10 +545,10 @@ public:
      * hash of an enrolled client to construct the SAS relay packet for
      * the other client.
      *
-     * @return a refernce to the byte array that contains the full
+     * @return a pointer to the constant byte array that contains the full
      *         SAS hash.
      */
-    uint8_t* getSasHash();
+    uint8_t const * getSasHash();
 
     /**
      * Send the SAS relay packet.
@@ -827,8 +827,8 @@ protected:
      *     by the applications; false: dismiss packet. The default
      *     implementation returns false.
      */
-    virtual bool
-    onSRTPPacketError(IncomingRTPPkt& pkt, int32 errorCode);
+    bool
+    onSRTPPacketError(IncomingRTPPkt& pkt, int32 errorCode) override;
 
     /**
      * Handle timeout event forwarded by the TimeoutProvider.
@@ -846,59 +846,56 @@ protected:
      *
      * @return number of payload bytes received,  <0 if error.
      */
-    virtual size_t takeInDataPacket();
+    size_t takeInDataPacket() override;
 
     /*
      * The following methods implement the GNU ZRTP callback interface.
      * For detailed documentation refer to file ZrtpCallback.h
      */
-    int32_t sendDataZRTP(const unsigned char* data, int32_t length);
+    int32_t sendDataZRTP(const unsigned char* data, int32_t length) override;
 
-    int32_t activateTimer(int32_t time);
+    int32_t activateTimer(int32_t time) override;
 
-    int32_t cancelTimer();
+    int32_t cancelTimer() override;
 
-    void sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t subCode);
+    void sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) override;
 
-    bool srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part);
+    bool srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part) override;
 
-    void srtpSecretsOff(EnableSecurity part);
+    void srtpSecretsOff(EnableSecurity part) override;
 
-    void srtpSecretsOn(std::string c, std::string s, bool verified);
+    void srtpSecretsOn(std::string c, std::string s, bool verified) override;
 
-    void handleGoClear();
+    void handleGoClear() override;
 
-    void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode);
+    void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) override;
 
-    void zrtpNotSuppOther();
+    void zrtpNotSuppOther() override;
 
-    void synchEnter();
+    void synchEnter() override;
 
-    void synchLeave();
+    void synchLeave() override;
 
-    void zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info);
+    void zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info) override;
 
-    void zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment  info);
+    void zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment  info) override;
 
-    void signSAS(uint8_t* sasHash);
+    void signSAS(uint8_t* sasHash) override;
 
-    bool checkSASSignature(uint8_t* sasHash);
+    bool checkSASSignature(uint8_t* sasHash) override;
 
     /*
      * End of ZrtpCallback functions.
      */
 
-    ZrtpQueue(uint32 size = RTPDataQueue::defaultMembersHashSize,
-              RTPApplication& app = defaultApplication());
+    explicit ZrtpQueue(uint32 size = RTPDataQueue::defaultMembersHashSize, RTPApplication& app = defaultApplication());
 
     /**
      * Local SSRC is given instead of computed by the queue.
      */
-    ZrtpQueue(uint32 ssrc, uint32 size =
-                  RTPDataQueue::defaultMembersHashSize,
-              RTPApplication& app = defaultApplication());
+    explicit ZrtpQueue(uint32 ssrc, uint32 size = RTPDataQueue::defaultMembersHashSize, RTPApplication& app = defaultApplication());
 
-    virtual ~ZrtpQueue();
+    ~ZrtpQueue() override ;
 
 private:
     void init();
@@ -923,6 +920,9 @@ private:
     bool mitmMode;
     bool signSas;
     bool enableParanoidMode;
+
+    static std::shared_ptr<ZIDCache> zrtpCache;     // All sessions should use the _same_ cache file
+
 };
 
 class IncomingZRTPPkt : public IncomingRTPPkt {
@@ -938,8 +938,7 @@ public:
 
     IncomingZRTPPkt(const unsigned char* block, size_t len);
 
-    ~IncomingZRTPPkt()
-    { }
+    ~IncomingZRTPPkt() override = default;
 
     uint32
     getZrtpMagic() const;
@@ -960,9 +959,8 @@ public:
      * @param hdrext whole header extension.
      * @param hdrextlen size of whole header extension, in octets.
      **/
-    OutgoingZRTPPkt(const unsigned char* const hdrext, uint32 hdrextlen);
-    ~OutgoingZRTPPkt()
-    { }
+    OutgoingZRTPPkt(unsigned char const * hdrext, uint32 hdrextlen);
+    ~OutgoingZRTPPkt() override = default;
 };
 
 END_NAMESPACE

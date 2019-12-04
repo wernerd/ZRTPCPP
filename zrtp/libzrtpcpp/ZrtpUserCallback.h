@@ -56,7 +56,7 @@ class __EXPORT ZrtpUserCallback {
     public:
 
         /// Create the standard user callback class.
-        ZrtpUserCallback() = default
+        ZrtpUserCallback() = default;
 
         virtual ~ZrtpUserCallback() = default;
 

@@ -17,6 +17,8 @@
 
 #include <cstdlib>
 #include <map>
+#include <memory>
+
 #include <zrtpccrtp.h>
 #include <libzrtpcpp/ZrtpUserCallback.h>
 
@@ -228,7 +230,9 @@ public:
         //RTPSession tx();
         // Initialize with local address and Local port is detination port +2 - keep RTP/RTCP port pairs
         ExtZrtpSession tx(pattern.getSsrc(), pattern.getSenderAddress(), pattern.getSenderPort());
-        tx.initialize("test_t.zid");
+
+        std::shared_ptr<ZrtpConfigure> config;      // empty shared pointer, no own configuration
+        tx.initialize("test_t.zid", true, config);
 
         tx.setSchedulingTimeout(10000);
         tx.setExpireTimeout(1000000);
@@ -270,7 +274,8 @@ public:
     doTest() {
         ExtZrtpSession rx(pattern.getSsrc()+1, pattern.getReceiverAddress(), pattern.getReceiverPort());
 
-        rx.initialize("test_r.zid");
+        std::shared_ptr<ZrtpConfigure> config;      // empty shared pointer, no own configuration
+        rx.initialize("test_r.zid", true, config);
 
         rx.setSchedulingTimeout(10000);
         rx.setExpireTimeout(1000000);
@@ -468,7 +473,7 @@ ZrtpSendPacketTransmissionTestCB : public Thread, public TimerPort
 {
 public:
 
-    ZrtpConfigure config;
+    shared_ptr<ZrtpConfigure> config = std::make_shared<ZrtpConfigure>();
 
     void run() {
         doTest();
@@ -478,32 +483,32 @@ public:
         // should be valid?
         //RTPSession tx();
         ExtZrtpSession tx(/*pattern.getSsrc(),*/ pattern.getSenderAddress(), pattern.getSenderPort());
-        config.clear();
+        config->clear();
 //        config.setStandardConfig();
 //         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));
 //         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));
 
         // This ordering prefers NIST
-        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
-        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));
+        config->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
+        config->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));
 
-        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC25"));
-        config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E255"));
+        config->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC25"));
+        config->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E255"));
 
-        config.addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
-        config.addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN3"));
+        config->addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
+        config->addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN3"));
 
-        config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES3"));
-        config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS3"));
+        config->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES3"));
+        config->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS3"));
 
-        config.addAlgo(SasType, zrtpSasTypes.getByName("B256"));
+        config->addAlgo(SasType, zrtpSasTypes.getByName("B256"));
 
-        config.addAlgo(AuthLength, zrtpAuthLengths.getByName("HS32"));
-        config.addAlgo(AuthLength, zrtpAuthLengths.getByName("HS80"));
-        config.addAlgo(AuthLength, zrtpAuthLengths.getByName("SK32"));
-        config.addAlgo(AuthLength, zrtpAuthLengths.getByName("SK64"));
+        config->addAlgo(AuthLength, zrtpAuthLengths.getByName("HS32"));
+        config->addAlgo(AuthLength, zrtpAuthLengths.getByName("HS80"));
+        config->addAlgo(AuthLength, zrtpAuthLengths.getByName("SK32"));
+        config->addAlgo(AuthLength, zrtpAuthLengths.getByName("SK64"));
 
-        tx.initialize("test_t.zid", true, &config);
+        tx.initialize("test_t.zid", true, config);
         // At this point the Hello hash is available. See ZRTP specification
         // chapter 9.1 for further information when an how to use the Hello
         // hash.
@@ -554,7 +559,8 @@ class
 ZrtpRecvPacketTransmissionTestCB: public Thread
 {
 public:
-    ZrtpConfigure config;
+    shared_ptr<ZrtpConfigure> config = std::make_shared<ZrtpConfigure>();
+
 
     void run() {
         doTest();
@@ -562,23 +568,23 @@ public:
 
     int doTest() {
         ExtZrtpSession rx( /*pattern.getSsrc()+1,*/ pattern.getReceiverAddress(), pattern.getReceiverPort());
-        config.clear();
+        config->clear();
 //        config.setStandardConfig();
 //         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));
 
-         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));
-         config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
+         config->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));
+         config->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
 
-         config.addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
-         config.addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN3"));
+         config->addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
+         config->addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN3"));
 
 //          config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS3"));
 //          config.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES3"));
 
-        config.addAlgo(SasType, zrtpSasTypes.getByName("B256"));
+        config->addAlgo(SasType, zrtpSasTypes.getByName("B256"));
 
 
-        rx.initialize("test_r.zid", true, &config);
+        rx.initialize("test_r.zid", true, config);
         // At this point the Hello hash is available. See ZRTP specification
         // chapter 9.1 for further information when an how to use the Hello
         // hash.
