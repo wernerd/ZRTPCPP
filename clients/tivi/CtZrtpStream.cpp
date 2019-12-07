@@ -100,7 +100,6 @@ CtZrtpStream::CtZrtpStream():
     sdes(nullptr), supressCounter(0), srtpAuthErrorBurst(0), srtpReplayErrorBurst(0), srtpDecodeErrorBurst(0),
     zrtpCrcErrors(0), role(NoRole), errorInfoIndex(0), numErrorArrayWrap(0)
 {
-    synchLock = new CMutexClass();
 
     if (staticTimeoutProvider == nullptr) {
         staticTimeoutProvider = new TimeoutProvider<std::string, CtZrtpStream*>();
@@ -122,8 +121,6 @@ void CtZrtpStream::setSendCallback(CtZrtpSendCb* scb) {
 
 CtZrtpStream::~CtZrtpStream() {
     stopStream();
-    delete synchLock;
-    synchLock = nullptr;
 }
 
 void CtZrtpStream::stopStream() {
@@ -1201,14 +1198,6 @@ void CtZrtpStream::zrtpNotSuppOther() {
     if (zrtpUserCallback != nullptr) {
         zrtpUserCallback->onNewZrtpStatus(session, nullptr, index);
     }
-}
-
-void CtZrtpStream::synchEnter() {
-    synchLock->Lock();
-}
-
-void CtZrtpStream::synchLeave() {
-    synchLock->Unlock();
 }
 
 void CtZrtpStream::zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment  info) {

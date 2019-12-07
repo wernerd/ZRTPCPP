@@ -24,6 +24,7 @@
 
 #include <map>
 #include <vector>
+#include <mutex>
 
 #include <libzrtpcpp/ZrtpCallback.h>
 #include <libzrtpcpp/ZrtpSdesStream.h>
@@ -49,7 +50,6 @@ class CtZrtpCb;
 class CtZrtpSendCb;
 class CtZrtpSession;
 class ZrtpSdesStream;
-class CMutexClass;
 
 class __EXPORT CtZrtpStream: public ZrtpCallback  {
 
@@ -473,9 +473,9 @@ protected:
 
     void zrtpNotSuppOther() override;
 
-    void synchEnter() override;
+    void synchEnter() override { syncLock.lock(); }
 
-    void synchLeave() override;
+    void synchLeave() override {syncLock.unlock(); }
 
     void zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info) override;
 
@@ -518,7 +518,7 @@ private:
     uint32_t srtpDecodeErrorBurst;
     uint32_t zrtpCrcErrors;
 
-    CMutexClass *synchLock;
+    std::mutex syncLock;
 
     char mixAlgoName[20] = {'\0'};          //!< stores name in during getInfo() call
 

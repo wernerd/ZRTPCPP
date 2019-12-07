@@ -33,7 +33,7 @@
  */
 
 #include <list>
-#include <stdint.h>
+#include <cstdint>
 #include <memory>
 
 #include "clients/tivi/timeoutHelper/Thread.h"
@@ -115,12 +115,9 @@ public:
      */
     bool operator==(const TPRequest<TOCommand, TOSubscriber> &req)
     {
-        if (req.subscriber == subscriber &&
-            req.command == command &&
-            req.when_ms == when_ms) {
-            return true;
-        }
-        return false;
+        return req.subscriber == subscriber &&
+               req.command == command &&
+               req.when_ms == when_ms;
     }
 
 private:

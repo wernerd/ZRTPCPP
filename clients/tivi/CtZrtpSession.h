@@ -742,8 +742,8 @@ protected:
 
 
 private:
-    void synchEnter();
-    void synchLeave();
+    void syncEnter();
+    void syncLeave();
 
     CtZrtpStream* streams[AllStreams] = { nullptr };
     std::string  clientIdString;

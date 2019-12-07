@@ -88,7 +88,7 @@ int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidF
     int32_t ret = 1;
     CtZrtpStream *stream;
 
-    synchEnter();
+    syncEnter();
 
     std::shared_ptr<ZrtpConfigure> configOwn;
 
@@ -155,7 +155,7 @@ int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidF
 
     isReady = true;
 
-    synchLeave();
+    syncLeave();
     return ret;
 }
 
@@ -701,7 +701,7 @@ const char* CtZrtpSession::getZrtpEncapAttribute(streamName streamNm) {
     if (stream->isStopped)
         return nullptr;
 
-    return stream->getZrtpEncapAttribute();
+    return CtZrtpStream::getZrtpEncapAttribute();
 }
 
 void CtZrtpSession::setZrtpEncapAttribute(const char *attribute, streamName streamNm) {
@@ -748,10 +748,10 @@ void CtZrtpSession::cleanCache() {
 // TODO    getZidCacheInstance()->cleanup();
 }
 
-void CtZrtpSession::synchEnter() {
+void CtZrtpSession::syncEnter() {
     sessionLock.lock();
 }
 
-void CtZrtpSession::synchLeave() {
+void CtZrtpSession::syncLeave() {
     sessionLock.unlock();
 }
