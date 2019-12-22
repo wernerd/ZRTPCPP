@@ -167,6 +167,7 @@ if (NOT ANDROID)
             set(LIBS ${LIBS} ${SQLCIPHER_LDFLAGS})
             MESSAGE(STATUS "Using SQlCipher based ZRTP cache: ${SQLCIPHER_LIBRARIES} ${SQLCIPHER_LIBRARY_DIRS} ${SQLCIPHER_LDFLAGS}")
             add_definitions(-DSQL_CIPHER -DSQLITE_HAS_CODEC)
+            include_directories(${SQLCIPHER_INCLUDE_DIRS}) #update includes directory from pkg-config
         else()
             message(FATAL_ERROR "SQLCipher library not found")
         endif()
