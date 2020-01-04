@@ -69,12 +69,10 @@ private:
     static const InetHostAddress destinationAddress;
     static const uint16 destinationPort = 5002;
     static const uint32 packetsNumber = 10;
-    static const uint32 packetsSize = 12;
     static const unsigned char* data[];
 };
 
-const InetHostAddress PacketsPattern::destinationAddress =
-    InetHostAddress("localhost");
+const InetHostAddress PacketsPattern::destinationAddress = InetHostAddress("localhost");
 
 const unsigned char* PacketsPattern::data[] = {
     (unsigned char*)"0123456789\n",
