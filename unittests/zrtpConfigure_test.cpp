@@ -3,6 +3,7 @@
 //
 
 #include "gtest/gtest.h"
+#include "../logging/ZrtpLogging.h"
 #include "../zrtp/libzrtpcpp/ZrtpConfigure.h"
 
 using namespace std;
@@ -18,7 +19,7 @@ public:
 
     void SetUp() override {
         // code here will execute just before the test ensues
-        // LOGGER_INSTANCE setLogLevel(DEBUGGING);
+        LOGGER_INSTANCE setLogLevel(DEBUGGING);
     }
 
     void TearDown( ) override {
@@ -28,7 +29,7 @@ public:
 
     ~ZrtpConfigureTestFixture( ) override {
         // cleanup any pending stuff, but no exceptions allowed
-        // LOGGER_INSTANCE setLogLevel(VERBOSE);
+        LOGGER_INSTANCE setLogLevel(VERBOSE);
     }
 };
 
