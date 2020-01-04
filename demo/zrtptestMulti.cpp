@@ -20,27 +20,11 @@
 #include <zrtpccrtp.h>
 #include <libzrtpcpp/ZrtpUserCallback.h>
 #include <libzrtpcpp/ZrtpConfigure.h>
+#include <zrtp/libzrtpcpp/ZIDCacheFile.h>
 
 using namespace ost;
 using namespace std;
 using namespace GnuZrtpCodes;
-
-/* maybe should be by special define...
-static void hexdump(const char* title, const unsigned char *s, int l) {
-    int n=0;
-
-    if (s == NULL) return;
-
-    fprintf(stderr, "%s",title);
-    for( ; n < l ; ++n)
-    {
-        if((n%16) == 0)
-            fprintf(stderr, "\n%04x",n);
-        fprintf(stderr, " %02x",s[n]);
-    }
-    fprintf(stderr, "\n");
-}
-*/
 
 class PacketsPattern
 {
@@ -51,7 +35,7 @@ public:
         return destinationAddress;
     }
 
-    inline const tpport_t
+    inline tpport_t
     getDestinationPort() const
     {
         return destinationPort;
@@ -69,13 +53,13 @@ public:
         return 0xdeadbeef;
     }
 
-    const unsigned char*
+    static const unsigned char*
     getPacketData(uint32 i)
     {
         return data[i%2];
     }
 
-    const size_t
+    static size_t
     getPacketSize(uint32 i)
     {
         return strlen((char*)data[i%2]) + 1 ;
@@ -104,11 +88,11 @@ class ZrtpSendPacketTransmissionTestCB;
 class MyUserCallback;
 class MyUserCallbackMulti;
 
-static ZrtpRecvPacketTransmissionTestCB* zrxcb = NULL;
-static ZrtpSendPacketTransmissionTestCB* ztxcb = NULL;
+static ZrtpRecvPacketTransmissionTestCB* zrxcb = nullptr;
+static ZrtpSendPacketTransmissionTestCB* ztxcb = nullptr;
 
-static ZrtpRecvPacketTransmissionTestCB* zrxcbMulti = NULL;
-static ZrtpSendPacketTransmissionTestCB* ztxcbMulti = NULL;
+static ZrtpRecvPacketTransmissionTestCB* zrxcbMulti = nullptr;
+static ZrtpSendPacketTransmissionTestCB* ztxcbMulti = nullptr;
 
 static bool enroll = false;
 static bool mitm = false;
@@ -129,20 +113,19 @@ static bool signsas = false;
  * appropriate methods to deal with these triggers.
  */
 
-class
-            ZrtpSendPacketTransmissionTestCB : public Thread, public TimerPort {
+class ZrtpSendPacketTransmissionTestCB : public Thread, public TimerPort {
 
 private:
     SymmetricZRTPSession* tx;
     string multiParams;
     string prefix;
-    ZRtp* zrtpMaster;
+    ZRtp* zrtpMaster = nullptr;
 
 public:
 
-    ZrtpSendPacketTransmissionTestCB(): tx(NULL), multiParams("") {};
+    ZrtpSendPacketTransmissionTestCB(): tx(nullptr), multiParams("") {};
 
-    void run() {
+    void run() override {
         doTest();
     }
 
@@ -153,9 +136,8 @@ public:
     }
 
     void setMultiStrParams(string params, ZRtp * zrtpM) {
-        multiParams = params;
+        multiParams = move(params);
         zrtpMaster = zrtpM;
-        return;
     }
 };
 
@@ -167,12 +149,12 @@ private:
     SymmetricZRTPSession* rx;
     string multiParams;
     string prefix;
-    ZRtp* zrtpMaster;
+    ZRtp* zrtpMaster = nullptr;
 
 public:
-    ZrtpRecvPacketTransmissionTestCB(): rx(NULL), multiParams("") {};
+    ZrtpRecvPacketTransmissionTestCB(): rx(nullptr), multiParams("") {};
 
-    void run() {
+    void run() override {
         doTest();
     }
 
@@ -183,9 +165,8 @@ public:
     }
 
     void setMultiStrParams(string params, ZRtp *zrtpM) {
-        multiParams = params;
+        multiParams = move(params);
         zrtpMaster = zrtpM;
-        return;
     }
 };
 
@@ -214,7 +195,7 @@ protected:
     std::string prefix;
 
 public:
-    MyUserCallback(SymmetricZRTPSession* s): session(s), prefix("default: ") {
+    explicit MyUserCallback(SymmetricZRTPSession* s): session(s), prefix("default: ") {
 
         if (initialized) {
             return;
@@ -279,36 +260,36 @@ public:
         initialized = true;
     }
 
-    void showMessage(GnuZrtpCodes::MessageSeverity sev, int32_t subCode) {
+    void showMessage(GnuZrtpCodes::MessageSeverity sev, int32_t subCode) override {
         string* msg;
         uint8_t sasHash[32];
 
         if (sev == Info) {
             msg = infoMap[subCode];
-            if (msg != NULL) {
+            if (msg != nullptr) {
                 cout << prefix << *msg << endl;
             }
             // this sets up and starts off the multi-stream test
             if (subCode == InfoSecureStateOn) {
-                ZRtp* zrtpMaster = NULL;
+                ZRtp* zrtpMaster = nullptr;
                 std::string str;
-                if (zrxcbMulti != NULL) {
+                if (zrxcbMulti != nullptr) {
                     str = session->getMultiStrParams(&zrtpMaster);
                     zrxcbMulti->setMultiStrParams(str, zrtpMaster);
-                    fprintf(stderr, "Master (test r): %p\n", zrtpMaster);
+                    fprintf(stderr, "Master (test r): %p\n", static_cast<void*>(zrtpMaster));
                     zrxcbMulti->start();
                 }
-                if (ztxcbMulti != NULL) {
+                if (ztxcbMulti != nullptr) {
                     str = session->getMultiStrParams(&zrtpMaster);
                     ztxcbMulti->setMultiStrParams(str, zrtpMaster);
-                    fprintf(stderr, "Master (test t): %p\n", zrtpMaster);
+                    fprintf(stderr, "Master (test t): %p\n", static_cast<void*>(zrtpMaster));
                     ztxcbMulti->start();
                 }
                 if (sender) {
                     if (mitm && !enroll) {  // sender now acts as trusted PBX in normal mode, not in enrollement service
                         std::string render = session->getSasType();
-                        for (int i = 0; i < 32; i++) {
-                            sasHash[i] = 0;
+                        for (unsigned char & i : sasHash) {
+                            i = 0;
                         }
                         if (untrusted) {    // treat receiver as non-enrolled receiver
                             cout << prefix << "send SAS relay to non-enrolled receiver" << endl;
@@ -328,13 +309,13 @@ public:
         }
         if (sev == Warning) {
             msg = warningMap[subCode];
-            if (msg != NULL) {
+            if (msg != nullptr) {
                 cout << prefix << *msg << endl;
             }
         }
         if (sev == Severe) {
             msg = severeMap[subCode];
-            if (msg != NULL) {
+            if (msg != nullptr) {
                 cout << prefix << *msg << endl;
             }
         }
@@ -347,13 +328,13 @@ public:
                 cout << prefix << "Sent error packet: ";
             }
             msg = zrtpMap[subCode];
-            if (msg != NULL) {
+            if (msg != nullptr) {
                 cout << prefix << *msg << endl;
             }
         }
     }
 
-    void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity sev, int32_t subCode) {
+    void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity sev, int32_t subCode) override {
         string* msg;
         if (sev == ZrtpError) {
             if (subCode < 0) {  // received an error packet from peer
@@ -364,7 +345,7 @@ public:
                 cout << prefix << "Sent error packet: ";
             }
             msg = zrtpMap[subCode];
-            if (msg != NULL) {
+            if (msg != nullptr) {
                 cout << prefix << *msg << endl;
             }
         }
@@ -374,28 +355,28 @@ public:
         }
     }
 
-    void zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info) {
+    void zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info) override {
         string* msg = enrollMap[info];
         cout << prefix << *msg << endl;
         session->acceptEnrollment(true);
     }
 
-    void zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment info) {
+    void zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment info) override {
         string* msg = enrollMap[info];
         cout << prefix << *msg << endl;
     }
 
-    void secureOn(std::string cipher) {
+    void secureOn(std::string cipher) override {
         cout << prefix << "Using cipher:" << cipher << endl;
         cout << prefix << "peer hello hash: " << session->getPeerHelloHash() << endl;
     }
 
-    void showSAS(std::string sas, bool verified) {
+    void showSAS(std::string sas, bool verified) override {
         cout << prefix << "SAS is: " << sas << endl;
 
     }
 
-    void signSAS(uint8_t* sasHash) {
+    void signSAS(uint8_t* sasHash) override {
         cout << prefix << "SAS to sign" << endl;
         uint8_t sign[12];
         sign[0] = sasHash[0];
@@ -425,7 +406,7 @@ public:
         cout << prefix << "set signature data result: " << session->setSignatureData(sign, 12) << endl;
     }
 
-    bool checkSASSignature(uint8_t* sasHash) {
+    bool checkSASSignature(uint8_t* sasHash) override {
         cout << prefix << "check signature" << endl;
         const uint8_t* sign = session->getSignatureData();
         cout << prefix << "signature: " << sign << endl;
@@ -433,7 +414,7 @@ public:
     }
 
     void setPrefix(std::string p) {
-        prefix = p;
+        prefix = move(p);
     }
 };
 
@@ -450,26 +431,26 @@ class MyUserCallbackMulti: public MyUserCallback {
 
 public:
 
-    MyUserCallbackMulti(SymmetricZRTPSession* s): MyUserCallback(s) {
+    explicit MyUserCallbackMulti(SymmetricZRTPSession* s): MyUserCallback(s) {
     }
 
-    void showMessage(GnuZrtpCodes::MessageSeverity sev, int32_t subCode) {
+    void showMessage(GnuZrtpCodes::MessageSeverity sev, int32_t subCode) override {
         string* msg;
         if (sev == Info) {
             msg = infoMap[subCode];
-            if (msg != NULL) {
+            if (msg != nullptr) {
                 cout << prefix << *msg << endl;
             }
         }
         if (sev == Warning) {
             msg = warningMap[subCode];
-            if (msg != NULL) {
+            if (msg != nullptr) {
                 cout << prefix << *msg << endl;
             }
         }
         if (sev == Severe) {
             msg = severeMap[subCode];
-            if (msg != NULL) {
+            if (msg != nullptr) {
                 cout << prefix << *msg << endl;
             }
         }
@@ -482,24 +463,58 @@ public:
                 cout << prefix << "Sent error packet: ";
             }
             msg = zrtpMap[subCode];
-            if (msg != NULL) {
+            if (msg != nullptr) {
                 cout << prefix << *msg << endl;
             }
         }
     }
 };
 
+static std::shared_ptr<ZIDCache> zrtpCache = nullptr;
+
+static std::shared_ptr<ZIDCache>
+initCache(const char *zidFilename, std::shared_ptr<ZIDCache> cache) {
+    std::string fname;
+    if (!zidFilename) {
+        char *home = getenv("HOME");
+        std::string baseDir = (home) ? (std::string(home) + std::string("/."))
+                                     : std::string(".");
+        fname = baseDir + std::string("GNUZRTP.zid");
+        zidFilename = fname.c_str();
+    }
+
+    // Check if a cache is available.
+    // If yes and it has the same filename -> use it
+    // otherwise close file and open new cache file
+    if (cache) {
+        if (cache->getFileName() == zidFilename) {
+            return cache;
+        }
+        cache->close();
+        if (cache->open((char *)zidFilename) < 0) {
+            return std::shared_ptr<ZIDCache>();
+        }
+        return cache;
+    }
+
+    auto zf = std::make_shared<ZIDCacheFile>();
+    if (zf->open((char *)zidFilename) < 0) {
+        return std::shared_ptr<ZIDCache>();
+    }
+    return zf;
+}
+
 int ZrtpSendPacketTransmissionTestCB::doTest() {
 
-    ZrtpConfigure config;
+    std::shared_ptr<ZrtpConfigure> config;
 
     MyUserCallback* mcb;
     if (!multiParams.empty()) {
         tx = new SymmetricZRTPSession(pattern.getDestinationAddress(),
                                       pattern.getDestinationPort()+2+10);
 
-        //            tx->initialize("test_t.zid", true, &config);
-        tx->initialize("test_t.zid", true);
+        tx->initialize("test_t.zid", true, config);
+        // tx->initialize("test_t.zid", true);
         tx->setMultiStrParams(multiParams, zrtpMaster);
 
         prefix = "TX Multi: ";
@@ -514,8 +529,8 @@ int ZrtpSendPacketTransmissionTestCB::doTest() {
         }
 
         tx->setSignSas(signsas);
-//            tx->initialize("test_t.zid", true, &config);
-        tx->initialize("test_t.zid", true);
+        tx->initialize("test_t.zid", true, config);
+        // tx->initialize("test_t.zid", true);
 
         if (enroll)                     // act as PBX enrollement service
             tx->setEnrollmentMode(true);
@@ -563,8 +578,8 @@ int ZrtpSendPacketTransmissionTestCB::doTest() {
     uint32 i;
     for (i = 0; i < pattern.getPacketsNumber(); i++ ) {
         tx->putData(i*inc,
-                    pattern.getPacketData(i),
-                    pattern.getPacketSize(i));
+                    PacketsPattern::getPacketData(i),
+                    PacketsPattern::getPacketSize(i));
         cout << prefix << "Sent some data: " << i << endl;
         Thread::sleep(TimerPort::getTimer());
         TimerPort::incTimer(period);
@@ -578,15 +593,15 @@ int ZrtpSendPacketTransmissionTestCB::doTest() {
 
 int ZrtpRecvPacketTransmissionTestCB::doTest() {
 
-    ZrtpConfigure config;
+    std::shared_ptr<ZrtpConfigure> config;
 
     MyUserCallback* mcb;
     if (!multiParams.empty()) {
         rx = new SymmetricZRTPSession(pattern.getDestinationAddress(),
                                       pattern.getDestinationPort()+10);
 
-//            rx->initialize("test_r.zid", true, &config);
-        rx->initialize("test_r.zid", true);
+        rx->initialize("test_r.zid", true, config);
+        // rx->initialize("test_r.zid", true);
         rx->setMultiStrParams(multiParams, zrtpMaster);
 
         prefix = "RX Multi: ";
@@ -596,16 +611,27 @@ int ZrtpRecvPacketTransmissionTestCB::doTest() {
     else {
         rx = new SymmetricZRTPSession(pattern.getDestinationAddress(),
                                       pattern.getDestinationPort());
-        config.setStandardConfig();
+        auto zf = initCache("test_r.zid", zrtpCache);
+        if (!zf) {
+            return -1;
+        }
+        if (!zrtpCache) {
+            zrtpCache = zf;
+        }
+
+        config = std::make_shared<ZrtpConfigure>();
+        config->setZidCache(zf);
+        config->setStandardConfig();
+
 //        config.clear();
 //        config.addAlgo(SasType, zrtpSasTypes.getByName("B256"));
 
         if (enroll)
-            config.setTrustedMitM(true);                // allow a trusted MitM to start enrollment process
+            config->setTrustedMitM(true);                // allow a trusted MitM to start enrollment process
 
         rx->setSignSas(signsas);
 
-        rx->initialize("test_r.zid", true, &config);
+        rx->initialize("test_r.zid", true, config);
 //            rx->initialize("test_r.zid", true);
 
         prefix = "RX: ";
@@ -668,7 +694,7 @@ int main(int argc, char *argv[])
     char c;
 
     /* check args */
-    while (1) {
+    while (true) {
         c = getopt(argc, argv, "rsSmeu");
         if (c == -1) {
             break;
