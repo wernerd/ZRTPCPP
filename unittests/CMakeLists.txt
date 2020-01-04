@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.10)
 
 #######
-# Setup for ZrtpConfigure test using catch2 testframework
+# Setup for ZrtpConfigure test using google test framework
 #######
-set (configure_test_src
-        catchMain.cpp
-        zrtpConfigureTest.cpp
-        )
-add_executable(zrtpConfigure_test ${configure_test_src} )
-target_link_libraries(zrtpConfigure_test ${zrtplibName})
+
+add_executable(zrtpConfigure_test zrtpConfigure_test.cpp)
+target_link_libraries(zrtpConfigure_test gtest_main ${zrtplibName})
+
+add_executable(utility_test utility_test.cpp)
+target_link_libraries(utility_test gtest_main ${libName})
