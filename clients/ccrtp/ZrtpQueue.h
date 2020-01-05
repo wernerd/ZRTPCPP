@@ -800,7 +800,7 @@ public:
       *
       * @return the number of supported ZRTP protocol versions.
       */
-     int32_t getNumberSupportedVersions();
+     static int32_t getNumberSupportedVersions();
 
      /**
       * Get negotiated ZRTP protocol version.
@@ -900,23 +900,22 @@ private:
                          InetHostAddress network_address,
                          tpport_t transport_port);
 
-    ZRtp *zrtpEngine;
-    ZrtpUserCallback* zrtpUserCallback;
+    ZRtp *zrtpEngine = nullptr;
+    ZrtpUserCallback* zrtpUserCallback = nullptr;
 
     std::string clientIdString;
 
-    int32 secureParts;
-
     ost::Mutex synchLock;   // Mutex for ZRTP (used by ZrtpStateClass)
-    uint32 peerSSRC;
+
+    uint32 peerSSRC = 0;
     int32_t timeoutId = -1;
-    uint64 zrtpUnprotect;
-    bool enableZrtp;
-    bool started;
-    bool mitmMode;
-    bool signSas;
-    bool enableParanoidMode;
-    int16 senderZrtpSeqNo;
+    uint64 zrtpUnprotect = 0;
+    bool enableZrtp = false;
+    bool started = false;
+    bool mitmMode = false;
+    bool signSas = false;
+    bool enableParanoidMode = false;
+    int16 senderZrtpSeqNo = 1;
 
     static std::shared_ptr<ZIDCache> zrtpCache;     // All sessions should use the _same_ cache file
 
