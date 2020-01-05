@@ -31,7 +31,6 @@
 #include <srtp/SrtpHandler.h>
 
 #include <CtZrtpSession.h>
-#include <TiviTimeoutProvider.h>
 
 // Define sizer of internal buffers.
 // NOTE: ZRTP buffer is large. An application shall never use ZRTP protocol
@@ -81,8 +80,6 @@ protected:
 
     CtZrtpStream();
     friend class CtZrtpSession;
-    friend class TimeoutProvider<std::string, CtZrtpStream*>;
-
 
     ~CtZrtpStream() override;
     /**
@@ -517,6 +514,8 @@ private:
     uint32_t srtpReplayErrorBurst;
     uint32_t srtpDecodeErrorBurst;
     uint32_t zrtpCrcErrors;
+
+    int32_t timeoutId = -1;
 
     std::mutex syncLock;
 

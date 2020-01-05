@@ -37,7 +37,7 @@ option(SQLITE "Use SQLite DB as backend for ZRTP cache." OFF)
 option(SQLCIPHER "Use SQLCipher DB as backend for ZRTP cache." OFF)
 option(SDES "Include SDES when not building for CCRTP." OFF)
 option(AXO "Include Axolotl support when not building for CCRTP." OFF)
-option(TESTS "Generate Unit test which use Catch2 framework." OFF)
+option(TESTS "Generate Unit test." OFF)
 
 option(ANDROID "Generate Android makefiles (Android.mk)" OFF)
 option(JAVA "Generate Java support files (requires JDK and SWIG)" OFF)
@@ -177,7 +177,7 @@ endif()
 # necessary and required modules checked, ready to generate config.h in top-level build directory
 configure_file(config.h.cmake ${CMAKE_BINARY_DIR}/config.h)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -std=c++14 -g -O2 -fno-strict-aliasing -Wno-unknown-pragmas")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -std=c++17 -g -O2 -fno-strict-aliasing -Wno-unknown-pragmas")
 
 if(CMAKE_COMPILER_IS_GNUCXX)
     add_definitions(-DNEW_STDCPP)
@@ -186,6 +186,10 @@ endif()
 
 if (AXO)
     add_definitions(-DAXO_SUPPORT)
+endif()
+
+if (TESTS)
+    add_definitions(-DUNIT_TESTS)
 endif()
 
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
@@ -280,6 +284,7 @@ set(zrtp_src_no_cache
         ${CMAKE_SOURCE_DIR}/common/Utilities.cpp
         ${CMAKE_SOURCE_DIR}/common/Utilities.h
         ${CMAKE_SOURCE_DIR}/common/typedefs.h
+        ${CMAKE_SOURCE_DIR}/common/ZrtpTimeoutProvider.h
         ${CMAKE_SOURCE_DIR}/logging/Logger.cpp
         ${CMAKE_SOURCE_DIR}/logging/ZrtpLogging.cpp
         ${CMAKE_SOURCE_DIR}/logging/logger_config.h

@@ -28,8 +28,10 @@
 #include <libzrtpcpp/ZrtpStateClass.h>
 #include <libzrtpcpp/ZrtpUserCallback.h>
 #include <zrtp/libzrtpcpp/ZIDCacheFile.h>
+#include <common/ZrtpTimeoutProvider.h>
+#include "../logging/ZrtpLogging.h"
 
-static TimeoutProvider<std::string, ost::ZrtpQueue*>* staticTimeoutProvider = nullptr;
+static zrtp::ZrtpTimeoutProvider *staticTimeoutProvider = nullptr;
 
 NAMESPACE_COMMONCPP
 using namespace GnuZrtpCodes;
@@ -140,8 +142,7 @@ ZrtpQueue::initialize(const char *zidFilename, bool autoEnable, std::shared_ptr<
     configOwn->setParanoidMode(enableParanoidMode);
 
     if (staticTimeoutProvider == nullptr) {
-        staticTimeoutProvider = new TimeoutProvider<std::string, ZrtpQueue*>();
-        staticTimeoutProvider->start();
+        staticTimeoutProvider = new zrtp::ZrtpTimeoutProvider();
     }
     const uint8_t* ownZidFromCache = configOwn->getZidCache()->getZid();
 
@@ -606,26 +607,30 @@ void ZrtpQueue::srtpSecretsOff(EnableSecurity part) {
 }
 
 int32_t ZrtpQueue::activateTimer(int32_t time) {
-    std::string s("ZRTP");
     if (staticTimeoutProvider != NULL) {
-        staticTimeoutProvider->requestTimeout(time, this, s);
+        if (timeoutId != -1) {
+            staticTimeoutProvider->removeTimer(timeoutId);
+        }
+        timeoutId = staticTimeoutProvider->addTimer(time, 0x776469, [this](uint64_t) {
+            timeoutId = -1;
+            if (zrtpEngine != NULL) {
+                zrtpEngine->processTimeout();
+            }
+        });
     }
     return 1;
 }
 
 int32_t ZrtpQueue::cancelTimer() {
-    std::string s("ZRTP");
-    if (staticTimeoutProvider != NULL) {
-        staticTimeoutProvider->cancelRequest(this, s);
+    if (staticTimeoutProvider != NULL && timeoutId >= 0) {
+        staticTimeoutProvider->removeTimer(timeoutId);
+        timeoutId = -1;
     }
     return 1;
 }
 
-void ZrtpQueue::handleTimeout(const std::string &c) {
-    if (zrtpEngine != NULL) {
-        zrtpEngine->processTimeout();
-    }
-}
+// Timeout handling now in lambda, see `activateTimer` above
+void ZrtpQueue::handleTimeout(const std::string &c) { (void) c; }   // NOLINT
 
 void ZrtpQueue::handleGoClear()
 {

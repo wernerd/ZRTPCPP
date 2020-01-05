@@ -247,10 +247,10 @@ void ZrtpStateClass::evDetect() {
         /*
          * Hello:
          * - send HelloAck packet to acknowledge the received Hello packet if versions match.
-         *   Otherweise negotiate ZRTP versions.
+         *   Otherwise negotiate ZRTP versions.
          * - use received Hello packet to prepare own Commit packet. We need to
          *   do it at this point because we need the hash value computed from
-         *   peer's Hello packet. Follwing states my use the prepared Commit.
+         *   peer's Hello packet. Following states my use the prepared Commit.
          * - switch to new state AckSent which sends own Hello packet until 
          *   peer acknowledges this
          * - Don't clear sentPacket, points to Hello

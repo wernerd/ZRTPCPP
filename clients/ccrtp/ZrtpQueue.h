@@ -22,7 +22,6 @@
 #include <ccrtp/rtppkt.h>
 #include <libzrtpcpp/ZrtpCallback.h>
 #include <libzrtpcpp/ZrtpConfigure.h>
-#include "CcrtpTimeoutProvider.h"
 
 class __EXPORT ZrtpUserCallback;
 class __EXPORT ZRtp;
@@ -811,8 +810,6 @@ public:
      int32_t getCurrentProtocolVersion();
 
 protected:
-    friend class TimeoutProvider<std::string, ost::ZrtpQueue*>;
-
     /**
      * A hook that gets called if the decoding of an incoming SRTP
      * was erroneous
@@ -908,18 +905,18 @@ private:
 
     std::string clientIdString;
 
-    bool enableZrtp;
-
     int32 secureParts;
 
-    int16 senderZrtpSeqNo;
     ost::Mutex synchLock;   // Mutex for ZRTP (used by ZrtpStateClass)
     uint32 peerSSRC;
+    int32_t timeoutId = -1;
     uint64 zrtpUnprotect;
+    bool enableZrtp;
     bool started;
     bool mitmMode;
     bool signSas;
     bool enableParanoidMode;
+    int16 senderZrtpSeqNo;
 
     static std::shared_ptr<ZIDCache> zrtpCache;     // All sessions should use the _same_ cache file
 

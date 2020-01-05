@@ -66,7 +66,6 @@ endif()
 
 set(zrtp_ccrtp_src
         ${CMAKE_CURRENT_SOURCE_DIR}/ZrtpQueue.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/CcrtpTimeoutProvider.h
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtpccrtp.h)
 
 set(zrtpcpp_src ${zrtp_src} ${zrtp_ccrtp_src} ${crypto_src} ${cryptcommon_srcs})
@@ -107,7 +106,7 @@ configure_file(${CMAKE_SOURCE_DIR}/libzrtpcpp.spec.cmake ${CMAKE_CURRENT_BINARY_
 set(ccrtp_inst
     ${CMAKE_CURRENT_SOURCE_DIR}/ZrtpQueue.h
     ${CMAKE_CURRENT_SOURCE_DIR}/zrtpccrtp.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/CcrtpTimeoutProvider.h)
+        )
 
 install(FILES
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCodes.h

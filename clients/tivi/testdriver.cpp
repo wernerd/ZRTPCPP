@@ -37,21 +37,6 @@ struct sockaddr_in adr_clnt;
 socklen_t lenClnt;          // length
 int s;                       // Socket
 
-//static void hexdump(const char* title, const unsigned char *s, int l)
-//{
-//    int n=0;
-//
-//    if (s == nullptr) return;
-//
-//    fprintf(stderr, "%s",title);
-//    for( ; n < l ; ++n) {
-//        if((n%16) == 0)
-//            fprintf(stderr, "\n%04x",n);
-//        fprintf(stderr, " %02x",s[n]);
-//    }
-//    fprintf(stderr, "\n");
-//}
-
 static void displayError(const char *what) {
     fprintf(stderr, "Error: %s: %s\n", strerror(errno), what);
     exit(1);

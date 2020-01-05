@@ -31,9 +31,9 @@
 
 #include <CtZrtpStream.h>
 #include <CtZrtpCallback.h>
-#include <TiviTimeoutProvider.h>
 #include <cryptcommon/aes.h>
 #include <cryptcommon/ZrtpRandom.h>
+#include <common/ZrtpTimeoutProvider.h>
 
 // #define DEBUG_CTSTREAM
 #ifdef DEBUG_CTSTREAM
@@ -52,7 +52,7 @@ void checkRemoteAxoIdKey(const string user, const string devId, const string pub
 int getCallInfo(int iCallID, const char *key, char *p, int iMax);
 #endif
 
-static TimeoutProvider<std::string, CtZrtpStream*>* staticTimeoutProvider = nullptr;
+static zrtp::ZrtpTimeoutProvider *staticTimeoutProvider = nullptr;
 
 static std::map<int32_t, std::string*> infoMap;
 static std::map<int32_t, std::string*> warningMap;
@@ -102,8 +102,7 @@ CtZrtpStream::CtZrtpStream():
 {
 
     if (staticTimeoutProvider == nullptr) {
-        staticTimeoutProvider = new TimeoutProvider<std::string, CtZrtpStream*>();
-        staticTimeoutProvider->Event(&staticTimeoutProvider);  // Event argument is dummy, not used
+        staticTimeoutProvider = new zrtp::ZrtpTimeoutProvider;
     }
     initStrings();
     ZrtpRandom::getRandomData((uint8_t*)&senderZrtpSeqNo, 2);
@@ -1036,26 +1035,30 @@ void CtZrtpStream::srtpSecretsOff(EnableSecurity part) {
 }
 
 int32_t CtZrtpStream::activateTimer(int32_t time) {
-    std::string s("ZRTP");
-    if (staticTimeoutProvider != nullptr) {
-        staticTimeoutProvider->requestTimeout(time, this, s);
+    if (staticTimeoutProvider != NULL) {
+        if (timeoutId != -1) {
+            staticTimeoutProvider->removeTimer(timeoutId);
+        }
+        timeoutId = staticTimeoutProvider->addTimer(time, 0x776469, [this](uint64_t) {
+            timeoutId = -1;
+            if (zrtpEngine != NULL) {
+                zrtpEngine->processTimeout();
+            }
+        });
     }
     return 1;
 }
 
 int32_t CtZrtpStream::cancelTimer() {
-    std::string s("ZRTP");
-    if (staticTimeoutProvider != nullptr) {
-        staticTimeoutProvider->cancelRequest(this, s);
+    if (staticTimeoutProvider != NULL && timeoutId >= 0) {
+        staticTimeoutProvider->removeTimer(timeoutId);
+        timeoutId = -1;
     }
     return 1;
 }
 
-void CtZrtpStream::handleTimeout(const std::string &c) {
-    if (zrtpEngine != nullptr) {
-        zrtpEngine->processTimeout();
-    }
-}
+// Timeout handling now in lambda, see `activateTimer` above
+void CtZrtpStream::handleTimeout(const std::string &c) { (void) c; }   // NOLINT
 
 void CtZrtpStream::handleGoClear() {
     fprintf(stderr, "Need to process a GoClear message!\n");

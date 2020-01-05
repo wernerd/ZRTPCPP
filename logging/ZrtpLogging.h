@@ -37,7 +37,7 @@ limitations under the License.
  */
 
 #ifndef LOG_MAX_LEVEL
-#define LOG_MAX_LEVEL WARNING
+#define LOG_MAX_LEVEL VERBOSE
 #endif
 
 #define LOGGER_INSTANCE _globalLogger->

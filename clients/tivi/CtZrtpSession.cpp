@@ -30,7 +30,6 @@
 #include <CtZrtpCallback.h>
 #include <CtZrtpSession.h>
 
-#include <clients/tivi/timeoutHelper/Thread.h>
 #include <zrtp/libzrtpcpp/ZIDCacheDb.h>
 
 static std::mutex sessionLock;
