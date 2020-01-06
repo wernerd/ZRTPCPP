@@ -19,7 +19,7 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <stdint.h>
+#include <cinttypes>
 
 #include <common/osSpecifics.h>
 
@@ -78,7 +78,7 @@ static void (*_zrtp_log_cb)(void *ret, const char *tag, const char *buf) = nullp
 static void *pLogRet=nullptr;
 
 // this function must be public. Tivi C++ code set its internal log function
-void set_zrtp_log_cb(void *pRet, void (*cb)(void *ret, const char *tag, const char *buf)){
+void set_zrtp_log_cb(void *pRet, void (*cb)(void *, const char *, const char *)) {
     _zrtp_log_cb=cb;
     pLogRet=pRet;
 }
@@ -465,27 +465,21 @@ int CtZrtpStream::isSecure() {
 }
 
 
-#define T_ZRTP_LB(_K,_V)                                \
-        if(iLen+1 == sizeof(_K) && strncmp(key, _K, iLen) == 0){  \
+#define T_ZRTP_LB(_K,_V)                                               \
+        if(iLen+1 == sizeof(_K) && strncmp(key, _K, iLen) == 0) {      \
             return snprintf(p, maxLen, "%s", _V);}
 
-#define T_ZRTP_F(_K,_FV)                                                \
-        if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0){              \
+#define T_ZRTP_F(_K,_FV)                                               \
+        if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0) {       \
             return snprintf(p, maxLen, "%d", (!!(info->secretsCached & _FV)) << (!!(info->secretsMatchedDH & _FV)));}
 
 #define T_ZRTP_I(_K,_I)                                                \
-        if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0){              \
+        if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0) {       \
             return snprintf(p, maxLen, "%d", _I);}
 
-#if __WORDSIZE == 64
 #define T_ZRTP_L(_K,_I)                                                \
-        if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0){              \
-            return snprintf(p, maxLen, "%lld", _I);}
-#else
-#define T_ZRTP_L(_K,_I)                                                \
-        if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0){              \
-            return snprintf(p, maxLen, "%lld", _I);}
-#endif
+        if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0) {       \
+            return snprintf(p, maxLen, "%" PRId64, _I);}
 
 int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
 
@@ -499,7 +493,7 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
     int iLen = strlen(key);
 
     // set the security state as a combination of tivi state and stateflags
-    u_int secState = tiviState & 0xffU;
+    uint32_t secState = static_cast<uint32_t>(tiviState) & 0xffU;
     if (useSdesForMedia)
         secState |= 0x100U;
 
@@ -985,10 +979,8 @@ void CtZrtpStream::srtpSecretsOn(std::string cipher, std::string sas, bool verif
     if (cipher.find ("SASviaMitM", cipher.size() - 10, 10) != std::string::npos) { // Found: SAS via PBX
         tiviState = CtZrtpSession::eSecureMitmVia;  //eSecureMitmVia
     }
-    else if (cipher.find ("MitM", cipher.size() - 4, 4) != std::string::npos) {
-        tiviState = CtZrtpSession::eSecureMitm;
-    }
-    else if (cipher.find ("EndAtMitM", cipher.size() - 9, 9) != std::string::npos) {
+    else if ((cipher.find ("MitM", cipher.size() - 4, 4) != std::string::npos) ||
+             (cipher.find ("EndAtMitM", cipher.size() - 9, 9) != std::string::npos)) {
         tiviState = CtZrtpSession::eSecureMitm;
     }
     sasVerified = verified;
@@ -1035,13 +1027,13 @@ void CtZrtpStream::srtpSecretsOff(EnableSecurity part) {
 }
 
 int32_t CtZrtpStream::activateTimer(int32_t time) {
-    if (staticTimeoutProvider != NULL) {
+    if (staticTimeoutProvider != nullptr) {
         if (timeoutId != -1) {
             staticTimeoutProvider->removeTimer(timeoutId);
         }
         timeoutId = staticTimeoutProvider->addTimer(time, 0x776469, [this](uint64_t) {
             timeoutId = -1;
-            if (zrtpEngine != NULL) {
+            if (zrtpEngine != nullptr) {
                 zrtpEngine->processTimeout();
             }
         });
@@ -1050,15 +1042,12 @@ int32_t CtZrtpStream::activateTimer(int32_t time) {
 }
 
 int32_t CtZrtpStream::cancelTimer() {
-    if (staticTimeoutProvider != NULL && timeoutId >= 0) {
+    if (staticTimeoutProvider != nullptr && timeoutId >= 0) {
         staticTimeoutProvider->removeTimer(timeoutId);
         timeoutId = -1;
     }
     return 1;
 }
-
-// Timeout handling now in lambda, see `activateTimer` above
-void CtZrtpStream::handleTimeout(const std::string &c) { (void) c; }   // NOLINT
 
 void CtZrtpStream::handleGoClear() {
     fprintf(stderr, "Need to process a GoClear message!\n");

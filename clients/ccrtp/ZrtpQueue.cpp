@@ -29,7 +29,10 @@
 #include <libzrtpcpp/ZrtpUserCallback.h>
 #include <zrtp/libzrtpcpp/ZIDCacheFile.h>
 #include <common/ZrtpTimeoutProvider.h>
+#include "../logging/ZrtpLogging.h"
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
 static zrtp::ZrtpTimeoutProvider *staticTimeoutProvider = nullptr;
 
 NAMESPACE_COMMONCPP
@@ -608,14 +611,16 @@ void ZrtpQueue::srtpSecretsOff(EnableSecurity part) {
 int32_t ZrtpQueue::activateTimer(int32_t time) {
     if (staticTimeoutProvider != nullptr) {
         if (timeoutId != -1) {
+            LOGGER(ERROR_LOG, "Duplicate timeout detected, old timeout removed: ", timeoutId)
             staticTimeoutProvider->removeTimer(timeoutId);
         }
-        timeoutId = staticTimeoutProvider->addTimer(time, 0x776469, [this](uint64_t) {
-            timeoutId = -1;
-            if (zrtpEngine != nullptr) {
-                zrtpEngine->processTimeout();
-            }
-        });
+        timeoutId = staticTimeoutProvider->addTimer(time, 0x776469,
+                [this](uint64_t) {
+                    timeoutId = -1;
+                    if (zrtpEngine != nullptr) {
+                        zrtpEngine->processTimeout();
+                    }
+                });
     }
     return 1;
 }
@@ -627,9 +632,6 @@ int32_t ZrtpQueue::cancelTimer() {
     }
     return 1;
 }
-
-// Timeout handling now in lambda, see `activateTimer` above
-void ZrtpQueue::handleTimeout(const std::string &c) { (void) c; }   // NOLINT
 
 void ZrtpQueue::handleGoClear()
 {
@@ -655,11 +657,11 @@ void ZrtpQueue::zrtpNotSuppOther() {
 }
 
 void ZrtpQueue::synchEnter() {
-    synchLock.enter();
+    syncLock.lock();
 }
 
 void ZrtpQueue::synchLeave() {
-    synchLock.leave();
+    syncLock.unlock();
 }
 
 void ZrtpQueue::zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment  info) {
@@ -779,7 +781,7 @@ uint8_t const * ZrtpQueue::getSasHash() {
         return nullptr;
 }
 
-bool ZrtpQueue::sendSASRelayPacket(uint8_t* sh, std::string render) {
+bool ZrtpQueue::sendSASRelayPacket(uint8_t* sh, std::string const &render) {
 
     if (zrtpEngine != nullptr)
         return zrtpEngine->sendSASRelayPacket(sh, render);
@@ -895,3 +897,5 @@ END_NAMESPACE
  * End:
  */
 
+
+#pragma clang diagnostic pop

@@ -82,12 +82,6 @@ protected:
     friend class CtZrtpSession;
 
     ~CtZrtpStream() override;
-    /**
-     * Handle timeout event forwarded by the TimeoutProvider.
-     *
-     * Just call the ZRTP engine for further processing.
-     */
-    void handleTimeout(const std::string &c);
 
     /**
      * Set the application's callback class.
@@ -161,7 +155,7 @@ protected:
      * @return 1: success, 0: not an error but drop packet, -1: SRTP authentication failed,
      *            -2: SRTP replay check failed
      */
-    int32_t processIncomingRtp(uint8_t* buffer, const size_t length, size_t* newLength);
+    int32_t processIncomingRtp(uint8_t* buffer, size_t length, size_t* newLength);
 
     /**
      * @brief Get the ZRTP Hello hash to be used for signaling
@@ -527,7 +521,7 @@ private:
     int32_t errorInfoIndex;
     uint32_t numErrorArrayWrap;
 
-    void initStrings();
+    static void initStrings();
     
     SrtpErrorData* srtpErrorElement();
 };
