@@ -138,7 +138,7 @@ public:
      * @param suite defines which crypto suite to use for this stream. The values are
      *              @c AES_CM_128_HMAC_SHA1_80 or @c AES_CM_128_HMAC_SHA1_32.
      */
-    ZrtpSdesStream(const sdesSuites suite =AES_CM_128_HMAC_SHA1_32);
+    explicit ZrtpSdesStream(sdesSuites suite =AES_CM_128_HMAC_SHA1_32);
 
     ~ZrtpSdesStream();
 
@@ -326,7 +326,7 @@ public:
      *       - -1: SRTP authentication failed,
      *       - -2: SRTP replay check failed
      */
-    int incomingRtp(uint8_t *packet, size_t length, size_t *newLength, SrtpErrorData* errorData=NULL);
+    int incomingRtp(uint8_t *packet, size_t length, size_t *newLength, SrtpErrorData* errorData= nullptr);
 
     /**
      * @brief Process an incoming RTCP or SRTCP packet
@@ -384,7 +384,7 @@ public:
      *       - -1: SRTP authentication failed,
      *       - -2: SRTP replay check failed
      */
-    int incomingZrtpTunnel(uint8_t *packet, size_t length, size_t *newLength, SrtpErrorData* errorData=NULL);
+    int incomingZrtpTunnel(uint8_t *packet, size_t length, size_t *newLength, SrtpErrorData* errorData=nullptr);
 
         /**
      * @brief Return state of SDES stream.
@@ -523,7 +523,7 @@ private:
 
     sdesZrtpStates state;
     sdesSuites     suite;
-    int32_t        tag;
+    int32_t        tag = 0;
     CryptoContext     *recvSrtp;           //!< The SRTP context for this stream
     CryptoContextCtrl *recvSrtcp;          //!< The SRTCP context for this stream
     CryptoContext     *sendSrtp;           //!< The SRTP context for this stream
@@ -537,21 +537,21 @@ private:
     sdesHmacTypeMix cryptoMixHashType;
 
     // Variables for crypto that this client creates and sends to the other client, filled during SDES create
-    uint8_t localKeySalt[((MAX_KEY_LEN + MAX_SALT_LEN + 3)/4)*4];  //!< Some buffer for key and salt, multiple of 4
-    uint32_t localKeyLenBytes;
-    uint32_t localSaltLenBytes;
-    uint32_t localCipher;
-    uint32_t localAuthn;
-    uint32_t localAuthKeyLen;
-    uint32_t localTagLength;
+    uint8_t localKeySalt[((MAX_KEY_LEN + MAX_SALT_LEN + 3)/4)*4] {0};  //!< Some buffer for key and salt, multiple of 4
+    uint32_t localKeyLenBytes = 0;
+    uint32_t localSaltLenBytes = 0;
+    uint32_t localCipher = 0;
+    uint32_t localAuthn = 0;
+    uint32_t localAuthKeyLen = 0;
+    uint32_t localTagLength = 0;
 
     // Variables for crypto that this client receives from the other client, filled during SDES parse
-    uint8_t remoteKeySalt[((MAX_KEY_LEN + MAX_SALT_LEN + 3)/4)*4];  //!< Some buffer for key and salt, multiple of 4
-    uint32_t remoteKeyLenBytes;
-    uint32_t remoteSaltLenBytes;
-    uint32_t remoteCipher;
-    uint32_t remoteAuthn;
-    uint32_t remoteAuthKeyLen;
-    uint32_t remoteTagLength;
+    uint8_t remoteKeySalt[((MAX_KEY_LEN + MAX_SALT_LEN + 3)/4)*4] {0};  //!< Some buffer for key and salt, multiple of 4
+    uint32_t remoteKeyLenBytes = 0;
+    uint32_t remoteSaltLenBytes = 0;
+    uint32_t remoteCipher = 0;
+    uint32_t remoteAuthn = 0;
+    uint32_t remoteAuthKeyLen = 0;
+    uint32_t remoteTagLength = 0;
 };
 #endif

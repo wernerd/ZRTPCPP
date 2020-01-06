@@ -17,10 +17,6 @@ if (CCRTP)
     add_executable(zrtptestMulti zrtptestMulti.cpp)
     target_link_libraries(zrtptestMulti ${zrtplibName})
     add_dependencies(zrtptestMulti ${zrtplibName})
-else()
-    add_executable(sdestest sdestest.cpp)
-    target_link_libraries(sdestest ${zrtplibName})
-    add_dependencies(sdestest ${zrtplibName})
 endif()
 ########### next target ###############
 

@@ -17,3 +17,6 @@ target_link_libraries(utility_test gtest_main ${zrtplibName})
 
 add_executable(zrtpTimeout_test zrtpTimeout_test.cpp)
 target_link_libraries(zrtpTimeout_test gtest_main ${zrtplibName})
+
+add_executable(sdesRun_test sdesRun_test.cpp)
+target_link_libraries(sdesRun_test gtest_main ${zrtplibName})

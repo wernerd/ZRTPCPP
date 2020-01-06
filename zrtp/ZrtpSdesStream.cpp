@@ -15,12 +15,10 @@
  */
 
 #include <cstdio>
-#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 
 #include <string>
-#include <sstream>
 
 #include <libzrtpcpp/ZrtpSdesStream.h>
 #include <libzrtpcpp/ZrtpTextData.h>
@@ -131,10 +129,10 @@ typedef struct _suite {
 /* NOTE: the b64len of a 128 bit suite is 40, a 256bit suite uses 64 characters */
 static suiteParam knownSuites[] = {
     {ZrtpSdesStream::AES_CM_128_HMAC_SHA1_32, "AES_CM_128_HMAC_SHA1_32", 128, 112, 160,
-     hs32, "AES-128", 40, (uint64_t)1<<48, (uint64_t)1<<31
+     hs32, "AES-128", 40, (uint64_t)1<<48U, (uint64_t)1<<31U
     },
     {ZrtpSdesStream::AES_CM_128_HMAC_SHA1_80, "AES_CM_128_HMAC_SHA1_80", 128, 112, 160,
-     hs80, "AES-128", 40, (uint64_t)1<<48, (uint64_t)1<<31
+     hs80, "AES-128", 40, (uint64_t)1<<48U, (uint64_t)1<<31U
     },
     {(ZrtpSdesStream::sdesSuites)0, nullptr, 0, 0, 0, nullptr, nullptr, 0, 0, 0}
 };
@@ -235,8 +233,8 @@ bool ZrtpSdesStream::outgoingRtp(uint8_t *packet, size_t length, size_t *newLeng
         return true;
     }
     bool rc = SrtpHandler::protect(sendSrtp, packet, length, newLength);
-    if (rc)
-        ;//protect++;
+//    if (rc)
+//        ;//protect++;
     return rc;
 }
 
@@ -246,12 +244,12 @@ int ZrtpSdesStream::incomingRtp(uint8_t *packet, size_t length, size_t *newLengt
         return 1;
     }
     int32_t rc = SrtpHandler::unprotect(recvSrtp, packet, length, newLength, errorData);
-    if (rc == 1) {
-//            unprotect++
-    }
-    else {
-//            unprotectFailed++;
-    }
+//    if (rc == 1) {
+////            unprotect++
+//    }
+//    else {
+////            unprotectFailed++;
+//    }
     return rc;
 }
 
@@ -263,8 +261,8 @@ bool ZrtpSdesStream::outgoingZrtpTunnel(uint8_t *packet, size_t length, size_t *
         return true;
     }
     bool rc = SrtpHandler::protect(sendZrtpTunnel, packet, length, newLength);
-    if (rc)
-        ;//protect++;
+//    if (rc)
+//        ;//protect++;
     return rc;
 }
 
@@ -274,12 +272,12 @@ int ZrtpSdesStream::incomingZrtpTunnel(uint8_t *packet, size_t length, size_t *n
         return 1;
     }
     int32_t rc = SrtpHandler::unprotect(recvZrtpTunnel, packet, length, newLength, errorData);
-    if (rc == 1) {
-//            unprotect++
-    }
-    else {
-//            unprotectFailed++;
-    }
+//    if (rc == 1) {
+////            unprotect++
+//    }
+//    else {
+////            unprotectFailed++;
+//    }
     return rc;
 }
 
@@ -407,6 +405,7 @@ static int b64Encode(const uint8_t *binData, int32_t binLength, char *b64Data, i
 
 static int b64Decode(const char *b64Data, int32_t b64length, uint8_t *binData, int32_t binLength)
 {
+    (void)binLength;
     base64_decodestate _state = {};
     int codelength;
 
@@ -455,7 +454,7 @@ static int expand(uint8_t* prk, uint32_t prkLen, uint8_t* info, uint32_t infoLen
             data.push_back(info);
             dataLen.push_back(infoLen);
         }
-        counter = static_cast<uint8_t >(i & 0xff);
+        counter = static_cast<uint8_t >(i % 255);
         data.push_back(&counter);
         dataLen.push_back(1);
 
@@ -510,8 +509,6 @@ void ZrtpSdesStream::computeMixedKeys(bool sipInvite) {
             break;
 
         case MIX_MAC_SKEIN:
-            return;
-
         default:
             return;
     }

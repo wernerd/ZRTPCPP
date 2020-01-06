@@ -32,6 +32,9 @@
 
 #include <zrtp/libzrtpcpp/ZIDCacheDb.h>
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
+
 static std::mutex sessionLock;
 
 const char *getZrtpBuildInfo()
@@ -439,6 +442,7 @@ void CtZrtpSession::release(streamName streamNm) {
 }
 
 void CtZrtpSession::setLastPeerNameVerify(const char *name, int iIsMitm) {
+    (void) iIsMitm;
     CtZrtpStream *stream = streams[AudioStream];
 
     if (!isReady || !stream || stream->isStopped)
@@ -621,7 +625,7 @@ int CtZrtpSession::enrollDenied() {
 }
 
 void CtZrtpSession::setClientId(std::string id) {
-    clientIdString = id;
+    clientIdString = std::move(id);
 }
 
 bool CtZrtpSession::createSdes(char *cryptoString, size_t *maxLen, streamName streamNm, const sdesSuites suite) {
@@ -687,9 +691,7 @@ void CtZrtpSession::resetSdesContext(streamName streamNm, bool force) {
 int32_t CtZrtpSession::getNumberSupportedVersions(streamName streamNm) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return 0;
-
-    CtZrtpStream *stream = streams[streamNm];
-    return stream->getNumberSupportedVersions();
+    return CtZrtpStream::getNumberSupportedVersions();
 }
 
 const char* CtZrtpSession::getZrtpEncapAttribute(streamName streamNm) {
@@ -741,8 +743,6 @@ int32_t CtZrtpSession::getSrtpTraceData(SrtpErrorData* data, streamName streamNm
     return stream->getSrtpTraceData(data);
 }
 
-
-
 void CtZrtpSession::cleanCache() {
 // TODO    getZidCacheInstance()->cleanup();
 }
@@ -754,3 +754,5 @@ void CtZrtpSession::syncEnter() {
 void CtZrtpSession::syncLeave() {
     sessionLock.unlock();
 }
+
+#pragma clang diagnostic pop

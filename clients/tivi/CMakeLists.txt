@@ -137,11 +137,6 @@ add_executable(testdriver testdriver.cpp)
 target_link_libraries(testdriver ${zrtplibName})
 add_dependencies(testdriver ${zrtplibName})
 
-add_executable(sdesTestdriver sdesTestdriver.cpp)
-target_link_libraries(sdesTestdriver ${zrtplibName})
-add_dependencies(sdesTestdriver ${zrtplibName})
-
-
 # If Java support is enabled then compile the generate Java classes, build jar
 # and compile java test program after the shared lib is ready
 if(JAVA)
