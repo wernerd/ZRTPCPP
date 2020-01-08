@@ -28,23 +28,25 @@
 #include <condition_variable>
 #include "Utilities.h"
 
+using namespace std;
+
 namespace zrtp {
     class ZrtpTimeoutProvider {
 
         // Internal timer task data
         struct TimerTask {
-            TimerTask(int32_t i, int64_t t, int64_t d, std::function<void(int64_t)> f):
-                    id(i), timeToRun(t), data(d), cbFunction(std::move(f)){}
+            TimerTask(int32_t i, int64_t t, int64_t d, function<void(int64_t)> f):
+                    id(i), timeToRun(t), data(d), cbFunction(move(f)){}
             int32_t id;
             int64_t timeToRun;
             int64_t data;
-            std::function<void(int64_t)> cbFunction;
+            function<void(int64_t)> cbFunction;
         };
-        using TimerTaskPtr = std::unique_ptr<TimerTask>;
+        using TimerTaskPtr = unique_ptr<TimerTask>;
 
     public:
         ZrtpTimeoutProvider() {
-            timerThread = std::thread(&ZrtpTimeoutProvider::timerRun, this);
+            timerThread = thread(&ZrtpTimeoutProvider::timerRun, this);
         }
 
         ~ZrtpTimeoutProvider() {
@@ -60,39 +62,44 @@ namespace zrtp {
          * @param data Caller data, not interpreted or used by the timer tasks
          * @return positive number: id of the timer task or an error code (< 0)
          */
-        int32_t addTimer(int32_t relativeTime, int64_t data, const std::function<void(int64_t)>& cbFunction) {
-            return addTimer(Utilities::currentTimeMillis() + relativeTime, data, cbFunction);
+        int32_t addTimer(int32_t relativeTime, int64_t data, const function<void(int64_t)>& cbFunction) {
+            auto steadyTime = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now().time_since_epoch()).count();
+            relativeTime = (relativeTime > 0) ? relativeTime : 1;       // at least one millisecond, never negative
+
+            lock_guard<mutex> tl(tasksLock);
+
+            auto taskId = nextTaskId++;
+            nextTaskId %= INT32_MAX;
+
+            auto task = make_unique<TimerTask>(taskId, steadyTime + relativeTime, data, cbFunction);
+
+            if (tasks.empty()) {
+                tasks.push_front(move(task));
+            } else if (tasks.size() == 1) {
+                if (task->timeToRun >= tasks.front()->timeToRun) {
+                    tasks.push_back(move(task));
+                } else {
+                    tasks.push_front(move(task));
+                }
+            } else {
+                tasks.push_back(move(task));
+                tasks.sort([](const TimerTaskPtr &l, const TimerTaskPtr &r) { return l->timeToRun < r->timeToRun; });
+            }
+            waitForTasks.notify_all();
+            return taskId;
+
         }
 
         /**
-         * @brief Schedules the specified function for execution at specified time.
+         * @brief Schedules the function for execution at specified absolute time since the Unix epoch
          *
          * @param relativeTime Execute function at/after the specified time given in milli-seconds
          * @param data Caller data, not interpreted or used by the timer tasks
          * @return positive number: id of the timer task or an error code (< 0)
          */
-        int32_t addTimer(int64_t absoluteTime, int64_t data, const std::function<void(int64_t)>& cbFunction) {
-            std::lock_guard<std::mutex> tl(tasksLock);
-
-            auto taskId = nextTaskId++;
-            nextTaskId %= INT32_MAX;
-
-            auto task = std::make_unique<TimerTask>(taskId, absoluteTime, data, cbFunction);
-
-            if (tasks.empty()) {
-                tasks.push_front(std::move(task));
-            } else if (tasks.size() == 1) {
-                if (task->timeToRun >= tasks.front()->timeToRun) {
-                    tasks.push_back(std::move(task));
-                } else {
-                    tasks.push_front(std::move(task));
-                }
-            } else {
-                tasks.push_back(std::move(task));
-                tasks.sort([](const TimerTaskPtr &l, const TimerTaskPtr &r) { return l->timeToRun < r->timeToRun; });
-            }
-            waitForTasks.notify_all();
-            return taskId;
+        int32_t addTimer(int64_t absoluteTime, int64_t data, const function<void(int64_t)>& cbFunction) {
+            return addTimer(static_cast<int32_t >(absoluteTime - Utilities::currentTimeMillis()),
+                            data, cbFunction);
         }
 
         /**
@@ -101,7 +108,7 @@ namespace zrtp {
          * @param taskId Timer to remove
          */
         void removeTimer(int32_t taskId) {
-            std::lock_guard<std::mutex> tl(tasksLock);
+            lock_guard<mutex> tl(tasksLock);
 
             if (tasks.empty()) return;
             tasks.remove_if([&](const TimerTaskPtr &t) { return t->id == taskId; });
@@ -109,21 +116,21 @@ namespace zrtp {
         }
 
 #ifdef UNIT_TESTS
-        [[nodiscard]] const std::list<TimerTaskPtr >& getTasks() const { return tasks; }
+        [[nodiscard]] const list<TimerTaskPtr >& getTasks() const { return tasks; }
 #endif
     private:
         void timerRun() {
-            std::unique_lock runLock(tasksLock);
+            unique_lock runLock(tasksLock);
             while (runTimerThread) {
                 if (tasks.empty()) {
                     waitForTasks.wait(runLock);
                     continue;
                 }
-                auto current = Utilities::currentTimeMillis();
+                auto current = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now().time_since_epoch()).count();
 
                 if (current < tasks.front()->timeToRun) {
                     auto waitTime = tasks.front()->timeToRun - current;
-                    waitForTasks.wait_for(runLock, std::chrono::milliseconds(waitTime));
+                    waitForTasks.wait_for(runLock, chrono::milliseconds(waitTime));
                     continue;
                 }
                 if (tasks.empty()) continue;
@@ -135,12 +142,12 @@ namespace zrtp {
             }
         }
 
-        std::list<TimerTaskPtr > tasks;
-        std::mutex tasksLock;
+        list<TimerTaskPtr > tasks;
+        mutex tasksLock;
 
-        std::condition_variable waitForTasks;
+        condition_variable waitForTasks;
 
-        std::thread timerThread;
+        thread timerThread;
 
         int32_t nextTaskId = 1;
         bool runTimerThread = true;
