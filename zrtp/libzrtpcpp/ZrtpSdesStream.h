@@ -82,12 +82,10 @@
  * 
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
+#include <memory>
 
 #include <common/osSpecifics.h>
 #include <srtp/SrtpHandler.h>
-
-class CryptoContext;
-class CryptoContextCtrl;
 
 /*
  * These functions support 256 bit encryption algorithms.
@@ -140,14 +138,7 @@ public:
      */
     explicit ZrtpSdesStream(sdesSuites suite =AES_CM_128_HMAC_SHA1_32);
 
-    ~ZrtpSdesStream();
-
-    /**
-     * @brief Close an SDES/ZRTP stream.
-     *
-     * Close the stream and return allocated memory to the pool.
-     */
-    void close();
+    ~ZrtpSdesStream() = default;
 
     /**
      * @brief Creates an SDES crypto string for the SDES/ZRTP stream.
@@ -291,7 +282,7 @@ public:
      *  - @c true if encryption is successful, app shall send packet to the recipient.
      *  - @c false if there was an error during encryption, don't send the packet.
      */
-    bool outgoingRtcp(uint8_t *packet, size_t length, size_t *newLength);
+    // ** currently not used ** bool outgoingRtcp(uint8_t *packet, size_t length, size_t *newLength);
 
     /*
      * ******** Incoming SRTP/SRTCP packet handling
@@ -345,7 +336,7 @@ public:
      *       - -1: SRTCP authentication failed,
      *       - -2: SRTCP replay check failed
      */
-    int incomingSrtcp(uint8_t *packet, size_t length, size_t *newLength);
+    // *** Currently not used *** int incomingSrtcp(uint8_t *packet, size_t length, size_t *newLength);
 
     /**
      * @brief Process an outgoing ZRTP packet.
@@ -520,21 +511,20 @@ private:
      */
     void computeMixedKeys(bool sipInvite);
 
+    std::unique_ptr<CryptoContext    > recvSrtp;           //!< The SRTP context for this stream
+//    std::unique_ptr<CryptoContextCtrl> recvSrtcp;          //!< The SRTCP context for this stream
+    std::unique_ptr<CryptoContext    > sendSrtp;           //!< The SRTP context for this stream
+//    std::unique_ptr<CryptoContextCtrl> sendSrtcp;          //!< The SRTCP context for this stream
+    std::unique_ptr<CryptoContext    > recvZrtpTunnel;     //!< The SRTP context for sender ZRTP tunnel
+    std::unique_ptr<CryptoContext    > sendZrtpTunnel;     //!< The SRTP context for receiver ZRTP tunnel
 
-    sdesZrtpStates state;
+    sdesZrtpStates state = STREAM_INITALIZED;
     sdesSuites     suite;
     int32_t        tag = 0;
-    CryptoContext     *recvSrtp;           //!< The SRTP context for this stream
-    CryptoContextCtrl *recvSrtcp;          //!< The SRTCP context for this stream
-    CryptoContext     *sendSrtp;           //!< The SRTP context for this stream
-    CryptoContextCtrl *sendSrtcp;          //!< The SRTCP context for this stream
-    uint32_t srtcpIndex;                   //!< the local SRTCP index
 
-    CryptoContext     *recvZrtpTunnel;     //!< The SRTP context for sender ZRTP tunnel
-    CryptoContext     *sendZrtpTunnel;     //!< The SRTP context for receiver ZRTP tunnel
-
-    uint32_t cryptoMixHashLength;
-    sdesHmacTypeMix cryptoMixHashType;
+    uint32_t srtcpIndex = 0;               //!< the local SRTCP index
+    uint32_t cryptoMixHashLength = 0;
+    sdesHmacTypeMix cryptoMixHashType = MIX_NONE;
 
     // Variables for crypto that this client creates and sends to the other client, filled during SDES create
     uint8_t localKeySalt[((MAX_KEY_LEN + MAX_SALT_LEN + 3)/4)*4] {0};  //!< Some buffer for key and salt, multiple of 4

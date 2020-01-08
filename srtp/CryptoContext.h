@@ -26,20 +26,19 @@
 
 #define REPLAY_WINDOW_SIZE 128
 
-const int SrtpAuthenticationNull      = 0;
-const int SrtpAuthenticationSha1Hmac  = 1;
-const int SrtpAuthenticationSkeinHmac = 2;
-
-const int SrtpEncryptionNull  = 0;
-const int SrtpEncryptionAESCM = 1;
-const int SrtpEncryptionAESF8 = 2;
-const int SrtpEncryptionTWOCM = 3;
-const int SrtpEncryptionTWOF8 = 4;
+constexpr int SrtpAuthenticationNull      = 0;
+constexpr int SrtpAuthenticationSha1Hmac  = 1;
+constexpr int SrtpAuthenticationSkeinHmac = 2;
+constexpr int SrtpEncryptionNull  = 0;
+constexpr int SrtpEncryptionAESCM = 1;
+constexpr int SrtpEncryptionAESF8 = 2;
+constexpr int SrtpEncryptionTWOCM = 3;
+constexpr int SrtpEncryptionTWOF8 = 4;
 
 // Check if included via CryptoContextCtrl.cpp - avoid double definitions
 #ifndef CRYPTOCONTEXTCTRL_H
 
-#include <stdint.h>
+#include <cstdint>
 #ifdef ZRTP_OPENSSL
 #include <openssl/hmac.h>
 #endif
@@ -212,8 +211,8 @@ public:
      */
     CryptoContext(uint32_t ssrc, int32_t roc,
                    int64_t  keyDerivRate,
-                   const  int32_t ealg,
-                   const  int32_t aalg,
+                   int32_t ealg,
+                   int32_t aalg,
                    uint8_t* masterKey,
                    int32_t  masterKeyLength,
                    uint8_t* masterSalt,
@@ -249,7 +248,7 @@ public:
      *
      * @return The roll-over-counter
      */
-    inline uint32_t getRoc() const { return roc; }
+    [[nodiscard]] inline uint32_t getRoc() const { return roc; }
 
     /**
      * @brief Perform SRTP encryption.
@@ -287,14 +286,14 @@ public:
      * @param pktlen
      *    Length of the RTP packet buffer
      *
-     * @param roc
+     * @param rocLocal
      *    The 32 bit SRTP roll-over-counter.
      *
      * @param tag
      *    Points to a buffer that hold the computed tag. This buffer must
      *    be able to hold <code>tagLength</code> bytes.
      */
-    void srtpAuthenticate(uint8_t* pkt, uint32_t pktlen, uint32_t roc, uint8_t* tag);
+    void srtpAuthenticate(uint8_t* pkt, uint32_t pktlen, uint32_t rocLocal, uint8_t* tag);
 
     /**
      * @brief Perform key derivation according to SRTP specification
@@ -359,21 +358,21 @@ public:
      *
      * @return the length of the authentication tag.
      */
-    int32_t getTagLength() const { return tagLength; }
+    [[nodiscard]] int32_t getTagLength() const { return tagLength; }
 
     /**
      * @brief Get the length of the MKI in bytes.
      *
      * @return the length of the MKI.
      */
-    int32_t getMkiLength() const { return mkiLength; }
+    [[nodiscard]] int32_t getMkiLength() const { return mkiLength; }
 
     /**
      * @brief Get the SSRC of this SRTP Cryptograhic context.
      *
      * @return the SSRC.
      */
-    uint32_t getSsrc() const { return ssrcCtx; }
+    [[nodiscard]] uint32_t getSsrc() const { return ssrcCtx; }
 
     /**
      * @brief Set the start (base) number to compute the PRF labels.
@@ -406,14 +405,14 @@ public:
      *
      * @param ssrc
      *     The SSRC for this context
-     * @param roc
+     * @param rocLocal
      *     The Roll-Over-Counter for this context, usually 0
      * @param keyDerivRate
      *     The key derivation rate for this context, usally 0
      * @return
      *     a new CryptoContext with all relevant data set.
      */
-    CryptoContext* newCryptoContextForSSRC(uint32_t ssrc, int roc, int64_t keyDerivRate);
+    CryptoContext* newCryptoContextForSSRC(uint32_t ssrc, int rocLocal, int64_t keyDerivRate);
 
 private:
     typedef union _hmacCtx {
@@ -436,7 +435,7 @@ private:
     int64_t  key_deriv_rate;
 
     /* bitmask for replay check */
-    uint64_t replay_window[2];
+    uint64_t replay_window[2] = {0, 0};
 
     uint8_t* master_key;
     uint32_t master_key_length;
@@ -461,7 +460,7 @@ private:
     bool  seqNumSet;
 
     void*   macCtx;
-    HmacCtx hmacCtx;
+    HmacCtx hmacCtx{};
 
     SrtpSymCrypto* cipher;
     SrtpSymCrypto* f8Cipher;

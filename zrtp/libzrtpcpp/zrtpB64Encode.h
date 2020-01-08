@@ -9,6 +9,7 @@ For details, see http://sourceforge.net/projects/libb64
 #define BASE64_CENCODE_H
 
 #include <stdint.h>
+#include <zconf.h>
 
 #if defined(__cplusplus)
 extern "C"
@@ -30,9 +31,7 @@ typedef struct
 
 void base64_init_encodestate(base64_encodestate* state_in, int lineLength);
 
-char base64_encode_value(int8_t value_in);
-
-int base64_encode_block(const uint8_t *plaintext_in, int length_in, char* code_out, base64_encodestate* state_in);
+ptrdiff_t base64_encode_block(const uint8_t *plaintext_in, int length_in, char* code_out, base64_encodestate* state_in);
 
 int base64_encode_blockend(char *code_out, base64_encodestate* state_in);
 #if defined(__cplusplus)

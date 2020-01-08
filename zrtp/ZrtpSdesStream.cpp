@@ -137,35 +137,7 @@ static suiteParam knownSuites[] = {
     {(ZrtpSdesStream::sdesSuites)0, nullptr, 0, 0, 0, nullptr, nullptr, 0, 0, 0}
 };
 
-ZrtpSdesStream::ZrtpSdesStream(const sdesSuites s) :
-    state(STREAM_INITALIZED), suite(s), recvSrtp(nullptr), recvSrtcp(nullptr), sendSrtp(nullptr),
-    sendSrtcp(nullptr), srtcpIndex(0), recvZrtpTunnel(nullptr), sendZrtpTunnel(nullptr), cryptoMixHashLength(0),
-    cryptoMixHashType(MIX_NONE)  {
-}
-
-ZrtpSdesStream::~ZrtpSdesStream() {
-    close();
-}
-
-void ZrtpSdesStream::close() {
-    delete sendSrtp;
-    sendSrtp = nullptr;
-
-    delete recvSrtp;
-    recvSrtp = nullptr;
-
-    delete sendSrtcp;
-    sendSrtp = nullptr;
-
-    delete recvSrtcp;
-    recvSrtp = nullptr;
-
-    delete recvZrtpTunnel;
-    recvZrtpTunnel = nullptr;
-
-    delete sendZrtpTunnel;
-    sendZrtpTunnel = nullptr;
-}
+ZrtpSdesStream::ZrtpSdesStream(const sdesSuites s) : suite(s) { }
 
 bool ZrtpSdesStream::createSdes(char *cryptoString, size_t *maxLen, bool sipInvite) {
 
@@ -232,7 +204,7 @@ bool ZrtpSdesStream::outgoingRtp(uint8_t *packet, size_t length, size_t *newLeng
         *newLength = length;
         return true;
     }
-    bool rc = SrtpHandler::protect(sendSrtp, packet, length, newLength);
+    bool rc = SrtpHandler::protect(sendSrtp.get(), packet, length, newLength);
 //    if (rc)
 //        ;//protect++;
     return rc;
@@ -243,7 +215,7 @@ int ZrtpSdesStream::incomingRtp(uint8_t *packet, size_t length, size_t *newLengt
         *newLength = length;
         return 1;
     }
-    int32_t rc = SrtpHandler::unprotect(recvSrtp, packet, length, newLength, errorData);
+    int32_t rc = SrtpHandler::unprotect(recvSrtp.get(), packet, length, newLength, errorData);
 //    if (rc == 1) {
 ////            unprotect++
 //    }
@@ -260,7 +232,7 @@ bool ZrtpSdesStream::outgoingZrtpTunnel(uint8_t *packet, size_t length, size_t *
         *newLength = length;
         return true;
     }
-    bool rc = SrtpHandler::protect(sendZrtpTunnel, packet, length, newLength);
+    bool rc = SrtpHandler::protect(sendZrtpTunnel.get(), packet, length, newLength);
 //    if (rc)
 //        ;//protect++;
     return rc;
@@ -271,7 +243,7 @@ int ZrtpSdesStream::incomingZrtpTunnel(uint8_t *packet, size_t length, size_t *n
         *newLength = length;
         return 1;
     }
-    int32_t rc = SrtpHandler::unprotect(recvZrtpTunnel, packet, length, newLength, errorData);
+    int32_t rc = SrtpHandler::unprotect(recvZrtpTunnel.get(), packet, length, newLength, errorData);
 //    if (rc == 1) {
 ////            unprotect++
 //    }
@@ -282,30 +254,31 @@ int ZrtpSdesStream::incomingZrtpTunnel(uint8_t *packet, size_t length, size_t *n
 }
 
 
-
-bool ZrtpSdesStream::outgoingRtcp(uint8_t *packet, size_t length, size_t *newLength) {
-#if 0
-SrtpHandler::protectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t length, size_t* newLength, uint32_t *srtcpIndex)
-#endif
-    return false;
-}
-
-int ZrtpSdesStream::incomingSrtcp(uint8_t *packet, size_t length, size_t *newLength) {
-#if 0
-int32_t SrtpHandler::unprotectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t length, size_t* newLength)
-#endif
-    return 0;
-}
+// ***
+// *** Currently not used, may be enabled if necessary (add tests!)
+// ***
+//bool ZrtpSdesStream::outgoingRtcp(uint8_t *packet, size_t length, size_t *newLength) {
+//#if 0
+//SrtpHandler::protectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t length, size_t* newLength, uint32_t *srtcpIndex)
+//#endif
+//    (void)packet, (void) length, (void) *newLength;
+//    return false;
+//}
+//
+//int ZrtpSdesStream::incomingSrtcp(uint8_t *packet, size_t length, size_t *newLength) {
+//#if 0
+//int32_t SrtpHandler::unprotectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t length, size_t* newLength)
+//#endif
+//    (void)packet, (void) length, (void) *newLength;
+//    return 0;
+//}
 
 const char* ZrtpSdesStream::getCipher() {
     return knownSuites[suite].cipher;
 }
 
 const char* ZrtpSdesStream::getAuthAlgo() {
-    if (strcmp(knownSuites[suite].tagLength, hs80) == 0)
-        return "HMAC-SHA1 80 bit";
-    else
-        return "HMAC-SHA1 32 bit";
+    return (strcmp(knownSuites[suite].tagLength, hs80) == 0) ? "HMAC-SHA1 80 bit" : "HMAC-SHA1 32 bit";
 }
 
 size_t ZrtpSdesStream::getCryptoMixAttribute(char *algoNames, size_t length) {
@@ -391,27 +364,26 @@ static int _random(unsigned char *output, size_t len)
 }
 #endif
 
-static int b64Encode(const uint8_t *binData, int32_t binLength, char *b64Data, int32_t b64Length)
+static ptrdiff_t b64Encode(const uint8_t *binData, int32_t binLength, char *b64Data, int32_t b64Length)
 {
+    (void)b64Length;
     base64_encodestate _state = {};
-    int codelength;
 
     base64_init_encodestate(&_state, 0);
-    codelength = base64_encode_block(binData, binLength, b64Data, &_state);
-    codelength += base64_encode_blockend(b64Data+codelength, &_state);
+    auto codeLength = base64_encode_block(binData, binLength, b64Data, &_state);
+    codeLength += base64_encode_blockend(b64Data+codeLength, &_state);
 
-    return codelength;
+    return codeLength;
 }
 
-static int b64Decode(const char *b64Data, int32_t b64length, uint8_t *binData, int32_t binLength)
+static ptrdiff_t b64Decode(const char *b64Data, int32_t b64length, uint8_t *binData, int32_t binLength)
 {
     (void)binLength;
     base64_decodestate _state = {};
-    int codelength;
 
     base64_init_decodestate(&_state);
-    codelength = base64_decode_block(b64Data, b64length, binData, &_state);
-    return codelength;
+    auto codeLength = base64_decode_block(b64Data, b64length, binData, &_state);
+    return codeLength;
 }
 
 void* createSha384HmacContext(const uint8_t* key, uint64_t keyLength);
@@ -546,7 +518,7 @@ void ZrtpSdesStream::createSrtpContexts(bool sipInvite) {
         computeMixedKeys(sipInvite);
     }
 
-    sendSrtp = new CryptoContext(0,                     // SSRC (used for lookup)
+    sendSrtp = std::make_unique<CryptoContext>(0,                     // SSRC (used for lookup)
                                  0,                     // Roll-Over-Counter (ROC)
                                  0L,                    // keyderivation << 48,
                                  localCipher,                // encryption algo
@@ -561,7 +533,7 @@ void ZrtpSdesStream::createSrtpContexts(bool sipInvite) {
                                  localTagLength);            // authentication tag len
     sendSrtp->deriveSrtpKeys(0L);
 
-    sendZrtpTunnel = new CryptoContext(0,                     // SSRC (used for lookup)
+    sendZrtpTunnel = std::make_unique<CryptoContext>(0,                     // SSRC (used for lookup)
                                  0,                     // Roll-Over-Counter (ROC)
                                  0L,                    // keyderivation << 48,
                                  localCipher,                // encryption algo
@@ -579,7 +551,7 @@ void ZrtpSdesStream::createSrtpContexts(bool sipInvite) {
     sendZrtpTunnel->deriveSrtpKeys(0L);
     memset(localKeySalt, 0, sizeof(localKeySalt));
 
-    recvSrtp = new CryptoContext(0,                     // SSRC (used for lookup)
+    recvSrtp = std::make_unique<CryptoContext>(0,                     // SSRC (used for lookup)
                                  0,                     // Roll-Over-Counter (ROC)
                                  0L,                    // keyderivation << 48,
                                  remoteCipher,                // encryption algo
@@ -594,7 +566,7 @@ void ZrtpSdesStream::createSrtpContexts(bool sipInvite) {
                                  remoteTagLength);            // authentication tag len
     recvSrtp->deriveSrtpKeys(0L);
 
-    recvZrtpTunnel = new CryptoContext(0,                     // SSRC (used for lookup)
+    recvZrtpTunnel = std::make_unique<CryptoContext>(0,                     // SSRC (used for lookup)
                                  0,                     // Roll-Over-Counter (ROC)
                                  0L,                    // keyderivation << 48,
                                  remoteCipher,                // encryption algo
@@ -654,10 +626,6 @@ bool ZrtpSdesStream::createSdesProfile(char *cryptoString, size_t *maxLen) {
 }
 
 bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length, sdesSuites *parsedSuite, int32_t *outTag) {
-    int elements,  i;
-    int charsScanned;
-    int mkiLength = 0;
-    uint32_t sidx;
 
     char cryptoString[MAX_CRYPT_STRING_LEN+1] = {'\0'};
 
@@ -677,12 +645,14 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
     memcpy(cryptoString, cryptoStr, length);   // make own copy, null terminated
 
     *outTag = -1;
-    elements = sscanf(cryptoString, parseCrypto, outTag, suiteName, keyParams, &charsScanned);
+    int charsScanned = 0;
+    auto elements = sscanf(cryptoString, parseCrypto, outTag, suiteName, keyParams, &charsScanned);
 
     if (elements < minElementsCrypto) {        // Do we have enough elements in the string
         return false;
     }
 
+    uint32_t sidx;
     for (sidx = 0; knownSuites[sidx].name != nullptr; sidx++) {  // Lookup crypto suite
         if (!strcmp(knownSuites[sidx].name, suiteName))
             break;
@@ -694,6 +664,7 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
     *parsedSuite = pSuite->suite;
 
     /* Now scan the key parameters */
+    int mkiLength = 0;
     elements = sscanf(keyParams, parseKeyParam, keySaltB64, lifetime, mkiVal, &mkiLength);
 
     if (elements != minElementsKeyParam) {     // Currently we only accept key||salt B64 string, no other parameters 
@@ -706,9 +677,9 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
     if (strlen(keySaltB64) != pSuite->b64length) {  // Check if key||salt B64 string hast the correct length
         return false;
     }
-    i = b64Decode(keySaltB64, pSuite->b64length, remoteKeySalt, remoteKeyLenBytes + remoteSaltLenBytes);
+    auto decoded = b64Decode(keySaltB64, pSuite->b64length, remoteKeySalt, remoteKeyLenBytes + remoteSaltLenBytes);
 
-    if (i != (remoteKeyLenBytes + remoteSaltLenBytes)) {  // Did the B64 decode delivered enough data for key||salt
+    if (decoded != (remoteKeyLenBytes + remoteSaltLenBytes)) {  // Did the B64 decode delivered enough data for key||salt
         return false;
     }
 

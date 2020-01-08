@@ -19,9 +19,8 @@
 
 #include <cstdint>
 #include <libzrtpcpp/ZrtpCodes.h>
-
-class CryptoContext;
-class CryptoContextCtrl;
+#include "CryptoContext.h"
+#include "CryptoContextCtrl.h"
 
 /**
  * @brief SRTP and SRTCP protect and unprotect functions.
