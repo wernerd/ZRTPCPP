@@ -2221,10 +2221,10 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord)
 }
 
 
-void ZRtp::KDF(uint8_t* key, size_t keyLength, uint8_t* label, size_t labelLength,
+void ZRtp::KDF(uint8_t* key, size_t keyLength, char const * label, size_t labelLength,
                uint8_t* context, size_t contextLength, size_t L, uint8_t* output) {
 
-    std::vector<const uint8_t*>data(5);
+    std::vector<uint8_t const *>data(5);
     std::vector<uint64_t> length(5);
     uint32_t macLen = 0;
 
@@ -2235,7 +2235,7 @@ void ZRtp::KDF(uint8_t* key, size_t keyLength, uint8_t* label, size_t labelLengt
     length.push_back(sizeof(uint32_t));
 
     // Next element is the label, null terminated, labelLength includes null byte.
-    data.push_back(label);
+    data.push_back(reinterpret_cast<uint8_t const *>(label));
     length.push_back(labelLength);
 
     // Next is the KDF context
@@ -2268,7 +2268,7 @@ void ZRtp::generateKeysMultiStream() {
     }
     memcpy(KDFcontext+sizeof(ownZid)+sizeof(peerZid), messageHash, hashLength);
 
-    KDF(zrtpSession, hashLength, (unsigned char*)zrtpMsk, strlen(zrtpMsk)+1, KDFcontext, kdfSize, hashLength*8, s0);
+    KDF(zrtpSession, hashLength, zrtpMsk, strlen(zrtpMsk)+1, KDFcontext, kdfSize, hashLength*8, s0);
 
     memset(KDFcontext, 0, sizeof(KDFcontext));
 
@@ -2317,36 +2317,36 @@ void ZRtp::computeSRTPKeys() {
     memcpy(KDFcontext+sizeof(ownZid)+sizeof(peerZid), messageHash, hashLength);
 
     // Initiator key and salt
-    KDF(s0, hashLength, (unsigned char*)iniMasterKey, strlen(iniMasterKey)+1, KDFcontext, kdfSize, keyLen, srtpKeyI);
-    KDF(s0, hashLength, (unsigned char*)iniMasterSalt, strlen(iniMasterSalt)+1, KDFcontext, kdfSize, 112, srtpSaltI);
+    KDF(s0, hashLength, iniMasterKey, strlen(iniMasterKey)+1, KDFcontext, kdfSize, keyLen, srtpKeyI);
+    KDF(s0, hashLength, iniMasterSalt, strlen(iniMasterSalt)+1, KDFcontext, kdfSize, 112, srtpSaltI);
 
     // Responder key and salt
-    KDF(s0, hashLength, (unsigned char*)respMasterKey, strlen(respMasterKey)+1, KDFcontext, kdfSize, keyLen, srtpKeyR);
-    KDF(s0, hashLength, (unsigned char*)respMasterSalt, strlen(respMasterSalt)+1, KDFcontext, kdfSize, 112, srtpSaltR);
+    KDF(s0, hashLength, respMasterKey, strlen(respMasterKey)+1, KDFcontext, kdfSize, keyLen, srtpKeyR);
+    KDF(s0, hashLength, respMasterSalt, strlen(respMasterSalt)+1, KDFcontext, kdfSize, 112, srtpSaltR);
 
     // The HMAC keys for GoClear
-    KDF(s0, hashLength, (unsigned char*)iniHmacKey, strlen(iniHmacKey)+1, KDFcontext, kdfSize, hashLength*8, hmacKeyI);
-    KDF(s0, hashLength, (unsigned char*)respHmacKey, strlen(respHmacKey)+1, KDFcontext, kdfSize, hashLength*8, hmacKeyR);
+    KDF(s0, hashLength, iniHmacKey, strlen(iniHmacKey)+1, KDFcontext, kdfSize, hashLength*8, hmacKeyI);
+    KDF(s0, hashLength, respHmacKey, strlen(respHmacKey)+1, KDFcontext, kdfSize, hashLength*8, hmacKeyR);
 
     // The keys for Confirm messages
-    KDF(s0, hashLength, (unsigned char*)iniZrtpKey, strlen(iniZrtpKey)+1, KDFcontext, kdfSize, keyLen, zrtpKeyI);
-    KDF(s0, hashLength, (unsigned char*)respZrtpKey, strlen(respZrtpKey)+1, KDFcontext, kdfSize, keyLen, zrtpKeyR);
+    KDF(s0, hashLength, iniZrtpKey, strlen(iniZrtpKey)+1, KDFcontext, kdfSize, keyLen, zrtpKeyI);
+    KDF(s0, hashLength, respZrtpKey, strlen(respZrtpKey)+1, KDFcontext, kdfSize, keyLen, zrtpKeyR);
 
     detailInfo.pubKey = detailInfo.sasType = nullptr;
     if (!multiStream) {
         // Compute the new Retained Secret
-        KDF(s0, hashLength, (unsigned char*)retainedSec, strlen(retainedSec)+1, KDFcontext, kdfSize, SHA256_DIGEST_LENGTH*8, newRs1);
+        KDF(s0, hashLength, retainedSec, strlen(retainedSec)+1, KDFcontext, kdfSize, SHA256_DIGEST_LENGTH*8, newRs1);
 
         // Compute the ZRTP Session Key
-        KDF(s0, hashLength, (unsigned char*)zrtpSessionKey, strlen(zrtpSessionKey)+1, KDFcontext, kdfSize, hashLength*8, zrtpSession);
+        KDF(s0, hashLength, zrtpSessionKey, strlen(zrtpSessionKey)+1, KDFcontext, kdfSize, hashLength*8, zrtpSession);
 
         // Compute the exported Key
-        KDF(s0, hashLength, (unsigned char*)zrtpExportedKey, strlen(zrtpExportedKey)+1, KDFcontext, kdfSize, hashLength*8, zrtpExport);
+        KDF(s0, hashLength, zrtpExportedKey, strlen(zrtpExportedKey)+1, KDFcontext, kdfSize, hashLength*8, zrtpExport);
         // perform  generation according to chapter 5.5 and 8.
-        // we don't need a speciai sasValue filed. sasValue are the first
+        // we don't need a special sasValue filed. sasValue are the first
         // (leftmost) 32 bits (4 bytes) of sasHash
         uint8_t sasBytes[4];
-        KDF(s0, hashLength, (unsigned char*)sasString, strlen(sasString)+1, KDFcontext, kdfSize, SHA256_DIGEST_LENGTH*8, sasHash);
+        KDF(s0, hashLength, sasString, strlen(sasString)+1, KDFcontext, kdfSize, SHA256_DIGEST_LENGTH*8, sasHash);
 
         // according to chapter 8 only the leftmost 20 bits of sasValue (aka
         //  sasHash) are used to create the character SAS string of type SAS

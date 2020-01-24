@@ -25,6 +25,7 @@
 
 #include <cstdlib>
 
+#include <common/SecureArray.h>
 #include <libzrtpcpp/ZrtpPacketHello.h>
 #include <libzrtpcpp/ZrtpPacketHelloAck.h>
 #include <libzrtpcpp/ZrtpPacketCommit.h>
@@ -1226,7 +1227,7 @@ private:
 
     void computeSRTPKeys();
 
-    void KDF(uint8_t* key, size_t keyLength, uint8_t* label, size_t labelLength,
+    void KDF(uint8_t* key, size_t keyLength, char const * label, size_t labelLength,
                uint8_t* context, size_t contextLength, size_t L, uint8_t* output);
 
     void generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord);

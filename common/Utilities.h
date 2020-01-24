@@ -20,12 +20,13 @@
 #include <cstring>
 
 #include "typedefs.h"
+#include "osSpecifics.h"
 
 namespace zrtp {
     /**
      * @brief Class with static helper functions only.
      */
-    class Utilities {
+    class __EXPORT Utilities {
 
     public:
 

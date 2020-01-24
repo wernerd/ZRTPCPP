@@ -272,7 +272,7 @@ return 0;
 
     // When creating a standalone (library) version of Logger then enable the __EXPORT attribute
     template<typename log_policy >
-    class /* __EXPORT */ Logger
+    class Logger
     {
         std::string getTime();
         std::string getLogLineHeader();

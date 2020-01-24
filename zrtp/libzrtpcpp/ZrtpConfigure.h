@@ -59,7 +59,7 @@ typedef void(*decrypt_t)(uint8_t*, int32_t, uint8_t*, uint8_t*, int32_t);
  *
  * An application shall use the get / check methods to retrieve information.
  */
-class AlgorithmEnum {
+class __EXPORT AlgorithmEnum {
 public:
     /**
      * Create an AlgorithmEnum object.
