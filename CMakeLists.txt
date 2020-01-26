@@ -307,10 +307,14 @@ set(bnlib_src
         ${CMAKE_SOURCE_DIR}/bnlib/ec/curve25519-donna.c)
 
 set(zrtp_skein_src
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skeinMac256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skeinMac384.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein384.cpp)
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein256.h
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein384.h
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skeinMac256.h
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skeinMac384.h
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/skeinMac256.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/skein256.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/skeinMac384.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/skein384.cpp)
 
 set(zrtp_crypto_includes
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/aesCFB.h
@@ -319,22 +323,19 @@ set(zrtp_crypto_includes
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha2.h
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha256.h
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha384.h
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein256.h
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein384.h
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.h
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/zrtpDH.h
         )
 
 set(zrtp_standalone_crypto_src
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/zrtpDH.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/hmac256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/hmac384.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha384.cpp
-
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/aesCFB.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha2.c
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/zrtpDH.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/hmac256.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/sha256.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/hmac384.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/sha384.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/aesCFB.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/twoCFB.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/sha2.c
         ${zrtp_crypto_includes})
 
 set(zrtp_src ${zrtp_src_no_cache}

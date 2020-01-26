@@ -79,7 +79,7 @@
 
 #include <string.h>     /* for memcpy() etc.        */
 
-#include "sha2.h"
+#include "zrtp/crypto/sha2.h"
 
 #include <cryptcommon/brg_endian.h>
 
