@@ -21,12 +21,10 @@
 #include <libzrtpcpp/ZrtpPacketDHPart.h>
 
 ZrtpPacketDHPart::ZrtpPacketDHPart() {
-    DEBUGOUT((fprintf(stdout, "Creating DHPart packet without data and pkt type\n")));
     initialize();
 }
 
-ZrtpPacketDHPart::ZrtpPacketDHPart(const char* pkt) {
-    DEBUGOUT((fprintf(stdout, "Creating DHPart packet without data\n")));
+ZrtpPacketDHPart::ZrtpPacketDHPart(char const * pkt) {
     initialize();
     setPubKeyType(pkt);
 }
@@ -44,7 +42,7 @@ void ZrtpPacketDHPart::initialize() {
 }
 
 // The fixed numbers below are taken from ZRTP specification, chap 5.1.5
-void ZrtpPacketDHPart::setPubKeyType(const char* pkt) {
+void ZrtpPacketDHPart::setPubKeyType(char const * pkt) {
     // Well - the algorithm type is only 4 char thus cast to int32 and compare
     if (*(int32_t*)pkt == *(int32_t*)dh2k) {
         dhLength = 256;
@@ -71,7 +69,7 @@ void ZrtpPacketDHPart::setPubKeyType(const char* pkt) {
     setLength(static_cast<uint16_t>(length / ZRTP_WORD_SIZE));
 }
 
-ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t *data) {
+ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t const * data) {
     zrtpHeader = &((DHPartPacket_t *)data)->hdr;  // the standard header
     DHPartHeader = &((DHPartPacket_t *)data)->dhPart;
 
@@ -98,5 +96,5 @@ ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t *data) {
         pv = nullptr;
         return;
     }
-    pv = data + sizeof(DHPartPacket_t);    // point to the public key value
+    pv = const_cast<uint8_t*>(data + sizeof(DHPartPacket_t));    // point to the public key value
 }

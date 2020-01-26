@@ -44,71 +44,71 @@ class __EXPORT ZrtpPacketDHPart : public ZrtpPacketBase {
     ZrtpPacketDHPart();
 
     /// Creates a DHPart packet with default data and a give public key type
-    explicit ZrtpPacketDHPart(const char* pkt);
+    explicit ZrtpPacketDHPart(char const * pkt);
 
     /// Creates a DHPart packet from received data
-    explicit ZrtpPacketDHPart(uint8_t* data);
+    explicit ZrtpPacketDHPart(uint8_t const * data);
 
     /// Standard destructor
     ~ZrtpPacketDHPart() override = default;
 
     /// Get pointer to public key value, variable length byte array
-    uint8_t* getPv()             { return pv; }
+    [[nodiscard]] uint8_t* getPv() const            { return pv; }
 
-    /// Get pointer to first retained secretd id, fixed length byte array
-    uint8_t* getRs1Id()          { return DHPartHeader->rs1Id; };
+    /// Get pointer to first retained secret id, fixed length byte array
+    [[nodiscard]] uint8_t* getRs1Id() const         { return DHPartHeader->rs1Id; };
 
     /// Get pointer to second retained secret id, fixed length byte array
-    uint8_t* getRs2Id()          { return DHPartHeader->rs2Id; };
+    [[nodiscard]] uint8_t* getRs2Id() const         { return DHPartHeader->rs2Id; };
 
     /// Get pointer to additional retained secret id, fixed length byte array
-    uint8_t* getAuxSecretId()    { return DHPartHeader->auxSecretId; };
+    [[nodiscard]] uint8_t* getAuxSecretId() const   { return DHPartHeader->auxSecretId; };
 
     /// Get pointer to PBX retained secret id, fixed length byte array
-    uint8_t* getPbxSecretId()    { return DHPartHeader->pbxSecretId; };
+    [[nodiscard]] uint8_t* getPbxSecretId() const   { return DHPartHeader->pbxSecretId; };
 
     /// Get pointer to first hash (H1) for hash chain, fixed length byte array
-    uint8_t* getH1()             { return DHPartHeader->hashH1; };
+    [[nodiscard]] uint8_t* getH1() const            { return DHPartHeader->hashH1; };
 
     /// Get pointer to HMAC, fixed length byte array
-    uint8_t* getHMAC()           { return pv+dhLength; };
+    [[nodiscard]] uint8_t* getHMAC() const          { return pv+dhLength; };
 
     /// Check if packet length makes sense. DHPart packets are 29 words at minumum, using E255
-    bool isLengthOk()            {return (getLength() >= 29);}
+    [[nodiscard]] bool isLengthOk() const           {return (getLength() >= 29);}
 
-    /// Setpublic key value, variable length byte array
-    void setPv(uint8_t* text)         { memcpy(pv, text, dhLength); };
+    /// Set public key value, variable length byte array
+    void setPv(uint8_t const * text)         { memcpy(pv, text, dhLength); };
 
     /// Set first retained secret id, fixed length byte array
-    void setRs1Id(uint8_t* text)      { memcpy(DHPartHeader->rs1Id, text, sizeof(DHPartHeader->rs1Id)); };
+    void setRs1Id(uint8_t const * text)      { memcpy(DHPartHeader->rs1Id, text, sizeof(DHPartHeader->rs1Id)); };
 
     /// Set second retained secret id, fixed length byte array
-    void setRs2Id(uint8_t* text)      { memcpy(DHPartHeader->rs2Id, text, sizeof(DHPartHeader->rs2Id)); };
+    void setRs2Id(uint8_t const * text)      { memcpy(DHPartHeader->rs2Id, text, sizeof(DHPartHeader->rs2Id)); };
 
     /// Set additional retained secret id, fixed length byte array
-    void setAuxSecretId(uint8_t* t)   { memcpy(DHPartHeader->auxSecretId, t, sizeof(DHPartHeader->auxSecretId)); };
+    void setAuxSecretId(uint8_t const * t)   { memcpy(DHPartHeader->auxSecretId, t, sizeof(DHPartHeader->auxSecretId)); };
 
     /// Set PBX retained secret id, fixed length byte array
-    void setPbxSecretId(uint8_t* t)   { memcpy(DHPartHeader->pbxSecretId,t, sizeof(DHPartHeader->pbxSecretId)); };
+    void setPbxSecretId(uint8_t const * t)   { memcpy(DHPartHeader->pbxSecretId,t, sizeof(DHPartHeader->pbxSecretId)); };
 
     /// Set first hash (H1) of hash chain, fixed length byte array
-    void setH1(uint8_t* t)            { memcpy(DHPartHeader->hashH1, t, sizeof(DHPartHeader->hashH1)); };
+    void setH1(uint8_t const * t)            { memcpy(DHPartHeader->hashH1, t, sizeof(DHPartHeader->hashH1)); };
 
     /// Set key agreement type, fixed size character array
-    void setPubKeyType(const char* pkt);
+    void setPubKeyType(char const * pkt);
 
     /// Set first MAC, fixed length byte array
-    void setHMAC(uint8_t* t)          { memcpy(pv+dhLength, t, 2*ZRTP_WORD_SIZE); };
+    void setHMAC(uint8_t const * t)          { memcpy(pv+dhLength, t, 2*ZRTP_WORD_SIZE); };
 
  private:
     void initialize();
-    uint8_t *pv = nullptr;                ///< points to public key value inside DH message
+    uint8_t  * pv = nullptr;        ///< points to public key value inside DH message
     DHPart_t* DHPartHeader = nullptr;     ///< points to DH message structure
     int32_t dhLength = 0;                 ///< length of DH message, DH message has variable length
 
      // SupportedPubKeys pktype;
      // DHPart packet is of variable length. It maximum size is 141 words:
-     // - 13 words fixed sizze
+     // - 13 words fixed size
      // - up to 128 words variable part, depending on DH algorithm
      //   leads to a maximum of 4*141=564 bytes.
      uint8_t data[768] = {0};       // large enough to hold a full blown DHPart packet
