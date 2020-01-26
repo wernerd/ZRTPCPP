@@ -26,6 +26,7 @@
  */
 
 #include <libzrtpcpp/ZrtpPacketBase.h>
+#include <common/typedefs.h>
 
 #define HELLO_FIXED_PART_LEN  22
 
@@ -140,8 +141,8 @@ class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
         { memcpy(((uint8_t*)helloHeader)+oSas+(n*ZRTP_WORD_SIZE), t, ZRTP_WORD_SIZE); }
 
     /// Set Hello MAC, fixed byte array
-    void setHMAC(uint8_t const * t)
-        { memcpy(((uint8_t*)helloHeader)+oHmac, t, 2*ZRTP_WORD_SIZE); }
+    void setHMAC(zrtp::ImplicitDigest hmac)
+        { memcpy(((uint8_t*)helloHeader)+oHmac, hmac.data(), 2*ZRTP_WORD_SIZE); }
 
     /// Get number of offered hash algorithms
     [[nodiscard]] int32_t getNumHashes() const  {return nHash; }

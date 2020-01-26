@@ -33,6 +33,8 @@
 #include <cstdint>
 #include <vector>
 
+#include "common/typedefs.h"
+
 #ifndef SHA256_DIGEST_LENGTH
 #define SHA256_DIGEST_LENGTH 32
 #endif
@@ -50,15 +52,12 @@
  *    Points to the data chunk.
  * @param data_length
  *    Length of the data in bytes
- * @param mac
- *    Points to a buffer that receives the computed digest. This
- *    buffer must have a size of at least 32 bytes (SHA256_DIGEST_LENGTH).
- * @param mac_length
- *    Point to an integer that receives the length of the computed HMAC.
+ * @param macOut
+ *    Reference to a secure array that receives the computed digest.
  */
 void hmac_sha256(const uint8_t* key, uint64_t key_length,
                  const uint8_t* data, uint64_t data_length,
-                 uint8_t* mac, uint32_t* mac_length);
+                 zrtp::RetainedSecArray & macOut);
 
 /**
  * Compute SHA256 HMAC over several data chunks.
@@ -75,17 +74,14 @@ void hmac_sha256(const uint8_t* key, uint64_t key_length,
  *    pointer in an array element terminates the data chunks.
  * @param dataLength
  *    Vector of integers that hold the length of each data chunk.
- * @param mac
- *    Points to a buffer that receives the computed digest. This
- *    buffer must have a size of at least 32 bytes (SHA256_DIGEST_LENGTH).
- * @param mac_length
- *    Point to an integer that receives the length of the computed HMAC.
+ * @param macOut
+ *    Reference to a secure array that receives the computed digest.
  */
 
 void hmacSha256(const uint8_t* key, uint64_t key_length,
                 const std::vector<const uint8_t*>& data,
                 const std::vector<uint64_t>& dataLength,
-                uint8_t* mac, uint32_t* mac_length);
+                zrtp::RetainedSecArray & macOut);
 /**
  * @}
  */

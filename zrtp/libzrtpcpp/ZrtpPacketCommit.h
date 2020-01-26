@@ -29,6 +29,7 @@
  */
 
 #include <libzrtpcpp/ZrtpPacketBase.h>
+#include <common/typedefs.h>
 
 // PRSH here only for completeness. We don't support PRSH in the other ZRTP parts.
 #define COMMIT_DH_EX      29
@@ -127,10 +128,10 @@ class __EXPORT ZrtpPacketCommit : public ZrtpPacketBase {
     void setH2(uint8_t const * hash)          { memcpy(commitHeader->hashH2, hash, sizeof(commitHeader->hashH2)); };
 
     /// Set MAC field, a fixed length byte array
-    void setHMAC(uint8_t const * hash)        { memcpy(commitHeader->hmac, hash, sizeof(commitHeader->hmac)); };
+    void setHMAC(zrtp::ImplicitDigest const & hmac) { memcpy(commitHeader->hmac, hmac.data(), sizeof(commitHeader->hmac)); };
 
     /// Set MAC field during multi-stream mode, a fixed length byte array
-    void setHMACMulti(uint8_t const * hash)   { memcpy(commitHeader->hmac-4*ZRTP_WORD_SIZE, hash, sizeof(commitHeader->hmac)); };
+    void setHMACMulti(zrtp::ImplicitDigest const & hmac) { memcpy(commitHeader->hmac-4*ZRTP_WORD_SIZE, hmac.data(), sizeof(commitHeader->hmac)); };
 
  private:
      Commit_t* commitHeader;     ///< Points to Commit message part

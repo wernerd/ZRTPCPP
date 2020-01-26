@@ -20,22 +20,23 @@
 
 #include <cryptcommon/macSkein.h>
 #include <zrtp/crypto/skeinMac256.h>
+#include <common/typedefs.h>
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
 
-void macSkein256(const uint8_t *key, uint64_t keyLength, const uint8_t* data, uint64_t dataLength, uint8_t* mac, uint32_t* macLength)
+void macSkein256(const uint8_t *key, uint64_t keyLength, const uint8_t* data, uint64_t dataLength, zrtp::RetainedSecArray & macOut)
 {
-    macSkein(key, keyLength, data, dataLength, mac, SKEIN256_DIGEST_LENGTH*8, SKEIN_SIZE);
-    *macLength = SKEIN256_DIGEST_LENGTH;
+    macSkein(key, keyLength, data, dataLength, macOut.data(), SKEIN256_DIGEST_LENGTH*8, SKEIN_SIZE);
+    macOut.size(SKEIN256_DIGEST_LENGTH);
 }
 
 
 void macSkein256(const uint8_t* key, uint64_t keyLength, const std::vector<const uint8_t*>& data,
-                  const std::vector<uint64_t>& dataLength, uint8_t* mac, uint32_t* macLength )
+                 const std::vector<uint64_t>& dataLength, zrtp::RetainedSecArray & macOut)
 {
-    macSkein(key, keyLength, data, dataLength, mac, SKEIN256_DIGEST_LENGTH*8, SKEIN_SIZE);
-    *macLength = SKEIN256_DIGEST_LENGTH;
+    macSkein(key, keyLength, data, dataLength, macOut.data(), SKEIN256_DIGEST_LENGTH*8, SKEIN_SIZE);
+    macOut.size(SKEIN256_DIGEST_LENGTH);
 }
 
 void* createMacSkein256Context(uint8_t* key, uint64_t keyLength)

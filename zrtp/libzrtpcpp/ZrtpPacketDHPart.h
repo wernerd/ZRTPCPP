@@ -26,6 +26,7 @@
  */
 
 #include <libzrtpcpp/ZrtpPacketBase.h>
+#include <common/typedefs.h>
 
 /**
  * Implement the DHPart packet.
@@ -77,16 +78,16 @@ class __EXPORT ZrtpPacketDHPart : public ZrtpPacketBase {
     void setPv(uint8_t const * text)         { memcpy(pv, text, dhLength); };
 
     /// Set first retained secret id, fixed length byte array
-    void setRs1Id(uint8_t const * text)      { memcpy(DHPartHeader->rs1Id, text, sizeof(DHPartHeader->rs1Id)); };
+    void setRs1Id(zrtp::RetainedSecArray const & text) { memcpy(DHPartHeader->rs1Id, text.data(), sizeof(DHPartHeader->rs1Id)); };
 
     /// Set second retained secret id, fixed length byte array
-    void setRs2Id(uint8_t const * text)      { memcpy(DHPartHeader->rs2Id, text, sizeof(DHPartHeader->rs2Id)); };
+    void setRs2Id(zrtp::RetainedSecArray const & text) { memcpy(DHPartHeader->rs2Id, text.data(), sizeof(DHPartHeader->rs2Id)); };
 
     /// Set additional retained secret id, fixed length byte array
-    void setAuxSecretId(uint8_t const * t)   { memcpy(DHPartHeader->auxSecretId, t, sizeof(DHPartHeader->auxSecretId)); };
+    void setAuxSecretId(zrtp::RetainedSecArray const & text) { memcpy(DHPartHeader->auxSecretId, text.data(), sizeof(DHPartHeader->auxSecretId)); };
 
     /// Set PBX retained secret id, fixed length byte array
-    void setPbxSecretId(uint8_t const * t)   { memcpy(DHPartHeader->pbxSecretId,t, sizeof(DHPartHeader->pbxSecretId)); };
+    void setPbxSecretId(zrtp::RetainedSecArray const & text) { memcpy(DHPartHeader->pbxSecretId, text.data(), sizeof(DHPartHeader->pbxSecretId)); };
 
     /// Set first hash (H1) of hash chain, fixed length byte array
     void setH1(uint8_t const * t)            { memcpy(DHPartHeader->hashH1, t, sizeof(DHPartHeader->hashH1)); };
@@ -95,7 +96,7 @@ class __EXPORT ZrtpPacketDHPart : public ZrtpPacketBase {
     void setPacketLength(size_t pubKeyLen);
 
     /// Set first MAC, fixed length byte array
-    void setHMAC(uint8_t const * t)          { memcpy(pv+dhLength, t, 2*ZRTP_WORD_SIZE); };
+    void setHMAC(zrtp::ImplicitDigest const & hmac) { memcpy(pv+dhLength, hmac.data(), 2*ZRTP_WORD_SIZE); };
 
  private:
     void initialize();

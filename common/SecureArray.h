@@ -293,12 +293,27 @@ namespace secUtilities {
          */
         auto
         equals(SecureArrayBase const & other, size_type const len) -> bool {
+            return equals(other.data(), len);
+        }
+
+        /**
+         * @brief Perform constant time compare of this secure array with some array of same value type.
+         *
+         * The function compares @c len number of @c value_type elements, thus both arrays must have a
+         * capacity/length that's less or equal to the specified length. Otherwise memory access violation
+         * may occur.
+         *
+         * @param other secure byte array to compare with.
+         * @param len number of elements
+         * @return @c true if data elements are equal
+         */
+        auto
+        equals(const_pointer otherData, size_type const len) -> bool {
             const_pointer in1 = data();
-            const_pointer in2 = other.data();
 
             value_type result = 0;
             for (size_type i = 0; i < len; i++) {
-                value_type x = *in1++ ^ *in2++;
+                value_type x = *in1++ ^ *otherData++;
                 result |= x;
             }
             return result == 0;

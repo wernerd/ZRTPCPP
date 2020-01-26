@@ -24,18 +24,18 @@
 #include <cryptcommon/macSkein.h>
 #include <zrtp/crypto/skeinMac384.h>
 
-void macSkein384(const uint8_t *key, uint64_t keyLength, const uint8_t* data, uint64_t dataLength, uint8_t* mac, uint32_t* macLength)
+void macSkein384(const uint8_t *key, uint64_t keyLength, const uint8_t* data, uint64_t dataLength, zrtp::RetainedSecArray & macOut)
 {
-    macSkein(key, keyLength, data, dataLength, mac, SKEIN384_DIGEST_LENGTH*8, SKEIN_SIZE);
-    *macLength = SKEIN384_DIGEST_LENGTH;
+    macSkein(key, keyLength, data, dataLength, macOut.data(), SKEIN384_DIGEST_LENGTH*8, SKEIN_SIZE);
+    macOut.size(SKEIN384_DIGEST_LENGTH);
 }
 
 
 void macSkein384(const uint8_t* key, uint64_t keyLength, const std::vector<const uint8_t*>& data,
-                 const std::vector<uint64_t>& dataLength, uint8_t* mac, uint32_t* macLength )
+                 const std::vector<uint64_t>& dataLength, zrtp::RetainedSecArray & macOut)
 {
-    macSkein(key, keyLength, data, dataLength, mac, SKEIN384_DIGEST_LENGTH*8, SKEIN_SIZE);
-    *macLength = SKEIN384_DIGEST_LENGTH;
+    macSkein(key, keyLength, data, dataLength, macOut.data(), SKEIN384_DIGEST_LENGTH*8, SKEIN_SIZE);
+    macOut.size(SKEIN384_DIGEST_LENGTH);
 }
 
 void* createMacSkein384Context(const uint8_t* key, uint64_t keyLength)

@@ -36,6 +36,8 @@
 #include <cstdint>
 #include <vector>
 
+#include "common/typedefs.h"
+
 #ifndef SKEIN256_DIGEST_LENGTH
 #define SKEIN256_DIGEST_LENGTH 32
 #endif
@@ -55,13 +57,10 @@
  *    Points to the data chunk.
  * @param dataLength
  *    Length of the data in bytes
- * @param mac
- *    Points to a buffer that receives the computed digest. This
- *    buffer must have a size of at least 32 bytes (SKEIN256_DIGEST_LENGTH).
- * @param macLength
- *    Point to an integer that receives the length of the computed HMAC.
+ * @param macOut
+ *    Reference to a secure array that receives the computed digest.
  */
-void macSkein256(const uint8_t* key, uint64_t key_length, const uint8_t* data, uint64_t dataLength, uint8_t* mac, uint32_t* macLength);
+void macSkein256(const uint8_t* key, uint64_t key_length, const uint8_t* data, uint64_t dataLength, zrtp::RetainedSecArray & macOut);
 
 /**
  * Compute Skein256 HMAC over several data cunks.
@@ -76,15 +75,12 @@ void macSkein256(const uint8_t* key, uint64_t key_length, const uint8_t* data, u
  *    Vector of pointers that point to the data chunks.
  * @param dataLength
  *    Vector of integers that hold the length of each data chunk.
- * @param mac
- *    Points to a buffer that receives the computed digest. This
- *    buffer must have a size of at least 32 bytes (SKEIN256_DIGEST_LENGTH).
- * @param macLength
- *    Point to an integer that receives the length of the computed HMAC.
+ * @param macOut
+ *    Reference to a secure array that receives the computed digest.
  */
 
 void macSkein256(const uint8_t* key, uint64_t key_length, const std::vector<const uint8_t*>& data,
-                 const std::vector<uint64_t>& dataLength, uint8_t* mac, uint32_t* macLength);
+                 const std::vector<uint64_t>& dataLength, zrtp::RetainedSecArray & macOut);
 /**
  * @}
  */

@@ -104,20 +104,20 @@ static void hmacSha256Final(hmacSha256Context *ctx, uint8_t *mac)
 }
 
 
-void hmac_sha256(const uint8_t *key, uint64_t keyLength, const uint8_t* data, uint64_t dataLength, uint8_t* mac, uint32_t* macLength)
+void hmac_sha256(const uint8_t *key, uint64_t keyLength, const uint8_t* data, uint64_t dataLength, zrtp::RetainedSecArray & macOut)
 {
     hmacSha256Context ctx = {};
 
     hmacSha256Init(&ctx, key, keyLength);
     hmacSha256Update(&ctx, data, dataLength);
-    hmacSha256Final(&ctx, mac);
-    *macLength = SHA256_DIGEST_SIZE;
+    hmacSha256Final(&ctx, macOut.data());
+    macOut.size(SHA256_DIGEST_SIZE);
 }
 
 void hmacSha256(const uint8_t* key, uint64_t keyLength,
                 const std::vector<const uint8_t*>& dataChunks,
                 const std::vector<uint64_t>& dataChunkLength,
-                uint8_t* mac, uint32_t* macLength )
+                zrtp::RetainedSecArray & macOut)
 {
     hmacSha256Context ctx= {};
 
@@ -126,8 +126,8 @@ void hmacSha256(const uint8_t* key, uint64_t keyLength,
     for (size_t i = 0, size = dataChunks.size(); i < size; i++) {
         hmacSha256Update(&ctx, dataChunks[i], dataChunkLength[i]);
     }
-    hmacSha256Final(&ctx, mac);
-    *macLength = SHA256_DIGEST_SIZE;
+    hmacSha256Final(&ctx, macOut.data());
+    macOut.size(SHA256_DIGEST_SIZE);
 }
 
 void* createSha256HmacContext(const uint8_t* key, uint64_t keyLength)

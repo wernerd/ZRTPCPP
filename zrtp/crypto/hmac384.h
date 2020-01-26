@@ -32,6 +32,8 @@
 #include <cstdint>
 #include <vector>
 
+#include "common/typedefs.h"
+
 #ifndef SHA384_DIGEST_LENGTH
 #define SHA384_DIGEST_LENGTH 48
 #endif
@@ -49,21 +51,18 @@
  *    Points to the data chunk.
  * @param data_length
  *    Length of the data in bytes
- * @param mac
- *    Points to a buffer that receives the computed digest. This
- *    buffer must have a size of at least 48 bytes (SHA384_DIGEST_LENGTH).
- * @param mac_length
- *    Point to an integer that receives the length of the computed HMAC.
+ * @param macOut
+ *    Reference to a secure array that receives the computed digest. This
+ *    array must have a size of at least 32 bytes (SHA256_DIGEST_LENGTH).
  */
 void hmac_sha384(const uint8_t* key, uint64_t key_length,
                  const uint8_t* data, uint64_t data_length,
-                 uint8_t* mac, uint32_t* mac_length);
+                 zrtp::RetainedSecArray &);
 
 /**
  * Compute SHA384 HMAC over several data cunks.
  *
- * This functions takes several data chunk and computes the SHA384 HAMAC. It
- * uses the openSSL HAMAC SHA384 implementation.
+ * This functions takes several data chunk and computes the SHA384 HMAC
  *
  * @param key
  *    The MAC key.
@@ -73,17 +72,15 @@ void hmac_sha384(const uint8_t* key, uint64_t key_length,
  *    Vector of pointers that point to the data chunks.
  * @param dataLength
  *   Vector of integers that hold the length of each data chunk.
- * @param mac
- *    Points to a buffer that receives the computed digest. This
- *    buffer must have a size of at least 48 bytes (SHA384_DIGEST_LENGTH).
- * @param mac_length
- *    Point to an integer that receives the length of the computed HMAC.
+ * @param macOut
+ *    Reference to a secure array that receives the computed digest. This
+ *    array must have a size of at least 32 bytes (SHA256_DIGEST_LENGTH).
  */
 
 void hmacSha384(const uint8_t* key, uint64_t key_length,
                 const std::vector<const uint8_t*>& data,
                 const std::vector<uint64_t>& dataLength,
-                uint8_t* mac, uint32_t* mac_length);
+                zrtp::RetainedSecArray &);
 /**
  * @}
  */

@@ -44,29 +44,8 @@
 #include <libzrtpcpp/ZIDCache.h>
 
 #include <cryptcommon/skeinApi.h>
-#ifdef ZRTP_OPENSSL
-#include <openssl/crypto.h>
-#include <openssl/sha.h>
-#else
-#include <zrtp/crypto/sha2.h>
-#endif
 
-#ifndef SHA256_DIGEST_LENGTH
-#define SHA256_DIGEST_LENGTH 32
-#endif
-
-// Prepare to support digest algorithms up to 512 bit (64 bytes)
-#define MAX_DIGEST_LENGTH       64
-#define IMPL_MAX_DIGEST_LENGTH  64
-
-// max. number of parallel supported ZRTP protocol versions.
-#define MAX_ZRTP_VERSIONS       2
-
-// currently only 1.10 supported
-#define SUPPORTED_ZRTP_VERSIONS       1
-
-// Integer representation of highest supported ZRTP protocol version
-#define HIGHEST_ZRTP_VERION    12
+#include "common/typedefs.h"
 
 class __EXPORT ZrtpStateClass;
 class ZrtpDH;
@@ -428,7 +407,7 @@ class __EXPORT ZRtp {
      * @return a reference to the byte array that contains the full
      *         SAS hash.
      */
-    [[nodiscard]] uint8_t const * getSasHash() const {return sasHash;}
+    [[nodiscard]] uint8_t const * getSasHash() const {return sasHash.data();}
 
     /**
      * Set signature data.
@@ -653,7 +632,7 @@ class __EXPORT ZRtp {
      const uint8_t& getExportedKey(int32_t *length) const {
          if (length != nullptr)
              *length = hashLength;
-         return *zrtpExport;
+         return *zrtpExport.data();
      };
 
      /**
@@ -719,10 +698,7 @@ private:
      * My computed public key
      */
     secUtilities::SecureArray<1000> pubKeyBytes;
-    /**
-     * Length off public key
-     */
-//    int32_t pubKeyLen;
+
     /**
      * My Role in the game
      */
@@ -737,19 +713,19 @@ private:
      * The SAS hash for signaling and alike. Refer to chapters
      * 4.5 and 7 how sasHash, sasValue and the SAS string are derived.
      */
-    uint8_t sasHash[MAX_DIGEST_LENGTH] = {0};
+    zrtp::NegotiatedArray  sasHash;
     /**
      * The ids for the retained and other shared secrets
      */
-    uint8_t rs1IDr[MAX_DIGEST_LENGTH] = {0};
-    uint8_t rs2IDr[MAX_DIGEST_LENGTH] = {0};
-    uint8_t auxSecretIDr[MAX_DIGEST_LENGTH] = {0};
-    uint8_t pbxSecretIDr[MAX_DIGEST_LENGTH] = {0};
+    zrtp::RetainedSecArray rs1IDr;
+    zrtp::RetainedSecArray rs2IDr;
+    zrtp::RetainedSecArray auxSecretIDr;
+    zrtp::RetainedSecArray pbxSecretIDr;
 
-    uint8_t rs1IDi[MAX_DIGEST_LENGTH] = {0};
-    uint8_t rs2IDi[MAX_DIGEST_LENGTH] = {0};
-    uint8_t auxSecretIDi[MAX_DIGEST_LENGTH] = {0};
-    uint8_t pbxSecretIDi[MAX_DIGEST_LENGTH] = {0};
+    zrtp::RetainedSecArray rs1IDi;
+    zrtp::RetainedSecArray rs2IDi;
+    zrtp::RetainedSecArray auxSecretIDi;
+    zrtp::RetainedSecArray pbxSecretIDi;
 
     /**
      * pointers to aux secret storage and length of aux secret
@@ -796,7 +772,7 @@ private:
 
     /**
      * The Hash images as defined in chapter 5.1.1 (H0 is a random value,
-     * not stored here). Need full SHA 256 lenght to store hash value but
+     * not stored here). Need full SHA 256 length to store hash value but
      * only the leftmost 128 bits are used in computations and comparisons.
      */
     uint8_t H0[IMPL_MAX_DIGEST_LENGTH] = {0};
@@ -819,36 +795,36 @@ private:
     /**
      * The s0
      */
-    uint8_t s0[MAX_DIGEST_LENGTH] = {0};
+    zrtp::NegotiatedArray s0;
 
     /**
      * The new Retained Secret
      */
-    uint8_t newRs1[MAX_DIGEST_LENGTH] = {0};
+    zrtp::NegotiatedArray  newRs1;
 
     /**
      * The confirm HMAC key
      */
-    uint8_t hmacKeyI[MAX_DIGEST_LENGTH] = {0};
-    uint8_t hmacKeyR[MAX_DIGEST_LENGTH] = {0};
+    zrtp::NegotiatedArray  hmacKeyI;
+    zrtp::NegotiatedArray  hmacKeyR;
 
     /**
      * The Initiator's srtp key and salt
      */
-    uint8_t srtpKeyI[MAX_DIGEST_LENGTH] = {0};
-    uint8_t srtpSaltI[MAX_DIGEST_LENGTH] = {0};
+    zrtp::NegotiatedArray  srtpKeyI;
+    zrtp::NegotiatedArray  srtpSaltI;
 
     /**
      * The Responder's srtp key and salt
      */
-    uint8_t srtpKeyR[MAX_DIGEST_LENGTH] = {0};
-    uint8_t srtpSaltR[MAX_DIGEST_LENGTH] = {0};
+    zrtp::NegotiatedArray  srtpKeyR;
+    zrtp::NegotiatedArray  srtpSaltR;
 
     /**
      * The keys used to encrypt/decrypt the confirm message
      */
-    uint8_t zrtpKeyI[MAX_DIGEST_LENGTH] = {0};
-    uint8_t zrtpKeyR[MAX_DIGEST_LENGTH] = {0};
+    zrtp::NegotiatedArray  zrtpKeyI;
+    zrtp::NegotiatedArray  zrtpKeyR;
 
     HashCtx hashCtx = {};
 
@@ -861,12 +837,12 @@ private:
 
     void (*hmacFunction)(const uint8_t* key, uint64_t key_length,
                          const uint8_t* data, uint64_t data_length,
-                         uint8_t* mac, uint32_t* mac_length) = nullptr;
+                         zrtp::RetainedSecArray & macOut) = nullptr;
 
     void (*hmacListFunction)(const uint8_t* key, uint64_t key_length,
                              const std::vector<const uint8_t*>& data,
                              const std::vector<uint64_t>& data_length,
-                             uint8_t* mac, uint32_t* mac_length) = nullptr;
+                             zrtp::RetainedSecArray & macOut) = nullptr;
 
     void* (*createHashCtx)(void* ctx) = nullptr;
 
@@ -883,7 +859,7 @@ private:
 
     void (*hmacFunctionImpl)(const uint8_t* key, uint64_t key_length,
                              const uint8_t* data, uint64_t data_length,
-                             uint8_t* mac, uint32_t* mac_length) = nullptr;
+                             zrtp::RetainedSecArray &) = nullptr;
 
     int32_t hashLengthImpl = 0;
 
@@ -891,13 +867,13 @@ private:
      * The ZRTP Session Key
      * Refer to chapter 4.5.2
      */
-    uint8_t zrtpSession[MAX_DIGEST_LENGTH] = {0};
+    zrtp::NegotiatedArray  zrtpSession;
 
     /**
      * The ZRTP export Key
      * Refer to chapter 4.5.2
      */
-    uint8_t zrtpExport[MAX_DIGEST_LENGTH] = {0};
+    zrtp::NegotiatedArray  zrtpExport;
 
     /**
      * True if this ZRTP instance uses multi-stream mode.
@@ -1228,7 +1204,7 @@ private:
     void computeSRTPKeys();
 
     void KDF(uint8_t* key, size_t keyLength, char const * label, size_t labelLength,
-               uint8_t* context, size_t contextLength, size_t L, uint8_t* output);
+               uint8_t* context, size_t contextLength, size_t L, zrtp::NegotiatedArray & output);
 
     void generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord);
 

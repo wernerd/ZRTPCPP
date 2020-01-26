@@ -25,9 +25,10 @@
 #include <libzrtpcpp/zrtpB64Decode.h>
 #include <libzrtpcpp/zrtpB64Encode.h>
 #include <srtp/CryptoContext.h>
-#include <srtp/CryptoContextCtrl.h>
 #include <cryptcommon/ZrtpRandom.h>
 #include <crypto/hmac384.h>
+
+#include "common/typedefs.h"
 
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -469,13 +470,11 @@ void ZrtpSdesStream::computeMixedKeys(bool sipInvite) {
     uint32_t keyLen = localKeyLenBytes + remoteKeyLenBytes;
     uint32_t L = saltLen + keyLen;
 
-    uint8_t prk[MAX_DIGEST_LENGTH];
-    uint32_t prkLen;
-
+    zrtp::NegotiatedArray prk;
     switch(cryptoMixHashType) {
         case MIX_HMAC_SHA:
             if (cryptoMixHashLength == 384)
-                hmac_sha384(salt, saltLen, ikm, keyLen, prk, &prkLen);
+                hmac_sha384(salt, saltLen, ikm, keyLen, prk);
             else
                 return;
             break;
@@ -486,7 +485,7 @@ void ZrtpSdesStream::computeMixedKeys(bool sipInvite) {
     }
 
     uint8_t T[(MAX_SALT_LEN + MAX_KEY_LEN)*2] = {0};
-    expand(prk, prkLen, nullptr, 0U, L, cryptoMixHashLength/8, T);
+    expand(prk.data(), prk.size(), nullptr, 0U, L, cryptoMixHashLength/8, T);
 
     // We have a new set of SRTP key data now, replace the old with the new.
     int32_t offset = 0;

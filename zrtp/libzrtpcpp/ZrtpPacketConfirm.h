@@ -25,6 +25,7 @@
  */
 
 #include <libzrtpcpp/ZrtpPacketBase.h>
+#include <common/typedefs.h>
 
 /**
  * Implement the Confirm packet.
@@ -97,7 +98,7 @@ class __EXPORT ZrtpPacketConfirm : public ZrtpPacketBase {
         void setPBXEnrollment()      { confirmHeader->flags |= 0x8U; }
 
         /// Set MAC data, fixed length byte array
-        void setHmac(uint8_t* text)  { memcpy(confirmHeader->hmac, text, sizeof(confirmHeader->hmac)); }
+        void setHmac(zrtp::ImplicitDigest const & hmac)  { memcpy(confirmHeader->hmac, hmac.data(), sizeof(confirmHeader->hmac)); }
 
         /// Set IV data, fixed length byte array
         void setIv(uint8_t* text)    { memcpy(confirmHeader->iv, text, sizeof(confirmHeader->iv)); }

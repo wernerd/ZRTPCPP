@@ -7,6 +7,10 @@
 
 #include <list>
 #include <string>
+#include <memory>
+
+#include "Constants.h"
+#include "SecureArray.h"
 
 /**
  * @file
@@ -20,10 +24,15 @@
 namespace zrtp {
 
     /** Unique pointer to a string */
-    typedef std::unique_ptr<std::string> StringUnique;
+    using StringUnique = std::unique_ptr<std::string> ;
 
     /** Unique pointer to a list of strings */
-    typedef std::unique_ptr<std::list<std::string>> StringListUnique;
+    using StringListUnique = std::unique_ptr<std::list<std::string>>;
+
+    using RetainedSecArray = secUtilities::SecureArray<MAX_DIGEST_LENGTH>;
+    using ImplicitDigest = secUtilities::SecureArray<IMPL_MAX_DIGEST_LENGTH>;
+    using NegotiatedArray = secUtilities::SecureArray<MAX_DIGEST_LENGTH>;
+    using MaxDigestArray = secUtilities::SecureArray<MAX_DIGEST_LENGTH>;
 }
 
 #ifdef _WIN64

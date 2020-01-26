@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <cstring>
 #include <cstdio>
+#include <common/typedefs.h>
 #include "zrtp/crypto/sha2.h"
 #include "zrtp/crypto/hmac384.h"
 
@@ -102,20 +103,20 @@ static void hmacSha384Final(hmacSha384Context *ctx, uint8_t *mac)
 }
 
 
-void hmac_sha384(const uint8_t *key, uint64_t keyLength, const uint8_t* data, uint64_t dataLength, uint8_t* mac, uint32_t* macLength)
+void hmac_sha384(const uint8_t *key, uint64_t keyLength, const uint8_t* data, uint64_t dataLength, zrtp::RetainedSecArray & macOut)
 {
     hmacSha384Context ctx = {};
 
     hmacSha384Init(&ctx, key, keyLength);
     hmacSha384Update(&ctx, data, dataLength);
-    hmacSha384Final(&ctx, mac);
-    *macLength = SHA384_DIGEST_SIZE;
+    hmacSha384Final(&ctx, macOut.data());
+    macOut.size(SHA384_DIGEST_SIZE);
 }
 
 void hmacSha384(const uint8_t* key, uint64_t keyLength,
                 const std::vector<const uint8_t*>& data,
                 const std::vector<uint64_t>& dataLength,
-                uint8_t* mac, uint32_t* macLength )
+                zrtp::RetainedSecArray & macOut)
 {
     hmacSha384Context ctx = {};
 
@@ -124,8 +125,8 @@ void hmacSha384(const uint8_t* key, uint64_t keyLength,
     for (size_t i = 0, size = data.size(); i < size; i++) {
         hmacSha384Update(&ctx, data[i], dataLength[i]);
     }
-    hmacSha384Final(&ctx, mac);
-    *macLength = SHA384_DIGEST_SIZE;
+    hmacSha384Final(&ctx, macOut.data());
+    macOut.size(SHA384_DIGEST_SIZE);
 }
 
 void* createSha384HmacContext(const uint8_t* key, uint64_t keyLength)
