@@ -2254,23 +2254,19 @@ void ZRtp::KDF(uint8_t* key, size_t keyLength, char const * label, size_t labelL
 // Compute the Multi Stream mode s0
 void ZRtp::generateKeysMultiStream() {
 
-    // allocate the maximum size, compute real size to use
-    uint8_t KDFcontext[sizeof(peerZid)+sizeof(ownZid)+sizeof(messageHash)];
-    size_t kdfSize = sizeof(peerZid)+sizeof(ownZid)+hashLength;
+    // allocate the required capacity
+    secUtilities::SecureArrayFlex kdfContext(sizeof(peerZid) + sizeof(ownZid) + hashLength);
+    size_t kdfSize = kdfContext.capacity();
 
     if (myRole == Responder) {
-        memcpy(KDFcontext, peerZid, sizeof(peerZid));
-        memcpy(KDFcontext+sizeof(peerZid), ownZid, sizeof(ownZid));
+        kdfContext.assign(peerZid, sizeof(peerZid)).append(ownZid, sizeof(ownZid));
     }
     else {
-        memcpy(KDFcontext, ownZid, sizeof(ownZid));
-        memcpy(KDFcontext+sizeof(ownZid), peerZid, sizeof(peerZid));
+        kdfContext.assign(ownZid, sizeof(ownZid)).append(peerZid, sizeof(peerZid));
     }
-    memcpy(KDFcontext+sizeof(ownZid)+sizeof(peerZid), messageHash, hashLength);
+    kdfContext.append(messageHash, hashLength);
 
-    KDF(zrtpSession, hashLength, zrtpMsk, strlen(zrtpMsk)+1, KDFcontext, kdfSize, hashLength*8, s0);
-
-    memset(KDFcontext, 0, sizeof(KDFcontext));
+    KDF(zrtpSession, hashLength, zrtpMsk, strlen(zrtpMsk)+1, kdfContext.data(), kdfSize, hashLength * 8, s0);
 
     computeSRTPKeys();
 }
@@ -2300,53 +2296,51 @@ void ZRtp::computePBXSecret() {
 
 void ZRtp::computeSRTPKeys() {
 
-    // allocate the maximum size, compute real size to use
-    uint8_t KDFcontext[sizeof(peerZid)+sizeof(ownZid)+sizeof(messageHash)];
-    size_t kdfSize = sizeof(peerZid)+sizeof(ownZid)+hashLength;
+    // allocate the required capacity
+    secUtilities::SecureArrayFlex kdfContext(sizeof(peerZid) + sizeof(ownZid) + hashLength);
+    size_t kdfSize = kdfContext.capacity();
 
     size_t keyLen = cipher->getKeylen() * 8UL;
 
     if (myRole == Responder) {
-        memcpy(KDFcontext, peerZid, sizeof(peerZid));
-        memcpy(KDFcontext+sizeof(peerZid), ownZid, sizeof(ownZid));
+        kdfContext.assign(peerZid, sizeof(peerZid)).append(ownZid, sizeof(ownZid));
     }
     else {
-        memcpy(KDFcontext, ownZid, sizeof(ownZid));
-        memcpy(KDFcontext+sizeof(ownZid), peerZid, sizeof(peerZid));
+        kdfContext.assign(ownZid, sizeof(ownZid)).append(peerZid, sizeof(peerZid));
     }
-    memcpy(KDFcontext+sizeof(ownZid)+sizeof(peerZid), messageHash, hashLength);
+    kdfContext.append(messageHash, hashLength);
 
     // Initiator key and salt
-    KDF(s0, hashLength, iniMasterKey, strlen(iniMasterKey)+1, KDFcontext, kdfSize, keyLen, srtpKeyI);
-    KDF(s0, hashLength, iniMasterSalt, strlen(iniMasterSalt)+1, KDFcontext, kdfSize, 112, srtpSaltI);
+    KDF(s0, hashLength, iniMasterKey, strlen(iniMasterKey)+1, kdfContext.data(), kdfSize, keyLen, srtpKeyI);
+    KDF(s0, hashLength, iniMasterSalt, strlen(iniMasterSalt)+1, kdfContext.data(), kdfSize, 112, srtpSaltI);
 
     // Responder key and salt
-    KDF(s0, hashLength, respMasterKey, strlen(respMasterKey)+1, KDFcontext, kdfSize, keyLen, srtpKeyR);
-    KDF(s0, hashLength, respMasterSalt, strlen(respMasterSalt)+1, KDFcontext, kdfSize, 112, srtpSaltR);
+    KDF(s0, hashLength, respMasterKey, strlen(respMasterKey)+1, kdfContext.data(), kdfSize, keyLen, srtpKeyR);
+    KDF(s0, hashLength, respMasterSalt, strlen(respMasterSalt)+1, kdfContext.data(), kdfSize, 112, srtpSaltR);
 
     // The HMAC keys for GoClear
-    KDF(s0, hashLength, iniHmacKey, strlen(iniHmacKey)+1, KDFcontext, kdfSize, hashLength*8, hmacKeyI);
-    KDF(s0, hashLength, respHmacKey, strlen(respHmacKey)+1, KDFcontext, kdfSize, hashLength*8, hmacKeyR);
+    KDF(s0, hashLength, iniHmacKey, strlen(iniHmacKey)+1, kdfContext.data(), kdfSize, hashLength * 8, hmacKeyI);
+    KDF(s0, hashLength, respHmacKey, strlen(respHmacKey)+1, kdfContext.data(), kdfSize, hashLength * 8, hmacKeyR);
 
     // The keys for Confirm messages
-    KDF(s0, hashLength, iniZrtpKey, strlen(iniZrtpKey)+1, KDFcontext, kdfSize, keyLen, zrtpKeyI);
-    KDF(s0, hashLength, respZrtpKey, strlen(respZrtpKey)+1, KDFcontext, kdfSize, keyLen, zrtpKeyR);
+    KDF(s0, hashLength, iniZrtpKey, strlen(iniZrtpKey)+1, kdfContext.data(), kdfSize, keyLen, zrtpKeyI);
+    KDF(s0, hashLength, respZrtpKey, strlen(respZrtpKey)+1, kdfContext.data(), kdfSize, keyLen, zrtpKeyR);
 
     detailInfo.pubKey = detailInfo.sasType = nullptr;
     if (!multiStream) {
         // Compute the new Retained Secret
-        KDF(s0, hashLength, retainedSec, strlen(retainedSec)+1, KDFcontext, kdfSize, SHA256_DIGEST_LENGTH*8, newRs1);
+        KDF(s0, hashLength, retainedSec, strlen(retainedSec)+1, kdfContext.data(), kdfSize, SHA256_DIGEST_LENGTH * 8, newRs1);
 
         // Compute the ZRTP Session Key
-        KDF(s0, hashLength, zrtpSessionKey, strlen(zrtpSessionKey)+1, KDFcontext, kdfSize, hashLength*8, zrtpSession);
+        KDF(s0, hashLength, zrtpSessionKey, strlen(zrtpSessionKey)+1, kdfContext.data(), kdfSize, hashLength * 8, zrtpSession);
 
         // Compute the exported Key
-        KDF(s0, hashLength, zrtpExportedKey, strlen(zrtpExportedKey)+1, KDFcontext, kdfSize, hashLength*8, zrtpExport);
+        KDF(s0, hashLength, zrtpExportedKey, strlen(zrtpExportedKey)+1, kdfContext.data(), kdfSize, hashLength * 8, zrtpExport);
         // perform  generation according to chapter 5.5 and 8.
         // we don't need a special sasValue filed. sasValue are the first
         // (leftmost) 32 bits (4 bytes) of sasHash
         uint8_t sasBytes[4];
-        KDF(s0, hashLength, sasString, strlen(sasString)+1, KDFcontext, kdfSize, SHA256_DIGEST_LENGTH*8, sasHash);
+        KDF(s0, hashLength, sasString, strlen(sasString)+1, kdfContext.data(), kdfSize, SHA256_DIGEST_LENGTH * 8, sasHash);
 
         // according to chapter 8 only the leftmost 20 bits of sasValue (aka
         //  sasHash) are used to create the character SAS string of type SAS
@@ -2381,8 +2375,6 @@ void ZRtp::computeSRTPKeys() {
     detailInfo.authLength = authLength->getReadable();
     detailInfo.cipher = cipher->getReadable();
     detailInfo.hash = hash->getReadable();
-
-    memset(KDFcontext, 0, sizeof(KDFcontext));
 }
 
 bool ZRtp::srtpSecretsReady(EnableSecurity part) {
