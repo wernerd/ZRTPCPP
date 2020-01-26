@@ -281,7 +281,7 @@ namespace secUtilities {
         }
 
         /**
-         * @brief Perform a constant time compare of this secure array with other secure array.
+         * @brief Perform constant time compare of this secure array with another secure array.
          *
          * The function compares @c len number of @c value_type elements, thus both arrays must have a
          * capacity that's less or equal to the specified length. Otherwise memory access violation
@@ -292,7 +292,7 @@ namespace secUtilities {
          * @return @c true if data elements are equal
          */
         auto
-        cmpConstTime(SecureArrayBase const & other, size_type const len) -> bool {
+        equals(SecureArrayBase const & other, size_type const len) -> bool {
             const_pointer in1 = data();
             const_pointer in2 = other.data();
 

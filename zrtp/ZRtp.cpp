@@ -53,12 +53,8 @@ extern "C" {
 }
 #endif
 
-ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback& cb, const string& id, shared_ptr<ZrtpConfigure>& config, bool mitm, bool sasSignSupport):
-        callback(&cb), auxSecretLength(0), rs1Valid(false),
-        rs2Valid(false), msgShaContext(nullptr), hash(nullptr), cipher(nullptr), pubKey(nullptr), sasType(nullptr), authLength(nullptr),
-        multiStream(false), multiStreamAvailable(false), peerIsEnrolled(false), mitmSeen(false), pbxSecretTmp(nullptr),
-        enrollmentMode(false), configureAlgos(config), zidRec(nullptr), saveZidRecord(true), signSasSeen(false),
-        masterStream(nullptr), peerDisclosureFlagSeen(false) {
+ZRtp::ZRtp(uint8_t const * myZid, ZrtpCallback& cb, const string& id, shared_ptr<ZrtpConfigure>& config, bool mitm, bool sasSignSupport):
+        callback(&cb), configureAlgos(config) {
 
 #ifdef ZRTP_SAS_RELAY_SUPPORT
     enableMitmEnrollment = config->isTrustedMitM();
@@ -77,7 +73,7 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback& cb, const string& id, shared_ptr<ZrtpCo
 
     hmacFunctionImpl = static_cast<void (*)(const uint8_t*, uint64_t, const uint8_t *, uint64_t,  uint8_t *c, uint32_t *)>(hmac_sha256);
 
-    memcpy(ownZid, myZid, ZID_SIZE);        // save the ZID
+    ownZid.assign(myZid, ZID_SIZE);        // save the ZID
 
     /*
      * Generate H0 as a random number (256 bits, 32 bytes) and then
@@ -91,13 +87,13 @@ ZRtp::ZRtp(uint8_t *myZid, ZrtpCallback& cb, const string& id, shared_ptr<ZrtpCo
     // configure all supported Hello packet versions
     zrtpHello_11.configureHello(*configureAlgos);
     zrtpHello_11.setH3(H3);                    // set H3 in Hello, included in helloHash
-    zrtpHello_11.setZid(ownZid);
+    zrtpHello_11.setZid(ownZid.data());
     zrtpHello_11.setVersion((uint8_t*)zrtpVersion_11);
 
 
     zrtpHello_12.configureHello(*configureAlgos);
     zrtpHello_12.setH3(H3);                 // set H3 in Hello, included in helloHash
-    zrtpHello_12.setZid(ownZid);
+    zrtpHello_12.setZid(ownZid.data());
     zrtpHello_12.setVersion((uint8_t*)zrtpVersion_12);
 
     if (mitm) {                             // this session acts for a trusted MitM (PBX)
@@ -250,8 +246,8 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     peerHelloVersion[ZRTP_WORD_SIZE] = 0;
 
     // Save our peer's (presumably the Responder) ZRTP id
-    memcpy(peerZid, hello->getZid(), ZID_SIZE);
-    if (memcmp(peerZid, ownZid, ZID_SIZE) == 0) {       // peers have same ZID????
+    peerZid.assign(hello->getZid(), ZID_SIZE);
+    if (peerZid.equals(ownZid, ZID_SIZE)) {       // peers have same ZID????
         *errMsg = EqualZIDHello;
         return nullptr;
     }
@@ -322,7 +318,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
      * To create this DH packet we have to compute the retained secret ids,
      * thus get our peer's retained secret data first.
      */
-    zidRec = getZidCache()->getRecord(peerZid);
+    zidRec = getZidCache()->getRecord(peerZid.data());
 
     //Compute the Initiator's and Responder's retained secret ids.
     computeSharedSecretSet(*zidRec);
@@ -361,7 +357,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     // Compute the HVI, refer to chapter 5.4.1.1 of the specification
     computeHvi(&zrtpDH2, hello);
 
-    zrtpCommit.setZid(ownZid);
+    zrtpCommit.setZid(ownZid.data());
     zrtpCommit.setHashType((uint8_t*)hash->getName());
     zrtpCommit.setCipherType((uint8_t*)cipher->getName());
     zrtpCommit.setAuthLen((uint8_t*)authLength->getName());
@@ -396,7 +392,7 @@ ZrtpPacketCommit* ZRtp::prepareCommitMultiStream(ZrtpPacketHello *hello) {
 
     randomZRTP(hvi, ZRTP_WORD_SIZE*4);  // This is the Multi-Stream NONCE size
 
-    zrtpCommit.setZid(ownZid);
+    zrtpCommit.setZid(ownZid.data());
     zrtpCommit.setHashType((uint8_t*)hash->getName());
     zrtpCommit.setCipherType((uint8_t*)cipher->getName());
     zrtpCommit.setAuthLen((uint8_t*)authLength->getName());
@@ -452,9 +448,9 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     }
 
     // Check if ZID in Commit is the same as we got in Hello
-    uint8_t tmpZid[ZID_SIZE];
-    memcpy(tmpZid, commit->getZid(), ZID_SIZE);
-    if (memcmp(peerZid, tmpZid, ZID_SIZE) != 0) {       // ZIDs do not match????
+    secUtilities::SecureArray<ZID_SIZE> tmpZid;
+    tmpZid.assign(commit->getZid(), ZID_SIZE);
+    if (!peerZid.equals(tmpZid, ZID_SIZE)) {       // ZIDs do not match????
         sendInfo(Severe, SevereProtocolError);
         *errMsg = CriticalSWError;
         return nullptr;
@@ -1223,7 +1219,7 @@ ZrtpPacketPingAck* ZRtp::preparePingAck(ZrtpPacketPing* ppkt) {
     // Because we do not support ZRTP proxy mode use the truncated ZID.
     // If this code shall be used in ZRTP proxy implementation the computation
     // of the endpoint hash must be enhanced (see chaps 5.15ff and 5.16)
-    zrtpPingAck.setLocalEpHash(ownZid);
+    zrtpPingAck.setLocalEpHash(ownZid.data());
     zrtpPingAck.setRemoteEpHash(ppkt->getEpHash());
     zrtpPingAck.setSSRC(peerSSRC);
     return &zrtpPingAck;
@@ -1991,7 +1987,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord)
      * hashed to create S0.  According to the formula the max number of
      * elements to hash is 12, add one for the terminating "nullptr"
      */
-    std::vector<const uint_8t*> data(15);
+    std::vector<uint_8t const *> data(15);
     std::vector<uint64_t> length(15);
 
     // we need a number of length data items, so define them here
@@ -2013,11 +2009,11 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord)
 
     // Next is Initiator's id (ZIDi), in this case as Initiator
     // it is zid
-    data.push_back(ownZid);
+    data.push_back(ownZid.data());
     length.push_back(ZID_SIZE);
 
     // Next is Responder's id (ZIDr), in this case our peer's id
-    data.push_back(peerZid);
+    data.push_back(peerZid.data());
     length.push_back(ZID_SIZE);
 
     // Next ist total hash (messageHash) itself
@@ -2151,7 +2147,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord)
      * These vectors hold the pointers and lengths of the data that must be
      * hashed to create S0.
      */
-    std::vector<const uint_8t*> data(15);
+    std::vector<uint_8t const *> data(15);
     std::vector<uint64_t> length(15);
 
     // we need a number of length data items, so define them here
@@ -2173,11 +2169,11 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord)
 
     // Next is Initiator's id (ZIDi), in this case as Responder
     // it is peerZid
-    data.push_back(peerZid);
+    data.push_back(peerZid.data());
     length.push_back(ZID_SIZE);
 
     // Next is Responder's id (ZIDr), in this case our own zid
-    data.push_back(ownZid);
+    data.push_back(ownZid.data());
     length.push_back(ZID_SIZE);
 
     // Next ist total hash (messageHash) itself
@@ -2255,14 +2251,14 @@ void ZRtp::KDF(uint8_t* key, size_t keyLength, char const * label, size_t labelL
 void ZRtp::generateKeysMultiStream() {
 
     // allocate the required capacity
-    secUtilities::SecureArrayFlex kdfContext(sizeof(peerZid) + sizeof(ownZid) + hashLength);
+    secUtilities::SecureArrayFlex kdfContext(peerZid.size() + ownZid.size() + hashLength);
     size_t kdfSize = kdfContext.capacity();
 
     if (myRole == Responder) {
-        kdfContext.assign(peerZid, sizeof(peerZid)).append(ownZid, sizeof(ownZid));
+        kdfContext.assign(peerZid).append(ownZid);
     }
     else {
-        kdfContext.assign(ownZid, sizeof(ownZid)).append(peerZid, sizeof(peerZid));
+        kdfContext.assign(ownZid).append(peerZid);
     }
     kdfContext.append(messageHash, hashLength);
 
@@ -2297,16 +2293,16 @@ void ZRtp::computePBXSecret() {
 void ZRtp::computeSRTPKeys() {
 
     // allocate the required capacity
-    secUtilities::SecureArrayFlex kdfContext(sizeof(peerZid) + sizeof(ownZid) + hashLength);
+    secUtilities::SecureArrayFlex kdfContext(peerZid.size() + ownZid.size() + hashLength);
     size_t kdfSize = kdfContext.capacity();
 
     size_t keyLen = cipher->getKeylen() * 8UL;
 
     if (myRole == Responder) {
-        kdfContext.assign(peerZid, sizeof(peerZid)).append(ownZid, sizeof(ownZid));
+        kdfContext.assign(peerZid).append(ownZid);
     }
     else {
-        kdfContext.assign(ownZid, sizeof(ownZid)).append(peerZid, sizeof(peerZid));
+        kdfContext.assign(ownZid).append(peerZid);
     }
     kdfContext.append(messageHash, hashLength);
 

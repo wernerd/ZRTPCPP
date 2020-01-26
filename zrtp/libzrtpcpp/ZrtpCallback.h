@@ -304,7 +304,7 @@ protected:
      *
      * After ZRTP was able to compute the Short Authentication String
      * (SAS) it calls this method. The client may now use an
-     * approriate method to sign the SAS. The client may use
+     * appropriate method to sign the SAS. The client may use
      * ZrtpQueue#setSignatureData() to store the signature data an
      * enable signature transmission to the other peer. Refer to
      * chapter 8.2 of ZRTP specification.

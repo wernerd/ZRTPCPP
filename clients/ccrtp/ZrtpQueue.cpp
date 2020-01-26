@@ -148,7 +148,7 @@ ZrtpQueue::initialize(const char *zidFilename, bool autoEnable, std::shared_ptr<
     }
     const uint8_t* ownZidFromCache = configOwn->getZidCache()->getZid();
 
-    zrtpEngine = new ZRtp((uint8_t*)ownZidFromCache, *(ZrtpCallback*)this, clientIdString, configOwn, mitmMode, signSas);
+    zrtpEngine = new ZRtp(ownZidFromCache, *(ZrtpCallback*)this, clientIdString, configOwn, mitmMode, signSas);
 
     synchLeave();
     return ret;

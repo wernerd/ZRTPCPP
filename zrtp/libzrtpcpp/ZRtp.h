@@ -139,8 +139,8 @@ class __EXPORT ZRtp {
      * Constructor initializes all relevant data but does not start the
      * engine.
      */
-    ZRtp(uint8_t* myZid, ZrtpCallback& cb, const std::string& id,
-         std::shared_ptr<ZrtpConfigure>& config, bool mitm = false, bool sasSignSupport= false);
+    ZRtp(uint8_t const * myZid, ZrtpCallback & cb, const std::string& id,
+         std::shared_ptr<ZrtpConfigure>& config, bool mitm = false, bool sasSignSupport = false);
 
     /**
      * Destructor cleans up.
@@ -416,7 +416,7 @@ class __EXPORT ZRtp {
      * 
      * @return the committed SAS rendering algorithm
      */
-    std::string getSasType() const { return sasType->getName(); }
+    [[nodiscard]] std::string getSasType() const { return sasType->getName(); }
  
     /**
      * Get the computed SAS hash for this ZRTP session.
@@ -428,7 +428,7 @@ class __EXPORT ZRtp {
      * @return a reference to the byte array that contains the full
      *         SAS hash.
      */
-    const uint8_t* getSasHash() const {return sasHash;}
+    [[nodiscard]] uint8_t const * getSasHash() const {return sasHash;}
 
     /**
      * Set signature data.
@@ -467,7 +467,7 @@ class __EXPORT ZRtp {
      * @return
      *    Signature data.
      */
-    uint8_t const * getSignatureData() const { return signatureData; }
+    [[nodiscard]] uint8_t const * getSignatureData() const { return signatureData; }
 
     /**
      * Get length of signature data in number of bytes.
@@ -479,7 +479,7 @@ class __EXPORT ZRtp {
      *    Length in bytes of the received signature data. The method returns
      *    zero if no signature data is available.
      */
-    int32_t getSignatureLength() const { return signatureLength * ZRTP_WORD_SIZE; }
+    [[nodiscard]] int32_t getSignatureLength() const { return signatureLength * ZRTP_WORD_SIZE; }
 
     /**
      * Emulate a Conf2Ack packet.
@@ -509,8 +509,8 @@ class __EXPORT ZRtp {
       *    Number of bytes copied into the data buffer - must be equivalent
       *    to 96 bit, usually 12 bytes.
       */
-     int32_t getPeerZid(uint8_t* data) {
-         memcpy(data, peerZid, IDENTIFIER_LEN);
+     int32_t getPeerZid(uint8_t* data) const {
+         memcpy(data, peerZid.data(), IDENTIFIER_LEN);
          return IDENTIFIER_LEN;
      }
 
@@ -520,21 +520,21 @@ class __EXPORT ZRtp {
       * This structure contains some detailed information about the negotiated
       * algorithms, the cached and matched shared secrets.
       */
-     const zrtpInfo& getDetailInfo() const { return detailInfo; }
+     [[nodiscard]] zrtpInfo const & getDetailInfo() const { return detailInfo; }
 
      /**
       * Get peer's client id.
       *
       * @return the peer's client id or an empty @c string if not set.
       */
-     const std::string& getPeerClientId() const {return peerClientId;};
+     [[nodiscard]] std::string const & getPeerClientId() const {return peerClientId;};
 
      /**
       * Get peer's protocol version string.
       *
       * @return the peer's protocol version or an empty @c string if not set.
       */
-     std::string getPeerProtocolVersion() const {
+     [[nodiscard]] std::string getPeerProtocolVersion() const {
          return (peerHelloVersion[0] == 0) ? std::string() : std::string((char*)peerHelloVersion);
      };
 
@@ -566,7 +566,7 @@ class __EXPORT ZRtp {
       * Returns the secure since field or 0 if no such field is available. Secure since
       * uses the unixepoch.
       */
-     int64_t getSecureSince() const {
+     [[nodiscard]] int64_t getSecureSince() const {
          return (zidRec != nullptr) ? zidRec->getSecureSince() :  0;
      }
 
@@ -659,16 +659,16 @@ class __EXPORT ZRtp {
      /**
       * @brief Return either Initiator or Responder.
       */
-     int32_t getZrtpRole() const { return myRole; }
+     [[nodiscard]] int32_t getZrtpRole() const { return myRole; }
 
      /**
       * @brief Get status of our peer's disclosure flag
       */
-     bool isPeerDisclosureFlag() const { return peerDisclosureFlagSeen; }
+     [[nodiscard]] bool isPeerDisclosureFlag() const { return peerDisclosureFlagSeen; }
 
-     std::shared_ptr<ZIDCache>& getZidCache() const { return configureAlgos->getZidCache(); }
+     [[nodiscard]] std::shared_ptr<ZIDCache>& getZidCache() const { return configureAlgos->getZidCache(); }
 
-     std::shared_ptr<ZrtpConfigure> getZrtpConfigure() const { return configureAlgos; }
+     [[nodiscard]] std::shared_ptr<ZrtpConfigure> getZrtpConfigure() const { return configureAlgos; }
 
 private:
      typedef union _hashCtx {
@@ -692,12 +692,12 @@ private:
     /**
      * This is my ZID that I send to the peer.
      */
-    uint8_t ownZid[IDENTIFIER_LEN] = {0};
+    secUtilities::SecureArray<IDENTIFIER_LEN> ownZid;
 
     /**
      * The peer's ZID
      */
-    uint8_t peerZid[IDENTIFIER_LEN]  = {0};
+    secUtilities::SecureArray<IDENTIFIER_LEN> peerZid;
 
     /**
      * The callback class provides me with the interface to send
@@ -755,14 +755,14 @@ private:
      * pointers to aux secret storage and length of aux secret
      */
     std::unique_ptr<uint8_t[]> auxSecret;
-    uint32_t auxSecretLength;
+    uint32_t auxSecretLength = 0;
 
     /**
      * Record if valid rs1 and/or rs1 were found in the
-     * retaind secret cache.
+     * retained secret cache.
      */
-    bool rs1Valid;
-    bool rs2Valid;
+    bool rs1Valid = false;
+    bool rs2Valid = false;
     /**
      * My hvi
      */
@@ -777,22 +777,22 @@ private:
      * Context to compute the SHA256 hash of selected messages.
      * Used to compute the s0, refer to chapter 4.4.1.4
      */
-    void* msgShaContext;
+    void* msgShaContext = 0;
     /**
-     * Commited Hash, Cipher, and public key algorithms
+     * Committed Hash, Cipher, and public key algorithms
      */
-    AlgorithmEnum* hash;
-    AlgorithmEnum* cipher;
-    AlgorithmEnum* pubKey;
+    AlgorithmEnum* hash = nullptr;
+    AlgorithmEnum* cipher = nullptr;
+    AlgorithmEnum* pubKey = nullptr;
     /**
      * The selected SAS type.
      */
-    AlgorithmEnum* sasType;
+    AlgorithmEnum* sasType = nullptr;
 
     /**
      * The selected SAS type.
      */
-    AlgorithmEnum* authLength;
+    AlgorithmEnum* authLength = nullptr;
 
     /**
      * The Hash images as defined in chapter 5.1.1 (H0 is a random value,
@@ -902,12 +902,12 @@ private:
     /**
      * True if this ZRTP instance uses multi-stream mode.
      */
-    bool multiStream;
+    bool multiStream = false;
 
         /**
      * True if the other ZRTP client supports multi-stream mode.
      */
-    bool multiStreamAvailable;
+    bool multiStreamAvailable = false;
 
     /**
      * Enable MitM (PBX) enrollment
@@ -922,19 +922,19 @@ private:
     /**
      * True if a valid trusted MitM key of the other peer is available, i.e. enrolled.
      */
-    bool peerIsEnrolled;
+    bool peerIsEnrolled = false;
 
     /**
      * Set to true if the Hello packet contained the M-flag (MitM flag).
      * We use this later to check some stuff for SAS Relay processing
      */
-    bool mitmSeen;
+    bool mitmSeen = false;
 
     /**
      * Temporarily store computed pbxSecret, if user accepts enrollment then
      * it will copied to our ZID record of the PBX (MitM)  
      */
-    uint8_t* pbxSecretTmp;
+    uint8_t* pbxSecretTmp = nullptr;
     uint8_t  pbxSecretTmpBuffer[MAX_DIGEST_LENGTH] = {0};
 
     /**
@@ -942,7 +942,7 @@ private:
      * packets. Set to true if the PBX enrollment service started this ZRTP 
      * session. Can be set to true only if mitmMode is also true. 
      */
-    bool enrollmentMode;
+    bool enrollmentMode = false;
 
     /**
      * Configuration data which algorithms to use.
@@ -985,7 +985,7 @@ private:
      * 
      * If false don't save record until user verified and confirmed the SAS.
      */
-    bool saveZidRecord;
+    bool saveZidRecord = false;
     /**
      * Random IV data to encrypt the confirm data, 128 bit for AES
      */
@@ -1003,7 +1003,7 @@ private:
     /**
      * Is true if the other peer signaled SAS signature support in its Hello packet.
      */
-    bool signSasSeen;
+    bool signSasSeen = false;
 
     uint32_t peerSSRC = 0;           // peer's SSRC, required to setup PingAck packet
 
@@ -1011,7 +1011,7 @@ private:
 
     std::string peerClientId;    // store the peer's client Id
 
-    ZRtp* masterStream;                    // This is the master stream in case this is a multi-stream
+    ZRtp* masterStream = nullptr;          // This is the master stream in case this is a multi-stream
     std::vector<std::string> peerNonces;   // Store nonces we got from our partner. Using std::string
                                            // just simplifies memory management, nonces are binary data, not strings :-)
     /**
@@ -1048,7 +1048,7 @@ private:
     /**
      * Is true if the other peer sent a Disclosure flag in its Confirm packet.
      */
-    bool peerDisclosureFlagSeen;
+    bool peerDisclosureFlagSeen = false;
 
     /**
      * Find the best Hash algorithm that is offered in Hello.

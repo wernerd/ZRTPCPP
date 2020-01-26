@@ -147,7 +147,7 @@ int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidF
         const uint8_t* ownZidFromCache = videoConfig->getZidCache()->getZid();
 
         stream = streams[VideoStream];
-        stream->zrtpEngine = new ZRtp((uint8_t*)ownZidFromCache, *stream, clientIdString, videoConfig);
+        stream->zrtpEngine = new ZRtp(ownZidFromCache, *stream, clientIdString, videoConfig);
         stream->type = Slave;
         stream->index = VideoStream;
         stream->session = this;
