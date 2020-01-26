@@ -124,7 +124,7 @@ ZrtpPacketHello::ZrtpPacketHello(const uint8_t *data) {
     oHmac = oSas + (nSas * ZRTP_WORD_SIZE);         // offset to HMAC
 }
 
-int32_t ZrtpPacketHello::getVersionInt() {
+int32_t ZrtpPacketHello::getVersionInt() const {
     uint8_t* vp = getVersion();
     int32_t version = 0;
 

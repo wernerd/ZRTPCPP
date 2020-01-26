@@ -66,31 +66,31 @@ class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
     void configureHello(ZrtpConfigure& config);
 
     /// Get version number from Hello message, fixed ASCII character array
-    uint8_t* getVersion()  { return helloHeader->version; };
+    [[nodiscard]] uint8_t* getVersion() const { return helloHeader->version; };
 
-     /// Get version number from Hello message as integer, only relvant digits converted
-    int32_t getVersionInt();
+     /// Get version number from Hello message as integer, only relevant digits converted
+    [[nodiscard]] int32_t getVersionInt() const;
 
     /// Get client id from Hello message, fixed ASCII character array
-    uint8_t* getClientId() { return helloHeader->clientId; };
+    [[nodiscard]] uint8_t* getClientId() const { return helloHeader->clientId; };
 
     /// Get H3 hash from Hello message, fixed byte array
-    uint8_t* getH3()       { return helloHeader->hashH3; };
+    [[nodiscard]] uint8_t* getH3() const      { return helloHeader->hashH3; };
 
     /// Get client ZID from Hello message, fixed bytes array
-    uint8_t* getZid()      { return helloHeader->zid; };
+    [[nodiscard]] uint8_t* getZid() const     { return helloHeader->zid; };
 
     /// Set version sting in Hello message, fixed ASCII character array
-    void setVersion(const uint8_t *text)     { memcpy(helloHeader->version, text,ZRTP_WORD_SIZE ); }
+    void setVersion(uint8_t const *text)     { memcpy(helloHeader->version, text,ZRTP_WORD_SIZE ); }
 
     /// Set client id in Hello message, fixed ASCII character array
-    void setClientId(const uint8_t *t) { memcpy(helloHeader->clientId, t, sizeof(helloHeader->clientId)); }
+    void setClientId(uint8_t const *t) { memcpy(helloHeader->clientId, t, sizeof(helloHeader->clientId)); }
 
     /// Set H3 hash in Hello message, fixed byte array
-    void setH3(uint8_t *hash)          { memcpy(helloHeader->hashH3, hash, sizeof(helloHeader->hashH3)); }
+    void setH3(uint8_t const *hash)          { memcpy(helloHeader->hashH3, hash, sizeof(helloHeader->hashH3)); }
 
     /// Set client ZID in Hello message, fixed bytes array
-    void setZid(uint8_t *text)         { memcpy(helloHeader->zid, text, sizeof(helloHeader->zid)); }
+    void setZid(uint8_t const *text)   { memcpy(helloHeader->zid, text, sizeof(helloHeader->zid)); }
 
     /// Check passive mode (mode not implemented)
     bool isPassive()       { return (helloHeader->flags & 0x10U) == 0x10 ; };
@@ -102,61 +102,61 @@ class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
     bool isSasSign()       { return (helloHeader->flags & 0x40U) == 0x40; };
 
     /// Get hash algorithm name at position n, fixed ASCII character array
-    uint8_t* getHashType(int32_t n)   { return ((uint8_t*)helloHeader)+oHash+(n*ZRTP_WORD_SIZE); }
+    [[nodiscard]] uint8_t* getHashType(int32_t n) const  { return ((uint8_t*)helloHeader)+oHash+(n*ZRTP_WORD_SIZE); }
 
     /// Get ciper algorithm name at position n, fixed ASCII character array
-    uint8_t* getCipherType(int32_t n) { return ((uint8_t*)helloHeader)+oCipher+(n*ZRTP_WORD_SIZE); }
+    [[nodiscard]] uint8_t* getCipherType(int32_t n) const{ return ((uint8_t*)helloHeader)+oCipher+(n*ZRTP_WORD_SIZE); }
 
     /// Get SRTP authentication algorithm name at position n, fixed ASCII character array
-    uint8_t* getAuthLen(int32_t n)    { return ((uint8_t*)helloHeader)+oAuth+(n*ZRTP_WORD_SIZE); }
+    [[nodiscard]] uint8_t* getAuthLen(int32_t n) const   { return ((uint8_t*)helloHeader)+oAuth+(n*ZRTP_WORD_SIZE); }
 
     /// Get key agreement algorithm name at position n, fixed ASCII character array
-    uint8_t* getPubKeyType(int32_t n) { return ((uint8_t*)helloHeader)+oPubkey+(n*ZRTP_WORD_SIZE); }
+    [[nodiscard]] uint8_t* getPubKeyType(int32_t n) const{ return ((uint8_t*)helloHeader)+oPubkey+(n*ZRTP_WORD_SIZE); }
 
     /// Get SAS algorithm name at position n, fixed ASCII character array
-    uint8_t* getSasType(int32_t n)    { return ((uint8_t*)helloHeader)+oSas+(n*ZRTP_WORD_SIZE); }
+    [[nodiscard]] uint8_t* getSasType(int32_t n) const   { return ((uint8_t*)helloHeader)+oSas+(n*ZRTP_WORD_SIZE); }
 
     /// Get Hello MAC, fixed byte array
-    uint8_t* getHMAC()                { return ((uint8_t*)helloHeader)+oHmac; }
+    [[nodiscard]] uint8_t* getHMAC() const               { return ((uint8_t*)helloHeader)+oHmac; }
 
     /// Set hash algorithm name at position n, fixed ASCII character array
-    void setHashType(int32_t n, int8_t* t)
+    void setHashType(int32_t n, int8_t const * t)
         { memcpy(((uint8_t*)helloHeader)+oHash+(n*ZRTP_WORD_SIZE), t, ZRTP_WORD_SIZE); }
 
     /// Set ciper algorithm name at position n, fixed ASCII character array
-    void setCipherType(int32_t n, int8_t* t)
+    void setCipherType(int32_t n, int8_t const * t)
         { memcpy(((uint8_t*)helloHeader)+oCipher+(n*ZRTP_WORD_SIZE), t, ZRTP_WORD_SIZE); }
 
     /// Set SRTP authentication algorithm name at position n, fixed ASCII character array
-    void setAuthLen(int32_t n, int8_t* t)
+    void setAuthLen(int32_t n, int8_t const * t)
         { memcpy(((uint8_t*)helloHeader)+oAuth+(n*ZRTP_WORD_SIZE), t, ZRTP_WORD_SIZE); }
 
     /// Set key agreement algorithm name at position n, fixed ASCII character array
-    void setPubKeyType(int32_t n, int8_t* t)
+    void setPubKeyType(int32_t n, int8_t const * t)
         { memcpy(((uint8_t*)helloHeader)+oPubkey+(n*ZRTP_WORD_SIZE), t, ZRTP_WORD_SIZE); }
 
     /// Set SAS algorithm name at position n, fixed ASCII character array
-    void setSasType(int32_t n, int8_t* t)
+    void setSasType(int32_t n, int8_t const * t)
         { memcpy(((uint8_t*)helloHeader)+oSas+(n*ZRTP_WORD_SIZE), t, ZRTP_WORD_SIZE); }
 
     /// Set Hello MAC, fixed byte array
-    void setHMAC(uint8_t* t)
+    void setHMAC(uint8_t const * t)
         { memcpy(((uint8_t*)helloHeader)+oHmac, t, 2*ZRTP_WORD_SIZE); }
 
     /// Get number of offered hash algorithms
-    int32_t getNumHashes()   {return nHash; }
+    [[nodiscard]] int32_t getNumHashes() const  {return nHash; }
 
     /// Get number of offered cipher algorithms
-    int32_t getNumCiphers()  {return nCipher; }
+    [[nodiscard]] int32_t getNumCiphers() const {return nCipher; }
 
     /// Get number of offered key agreement algorithms
-    int32_t getNumPubKeys()  {return nPubkey; }
+    [[nodiscard]] int32_t getNumPubKeys() const {return nPubkey; }
 
     /// Get number of offered SAS algorithms
-    int32_t getNumSas()      {return nSas; }
+    [[nodiscard]] int32_t getNumSas() const     {return nSas; }
 
     /// Get number of offered SRTP authentication algorithms
-    int32_t getNumAuth()     {return nAuth; }
+    [[nodiscard]] int32_t getNumAuth() const    {return nAuth; }
 
     /// set MitM flag
     void setMitmMode()       {helloHeader->flags |= 0x20U; }
