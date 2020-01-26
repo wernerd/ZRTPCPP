@@ -278,7 +278,7 @@ ZrtpDH::~ZrtpDH() {
     ctx = nullptr;
 }
 
-int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
+int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret) {
 
     auto* tmpCtx = static_cast<dhCtx*>(ctx);
 
@@ -302,8 +302,9 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
             return 0;
         }
         bnEnd(&pubKeyOther);
-        bnExtractBigBytes(&sec, secret, 0, length);
+        bnExtractBigBytes(&sec, secret.data(), 0, length);
         bnEnd(&sec);
+        secret.size(length);
 
         return length;
     }
@@ -321,9 +322,10 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
 
         /* Generate agreement for responder: sec = pub * privKey */
         ecdhComputeAgreement(&tmpCtx->curve, &sec, &pub, &tmpCtx->privKey);
-        bnExtractBigBytes(&sec, secret, 0, length);
+        bnExtractBigBytes(&sec, secret.data(), 0, length);
         bnEnd(&sec);
         FREE_EC_POINT(&pub)
+        secret.size(length);
 
         return length;
     }
@@ -338,9 +340,10 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
 
         /* Generate agreement for responder: sec = pub * privKey */
         ecdhComputeAgreement(&tmpCtx->curve, &sec, &pub, &tmpCtx->privKey);
-        bnExtractLittleBytes(&sec, secret, 0, length);
+        bnExtractLittleBytes(&sec, secret.data(), 0, length);
         bnEnd(&sec);
         FREE_EC_POINT(&pub)
+        secret.size(length);
 
         return length;
     }
@@ -410,7 +413,7 @@ int32_t ZrtpDH::getPubKeySize() const
 
 }
 
-int32_t ZrtpDH::getPubKeyBytes(uint8_t *buf) const
+int32_t ZrtpDH::fillInPubKeyBytes(secUtilities::SecureArray<1000>& pubKey) const
 {
     auto* tmpCtx = static_cast<dhCtx*>(ctx);
 
@@ -419,22 +422,25 @@ int32_t ZrtpDH::getPubKeyBytes(uint8_t *buf) const
         int size = getPubKeySize();
         int32_t prepend = getDhSize() - size;
         if (prepend > 0) {
-            memset(buf, 0, prepend);
+            memset(pubKey.data(), 0, prepend);
         }
-        bnExtractBigBytes(&tmpCtx->pubKey, buf + prepend, 0, size);
-        return size;
+        bnExtractBigBytes(&tmpCtx->pubKey, pubKey.data() + prepend, 0, size);
+        pubKey.size(prepend + size);
+        return prepend + size;
     }
 
     if (pkType == EC25 || pkType == EC38 || pkType == E414) {
         int32_t len = getPubKeySize() / 2;
 
-        bnExtractBigBytes(tmpCtx->pubPoint.x, buf, 0, len);
-        bnExtractBigBytes(tmpCtx->pubPoint.y, buf+len, 0, len);
+        bnExtractBigBytes(tmpCtx->pubPoint.x, pubKey.data(), 0, len);
+        bnExtractBigBytes(tmpCtx->pubPoint.y, pubKey.data()+len, 0, len);
+        pubKey.size(len * 2);
         return len * 2;
     }
     if (pkType == E255) {
         int32_t len = getPubKeySize();
-        bnExtractLittleBytes(tmpCtx->pubPoint.x, buf, 0, len);
+        bnExtractLittleBytes(tmpCtx->pubPoint.x, pubKey.data(), 0, len);
+        pubKey.size(len);
         return len;
     }
     return 0;

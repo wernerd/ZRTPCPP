@@ -56,6 +56,7 @@ void randomZRTP(uint8_t *buf, int32_t length);
 #if defined(__cplusplus)
 
 #include <libzrtpcpp/ZrtpConfigure.h>
+#include <common/SecureArray.h>
 
 const int32_t DH2K = 0;
 const int32_t DH3K = 1;
@@ -106,26 +107,27 @@ public:
      *
      * @return Size in bytes.
      */
-    uint32_t getDhSize() const;
+    [[nodiscard]] uint32_t getDhSize() const;
 
     /**
      * Returns the size in bytes of computed public key.
      *
      * @return Size in bytes.
      */
-    int32_t getPubKeySize() const;
+    [[nodiscard]] int32_t getPubKeySize() const;
 
     /**
-     * Returns the bytes of computed secret key.
+     * Fill in the bytes of computed secret key.
      *
-     * Returns the bytes of the public key in network (big endian) order.#
+     * Computes length of the public key, copies data to pubKey in network
+     * (big endian) order and sets correct size.
      *
-     * @param buf
-     *    Pointer to a buffer of at least <code>getPubKeySize()</code> bytes.
+     * @param pubKey
+     *    Reference to a SecureArray with a capacity of at least <code>getPubKeySize()</code> bytes.
      *
      * @return Size in bytes.
      */
-    int32_t getPubKeyBytes(uint8_t *buf) const;
+    int32_t fillInPubKeyBytes(secUtilities::SecureArray<1000>& pubKey) const;
 
     /**
      * Compute the secret key and returns it to caller.
@@ -137,12 +139,11 @@ public:
      *    Pointer to the peer's public key bytes. Must be in big endian order.
      *
      * @param secret
-     *    Pointer to a buffer that receives the secret key. This buffer must
-     *    have a length of at least <code>getSecretSize()</code> bytes.
+     *    Pointer to a buffer that receives the secret key.
      *
      * @return the size of the shared secret on success, -1 on error.
      */
-    int32_t computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret);
+    int32_t computeSecretKey(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret);
 
     /**
      * Check and validate the public key received from peer.
@@ -154,7 +155,7 @@ public:
      * @param pubKeyBytes
      *     Pointer to the peer's public key bytes. Must be in big endian order.
      *
-     * @return 0 if check faild, 1 if public key value is ok.
+     * @return 0 if check failed, 1 if public key value is ok.
      */
     int32_t checkPubKey(uint8_t* pubKeyBytes) const;
 

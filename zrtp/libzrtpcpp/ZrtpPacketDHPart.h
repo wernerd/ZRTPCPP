@@ -43,9 +43,6 @@ class __EXPORT ZrtpPacketDHPart : public ZrtpPacketBase {
     /// Creates a DHPart packet no data, must use setPubKeyType(...)
     ZrtpPacketDHPart();
 
-    /// Creates a DHPart packet with default data and a give public key type
-    explicit ZrtpPacketDHPart(char const * pkt);
-
     /// Creates a DHPart packet from received data
     explicit ZrtpPacketDHPart(uint8_t const * data);
 
@@ -94,8 +91,8 @@ class __EXPORT ZrtpPacketDHPart : public ZrtpPacketBase {
     /// Set first hash (H1) of hash chain, fixed length byte array
     void setH1(uint8_t const * t)            { memcpy(DHPartHeader->hashH1, t, sizeof(DHPartHeader->hashH1)); };
 
-    /// Set key agreement type, fixed size character array
-    void setPubKeyType(char const * pkt);
+    /// Set key length and compute overall packet length
+    void setPacketLength(size_t pubKeyLen);
 
     /// Set first MAC, fixed length byte array
     void setHMAC(uint8_t const * t)          { memcpy(pv+dhLength, t, 2*ZRTP_WORD_SIZE); };

@@ -21,7 +21,7 @@
 #ifndef _AESCFB_H__
 #define _AESCFB_H__
 
-#include <stdint.h>
+#include <cstdint>
 
 /**
  * @file aesCFB.h

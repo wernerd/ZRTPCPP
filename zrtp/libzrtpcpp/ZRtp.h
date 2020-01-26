@@ -713,12 +713,12 @@ private:
     /**
      * The computed DH shared secret
      */
-    std::unique_ptr<uint8_t[]> DHss;
+    secUtilities::SecureArray<1000> DHss;
 
     /**
      * My computed public key
      */
-    uint8_t pubKeyBytes[1000] = {0};
+    secUtilities::SecureArray<1000> pubKeyBytes;
     /**
      * Length off public key
      */
@@ -777,7 +777,7 @@ private:
      * Context to compute the SHA256 hash of selected messages.
      * Used to compute the s0, refer to chapter 4.4.1.4
      */
-    void* msgShaContext = 0;
+    void* msgShaContext = nullptr;
     /**
      * Committed Hash, Cipher, and public key algorithms
      */

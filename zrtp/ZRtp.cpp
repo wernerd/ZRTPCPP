@@ -306,7 +306,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     dhContext = make_unique<ZrtpDH>(pubKey->getName());
     dhContext->generatePublicKey();
 
-    dhContext->getPubKeyBytes(pubKeyBytes);
+    dhContext->fillInPubKeyBytes(pubKeyBytes);
     sendInfo(Info, InfoCommitDHGenerated);
 
     // Prepare IV data that we will use during confirm packet encryption.
@@ -335,13 +335,13 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     // chapter 5.4.1.1.
 
     // Fill the values in the DHPart2 packet
-    zrtpDH2.setPubKeyType(pubKey->getName());
+    zrtpDH2.setPacketLength(pubKeyBytes.size());
     zrtpDH2.setMessageType((uint8_t*)DHPart2Msg);
     zrtpDH2.setRs1Id(rs1IDi);
     zrtpDH2.setRs2Id(rs2IDi);
     zrtpDH2.setAuxSecretId(auxSecretIDi);
     zrtpDH2.setPbxSecretId(pbxSecretIDi);
-    zrtpDH2.setPv(pubKeyBytes);
+    zrtpDH2.setPv(pubKeyBytes.data());
     zrtpDH2.setH1(H1);
 
     uint32_t len = zrtpDH2.getLength() * ZRTP_WORD_SIZE;
@@ -375,7 +375,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     zrtpCommit.setHMAC(hmac);
 
     // hash first messages to produce overall message hash
-    // First the Responder's Hello message, second the Commit (always Initator's).
+    // First the Responder's Hello message, second the Commit (always Initiator's).
     // Must use negotiated hash.
     msgShaContext = createHashCtx(msgShaContext);
     hashCtxFunction(msgShaContext, (unsigned char*)hello->getHeaderBase(), helloLen);
@@ -540,20 +540,20 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     }
     sendInfo(Info, InfoDH1DHGenerated);
 
-    dhContext->getPubKeyBytes(pubKeyBytes);
+    dhContext->fillInPubKeyBytes(pubKeyBytes);
 
     // Re-compute auxSecretIDr because we changed roles *IDr with my H3, *IDi with peer's H3
     // Setup a DHPart1 packet.
     myRole = Responder;
     computeAuxSecretIds();                 // recompute AUX secret ids because we are now Responder, use different H3
 
-    zrtpDH1.setPubKeyType(pubKey->getName());
+    zrtpDH1.setPacketLength(pubKeyBytes.size());
     zrtpDH1.setMessageType((uint8_t*)DHPart1Msg);
     zrtpDH1.setRs1Id(rs1IDr);
     zrtpDH1.setRs2Id(rs2IDr);
     zrtpDH1.setAuxSecretId(auxSecretIDr);
     zrtpDH1.setPbxSecretId(pbxSecretIDr);
-    zrtpDH1.setPv(pubKeyBytes);
+    zrtpDH1.setPv(pubKeyBytes.data());
     zrtpDH1.setH1(H1);
 
     int32_t len = zrtpDH1.getLength() * ZRTP_WORD_SIZE;
@@ -626,13 +626,6 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
         return nullptr;
     }
 
-    // get memory to store DH result TODO: make it fixed memory
-    DHss = make_unique<uint8_t[]>(dhContext->getDhSize());
-    if (!DHss) {
-        *errMsg = CriticalSWError;
-        return nullptr;
-    }
-
     // get and check Responder's public value, see chap. 5.4.3 in the spec
     pvr = dhPart1->getPv();
     if (pvr == nullptr) {
@@ -643,7 +636,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
         *errMsg = DHErrorWrongPV;
         return nullptr;
     }
-    dhContext->computeSecretKey(pvr, DHss.get());
+    dhContext->computeSecretKey(pvr, DHss);
 
     // We are Initiator: the Responder's Hello and the Initiator's (our) Commit
     // are already hashed in the context. Now hash the Responder's DH1 and then
@@ -706,18 +699,13 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
         *errMsg = DHErrorWrongHVI;
         return nullptr;
     }
-    DHss = make_unique<uint8_t[]>(dhContext->getDhSize());
-    if (!DHss) {
-        *errMsg = CriticalSWError;
-        return nullptr;
-    }
     // Get and check the Initiator's public value, see chap. 5.4.2 of the spec
     pvi = dhPart2->getPv();
     if (!dhContext->checkPubKey(pvi)) {
         *errMsg = DHErrorWrongPV;
         return nullptr;
     }
-    dhContext->computeSecretKey(pvi, DHss.get());
+    dhContext->computeSecretKey(pvi, DHss);
 
     // Hash the Initiator's DH2 into the message Hash (other messages already prepared, see method prepareDHPart1().
     // Use negotiated hash function
@@ -2000,8 +1988,8 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord)
     length.push_back(sizeof(uint32_t));
 
     // Next is the DH result itself
-    data.push_back(DHss.get());
-    length.push_back(dhContext->getDhSize());
+    data.push_back(DHss.data());
+    length.push_back(DHss.size());
 
     // Next the fixed string "ZRTP-HMAC-KDF"
     data.push_back((unsigned char*)KDFString);
@@ -2049,8 +2037,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord)
     hashListFunction(data, length, s0);
 //  hexdump("S0 I", s0, hashLength);
 
-    memset_volatile(DHss.get(), 0, dhContext->getDhSize());
-    DHss.reset(nullptr);
+    DHss.clear();
 
     computeSRTPKeys();
     memset(s0, 0, MAX_DIGEST_LENGTH);
@@ -2160,8 +2147,8 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord)
     length.push_back(sizeof(uint32_t));
 
     // Next is the DH result itself
-    data.push_back(DHss.get());
-    length.push_back(dhContext->getDhSize());
+    data.push_back(DHss.data());
+    length.push_back(DHss.size());
 
     // Next the fixed string "ZRTP-HMAC-KDF"
     data.push_back((unsigned char*)KDFString);
@@ -2209,8 +2196,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord)
     hashListFunction(data, length, s0);
 //  hexdump("S0 R", s0, hashLength);
 
-    memset_volatile(DHss.get(), 0, dhContext->getDhSize());
-    DHss.reset(nullptr);
+    DHss.clear();
 
     computeSRTPKeys();
     memset(s0, 0, MAX_DIGEST_LENGTH);

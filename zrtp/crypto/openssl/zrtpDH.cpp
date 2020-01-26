@@ -315,24 +315,27 @@ int32_t ZrtpDH::getPubKeySize() const
 
 }
 
-int32_t ZrtpDH::getPubKeyBytes(uint8_t *buf) const
+int32_t ZrtpDH::getPubKeyBytes(secUtilities::SecureArray<1000>& pubKey) const
 {
 
     if (pkType == DH2K || pkType == DH3K) {
         // get len of pub_key, prepend with zeros to DH size
         int32_t prepend = getDhSize() - getPubKeySize();
         if (prepend > 0) {
-            memset(buf, 0, prepend);
+            memset(pubKey.data(), 0, prepend);
         }
-        return BN_bn2bin(static_cast<DH*>(ctx)->pub_key, buf + prepend);
+        auto len = BN_bn2bin(static_cast<DH*>(ctx)->pub_key, pubKey.data() + prepend);
+        pubKey.size(prepend + len);
+        return prepend + len;
     }
     if (pkType == EC25 || pkType == EC38) {
         uint8_t buffer[200];
 
-        size_t len = EC_POINT_point2oct(EC_KEY_get0_group(static_cast<EC_KEY*>(ctx)),
+        auto len = EC_POINT_point2oct(EC_KEY_get0_group(static_cast<EC_KEY*>(ctx)),
                                      EC_KEY_get0_public_key(static_cast<EC_KEY*>(ctx)),
                                      POINT_CONVERSION_UNCOMPRESSED, buffer, 200, nullptr);
-        memcpy(buf, buffer+1, len-1);
+        memcpy(pubKey.data(), buffer+1, len-1);
+        pubKey.size(len-1);
         return static_cast<int32_t>(len-1);
     }
     return 0;

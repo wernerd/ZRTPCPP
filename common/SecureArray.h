@@ -79,7 +79,7 @@ namespace secUtilities {
          * @return Maximum number of elements in the secure array.
          */
         [[nodiscard]] virtual auto
-        capacity() const -> size_type const = 0;
+        capacity() const -> size_type = 0;
 
         /**
          * @brief Begin iterator of secure array.
@@ -382,7 +382,7 @@ namespace secUtilities {
          * @brief SecureArray with given capacity
          */
         explicit SecureArrayFlex(size_type cap) {
-            capacity(cap);
+            capacity_ = cap;
             allocate();
         }
 
@@ -393,8 +393,8 @@ namespace secUtilities {
          * default capacity if @c length is smaller than default capacity.
          */
         SecureArrayFlex(const_pointer data, size_type length) {
-            if (length > capacity()) {
-                capacity(length);
+            if (length > capacity_) {
+                capacity_ =length;
                 allocate();
             }
             assign(data, length);
@@ -405,7 +405,7 @@ namespace secUtilities {
          */
         SecureArrayFlex(const SecureArrayFlex &other) {
             reset();
-            capacity(other.capacity());
+            capacity_ = other.capacity();
             allocate();
             assign(other);
         }
@@ -414,16 +414,16 @@ namespace secUtilities {
          * @brief Move constructor.
          */
         SecureArrayFlex(SecureArrayFlex&& other) noexcept {
-            capacity(other.capacity());
-            size(other.size());
+            capacity_ = other.capacity();
+            size_ = other.size();
 
             // array is larger than pre-allocated thus was allocated on heap. Just steal the pointer
             // and set it to pre-allocated on moved secure array, then set other values to initial states.
             if (other.data() != other.preAllocated()) {
-                data(other.data());
+                data_ = other.data();
                 other.data(other.preAllocated());
             } else {
-                memcpy(data(), other.data(), size() * sizeof(value_type));
+                memcpy(data_, other.data(), size_ * sizeof(value_type));
             }
             other.capacity(SECURE_PRE_ALLOCATED);
             other.clear();
@@ -442,8 +442,8 @@ namespace secUtilities {
         [[nodiscard]] auto
         size() const -> size_type override { return size_; }
 
-        [[nodiscard]] virtual auto
-        capacity() const -> size_type const override { return capacity_; }
+        [[nodiscard]] auto
+        capacity() const -> size_type override { return capacity_; }
 
         auto
         data() noexcept -> pointer override { return data_; }
@@ -451,11 +451,13 @@ namespace secUtilities {
         [[nodiscard]] auto
         data() const noexcept -> const_pointer override { return data_; }
 
-    private:
         auto
         size(size_type newSize) -> void override {
+            if (newSize > capacity_) throw std::out_of_range("SecureArrayFlex::setSize() overflows capacity");
             size_ = newSize;
         }
+
+    private:
 
         auto
         capacity(size_type cap) -> void override { capacity_ = cap; }
@@ -503,8 +505,8 @@ namespace secUtilities {
     public:
         SecureArray() = default;
 
-        auto
-        capacity() const -> size_type const override { return CAPACITY; }
+        [[nodiscard]] auto
+        capacity() const -> size_type override { return CAPACITY; }
 
         SecureArray(const_pointer data, size_type length) {
             assign(data, length);
@@ -539,11 +541,13 @@ namespace secUtilities {
         [[nodiscard]] auto
         data() const noexcept -> const_pointer override { return preAllocated(); }
 
-    private:
         auto
         size(size_type newSize) -> void override {
+            if (newSize > CAPACITY) throw std::out_of_range("SecureArray::setSize() overflows capacity");
             size_ = newSize;
         }
+
+    private:
 
         auto
         capacity(size_type cap) -> void override {}    // Capacity is fixed
@@ -554,7 +558,7 @@ namespace secUtilities {
         auto
         preAllocated() -> pointer override { return preAllocated_; }
 
-        auto
+        [[nodiscard]] auto
         preAllocated() const -> const_pointer { return preAllocated_; }
 
         // reset the class to its initial state. Clear data, size to 0.

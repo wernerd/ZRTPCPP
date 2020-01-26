@@ -24,11 +24,6 @@ ZrtpPacketDHPart::ZrtpPacketDHPart() {
     initialize();
 }
 
-ZrtpPacketDHPart::ZrtpPacketDHPart(char const * pkt) {
-    initialize();
-    setPubKeyType(pkt);
-}
-
 void ZrtpPacketDHPart::initialize() {
 
     void* allocated = &data;
@@ -42,28 +37,8 @@ void ZrtpPacketDHPart::initialize() {
 }
 
 // The fixed numbers below are taken from ZRTP specification, chap 5.1.5
-void ZrtpPacketDHPart::setPubKeyType(char const * pkt) {
-    // Well - the algorithm type is only 4 char thus cast to int32 and compare
-    if (*(int32_t*)pkt == *(int32_t*)dh2k) {
-        dhLength = 256;
-    }
-    else if (*(int32_t*)pkt == *(int32_t*)dh3k) {
-        dhLength = 384;
-    }
-    else if (*(int32_t*)pkt == *(int32_t*)ec25) {
-        dhLength = 64;
-    }
-    else if (*(int32_t*)pkt == *(int32_t*)ec38) {
-        dhLength = 96;
-    }
-    else if (*(int32_t*)pkt == *(int32_t*)e255) {
-        dhLength = 32;
-    }
-    else if (*(int32_t*)pkt == *(int32_t*)e414) {
-        dhLength = 104;
-    }
-    else
-        return;
+void ZrtpPacketDHPart::setPacketLength(size_t pubKeyLen) {
+    dhLength = pubKeyLen;
 
     auto length = static_cast<uint16_t>(sizeof(DHPartPacket_t) + dhLength + (2 * ZRTP_WORD_SIZE)); // HMAC field is 2*ZRTP_WORD_SIZE
     setLength(static_cast<uint16_t>(length / ZRTP_WORD_SIZE));
