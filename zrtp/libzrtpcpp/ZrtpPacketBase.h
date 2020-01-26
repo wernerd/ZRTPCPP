@@ -84,7 +84,7 @@ class __EXPORT ZrtpPacketBase {
      * @return
      *     Pointer to ZRTP header structure.
      */
-    const uint8_t* getHeaderBase() { return (const uint8_t*)zrtpHeader; };
+    [[nodiscard]] uint8_t const * getHeaderBase() const { return (const uint8_t*)zrtpHeader; };
 
     /**
      * Check is this is a ZRTP message
@@ -92,7 +92,7 @@ class __EXPORT ZrtpPacketBase {
      * @return
      *     @c true if check was ok
      */
-    bool isZrtpPacket()            { return (zrtpNtohs(zrtpHeader->zrtpId) == zrtpId); };
+    [[nodiscard]] bool isZrtpPacket() const          { return (zrtpNtohs(zrtpHeader->zrtpId) == zrtpId); };
 
     /**
      * Get the length in words of the ZRTP message
@@ -100,7 +100,7 @@ class __EXPORT ZrtpPacketBase {
      * @return
      *     The length in words
      */
-    uint16_t getLength()           { return zrtpNtohs(zrtpHeader->length); };
+    [[nodiscard]] uint16_t getLength()  const         { return zrtpNtohs(zrtpHeader->length); };
 
     /**
      * Return pointer to fixed length message type ASCII data
@@ -108,7 +108,7 @@ class __EXPORT ZrtpPacketBase {
      * @return
      *     Pointer to ASCII character array
      */
-    uint8_t* getMessageType()      { return zrtpHeader->messageType; };
+    [[nodiscard]] uint8_t* getMessageType() const     { return zrtpHeader->messageType; };
 
     /**
      * Set the lenght field in the ZRTP header
@@ -124,7 +124,7 @@ class __EXPORT ZrtpPacketBase {
      * @param msg
      *     Pointer to message type ASCII character array
      */
-    void setMessageType(uint8_t *msg)
+    void setMessageType(uint8_t const * msg)
         { memcpy(zrtpHeader->messageType, msg, sizeof(zrtpHeader->messageType)); };
 
     /**

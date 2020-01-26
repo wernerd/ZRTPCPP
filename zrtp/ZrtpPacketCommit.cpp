@@ -29,14 +29,14 @@ ZrtpPacketCommit::ZrtpPacketCommit() {
     setMessageType((uint8_t*)CommitMsg);
 }
 
-void ZrtpPacketCommit::setNonce(uint8_t* text) {
+void ZrtpPacketCommit::setNonce(uint8_t const * text) {
     memcpy(commitHeader->hvi, text, sizeof(data.commit.hvi)-4*ZRTP_WORD_SIZE);
     uint16_t len = getLength();
     len -= 4;
     setLength(len);
 }
 
-ZrtpPacketCommit::ZrtpPacketCommit(const uint8_t *data) {
+ZrtpPacketCommit::ZrtpPacketCommit(uint8_t const *data) {
     zrtpHeader = (zrtpPacketHeader_t *)&((CommitPacket_t *)data)->hdr;	// the standard header
     commitHeader = (Commit_t *)&((CommitPacket_t *)data)->commit;
 }

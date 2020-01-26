@@ -57,80 +57,80 @@ class __EXPORT ZrtpPacketCommit : public ZrtpPacketBase {
     ZrtpPacketCommit();
 
     /// Creates a Commit packet from received data
-    explicit ZrtpPacketCommit(const uint8_t* data);
+    explicit ZrtpPacketCommit(uint8_t const * data);
 
     /// Normal destructor
     ~ZrtpPacketCommit() override = default;
 
     /// Get pointer to hash algorithm type field, a fixed length character array
-    uint8_t* getHashType()    { return commitHeader->hash; };
+    [[nodiscard]] uint8_t* getHashType() const   { return commitHeader->hash; };
 
     /// Get pointer to cipher algorithm type field, a fixed length character array
-    uint8_t* getCipherType()  { return commitHeader->cipher; };
+    [[nodiscard]] uint8_t* getCipherType() const { return commitHeader->cipher; };
 
     /// Get pointer to SRTP authentication algorithm type field, a fixed length character array
-    uint8_t* getAuthLen()     { return commitHeader->authlengths; };
+    [[nodiscard]] uint8_t* getAuthLen() const    { return commitHeader->authlengths; };
 
     /// Get pointer to key agreement algorithm type field, a fixed length character array
-    uint8_t* getPubKeysType() { return commitHeader->pubkey; };
+    [[nodiscard]] uint8_t* getPubKeysType() const { return commitHeader->pubkey; };
 
     /// Get pointer to SAS algorithm type field, a fixed length character array
-    uint8_t* getSasType()     { return commitHeader->sas; };
+    [[nodiscard]] uint8_t* getSasType() const    { return commitHeader->sas; };
 
     /// Get pointer to ZID field, a fixed length byte array
-    uint8_t* getZid()         { return commitHeader->zid; };
+    [[nodiscard]] uint8_t* getZid() const        { return commitHeader->zid; };
 
     /// Get pointer to HVI field, a fixed length byte array
-    uint8_t* getHvi()         { return commitHeader->hvi; };
+    [[nodiscard]] uint8_t* getHvi() const        { return commitHeader->hvi; };
 
     /// Get pointer to NONCE field, a fixed length byte array, overlaps HVI field
-    uint8_t* getNonce()       { return commitHeader->hvi; };
+    [[nodiscard]] uint8_t* getNonce() const      { return commitHeader->hvi; };
 
     /// Get pointer to hashH2 field, a fixed length byte array
-    uint8_t* getH2()          { return commitHeader->hashH2; };
+    [[nodiscard]] uint8_t* getH2() const         { return commitHeader->hashH2; };
 
     /// Get pointer to MAC field, a fixed length byte array
-    uint8_t* getHMAC()        { return commitHeader->hmac; };
+    [[nodiscard]] uint8_t* getHMAC() const       { return commitHeader->hmac; };
 
     /// Get pointer to MAC field during multi-stream mode, a fixed length byte array
-    uint8_t* getHMACMulti()   { return commitHeader->hmac-4*ZRTP_WORD_SIZE; };
+    [[nodiscard]] uint8_t* getHMACMulti() const  { return commitHeader->hmac-4*ZRTP_WORD_SIZE; };
 
     /// Check if packet length makes sense.
-    bool isLengthOk(commitType type)   {int32_t len = getLength(); 
+    [[nodiscard]] bool isLengthOk(commitType type) const  {int32_t len = getLength();
                                         return ((type == DhExchange) ? len == COMMIT_DH_EX : len == COMMIT_MULTI);}
 
     /// Set hash algorithm type field, fixed length character field
-    void setHashType(uint8_t* text)    { memcpy(commitHeader->hash, text, ZRTP_WORD_SIZE); };
+    void setHashType(uint8_t const * text)    { memcpy(commitHeader->hash, text, ZRTP_WORD_SIZE); };
 
     /// Set cipher algorithm type field, fixed length character field
-    void setCipherType(uint8_t* text)  { memcpy(commitHeader->cipher, text, ZRTP_WORD_SIZE); };
+    void setCipherType(uint8_t const * text)  { memcpy(commitHeader->cipher, text, ZRTP_WORD_SIZE); };
 
     /// Set SRTP authentication algorithm algorithm type field, fixed length character field
-    void setAuthLen(uint8_t* text)     { memcpy(commitHeader->authlengths, text, ZRTP_WORD_SIZE); };
+    void setAuthLen(uint8_t const * text)     { memcpy(commitHeader->authlengths, text, ZRTP_WORD_SIZE); };
 
     /// Set key agreement algorithm type field, fixed length character field
-    void setPubKeyType(uint8_t* text)  { memcpy(commitHeader->pubkey, text, ZRTP_WORD_SIZE); };
+    void setPubKeyType(uint8_t const * text)  { memcpy(commitHeader->pubkey, text, ZRTP_WORD_SIZE); };
 
     /// Set SAS algorithm type field, fixed length character field
-    void setSasType(uint8_t* text)     { memcpy(commitHeader->sas, text, ZRTP_WORD_SIZE); };
+    void setSasType(uint8_t const * text)     { memcpy(commitHeader->sas, text, ZRTP_WORD_SIZE); };
 
     /// Set ZID field, a fixed length byte array
-    void setZid(uint8_t* text)         { memcpy(commitHeader->zid, text, sizeof(commitHeader->zid)); };
+    void setZid(uint8_t const * text)         { memcpy(commitHeader->zid, text, sizeof(commitHeader->zid)); };
 
     /// Set HVI field, a fixed length byte array
-    void setHvi(uint8_t* text)         { memcpy(commitHeader->hvi, text, sizeof(commitHeader->hvi)); };
+    void setHvi(uint8_t const * text)         { memcpy(commitHeader->hvi, text, sizeof(commitHeader->hvi)); };
 
     /// Set Nonce field, a fixed length byte array, overlapping HVI field
-    void setNonce(uint8_t* text);
+    void setNonce(uint8_t const * text);
 
     /// Set hashH2 field, a fixed length byte array
-    void setH2(uint8_t* hash)          { memcpy(commitHeader->hashH2, hash, sizeof(commitHeader->hashH2)); };
+    void setH2(uint8_t const * hash)          { memcpy(commitHeader->hashH2, hash, sizeof(commitHeader->hashH2)); };
 
     /// Set MAC field, a fixed length byte array
-    void setHMAC(uint8_t* hash)        { memcpy(commitHeader->hmac, hash, sizeof(commitHeader->hmac)); };
+    void setHMAC(uint8_t const * hash)        { memcpy(commitHeader->hmac, hash, sizeof(commitHeader->hmac)); };
 
     /// Set MAC field during multi-stream mode, a fixed length byte array
-    void setHMACMulti(uint8_t* hash)   { memcpy(commitHeader->hmac-4*ZRTP_WORD_SIZE, hash, sizeof(commitHeader->hmac)); };
+    void setHMACMulti(uint8_t const * hash)   { memcpy(commitHeader->hmac-4*ZRTP_WORD_SIZE, hash, sizeof(commitHeader->hmac)); };
 
  private:
      Commit_t* commitHeader;     ///< Points to Commit message part
