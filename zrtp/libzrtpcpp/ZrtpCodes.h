@@ -109,7 +109,7 @@ enum SevereCodes {
     SevereDH1HMACFailed,            //!< Hash HMAC check of DHPart1 failed!
     SevereDH2HMACFailed,            //!< Hash HMAC check of DHPart2 failed!
     SevereCannotSend,               //!< Cannot send data - connection or peer down?
-    SevereProtocolError,            //!< Internal protocol error occured!
+    SevereProtocolError,            //!< Internal protocol error occurred!
     SevereNoTimer,                  //!< Cannot start a timer - internal resources exhausted?
     SevereTooMuchRetries            //!< Too much retries during ZRTP negotiation - connection or peer down?
 };

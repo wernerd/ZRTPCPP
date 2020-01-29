@@ -57,31 +57,31 @@ void ZrtpPacketHello::configureHello(ZrtpConfigure& config) {
     setMessageType((uint8_t*)HelloMsg);
 
     uint32_t lenField = nHash << 16U;
-    for (int32_t i = 0; i < nHash; i++) {
+    for (uint32_t i = 0; i < nHash; i++) {
         AlgorithmEnum& hash = config.getAlgoAt(HashAlgorithm, i);
         setHashType(i, (int8_t*)hash.getName());
     }
 
     lenField |= nCipher << 12U;
-    for (int32_t i = 0; i < nCipher; i++) {
+    for (uint32_t i = 0; i < nCipher; i++) {
         AlgorithmEnum& cipher = config.getAlgoAt(CipherAlgorithm, i);
         setCipherType(i, (int8_t*)cipher.getName());
     }
 
     lenField |= nAuth << 8U;
-    for (int32_t i = 0; i < nAuth; i++) {
+    for (uint32_t i = 0; i < nAuth; i++) {
         AlgorithmEnum& authLength = config.getAlgoAt(AuthLength, i);
         setAuthLen(i, (int8_t*)authLength.getName());
     }
 
     lenField |= nPubkey << 4U;
-    for (int32_t i = 0; i < nPubkey; i++) {
+    for (uint32_t i = 0; i < nPubkey; i++) {
         AlgorithmEnum& pubKey = config.getAlgoAt(PubKeyAlgorithm, i);
         setPubKeyType(i, (int8_t*)pubKey.getName());
     }
 
     lenField |= nSas;
-    for (int32_t i = 0; i < nSas; i++) {
+    for (uint32_t i = 0; i < nSas; i++) {
         AlgorithmEnum& sas = config.getAlgoAt(SasType, i);
         setSasType(i, (int8_t*)sas.getName());
     }

@@ -68,7 +68,7 @@ class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
     /// Get version number from Hello message, fixed ASCII character array
     uint8_t* getVersion()  { return helloHeader->version; };
 
-     /// Get version number from Hello message as integer, only relvant digits converted
+     /// Get version number from Hello message as integer, only relevant digits converted
     int32_t getVersionInt();
 
     /// Get client id from Hello message, fixed ASCII character array
@@ -104,7 +104,7 @@ class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
     /// Get hash algorithm name at position n, fixed ASCII character array
     uint8_t* getHashType(int32_t n)   { return ((uint8_t*)helloHeader)+oHash+(n*ZRTP_WORD_SIZE); }
 
-    /// Get ciper algorithm name at position n, fixed ASCII character array
+    /// Get cipher algorithm name at position n, fixed ASCII character array
     uint8_t* getCipherType(int32_t n) { return ((uint8_t*)helloHeader)+oCipher+(n*ZRTP_WORD_SIZE); }
 
     /// Get SRTP authentication algorithm name at position n, fixed ASCII character array

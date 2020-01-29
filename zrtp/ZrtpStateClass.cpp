@@ -93,10 +93,12 @@ void ZrtpStateClass::processEvent(Event *ev) {
         last = tolower(*(msg+7));
 
         // Sanity check of packet size for all states except WaitErrorAck.
+        // Actual packet type not known yet, thus use internal knowledge of ZRTP
+        // packet layout as specified in ZRTP RFC.
         if (!inState(WaitErrorAck)) {
-            uint16_t totalLength = *(uint16_t*)(pkt+2);
-            totalLength = zrtpNtohs(totalLength) * ZRTP_WORD_SIZE;
-            totalLength += 12 + sizeof(uint32_t);           // 12 bytes is fixed header, uint32_t is CRC
+            uint16_t totalLength = *(uint16_t*)(pkt+2);                 // packet length store in bytes 3 and 4, big endian
+            totalLength = zrtpNtohs(totalLength) * ZRTP_WORD_SIZE;      // packet length is in number of ZRTP words
+            totalLength += transportOverhead + sizeof(uint32_t);        // add transport overhead and CRC (uint32_t)
 
             if (totalLength != ev->length) {
                 fprintf(stderr, "Total length does not match received length: %d - %ld\n", totalLength, (long int)(ev->length & 0xffffU));
@@ -221,7 +223,7 @@ void ZrtpStateClass::evDetect() {
     uint32_t errorCode = 0;
 
     /*
-     * First check the general event type, then discrimnate
+     * First check the general event type, then discriminate
      * the real event.
      */
     if (event->type == ZrtpPacket) {
