@@ -18,6 +18,12 @@ target_link_libraries(utility_test gtest_main ${zrtplibName})
 add_executable(zrtpTimeout_test zrtpTimeout_test.cpp)
 target_link_libraries(zrtpTimeout_test gtest_main ${zrtplibName})
 
+add_executable(zrtpStartStop_test ZrtpStartStop_test.cpp)
+target_link_libraries(zrtpStartStop_test gmock_main ${zrtplibName})
+
+add_executable(zrtpHello_test ZrtpHello_test.cpp)
+target_link_libraries(zrtpHello_test gmock_main ${zrtplibName})
+
 if(SDES)
     add_executable(sdesRun_test sdesRun_test.cpp)
     target_link_libraries(sdesRun_test gtest_main ${zrtplibName})
