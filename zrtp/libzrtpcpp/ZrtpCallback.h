@@ -109,7 +109,6 @@ class __EXPORT ZrtpCallback {
 public:
     virtual ~ZrtpCallback() {};
 
-protected:
     friend class ZRtp;
 
     /**

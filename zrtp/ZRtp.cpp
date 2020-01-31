@@ -2793,6 +2793,10 @@ int ZRtp::getCountersZrtp(int32_t* counters) {
     return stateEngine->getRetryCounters(counters);
 }
 
+void ZRtp::setTransportOverhead(int32_t overhead) {
+    stateEngine->setTransportOverhead(overhead);
+}
+
 bool ZRtp::checkAndSetNonce(uint8_t* nonce) {
     // This is for backward compatibility if an applications uses the old
     // get- and setMultiStrParams functions

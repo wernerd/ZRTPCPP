@@ -649,6 +649,8 @@ class __EXPORT ZRtp {
 
      [[nodiscard]] std::shared_ptr<ZrtpConfigure> getZrtpConfigure() const { return configureAlgos; }
 
+     void setTransportOverhead(int32_t overhead);
+
 private:
      typedef union _hashCtx {
          SkeinCtx_t  skeinCtx;
@@ -1255,7 +1257,7 @@ private:
     /**
      * Prepare a Hello packet.
      *
-     * Just take the preinitialized Hello packet and return it. No
+     * Just take the pre-initialized Hello packet and return it. No
      * further processing required.
      *
      * @return

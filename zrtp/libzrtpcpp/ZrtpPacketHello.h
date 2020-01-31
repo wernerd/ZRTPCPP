@@ -105,7 +105,7 @@ class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
     /// Get hash algorithm name at position n, fixed ASCII character array
     [[nodiscard]] uint8_t* getHashType(int32_t n) const  { return ((uint8_t*)helloHeader)+oHash+(n*ZRTP_WORD_SIZE); }
 
-    /// Get ciper algorithm name at position n, fixed ASCII character array
+    /// Get cipher algorithm name at position n, fixed ASCII character array
     [[nodiscard]] uint8_t* getCipherType(int32_t n) const{ return ((uint8_t*)helloHeader)+oCipher+(n*ZRTP_WORD_SIZE); }
 
     /// Get SRTP authentication algorithm name at position n, fixed ASCII character array

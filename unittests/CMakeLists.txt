@@ -4,19 +4,23 @@ cmake_minimum_required(VERSION 3.10)
 # Setup for ZrtpConfigure test using google test framework
 #######
 
-set (test_src
-        zrtpConfigure_test.cpp
-        utility_test.cpp
-        zrtpTimeout_test.cpp)
-
-add_executable(zrtpConfigure_test zrtpConfigure_test.cpp)
+add_executable(zrtpConfigure_test ZrtpConfigure_test.cpp)
 target_link_libraries(zrtpConfigure_test gtest_main ${zrtplibName})
 
 add_executable(utility_test utility_test.cpp)
 target_link_libraries(utility_test gtest_main ${zrtplibName})
 
-add_executable(zrtpTimeout_test zrtpTimeout_test.cpp)
+add_executable(zrtpTimeout_test ZrtpTimeout_test.cpp)
 target_link_libraries(zrtpTimeout_test gtest_main ${zrtplibName})
+
+add_executable(zrtpStartStop_test ZrtpStartStop_test.cpp)
+target_link_libraries(zrtpStartStop_test gmock_main ${zrtplibName})
+
+add_executable(zrtpHello_test ZrtpHello_test.cpp)
+target_link_libraries(zrtpHello_test gmock_main ${zrtplibName})
+
+add_executable(zrtpRun_test ZrtpBasicRun_test.cpp ZrtpTestCommon.h)
+target_link_libraries(zrtpRun_test gmock_main ${zrtplibName})
 
 if(SDES)
     add_executable(sdesRun_test sdesRun_test.cpp)

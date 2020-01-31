@@ -170,6 +170,8 @@ private:
     
     int32_t retryCounters[ErrorRetry+1] = {0};  // TODO adjust
 
+    int32_t transportOverhead = RTP_HEADER_LENGTH;
+
 public:
     /// Create a ZrtpStateClass
     explicit ZrtpStateClass(ZRtp *p);
@@ -372,6 +374,18 @@ public:
      * @return number of 32-bit counters returned in buffer or < 0 on error
      */
     int getRetryCounters(int32_t* counters);
+
+    /**
+     * Set length in bytes of transport over head, default is @c RTP_HEADER_LENGTH
+     *
+     * State engine uses this overhead length to validate the packet length of a ZRTP
+     * packet including the transport header/footer. For example overhead of RTP is
+     * 12 bytes (RTP header) and this is also the default value that the ZRTP state
+     * engine uses.
+     *
+     * @param overhead
+     */
+    void setTransportOverhead(int32_t overhead) { transportOverhead = overhead; }
 
 };
 

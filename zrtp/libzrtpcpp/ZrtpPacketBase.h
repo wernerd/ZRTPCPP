@@ -111,7 +111,7 @@ class __EXPORT ZrtpPacketBase {
     [[nodiscard]] uint8_t* getMessageType() const     { return zrtpHeader->messageType; };
 
     /**
-     * Set the lenght field in the ZRTP header
+     * Set the length field in the ZRTP header
      *
      * @param len
      *     The length of the ZRTP message in words, host order
