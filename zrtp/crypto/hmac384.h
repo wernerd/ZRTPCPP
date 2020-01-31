@@ -52,8 +52,7 @@
  * @param data_length
  *    Length of the data in bytes
  * @param macOut
- *    Reference to a secure array that receives the computed digest. This
- *    array must have a size of at least 32 bytes (SHA256_DIGEST_LENGTH).
+ *    Reference to a secure array that receives the computed digest.
  */
 void hmac_sha384(const uint8_t* key, uint64_t key_length,
                  const uint8_t* data, uint64_t data_length,
@@ -73,8 +72,7 @@ void hmac_sha384(const uint8_t* key, uint64_t key_length,
  * @param dataLength
  *   Vector of integers that hold the length of each data chunk.
  * @param macOut
- *    Reference to a secure array that receives the computed digest. This
- *    array must have a size of at least 32 bytes (SHA256_DIGEST_LENGTH).
+ *    Reference to a secure array that receives the computed digest..
  */
 
 void hmacSha384(const uint8_t* key, uint64_t key_length,

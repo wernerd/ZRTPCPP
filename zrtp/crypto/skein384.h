@@ -34,6 +34,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <common/typedefs.h>
 
 #ifndef SKEIN384_DIGEST_LENGTH
 #define SKEIN384_DIGEST_LENGTH  48
@@ -123,12 +124,10 @@ void* initializeSkein384Context(void* ctx);
  *
  * @param ctx
  *    Points to the Skein384 context.
- * @param digest
- *    If this pointer is not NULL then it must point to a byte array that
- *    is big enough to hold the Skei384 digest (384 bit = 48 Bytes). If this
- *    pointer is NULL then the functions does not compute the digest.
+ * @param digestOut
+ *    Reference to a secure array that receives the computed digest.
  */
-void finalizeSkein384Context(void* ctx, uint8_t* digest);
+void finalizeSkein384Context(void* ctx, zrtp::RetainedSecArray & digestOut);
 
 /**
  * Update the Skein384 context with data.

@@ -74,13 +74,11 @@ void* initializeSkein256Context(void* ctx)
     return (void*)hd;
 }
 
-void finalizeSkein256Context(void* ctx, uint8_t* digest)
+void finalizeSkein256Context(void* ctx, zrtp::RetainedSecArray & digestOut)
 {
     auto* hd = reinterpret_cast<SkeinCtx_t*>(ctx);
-
-    if (digest != nullptr && hd != nullptr) {
-        skeinFinal(hd, digest);
-    }
+    skeinFinal(hd, digestOut.data());
+    digestOut.size(SHA256_DIGEST_SIZE);
 }
 
 void skein256Ctx(void* ctx, const uint8_t* data, uint64_t dataLength)

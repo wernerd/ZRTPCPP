@@ -790,9 +790,9 @@ private:
     uint8_t peerH3[8*ZRTP_WORD_SIZE] = {0};
 
     /**
-     * The SHA256 hash over selected messages
+     * The hash over selected messages, use negotiated hash function
      */
-    uint8_t messageHash[MAX_DIGEST_LENGTH] = {0};
+    zrtp::NegotiatedArray messageHash;
 
     /**
      * The s0
@@ -848,7 +848,7 @@ private:
 
     void* (*createHashCtx)(void* ctx) = nullptr;
 
-    void (*closeHashCtx)(void* ctx, uint_8t* digest) = nullptr;
+    void (*closeHashCtx)(void* ctx, zrtp::RetainedSecArray & macOut) = nullptr;
 
     void (*hashCtxFunction)(void* ctx, const uint8_t* data, uint64_t dataLength) = nullptr;
 

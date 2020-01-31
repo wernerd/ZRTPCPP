@@ -34,6 +34,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <common/typedefs.h>
 
 #ifndef SHA256_DIGEST_LENGTH
 #define SHA256_DIGEST_LENGTH 32
@@ -120,12 +121,10 @@ void* initializeSha256Context(void* ctx);
  *
  * @param ctx
  *    Points to the SHA256 context.
- * @param digest
- *    If this pointer is not NULL then it must point to a byte array that
- *    is big enough to hold the SHA256 digest (256 bit = 32 Bytes). If this
- *    pointer is NULL then the functions does not compute the digest.
+ * @param digestOut
+ *    Reference to a secure array that receives the computed digest.
  */
-void finalizeSha256Context(void* ctx, uint8_t * digest);
+void finalizeSha256Context(void* ctx, zrtp::RetainedSecArray & digestOut);
 
 /**
  * Update the SHA256 context with data.

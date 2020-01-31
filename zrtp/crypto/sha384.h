@@ -33,6 +33,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <common/typedefs.h>
 
 #ifndef SHA384_DIGEST_LENGTH
 #define SHA384_DIGEST_LENGTH 48
@@ -120,12 +121,10 @@ void* initializeSha384Context(void* ctx);
  *
  * @param ctx
  *    Points to the SHA384 context.
- * @param digest
- *    If this pointer is not NULL then it must point to a byte array that
- *    is big enough to hold the SHA384 digest (384 bit = 48 Bytes). If this
- *    pointer is NULL then the functions does not compute the digest.
+ * @param digestOut
+ *    Reference to a secure array that receives the computed digest.
  */
-void finalizeSha384Context(void* ctx, uint8_t* digest);
+void finalizeSha384Context(void* ctx, zrtp::RetainedSecArray & digestOut);
 
 /**
  * Update the SHA384 context with data.

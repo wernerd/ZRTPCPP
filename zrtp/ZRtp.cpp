@@ -569,7 +569,8 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     // We are responder. Release the pre-computed SHA context because it was prepared for Initiator.
     // Setup and compute for Responder.
     if (msgShaContext != nullptr) {
-        closeHashCtx(msgShaContext, nullptr);
+        zrtp::NegotiatedArray dummy;
+        closeHashCtx(msgShaContext, dummy);
     }
     msgShaContext = createHashCtx(msgShaContext);
 
@@ -840,7 +841,8 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
     // We are responder. Release a possibly pre-computed SHA256 context
     // because this was prepared for Initiator. Then create a new one.
     if (msgShaContext != nullptr) {
-        closeHashCtx(msgShaContext, nullptr);
+        zrtp::NegotiatedArray dummy;
+        closeHashCtx(msgShaContext, dummy);
     }
     msgShaContext = createHashCtx(msgShaContext);
 
@@ -1986,8 +1988,8 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord)
     length.push_back(ZID_SIZE);
 
     // Next ist total hash (messageHash) itself
-    data.push_back(messageHash);
-    length.push_back(hashLength);
+    data.push_back(messageHash.data());
+    length.push_back(messageHash.size());
 
     /*
      * For each matching shared secret hash the length of
@@ -2145,8 +2147,8 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord)
     length.push_back(ZID_SIZE);
 
     // Next ist total hash (messageHash) itself
-    data.push_back(messageHash);
-    length.push_back(hashLength);
+    data.push_back(messageHash.data());
+    length.push_back(messageHash.size());
 
     /*
      * For each matching shared secret hash the length of
@@ -2226,7 +2228,7 @@ void ZRtp::generateKeysMultiStream() {
     else {
         kdfContext.assign(ownZid).append(peerZid);
     }
-    kdfContext.append(messageHash, hashLength);
+    kdfContext.append(messageHash);
 
     KDF(zrtpSession.data(), hashLength, zrtpMsk, strlen(zrtpMsk)+1, kdfContext.data(), kdfSize, hashLength * 8, s0);
 
@@ -2270,7 +2272,7 @@ void ZRtp::computeSRTPKeys() {
     else {
         kdfContext.assign(ownZid).append(peerZid);
     }
-    kdfContext.append(messageHash, hashLength);
+    kdfContext.append(messageHash);
 
     // Initiator key and salt
     KDF(s0.data(), hashLength, iniMasterKey, strlen(iniMasterKey)+1, kdfContext.data(), kdfSize, keyLen, srtpKeyI);
