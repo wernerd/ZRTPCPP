@@ -1535,14 +1535,6 @@ private:
     void srtpSecretsOff(EnableSecurity part);
 
     /**
-     * ZRTP state engine calls these methods to enter or leave its
-     * synchronization mutex.
-     */
-    void synchEnter();
-
-    void synchLeave();
-
-    /**
      * Helper function to store ZRTP message data in a temporary buffer
      *
      * This functions first clears the temporary buffer, then stores

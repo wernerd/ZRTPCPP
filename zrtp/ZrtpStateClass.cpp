@@ -24,6 +24,7 @@
 
 #include <libzrtpcpp/ZRtp.h>
 #include <libzrtpcpp/ZrtpStateClass.h>
+#include <mutex>
 
 using namespace std;
 using namespace GnuZrtpCodes;
@@ -82,7 +83,8 @@ void ZrtpStateClass::processEvent(Event *ev) {
     char *msg, first, middle, last;
     uint8_t *pkt;
 
-    parent->synchEnter();
+    std::mutex stateMutex;
+    lock_guard<std::mutex> stateGuard(stateMutex);  // process only one packet at a time
 
     event = ev;
     if (event->type == ZrtpPacket) {
@@ -96,14 +98,13 @@ void ZrtpStateClass::processEvent(Event *ev) {
         // Actual packet type not known yet, thus use internal knowledge of ZRTP
         // packet layout as specified in ZRTP RFC.
         if (!inState(WaitErrorAck)) {
-            uint16_t totalLength = *(uint16_t*)(pkt+2);                 // packet length store in bytes 3 and 4, big endian
+            uint16_t totalLength = *(uint16_t*)(pkt+2);                 // packet length stored in bytes 3 and 4, big endian
             totalLength = zrtpNtohs(totalLength) * ZRTP_WORD_SIZE;      // packet length is in number of ZRTP words
             totalLength += transportOverhead + sizeof(uint32_t);        // add transport overhead and CRC (uint32_t)
 
             if (totalLength != ev->length) {
                 fprintf(stderr, "Total length does not match received length: %d - %ld\n", totalLength, (long int)(ev->length & 0xffffU));
                 sendErrorPacket(MalformedPacket);
-                parent->synchLeave();
                 return;
             }
         }
@@ -130,7 +131,6 @@ void ZrtpStateClass::processEvent(Event *ev) {
             if (ppktAck != nullptr) {          // ACK only to valid PING packet, otherwise ignore it
                 parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(ppktAck));
             }
-            parent->synchLeave();
             return;
         }
         else if (first == 's' && last == 'y') {
@@ -138,7 +138,6 @@ void ZrtpStateClass::processEvent(Event *ev) {
             auto* srly = new ZrtpPacketSASrelay(pkt);
             auto* rapkt = parent->prepareRelayAck(srly, &errorCode);
             parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(rapkt));
-            parent->synchLeave();
             return;
         }
     }
@@ -150,7 +149,6 @@ void ZrtpStateClass::processEvent(Event *ev) {
         cancelTimer();
     }
     engine->processEvent(*this);
-    parent->synchLeave();
 }
 
 
@@ -1388,7 +1386,7 @@ void ZrtpStateClass::evSecureState() {
     }
     // unknown Event type for this state (covers Error and ZrtpClose)
     else  {
-        // If in secure state ingnore error events to avoid Error packet injection
+        // If in secure state ignore error events to avoid Error packet injection
         // attack - found by Dmitry Monakhov (dmonakhov@openvz.org)
         if (event->type == ErrorPkt)
             return;
@@ -1408,7 +1406,7 @@ bool ZrtpStateClass::subEvWaitRelayAck() {
     uint8_t* pkt;
 
     /*
-     * First check the general event type, then discrimnate the real event.
+     * First check the general event type, then discriminate the real event.
      */
     if  (event->type == ZrtpPacket) {
         pkt = event->packet;

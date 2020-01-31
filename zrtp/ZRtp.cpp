@@ -2493,14 +2493,6 @@ void ZRtp::zrtpNotSuppOther() {
     callback->zrtpNotSuppOther();
 }
 
-void ZRtp::synchEnter() {
-    callback->synchEnter();
-}
-
-void ZRtp::synchLeave() {
-    callback->synchLeave();
-}
-
 int32_t ZRtp::sendPacketZRTP(ZrtpPacketBase *packet) {
     return ((packet == nullptr) ? 0 :
             callback->sendDataZRTP(packet->getHeaderBase(), (packet->getLength() * 4) + 4));

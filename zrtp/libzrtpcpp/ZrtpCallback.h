@@ -261,14 +261,18 @@ public:
      * processing. Because mutex implementations depend on the
      * underlying infrastructure, for example operating system or
      * thread implementation, GNU ZRTP delegates mutex handling to the
-     * spcific part of its implementation.
+     * specific part of its implementation.
+     *
+     * @deprecated Not used anymore by ZRTP - uses C++ std::mutex internally to perform thread synchronisation
      */
-    virtual void synchEnter() =0;
+    DEPRECATED_ZRTP virtual void synchEnter() =0;
 
     /**
      * Leave synchronization mutex.
+     *
+     * @deprecated Not used anymore by ZRTP - uses C++ std::mutex internally to perform thread synchronisation
      */
-    virtual void synchLeave() =0;
+    DEPRECATED_ZRTP virtual void synchLeave() =0;
 
     /**
      * Inform about a PBX enrollment request.
