@@ -19,19 +19,17 @@
  * @author  Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <string.h>
+#include <cstring>
 #include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
 #include <bn.h>
-#include <bnprint.h>
 #include <ec/ec.h>
 #include <ec/ecdh.h>
 #include <zrtp/crypto/zrtpDH.h>
 #include <zrtp/libzrtpcpp/ZrtpTextData.h>
 #include <cryptcommon/aes.h>
 #include <cryptcommon/ZrtpRandom.h>
+#include <mutex>
 
 
 static BigNum bnP2048;
@@ -43,6 +41,7 @@ static BigNum bnP3072MinusOne;
 static BigNum two;
 
 static uint8_t dhinit = 0;
+static std::mutex initMutex;
 
 typedef struct _dhCtx {
     BigNum privKey;
@@ -199,24 +198,27 @@ ZrtpDH::ZrtpDH(const char* type) {
 
     randomZRTP(random, sizeof(random));
 
-    if (!dhinit) {
-        bnBegin(&two);
-        bnSetQ(&two, 2);
+    {
+        std::lock_guard<std::mutex> initLock(initMutex);
+        if (!dhinit) {
+            bnBegin(&two);
+            bnSetQ(&two, 2);
 
-        bnBegin(&bnP2048);
-        bnInsertBigBytes(&bnP2048, P2048, 0, sizeof(P2048));
-        bnBegin(&bnP3072);
-        bnInsertBigBytes(&bnP3072, P3072, 0, sizeof(P3072));
+            bnBegin(&bnP2048);
+            bnInsertBigBytes(&bnP2048, P2048, 0, sizeof(P2048));
+            bnBegin(&bnP3072);
+            bnInsertBigBytes(&bnP3072, P3072, 0, sizeof(P3072));
 
-        bnBegin(&bnP2048MinusOne);
-        bnCopy(&bnP2048MinusOne, &bnP2048);
-        bnSubQ(&bnP2048MinusOne, 1);
+            bnBegin(&bnP2048MinusOne);
+            bnCopy(&bnP2048MinusOne, &bnP2048);
+            bnSubQ(&bnP2048MinusOne, 1);
 
-        bnBegin(&bnP3072MinusOne);
-        bnCopy(&bnP3072MinusOne, &bnP3072);
-        bnSubQ(&bnP3072MinusOne, 1);
+            bnBegin(&bnP3072MinusOne);
+            bnCopy(&bnP3072MinusOne, &bnP3072);
+            bnSubQ(&bnP3072MinusOne, 1);
 
-        dhinit = 1;
+            dhinit = 1;
+        }
     }
 
     bnBegin(&tmpCtx->privKey);
