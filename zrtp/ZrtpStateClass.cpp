@@ -18,9 +18,8 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <iostream>
 #include <cstdlib>
-#include <ctype.h>
+#include <cctype>
 
 #include <libzrtpcpp/ZRtp.h>
 #include <libzrtpcpp/ZrtpStateClass.h>
@@ -90,9 +89,9 @@ void ZrtpStateClass::processEvent(Event *ev) {
     if (event->type == ZrtpPacket) {
         pkt = event->packet;
         msg = (char *)pkt + 4;
-        first = tolower(*msg);
-        middle = tolower(*(msg+4));
-        last = tolower(*(msg+7));
+        first = static_cast<char>(tolower(*msg));
+        middle = static_cast<char>(tolower(*(msg+4)));
+        last = static_cast<char>(tolower(*(msg+7)));
 
         // Sanity check of packet size for all states except WaitErrorAck.
         // Actual packet type not known yet, thus use internal knowledge of ZRTP
@@ -228,8 +227,8 @@ void ZrtpStateClass::evDetect() {
         pkt = event->packet;
         msg = (char *)pkt + 4;
 
-        first = tolower(*msg);
-        last = tolower(*(msg+7));
+        first = static_cast<char>(tolower(*msg));
+        last = static_cast<char>(tolower(*(msg+7)));
         /*
          * HelloAck:
          * - our peer acknowledged our Hello packet, we have not seen the peer's Hello yet
@@ -412,8 +411,8 @@ void ZrtpStateClass::evAckSent() {
         pkt = event->packet;
         msg = (char *)pkt + 4;
 
-        first = tolower(*msg);
-        last = tolower(*(msg+7));
+        first = static_cast<char>(tolower(*msg));
+        last = static_cast<char>(tolower(*(msg+7)));
 
         /*
          * HelloAck:
@@ -567,8 +566,8 @@ void ZrtpStateClass::evAckDetected() {
         pkt = event->packet;
         msg = (char *)pkt + 4;
 
-        first = tolower(*msg);
-        last = tolower(*(msg+7));
+        first = static_cast<char>(tolower(*msg));
+        last = static_cast<char>(tolower(*(msg+7)));
 
 #if 1
         /*
@@ -667,8 +666,8 @@ void ZrtpStateClass::evWaitCommit() {
         pkt = event->packet;
         msg = (char *)pkt + 4;
 
-        first = tolower(*msg);
-        last = tolower(*(msg+7));
+        first = static_cast<char>(tolower(*msg));
+        last = static_cast<char>(tolower(*(msg+7)));
         /*
          * Hello:
          * - resend HelloAck
@@ -761,10 +760,10 @@ void ZrtpStateClass::evCommitSent() {
         pkt = event->packet;
         msg = (char *)pkt + 4;
 
-        first = tolower(*msg);
-        middle = tolower(*(msg+4));
-        last = tolower(*(msg+7));
-        secondLast = tolower(*(msg+6));
+        first = static_cast<char>(tolower(*msg));
+        middle = static_cast<char>(tolower(*(msg+4)));
+        last = static_cast<char>(tolower(*(msg+7)));
+        secondLast = static_cast<char>(tolower(*(msg+6)));
 
         /*
          * HelloAck or Hello:
@@ -969,9 +968,9 @@ void ZrtpStateClass::evWaitDHPart2() {
         pkt = event->packet;
         msg = (char *)pkt + 4;
 
-        first = tolower(*msg);
-        last = tolower(*(msg+7));
-        secondLast = tolower(*(msg+6));
+        first = static_cast<char>(tolower(*msg));
+        last = static_cast<char>(tolower(*(msg+7)));
+        secondLast = static_cast<char>(tolower(*(msg+6)));
         /*
          * Commit:
          * - resend DHPart1
@@ -1045,8 +1044,8 @@ void ZrtpStateClass::evWaitConfirm1() {
         pkt = event->packet;
         msg = (char *)pkt + 4;
 
-        first = tolower(*msg);
-        last = tolower(*(msg+7));
+        first = static_cast<char>(tolower(*msg));
+        last = static_cast<char>(tolower(*(msg+7)));
 
         /*
          * Confirm1:
@@ -1136,9 +1135,9 @@ void ZrtpStateClass::evWaitConfirm2() {
         pkt = event->packet;
         msg = (char *)pkt + 4;
 
-        first = tolower(*msg);
-        secondLast = tolower(*(msg+6));
-        last = tolower(*(msg+7));
+        first = static_cast<char>(tolower(*msg));
+        secondLast = static_cast<char>(tolower(*(msg+6)));
+        last = static_cast<char>(tolower(*(msg+7)));
 
         /*
          * DHPart2 or Commit in multi stream mode:
@@ -1216,8 +1215,8 @@ void ZrtpStateClass::evWaitConfAck() {
         pkt = event->packet;
         msg = (char *)pkt + 4;
 
-        first = tolower(*msg);
-        last = tolower(*(msg+7));
+        first = static_cast<char>(tolower(*msg));
+        last = static_cast<char>(tolower(*(msg+7)));
          /*
          * ConfAck:
          * - Switch off resending Confirm2
@@ -1297,8 +1296,8 @@ void ZrtpStateClass::evWaitErrorAck() {
         pkt = event->packet;
         msg = (char *)pkt + 4;
 
-        first = tolower(*msg);
-        last = tolower(*(msg+7));
+        first = static_cast<char>(tolower(*msg));
+        last = static_cast<char>(tolower(*(msg+7)));
 
         /*
          * Errorck:
@@ -1338,7 +1337,7 @@ void ZrtpStateClass::evSecureState() {
     uint8_t *pkt;
 
     /*
-     * Handle a possible substate. If substate handling was ok just return.
+     * Handle a possible sub-state. If sub-state handling was ok just return.
      */
     if (secSubstate == WaitSasRelayAck) {
         if (subEvWaitRelayAck())
@@ -1349,8 +1348,8 @@ void ZrtpStateClass::evSecureState() {
         pkt = event->packet;
         msg = (char *)pkt + 4;
 
-        first = tolower(*msg);
-        last = tolower(*(msg+7));
+        first = static_cast<char>(tolower(*msg));
+        last = static_cast<char>(tolower(*(msg+7)));
 
         /*
          * Confirm2:
@@ -1382,7 +1381,6 @@ void ZrtpStateClass::evSecureState() {
     }
     else if (event->type == Timer) {
         // Ignore stray timeout in this state
-        ;
     }
     // unknown Event type for this state (covers Error and ZrtpClose)
     else  {
@@ -1412,8 +1410,8 @@ bool ZrtpStateClass::subEvWaitRelayAck() {
         pkt = event->packet;
         msg = (char *)pkt + 4;
 
-        first = tolower(*msg);
-        last = tolower(*(msg+7));
+        first = static_cast<char>(tolower(*msg));
+        last = static_cast<char>(tolower(*(msg+7)));
 
         /*
          * SAS relayAck:
@@ -1498,7 +1496,7 @@ void ZrtpStateClass::setMultiStream(bool multi) {
     multiStream = multi;
 }
 
-bool ZrtpStateClass::isMultiStream() {
+[[maybe_unused]] bool ZrtpStateClass::isMultiStream() {
     return multiStream;
 }
 
