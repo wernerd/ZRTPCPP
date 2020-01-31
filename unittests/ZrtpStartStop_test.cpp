@@ -62,26 +62,6 @@ public:
     }
 };
 
-// Check to make sure we don't have dangling locks during simple start/stop
-// SynchEnter and SynchLeave call must match.
-TEST_F(ZrtpStartStopFixture, check_synch_enter_leave) {
-    // Configure with mandatory algorithms only
-    shared_ptr<ZrtpConfigure> configure = make_shared<ZrtpConfigure>();
-
-    int32_t syncs = 0;
-
-    testing::NiceMock<MockZrtpCallback> callback;
-
-    ON_CALL(callback, synchEnter).WillByDefault([&syncs]() { syncs++; });
-    ON_CALL(callback, synchLeave).WillByDefault([&syncs]() { syncs--; });
-
-    ZRtp zrtp(aliceZid, callback, aliceId, configure, false, false);
-    zrtp.startZrtpEngine();
-    zrtp.stopZrtp();
-
-    ASSERT_EQ(0, syncs);
-}
-
 // No timeout happens in this test: Start and cancel timer call must be in sync
 TEST_F(ZrtpStartStopFixture, check_timer_start_cancel) {
     // Configure with mandatory algorithms only

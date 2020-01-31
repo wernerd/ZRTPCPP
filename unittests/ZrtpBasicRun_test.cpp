@@ -203,6 +203,8 @@ public:
         LOGGER(DEBUGGING, "Bob thread terminating.")
     }
     // endregion
+    mutex securityOn;
+    condition_variable securityOnCv;
 
     testing::NiceMock<MockZrtpCallback> aliceCb;
     unique_ptr<ZRtp> aliceZrtp;
@@ -279,21 +281,13 @@ TEST_F(ZrtpBasicRunFixture, full_run_test) {
     bobConfigure->setZidCache(bobCache);
 
     int32_t aliceTimers = 0;
-    int32_t aliceSyncs = 0;
     int32_t bobTimers = 0;
-    int32_t bobSyncs = 0;
 
     // No timeout happens in this test: Start and cancel timer calls must match
     ON_CALL(aliceCb, activateTimer).WillByDefault(DoAll(([&aliceTimers](int32_t time) { aliceTimers++; }), Return(1)));
     ON_CALL(aliceCb, cancelTimer).WillByDefault(DoAll([&aliceTimers]() { aliceTimers--; }, Return(1)));
     ON_CALL(bobCb, activateTimer).WillByDefault(DoAll(([&bobTimers](int32_t time) { bobTimers++; }), Return(1)));
     ON_CALL(bobCb, cancelTimer).WillByDefault(DoAll([&bobTimers]() { bobTimers--; }, Return(1)));
-
-    // synchEnter and synchLeave calls must match
-    ON_CALL(aliceCb, synchEnter).WillByDefault([&aliceSyncs]() { aliceSyncs++; });
-    ON_CALL(aliceCb, synchLeave).WillByDefault([&aliceSyncs]() { aliceSyncs--; });
-    ON_CALL(bobCb, synchEnter).WillByDefault([&bobSyncs]() { bobSyncs++; });
-    ON_CALL(bobCb, synchLeave).WillByDefault([&bobSyncs]() { bobSyncs--; });
 
     // send data just forwards the data, no further checks yet.
     // When Alice sends data put the data into Bob's receive queue and signal 'data available'
@@ -316,6 +310,9 @@ TEST_F(ZrtpBasicRunFixture, full_run_test) {
     string bobCipher;
     string bobSas;
 
+    bool aliceSecureOn = false;
+    bool bobSecureOn = false;
+
     // These calls must happen in the given sequence during the ZRTP protocol run
     {
         testing::InSequence aliceSequence;
@@ -327,9 +324,11 @@ TEST_F(ZrtpBasicRunFixture, full_run_test) {
         // Once all secrets set and the two endpoints are active report the ciphers and the
         // SAS. One call only.
         EXPECT_CALL(aliceCb, srtpSecretsOn(_, _, Eq(false)))
-                .WillOnce([&aliceCipher, &aliceSas](string c, string s, bool v) {
+                .WillOnce([this, &aliceCipher, &aliceSas, &aliceSecureOn](string c, string s, bool v) {
                     aliceCipher = move(c);
                     aliceSas = move(s);
+                    aliceSecureOn = true;
+                    this->securityOnCv.notify_all();
                     LOGGER(INFO, "Alice cipher: ", aliceCipher, ", SAS: ", aliceSas)
                 });
 
@@ -343,9 +342,11 @@ TEST_F(ZrtpBasicRunFixture, full_run_test) {
         EXPECT_CALL(bobCb, srtpSecretsReady(_, _)).Times(2).WillRepeatedly(Return(true));
 
         EXPECT_CALL(bobCb, srtpSecretsOn(_, _, Eq(false)))
-                .WillOnce([&bobCipher, &bobSas](string c, string s, bool v) {
+                .WillOnce([this, &bobCipher, &bobSas, &bobSecureOn](string c, string s, bool v) {
                     bobCipher = move(c);
                     bobSas = move(s);
+                    bobSecureOn = true;
+                    this->securityOnCv.notify_all();
                     LOGGER(INFO, "  Bob cipher: ", bobCipher, ", SAS: ", bobSas)
                 });
 
@@ -360,15 +361,18 @@ TEST_F(ZrtpBasicRunFixture, full_run_test) {
 
     bobStartThread();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));  // time to complete ZRTP run
+    unique_lock<mutex> secure(securityOn);
+    while (!(aliceSecureOn && bobSecureOn)) {
+        securityOnCv.wait(secure);
+    }
+    // time to complete ZRTP security on handling
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
 
     aliceStopThread();
     bobStopThread();
 
     ASSERT_EQ(0, aliceTimers);
-    ASSERT_EQ(0, aliceSyncs);
     ASSERT_EQ(0, bobTimers);
-    ASSERT_EQ(0, bobSyncs);
 
     ASSERT_EQ(aliceCipher, bobCipher);
     ASSERT_EQ(aliceSas, bobSas);
