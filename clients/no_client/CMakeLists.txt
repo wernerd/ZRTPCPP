@@ -36,7 +36,6 @@ if (OPENSSL_FOUND)
             ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/hmac384.cpp
             ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/sha384.cpp
             ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/aesCFB.cpp
-            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/InitializeOpenSSL.cpp
             ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.cpp
             ${zrtp_crypto_includes})
 

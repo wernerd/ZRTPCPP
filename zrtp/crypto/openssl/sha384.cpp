@@ -60,13 +60,12 @@ void* initializeSha384Context(void* ctx)
     return (void*)hd;
 }
 
-void finalizeSha384Context(void* ctx, uint8_t * digest)
+void finalizeSha384Context(void* ctx, zrtp::RetainedSecArray & digestOut)
 {
     auto* hd = (SHA512_CTX*)ctx;
 
-    if (digest != nullptr) {
-        SHA384_Final(digest, hd);
-    }
+    SHA384_Final(digestOut.data(), hd);
+    digestOut.size(SHA384_DIGEST_LENGTH);
 }
 
 void sha384Ctx(void* ctx, const uint8_t* data, uint64_t dataLength)

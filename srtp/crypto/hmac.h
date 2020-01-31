@@ -96,17 +96,13 @@ void hmac_sha1(const uint8_t* key, uint64_t keyLength,
                uint8_t* mac, int32_t* macLength);
 
 /**
- * Create and initialize a SHA1 HMAC context.
+ * Create an SHA1 HMAC context.
  *
  * An application uses this context to create several HMAC with the same key.
  *
- * @param key
- *    The MAC key.
- * @param key_length
- *    Lenght of the MAC key in bytes
- * @return Returns a pointer to the initialized context or @c NULL in case of an error.
+ * @return Returns a pointer to the initialized context or @c nullptr in case of an error.
  */
-void* createSha1HmacContext(const uint8_t* key, uint64_t key_length);
+void* createSha1HmacContext();
 
 /**
  * Initialize a SHA1 HMAC context.

@@ -78,7 +78,7 @@ void finalizeSkein256Context(void* ctx, zrtp::RetainedSecArray & digestOut)
 {
     auto* hd = reinterpret_cast<SkeinCtx_t*>(ctx);
     skeinFinal(hd, digestOut.data());
-    digestOut.size(SHA256_DIGEST_SIZE);
+    digestOut.size(SKEIN256_DIGEST_LENGTH);
 }
 
 void skein256Ctx(void* ctx, const uint8_t* data, uint64_t dataLength)

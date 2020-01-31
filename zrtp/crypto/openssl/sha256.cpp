@@ -60,12 +60,11 @@ void* initializeSha256Context(void* ctx)
     return (void*)hd;
 }
 
-void finalizeSha256Context(void* ctx, uint8_t * digest)
+void finalizeSha256Context(void* ctx, zrtp::RetainedSecArray & digestOut)
 {
     auto* hd = (SHA256_CTX*)ctx;
-    if (digest != nullptr && hd != nullptr) {
-        SHA256_Final(digest, hd);
-    }
+    SHA256_Final(digestOut.data(), hd);
+    digestOut.size(SHA256_DIGEST_LENGTH);
 }
 
 void sha256Ctx(void* ctx, const uint8_t* data, uint64_t dataLength)

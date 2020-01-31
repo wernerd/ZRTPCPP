@@ -39,6 +39,7 @@ set(cryptcommon_srcs
     ${CMAKE_SOURCE_DIR}/cryptcommon/twofish_cfb.c ${zrtp_skein_src})
 
 if (OPENSSL_FOUND)
+    # openSSL crypto does not have twoFish, use the standalone implementation
     set(crypto_src
             ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/zrtpDH.cpp
             ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/hmac256.cpp
@@ -46,8 +47,7 @@ if (OPENSSL_FOUND)
             ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/hmac384.cpp
             ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/sha384.cpp
             ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/aesCFB.cpp
-            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/InitializeOpenSSL.cpp
-            ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/twoCFB.cpp
             ${zrtp_crypto_includes})
 
 endif()

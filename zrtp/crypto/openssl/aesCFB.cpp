@@ -14,22 +14,16 @@
  * limitations under the License.
  */
 
-#include <openssl/crypto.h>
 #include <openssl/aes.h>
-#include <string>
+#include <cstring>
 
 #include <zrtp/crypto/aesCFB.h>
-
-// extern void initializeOpenSSL();
-
 
 void aesCfbEncrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data,
                    int32_t dataLength)
 {
     AES_KEY aesKey;
     int usedBytes = 0;
-
-//    initializeOpenSSL();
 
     memset(&aesKey, 0, sizeof( AES_KEY ) );
     if (keyLength == 16) {
@@ -51,8 +45,6 @@ void aesCfbDecrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data,
 {
     AES_KEY aesKey;
     int usedBytes = 0;
-
-//    initializeOpenSSL();
 
     memset(&aesKey, 0, sizeof( AES_KEY ) );
     if (keyLength == 16) {

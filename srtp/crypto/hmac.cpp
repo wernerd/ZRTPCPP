@@ -120,13 +120,11 @@ void hmac_sha1(const uint8_t* key, uint64_t keyLength,
     *macLength = SHA1_BLOCK_SIZE;
 }
 
-void* createSha1HmacContext(const uint8_t* key, uint64_t keyLength)
+void* createSha1HmacContext()
 {
     auto *ctx = reinterpret_cast<hmacSha1Context*>(malloc(sizeof(hmacSha1Context)));
     if (ctx == nullptr)
         return nullptr;
-
-    hmacSha1Init(ctx, key, keyLength);
     return ctx;
 }
 

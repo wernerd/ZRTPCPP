@@ -85,7 +85,7 @@ void finalizeSkein384Context(void* ctx, zrtp::RetainedSecArray & digestOut)
     auto* hd = reinterpret_cast<SkeinCtx_t*>(ctx);
 
     skeinFinal(hd, digestOut.data());
-    digestOut.size(SHA384_DIGEST_SIZE);
+    digestOut.size(SKEIN384_DIGEST_LENGTH);
 }
 
 void skein384Ctx(void* ctx, const uint8_t* data, uint64_t dataLength)
