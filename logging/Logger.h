@@ -424,22 +424,22 @@ return 0;
         if (logType == FULL && loggerCallback_ == nullptr) {
             switch (level) {
                 case DEBUGGING:
-                    logStream << "<DEBUG> :";
+                    logStream << "<DEBUG>: ";
                     break;
                 case WARNING:
-                    logStream << "<WARNING> :";
+                    logStream << "<WARNING>: ";
                     break;
                 case ERROR_LOG:
-                    logStream << "<ERROR> :";
+                    logStream << "<ERROR>: ";
                     break;
                 case INFO:
-                    logStream << "<INFO> :";
+                    logStream << "<INFO>";
                     break;
                 case VERBOSE:
-                    logStream << "<VERBOSE> :";
+                    logStream << "<VERBOSE>";
                     break;
                 case EPIC:
-                    logStream << "<EPIC> :";
+                    logStream << "<EPIC>";
                     break;
                 default:
                     break;
@@ -476,11 +476,11 @@ return 0;
         header.str("");
         header.fill('0');
         header.width(7);
-        header << logLineNumber++ << " < " << getTime() <<" - ";
+        header << logLineNumber++ << "<" << getTime() <<" - ";
 
         header.fill('0');
         header.width(7);
-        header << clock() << " > ~ ";
+        header << clock() << ">~";
 
         return header.str();
     }

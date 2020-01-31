@@ -266,7 +266,7 @@ void ZrtpStateClass::evDetect() {
              * Check and negotiate the ZRTP protocol version first.
              *
              * This selection mechanism relies on the fact that we sent the highest supported protocol version in
-             * the initial Hello packet with as stated in RFC6189, section 4.1.1
+             * the initial Hello packet as stated in RFC6189, section 4.1.1
              */
             int32_t recvVersion = hpkt.getVersionInt();
             if (recvVersion > sentVersion) {   // We don't support this version, stay in state with timer active
@@ -385,8 +385,8 @@ void ZrtpStateClass::evDetect() {
  * that both peers have seen at least one Hello.
  *
  * When entering this transition function:
- * - The instance variabe sentPacket contains own Hello packet
- * - The instance variabe commitPkt points to prepared Commit packet 
+ * - The instance variable sentPacket contains own Hello packet
+ * - The instance variable commitPkt points to prepared Commit packet
  * - Timer T1 is active
  *
  * Possible events in this state are:
@@ -396,7 +396,7 @@ void ZrtpStateClass::evDetect() {
  *   prepared Commit packet and try Initiator mode.
  * - Commit: The peer answered with Commit to HelloAck/Hello, thus switch to
  *   responder mode.
- * - Hello: If the protcol engine receives another Hello it repeats the 
+ * - Hello: If the protocol engine receives another Hello it repeats the
  *   HelloAck/Hello response until Timer T1 exceeds its maximum. This may 
  *   happen if the other peer sends Hello only (maybe due to network problems)
  */
@@ -407,7 +407,7 @@ void ZrtpStateClass::evAckSent() {
     uint32_t errorCode = 0;
 
     /*
-     * First check the general event type, then discrimnate
+     * First check the general event type, then discriminate
      * the real event.
      */
     if (event->type == ZrtpPacket) {
@@ -545,7 +545,7 @@ void ZrtpStateClass::evAckSent() {
  * The protocol engine received a HelloAck in state Detect, thus the peer 
  * acknowledged our the Hello. According to ZRT RFC 6189 our peer must send
  * its Hello until our protocol engine sees it (refer also to comment for
- * state AckSent). This protocol sequence gurantees that both peers got at
+ * state AckSent). This protocol sequence guarantees that both peers got at
  * least one Hello. 
  *
  * When entering this transition function

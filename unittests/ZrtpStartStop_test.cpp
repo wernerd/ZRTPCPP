@@ -18,7 +18,7 @@
 #include <zrtp/libzrtpcpp/ZrtpConfigure.h>
 #include <zrtp/libzrtpcpp/ZRtp.h>
 #include "../logging/ZrtpLogging.h"
-#include "gmock/gmock.h"
+#include "ZrtpTestCommon.h"
 
 using namespace std;
 
@@ -28,10 +28,10 @@ using testing::Return;
 using testing::SaveArg;
 using testing::DoAll;
 
-string myId_1;
-string myId_2;
-uint8_t myZid_1[] = {1,2,3,4,5,6,7,8,9,10,11,12};
-uint8_t myZid_2[] = {2,3,4,5,6,7,8,9,10,11,12,13};
+string aliceId;
+string BobId;
+uint8_t aliceZid[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+uint8_t bobZid[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
 
 class ZrtpStartStopFixture: public ::testing::Test {
 public:
@@ -45,8 +45,8 @@ public:
     void SetUp() override {
         // code here will execute just before the test ensues
         LOGGER_INSTANCE setLogLevel(DEBUGGING);
-        myId_1 = "test zid 1";
-        myId_2 = "test zid 2";
+        aliceId = "test zid 1";
+        BobId = "test zid 2";
     }
 
     void TearDown( ) override {
@@ -57,39 +57,8 @@ public:
     ~ZrtpStartStopFixture( ) override {
         // cleanup any pending stuff, but no exceptions allowed
         LOGGER_INSTANCE setLogLevel(VERBOSE);
-        myId_1.clear();
-        myId_2.clear();
-    }
-};
-
-class MockCallback : public ZrtpCallback {
-public:
-    MOCK_METHOD(int32_t, sendDataZRTP, (const uint8_t* data, int32_t length), (override));
-    MOCK_METHOD(int32_t, activateTimer, (int32_t time), (override));
-    MOCK_METHOD(int32_t, cancelTimer, (), (override));
-    MOCK_METHOD(void, sendInfo, (GnuZrtpCodes::MessageSeverity severity, int32_t subCode), (override));
-    MOCK_METHOD(bool, srtpSecretsReady, (SrtpSecret_t* secrets, EnableSecurity part), (override));
-    MOCK_METHOD(void, srtpSecretsOff, (EnableSecurity part), (override));
-    MOCK_METHOD(void, srtpSecretsOn, (std::string c, std::string s, bool verified), (override));
-    MOCK_METHOD(void, handleGoClear, (), (override));
-    MOCK_METHOD(void, zrtpNegotiationFailed, (GnuZrtpCodes::MessageSeverity severity, int32_t subCode), (override));
-    MOCK_METHOD(void, zrtpNotSuppOther, (), (override));
-    MOCK_METHOD(void, synchEnter, (), (override));
-    MOCK_METHOD(void, synchLeave, (), (override));
-    MOCK_METHOD(void, zrtpAskEnrollment, (GnuZrtpCodes::InfoEnrollment info), (override));
-    MOCK_METHOD(void, zrtpInformEnrollment, (GnuZrtpCodes::InfoEnrollment info), (override));
-    MOCK_METHOD(void, signSAS, (uint8_t* sasHash), (override));
-    MOCK_METHOD(bool, checkSASSignature, (uint8_t* sasHash), (override));
-
-    // Setup defaults with appropriate return values, overwrite in tests as required
-    MockCallback() {
-        ON_CALL(*this, sendDataZRTP).WillByDefault(Return(1));
-
-        ON_CALL(*this, activateTimer).WillByDefault(Return(1));
-        ON_CALL(*this, cancelTimer).WillByDefault(Return(1));
-
-        ON_CALL(*this, srtpSecretsReady).WillByDefault(Return(true));
-        ON_CALL(*this, checkSASSignature).WillByDefault(Return(true));
+        aliceId.clear();
+        BobId.clear();
     }
 };
 
@@ -101,12 +70,12 @@ TEST_F(ZrtpStartStopFixture, check_synch_enter_leave) {
 
     int32_t syncs = 0;
 
-    testing::NiceMock<MockCallback> callback;
+    testing::NiceMock<MockZrtpCallback> callback;
 
     ON_CALL(callback, synchEnter).WillByDefault([&syncs]() { syncs++; });
     ON_CALL(callback, synchLeave).WillByDefault([&syncs]() { syncs--; });
 
-    ZRtp zrtp(myZid_1, callback, myId_1, configure, false, false);
+    ZRtp zrtp(aliceZid, callback, aliceId, configure, false, false);
     zrtp.startZrtpEngine();
     zrtp.stopZrtp();
 
@@ -120,12 +89,12 @@ TEST_F(ZrtpStartStopFixture, check_timer_start_cancel) {
 
     int32_t timers = 0;
 
-    testing::NiceMock<MockCallback> callback;
+    testing::NiceMock<MockZrtpCallback> callback;
 
     ON_CALL(callback, activateTimer).WillByDefault(DoAll(([&timers](int32_t time) { timers++; }), Return(1)));
     ON_CALL(callback, cancelTimer).WillByDefault(DoAll([&timers]() { timers--; }, Return(1)));
 
-    ZRtp zrtp(myZid_1, callback, myId_1, configure, false, false);
+    ZRtp zrtp(aliceZid, callback, aliceId, configure, false, false);
     zrtp.startZrtpEngine();
     zrtp.stopZrtp();
 

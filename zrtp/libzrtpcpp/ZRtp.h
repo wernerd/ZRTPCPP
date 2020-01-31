@@ -659,16 +659,18 @@ class __EXPORT ZRtp {
      /**
       * @brief Return either Initiator or Responder.
       */
-     int32_t getZrtpRole() const { return myRole; }
+     [[nodiscard]] int32_t getZrtpRole() const { return myRole; }
 
      /**
       * @brief Get status of our peer's disclosure flag
       */
-     bool isPeerDisclosureFlag() const { return peerDisclosureFlagSeen; }
+     [[nodiscard]] bool isPeerDisclosureFlag() const { return peerDisclosureFlagSeen; }
 
-     std::shared_ptr<ZIDCache>& getZidCache() const { return configureAlgos->getZidCache(); }
+     [[nodiscard]] std::shared_ptr<ZIDCache>& getZidCache() const { return configureAlgos->getZidCache(); }
 
-     std::shared_ptr<ZrtpConfigure> getZrtpConfigure() const { return configureAlgos; }
+     [[nodiscard]] std::shared_ptr<ZrtpConfigure> getZrtpConfigure() const { return configureAlgos; }
+
+     void setTransportOverhead(int32_t overhead);
 
 private:
      typedef union _hashCtx {
@@ -1279,7 +1281,7 @@ private:
     /**
      * Prepare a Hello packet.
      *
-     * Just take the preinitialized Hello packet and return it. No
+     * Just take the pre-initialized Hello packet and return it. No
      * further processing required.
      *
      * @return
