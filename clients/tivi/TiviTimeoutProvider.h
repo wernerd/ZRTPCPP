@@ -36,7 +36,7 @@
 #include <stdint.h>
 #include <memory>
 
-#include <common/Thread.h>
+#include "clients/tivi/timeoutHelper/Thread.h"
 #include <common/osSpecifics.h>
 
 /**

@@ -38,24 +38,22 @@ set(cryptcommon_srcs
 
 if (OPENSSL_FOUND)
     set(crypto_src
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/zrtpDH.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/hmac256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/sha256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/hmac384.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/sha384.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/aesCFB.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/InitializeOpenSSL.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.cpp)
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/zrtpDH.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/hmac256.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/sha256.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/hmac384.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/sha384.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/aesCFB.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/InitializeOpenSSL.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.cpp
+            ${zrtp_crypto_includes})
 
 endif()
 
 if (CRYPTO_STANDALONE)
     set(crypto_src
         ${CMAKE_SOURCE_DIR}/cryptcommon/ZrtpRandom.cpp
-        ${CMAKE_SOURCE_DIR}/common/Thread.cpp
-        ${CMAKE_SOURCE_DIR}/common/MutexClass.cpp
-        ${CMAKE_SOURCE_DIR}/common/EventClass.cpp
-        ${zrtp_crypto_src} ${bnlib_src})
+        ${zrtp_standalone_crypto_src} ${bnlib_src})
 
     set(cryptcommon_srcs ${cryptcommon_srcs}
         ${CMAKE_SOURCE_DIR}/cryptcommon/aescrypt.c
@@ -65,7 +63,9 @@ if (CRYPTO_STANDALONE)
 endif()
 
 set(zrtp_ccrtp_src
-    ${CMAKE_CURRENT_SOURCE_DIR}/ZrtpQueue.cpp)
+        ${CMAKE_CURRENT_SOURCE_DIR}/ZrtpQueue.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/CcrtpTimeoutProvider.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtpccrtp.h)
 
 set(zrtpcpp_src ${zrtp_src} ${zrtp_ccrtp_src} ${crypto_src} ${cryptcommon_srcs})
 

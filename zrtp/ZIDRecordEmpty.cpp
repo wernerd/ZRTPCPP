@@ -18,24 +18,24 @@
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <libzrtpcpp/ZrtpPacketConf2Ack.h>
+#include <time.h>
 
-ZrtpPacketConf2Ack::ZrtpPacketConf2Ack() {
-    DEBUGOUT((fprintf(stdout, "Creating Conf2Ack packet without data\n")));
+#include <libzrtpcpp/ZIDRecordEmpty.h>
 
-    zrtpHeader = &data.hdr;	// the standard header
-
-    setZrtpId();
-    setLength((sizeof (Conf2AckPacket_t) / ZRTP_WORD_SIZE) - 1);
-    setMessageType((uint8_t*)Conf2AckMsg);
+void ZIDRecordEmpty::setNewRs1(const unsigned char* data, int32_t expire) {
+    (void) data;
+    (void) expire;
 }
 
-ZrtpPacketConf2Ack::ZrtpPacketConf2Ack(char *data) {
-    DEBUGOUT((fprintf(stdout, "Creating Conf2Ack packet from data\n")));
 
-    zrtpHeader = (zrtpPacketHeader_t *)&((Conf2AckPacket_t*)data)->hdr;	// the standard header
+bool ZIDRecordEmpty::isRs1NotExpired() {
+    return false;
 }
 
-ZrtpPacketConf2Ack::~ZrtpPacketConf2Ack() {
-    DEBUGOUT((fprintf(stdout, "Deleting Conf2Ack packet: alloc: %x\n", allocated)));
+bool ZIDRecordEmpty::isRs2NotExpired() {
+    return false;
+}
+
+void ZIDRecordEmpty::setMiTMData(const unsigned char* data) {
+    (void) data;
 }

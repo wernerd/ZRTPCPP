@@ -72,8 +72,8 @@ typedef DWORD ThreadId_t;
 #endif
 #endif
 
-#include <common/MutexClass.h>
-#include <common/EventClass.h>
+#include "clients/tivi/timeoutHelper/MutexClass.h"
+#include "clients/tivi/timeoutHelper/EventClass.h"
 
 #define QUEUE_SIZE 100
 #define DEFAULT_STACK_SIZE 0

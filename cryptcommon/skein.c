@@ -85,7 +85,7 @@ int Skein_256_InitExt(Skein_256_Ctxt_t *ctx,size_t hashBitLen,u64b_t treeInfo, c
     } cfg;                              /* config block */
 
     Skein_Assert(hashBitLen > 0,SKEIN_BAD_HASHLEN);
-    Skein_Assert(keyBytes == 0 || key != NULL,SKEIN_FAIL);
+    Skein_Assert(keyBytes == 0 || key != nullptr,SKEIN_FAIL);
 
     /* compute the initial chaining values ctx->X[], based on key */
     if (keyBytes == 0)                          /* is there a key? */

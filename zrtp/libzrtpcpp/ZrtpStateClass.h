@@ -1,19 +1,18 @@
 /*
-  Copyright (C) 2006-2013 Werner Dittmann
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef _ZRTPSTATECLASS_H_
 #define _ZRTPSTATECLASS_H_
@@ -59,6 +58,7 @@ enum EventReturnCodes {
 };
 
 enum EventDataType {
+    NoEvent = 0,
     ZrtpInitial = 1,    ///< Initial event, enter Initial state
     ZrtpClose,          ///< Close event, shut down state engine
     ZrtpPacket,         ///< Normal ZRTP message event, process according to state
@@ -69,15 +69,17 @@ enum EventDataType {
 enum SecureSubStates {
     Normal,
     WaitSasRelayAck,
-    numberofSecureSubStates
+    numberOfSecureSubStates
 };
 
 /// A ZRTP state event
-typedef struct Event {
+struct Event {
+    Event(): type(NoEvent), length(0), packet(nullptr) {}
+
     EventDataType type; ///< Type of event
     size_t   length;    ///< length of the message data
     uint8_t* packet;    ///< Event data if availabe, usually a ZRTP message
-} Event_t;
+};
 
 
 /**
@@ -117,9 +119,9 @@ class ZRtp;
 class __EXPORT ZrtpStateClass {
 
 private:
-    ZRtp* parent;           ///< The ZRTP implmentation
+    ZRtp* parent;           ///< The ZRTP implementation
     ZrtpStates* engine;     ///< The state switching engine
-    Event_t* event;         ///< Current event to process
+    Event* event;           ///< Current event to process
 
     /**
      * The last packet that was sent.
@@ -185,7 +187,7 @@ public:
     void nextState(int32_t state)        { engine->nextState(state); };
 
     /// Process an event, the main entry point into the state engine
-    void processEvent(Event_t *ev);
+    void processEvent(Event *ev);
 
     /**
      * The state event handling methods.

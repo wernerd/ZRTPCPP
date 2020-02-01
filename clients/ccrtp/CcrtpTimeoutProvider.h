@@ -25,8 +25,9 @@
  *
  * A command is associated to each timeout.
  *
- * Modified to use the common c++ library functions and the STL
- * list by Werner Dittmann.
+ * Modified to use the common c++ (commoncpp) library functions and the STL
+ * list by Werner Dittmann. Don't confuse with the STL thread class. 'commoncpp'
+ * is part (or associated with) GNU ccRTP.
  *
  * @author Erik Eliasson, eliasson@it.kth.se, 2003
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
@@ -44,7 +45,7 @@
  *
  * Slightly modified to use gettimeofday directly.
  *
- * NOTE: This class is only used internaly.
+ * NOTE: This class is only used internally.
  * @author Erik Eliasson
  * @author Werner Dittmann
  */

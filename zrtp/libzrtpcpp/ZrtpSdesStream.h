@@ -1,19 +1,18 @@
 /*
-  Copyright (C) 2012-2013 Werner Dittmann
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef _ZRTPSDESSTREAM_H_
 #define _ZRTPSDESSTREAM_H_
@@ -227,7 +226,7 @@ public:
      * @return Length of algorithm names (excluding nul byte) or zero if crypto mix not supported or
      *         enabled.
      */
-    int getCryptoMixAttribute(char *algoNames, size_t length);
+    size_t getCryptoMixAttribute(char *algoNames, size_t length);
 
     /**
      * @brief Set Crypto Mix attribute string
@@ -534,25 +533,25 @@ private:
     CryptoContext     *recvZrtpTunnel;     //!< The SRTP context for sender ZRTP tunnel
     CryptoContext     *sendZrtpTunnel;     //!< The SRTP context for receiver ZRTP tunnel
 
-    int32_t cryptoMixHashLength;
+    uint32_t cryptoMixHashLength;
     sdesHmacTypeMix cryptoMixHashType;
 
     // Variables for crypto that this client creates and sends to the other client, filled during SDES create
     uint8_t localKeySalt[((MAX_KEY_LEN + MAX_SALT_LEN + 3)/4)*4];  //!< Some buffer for key and salt, multiple of 4
-    int localKeyLenBytes;
-    int localSaltLenBytes;
-    int localCipher;
-    int localAuthn;
-    int localAuthKeyLen;
-    int localTagLength;
+    uint32_t localKeyLenBytes;
+    uint32_t localSaltLenBytes;
+    uint32_t localCipher;
+    uint32_t localAuthn;
+    uint32_t localAuthKeyLen;
+    uint32_t localTagLength;
 
     // Variables for crypto that this client receives from the other client, filled during SDES parse
     uint8_t remoteKeySalt[((MAX_KEY_LEN + MAX_SALT_LEN + 3)/4)*4];  //!< Some buffer for key and salt, multiple of 4
-    int remoteKeyLenBytes;
-    int remoteSaltLenBytes;
-    int remoteCipher;
-    int remoteAuthn;
-    int remoteAuthKeyLen;
-    int remoteTagLength;
+    uint32_t remoteKeyLenBytes;
+    uint32_t remoteSaltLenBytes;
+    uint32_t remoteCipher;
+    uint32_t remoteAuthn;
+    uint32_t remoteAuthKeyLen;
+    uint32_t remoteTagLength;
 };
 #endif

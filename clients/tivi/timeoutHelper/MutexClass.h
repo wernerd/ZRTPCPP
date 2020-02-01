@@ -35,7 +35,7 @@
 #ifndef WINDOWS
 #include <pthread.h>
 #endif
-#include <common/Thread.h>
+#include <clients/tivi/timeoutHelper/Thread.h>
 
 class CMutexClass
 {

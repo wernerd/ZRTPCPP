@@ -1,19 +1,18 @@
 /*
-  Copyright (C) 2006-2013 Werner Dittmann
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 /*
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
@@ -42,18 +41,19 @@
  */
 #define ZRTP_MAGIC       0x5a525450
 
-#define ZRTP_WORD_SIZE   4
-#define CRC_SIZE         4
+//#define ZRTP_WORD_SIZE   4
+static const uint16_t ZRTP_WORD_SIZE = 4;
+static const uint32_t CRC_SIZE =       4;
 
-#define TYPE_SIZE        (2*ZRTP_WORD_SIZE)
-#define CLIENT_ID_SIZE   (4*ZRTP_WORD_SIZE)
-#define HASH_IMAGE_SIZE  (8*ZRTP_WORD_SIZE)
-#define ZID_SIZE         (3*ZRTP_WORD_SIZE)
-#define HVI_SIZE         (8*ZRTP_WORD_SIZE)
-#define HMAC_SIZE        (2*ZRTP_WORD_SIZE)
-#define ID_SIZE          (2*ZRTP_WORD_SIZE)
-#define IV_SIZE          (4*ZRTP_WORD_SIZE)
-#define PING_HASH_SIZE   (2*ZRTP_WORD_SIZE)
+static const uint32_t TYPE_SIZE =       (2*ZRTP_WORD_SIZE);
+static const uint32_t CLIENT_ID_SIZE =  (4*ZRTP_WORD_SIZE);
+static const uint32_t HASH_IMAGE_SIZE = (8*ZRTP_WORD_SIZE);
+static const uint32_t ZID_SIZE =        (3*ZRTP_WORD_SIZE);
+static const uint32_t HVI_SIZE =        (8*ZRTP_WORD_SIZE);
+static const uint32_t HMAC_SIZE =       (2*ZRTP_WORD_SIZE);
+static const uint32_t ID_SIZE =         (2*ZRTP_WORD_SIZE);
+static const uint32_t IV_SIZE =         (4*ZRTP_WORD_SIZE);
+static const uint32_t PING_HASH_SIZE =  (2*ZRTP_WORD_SIZE);
 
 
 /**
@@ -66,7 +66,7 @@
 typedef struct zrtpPacketHeader {
     uint16_t    zrtpId;         ///< Id to identify the message, always 0x505a
     uint16_t    length;         ///< Length of the ZRTP message in words
-    uint8_t     messageType[TYPE_SIZE]; ///< 2 word (8 octest) message type in ASCII
+    uint8_t     messageType[TYPE_SIZE]; ///< 2 word (8 octets) message type in ASCII
 } zrtpPacketHeader_t;
 
 /**

@@ -56,7 +56,7 @@ MACRO(GENERATE_PACKAGING PACKAGE VERSION)
 #  SPECFILE()
 
   ADD_CUSTOM_TARGET(svncheck
-    COMMAND cd $(CMAKE_SOURCE_DIR) && LC_ALL=C git status | grep -q "nothing to commit .working directory clean.")
+    COMMAND cd ${CMAKE_SOURCE_DIR} && LC_ALL=C git status | grep -q "nothing to commit .working directory clean.")
 
   SET(AUTOBUILD_COMMAND
     COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/*.tar.bz2

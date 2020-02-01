@@ -1,25 +1,25 @@
 /*
-  Copyright (C) 2010-2013 Werner Dittmann
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 
 #ifndef MAC_SKEIN_H
 #define MAC_SKEIN_H
 
 #include <cryptcommon/skeinApi.h>
+#include <vector>
 /**
  * @file macSkein.h
  * @brief Function that provide Skein MAC support
@@ -38,47 +38,48 @@
  *
  * @param key
  *    The MAC key.
- * @param key_length
+ * @param keyLength
  *    Lneght of the MAC key in bytes
  * @param data
  *    Points to the data chunk.
- * @param data_length
+ * @param dataLength
  *    Length of the data in bytes
  * @param mac
  *    Points to a buffer that receives the computed digest.
- * @param mac_length
+ * @param macLength
  *    Integer that contains the length of the MAC in bits (not bytes).
  * @param skeinSize
  *    The Skein size to use.
  */
-void macSkein( uint8_t* key, int32_t key_length,
-                const uint8_t* data, uint32_t data_length,
-                uint8_t* mac, int32_t mac_length, SkeinSize_t skeinSize );
+void macSkein(const uint8_t* key, uint64_t keyLength,
+              const uint8_t* data, uint64_t dataLength,
+              uint8_t* mac, size_t macLength, SkeinSize_t skeinSize );
 
 /**
- * Compute Skein MAC over several data cunks.
+ * Compute Skein MAC over several data chunks.
  *
  * This functions takes several data chunk and computes the Skein MAC.
  *
  * @param key
  *    The MAC key.
- * @param key_length
+ * @param keyLength
  *    Lneght of the MAC key in bytes
  * @param data
- *    Points to an array of pointers that point to the data chunks. A NULL
+ *    A Vector of pointers that point to the data chunks. A NULL
  *    pointer in an array element terminates the data chunks.
- * @param data_length
- *    Points to an array of integers that hold the length of each data chunk.
+ * @param dataLength
+ *    A vector of integers that hold the length of each data chunk.
  * @param mac
  *    Points to a buffer that receives the computed digest.
- * @param mac_length
+ * @param macLength
  *    Integer that contains the length of the MAC in bits (not bytes).
  * @param skeinSize
  *    The Skein size to use.
  */
-void macSkein( uint8_t* key, int32_t key_length,
-                const uint8_t* data[], uint32_t data_length[],
-                uint8_t* mac, int32_t mac_length, SkeinSize_t skeinSize);
+void macSkein(const uint8_t* key, uint64_t keyLength,
+              std::vector<const uint8_t*> data,
+              std::vector<uint64_t> dataLength,
+              uint8_t* mac, size_t macLength, SkeinSize_t skeinSize);
 
 /**
  * Create and initialize a Skein MAC context.
@@ -88,15 +89,15 @@ void macSkein( uint8_t* key, int32_t key_length,
  *
  * @param key
  *    The MAC key.
- * @param key_length
- *    Lenght of the MAC key in bytes
- * @param mac_length
+ * @param keyLength
+ *    Length of the MAC key in bytes
+ * @param macLength
  *    Integer that contains the length of the MAC in bits (not bytes).
  * @param skeinSize
  *    The Skein size to use.
  * @return Returns a pointer to the initialized context or @c NULL in case of an error.
  */
-void* createSkeinMacContext(uint8_t* key, int32_t key_length, int32_t mac_length, SkeinSize_t skeinSize);
+void* createSkeinMacContext(const uint8_t* key, uint64_t keyLength, size_t macLength, SkeinSize_t skeinSize);
 
 /**
  * Initialize a Skein MAC context.
@@ -108,15 +109,15 @@ void* createSkeinMacContext(uint8_t* key, int32_t key_length, int32_t mac_length
  *     Pointer to initialized Skein MAC context
  * @param key
  *    The MAC key.
- * @param key_length
- *    Lenght of the MAC key in bytes
- * @param mac_length
+ * @param keyLength
+ *    Length of the MAC key in bytes
+ * @param macLength
  *    Integer that contains the length of the MAC in bits (not bytes).
  * @param skeinSize
  *    The Skein size to use.
  * @return Returns a pointer to the initialized context
  */
-void* initializeSkeinMacContext(void* ctx, uint8_t* key, int32_t key_length, int32_t mac_length, SkeinSize_t skeinSize);
+void* initializeSkeinMacContext(void* ctx, const uint8_t* key, uint64_t keyLength, size_t macLength, SkeinSize_t skeinSize);
 
 /**
  * Compute Skein MAC.
@@ -127,14 +128,13 @@ void* initializeSkeinMacContext(void* ctx, uint8_t* key, int32_t key_length, int
  *     Pointer to initialized Skein MAC context
  * @param data
  *    Points to the data chunk.
- * @param data_length
+ * @param dataLength
  *    Length of the data in bytes
  * @param mac
  *    Points to a buffer that receives the computed digest.
  */
 
-void macSkeinCtx(void* ctx, const uint8_t* data, uint32_t data_length,
-                uint8_t* mac);
+void macSkeinCtx(void* ctx, const uint8_t* data, uint64_t dataLength, uint8_t* mac);
 
 /**
  * Compute Skein MAC over several data cunks.
@@ -146,13 +146,14 @@ void macSkeinCtx(void* ctx, const uint8_t* data, uint32_t data_length,
  * @param data
  *    Points to an array of pointers that point to the data chunks. A NULL
  *    pointer in an array element terminates the data chunks.
- * @param data_length
+ * @param dataLength
  *    Points to an array of integers that hold the length of each data chunk.
  * @param mac
  *    Points to a buffer that receives the computed digest.
  */
-void macSkeinCtx(void* ctx, const uint8_t* data[], uint32_t data_length[],
-                uint8_t* mac);
+void macSkeinCtx(void* ctx, const std::vector<const uint8_t*>& data,
+                 const std::vector<uint64_t>& dataLength,
+                 uint8_t* mac);
 
 /**
  * Free Skein MAC context.

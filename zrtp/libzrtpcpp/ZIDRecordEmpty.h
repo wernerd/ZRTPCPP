@@ -14,137 +14,130 @@
  * limitations under the License.
  */
 
-#ifndef _ZIDRECORD_H_
-#define _ZIDRECORD_H_
+#ifndef _ZIDRECORDEMPTY_H_
+#define _ZIDRECORDEMPTY_H_
 
-#include <stdint.h>
-#include <common/osSpecifics.h>
+
 /**
- * @file ZIDRecord.h
+ * @file ZIDRecordEmpty.h
  * @brief ZID cache record management
  *
- * A ZID record stores (caches) ZID (ZRTP ID) specific data that helps ZRTP
- * to achives its key continuity feature. Please refer to the ZRTP
- * specification to get detailed information about the ZID.
+ * This empty ZID record does not store any data, thus implements an empty or non-existent
+ * ZRTP cache.
  *
  * @ingroup GNU_ZRTP
  * @{
  */
 
-/**
- * These length are fixed for ZRTP. See RFC 6189.
- */
-#define IDENTIFIER_LEN  12
-#define RS_LENGTH       32
+#include <string.h>
+#include <stdint.h>
+#include <libzrtpcpp/ZIDRecord.h>
 
-#define FILE_TYPE_RECORD    1
-#define SQLITE_TYPE_RECORD  2
+#define TIME_LENGTH      8      // 64 bit, can hold time on 64 bit systems
 
-#if defined(__cplusplus)
 /**
- * Interface for classes that implement a ZID cache record.
+ * This class implements an empty ZID record.
  *
- * The ZID cache record holds data about a peer. According to ZRTP specification
- * we use a ZID to identify a peer. ZRTP uses the RS (Retained Secret) data
- * to construct shared secrets.
+ * The ZID record is empty. It's a placeholder for an empty ZRTP cache record and returns @c false for
+ * checks if some data exists of is valid.
+ *
+ * Other functions are just no-ops
  *
  * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
-class __EXPORT ZIDRecord {
+class __EXPORT ZIDRecordEmpty: public ZIDRecord {
+    friend class ZIDCacheEmpty;
 
 public:
-    /**
-     * @brief Destructor.
-     * Define a virtual destructor to enable cleanup in derived classes.
+    /*
+     * @brief The default constructor,
      */
-    virtual ~ZIDRecord() {};
+    ZIDRecordEmpty() = default;
 
     /**
      * @brief Set the @c ZID in the record.
      *
      * Set the ZID in this record before calling read or save.
      */
-    virtual void setZid(const unsigned char *zid) =0;
+    void setZid(const unsigned char *zid) override { (void) zid; }
 
     /**
      * @brief Set @c valid flag in RS1
      */
-    virtual void setRs1Valid() =0;
+    void setRs1Valid() override  {  }
 
     /**
      * @brief Reset @c valid flag in RS1
      */
-    virtual void resetRs1Valid()  =0;
+    void resetRs1Valid() override { }
 
     /**
      * @brief Check @c valid flag in RS1
      */
-    virtual bool isRs1Valid() =0;
+    bool isRs1Valid() override   { return false; }
 
     /**
      * @brief Set @c valid flag in RS2
      */
-    virtual void setRs2Valid() =0;
+    void setRs2Valid() override  {  }
 
     /**
      * @brief Reset @c valid flag in RS2
      */
-    virtual void resetRs2Valid() =0;
+    void resetRs2Valid() override {  }
 
     /**
      * @brief Check @c valid flag in RS2
      */
-    virtual bool isRs2Valid() =0;
+    bool isRs2Valid()  override  { return false; }
 
     /**
      * @brief Set MITM key available
      */
-    virtual void setMITMKeyAvailable() =0;
+    void setMITMKeyAvailable() override  {  }
 
     /**
      * @brief Reset MITM key available
      */
-    virtual void resetMITMKeyAvailable() =0;
+    void resetMITMKeyAvailable() override {  }
 
     /**
      * @brief Check MITM key available is set
      */
-    virtual bool isMITMKeyAvailable() =0;
+    bool isMITMKeyAvailable()   override  { return false; }
 
     /**
      * @brief Mark this as own ZID record
      */
-    virtual void setOwnZIDRecord() =0;
-
+    void setOwnZIDRecord() override { }
     /**
      * @brief Reset own ZID record marker
      */
-    virtual void resetOwnZIDRecord() =0;
+    void resetOwnZIDRecord() override {  }
 
     /**
      * @brief Check own ZID record marker
      */
-    virtual bool isOwnZIDRecord() =0;
+    bool isOwnZIDRecord() override  { return false; }  // no other flag allowed if own ZID
 
     /**
      * @brief Set SAS for this ZID as verified
      */
-    virtual void setSasVerified() =0;
-
+    void setSasVerified() override  {  }
     /**
      * @brief Reset SAS for this ZID as verified
      */
-    virtual void resetSasVerified() =0;
+    void resetSasVerified() override {  }
 
     /**
      * @brief Check if SAS for this ZID was verified
      */
-    virtual bool isSasVerified() =0;
+    bool isSasVerified()  override  { return false; }
 
     /**
      * @brief Return the ZID for this record
      */
-    virtual const uint8_t* getIdentifier() =0;
+    const uint8_t* getIdentifier() override {return nullptr; }
 
     /**
      * @brief Check if RS1 is still valid
@@ -154,12 +147,12 @@ public:
      * @return
      *    Returns true is RS1 is not expired (valid), false otherwise.
      */
-    virtual bool isRs1NotExpired() =0;
+    bool isRs1NotExpired() override;
 
     /**
      * @brief Returns pointer to RS1 data.
      */
-    virtual const unsigned char* getRs1() =0;
+    const unsigned char* getRs1() override { return nullptr; }
 
     /**
      * @brief Check if RS2 is still valid
@@ -169,12 +162,12 @@ public:
      * @return
      *    Returns true is RS2 is not expired (valid), false otherwise.
      */
-    virtual bool isRs2NotExpired() =0;
+    bool isRs2NotExpired() override;
 
     /**
      * @brief Returns pointer to RS1 data.
      */
-    virtual const unsigned char* getRs2() =0;
+    const unsigned char* getRs2() override { return nullptr; }
 
     /**
      * @brief Sets new RS1 data and associated expiration value.
@@ -194,32 +187,33 @@ public:
      * @param data
      *    Points to the new RS1 data.
      * @param expire
-     *    The expiration interval in seconds. Default is -1.
+     *    The expiration interval in seconds.
      *
      */
-    virtual void setNewRs1(const unsigned char* data, int32_t expire =-1) =0;
+    void setNewRs1(const unsigned char* data, int32_t expire) override;
 
     /**
      * @brief Set MiTM key data.
      *
      */
-    virtual void setMiTMData(const unsigned char* data) =0;
+    void setMiTMData(const unsigned char* data) override;
 
     /**
      * @brief Get MiTM key data.
      *
      */
-    virtual const unsigned char* getMiTMData() =0;
+    const unsigned char* getMiTMData() override {return nullptr; }
 
-    virtual int getRecordType() =0;
- 
+    int getRecordType() override {return FILE_TYPE_RECORD; }
+    
     /**
-     * @brief Get the secure since field
+     * @brief Get Secure since date.
      * 
-     * Returns the secure since field or 0 if no such field is available. Secure since
-     * uses the unixepoch.
+     * The file based cache implementation does not support this datum, thus return 0
+     * 
      */
-    virtual int64_t getSecureSince() =0;
+    int64_t getSecureSince() override { return 0; }
 };
-#endif /* (__cplusplus) */
-#endif
+
+#endif // ZIDRECORDSMALL
+

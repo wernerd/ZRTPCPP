@@ -1,21 +1,18 @@
 /*
-  Copyright (C) 2013 Werner Dittmann
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 /**
  * Methods to compute a Skein384 HMAC.
@@ -23,6 +20,8 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
 #ifndef HMAC_SKEIN384_H
 #define HMAC_SKEIN384_H
 
@@ -34,7 +33,8 @@
  * @{
  */
 
-#include <stdint.h>
+#include <cstdint>
+#include <vector>
 
 #ifndef SKEIN384_DIGEST_LENGTH
 #define SKEIN384_DIGEST_LENGTH 48
@@ -53,15 +53,15 @@
  *    Lneght of the MAC key in bytes
  * @param data
  *    Points to the data chunk.
- * @param data_length
+ * @param dataLength
  *    Length of the data in bytes
  * @param mac
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 48 bytes (SKEIN384_DIGEST_LENGTH).
- * @param mac_length
- *    Point to an integer that receives the length of the computed HMAC.
+ * @param macLength
+ *    Point to an uint32_t that receives the length of the computed HMAC.
  */
-void macSkein384( uint8_t* key, uint32_t key_length, uint8_t* data, int32_t data_length, uint8_t* mac, uint32_t* mac_length );
+void macSkein384(const uint8_t* key, uint64_t key_length, const uint8_t* data, uint64_t dataLength, uint8_t* mac, uint32_t* macLength);
 
 /**
  * Compute Skein384 HMAC over several data cunks.
@@ -70,22 +70,26 @@ void macSkein384( uint8_t* key, uint32_t key_length, uint8_t* data, int32_t data
  *
  * @param key
  *    The MAC key.
- * @param key_length
+ * @param keyLength
  *    Lneght of the MAC key in bytes
  * @param data
- *    Points to an array of pointers that point to the data chunks. A NULL
+ *    Vector of pointers that point to the data chunks. A NULL
  *    pointer in an array element terminates the data chunks.
- * @param data_length
- *    Points to an array of integers that hold the length of each data chunk.
+ * @param dataLength
+ *    Vector of integers that hold the length of each data chunk.
  * @param mac
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 48 bytes (SKEIN384_DIGEST_LENGTH).
- * @param mac_length
- *    Point to an integer that receives the length of the computed HMAC.
+ * @param macLength
+ *    Pointer to an uint32_t that receives the length of the computed HMAC.
  */
-
-void macSkein384( uint8_t* key, uint32_t key_length, uint8_t* data[], uint32_t data_length[], uint8_t* mac, uint32_t* mac_length );
+void macSkein384(const uint8_t* key, uint64_t keyLength,
+                 const std::vector<const uint8_t*>& data,
+                 const std::vector<uint64_t>& dataLength,
+                 uint8_t* mac, uint32_t* mac_length);
 /**
  * @}
  */
 #endif
+
+#pragma clang diagnostic pop

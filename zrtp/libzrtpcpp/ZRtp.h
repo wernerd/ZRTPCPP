@@ -1,19 +1,18 @@
 /*
-  Copyright (C) 2006-2013 Werner Dittmann
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef _ZRTP_H_
 #define _ZRTP_H_
@@ -140,7 +139,7 @@ class __EXPORT ZRtp {
      * engine.
      */
     ZRtp(uint8_t* myZid, ZrtpCallback* cb, std::string id,
-         ZrtpConfigure* config, bool mitmm= false, bool sasSignSupport= false);
+         ZrtpConfigure* config, bool mitm = false, bool sasSignSupport= false);
 
     /**
      * Destructor cleans up.
@@ -190,7 +189,7 @@ class __EXPORT ZRtp {
      *
      */
     void processTimeout();
-
+#if 0
     /**
      * Check for and handle GoClear ZRTP packet header.
      *
@@ -204,7 +203,7 @@ class __EXPORT ZRtp {
      *    False if not a GoClear, true otherwise.
      */
     bool handleGoClear(uint8_t *extHeader);
-
+#endif
     /**
      * Set the auxilliary secret.
      *
@@ -216,7 +215,7 @@ class __EXPORT ZRtp {
      * @param length
      *     Length of the auxilliary secrect in bytes
      */
-    void setAuxSecret(uint8_t* data, int32_t length);
+    void setAuxSecret(uint8_t* data, uint32_t length);
 
     /**
      * Check current state of the ZRTP state engine
@@ -491,7 +490,7 @@ class __EXPORT ZRtp {
      * @return
      *    True if the method stored the data, false otherwise.
      */
-    bool setSignatureData(uint8_t* data, int32_t length);
+    bool setSignatureData(uint8_t* data, uint32_t length);
 
     /**
      * Get signature data.
@@ -745,7 +744,7 @@ private:
     /**
      * My computed public key
      */
-    uint8_t pubKeyBytes[400];
+    uint8_t pubKeyBytes[1000];
     /**
      * Length off public key
      */
@@ -782,7 +781,7 @@ private:
      * pointers to aux secret storage and length of aux secret
      */
     uint8_t* auxSecret;
-    int32_t auxSecretLength;
+    uint32_t auxSecretLength;
 
     /**
      * Record if valid rs1 and/or rs1 were found in the
@@ -856,7 +855,7 @@ private:
     uint8_t newRs1[MAX_DIGEST_LENGTH];
 
     /**
-     * The GoClear HMAC keys and confirm HMAC key
+     * The confirm HMAC key
      */
     uint8_t hmacKeyI[MAX_DIGEST_LENGTH];
     uint8_t hmacKeyR[MAX_DIGEST_LENGTH];
@@ -884,50 +883,35 @@ private:
     /**
      * Pointers to negotiated hash and HMAC functions
      */
-    void (*hashFunction)(unsigned char *data,
-            unsigned int data_length,
-            unsigned char *digest);
+    void (*hashListFunction)(const std::vector<const uint8_t*>& data,
+                             const std::vector<uint64_t>& dataLength,
+                             uint8_t *digest);
 
-    void (*hashListFunction)(unsigned char *data[],
-            unsigned int data_length[],
-            unsigned char *digest);
+    void (*hmacFunction)(const uint8_t* key, uint64_t key_length,
+                         const uint8_t* data, uint64_t data_length,
+                         uint8_t* mac, uint32_t* mac_length);
 
-    void (*hmacFunction)(uint8_t* key, uint32_t key_length,
-                uint8_t* data, int32_t data_length,
-                uint8_t* mac, uint32_t* mac_length);
-
-    void (*hmacListFunction)( uint8_t* key, uint32_t key_length,
-                           uint8_t* data[], uint32_t data_length[],
-                           uint8_t* mac, uint32_t* mac_length );
+    void (*hmacListFunction)(const uint8_t* key, uint64_t key_length,
+                             const std::vector<const uint8_t*>& data,
+                             const std::vector<uint64_t>& data_length,
+                             uint8_t* mac, uint32_t* mac_length );
 
     void* (*createHashCtx)(void* ctx);
 
-    void (*closeHashCtx)(void* ctx, unsigned char* digest);
+    void (*closeHashCtx)(void* ctx, uint_8t* digest);
 
-    void (*hashCtxFunction)(void* ctx, unsigned char* data,
-           unsigned int dataLength);
+    void (*hashCtxFunction)(void* ctx, const uint8_t* data, uint64_t dataLength);
 
-    void (*hashCtxListFunction)(void* ctx, unsigned char* dataChunks[],
-           unsigned int dataChunkLength[]);
+    uint32_t hashLength;
 
-    int32_t hashLength;
+    // Function pointers to implicit hash and hmac functions
+    void (*hashFunctionImpl)(const uint8_t *data,
+                             uint64_t data_length,
+                             uint8_t *digest);
 
-    // Funtion pointers to implicit hash and hmac functions
-    void (*hashFunctionImpl)(unsigned char *data,
-            unsigned int data_length,
-            unsigned char *digest);
-
-    void (*hashListFunctionImpl)(unsigned char *data[],
-            unsigned int data_length[],
-            unsigned char *digest);
-
-    void (*hmacFunctionImpl)(uint8_t* key, uint32_t key_length,
-                uint8_t* data, int32_t data_length,
-                uint8_t* mac, uint32_t* mac_length);
-
-    void (*hmacListFunctionImpl)( uint8_t* key, uint32_t key_length,
-                           uint8_t* data[], uint32_t data_length[],
-                           uint8_t* mac, uint32_t* mac_length );
+    void (*hmacFunctionImpl)(const uint8_t* key, uint64_t key_length,
+                             const uint8_t* data, uint64_t data_length,
+                             uint8_t* mac, uint32_t* mac_length);
 
     int32_t hashLengthImpl;
 
@@ -1000,7 +984,7 @@ private:
 
     ZrtpPacketHelloAck zrtpHelloAck;
     ZrtpPacketConf2Ack zrtpConf2Ack;
-    ZrtpPacketClearAck zrtpClearAck;
+//    ZrtpPacketClearAck zrtpClearAck;
     ZrtpPacketGoClear  zrtpGoClear;
     ZrtpPacketError    zrtpError;
     ZrtpPacketErrorAck zrtpErrorAck;
@@ -1036,7 +1020,7 @@ private:
     uint8_t randomIV[16];
 
     uint8_t tempMsgBuffer[1024];
-    int32_t lengthOfMsgData;
+    uint32_t lengthOfMsgData;
 
     /**
      * Variables to store signature data. Includes the signature type block
@@ -1062,7 +1046,7 @@ private:
      * Enable or disable paranoid mode.
      *
      * The Paranoid mode controls the behaviour and handling of the SAS verify flag. If
-     * Panaoid mode is set to flase then ZRtp applies the normal handling. If Paranoid
+     * Paranoid mode is set to flase then ZRtp applies the normal handling. If Paranoid
      * mode is set to true then the handling is:
      *
      * <ul>
@@ -1077,7 +1061,7 @@ private:
      *      but do not process the relayed data. This protects the user from a malicious
      *      "trusted PBX".</li>
      * </ul>
-     * ZRtp performs alls other steps during the ZRTP negotiations as usual, in particular it
+     * ZRtp performs calls other steps during the ZRTP negotiations as usual, in particular it
      * computes, compares, uses, and stores the retained secrets. This avoids unnecessary warning
      * messages. The user may enable or disable the Paranoid mode on a call-by-call basis without
      * breaking the key continuity data.
@@ -1085,7 +1069,7 @@ private:
      * <b>Implementation note:</b></br>
      * An application shall always display the SAS code if the SAS verify flag is <code>false</code>.
      * The application shall also use mechanisms to remind the user to compare the SAS code, for
-     * example useing larger fonts, different colours and other display features.
+     * example using larger fonts, different colours and other display features.
      */
     bool paranoidMode;
 
@@ -1103,7 +1087,7 @@ private:
      * @param hello
      *    The Hello packet.
      * @return
-     *    The Enum that identifies the best offered Hash algortihm. Return
+     *    The Enum that identifies the best offered Hash algorithm. Return
      *    mandatory algorithm if no match was found.
      */
     AlgorithmEnum* findBestHash(ZrtpPacketHello *hello);
@@ -1142,7 +1126,7 @@ private:
      * Find the best SAS algorithm that is offered in Hello.
      *
      * Find the best, that is the strongest, SAS algorithm that our peer
-     * offers in its Hello packet. The method works as definied in RFC 6189,
+     * offers in its Hello packet. The method works as defined in RFC 6189,
      * chapter 4.1.2.
      *
      * The list of own supported public key algorithms must follow the rules
@@ -1187,7 +1171,7 @@ private:
     /**
      * Checks if Hello packet contains a strong (384bit) hash based on selection policy.
      * 
-     * The function currently implements the nonNist policy only:
+     * The function currently implements the non-NIST policy only:
      * If the public key algorithm is a non-NIST ECC algorithm this function prefers
      * non-NIST HASH algorithms (Skein etc).
      * 
@@ -1271,8 +1255,8 @@ private:
 
     void computeSRTPKeys();
 
-    void KDF(uint8_t* key, uint32_t keyLength, uint8_t* label, int32_t labelLength,
-               uint8_t* context, int32_t contextLength, int32_t L, uint8_t* output);
+    void KDF(uint8_t* key, size_t keyLength, uint8_t* label, size_t labelLength,
+               uint8_t* context, size_t contextLength, size_t L, uint8_t* output);
 
     void generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec);
 
@@ -1401,7 +1385,7 @@ private:
      * Prepare the Confirm1 packet.
      *
      * This method prepare the Confirm1 packet. The input to this method is the
-     * DHPart2 packect received from our peer. The peer sends the DHPart2 packet
+     * DHPart2 packet received from our peer. The peer sends the DHPart2 packet
      * as response of our DHPart1. Here we are in the role of the Responder
      *
      */
@@ -1463,6 +1447,7 @@ private:
      */
     ZrtpPacketError* prepareError(uint32_t errMsg);
 
+#if 0
     /**
      * Prepare a ClearAck packet.
      *
@@ -1476,7 +1461,7 @@ private:
      *     otherwise.
      */
     ZrtpPacketClearAck* prepareClearAck(ZrtpPacketGoClear* gpkt);
-
+#endif
     /**
      * Prepare the ErrorAck packet.
      *
@@ -1491,8 +1476,8 @@ private:
      * This method prepares the RelayAck packet. The input to this method is the
      * SASrelay packet received from the peer.
      */
-    ZrtpPacketRelayAck* prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* errMsg);
-    
+    ZrtpPacketRelayAck* prepareRelayAck(ZrtpPacketSASrelay* srly, const uint32_t* errMsg);
+#if 0
     /**
      * Prepare a GoClearAck packet w/o HMAC
      *
@@ -1504,7 +1489,7 @@ private:
      *     A goClear packet without HMAC
      */
     ZrtpPacketGoClear* prepareGoClear(uint32_t errMsg = 0);
-
+#endif
     /**
      * Compare the hvi values.
      *

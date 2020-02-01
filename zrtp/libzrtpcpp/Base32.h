@@ -27,7 +27,7 @@
 
 /**
  * @file Base32.h
- * @brief C++ implmentation of the Base32 encoding and decoding
+ * @brief C++ implementation of the Base32 encoding and decoding
  * 
  * ZRTP uses the base 32 encoding and decoding to generate the Short 
  * Authentication String (SAS).

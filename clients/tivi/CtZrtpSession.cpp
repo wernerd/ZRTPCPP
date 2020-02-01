@@ -29,7 +29,7 @@
 #include <CtZrtpCallback.h>
 #include <CtZrtpSession.h>
 
-#include <common/Thread.h>
+#include <clients/tivi/timeoutHelper/Thread.h>
 
 static CMutexClass sessionLock;
 
