@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 #######
-# Setup for ZrtpConfigure test using google test framework
+# Setup for ZRTP tests using google test framework
 #######
 
 add_executable(zrtpConfigure_test ZrtpConfigure_test.cpp)
@@ -25,4 +25,9 @@ target_link_libraries(zrtpRun_test gmock_main ${zrtplibName})
 if(SDES)
     add_executable(sdesRun_test sdesRun_test.cpp)
     target_link_libraries(sdesRun_test gtest_main ${zrtplibName})
+endif()
+
+if (NOT CCRTP)
+    add_executable(srtpCrypto_test SrtpCrypto_test.cpp ZrtpTestCommon.h)
+    target_link_libraries(srtpCrypto_test gtest_main ${zrtplibName})
 endif()

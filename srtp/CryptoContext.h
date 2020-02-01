@@ -39,6 +39,7 @@ constexpr int SrtpEncryptionTWOF8 = 4;
 #ifndef CRYPTOCONTEXTCTRL_H
 
 #include <cstdint>
+#include <memory>
 #ifdef ZRTP_OPENSSL
 #include <openssl/hmac.h>
 #endif
@@ -436,7 +437,7 @@ private:
     uint16_t s_l;
     int64_t  key_deriv_rate;
 
-    /* bitmask for replay check */
+    /* bit mask for replay check */
     uint64_t replay_window[2] = {0, 0};
 
     uint8_t* master_key;
@@ -464,8 +465,8 @@ private:
     void*   macCtx;
     HmacCtx hmacCtx{};
 
-    SrtpSymCrypto* cipher;
-    SrtpSymCrypto* f8Cipher;
+    std::unique_ptr<SrtpSymCrypto> cipher;
+    std::unique_ptr<SrtpSymCrypto> f8Cipher;
 };
 
 #endif

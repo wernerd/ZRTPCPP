@@ -68,25 +68,25 @@ CryptoContext::CryptoContext( uint32_t ssrc,
             break;
 
         case SrtpEncryptionTWOF8:
-            f8Cipher = new SrtpSymCrypto(SrtpEncryptionTWOF8);
+            f8Cipher = std::make_unique<SrtpSymCrypto>(SrtpEncryptionTWOF8);
 
         case SrtpEncryptionTWOCM:
             n_e = ekeyl;
             k_e = new uint8_t[n_e];
             n_s = skeyl;
             k_s = new uint8_t[n_s];
-            cipher = new SrtpSymCrypto(SrtpEncryptionTWOCM);
+            cipher = std::make_unique<SrtpSymCrypto>(SrtpEncryptionTWOCM);
             break;
 
         case SrtpEncryptionAESF8:
-            f8Cipher = new SrtpSymCrypto(SrtpEncryptionAESF8);
+            f8Cipher = std::make_unique<SrtpSymCrypto>(SrtpEncryptionAESF8);
 
         case SrtpEncryptionAESCM:
             n_e = ekeyl;
             k_e = new uint8_t[n_e];
             n_s = skeyl;
             k_s = new uint8_t[n_s];
-            cipher = new SrtpSymCrypto(SrtpEncryptionAESCM);
+            cipher = std::make_unique<SrtpSymCrypto>(SrtpEncryptionAESCM);
             break;
 
         default:
@@ -150,14 +150,7 @@ CryptoContext::~CryptoContext() {
         n_a = 0;
         delete [] k_a;
     }
-    if (cipher != nullptr) {
-        delete cipher;
-        cipher = nullptr;
-    }
-    if (f8Cipher != nullptr) {
-        delete f8Cipher;
-        f8Cipher = nullptr;
-    }
+
 #ifdef ZRTP_OPENSSL
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
     freeSha1HmacContext(macCtx);
@@ -216,7 +209,7 @@ void CryptoContext::srtpEncrypt(uint8_t* pkt, uint8_t* payload, uint32_t paylen,
         auto *ui32p = reinterpret_cast<uint32_t *>(iv); // well, dirty trick but works
         ui32p[3] = zrtpHtonl(roc);
 
-        cipher->f8_encrypt(payload, paylen, iv, f8Cipher);
+        cipher->f8_encrypt(payload, paylen, iv, f8Cipher.get());
     }
 }
 
@@ -345,7 +338,7 @@ void CryptoContext::deriveSrtpKeys(uint64_t index)
     // as last step prepare cipher with derived key.
     cipher->setNewKey(k_e, n_e);
     if (f8Cipher != nullptr)
-        cipher->f8_deriveForIV(f8Cipher, k_e, n_e, k_s, n_s);
+        SrtpSymCrypto::f8_deriveForIV(f8Cipher.get(), k_e, n_e, k_s, n_s);
     memset(k_e, 0, n_e);
 }
 

@@ -18,8 +18,6 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <cstdio>
-#include <cstdlib>
 #include <cstring>
 #include <cstdint>
 
@@ -37,7 +35,7 @@ bool SrtpHandler::decodeRtp(uint8_t* buffer, int32_t length, uint32_t *ssrc, uin
 
     /* Assume RTP header at the start of buffer. */
 
-    if ((*buffer & 0xC0) != 0x80) {         // check version bits
+    if ((*buffer & 0xC0U) != 0x80) {         // check version bits
         return false;
     }
     if (length < RTP_HEADER_LENGTH)
@@ -54,7 +52,7 @@ bool SrtpHandler::decodeRtp(uint8_t* buffer, int32_t length, uint32_t *ssrc, uin
     *ssrc = zrtpNtohl(tmp32);                       // and return in host order
 
     /* Payload is located right after header plus CSRC */
-    int32_t numCC = buffer[0] & 0x0f;           // lower 4 bits in first byte is num of contrib SSRC
+    int32_t numCC = buffer[0] & 0x0fU;           // lower 4 bits in first byte is num of contrib SSRC
     offset = RTP_HEADER_LENGTH + (numCC * sizeof(uint32_t));
 
     // Sanity check
@@ -62,7 +60,7 @@ bool SrtpHandler::decodeRtp(uint8_t* buffer, int32_t length, uint32_t *ssrc, uin
         return false;
 
     /* Adjust payload offset if RTP extension is used. */
-    if ((*buffer & 0x10) == 0x10) {             // packet contains RTP extension
+    if ((*buffer & 0x10U) == 0x10) {             // packet contains RTP extension
         pus = (uint16_t*)(buffer + offset);     // pus points to extension as 16bit pointer
         tmp16 = pus[1];                         // the second 16 bit word is the length
         tmp16 = zrtpNtohs(tmp16);                   // to host order
@@ -89,20 +87,20 @@ static void fillErrorData(SrtpErrorData* data, SrtpErrorType type, uint8_t* buff
 
 bool SrtpHandler::protect(CryptoContext* pcc, uint8_t* buffer, size_t length, size_t* newLength)
 {
-    uint8_t* payload = NULL;
+    uint8_t* payload = nullptr;
     int32_t payloadlen = 0;
     uint16_t seqnum;
     uint32_t ssrc;
 
 
-    if (pcc == NULL) {
+    if (pcc == nullptr) {
         return false;
     }
     if (!decodeRtp(buffer, length, &ssrc, &seqnum, &payload, &payloadlen))
         return false;
 
     /* Encrypt the packet */
-    uint64_t index = ((uint64_t)pcc->getRoc() << 16) | (uint64_t)seqnum;
+    uint64_t index = ((uint64_t)pcc->getRoc() << 16U) | (uint64_t)seqnum;
 
     pcc->srtpEncrypt(buffer, payload, payloadlen, index, ssrc);
 
@@ -124,17 +122,17 @@ bool SrtpHandler::protect(CryptoContext* pcc, uint8_t* buffer, size_t length, si
 
 int32_t SrtpHandler::unprotect(CryptoContext* pcc, uint8_t* buffer, size_t length, size_t* newLength, SrtpErrorData* errorData)
 {
-    uint8_t* payload = NULL;
+    uint8_t* payload = nullptr;
     int32_t payloadlen = 0;
     uint16_t seqnum;
     uint32_t ssrc;
 
-    if (pcc == NULL) {
+    if (pcc == nullptr) {
         return 0;
     }
 
     if (!decodeRtp(buffer, length, &ssrc, &seqnum, &payload, &payloadlen)) {
-        if (errorData != NULL)
+        if (errorData != nullptr)
             fillErrorData(errorData, DecodeError, buffer, length, 0);
         return 0;
     }
@@ -155,7 +153,7 @@ int32_t SrtpHandler::unprotect(CryptoContext* pcc, uint8_t* buffer, size_t lengt
     length -= pcc->getTagLength() + pcc->getMkiLength();
     *newLength = length;
 
-    // recompute payloadlen by subtracting SRTP data
+    // recompute payload length by subtracting SRTP data
     payloadlen -= pcc->getTagLength() + pcc->getMkiLength();
 
     // MKI is unused, so just skip it
@@ -167,18 +165,18 @@ int32_t SrtpHandler::unprotect(CryptoContext* pcc, uint8_t* buffer, size_t lengt
 
     /* Replay control */
     if (!pcc->checkReplay(seqnum)) {
-        if (errorData != NULL)
+        if (errorData != nullptr)
             fillErrorData(errorData, ReplayError, buffer, length, guessedIndex);
         return -2;
     }
 
     if (pcc->getTagLength() > 0) {
-        uint32_t guessedRoc = guessedIndex >> 16;
+        uint32_t guessedRoc = guessedIndex >> 16U;
         uint8_t mac[20];
 
         pcc->srtpAuthenticate(buffer, (uint32_t)length, guessedRoc, mac);
         if (memcmp(tag, mac, pcc->getTagLength()) != 0) {
-            if (errorData != NULL)
+            if (errorData != nullptr)
                 fillErrorData(errorData, AuthError, buffer, length, guessedIndex);
             return -1;
         }
@@ -196,7 +194,7 @@ int32_t SrtpHandler::unprotect(CryptoContext* pcc, uint8_t* buffer, size_t lengt
 bool SrtpHandler::protectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t length, size_t* newLength)
 {
 
-    if (pcc == NULL) {
+    if (pcc == nullptr) {
         return false;
     }
     /* Encrypt the packet */
@@ -209,7 +207,7 @@ bool SrtpHandler::protectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t le
     encIndex |= 0x80000000;                                     // set the E flag
 
     // Fill SRTCP index as last word
-    uint32_t* ip = reinterpret_cast<uint32_t*>(buffer+length);
+    auto* ip = reinterpret_cast<uint32_t*>(buffer+length);
     *ip = zrtpHtonl(encIndex);
 
     // NO MKI support yet - here we assume MKI is zero. To build in MKI
@@ -229,7 +227,7 @@ bool SrtpHandler::protectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t le
 int32_t SrtpHandler::unprotectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t length, size_t* newLength)
 {
 
-    if (pcc == NULL) {
+    if (pcc == nullptr) {
         return 0;
     }
 

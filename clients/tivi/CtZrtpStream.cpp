@@ -896,7 +896,7 @@ bool CtZrtpStream::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
         sendSrtcp = senderCryptoContextCtrl;
     }
     if (part == ForReceiver) {
-        // To decrypt packets: intiator uses responder keys,
+        // To decrypt packets: initiator uses responder keys,
         // responder initiator keys
         // See comment above.
         if (secrets->role == Initiator) {
@@ -961,7 +961,7 @@ bool CtZrtpStream::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
         recvCryptoContextCtrl->deriveSrtcpKeys();
         recvSrtcp = recvCryptoContextCtrl;
 
-        supressCounter = 0;         // supress SRTP warnings for some packets after we switch to SRTP
+        supressCounter = 0;         // suppress SRTP warnings for some packets after we switch to SRTP
     }
     if (!peerHelloHashes.empty() && recvSrtp != nullptr && sendSrtp != nullptr) {
         useSdesForMedia = false;

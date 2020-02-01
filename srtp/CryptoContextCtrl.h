@@ -25,6 +25,7 @@
  * @{
  */
 
+#include <memory>
 #include "crypto/hmac.h"
 #include "cryptcommon/macSkein.h"
 
@@ -307,7 +308,7 @@ class CryptoContextCtrl {
 
         uint32_t s_l;
 
-        /* bitmask for replay check */
+        /* bit mask for replay check */
         uint64_t replay_window;
 
         uint8_t* master_key;
@@ -335,8 +336,8 @@ class CryptoContextCtrl {
         void*   macCtx;
         HmacCtx hmacCtx;
 
-        SrtpSymCrypto* cipher;
-        SrtpSymCrypto* f8Cipher;
+        std::unique_ptr<SrtpSymCrypto> cipher;
+        std::unique_ptr<SrtpSymCrypto> f8Cipher;
     };
 
 /**

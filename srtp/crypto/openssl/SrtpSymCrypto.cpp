@@ -18,8 +18,6 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-// #define MAKE_F8_TEST
-
 #include <cstdlib>
 #include <cstring>
 #include <openssl/aes.h>                // the include of openSSL
@@ -90,30 +88,28 @@ void SrtpSymCrypto::encrypt(const uint8_t* input, uint8_t* output ) {
     }
 }
 
-void SrtpSymCrypto::get_ctr_cipher_stream(uint8_t* output, uint32_t length,
-                                    uint8_t* iv ) {
-    uint16_t ctr = 0;
+void SrtpSymCrypto::get_ctr_cipher_stream(uint8_t* output, uint32_t length, uint8_t* iv ) {
+    uint32_t ctr = 0;
     unsigned char temp[SRTP_BLOCK_SIZE];
 
     for(ctr = 0; ctr < length/SRTP_BLOCK_SIZE; ctr++) {
         //compute the cipher stream
-        iv[14] = (uint8_t)((ctr & 0xFF00) >>  8);
-        iv[15] = (uint8_t)((ctr & 0x00FF));
+        iv[14] = (uint8_t)((ctr & 0xFF00U) >>  8U);
+        iv[15] = (uint8_t)((ctr & 0x00FFU));
 
         encrypt(iv, &output[ctr*SRTP_BLOCK_SIZE]);
     }
     if ((length % SRTP_BLOCK_SIZE) > 0) {
-        // Treat the last bytes:
-        iv[14] = (uint8_t)((ctr & 0xFF00) >>  8);
-        iv[15] = (uint8_t)((ctr & 0x00FF));
+        // Process the last bytes:
+        iv[14] = (uint8_t)((ctr & 0xFF00U) >>  8U);
+        iv[15] = (uint8_t)((ctr & 0x00FFU));
 
         encrypt(iv, temp);
         memcpy(&output[ctr*SRTP_BLOCK_SIZE], temp, length % SRTP_BLOCK_SIZE );
     }
 }
 
-void SrtpSymCrypto::ctr_encrypt(const uint8_t* input, uint32_t input_length,
-                           uint8_t* output, uint8_t* iv ) {
+void SrtpSymCrypto::ctr_encrypt(const uint8_t* input, uint32_t input_length, uint8_t* output, uint8_t* iv ) {
 
     if (key == nullptr)
         return;
@@ -121,22 +117,21 @@ void SrtpSymCrypto::ctr_encrypt(const uint8_t* input, uint32_t input_length,
     uint16_t ctr = 0;
     unsigned char temp[SRTP_BLOCK_SIZE];
 
-    int l = input_length/SRTP_BLOCK_SIZE;
+    uint16_t l = input_length/SRTP_BLOCK_SIZE;
     for (ctr = 0; ctr < l; ctr++ ) {
-        iv[14] = (uint8_t)((ctr & 0xFF00) >>  8);
-        iv[15] = (uint8_t)((ctr & 0x00FF));
+        iv[14] = (uint8_t)((ctr & 0xFF00U) >>  8U);
+        iv[15] = (uint8_t)((ctr & 0x00FFU));
 
         encrypt(iv, temp);
-        for (int i = 0; i < SRTP_BLOCK_SIZE; i++ ) {
-            *output++ = temp[i] ^ *input++;
+        for (unsigned char i : temp) {
+            *output++ = i ^ *input++;
         }
-
     }
     l = input_length % SRTP_BLOCK_SIZE;
     if (l > 0) {
         // Treat the last bytes:
-        iv[14] = (uint8_t)((ctr & 0xFF00) >>  8);
-        iv[15] = (uint8_t)((ctr & 0x00FF));
+        iv[14] = (uint8_t)((ctr & 0xFF00U) >>  8U);
+        iv[15] = (uint8_t)((ctr & 0x00FFU));
 
         encrypt(iv, temp);
         for (int i = 0; i < l; i++ ) {
@@ -153,22 +148,22 @@ void SrtpSymCrypto::ctr_encrypt( uint8_t* data, uint32_t data_length, uint8_t* i
     uint16_t ctr = 0;
     unsigned char temp[SRTP_BLOCK_SIZE];
 
-    int l = data_length/SRTP_BLOCK_SIZE;
+    uint16_t l = data_length/SRTP_BLOCK_SIZE;
     for (ctr = 0; ctr < l; ctr++ ) {
-        iv[14] = (uint8_t)((ctr & 0xFF00) >>  8);
-        iv[15] = (uint8_t)((ctr & 0x00FF));
+        iv[14] = (uint8_t)((ctr & 0xFF00U) >>  8U);
+        iv[15] = (uint8_t)((ctr & 0x00FFU));
 
         encrypt(iv, temp);
-        for (int i = 0; i < SRTP_BLOCK_SIZE; i++ ) {
-            *data++ ^= temp[i];
+        for (unsigned char i : temp) {
+            *data++ ^= i;
         }
 
     }
     l = data_length % SRTP_BLOCK_SIZE;
     if (l > 0) {
-        // Treat the last bytes:
-        iv[14] = (uint8_t)((ctr & 0xFF00) >>  8);
-        iv[15] = (uint8_t)((ctr & 0x00FF));
+        // Process the last bytes:
+        iv[14] = (uint8_t)((ctr & 0xFF00U) >>  8U);
+        iv[15] = (uint8_t)((ctr & 0x00FFU));
 
         encrypt(iv, temp);
         for (int i = 0; i < l; i++ ) {
@@ -185,8 +180,8 @@ void SrtpSymCrypto::f8_encrypt(const uint8_t* data, uint32_t data_length,
 
 #define MAX_KEYLEN 32
 
-void SrtpSymCrypto::f8_deriveForIV(SrtpSymCrypto* f8Cipher, uint8_t* key, int32_t keyLen,
-             uint8_t* salt, int32_t saltLen) {
+void SrtpSymCrypto::f8_deriveForIV(SrtpSymCrypto* f8Cipher, uint8_t* keyIn, int32_t keyLen,
+                                   uint8_t* salt, int32_t saltLen) {
 
     unsigned char *cp_in, *cp_in1, *cp_out;
 
@@ -210,7 +205,7 @@ void SrtpSymCrypto::f8_deriveForIV(SrtpSymCrypto* f8Cipher, uint8_t* key, int32_
      * get the special key.
      */
     cp_out = maskedKey;
-    cp_in = key;
+    cp_in = keyIn;
     cp_in1 = saltMask;
     for (int i = 0; i < keyLen; i++) {
         *cp_out++ = *cp_in++ ^ *cp_in1++;
@@ -222,7 +217,7 @@ void SrtpSymCrypto::f8_deriveForIV(SrtpSymCrypto* f8Cipher, uint8_t* key, int32_
 }
 
 void SrtpSymCrypto::f8_encrypt(const uint8_t* in, uint32_t in_length, uint8_t* out,
-                         uint8_t* iv, SrtpSymCrypto* f8Cipher ) {
+                               uint8_t* iv, SrtpSymCrypto* f8Cipher ) {
 
 
     int offset = 0;
