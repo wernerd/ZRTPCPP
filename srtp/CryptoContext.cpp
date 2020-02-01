@@ -158,6 +158,12 @@ CryptoContext::~CryptoContext() {
         delete f8Cipher;
         f8Cipher = nullptr;
     }
+#ifdef ZRTP_OPENSSL
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+    freeSha1HmacContext(macCtx);
+#endif
+#endif
+
 }
 
 void CryptoContext::srtpEncrypt(uint8_t* pkt, uint8_t* payload, uint32_t paylen, uint64_t index, uint32_t ssrc ) {
@@ -310,7 +316,15 @@ void CryptoContext::deriveSrtpKeys(uint64_t index)
     // Initialize MAC context with the derived key
     switch (aalg) {
     case SrtpAuthenticationSha1Hmac:
-        macCtx = &hmacCtx.hmacSha1Ctx;
+#ifdef ZRTP_OPENSSL
+    #if OPENSSL_VERSION_NUMBER < 0x10100000L
+            macCtx = &hmacCtx.hmacSha1Ctx;
+    #else
+            macCtx = createSha1HmacContext();
+    #endif
+#else
+            macCtx = &hmacCtx.hmacSha1Ctx;
+#endif
         macCtx = initializeSha1HmacContext(macCtx, k_a, n_a);
         break;
     case SrtpAuthenticationSkeinHmac:

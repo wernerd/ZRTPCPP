@@ -420,8 +420,6 @@ private:
 #ifdef ZRTP_OPENSSL
     #if OPENSSL_VERSION_NUMBER < 0x10100000L
         HMAC_CTX         hmacSha1Ctx;
-	#else
-		HMAC_CTX *		hmacSha1Ctx;
 	#endif
 #else
         hmacSha1Context  hmacSha1Ctx;
