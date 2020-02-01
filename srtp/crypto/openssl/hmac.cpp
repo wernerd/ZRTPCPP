@@ -50,42 +50,23 @@ void hmac_sha1( uint8_t* key, int32_t key_length,
                 const uint8_t* data_chunks[],
                 uint32_t data_chunck_length[],
                 uint8_t* mac, int32_t* mac_length ) {
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
     HMAC_CTX ctx;
     HMAC_CTX_init(&ctx);
     HMAC_Init_ex(&ctx, key, key_length, EVP_sha1(), NULL);
-#else
-	HMAC_CTX* ctx;
-	ctx = HMAC_CTX_new();
-	HMAC_Init_ex(ctx, key, key_length, EVP_sha1(), NULL);
-#endif
     while (*data_chunks) {
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
         HMAC_Update(&ctx, *data_chunks, *data_chunck_length);
-#else
-		HMAC_Update(ctx, *data_chunks, *data_chunck_length);
-#endif
         data_chunks ++;
         data_chunck_length ++;
     }
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
     HMAC_Final(&ctx, mac, reinterpret_cast<uint32_t*>(mac_length));
     HMAC_CTX_cleanup(&ctx);
-#else
-	HMAC_Final(ctx, mac, reinterpret_cast<uint32_t*>(mac_length));
-	HMAC_CTX_free( ctx );
-#endif
 }
 
 void* createSha1HmacContext(uint8_t* key, int32_t key_length)
 {
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
     HMAC_CTX* ctx = (HMAC_CTX*)malloc(sizeof(HMAC_CTX));
 
     HMAC_CTX_init(ctx);
-#else
-	HMAC_CTX* ctx = HMAC_CTX_new();
-#endif
     HMAC_Init_ex(ctx, key, key_length, EVP_sha1(), NULL);
     return ctx;
 }
@@ -94,11 +75,7 @@ void* initializeSha1HmacContext(void* ctx, uint8_t* key, int32_t keyLength)
 {
     HMAC_CTX *pctx = (HMAC_CTX*)ctx;
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
     HMAC_CTX_init(pctx);
-#else
-	HMAC_CTX_reset(pctx);
-#endif
     HMAC_Init_ex(pctx, key, keyLength, EVP_sha1(), NULL);
     return pctx;
 }
@@ -108,9 +85,9 @@ void hmacSha1Ctx(void* ctx, const uint8_t* data, uint32_t data_length,
 {
     HMAC_CTX* pctx = (HMAC_CTX*)ctx;
 
-    HMAC_Init_ex( pctx, NULL, 0, NULL, NULL );
-    HMAC_Update( pctx, data, data_length );
-    HMAC_Final( pctx, mac, reinterpret_cast<uint32_t*>(mac_length) );
+    HMAC_Init_ex(pctx, NULL, 0, NULL, NULL );
+    HMAC_Update(pctx, data, data_length );
+    HMAC_Final(pctx, mac, reinterpret_cast<uint32_t*>(mac_length) );
 }
 
 void hmacSha1Ctx(void* ctx, const uint8_t* data[], uint32_t data_length[],
@@ -118,23 +95,19 @@ void hmacSha1Ctx(void* ctx, const uint8_t* data[], uint32_t data_length[],
 {
     HMAC_CTX* pctx = (HMAC_CTX*)ctx;
 
-    HMAC_Init_ex( pctx, NULL, 0, NULL, NULL );
+    HMAC_Init_ex(pctx, NULL, 0, NULL, NULL );
     while (*data) {
-        HMAC_Update( pctx, *data, *data_length );
+        HMAC_Update(pctx, *data, *data_length);
         data++;
         data_length++;
     }
-    HMAC_Final( pctx, mac, reinterpret_cast<uint32_t*>(mac_length) );
+    HMAC_Final(pctx, mac, reinterpret_cast<uint32_t*>(mac_length) );
 }
 
 void freeSha1HmacContext(void* ctx)
 {
     if (ctx) {
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
         HMAC_CTX_cleanup((HMAC_CTX*)ctx);
-		free(ctx);
-#else
-		HMAC_CTX_free((HMAC_CTX*)ctx);
-#endif
+        free(ctx);
     }
 }
