@@ -26,9 +26,8 @@ include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOU
     ${CMAKE_SOURCE_DIR}/srtp ${CMAKE_SOURCE_DIR}/bnlib)
 
 # **** setup the various crypto interface implementations ***
-# Twofish is a special case: its always a standalone modlue and thus
+# Twofish is a special case: its always a standalone module and thus
 # not specific to a library.
-# NOTE: the standalone modules live in the 'crypto'
 
 set(cryptcommon_srcs
     ${CMAKE_SOURCE_DIR}/cryptcommon/macSkein.cpp

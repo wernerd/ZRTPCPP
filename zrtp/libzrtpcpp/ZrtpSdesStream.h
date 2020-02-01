@@ -198,6 +198,7 @@ public:
      */
     bool parseSdes(const char *cryptoString, size_t length, bool sipInvite);
 
+#ifdef ENABLE_SDES_MIX
     /**
      * @brief Get Crypto Mix attribute string
      *
@@ -234,7 +235,7 @@ public:
      * @return @c false if none of the offered algorithms is supported.
      */
     bool setCryptoMixAttribute(const char *algoNames);
-
+#endif
     /*
      * ******** Outgoing RTP/RTCP packet handling
      */
@@ -499,6 +500,7 @@ private:
      */
     void createSrtpContexts(bool sipInvite);
 
+#ifdef ENABLE_SDES_MIX
     /**
      * @brief Compute the mixed keys if SDES mixing attribute is set.
      *
@@ -510,6 +512,7 @@ private:
      *                  for the answerer otherwise.
      */
     void computeMixedKeys(bool sipInvite);
+#endif
 
     std::unique_ptr<CryptoContext    > recvSrtp;           //!< The SRTP context for this stream
 //    std::unique_ptr<CryptoContextCtrl> recvSrtcp;          //!< The SRTCP context for this stream

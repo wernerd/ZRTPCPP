@@ -33,22 +33,22 @@
 #endif
 
 typedef struct _f8_ctx {
-    unsigned char *S;           ///< Intermetiade buffer
+    unsigned char *S;           ///< Intermediate buffer
     unsigned char *ivAccent;    ///< second IV
     uint32_t J;                 ///< Counter
 } F8_CIPHER_CTX;
 
 /**
- * @brief Implments the SRTP encryption modes as defined in RFC3711
+ * @brief Implements the SRTP encryption modes as defined in RFC3711
  *
  * The SRTP specification defines two encryption modes, AES-CTR
  * (AES Counter mode) and AES-F8 mode. The AES-CTR is required,
  * AES-F8 is optional.
  *
- * Both modes are desinged to encrypt/decrypt data of arbitrary length
+ * Both modes are designed to encrypt/decrypt data of arbitrary length
  * (with a specified upper limit, refer to RFC 3711). These modes do
  * <em>not</em> require that the amount of data to encrypt is a multiple
- * of the AES blocksize (16 bytes), no padding is necessary.
+ * of the AES block size (16 bytes), no padding is necessary.
  *
  * The implementation uses the openSSL library as its cryptographic
  * backend.

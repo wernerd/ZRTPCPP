@@ -60,6 +60,9 @@ uint32_t zrtpNtohl (uint32_t net)
     return ntohl(net);
 }
 
+#ifdef UNIT_TESTS
+__EXPORT
+#endif
 uint16_t zrtpNtohs (uint16_t net)
 {
     return ntohs(net);

@@ -21,9 +21,11 @@
 // #define MAKE_F8_TEST
 
 #include <cstdlib>
+#include <cstring>
 #include <openssl/aes.h>                // the include of openSSL
 #include <srtp/crypto/SrtpSymCrypto.h>
 #include <cryptcommon/twofish.h>
+#include "common/osSpecifics.h"
 
 SrtpSymCrypto::SrtpSymCrypto(int algo):key(nullptr), algorithm(algo) {
 }

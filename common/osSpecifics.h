@@ -64,7 +64,7 @@ extern "C"
 {
 #endif
 /**
- * Get surrent system time in milli-second.
+ * Get current system time in milli-second.
  *
  * @return current time in ms.
  */
@@ -74,7 +74,7 @@ extern uint64_t zrtpGetTickCount();
  * Convert a 32bit variable from network to host order.
  *
  * Replaces the macros found in @c inet.h or @c WinSock2.h. Use this function
- * to avoid different includes freamed with @c #idef in the sources. Including
+ * to avoid different includes framed with @c #idef in the sources. Including
  * @c WinSock2 will increase compile time and may lead to other subtle problems
  * because @c WinSock2 also includes @c windows.h.
  *

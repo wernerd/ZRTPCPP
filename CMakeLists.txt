@@ -35,7 +35,7 @@ option(CRYPTO_STANDALONE "Use embedded crypto and big number modules." ON)
 option(TIVI "Build library for the tivi client, implies '-DCRYPTO_STNDALONE=ON' and '-DSDES=ON'." OFF)
 option(SQLITE "Use SQLite DB as backend for ZRTP cache." OFF)
 option(SQLCIPHER "Use SQLCipher DB as backend for ZRTP cache." OFF)
-option(SDES "Include SDES when not building for CCRTP." OFF)
+option(SRTP "Include SRTP when not building for CCRTP." OFF)
 option(AXO "Include Axolotl support when not building for CCRTP." OFF)
 option(TESTS "Generate Unit test." OFF)
 
@@ -62,19 +62,18 @@ endif()
 if (CCRTP)
     set (PACKAGE libzrtpcpp)
     set(zrtplibName zrtpcpp)
+    set(SRTP false)
 elseif (TIVI)
     set (PACKAGE libzrtptivi)
     set(zrtplibName zrtptivi)
     set(CRYPTO_STANDALONE true)
     set(SDES true)
+    set(SRTP true)
 elseif (CORE_LIB)
     set (PACKAGE libzrtpcore)
     set(zrtplibName zrtpcppcore)
 else()
-    MESSAGE(WARNING "No client defined, building for GNU ccRTP.")
-    set (PACKAGE libzrtpcpp)
-    set(CCRTP true)
-    set(zrtplibName zrtpcpp)
+    MESSAGE(FATAL_ERROR "No client defined: define client using -DCCRTP=true, or -DTIVI=true, or -DCORE_LIB=true.")
 endif()
 
 
@@ -200,8 +199,15 @@ if(CRYPTO_STANDALONE)
     include_directories (${CMAKE_SOURCE_DIR}/bnlib)
 endif()
 
-if (SDES AND NOT CCRTP)
-    set (sdes_src ${CMAKE_SOURCE_DIR}/zrtp/ZrtpSdesStream.cpp)
+if (SRTP)
+    set (sdes_src
+            ${CMAKE_SOURCE_DIR}/zrtp/ZrtpSdesStream.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpSdesStream.h)
+
+    if (SDES AND CRYPTO_STANDALONE)
+        add_definitions(-DENABLE_SDES_MIX)  ## SDES mixer currently with standalone crypto (no openSSL)
+    endif()
+
 endif()
 
 # **** The following source files a common for all clients ****
@@ -243,8 +249,6 @@ set(zrtp_src_include
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketPing.h
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketRelayAck.h
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketSASrelay.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpSdesStream.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpSdesStream.h
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpStateClass.h
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpStates.h
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpTextData.h

@@ -20,7 +20,6 @@
 
 #include <cstdint>
 #include <openssl/hmac.h>
-#include <srtp/crypto/hmac.h>
 #include <vector>
 
 void hmac_sha1(const uint8_t* key, int64_t keyLength,
@@ -43,20 +42,20 @@ void hmac_sha1(const uint8_t* key, uint64_t keyLength,
 #else
     HMAC_CTX* ctx;
     ctx = HMAC_CTX_new();
-    HMAC_Init_ex(ctx, key, key_length, EVP_sha1(), nullptr);
+    HMAC_Init_ex(ctx, key, keyLength, EVP_sha1(), nullptr);
 #endif
     for (size_t i = 0, size = data.size(); i < size; i++) {
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-        HMAC_Update(&ctx, *data_chunks, *data_chunck_length);
+        HMAC_Update(&ctx, data[i], dataLength[i]);
 #else
-        HMAC_Update(ctx, *data_chunks, *data_chunck_length);
+        HMAC_Update(ctx, data[i], dataLength[i]);
 #endif
     }
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-    HMAC_Final(&ctx, mac, reinterpret_cast<uint32_t*>(mac_length));
+    HMAC_Final(&ctx, mac, reinterpret_cast<uint32_t*>(macLength));
     HMAC_CTX_cleanup(&ctx);
 #else
-    HMAC_Final(ctx, mac, reinterpret_cast<uint32_t*>(mac_length));
+    HMAC_Final(ctx, mac, reinterpret_cast<uint32_t*>(macLength));
     HMAC_CTX_free( ctx );
 #endif
 }

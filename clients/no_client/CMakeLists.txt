@@ -17,15 +17,14 @@ include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOU
 # **** setup the various crypto interface implementations ***
 # Twofish is a special case: its always a standalone module and thus
 # not specific to a library. Same is true for Skein hash.
-# NOTE: the standalone modules live in the 'crypto'
 
 set(cryptcommon_srcs
-    ${CMAKE_SOURCE_DIR}/cryptcommon/macSkein.cpp
-    ${CMAKE_SOURCE_DIR}/cryptcommon/skein.c
-    ${CMAKE_SOURCE_DIR}/cryptcommon/skein_block.c
-    ${CMAKE_SOURCE_DIR}/cryptcommon/skeinApi.c
-    ${CMAKE_SOURCE_DIR}/cryptcommon/twofish.c
-    ${CMAKE_SOURCE_DIR}/cryptcommon/twofish_cfb.c
+        ${CMAKE_SOURCE_DIR}/cryptcommon/macSkein.cpp
+        ${CMAKE_SOURCE_DIR}/cryptcommon/skein.c
+        ${CMAKE_SOURCE_DIR}/cryptcommon/skein_block.c
+        ${CMAKE_SOURCE_DIR}/cryptcommon/skeinApi.c
+        ${CMAKE_SOURCE_DIR}/cryptcommon/twofish.c
+        ${CMAKE_SOURCE_DIR}/cryptcommon/twofish_cfb.c
         ${zrtp_skein_src})
 
 if (OPENSSL_FOUND)
@@ -36,7 +35,7 @@ if (OPENSSL_FOUND)
             ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/hmac384.cpp
             ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/sha384.cpp
             ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/aesCFB.cpp
-            ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/twoCFB.cpp
             ${zrtp_crypto_includes})
 
 endif()
@@ -53,15 +52,12 @@ if (CRYPTO_STANDALONE)
         ${CMAKE_SOURCE_DIR}/cryptcommon/aes_modes.c)
 endif()
 
-if (SDES)
+if (SRTP)
    include_directories(${CMAKE_SOURCE_DIR}/srtp ${CMAKE_SOURCE_DIR}/srtp/crypto)
    set (zrtp_srtp_src
        ${CMAKE_SOURCE_DIR}/srtp/CryptoContext.cpp
        ${CMAKE_SOURCE_DIR}/srtp/CryptoContextCtrl.cpp
-       ${CMAKE_SOURCE_DIR}/srtp/SrtpHandler.cpp
-       ${CMAKE_SOURCE_DIR}/srtp/crypto/sha1.c
-       ${CMAKE_SOURCE_DIR}/srtp/crypto/hmac.cpp
-       ${CMAKE_SOURCE_DIR}/srtp/crypto/SrtpSymCrypto.cpp)
+       ${CMAKE_SOURCE_DIR}/srtp/SrtpHandler.cpp)
 endif()
 
 set(srtp_src
@@ -69,21 +65,20 @@ set(srtp_src
         ${CMAKE_SOURCE_DIR}/srtp/CryptoContextCtrl.cpp
         ${CMAKE_SOURCE_DIR}/srtp/SrtpHandler.cpp
         ${CMAKE_SOURCE_DIR}/srtp/crypto/hmac.h
-        ${CMAKE_SOURCE_DIR}/srtp/crypto/sha1.h
         ${CMAKE_SOURCE_DIR}/srtp/crypto/SrtpSymCrypto.h)
 
 if (CRYPTO_STANDALONE)
     set(crypto_src_srtp
-            ${CMAKE_SOURCE_DIR}/srtp/crypto/hmac.cpp
-            ${CMAKE_SOURCE_DIR}/srtp/crypto/SrtpSymCrypto.cpp
-            ${CMAKE_SOURCE_DIR}/srtp/crypto/sha1.c)
+            ${CMAKE_SOURCE_DIR}/srtp/crypto/standalone/hmac.cpp
+            ${CMAKE_SOURCE_DIR}/srtp/crypto/standalone/sha1.c
+            ${CMAKE_SOURCE_DIR}/srtp/crypto/standalone/sha1.h
+            ${CMAKE_SOURCE_DIR}/srtp/crypto/standalone/SrtpSymCrypto.cpp)
 endif()
 
 if (OPENSSL_FOUND)
     set(crypto_src_srtp
             ${CMAKE_SOURCE_DIR}/srtp/crypto/openssl/hmac.cpp
-            ${CMAKE_SOURCE_DIR}/srtp/crypto/openssl/SrtpSymCrypto.cpp
-            ${CMAKE_SOURCE_DIR}/srtp/crypto/sha1.c)
+            ${CMAKE_SOURCE_DIR}/srtp/crypto/openssl/SrtpSymCrypto.cpp)
 endif()
 
 

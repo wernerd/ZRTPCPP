@@ -33,7 +33,7 @@
 
 #include <cstdint>
 #include <vector>
-#include "srtp/crypto/sha1.h"
+#include "srtp/crypto/standalone/sha1.h"
 
 #ifndef SHA1_DIGEST_LENGTH
 #define SHA1_DIGEST_LENGTH 20

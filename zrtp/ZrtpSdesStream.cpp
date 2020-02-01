@@ -18,17 +18,15 @@
 #include <cstdlib>
 #include <cstring>
 
-#include <string>
 
 #include <libzrtpcpp/ZrtpSdesStream.h>
 #include <libzrtpcpp/ZrtpTextData.h>
 #include <libzrtpcpp/zrtpB64Decode.h>
 #include <libzrtpcpp/zrtpB64Encode.h>
+#include "crypto/zrtpDH.h"
 #include <srtp/CryptoContext.h>
-#include <cryptcommon/ZrtpRandom.h>
-#include <crypto/hmac384.h>
-
-#include "common/typedefs.h"
+#include <common/typedefs.h>
+#include <zrtp/crypto/hmac384.h>
 
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -282,6 +280,7 @@ const char* ZrtpSdesStream::getAuthAlgo() {
     return (strcmp(knownSuites[suite].tagLength, hs80) == 0) ? "HMAC-SHA1 80 bit" : "HMAC-SHA1 32 bit";
 }
 
+#ifdef ENABLE_SDES_MIX
 size_t ZrtpSdesStream::getCryptoMixAttribute(char *algoNames, size_t length) {
 
     if (length < MIX_HMAC_STRING_MIN_LEN)
@@ -340,51 +339,6 @@ bool ZrtpSdesStream::setCryptoMixAttribute(const char *algoNames) {
     } while (true);
 
     return false;
-}
-
-#ifdef WEAKRANDOM
-/*
- * A standard random number generator that uses the portable random() system function.
- *
- * This should be enhanced to use a better random generator
- */
-static int _random(unsigned char *output, size_t len)
-{
-    size_t i;
-
-    for(i = 0; i < len; ++i )
-        output[i] = random();
-
-    return( 0 );
-}
-#else
-
-static int _random(unsigned char *output, size_t len)
-{
-    return ZrtpRandom::getRandomData(output, len);
-}
-#endif
-
-static ptrdiff_t b64Encode(const uint8_t *binData, int32_t binLength, char *b64Data, int32_t b64Length)
-{
-    (void)b64Length;
-    base64_encodestate _state = {};
-
-    base64_init_encodestate(&_state, 0);
-    auto codeLength = base64_encode_block(binData, binLength, b64Data, &_state);
-    codeLength += base64_encode_blockend(b64Data+codeLength, &_state);
-
-    return codeLength;
-}
-
-static ptrdiff_t b64Decode(const char *b64Data, int32_t b64length, uint8_t *binData, int32_t binLength)
-{
-    (void)binLength;
-    base64_decodestate _state = {};
-
-    base64_init_decodestate(&_state);
-    auto codeLength = base64_decode_block(b64Data, b64length, binData, &_state);
-    return codeLength;
 }
 
 void* createSha384HmacContext(const uint8_t* key, uint64_t keyLength);
@@ -510,13 +464,42 @@ void ZrtpSdesStream::computeMixedKeys(bool sipInvite) {
         memcpy(localKeySalt, &T[offset], localKeyLenBytes);
     }
 }
+#endif
+
+static int _random(uint8_t *output, int32_t len) {
+    randomZRTP(output, len);
+    return (0);
+}
+
+static ptrdiff_t b64Encode(const uint8_t *binData, int32_t binLength, char *b64Data, int32_t b64Length)
+{
+    (void)b64Length;
+    base64_encodestate _state = {};
+
+    base64_init_encodestate(&_state, 0);
+    auto codeLength = base64_encode_block(binData, binLength, b64Data, &_state);
+    codeLength += base64_encode_blockend(b64Data+codeLength, &_state);
+
+    return codeLength;
+}
+
+static ptrdiff_t b64Decode(const char *b64Data, int32_t b64length, uint8_t *binData, int32_t binLength)
+{
+    (void)binLength;
+    base64_decodestate _state = {};
+
+    base64_init_decodestate(&_state);
+    auto codeLength = base64_decode_block(b64Data, b64length, binData, &_state);
+    return codeLength;
+}
 
 void ZrtpSdesStream::createSrtpContexts(bool sipInvite) {
 
+#ifdef ENABLE_SDES_MIX
     if (cryptoMixHashType != MIX_NONE) {
         computeMixedKeys(sipInvite);
     }
-
+#endif
     sendSrtp = std::make_unique<CryptoContext>(0,                     // SSRC (used for lookup)
                                  0,                     // Roll-Over-Counter (ROC)
                                  0L,                    // keyderivation << 48,

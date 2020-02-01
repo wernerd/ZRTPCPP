@@ -63,9 +63,9 @@ set(srtp_src
         ${CMAKE_SOURCE_DIR}/srtp/SrtpHandler.cpp)
 
 set(crypto_src_srtp
-        ${CMAKE_SOURCE_DIR}/srtp/crypto/hmac.cpp
-        ${CMAKE_SOURCE_DIR}/srtp/crypto/SrtpSymCrypto.cpp
-        ${CMAKE_SOURCE_DIR}/srtp/crypto/sha1.c)
+        ${CMAKE_SOURCE_DIR}/srtp/crypto/standalone/hmac.cpp
+        ${CMAKE_SOURCE_DIR}/srtp/crypto/standalone/SrtpSymCrypto.cpp
+        ${CMAKE_SOURCE_DIR}/srtp/crypto/standalone/sha1.c)
 
 set(zrtpcpp_src ${zrtp_src} ${zrtp_tivi_src}
         ${zrtp_standalone_crypto_src} ${zrtp_skein_src} ${bnlib_src} ${srtp_src}
