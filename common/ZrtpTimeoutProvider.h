@@ -63,6 +63,8 @@ namespace zrtp {
          * @return positive number: id of the timer task or an error code (< 0)
          */
         int32_t addTimer(int32_t relativeTime, int64_t data, const function<void(int64_t)>& cbFunction) {
+            if (!runTimerThread) return -1;
+
             auto steadyTime = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now().time_since_epoch()).count();
             relativeTime = (relativeTime > 0) ? relativeTime : 1;       // at least one millisecond, never negative
 
@@ -110,7 +112,7 @@ namespace zrtp {
         void removeTimer(int32_t taskId) {
             lock_guard<mutex> tl(tasksLock);
 
-            if (tasks.empty()) return;
+            if (tasks.empty() || !runTimerThread ) return;
             tasks.remove_if([&](const TimerTaskPtr &t) { return t->id == taskId; });
             waitForTasks.notify_all();
         }
@@ -133,7 +135,6 @@ namespace zrtp {
                     waitForTasks.wait_for(runLock, chrono::milliseconds(waitTime));
                     continue;
                 }
-                if (tasks.empty()) continue;
                 auto task = move(tasks.front());
                 tasks.pop_front();
                 runLock.unlock();
