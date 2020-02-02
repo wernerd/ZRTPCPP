@@ -433,13 +433,13 @@ return 0;
                     logStream << "<ERROR>: ";
                     break;
                 case INFO:
-                    logStream << "<INFO>";
+                    logStream << "<INFO>: ";
                     break;
                 case VERBOSE:
-                    logStream << "<VERBOSE>";
+                    logStream << "<VERBOSE>: ";
                     break;
                 case EPIC:
-                    logStream << "<EPIC>";
+                    logStream << "<EPIC>: ";
                     break;
                 default:
                     break;
