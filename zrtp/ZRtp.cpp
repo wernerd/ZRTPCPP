@@ -53,8 +53,8 @@ extern "C" {
 }
 #endif
 
-ZRtp::ZRtp(uint8_t const * myZid, ZrtpCallback& cb, const string& id, shared_ptr<ZrtpConfigure>& config, bool mitm, bool sasSignSupport):
-        callback(&cb), configureAlgos(config) {
+ZRtp::ZRtp(uint8_t const * myZid, std::shared_ptr<ZrtpCallback>& userCallback, const string& id, shared_ptr<ZrtpConfigure>& config, bool mitm, bool sasSignSupport):
+        callback(userCallback), configureAlgos(config) {
 
 #ifdef ZRTP_SAS_RELAY_SUPPORT
     enableMitmEnrollment = config->isTrustedMitM();
@@ -939,8 +939,10 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
     signatureLength = confirm1->getSignatureLength();
     if (signSasSeen && signatureLength > 0 && confirm1->isSignatureLengthOk()) {
         signatureData = confirm1->getSignatureData();
-        callback->checkSASSignature(sasHash.data());
-        // error handling if checkSASSignature returns false? -> app (callback) should deal with this IMHO.
+        if (auto ucb = callback.lock()) {
+            ucb->checkSASSignature(sasHash.data());
+            // error handling if checkSASSignature returns false? -> app (callback) should deal with this IMHO.
+        }
     }
     // now we are ready to save the new RS1 which inherits the verified
     // flag from old RS1
@@ -1137,8 +1139,10 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
         signatureLength = confirm2->getSignatureLength();
         if (signSasSeen && signatureLength > 0 && confirm2->isSignatureLengthOk() ) {
             signatureData = confirm2->getSignatureData();
-            callback->checkSASSignature(sasHash.data());
-            // error handling if checkSASSignature returns false? -> app (callback) should deal with this IMHO.
+            if (auto ucb = callback.lock()) {
+                ucb->checkSASSignature(sasHash.data());
+                // error handling if checkSASSignature returns false? -> app (callback) should deal with this IMHO.
+            }
         }
         // save new RS1, this inherits the verified flag from old RS1
         zidRec->setNewRs1(newRs1.data());
@@ -2293,18 +2297,22 @@ void ZRtp::computeSRTPKeys() {
     detailInfo.pubKey = detailInfo.sasType = nullptr;
     if (!multiStream) {
         // Compute the new Retained Secret
-        KDF(s0.data(), hashLength, retainedSec, strlen(retainedSec)+1, kdfContext.data(), kdfSize, SHA256_DIGEST_LENGTH * 8, newRs1);
+        KDF(s0.data(), hashLength, retainedSec, strlen(retainedSec) + 1, kdfContext.data(), kdfSize,
+            SHA256_DIGEST_LENGTH * 8, newRs1);
 
         // Compute the ZRTP Session Key
-        KDF(s0.data(), hashLength, zrtpSessionKey, strlen(zrtpSessionKey)+1, kdfContext.data(), kdfSize, hashLength * 8, zrtpSession);
+        KDF(s0.data(), hashLength, zrtpSessionKey, strlen(zrtpSessionKey) + 1, kdfContext.data(), kdfSize,
+            hashLength * 8, zrtpSession);
 
         // Compute the exported Key
-        KDF(s0.data(), hashLength, zrtpExportedKey, strlen(zrtpExportedKey)+1, kdfContext.data(), kdfSize, hashLength * 8, zrtpExport);
+        KDF(s0.data(), hashLength, zrtpExportedKey, strlen(zrtpExportedKey) + 1, kdfContext.data(), kdfSize,
+            hashLength * 8, zrtpExport);
         // perform  generation according to chapter 5.5 and 8.
         // we don't need a special sasValue filed. sasValue are the first
         // (leftmost) 32 bits (4 bytes) of sasHash
         uint8_t sasBytes[4];
-        KDF(s0.data(), hashLength, sasString, strlen(sasString)+1, kdfContext.data(), kdfSize, SHA256_DIGEST_LENGTH * 8, sasHash);
+        KDF(s0.data(), hashLength, sasString, strlen(sasString) + 1, kdfContext.data(), kdfSize,
+            SHA256_DIGEST_LENGTH * 8, sasHash);
 
         // according to chapter 8 only the leftmost 20 bits of sasValue (aka
         //  sasHash) are used to create the character SAS string of type SAS
@@ -2313,24 +2321,24 @@ void ZRtp::computeSRTPKeys() {
         sasBytes[1] = sasHash[1];
         sasBytes[2] = sasHash[2] & static_cast<uint8_t>(0xf0);
         sasBytes[3] = 0;
-        if (*(int32_t*)b32 == *(int32_t*)(sasType->getName())) {
+        if (*(int32_t *) b32 == *(int32_t *) (sasType->getName())) {
             SAS = Base32(sasBytes, 20).getEncoded();
-        }
-        else if (*(int32_t*)b32e == *(int32_t*)(sasType->getName())) {
+        } else if (*(int32_t *) b32e == *(int32_t *) (sasType->getName())) {
             SAS = *EmojiBase32::u32StringToUtf8(EmojiBase32(sasBytes, 20).getEncoded());
-        }
-        else if (*(int32_t*)b10d == *(int32_t*)(sasType->getName())) {
+        } else if (*(int32_t *) b10d == *(int32_t *) (sasType->getName())) {
             SAS = sasDigit(sasHash.data());
             if (SAS.empty()) {
                 // report fatal error
             }
-        }
-        else {
+        } else {
             SAS.assign(sas256WordsEven[sasBytes[0]]).append(":").append(sas256WordsOdd[sasBytes[1]]);
         }
 
-        if (signSasSeen)
-             callback->signSAS(sasHash.data());
+        if (signSasSeen) {
+            if (auto ucb = callback.lock()) {
+                ucb->signSAS(sasHash.data());
+            }
+        }
 
         detailInfo.pubKey = pubKey->getReadable();
         detailInfo.sasType = sasType->getReadable();
@@ -2363,7 +2371,10 @@ bool ZRtp::srtpSecretsReady(EnableSecurity part) {
     sec.sas = SAS;
     sec.role = myRole;
 
-    bool rc = callback->srtpSecretsReady(&sec, part);
+    bool rc = false;
+    if (auto ucb = callback.lock()) {           // if no callback available: returning false leads to an ZRTP error and abort
+        rc = ucb->srtpSecretsReady(&sec, part);
+    }
 
     // The call state engine calls ForSender always after ForReceiver.
     if (part == ForSender) {
@@ -2372,13 +2383,17 @@ bool ZRtp::srtpSecretsReady(EnableSecurity part) {
             cs.append("/").append(pubKey->getName());
             if (mitmSeen)
                 cs.append("/EndAtMitM");
-            callback->srtpSecretsOn(cs, SAS, zidRec->isSasVerified());
+            if (auto ucb = callback.lock()) {
+                ucb->srtpSecretsOn(cs, SAS, zidRec->isSasVerified());
+            }
         }
         else {
             string cs1;
             if (mitmSeen)
                 cs.append("/EndAtMitM");
-            callback->srtpSecretsOn(cs, cs1, true);
+            if (auto ucb = callback.lock()) {
+                ucb->srtpSecretsOn(cs, cs1, true);
+            }
         }
     }
     return rc;
@@ -2447,7 +2462,9 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hashNegotiated) {
 
 
 void ZRtp::srtpSecretsOff(EnableSecurity part) {
-    callback->srtpSecretsOff(part);
+    if (auto ucb = callback.lock()) {
+        ucb->srtpSecretsOff(part);
+    }
 }
 
 void ZRtp::SASVerified() {
@@ -2483,29 +2500,46 @@ void ZRtp::sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) {
         srtpKeyR.clear();
         srtpSaltR.clear();
     }
-    callback->sendInfo(severity, subCode);
+    if (auto ucb = callback.lock()) {
+        ucb->sendInfo(severity, subCode);
+    }
 }
 
 
 void ZRtp::zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) {
-    callback->zrtpNegotiationFailed(severity, subCode);
+    if (auto ucb = callback.lock()) {
+        ucb->zrtpNegotiationFailed(severity, subCode);
+    }
 }
 
 void ZRtp::zrtpNotSuppOther() {
-    callback->zrtpNotSuppOther();
+    if (auto ucb = callback.lock()) {
+        ucb->zrtpNotSuppOther();
+    }
 }
 
 int32_t ZRtp::sendPacketZRTP(ZrtpPacketBase *packet) {
-    return ((packet == nullptr) ? 0 :
-            callback->sendDataZRTP(packet->getHeaderBase(), (packet->getLength() * 4) + 4));
+    if (packet == nullptr) {
+        return 0;
+    }
+    if (auto ucb = callback.lock()) {
+        return ucb->sendDataZRTP(packet->getHeaderBase(), (packet->getLength() * 4) + 4);
+    }
+    return 0;
 }
 
 int32_t ZRtp::activateTimer(int32_t tm) {
-    return (callback->activateTimer(tm));
+    if (auto ucb = callback.lock()) {
+        return ucb->activateTimer(tm);
+    }
+    return 0;
 }
 
 int32_t ZRtp::cancelTimer() {
-    return (callback->cancelTimer());
+    if (auto ucb = callback.lock()) {
+        return ucb->cancelTimer();
+    }
+    return 0;
 }
 
 void ZRtp::setAuxSecret(uint8_t* data, uint32_t length) {

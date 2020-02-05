@@ -90,7 +90,7 @@ int32_t zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext,
 
     std::shared_ptr<ZrtpConfigure> configOwn;
 
-    zrtpContext->zrtpCallback = new ZrtpCallbackWrapper(cb, zrtpContext);
+    zrtpContext->zrtpCallback = std::make_shared<ZrtpCallbackWrapper>(cb, zrtpContext);
     zrtpContext->userData = userData;
 
     // don't copy from another context: take over ZrtpConfigure raw pointer,  check and
@@ -109,7 +109,7 @@ int32_t zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext,
     }
     else {
         // use ZrtpConfigure of another, existing ZRTP stream
-        delete zrtpContext->configure;              // delete initialized stream, not needed anymore
+        delete zrtpContext->configure;              // delete initialized configure - we copy it from another context
         configOwn = copyConfigFrom->zrtpEngine->getZrtpConfigure(); // get pointer to ZrtpConfigure from other stream
         zrtpContext->configure = configOwn.get();   // set raw pointer in ZrtpContext
     }
@@ -118,7 +118,7 @@ int32_t zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext,
     if (!myZid) {
         return false;
     }
-    zrtpContext->zrtpEngine = new ZRtp((uint8_t*)myZid, *zrtpContext->zrtpCallback,
+    zrtpContext->zrtpEngine = new ZRtp((uint8_t*)myZid, zrtpContext->zrtpCallback,
                                        clientIdString, configOwn, mitmMode != 0);
     return true;
 }
@@ -141,9 +141,6 @@ void zrtp_DestroyWrapper(ZrtpContext* zrtpContext) {
 
     delete zrtpContext->zrtpEngine;
     zrtpContext->zrtpEngine = nullptr;
-
-    delete zrtpContext->zrtpCallback;
-    zrtpContext->zrtpCallback = nullptr;
 
     // Don't delete ZrtpConfigure, see comments above.
     zrtpContext->configure = nullptr;

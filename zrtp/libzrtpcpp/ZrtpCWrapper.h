@@ -274,7 +274,7 @@ extern "C"
     typedef struct zrtpContext
     {
         ZRtp* zrtpEngine;                   /*!< Holds the real ZRTP engine */
-        ZrtpCallbackWrapper* zrtpCallback;  /*!< Help class Callback wrapper */
+        std::shared_ptr<ZrtpCallback> zrtpCallback;  /*!< Helper class Callback wrapper */
         ZrtpConfigure* configure;           /*!< Optional configuration data */
         ZRtp* zrtpMaster;                   /*!< Holds the master ZRTP stream in case this is a multi-stream */
         void* userData;                     /*!< User data, set by application */
@@ -284,11 +284,11 @@ extern "C"
     * This structure defines the callback functions required by GNU ZRTP.
     *
     * The RTP stack specific part must implement the callback methods.
-    * The generic part of GNU ZRTP uses these mehtods
+    * The generic part of GNU ZRTP uses these methods
     * to communicate with the specific part, for example to send data
     * via the RTP/SRTP stack, to set timers and cancel timer and so on.
     *
-    * The generiy part of GNU ZRTP needs only a few callback methods to
+    * The generic part of GNU ZRTP needs only a few callback methods to
     * be implemented by the specific part.
     *
     * @author Werner Dittmann <Werner.Dittmann@t-online.de>

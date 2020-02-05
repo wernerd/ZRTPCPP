@@ -98,7 +98,7 @@ public:
 
     CtZrtpSession();
 
-    ~CtZrtpSession();
+    ~CtZrtpSession() = default;
 
     /** @brief Initialize CtZrtpSession.
      *
@@ -745,7 +745,7 @@ private:
     static void syncEnter();
     static void syncLeave();
 
-    CtZrtpStream* streams[AllStreams] = { nullptr };
+    std::shared_ptr<CtZrtpStream> streams[AllStreams] = { nullptr };
     std::string  clientIdString;
     std::string  multiStreamParameter;
     const uint8_t* ownZid = nullptr;
