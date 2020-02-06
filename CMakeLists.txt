@@ -235,8 +235,6 @@ endif()
 # necessary and required modules checked, ready to generate config.h in top-level build directory
 configure_file(config.h.cmake ${CMAKE_BINARY_DIR}/config.h)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -std=c++17 -g -O2 -fno-strict-aliasing -Wno-unknown-pragmas ${LOG_MAX_LEVEL}")
-
 if(CMAKE_COMPILER_IS_GNUCXX)
     add_definitions(-DNEW_STDCPP)
 endif()
@@ -247,7 +245,11 @@ if (AXO)
 endif()
 
 if (TESTS)
+    # -Wall, -pedantic produce a lot of warning when compiling gtest and/or gmock macros
     add_definitions(-DUNIT_TESTS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -O2 -fno-strict-aliasing -Wno-unknown-pragmas ${LOG_MAX_LEVEL}")
+else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -std=c++17 -g -O2 -fno-strict-aliasing -Wno-unknown-pragmas ${LOG_MAX_LEVEL}")
 endif()
 
 if (SIDH)
