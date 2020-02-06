@@ -22,6 +22,9 @@ target_link_libraries(zrtpHello_test gmock_main ${zrtplibName})
 add_executable(zrtpRun_test ZrtpBasicRun_test.cpp ZrtpTestCommon.h)
 target_link_libraries(zrtpRun_test gmock_main ${zrtplibName})
 
+add_executable(zrtpTimedRun_test ZrtpTimedRun_test.cpp ZrtpTestCommon.h NetworkSimulation.h)
+target_link_libraries(zrtpTimedRun_test gmock_main ${zrtplibName})
+
 if(SDES)
     add_executable(sdesRun_test sdesRun_test.cpp)
     target_link_libraries(sdesRun_test gtest_main ${zrtplibName})
