@@ -303,7 +303,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
 
     // Modify here when introducing new DH key agreement, for example
     // elliptic curves.
-    dhContext = make_unique<ZrtpDH>(pubKey->getName());
+    dhContext = make_unique<ZrtpDH>(pubKey->getName(), ZrtpDH::Commit);
     dhContext->generatePublicKey();
 
     dhContext->fillInPubKeyBytes(pubKeyBytes);
@@ -539,7 +539,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     // keys are precomputed, thus it's a fast operation at this point
     if (*(int32_t*)(dhContext->getDHtype()) != *(int32_t*)(pubKey->getName()) ||
             *(int32_t*)(pubKey->getName()) == *(int32_t*)sdh1) {
-        dhContext = make_unique<ZrtpDH>(pubKey->getName());
+        dhContext = make_unique<ZrtpDH>(pubKey->getName(), ZrtpDH::DhPart1);
         dhContext->generatePublicKey();
     }
     sendInfo(Info, InfoDH1DHGenerated);
@@ -1501,7 +1501,7 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
     // Build own list of intersecting algos, keep own order of algorithms
     // The list must include real public key algorithms only, so skip multi-stream mode,
     // pre-shared and alike.
-    int numAlgosOwn = configureAlgos.getNumConfiguredAlgos(PubKeyAlgorithm);
+    int numAlgosOwn = configureAlgos->getNumConfiguredAlgos(PubKeyAlgorithm);
     int numOwnIntersect = 0;
     for (int i = 0; i < numAlgosOwn; i++) {
         ownIntersect[numOwnIntersect] = &configureAlgos->getAlgoAt(PubKeyAlgorithm, i);
@@ -2816,6 +2816,10 @@ bool ZRtp::checkAndSetNonce(uint8_t* nonce) {
     masterStream->peerNonces.push_back(str);
     return true;
 }
+
+//srtpSecrets::srtpSecrets() {}
+//srtpSecrets::~srtpSecrets() {}
+
 
 /** EMACS **
  * Local variables:

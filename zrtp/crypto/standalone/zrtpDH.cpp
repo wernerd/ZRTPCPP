@@ -48,6 +48,7 @@ typedef struct _dhCtx {
     BigNum pubKey;
     EcCurve curve;
     EcPoint pubPoint;
+    sidh751KM::KeyPair sdh1KeyPair;
 } dhCtx;
 
 void randomZRTP(uint8_t *buf, int32_t length)
@@ -313,11 +314,11 @@ ZrtpDH::~ZrtpDH() {
     ctx = nullptr;
 }
 
-int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
+int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret) {
 
     auto* tmpCtx = static_cast<dhCtx*>(ctx);
 
-    int32_t length = getDhSize();
+    int32_t length = getSharedSecretSize();
 
     BigNum sec;
     if (pkType == DH2K || pkType == DH3K) {
@@ -386,18 +387,19 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
     if (pkType == SDH1) {
         int32_t status;
         if (protocolState == Commit) {
-            status = sidh751KM::SidhKeyManagement::secretAgreement_A(tmpCtx->sdh1KeyPair.privateKey, pubKeyBytes, secret);
+            status = sidh751KM::SidhKeyManagement::secretAgreement_A(tmpCtx->sdh1KeyPair.privateKey, pubKeyBytes, secret.data());
             errorCode = status == CRYPTO_SUCCESS ? SUCCESS : SDH1_KEY_A_SECRET_FAILED;
         }
         else {
-            status = sidh751KM::SidhKeyManagement::secretAgreement_B(tmpCtx->sdh1KeyPair.privateKey, pubKeyBytes, secret);
+            status = sidh751KM::SidhKeyManagement::secretAgreement_B(tmpCtx->sdh1KeyPair.privateKey, pubKeyBytes, secret.data());
             errorCode = status == CRYPTO_SUCCESS ? SUCCESS : SDH1_KEY_B_SECRET_FAILED;
         }
-        if (errorCode != SUCCESS) {
-            LOGGER(ERROR, __func__, " SIDH1 key agreement failed: ", errorCode);
-        }
-        LOGGER(DEBUGGING, __func__, " <-- SDH1");
-        return getSharedSecretSize();
+        secret.size(length);
+//        if (errorCode != SUCCESS) {
+//            LOGGER(ERROR, __func__, " SIDH1 key agreement failed: ", errorCode);
+//        }
+//        LOGGER(DEBUGGING, __func__, " <-- SDH1");
+        return length;
     }
     return -1;
 }
@@ -475,7 +477,7 @@ int32_t ZrtpDH::getPubKeySize() const
     if (pkType == SDH1) {
         return sidh751KM::PUBLIC_KEY_LENGTH_BYTES;
     }
-    LOGGER(DEBUGGING, __func__, " <-- Error return");
+//    LOGGER(DEBUGGING, __func__, " <-- Error return");
 
     return 0;
 
@@ -512,11 +514,12 @@ int32_t ZrtpDH::fillInPubKeyBytes(secUtilities::SecureArray<1000>& pubKey) const
         return len;
     }
     if (pkType == SDH1) {
-        int32_t len = static_cast<int32_t>(getPubKeySize());
-        memcpy(buf, tmpCtx->sdh1KeyPair.publicKey, static_cast<size_t>(len));
+        int32_t len = getPubKeySize();
+        memcpy(pubKey.data(), tmpCtx->sdh1KeyPair.publicKey, static_cast<size_t>(len));
+        pubKey.size(len);
         return len;
     }
-    LOGGER(DEBUGGING, __func__, " <-- Error return");
+//    LOGGER(DEBUGGING, __func__, " <-- Error return");
     return 0;
 }
 

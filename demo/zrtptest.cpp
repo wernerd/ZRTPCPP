@@ -783,19 +783,20 @@ int main(int argc, char *argv[]) {
 
     if (send) {
 //    setZrtpLogLevel(DEBUGGING);
-    if ( send ) {
-        ztxcb = new ZrtpSendPacketTransmissionTestCB();
-        ztxcb->start();
-        ztxcb->join();
-        delete ztxcb;
-    } else {
-        zrxcb = new ZrtpRecvPacketTransmissionTestCB();
-        zrxcb->start();
-        zrxcb->join();
-        delete zrxcb;
+        if (send) {
+            ztxcb = new ZrtpSendPacketTransmissionTestCB();
+            ztxcb->start();
+            ztxcb->join();
+            delete ztxcb;
+        } else {
+            zrxcb = new ZrtpRecvPacketTransmissionTestCB();
+            zrxcb->start();
+            zrxcb->join();
+            delete zrxcb;
+        }
+        Thread::sleep(1000);
+        exit(result);
     }
-    Thread::sleep(1000);
-    exit(result);
 }
 
 /** EMACS **

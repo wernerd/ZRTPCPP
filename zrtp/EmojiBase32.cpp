@@ -100,7 +100,6 @@ void EmojiBase32::b2a_l(const unsigned char* os, size_t len, const size_t length
                 result[--resp] = emojis[x % 32]; /* The least sig 5 bits go into the final quintet. */
                 x /= 32;	/* ... now we have 3 bits worth in x... */
 
-                FALLTHROUGH;
                 case 4:
                     x |= ((unsigned long)(*--osp)) << 3U; /* ... now we have 11 bits worth in x... */
                     result[--resp] = emojis[x % 32];
@@ -108,14 +107,12 @@ void EmojiBase32::b2a_l(const unsigned char* os, size_t len, const size_t length
                     result[--resp] = emojis[x % 32];
                     x /= 32; /* ... now we have 1 bits worth in x... */
 
-                FALLTHROUGH;
                 case 3:
                     x |= ((unsigned long)(*--osp)) << 1U; /* The 8 bits from the 2-indexed octet.
 							    So now we have 9 bits worth in x... */
                     result[--resp] = emojis[x % 32];
                     x /= 32; /* ... now we have 4 bits worth in x... */
 
-                FALLTHROUGH;
                 case 2:
                     x |= ((unsigned long)(*--osp)) << 4U; /* The 8 bits from the 1-indexed octet.
 							    So now we have 12 bits worth in x... */
@@ -124,7 +121,6 @@ void EmojiBase32::b2a_l(const unsigned char* os, size_t len, const size_t length
                     result[--resp] = emojis[x%32];
                     x /= 32; /* ... now we have 2 bits worth in x... */
 
-                FALLTHROUGH;
                 case 1:
                     x |= ((unsigned long)(*--osp)) << 2U; /* The 8 bits from the 0-indexed octet.
 							    So now we have 10 bits worth in x... */

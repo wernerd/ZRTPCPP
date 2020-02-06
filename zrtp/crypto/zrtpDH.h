@@ -56,6 +56,7 @@ void randomZRTP(uint8_t *buf, int32_t length);
 #if defined(__cplusplus)
 
 #include <libzrtpcpp/ZrtpConfigure.h>
+#include "../common/SecureArray.h"
 #include <cryptcommon/sidhp751/keymanagement/SidhKeyManagement.h>
 
 static const uint DH2K_LENGTH_BYTES = 2048 / 8;

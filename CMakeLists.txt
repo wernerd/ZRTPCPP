@@ -43,7 +43,7 @@ option(TESTS "Generate Unit test." OFF)
 option(ANDROID "Generate Android makefiles (Android.mk)" OFF)
 option(JAVA "Generate Java support files (requires JDK and SWIG)" OFF)
 
-## The foolowing option are used for SIDH mainly
+## The following option are used for SIDH mainly
 option(SIDH "Include SIDH Post-Quantum algorithm." OFF)
 
 option(X64 "Set this to true to build for a x64 (64 bit) architecture." OFF)
@@ -251,7 +251,7 @@ if (TESTS)
 endif()
 
 if (SIDH)
-    add_definitions(${SIDH_ARCHITECTURE} ${USE_GENERIC} -D__LINUX__)
+    add_definitions(-DENABLE_SIDH ${SIDH_ARCHITECTURE} ${USE_GENERIC} -D__LINUX__)
 
     ## The common SIDH sources
     set(sidh751_src

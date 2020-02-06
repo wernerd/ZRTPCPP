@@ -148,7 +148,7 @@ namespace sidh751KM {
                 CRYPTO_STATUS status = EphemeralKeyGeneration_A(entry->keyPair.privateKey, entry->keyPair.publicKey,
                                                                 CurveIsogeny);
                 if (status != CRYPTO_SUCCESS) {
-                    LOGGER(ERROR, " Key generation (A) failed: ", status);
+                    LOGGER(ERROR_LOG, " Key generation (A) failed: ", status);
                     entry->status = Empty;
                 } else {
                     entry->status = Ready;
@@ -159,7 +159,7 @@ namespace sidh751KM {
                 CRYPTO_STATUS status = EphemeralKeyGeneration_B(entry->keyPair.privateKey, entry->keyPair.publicKey,
                                                                 CurveIsogeny);
                 if (status != CRYPTO_SUCCESS) {
-                    LOGGER(ERROR, "Key generation (B) failed: ", status);
+                    LOGGER(ERROR_LOG, "Key generation (B) failed: ", status);
                     entry->status = Empty;
                 } else {
                     entry->status = Ready;
@@ -183,7 +183,7 @@ namespace sidh751KM {
                 }
                 CRYPTO_STATUS status = SIDH_curve_initialize(CurveIsogeny, getRandomBytes, &CurveIsogeny_SIDHp751);
                 if (status != CRYPTO_SUCCESS) {
-                    LOGGER(ERROR, "SIDH curve initialization failed: ", status);
+                    LOGGER(ERROR_LOG, "SIDH curve initialization failed: ", status);
                     SIDH_curve_free(CurveIsogeny);
                     return false;
                 }

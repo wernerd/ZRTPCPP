@@ -94,7 +94,7 @@ target_link_libraries(${zrtplibName} ${LIBS})
 if(${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
     include(${CMAKE_SOURCE_DIR}/cmake/Modules/GeneratePackage.cmake)
 
-    GENERATE_PACKAGING(${PACKAGE} ${VERSION})
+    GENERATE_PACKAGING(${PACKAGE} ${VERSION} "")
 endif()
 
 # **** Create the external files for RPM and pkgconfig ****

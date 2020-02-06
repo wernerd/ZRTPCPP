@@ -69,8 +69,8 @@ typedef enum {
  * of ZRtp clears the data.
  */
 typedef struct srtpSecrets {
-    srtpSecrets();
-    ~srtpSecrets();
+//    srtpSecrets();
+//    ~srtpSecrets();
 
     SrtpAlgorithms symEncAlgorithm;     ///< symmetrical cipher algorithm
     const uint8_t* keyInitiator;        ///< Initiator's key

@@ -148,7 +148,6 @@ void Base32::b2a_l(const unsigned char* os, int len,
 		result[--resp] = chars[x % 32]; /* The least sig 5 bits go into the final quintet. */
 		x /= 32;	/* ... now we have 3 bits worth in x... */
 
-            FALLTHROUGH;
 		case 4:
 		    x |= ((unsigned long)(*--osp)) << 3U; /* ... now we have 11 bits worth in x... */
 		    result[--resp] = chars[x % 32];
@@ -156,14 +155,12 @@ void Base32::b2a_l(const unsigned char* os, int len,
 		    result[--resp] = chars[x % 32];
 		    x /= 32; /* ... now we have 1 bits worth in x... */
 
-            FALLTHROUGH;
 		case 3:
 		    x |= ((unsigned long)(*--osp)) << 1U; /* The 8 bits from the 2-indexed octet.
 							    So now we have 9 bits worth in x... */
 		    result[--resp] = chars[x % 32];
 		    x /= 32; /* ... now we have 4 bits worth in x... */
 
-            FALLTHROUGH;
 		case 2:
 		    x |= ((unsigned long)(*--osp)) << 4U; /* The 8 bits from the 1-indexed octet.
 							    So now we have 12 bits worth in x... */
@@ -172,7 +169,6 @@ void Base32::b2a_l(const unsigned char* os, int len,
 		    result[--resp] = chars[x%32];
 		    x /= 32; /* ... now we have 2 bits worth in x... */
 
-            FALLTHROUGH;
 		case 1:
 		    x |= ((unsigned long)(*--osp)) << 2U; /* The 8 bits from the 0-indexed octet.
 							    So now we have 10 bits worth in x... */
@@ -220,39 +216,32 @@ void Base32::a2b_l(const string& cs, size_t size, const size_t lengthinbits ) {
 	    do {
 		x = revchars[cs[--csp]&0xff]; /* 5 bits... */
 
-            FALLTHROUGH;
 		case 7:
 		    x |= revchars[cs[--csp]&0xff] << 5; /* 10 bits... */
 		    *--resp = x % 256;
 		    x /= 256; /* 2 bits... */
 
-            FALLTHROUGH;
 		case 6:
 		    x |= revchars[cs[--csp]&0xff] << 2; /* 7 bits... */
 
-            FALLTHROUGH;
 		case 5:
 		    x |= revchars[cs[--csp]&0xff] << 7; /* 12 bits... */
 		    *--resp = x % 256;
 		    x /= 256; /* 4 bits... */
 
-            FALLTHROUGH;
 		case 4:
 		    x |= revchars[cs[--csp]&0xff] << 4; /* 9 bits... */
 		    *--resp = x % 256;
 		    x /= 256; /* 1 bit... */
 
-            FALLTHROUGH;
 		case 3:
 		    x |= revchars[cs[--csp]&0xff] << 1; /* 6 bits... */
 
-            FALLTHROUGH;
 		case 2:
 		    x |= revchars[cs[--csp]&0xff] << 6; /* 11 bits... */
 		    *--resp = x % 256;
 		    x /= 256; /* 3 bits... */
 
-            FALLTHROUGH;
 		case 1:
 		    x |= revchars[cs[--csp]&0xff] << 3; /* 8 bits... */
 		    *--resp = x % 256;
