@@ -20,39 +20,82 @@
  */
 
 #include <string>
-#include <stdio.h>
+#include <cstdio>
+#include <memory>
 
 #include <ZrtpQueue.h>
-#include <libzrtpcpp/ZIDCache.h>
 #include <libzrtpcpp/ZRtp.h>
 #include <libzrtpcpp/ZrtpStateClass.h>
 #include <libzrtpcpp/ZrtpUserCallback.h>
+#include <zrtp/libzrtpcpp/ZIDCacheFile.h>
+#include <common/ZrtpTimeoutProvider.h>
+#include "../logging/ZrtpLogging.h"
 
-static TimeoutProvider<std::string, ost::ZrtpQueue*>* staticTimeoutProvider = NULL;
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
+static zrtp::ZrtpTimeoutProvider *staticTimeoutProvider = nullptr;
 
 NAMESPACE_COMMONCPP
 using namespace GnuZrtpCodes;
 
+    std::shared_ptr<ZIDCache> ZrtpQueue::zrtpCache = nullptr;
+
+// Specific initialization for ccrtp: use _one_ ZRTP cache file for _all_ sessions, even
+// for conference calls. This simplifies handling of cache data.
+// If another app likes to have different cache files (or even open the same file several times ? )
+// then just change the cache initialization at his point.
+    static std::shared_ptr<ZIDCache>
+    initCache(const char *zidFilename, std::shared_ptr<ZIDCache> cache) {
+        std::string fname;
+        if (!zidFilename) {
+            char *home = getenv("HOME");
+            std::string baseDir = (home) ? (std::string(home) + std::string("/."))
+                                         : std::string(".");
+            fname = baseDir + std::string("GNUZRTP.zid");
+            zidFilename = fname.c_str();
+        }
+
+        // Check if a cache is available.
+        // If yes and it has the same filename -> use it
+        // otherwise close file and open new cache file
+        if (cache) {
+            if (cache->getFileName() == zidFilename) {
+                return cache;
+            }
+            cache->close();
+            if (cache->open((char *)zidFilename) < 0) {
+                return std::shared_ptr<ZIDCache>();
+            }
+            return cache;
+        }
+
+        auto zf = std::make_shared<ZIDCacheFile>();
+        if (zf->open((char *)zidFilename) < 0) {
+            return std::shared_ptr<ZIDCache>();
+        }
+        return zf;
+    }
+
 ZrtpQueue::ZrtpQueue(uint32 size, RTPApplication& app) :
-        AVPQueue(size,app)
+        AVPQueue(size,app), clientIdString(clientId)
 {
     init();
 }
 
 ZrtpQueue::ZrtpQueue(uint32 ssrc, uint32 size, RTPApplication& app) :
-        AVPQueue(ssrc,size,app)
+        AVPQueue(ssrc,size,app), clientIdString(clientId)
 {
     init();
 }
 
 void ZrtpQueue::init()
 {
-    zrtpUserCallback = NULL;
+    zrtpUserCallback = nullptr;
     enableZrtp = false;
     started = false;
     mitmMode = false;
     enableParanoidMode = false;
-    zrtpEngine = NULL;
+    zrtpEngine = nullptr;
     senderZrtpSeqNo = 1;
 
     clientIdString = clientId;
@@ -64,60 +107,55 @@ ZrtpQueue::~ZrtpQueue() {
     endQueue();
     stopZrtp();
 
-    if (zrtpUserCallback != NULL) {
+    if (zrtpUserCallback != nullptr) {
         delete zrtpUserCallback;
-        zrtpUserCallback = NULL;
+        zrtpUserCallback = nullptr;
     }
 }
 
 int32_t
-ZrtpQueue::initialize(const char *zidFilename, bool autoEnable, ZrtpConfigure* config)
+ZrtpQueue::initialize(const char *zidFilename, bool autoEnable, std::shared_ptr<ZrtpConfigure>& config)
 {
     int32_t ret = 1;
 
     synchEnter();
 
-    ZrtpConfigure* configOwn = NULL;
-    if (config == NULL) {
-        config = configOwn = new ZrtpConfigure();
-        config->setStandardConfig();
+    std::shared_ptr<ZrtpConfigure> configOwn;
+
+    if (!config) {
+        auto zf = initCache(zidFilename, zrtpCache);
+        if (!zf) {
+            return -1;
+        }
+        if (!zrtpCache) {
+            zrtpCache = zf;
+        }
+
+        configOwn = std::make_shared<ZrtpConfigure>();
+        configOwn->setZidCache(zf);
+        configOwn->setStandardConfig();
     }
+    else {
+        configOwn = config;
+    }
+
     enableZrtp = autoEnable;
 
-    config->setParanoidMode(enableParanoidMode);
+    configOwn->setParanoidMode(enableParanoidMode);
 
-    if (staticTimeoutProvider == NULL) {
-        staticTimeoutProvider = new TimeoutProvider<std::string, ZrtpQueue*>();
-        staticTimeoutProvider->start();
+    if (staticTimeoutProvider == nullptr) {
+        staticTimeoutProvider = new zrtp::ZrtpTimeoutProvider();
     }
-    ZIDCache* zf = getZidCacheInstance();
-    if (!zf->isOpen()) {
-        std::string fname;
-        if (zidFilename == NULL) {
-            char *home = getenv("HOME");
-            std::string baseDir = (home != NULL) ? (std::string(home) + std::string("/."))
-                                                    : std::string(".");
-            fname = baseDir + std::string("GNUZRTP.zid");
-            zidFilename = fname.c_str();
-        }
-        if (zf->open((char *)zidFilename) < 0) {
-            enableZrtp = false;
-            ret = -1;
-        }
-    }
-    if (ret > 0) {
-        const uint8_t* ownZid = zf->getZid();
-        zrtpEngine = new ZRtp((uint8_t*)ownZid, (ZrtpCallback*)this, clientIdString, config, mitmMode, signSas);
-    }
-    if (configOwn != NULL) {
-        delete configOwn;
-    }
+    const uint8_t* ownZidFromCache = configOwn->getZidCache()->getZid();
+
+    zrtpEngine = new ZRtp(ownZidFromCache, *(ZrtpCallback*)this, clientIdString, configOwn, mitmMode, signSas);
+
     synchLeave();
     return ret;
 }
 
 void ZrtpQueue::startZrtp() {
-    if (zrtpEngine != NULL) {
+    if (zrtpEngine != nullptr) {
         zrtpEngine->startZrtpEngine();
         zrtpUnprotect = 0;
         started = true;
@@ -125,11 +163,11 @@ void ZrtpQueue::startZrtp() {
 }
 
 void ZrtpQueue::stopZrtp() {
-    if (zrtpEngine != NULL) {
+    if (zrtpEngine != nullptr) {
         if (zrtpUnprotect < 50 && !zrtpEngine->isMultiStream())
             zrtpEngine->setRs2Valid();
         delete zrtpEngine;
-        zrtpEngine = NULL;
+        zrtpEngine = nullptr;
         started = false;
     }
 }
@@ -138,29 +176,33 @@ void ZrtpQueue::stopZrtp() {
  * The takeInDataPacket implementation for ZRTPQueue.
  */
 size_t
-ZrtpQueue::takeInDataPacket(void)
+ZrtpQueue::takeInDataPacket()
 {
     InetHostAddress network_address;
     tpport_t transport_port;
 
-    uint32 nextSize = (uint32)getNextDataPacketSize();
-    unsigned char* buffer = new unsigned char[nextSize];
-    int32 rtn = (int32)recvData(buffer, nextSize, network_address, transport_port);
-    if ( (rtn < 0) || ((uint32)rtn > getMaxRecvPacketSize()) ){
+    // Reduce this to int32_t: the call function uses an ioctl(..., FIONREAD, &num) where num in of size_t
+    // and returns this num. Somehow this is wrong: I assume the Linux kernel (and maybe others) expects
+    // a 4 bytes int (int32_t) instead of an 8-byte size_t (on 64bit CPUs). Fortunately the case cuts of
+    // the upper part
+    auto nextSize = static_cast<int32_t>(getNextDataPacketSize());
+    auto buffer = new unsigned char[nextSize];
+    auto rtn = recvData(buffer, nextSize, network_address, transport_port);
+    if ( rtn > getMaxRecvPacketSize() ){
         delete[] buffer;
         return 0;
     }
 
-    IncomingZRTPPkt* packet = NULL;
+    IncomingZRTPPkt* packet = nullptr;
     // check if this could be a real RTP/SRTP packet.
-    if ((*buffer & 0xf0) != 0x10) {
+    if ((*buffer & 0xf0U) != 0x10) {
         return (rtpDataPacket(buffer, rtn, network_address, transport_port));
     }
 
     // We assume all other packets are ZRTP packets here. Process
     // if ZRTP processing is enabled. Because valid RTP packets are
     // already handled we delete any packets here after processing.
-    if (enableZrtp && zrtpEngine != NULL) {
+    if (enableZrtp && zrtpEngine != nullptr) {
         // Fixed header length + smallest ZRTP packet (includes CRC)
         if (rtn < (int32)(12 + sizeof(HelloAckPacket_t))) // data too small, dismiss
             return 0;
@@ -172,7 +214,7 @@ ZrtpQueue::takeInDataPacket(void)
 
         if (!zrtpCheckCksum(buffer, temp, crc)) {
             delete[] buffer;
-            if (zrtpUserCallback != NULL)
+            if (zrtpUserCallback != nullptr)
                 zrtpUserCallback->showMessage(Warning, WarningCRCmismatch);
             return 0;
         }
@@ -182,7 +224,7 @@ ZrtpQueue::takeInDataPacket(void)
         uint32 magic = packet->getZrtpMagic();
 
         // Check if it is really a ZRTP packet, if not delete it and return 0
-        if (magic != ZRTP_MAGIC || zrtpEngine == NULL) {
+        if (magic != ZRTP_MAGIC || zrtpEngine == nullptr) {
             delete packet;
             return 0;
         }
@@ -193,7 +235,7 @@ ZrtpQueue::takeInDataPacket(void)
          }
         // this now points beyond the undefined and length field.
         // We need them, thus adjust
-        unsigned char* extHeader =
+        auto* extHeader =
                 const_cast<unsigned char*>(packet->getHdrExtContent());
         extHeader -= 4;
 
@@ -213,13 +255,12 @@ ZrtpQueue::rtpDataPacket(unsigned char* buffer, int32 rtn, InetHostAddress netwo
     // it gives a wrong length. Check and clear padding bit before
     // creating the RTPPacket. Will be set and re-computed after a possible
     // SRTP decryption.
-    uint8 padSet = (*buffer & 0x20);
+    uint8 padSet = (*buffer & 0x20U);
     if (padSet) {
-        *buffer = *buffer & ~0x20;          // clear padding bit
+        *buffer = *buffer & ~0x20U;          // clear padding bit
     }
     //  build a packet. It will link itself to its source
-    IncomingRTPPkt* packet =
-        new IncomingRTPPkt(buffer,rtn);
+    auto* packet = new IncomingRTPPkt(buffer, rtn);
 
     // Generic header validity check.
     if ( !packet->isHeaderValid() ) {
@@ -234,11 +275,11 @@ ZrtpQueue::rtpDataPacket(unsigned char* buffer, int32 rtn, InetHostAddress netwo
     // Secure state then create a CryptoContext for this SSRC.
     // Assumption: every SSRC stream sent via this connection is secured
     // _and_ uses the same crypto parameters.
-    if (pcc == NULL) {
+    if (pcc == nullptr) {
         pcc = getInQueueCryptoContext(0);
-        if (pcc != NULL) {
+        if (pcc != nullptr) {
             pcc = pcc->newCryptoContextForSSRC(packet->getSSRC(), 0, 0L);
-            if (pcc != NULL) {
+            if (pcc != nullptr) {
                 pcc->deriveSrtpKeys(0);
                 setInQueueCryptoContext(pcc);
             }
@@ -247,7 +288,7 @@ ZrtpQueue::rtpDataPacket(unsigned char* buffer, int32 rtn, InetHostAddress netwo
     // If no crypto context: then either ZRTP is off or in early state
     // If crypto context is available then unprotect data here. If an error
     // occurs report the error and discard the packet.
-    if (pcc != NULL) {
+    if (pcc != nullptr) {
         int32 ret;
         if ((ret = packet->unprotect(pcc)) < 0) {
             if (!onSRTPPacketError(*packet, ret)) {
@@ -269,8 +310,8 @@ ZrtpQueue::rtpDataPacket(unsigned char* buffer, int32 rtn, InetHostAddress netwo
         packet->reComputePayLength(true);
     }
     // get time of arrival
-    struct timeval recvtime;
-    gettimeofday(&recvtime,NULL);
+    struct timeval recvtime{};
+    gettimeofday(&recvtime,nullptr);
 
     bool source_created;
     SyncSourceLink* sourceLink =
@@ -303,9 +344,9 @@ ZrtpQueue::rtpDataPacket(unsigned char* buffer, int32 rtn, InetHostAddress netwo
         network_address, transport_port) &&
         recordReception(*sourceLink,*packet,recvtime) ) {
         // now the packet link is linked in the queues
-        IncomingRTPPktLink* packetLink = new IncomingRTPPktLink(packet, sourceLink, recvtime,
+        auto* packetLink = new IncomingRTPPktLink(packet, sourceLink, recvtime,
                                        packet->getTimestamp() - sourceLink->getInitialDataTimestamp(),
-                                       NULL,NULL,NULL,NULL);
+                                       nullptr,nullptr,nullptr,nullptr);
         insertRecvPacket(packetLink);
     } else {
         // must be discarded due to collision or loop or
@@ -353,7 +394,7 @@ ZrtpQueue::sendImmediate(uint32 stamp, const unsigned char* data, size_t len)
  */
 int32_t ZrtpQueue::sendDataZRTP(const unsigned char *data, int32_t length) {
 
-    OutgoingZRTPPkt* packet = new OutgoingZRTPPkt(data, length);
+    auto* packet = new OutgoingZRTPPkt(data, length);
 
     packet->setSSRC(getLocalSSRC());
 
@@ -364,7 +405,7 @@ int32_t ZrtpQueue::sendDataZRTP(const unsigned char *data, int32_t length) {
      * the fixed packet header into the calculation.
      */
     uint16_t temp = packet->getRawPacketSize() - CRC_SIZE;
-    uint8_t* pt = (uint8_t*)packet->getRawPacket();
+    auto* pt = packet->getRawPacket();
     uint32_t crc = zrtpGenerateCksum(pt, temp);
     // convert and store CRC in crc field of ZRTP packet.
     crc = zrtpEndCksum(crc);
@@ -386,9 +427,9 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
     CryptoContextCtrl* recvCryptoContextCtrl;
     CryptoContextCtrl* senderCryptoContextCtrl;
 
-    int cipher;
-    int authn;
-    int authKeyLen;
+    int cipher = SrtpEncryptionNull;
+    int authn = SrtpAuthenticationNull;
+    int authKeyLen = 0;
 
     if (secrets->authAlgorithm == Sha1) {
         authn = SrtpAuthenticationSha1Hmac;
@@ -465,9 +506,6 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
                   secrets->respSaltLen / 8,                  // session salt len
                   secrets->srtpAuthTagLen / 8);              // authentication tag len
         }
-        if (senderCryptoContext == NULL) {
-            return false;
-        }
         // Insert the Crypto templates (SSRC == 0) into the queue. When we send
         // the first RTP or RTCP packet the real crypto context will be created.
         // Refer to putData(), sendImmediate() in ccrtp's outqueue.cpp and
@@ -535,9 +573,6 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
                   secrets->initSaltLen / 8,                  // session salt len
                   secrets->srtpAuthTagLen / 8);              // authentication tag len
         }
-        if (recvCryptoContext == NULL) {
-            return false;
-        }
         // Insert the Crypto templates (SSRC == 0) into the queue. When we receive
         // the first RTP or RTCP packet the real crypto context will be created.
         // Refer to rtpDataPacket() above and takeinControlPacket in ccrtp's control.cpp.
@@ -551,7 +586,7 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
 void ZrtpQueue::srtpSecretsOn(std::string c, std::string s, bool verified)
 {
 
-  if (zrtpUserCallback != NULL) {
+  if (zrtpUserCallback != nullptr) {
     zrtpUserCallback->secureOn(c);
     if (!s.empty()) {
         zrtpUserCallback->showSAS(s, verified);
@@ -561,38 +596,41 @@ void ZrtpQueue::srtpSecretsOn(std::string c, std::string s, bool verified)
 
 void ZrtpQueue::srtpSecretsOff(EnableSecurity part) {
     if (part == ForSender) {
-        removeOutQueueCryptoContext(NULL);
-        removeOutQueueCryptoContextCtrl(NULL);
+        removeOutQueueCryptoContext(nullptr);
+        removeOutQueueCryptoContextCtrl(nullptr);
     }
     if (part == ForReceiver) {
-        removeInQueueCryptoContext(NULL);
-        removeInQueueCryptoContextCtrl(NULL);
+        removeInQueueCryptoContext(nullptr);
+        removeInQueueCryptoContextCtrl(nullptr);
     }
-    if (zrtpUserCallback != NULL) {
+    if (zrtpUserCallback != nullptr) {
         zrtpUserCallback->secureOff();
     }
 }
 
 int32_t ZrtpQueue::activateTimer(int32_t time) {
-    std::string s("ZRTP");
-    if (staticTimeoutProvider != NULL) {
-        staticTimeoutProvider->requestTimeout(time, this, s);
+    if (staticTimeoutProvider != nullptr) {
+        if (timeoutId != -1) {
+            LOGGER(ERROR_LOG, "Duplicate timeout detected, old timeout removed: ", timeoutId)
+            staticTimeoutProvider->removeTimer(timeoutId);
+        }
+        timeoutId = staticTimeoutProvider->addTimer(time, 0x776469,
+                [this](uint64_t) {
+                    timeoutId = -1;
+                    if (zrtpEngine != nullptr) {
+                        zrtpEngine->processTimeout();
+                    }
+                });
     }
     return 1;
 }
 
 int32_t ZrtpQueue::cancelTimer() {
-    std::string s("ZRTP");
-    if (staticTimeoutProvider != NULL) {
-        staticTimeoutProvider->cancelRequest(this, s);
+    if (staticTimeoutProvider != nullptr && timeoutId >= 0) {
+        staticTimeoutProvider->removeTimer(timeoutId);
+        timeoutId = -1;
     }
     return 1;
-}
-
-void ZrtpQueue::handleTimeout(const std::string &c) {
-    if (zrtpEngine != NULL) {
-        zrtpEngine->processTimeout();
-    }
 }
 
 void ZrtpQueue::handleGoClear()
@@ -601,51 +639,51 @@ void ZrtpQueue::handleGoClear()
 }
 
 void ZrtpQueue::sendInfo(MessageSeverity severity, int32_t subCode) {
-    if (zrtpUserCallback != NULL) {
+    if (zrtpUserCallback != nullptr) {
         zrtpUserCallback->showMessage(severity, subCode);
     }
 }
 
 void ZrtpQueue::zrtpNegotiationFailed(MessageSeverity severity, int32_t subCode) {
-    if (zrtpUserCallback != NULL) {
+    if (zrtpUserCallback != nullptr) {
         zrtpUserCallback->zrtpNegotiationFailed(severity, subCode);
     }
 }
 
 void ZrtpQueue::zrtpNotSuppOther() {
-    if (zrtpUserCallback != NULL) {
+    if (zrtpUserCallback != nullptr) {
         zrtpUserCallback->zrtpNotSuppOther();
     }
 }
 
 void ZrtpQueue::synchEnter() {
-    synchLock.enter();
+    syncLock.lock();
 }
 
 void ZrtpQueue::synchLeave() {
-    synchLock.leave();
+    syncLock.unlock();
 }
 
 void ZrtpQueue::zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment  info) {
-    if (zrtpUserCallback != NULL) {
+    if (zrtpUserCallback != nullptr) {
         zrtpUserCallback->zrtpAskEnrollment(info);
     }
 }
 
 void ZrtpQueue::zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment  info) {
-    if (zrtpUserCallback != NULL) {
+    if (zrtpUserCallback != nullptr) {
         zrtpUserCallback->zrtpInformEnrollment(info);
     }
 }
 
 void ZrtpQueue::signSAS(uint8_t* sasHash) {
-    if (zrtpUserCallback != NULL) {
+    if (zrtpUserCallback != nullptr) {
         zrtpUserCallback->signSAS(sasHash);
     }
 }
 
 bool ZrtpQueue::checkSASSignature(uint8_t* sasHash) {
-    if (zrtpUserCallback != NULL) {
+    if (zrtpUserCallback != nullptr) {
         return zrtpUserCallback->checkSASSignature(sasHash);
     }
     return false;
@@ -660,12 +698,12 @@ bool ZrtpQueue::isEnableZrtp() {
 }
 
 void ZrtpQueue::SASVerified() {
-    if (zrtpEngine != NULL)
+    if (zrtpEngine != nullptr)
         zrtpEngine->SASVerified();
 }
 
 void ZrtpQueue::resetSASVerified() {
-    if (zrtpEngine != NULL)
+    if (zrtpEngine != nullptr)
         zrtpEngine->resetSASVerified();
 }
 
@@ -674,7 +712,7 @@ void ZrtpQueue::goClearOk()    {  }
 void ZrtpQueue::requestGoClear()  { }
 
 void ZrtpQueue::setAuxSecret(uint8* data, int32_t length)  {
-    if (zrtpEngine != NULL)
+    if (zrtpEngine != nullptr)
         zrtpEngine->setAuxSecret(data, length);
 }
 
@@ -683,69 +721,69 @@ void ZrtpQueue::setUserCallback(ZrtpUserCallback* ucb) {
 }
 
 void ZrtpQueue::setClientId(std::string id) {
-    clientIdString = id;
+    clientIdString = std::move(id);
 }
 
 std::string ZrtpQueue::getHelloHash(int32_t index)  {
-    if (zrtpEngine != NULL)
+    if (zrtpEngine != nullptr)
         return zrtpEngine->getHelloHash(index);
     else
         return std::string();
 }
 
 std::string ZrtpQueue::getPeerHelloHash()  {
-    if (zrtpEngine != NULL)
+    if (zrtpEngine != nullptr)
         return zrtpEngine->getPeerHelloHash();
     else
         return std::string();
 }
 
 std::string ZrtpQueue::getMultiStrParams(ZRtp ** zrtpMaster)  {
-    if (zrtpEngine != NULL)
+    if (zrtpEngine != nullptr)
         return zrtpEngine->getMultiStrParams(zrtpMaster);
     else
         return std::string();
 }
 
 void ZrtpQueue::setMultiStrParams(std::string parameters, ZRtp* zrtpMaster)  {
-    if (zrtpEngine != NULL)
-        zrtpEngine->setMultiStrParams(parameters, zrtpMaster);
+    if (zrtpEngine != nullptr)
+        zrtpEngine->setMultiStrParams(std::move(parameters), zrtpMaster);
 }
 
 bool ZrtpQueue::isMultiStream()  {
-    if (zrtpEngine != NULL)
+    if (zrtpEngine != nullptr)
         return zrtpEngine->isMultiStream();
     return false;
 }
 
 bool ZrtpQueue::isMultiStreamAvailable()  {
-    if (zrtpEngine != NULL)
+    if (zrtpEngine != nullptr)
         return zrtpEngine->isMultiStreamAvailable();
     return false;
 }
 
 void ZrtpQueue::acceptEnrollment(bool accepted) {
-    if (zrtpEngine != NULL)
+    if (zrtpEngine != nullptr)
         zrtpEngine->acceptEnrollment(accepted);
 }
 
 std::string ZrtpQueue::getSasType() {
-    if (zrtpEngine != NULL)
+    if (zrtpEngine != nullptr)
         return zrtpEngine->getSasType();
     else
-        return NULL;
+        return std::string();
 }
 
-uint8_t* ZrtpQueue::getSasHash() {
-    if (zrtpEngine != NULL)
+uint8_t const * ZrtpQueue::getSasHash() {
+    if (zrtpEngine != nullptr)
         return zrtpEngine->getSasHash();
     else
-        return NULL;
+        return nullptr;
 }
 
-bool ZrtpQueue::sendSASRelayPacket(uint8_t* sh, std::string render) {
+bool ZrtpQueue::sendSASRelayPacket(uint8_t* sh, std::string const &render) {
 
-    if (zrtpEngine != NULL)
+    if (zrtpEngine != nullptr)
         return zrtpEngine->sendSASRelayPacket(sh, render);
     else
         return false;
@@ -755,19 +793,19 @@ bool ZrtpQueue::isMitmMode() {
     return mitmMode;
 }
 
-void ZrtpQueue::setMitmMode(bool mitmMode) {
-    this->mitmMode = mitmMode;
+void ZrtpQueue::setMitmMode(bool mitm) {
+    this->mitmMode = mitm;
 }
 
 bool ZrtpQueue::isEnrollmentMode() {
-    if (zrtpEngine != NULL)
+    if (zrtpEngine != nullptr)
         return zrtpEngine->isEnrollmentMode();
     else
         return false;
 }
 
 void ZrtpQueue::setEnrollmentMode(bool enrollmentMode) {
-    if (zrtpEngine != NULL)
+    if (zrtpEngine != nullptr)
         zrtpEngine->setEnrollmentMode(enrollmentMode);
 }
 
@@ -780,7 +818,7 @@ bool ZrtpQueue::isParanoidMode() {
 }
 
 bool ZrtpQueue::isPeerEnrolled() {
-    if (zrtpEngine != NULL)
+    if (zrtpEngine != nullptr)
         return zrtpEngine->isPeerEnrolled();
     else
         return false;
@@ -791,42 +829,39 @@ void ZrtpQueue::setSignSas(bool sasSignMode) {
 }
 
 bool ZrtpQueue::setSignatureData(uint8* data, int32 length) {
-    if (zrtpEngine != NULL)
+    if (zrtpEngine != nullptr)
         return zrtpEngine->setSignatureData(data, length);
-    return 0;
+    return false;
 }
 
 const uint8* ZrtpQueue::getSignatureData() {
-    if (zrtpEngine != NULL)
+    if (zrtpEngine != nullptr)
         return zrtpEngine->getSignatureData();
-    return 0;
+    return nullptr;
 }
 
 int32 ZrtpQueue::getSignatureLength() {
-    if (zrtpEngine != NULL)
+    if (zrtpEngine != nullptr)
         return zrtpEngine->getSignatureLength();
     return 0;
 }
 
 int32 ZrtpQueue::getPeerZid(uint8* data) {
-    if (data == NULL)
+    if (data == nullptr)
         return 0;
 
-    if (zrtpEngine != NULL)
+    if (zrtpEngine != nullptr)
         return zrtpEngine->getPeerZid(data);
 
     return 0;
 }
 
 int32_t ZrtpQueue::getNumberSupportedVersions() {
-    if (zrtpEngine != NULL)
-        return zrtpEngine->getNumberSupportedVersions();
-
-    return 0;
+    return ZRtp::getNumberSupportedVersions();
 }
 
 int32_t ZrtpQueue::getCurrentProtocolVersion() {
-    if (zrtpEngine != NULL)
+    if (zrtpEngine != nullptr)
         return zrtpEngine->getCurrentProtocolVersion();
 
     return 0;
@@ -845,9 +880,8 @@ uint32 IncomingZRTPPkt::getSSRC() const {
      return ntohl(getHeader()->sources[0]);
 }
 
-OutgoingZRTPPkt::OutgoingZRTPPkt(
-    const unsigned char* const hdrext, uint32 hdrextlen) :
-        OutgoingRTPPkt(NULL, 0, hdrext, hdrextlen, NULL ,0, 0, NULL)
+OutgoingZRTPPkt::OutgoingZRTPPkt(unsigned char const * hdrext, uint32 hdrextlen) :
+        OutgoingRTPPkt(nullptr, 0, hdrext, hdrextlen, nullptr ,0, 0, nullptr)
 {
     getHeader()->version = 0;
     getHeader()->timestamp = htonl(ZRTP_MAGIC);
@@ -863,3 +897,5 @@ END_NAMESPACE
  * End:
  */
 
+
+#pragma clang diagnostic pop

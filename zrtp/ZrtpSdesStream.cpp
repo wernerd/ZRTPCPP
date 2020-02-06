@@ -1,37 +1,32 @@
 /*
-  Copyright (C) 2012-2013 Werner Dittmann
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <string>
-#include <sstream>
 
 #include <libzrtpcpp/ZrtpSdesStream.h>
 #include <libzrtpcpp/ZrtpTextData.h>
-#include <libzrtpcpp/ZrtpConfigure.h>
 #include <libzrtpcpp/zrtpB64Decode.h>
 #include <libzrtpcpp/zrtpB64Encode.h>
+#include "crypto/zrtpDH.h"
 #include <srtp/CryptoContext.h>
-#include <srtp/CryptoContextCtrl.h>
-#include <cryptcommon/ZrtpRandom.h>
-#include <crypto/hmac384.h>
+#include <common/typedefs.h>
+#include <zrtp/crypto/hmac384.h>
 
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -68,7 +63,7 @@
  */
 static const char parseCrypto[] = "%d %99s %99s %n";
 
-static const int64_t maxTagValue = 999999999;
+// static const int64_t maxTagValue = 999999999; For some later use
 
 static const int minElementsCrypto = 3;
 
@@ -97,7 +92,7 @@ static const int minElementsCrypto = 3;
  * - the fixed separator character '|'
  * - %[0-9]:%d - parses and strore MKI value and MKI length, separated by ':'
  *
- * If the key parameter string does not contain the operional fields lifetime
+ * If the key parameter string does not contain the optional fields lifetime
  * and MKI information the respective parameters are not filled.
  */
 static const char parseKeyParam[] = " inline:%[A-Za-z0-9+/=]|%[0-9^]|%[0-9]:%d";
@@ -106,7 +101,7 @@ static const int minElementsKeyParam = 1;
 
 typedef struct _cryptoMix {
     const char* name;
-    int32_t hashLength;
+    uint32_t hashLength;
     ZrtpSdesStream::sdesHmacTypeMix hashType;
 } cryptoMix;
 
@@ -114,15 +109,15 @@ static const size_t MIX_HMAC_STRING_MIN_LEN = sizeof("HMAC-SHA-384");
 
 static cryptoMix knownMixAlgos[] = {
     {"HMAC-SHA-384", 384, ZrtpSdesStream::MIX_HMAC_SHA},
-    {NULL, 0, ZrtpSdesStream::MIX_NONE}
+    {nullptr, 0, ZrtpSdesStream::MIX_NONE}
 };
 
 typedef struct _suite {
     ZrtpSdesStream::sdesSuites suite;
     const char *name;
-    int32_t    keyLength;             // key length in bits
-    int32_t    saltLength;            // salt lenght in bits
-    int32_t    authKeyLength;         // authentication key length in bits
+    uint32_t    keyLength;             // key length in bits
+    uint32_t    saltLength;            // salt lenght in bits
+    uint32_t    authKeyLength;         // authentication key length in bits
     const char *tagLength;            // tag type hs80 or hs32
     const char *cipher;               // aes1 or aes3
     uint32_t   b64length;             // length of b64 encoded key/saltstring
@@ -133,43 +128,15 @@ typedef struct _suite {
 /* NOTE: the b64len of a 128 bit suite is 40, a 256bit suite uses 64 characters */
 static suiteParam knownSuites[] = {
     {ZrtpSdesStream::AES_CM_128_HMAC_SHA1_32, "AES_CM_128_HMAC_SHA1_32", 128, 112, 160,
-     hs32, "AES-128", 40, (uint64_t)1<<48, (uint64_t)1<<31
+     hs32, "AES-128", 40, (uint64_t)1<<48U, (uint64_t)1<<31U
     },
     {ZrtpSdesStream::AES_CM_128_HMAC_SHA1_80, "AES_CM_128_HMAC_SHA1_80", 128, 112, 160,
-     hs80, "AES-128", 40, (uint64_t)1<<48, (uint64_t)1<<31
+     hs80, "AES-128", 40, (uint64_t)1<<48U, (uint64_t)1<<31U
     },
-    {(ZrtpSdesStream::sdesSuites)0, NULL, 0, 0, 0, 0, 0, 0, 0, 0}
+    {(ZrtpSdesStream::sdesSuites)0, nullptr, 0, 0, 0, nullptr, nullptr, 0, 0, 0}
 };
 
-ZrtpSdesStream::ZrtpSdesStream(const sdesSuites s) :
-    state(STREAM_INITALIZED), suite(s), recvSrtp(NULL), recvSrtcp(NULL), sendSrtp(NULL),
-    sendSrtcp(NULL), srtcpIndex(0), recvZrtpTunnel(0), sendZrtpTunnel(0), cryptoMixHashLength(0), 
-    cryptoMixHashType(MIX_NONE)  {
-}
-
-ZrtpSdesStream::~ZrtpSdesStream() {
-    close();
-}
-
-void ZrtpSdesStream::close() {
-    delete sendSrtp;
-    sendSrtp = NULL;
-
-    delete recvSrtp;
-    recvSrtp = NULL;
-
-    delete sendSrtcp;
-    sendSrtp = NULL;
-
-    delete recvSrtcp;
-    recvSrtp = NULL;
-
-    delete recvZrtpTunnel;
-    recvZrtpTunnel = NULL;
-
-    delete sendZrtpTunnel;
-    sendZrtpTunnel = NULL;
-}
+ZrtpSdesStream::ZrtpSdesStream(const sdesSuites s) : suite(s) { }
 
 bool ZrtpSdesStream::createSdes(char *cryptoString, size_t *maxLen, bool sipInvite) {
 
@@ -232,87 +199,89 @@ bool ZrtpSdesStream::parseSdes(const char *cryptoString, size_t length, bool sip
 
 bool ZrtpSdesStream::outgoingRtp(uint8_t *packet, size_t length, size_t *newLength) {
 
-    if (state != SDES_SRTP_ACTIVE || sendSrtp == NULL) {
+    if (state != SDES_SRTP_ACTIVE || sendSrtp == nullptr) {
         *newLength = length;
         return true;
     }
-    bool rc = SrtpHandler::protect(sendSrtp, packet, length, newLength);
-    if (rc)
-        ;//protect++;
+    bool rc = SrtpHandler::protect(sendSrtp.get(), packet, length, newLength);
+//    if (rc)
+//        ;//protect++;
     return rc;
 }
 
 int ZrtpSdesStream::incomingRtp(uint8_t *packet, size_t length, size_t *newLength, SrtpErrorData* errorData) {
-    if (state != SDES_SRTP_ACTIVE || recvSrtp == NULL) {    // SRTP inactive, just return with newLength set
+    if (state != SDES_SRTP_ACTIVE || recvSrtp == nullptr) {    // SRTP inactive, just return with newLength set
         *newLength = length;
         return 1;
     }
-    int32_t rc = SrtpHandler::unprotect(recvSrtp, packet, length, newLength, errorData);
-    if (rc == 1) {
-//            unprotect++
-    }
-    else {
-//            unprotectFailed++;
-    }
+    int32_t rc = SrtpHandler::unprotect(recvSrtp.get(), packet, length, newLength, errorData);
+//    if (rc == 1) {
+////            unprotect++
+//    }
+//    else {
+////            unprotectFailed++;
+//    }
     return rc;
 }
 
 
 bool ZrtpSdesStream::outgoingZrtpTunnel(uint8_t *packet, size_t length, size_t *newLength) {
 
-    if (state != SDES_SRTP_ACTIVE || sendZrtpTunnel == NULL) {
+    if (state != SDES_SRTP_ACTIVE || sendZrtpTunnel == nullptr) {
         *newLength = length;
         return true;
     }
-    bool rc = SrtpHandler::protect(sendZrtpTunnel, packet, length, newLength);
-    if (rc)
-        ;//protect++;
+    bool rc = SrtpHandler::protect(sendZrtpTunnel.get(), packet, length, newLength);
+//    if (rc)
+//        ;//protect++;
     return rc;
 }
 
 int ZrtpSdesStream::incomingZrtpTunnel(uint8_t *packet, size_t length, size_t *newLength, SrtpErrorData* errorData) {
-    if (state != SDES_SRTP_ACTIVE || recvZrtpTunnel == NULL) {    // SRTP inactive, just return with newLength set
+    if (state != SDES_SRTP_ACTIVE || recvZrtpTunnel == nullptr) {    // SRTP inactive, just return with newLength set
         *newLength = length;
         return 1;
     }
-    int32_t rc = SrtpHandler::unprotect(recvZrtpTunnel, packet, length, newLength, errorData);
-    if (rc == 1) {
-//            unprotect++
-    }
-    else {
-//            unprotectFailed++;
-    }
+    int32_t rc = SrtpHandler::unprotect(recvZrtpTunnel.get(), packet, length, newLength, errorData);
+//    if (rc == 1) {
+////            unprotect++
+//    }
+//    else {
+////            unprotectFailed++;
+//    }
     return rc;
 }
 
 
-
-bool ZrtpSdesStream::outgoingRtcp(uint8_t *packet, size_t length, size_t *newLength) {
-#if 0
-SrtpHandler::protectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t length, size_t* newLength, uint32_t *srtcpIndex)
-#endif
-    return false;
-}
-
-int ZrtpSdesStream::incomingSrtcp(uint8_t *packet, size_t length, size_t *newLength) {
-#if 0
-int32_t SrtpHandler::unprotectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t length, size_t* newLength)
-#endif
-    return 0;
-}
+// ***
+// *** Currently not used, may be enabled if necessary (add tests!)
+// ***
+//bool ZrtpSdesStream::outgoingRtcp(uint8_t *packet, size_t length, size_t *newLength) {
+//#if 0
+//SrtpHandler::protectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t length, size_t* newLength, uint32_t *srtcpIndex)
+//#endif
+//    (void)packet, (void) length, (void) *newLength;
+//    return false;
+//}
+//
+//int ZrtpSdesStream::incomingSrtcp(uint8_t *packet, size_t length, size_t *newLength) {
+//#if 0
+//int32_t SrtpHandler::unprotectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t length, size_t* newLength)
+//#endif
+//    (void)packet, (void) length, (void) *newLength;
+//    return 0;
+//}
 
 const char* ZrtpSdesStream::getCipher() {
     return knownSuites[suite].cipher;
 }
 
 const char* ZrtpSdesStream::getAuthAlgo() {
-    if (strcmp(knownSuites[suite].tagLength, hs80) == 0)
-        return "HMAC-SHA1 80 bit";
-    else
-        return "HMAC-SHA1 32 bit";
+    return (strcmp(knownSuites[suite].tagLength, hs80) == 0) ? "HMAC-SHA1 80 bit" : "HMAC-SHA1 32 bit";
 }
 
-int ZrtpSdesStream::getCryptoMixAttribute(char *algoNames, size_t length) {
+#ifdef ENABLE_SDES_MIX
+size_t ZrtpSdesStream::getCryptoMixAttribute(char *algoNames, size_t length) {
 
     if (length < MIX_HMAC_STRING_MIN_LEN)
         return 0;
@@ -320,7 +289,7 @@ int ZrtpSdesStream::getCryptoMixAttribute(char *algoNames, size_t length) {
     // In case we support more than one MIX profile select the correct one if the
     // application called setCryptoMixAttribute(...) and we already selected the one to use.
     if (cryptoMixHashType != MIX_NONE) {
-        for (cryptoMix* cp = knownMixAlgos; cp->name != NULL; cp++) {
+        for (cryptoMix* cp = knownMixAlgos; cp->name != nullptr; cp++) {
             if (cp->hashLength == cryptoMixHashLength && cp->hashType == cryptoMixHashType) {
                 strcpy(algoNames, cp->name);
                 return strlen(cp->name);
@@ -337,8 +306,8 @@ int ZrtpSdesStream::getCryptoMixAttribute(char *algoNames, size_t length) {
 
 bool ZrtpSdesStream::setCryptoMixAttribute(const char *algoNames) {
 
-    int len = strlen(algoNames);
-    if (len <= 0)
+    size_t len = strlen(algoNames);
+    if (len == 0)
         return false;
 
     std::string algoIn(algoNames);
@@ -348,18 +317,19 @@ bool ZrtpSdesStream::setCryptoMixAttribute(const char *algoNames) {
     // We take the first match.
     std::string delimiters = " ";
     size_t current;
-    size_t next = -1;
+    size_t next = 0;
 
     do {
-        current = next + 1;
+        current = next;
         next = algoIn.find_first_of(delimiters, current);
         if (next == std::string::npos)
             break;
 
-        std::string tmps = algoIn.substr(current, next - current );
+        std::string tmps = algoIn.substr(current, next - current);
+        next++;                             // Skip delimiter
         const char* nm = tmps.c_str();
 
-        for (cryptoMix* cp = knownMixAlgos; cp->name != NULL; cp++) {
+        for (cryptoMix* cp = knownMixAlgos; cp->name != nullptr; cp++) {
             if (strncmp(cp->name, nm, strlen(cp->name)) == 0) {
                 cryptoMixHashLength = cp->hashLength;
                 cryptoMixHashType = cp->hashType;
@@ -371,67 +341,23 @@ bool ZrtpSdesStream::setCryptoMixAttribute(const char *algoNames) {
     return false;
 }
 
-#ifdef WEAKRANDOM
-/*
- * A standard random number generator that uses the portable random() system function.
- *
- * This should be enhanced to use a better random generator
- */
-static int _random(unsigned char *output, size_t len)
-{
-    size_t i;
-
-    for(i = 0; i < len; ++i )
-        output[i] = random();
-
-    return( 0 );
-}
-#else
-#include <cryptcommon/ZrtpRandom.h>
-static int _random(unsigned char *output, size_t len)
-{
-    return ZrtpRandom::getRandomData(output, len);
-}
-#endif
-
-static int b64Encode(const uint8_t *binData, int32_t binLength, char *b64Data, int32_t b64Length)
-{
-    base64_encodestate _state;
-    int codelength;
-
-    base64_init_encodestate(&_state, 0);
-    codelength = base64_encode_block(binData, binLength, b64Data, &_state);
-    codelength += base64_encode_blockend(b64Data+codelength, &_state);
-
-    return codelength;
-}
-
-static int b64Decode(const char *b64Data, int32_t b64length, uint8_t *binData, int32_t binLength)
-{
-    base64_decodestate _state;
-    int codelength;
-
-    base64_init_decodestate(&_state);
-    codelength = base64_decode_block(b64Data, b64length, binData, &_state);
-    return codelength;
-}
-
-void* createSha384HmacContext(uint8_t* key, int32_t keyLength);
+void* createSha384HmacContext(const uint8_t* key, uint64_t keyLength);
 void freeSha384HmacContext(void* ctx);
-void hmacSha384Ctx(void* ctx, const uint8_t* data[], uint32_t dataLength[], uint8_t* mac, int32_t* macLength );
+void hmacSha384Ctx(void* ctx, const std::vector<const uint8_t*>& data,
+                   const std::vector<uint64_t>& dataLength,
+                   uint8_t* mac, uint32_t* macLength );
 
-static int expand(uint8_t* prk, uint32_t prkLen, uint8_t* info, int32_t infoLen, int32_t L, uint32_t hashLen, uint8_t* outbuffer)
+static int expand(uint8_t* prk, uint32_t prkLen, uint8_t* info, uint32_t infoLen, int32_t L, uint32_t hashLen, uint8_t* outbuffer)
 {
     int32_t n;
     uint8_t *T;
     void* hmacCtx;
 
-    const uint8_t* data[4];      // 3 data pointers for HMAC data plus terminating NULL
-    uint32_t dataLen[4];
-    int32_t dataIdx = 0;
+    std::vector<const uint8_t*>data;
+    std::vector<uint64_t> dataLen;
 
     uint8_t counter;
-    int32_t macLength;
+    uint32_t macLength;
 
     if (prkLen < hashLen)
         return -1;
@@ -451,24 +377,22 @@ static int expand(uint8_t* prk, uint32_t prkLen, uint8_t* info, int32_t infoLen,
     // Prepare first HMAC. T(0) has zero length, thus we ignore it in first run.
     // After first run use its output (T(1)) as first data in next HMAC run.
     for (int i = 1; i <= n; i++) {
-        if (infoLen > 0 && info != NULL) {
-            data[dataIdx] = info;
-            dataLen[dataIdx++] = infoLen;
+        if (infoLen > 0 && info != nullptr) {
+            data.push_back(info);
+            dataLen.push_back(infoLen);
         }
-        counter = i & 0xff;
-        data[dataIdx] = &counter;
-        dataLen[dataIdx++] = 1;
-
-        data[dataIdx] = NULL;
-        dataLen[dataIdx++] = 0;
+        counter = static_cast<uint8_t >(i % 255);
+        data.push_back(&counter);
+        dataLen.push_back(1);
 
         if (hashLen == 384/8)
             hmacSha384Ctx(hmacCtx, data, dataLen, T + ((i-1) * hashLen), &macLength);
 
         // Use output of previous hash run as first input of next hash run
-        dataIdx = 0;
-        data[dataIdx] = T + ((i-1) * hashLen);
-        dataLen[dataIdx++] = hashLen;
+        data.clear();
+        dataLen.clear();
+        data.push_back(T + ((i-1) * hashLen));
+        dataLen.push_back(hashLen);
     }
     freeSha384HmacContext(hmacCtx);
     memcpy(outbuffer, T, L);
@@ -500,26 +424,22 @@ void ZrtpSdesStream::computeMixedKeys(bool sipInvite) {
     uint32_t keyLen = localKeyLenBytes + remoteKeyLenBytes;
     uint32_t L = saltLen + keyLen;
 
-    uint8_t prk[MAX_DIGEST_LENGTH];
-    uint32_t prkLen;
-
+    zrtp::NegotiatedArray prk;
     switch(cryptoMixHashType) {
         case MIX_HMAC_SHA:
             if (cryptoMixHashLength == 384)
-                hmac_sha384(salt, saltLen, ikm, keyLen, prk, &prkLen);
+                hmac_sha384(salt, saltLen, ikm, keyLen, prk);
             else
                 return;
             break;
 
         case MIX_MAC_SKEIN:
-            return;
-
         default:
             return;
     }
 
     uint8_t T[(MAX_SALT_LEN + MAX_KEY_LEN)*2] = {0};
-    expand(prk, prkLen, NULL, 0, L, cryptoMixHashLength/8, T);
+    expand(prk.data(), prk.size(), nullptr, 0U, L, cryptoMixHashLength/8, T);
 
     // We have a new set of SRTP key data now, replace the old with the new.
     int32_t offset = 0;
@@ -544,14 +464,43 @@ void ZrtpSdesStream::computeMixedKeys(bool sipInvite) {
         memcpy(localKeySalt, &T[offset], localKeyLenBytes);
     }
 }
+#endif
+
+static int _random(uint8_t *output, int32_t len) {
+    randomZRTP(output, len);
+    return (0);
+}
+
+static ptrdiff_t b64Encode(const uint8_t *binData, int32_t binLength, char *b64Data, int32_t b64Length)
+{
+    (void)b64Length;
+    base64_encodestate _state = {};
+
+    base64_init_encodestate(&_state, 0);
+    auto codeLength = base64_encode_block(binData, binLength, b64Data, &_state);
+    codeLength += base64_encode_blockend(b64Data+codeLength, &_state);
+
+    return codeLength;
+}
+
+static ptrdiff_t b64Decode(const char *b64Data, int32_t b64length, uint8_t *binData, int32_t binLength)
+{
+    (void)binLength;
+    base64_decodestate _state = {};
+
+    base64_init_decodestate(&_state);
+    auto codeLength = base64_decode_block(b64Data, b64length, binData, &_state);
+    return codeLength;
+}
 
 void ZrtpSdesStream::createSrtpContexts(bool sipInvite) {
 
+#ifdef ENABLE_SDES_MIX
     if (cryptoMixHashType != MIX_NONE) {
         computeMixedKeys(sipInvite);
     }
-
-    sendSrtp = new CryptoContext(0,                     // SSRC (used for lookup)
+#endif
+    sendSrtp = std::make_unique<CryptoContext>(0,                     // SSRC (used for lookup)
                                  0,                     // Roll-Over-Counter (ROC)
                                  0L,                    // keyderivation << 48,
                                  localCipher,                // encryption algo
@@ -566,7 +515,7 @@ void ZrtpSdesStream::createSrtpContexts(bool sipInvite) {
                                  localTagLength);            // authentication tag len
     sendSrtp->deriveSrtpKeys(0L);
 
-    sendZrtpTunnel = new CryptoContext(0,                     // SSRC (used for lookup)
+    sendZrtpTunnel = std::make_unique<CryptoContext>(0,                     // SSRC (used for lookup)
                                  0,                     // Roll-Over-Counter (ROC)
                                  0L,                    // keyderivation << 48,
                                  localCipher,                // encryption algo
@@ -584,7 +533,7 @@ void ZrtpSdesStream::createSrtpContexts(bool sipInvite) {
     sendZrtpTunnel->deriveSrtpKeys(0L);
     memset(localKeySalt, 0, sizeof(localKeySalt));
 
-    recvSrtp = new CryptoContext(0,                     // SSRC (used for lookup)
+    recvSrtp = std::make_unique<CryptoContext>(0,                     // SSRC (used for lookup)
                                  0,                     // Roll-Over-Counter (ROC)
                                  0L,                    // keyderivation << 48,
                                  remoteCipher,                // encryption algo
@@ -599,7 +548,7 @@ void ZrtpSdesStream::createSrtpContexts(bool sipInvite) {
                                  remoteTagLength);            // authentication tag len
     recvSrtp->deriveSrtpKeys(0L);
 
-    recvZrtpTunnel = new CryptoContext(0,                     // SSRC (used for lookup)
+    recvZrtpTunnel = std::make_unique<CryptoContext>(0,                     // SSRC (used for lookup)
                                  0,                     // Roll-Over-Counter (ROC)
                                  0L,                    // keyderivation << 48,
                                  remoteCipher,                // encryption algo
@@ -624,7 +573,7 @@ bool ZrtpSdesStream::createSdesProfile(char *cryptoString, size_t *maxLen) {
     uint32_t sidx;
     int32_t b64Len;
 
-    for (sidx = 0; knownSuites[sidx].name != NULL; sidx++) {  // Lookup crypto suite parameters
+    for (sidx = 0; knownSuites[sidx].name != nullptr; sidx++) {  // Lookup crypto suite parameters
         if (knownSuites[sidx].suite == suite)
             break;
     }
@@ -636,7 +585,7 @@ bool ZrtpSdesStream::createSdesProfile(char *cryptoString, size_t *maxLen) {
 
     AlgorithmEnum& auth = zrtpAuthLengths.getByName(pSuite->tagLength);
     localAuthn = SrtpAuthenticationSha1Hmac;
-    localAuthKeyLen = pSuite->authKeyLength / 8;
+    localAuthKeyLen = pSuite->authKeyLength / 8u;
     localTagLength = auth.getKeylen() / 8;
 
     // If SDES will support other encryption algos - get it here based on
@@ -659,10 +608,6 @@ bool ZrtpSdesStream::createSdesProfile(char *cryptoString, size_t *maxLen) {
 }
 
 bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length, sdesSuites *parsedSuite, int32_t *outTag) {
-    int elements,  i;
-    int charsScanned;
-    int mkiLength = 0;
-    uint32_t sidx;
 
     char cryptoString[MAX_CRYPT_STRING_LEN+1] = {'\0'};
 
@@ -682,13 +627,15 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
     memcpy(cryptoString, cryptoStr, length);   // make own copy, null terminated
 
     *outTag = -1;
-    elements = sscanf(cryptoString, parseCrypto, outTag, suiteName, keyParams, &charsScanned);
+    int charsScanned = 0;
+    auto elements = sscanf(cryptoString, parseCrypto, outTag, suiteName, keyParams, &charsScanned);
 
     if (elements < minElementsCrypto) {        // Do we have enough elements in the string
         return false;
     }
 
-    for (sidx = 0; knownSuites[sidx].name != NULL; sidx++) {  // Lookup crypto suite
+    uint32_t sidx;
+    for (sidx = 0; knownSuites[sidx].name != nullptr; sidx++) {  // Lookup crypto suite
         if (!strcmp(knownSuites[sidx].name, suiteName))
             break;
     }
@@ -699,6 +646,7 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
     *parsedSuite = pSuite->suite;
 
     /* Now scan the key parameters */
+    int mkiLength = 0;
     elements = sscanf(keyParams, parseKeyParam, keySaltB64, lifetime, mkiVal, &mkiLength);
 
     if (elements != minElementsKeyParam) {     // Currently we only accept key||salt B64 string, no other parameters 
@@ -711,9 +659,9 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
     if (strlen(keySaltB64) != pSuite->b64length) {  // Check if key||salt B64 string hast the correct length
         return false;
     }
-    i = b64Decode(keySaltB64, pSuite->b64length, remoteKeySalt, remoteKeyLenBytes + remoteSaltLenBytes);
+    auto decoded = b64Decode(keySaltB64, pSuite->b64length, remoteKeySalt, remoteKeyLenBytes + remoteSaltLenBytes);
 
-    if (i != (remoteKeyLenBytes + remoteSaltLenBytes)) {  // Did the B64 decode delivered enough data for key||salt
+    if (decoded != (remoteKeyLenBytes + remoteSaltLenBytes)) {  // Did the B64 decode delivered enough data for key||salt
         return false;
     }
 

@@ -1,19 +1,18 @@
 /*
-  Copyright (C) 2006-2009 Werner Dittmann
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 /*
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
@@ -22,11 +21,10 @@
 #ifndef _ZRTPDH_H__
 #define _ZRTPDH_H__
 
-#include <stdint.h>
 
 /**
  * @file zrtpDH.h
- * @brief Class that implemets Diffie-Helman key agreement for ZRTP
+ * @brief Class that implements Diffie-Hellman key agreement for ZRTP
  * 
  * @ingroup GNU_ZRTP
  * @{
@@ -43,14 +41,18 @@
  *    Number of random bytes to produce.
  */
 #if defined(__cplusplus)
+#include <cstdint>
 extern "C"
 {
+#else
+#include <stdint.h>
 #endif
 void randomZRTP(uint8_t *buf, int32_t length);
 #if defined(__cplusplus)
 }
 #endif
 
+// Exclude the whole code if not compile with c++ - needed for C-wrapper code.
 #if defined(__cplusplus)
 
 #include <libzrtpcpp/ZrtpConfigure.h>
@@ -105,7 +107,7 @@ public:
      * @param state
      *     At which protocol state ZRTP needs a new DH
      */
-    ZrtpDH(const char* type, ProtocolState state);
+    explicit ZrtpDH(const char* type, ProtocolState state);
     
     ~ZrtpDH();
 
@@ -122,26 +124,27 @@ public:
      *
      * @return Size in bytes.
      */
-    uint32_t getSharedSecretSize() const;
+    [[nodiscard]] uint32_t getSharedSecretSize() const;
 
     /**
      * Returns the size in bytes of computed public key.
      *
      * @return Size in bytes.
      */
-    int32_t getPubKeySize() const;
+    [[nodiscard]] int32_t getPubKeySize() const;
 
     /**
-     * Returns the bytes of computed secret key.
+     * Fill in the bytes of computed secret key.
      *
-     * Returns the bytes of the public key in network (big endian) order.#
+     * Computes length of the public key, copies data to pubKey in network
+     * (big endian) order and sets correct size.
      *
-     * @param buf
-     *    Pointer to a buffer of at least <code>getPubKeySize()</code> bytes.
+     * @param pubKey
+     *    Reference to a SecureArray with a capacity of at least <code>getPubKeySize()</code> bytes.
      *
      * @return Size in bytes.
      */
-    int32_t getPubKeyBytes(uint8_t *buf) const;
+    int32_t fillInPubKeyBytes(secUtilities::SecureArray<1000>& pubKey) const;
 
     /**
      * Compute the secret key and returns it to caller.
@@ -153,12 +156,11 @@ public:
      *    Pointer to the peer's public key bytes. Must be in big endian order.
      *
      * @param secret
-     *    Pointer to a buffer that receives the secret key. This buffer must
-     *    have a length of at least <code>getSecretSize()</code> bytes.
+     *    Pointer to a buffer that receives the secret key.
      *
      * @return the size of the shared secret on success, -1 on error.
      */
-    int32_t computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret);
+    int32_t computeSecretKey(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret);
 
     /**
      * Check and validate the public key received from peer.
@@ -170,7 +172,7 @@ public:
      * @param pubKeyBytes
      *     Pointer to the peer's public key bytes. Must be in big endian order.
      *
-     * @return 0 if check faild, 1 if public key value is ok.
+     * @return 0 if check failed, 1 if public key value is ok.
      */
     int32_t checkPubKey(uint8_t* pubKeyBytes) const;
 

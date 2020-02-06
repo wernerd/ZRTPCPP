@@ -1,19 +1,18 @@
 /*
-  Copyright (C) 2006-2013 Werner Dittmann
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef _ZRTP_CACHE_DB_BACKEND_H_
 #define _ZRTP_CACHE_DB_BACKEND_H_
@@ -28,12 +27,11 @@ extern "C"
 #define DB_CACHE_ERR_BUFF_SIZE  1000
 
 /**
- * Set of accessible operations of database ZRTP cache implementaion.
+ * Set of accessible operations of database ZRTP cache implementation.
  *
  * The only public method of the database ZRTP implementation is
  * getDbCacheOps(...)  that fills in this call structure. This mechanism
- * decouples the database implementations from libzrtp and possible other
- * clients.
+ * decouples implementation of ZID cache and possible other database backends.
  *
  * Some implementation notes:
  * <ul>
@@ -83,14 +81,14 @@ typedef struct {
      * ZRTP identifiers (ZID) and optionally link them with account
      * information. The account information data is the key to the request
      * local ZID. If the application does not provide account information data
-     * the method implmentation shall use a standard predfined string that
+     * the method implementation shall use a standard predefined string that
      * does not collide with usual account information.
      *
      * The SQLite backend uses the string @c "_STANDARD_" in this case and
      * sets a specific type field.
      * 
      * The first call to this method with a specific account information
-     * generates a ZID, stores it in the database usind the account
+     * generates a ZID, stores it in the database using the account
      * information as key, and returns the ZID to the application. Any
      * subsequent call with the same account information return the same local
      * ZID.
@@ -321,7 +319,7 @@ typedef struct {
      * @param errString Pointer to a character buffer, see implementation
      *                  notes above.
      * 
-     * @return a void pointer to the sqlite3 statment (SQL cursor) or @c NULL
+     * @return a void pointer to the sqlite3 statement (SQL cursor) or @c NULL
      */
     void *(*prepareReadAllZid)(void *db, char *errString);
 
@@ -343,27 +341,26 @@ typedef struct {
      * @param errString Pointer to a character buffer, see implementation
      *                  notes above.
      * 
-     * @return void pointer to statment if successful, this is the same pointer as
-     *         the @c stmt input parameter. The function returns @c NULL if either 
+     * @return void pointer to statement if successful. This is the same pointer as
+     *         the @c stmt input parameter. The function returns @c nullptr if either
      *         no more record is available or it got another error.
      */
     void *(*readNextZidRecord)(void *db, void *stmt, remoteZidRecord_t *remZid, char* errString);
 
     /**
-     * @brief Close sqlite3 statment (SQL cursor)
+     * @brief Close sqlite3 statement (SQL cursor)
      * 
-     * This functions closes (finalizes) an open sqlite3 statment. Usually the 
-     * @c readNextZidRecord closes the statment if no more record is available. However, an
+     * This functions closes (finalizes) an open sqlite3 statement. Usually the
+     * @c readNextZidRecord closes the statement if no more record is available. However, an
      * application may decide not to read every record. In this case it @b must close the
-     * sqlite3 statment
+     * sqlite3 statement
      * 
      * @param stmt a void pointer to a sqlite3 statement (SQL cursor)
      */
-    void (*closeStatement)(void *vstmt);
+    void (*closeStatement)(void *stmt);
 } dbCacheOps_t;
 
 void getDbCacheOps(dbCacheOps_t *ops);
-
 
 #if defined(__cplusplus)
 }

@@ -27,7 +27,7 @@
 
 /**
  * @file Base32.h
- * @brief C++ implmentation of the Base32 encoding and decoding
+ * @brief C++ implementation of the Base32 encoding and decoding
  * 
  * ZRTP uses the base 32 encoding and decoding to generate the Short 
  * Authentication String (SAS).
@@ -42,6 +42,8 @@
 #include <string.h>
 #include <assert.h>
 #include <stddef.h>
+
+using namespace std;
 
 extern int divceil(int a, int b);
 
@@ -58,7 +60,7 @@ class Base32 {
      * @param encoded
      *     The string that contains the base32 encoded data.
      */
-    Base32(const std::string encoded);
+    explicit Base32(const string& encoded);
 
     /**
      * A Constructor that decodes from base32 into binary.
@@ -73,7 +75,7 @@ class Base32 {
      * @param noOfBits
      *     How many bits to decode into binary data.
      */
-    Base32(const std::string encoded, int noOfBits);
+    Base32(const string& encoded, int noOfBits);
 
     /**
      * A Constructor that encodes binary data.
@@ -122,7 +124,7 @@ class Base32 {
      * @return
      *     The string containing the base32 encoded data.
      */
-    const std::string getEncoded() { return encoded; };
+    const string getEncoded() { return encoded; };
 
     /**
      * Compute the number of base32 encoded characters given the
@@ -133,7 +135,7 @@ class Base32 {
      * @return
      *      The length of the base-32 encoding of the data in characters
      */
-    static size_t b2alen(const size_t lengthInBits) {
+    static size_t const b2alen(const size_t lengthInBits) {
 	return divceil(lengthInBits, 5); };
 
  private:
@@ -164,7 +166,7 @@ class Base32 {
      * @param lengthinbits
      *    The number of bits of data in <code>cs</code> to be decoded
      */
-    void a2b_l(const std::string cs, size_t size, const size_t lengthinbits);
+    void a2b_l(const string& cs, size_t size, size_t lengthinbits);
 
     /**
      * Encodes binary to to base32 presentation.
@@ -215,9 +217,9 @@ class Base32 {
     /**
      * The string containing the base32 encoded data.
      */
-    std::string encoded;
+    string encoded;
 
-    unsigned char smallBuffer[128];
+    unsigned char smallBuffer[128] = {'\0'};
 };
 
 /**

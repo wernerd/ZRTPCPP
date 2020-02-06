@@ -1,19 +1,18 @@
 /*
-  Copyright (C) 2006-2013 Werner Dittmann
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 /*
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
@@ -31,9 +30,9 @@
  */
 
 #include <stdlib.h>
-#include <string.h>
+#include <string>
 #include <assert.h>
-#include <stdint.h>
+#include <cstdint>
 
 class __EXPORT ZrtpStateClass;
 /**
@@ -42,7 +41,7 @@ class __EXPORT ZrtpStateClass;
  */
 typedef struct  {
     int32_t stateName;                      ///< The state number
-    void (ZrtpStateClass::* handler)(void); ///< The state handler
+    void (ZrtpStateClass::* handler)();     ///< The state handler
 } state_t;
 
 /**
@@ -56,12 +55,10 @@ typedef struct  {
 
 class __EXPORT ZrtpStates {
  public:
+    ZrtpStates() = delete;
 
     /// Create an initialize state switching
-    ZrtpStates(state_t* const zstates,
-           const int32_t numStates,
-           const int32_t initialState):
-    numStates(numStates), states(zstates), state(initialState) {}
+    ZrtpStates(state_t* const zrtpStates, const int32_t initialState): states(zrtpStates), state(initialState) {}
 
     /// Call a state handler
     int32_t processEvent(ZrtpStateClass& zsc) {
@@ -73,14 +70,11 @@ class __EXPORT ZrtpStates {
     bool inState(const int32_t s) { return ((s == state)); }
 
     /// Set the next state
-    void nextState(int32_t s)        { state = s; }
+    void nextState(int32_t s)     { state = s; }
 
  private:
-    const int32_t numStates;
     const state_t* states;
     int32_t  state;
-
-    ZrtpStates();
 };
 
 /**

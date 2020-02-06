@@ -1,19 +1,18 @@
 /*
-  Copyright (C) 2006-2013 Werner Dittmann
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef _ZRTP_H_
 #define _ZRTP_H_
@@ -26,6 +25,7 @@
 
 #include <cstdlib>
 
+#include <common/SecureArray.h>
 #include <libzrtpcpp/ZrtpPacketHello.h>
 #include <libzrtpcpp/ZrtpPacketHelloAck.h>
 #include <libzrtpcpp/ZrtpPacketCommit.h>
@@ -44,29 +44,8 @@
 #include <libzrtpcpp/ZIDCache.h>
 
 #include <cryptcommon/skeinApi.h>
-#ifdef ZRTP_OPENSSL
-#include <openssl/crypto.h>
-#include <openssl/sha.h>
-#else
-#include <zrtp/crypto/sha2.h>
-#endif
 
-#ifndef SHA256_DIGEST_LENGTH
-#define SHA256_DIGEST_LENGTH 32
-#endif
-
-// Prepare to support digest algorithms up to 512 bit (64 bytes)
-#define MAX_DIGEST_LENGTH       64
-#define IMPL_MAX_DIGEST_LENGTH  64
-
-// max. number of parallel supported ZRTP protocol versions.
-#define MAX_ZRTP_VERSIONS       2
-
-// currently only 1.10 supported
-#define SUPPORTED_ZRTP_VERSIONS       1
-
-// Integer representation of highest supported ZRTP protocol version
-#define HIGHEST_ZRTP_VERION    12
+#include "common/typedefs.h"
 
 class __EXPORT ZrtpStateClass;
 class ZrtpDH;
@@ -116,9 +95,9 @@ class __EXPORT ZRtp {
     } secrets;
 
     typedef struct _zrtpInfo {
-        int32_t secretsCached;
-        int32_t secretsMatched;
-        int32_t secretsMatchedDH;
+        uint32_t secretsCached;
+        uint32_t secretsMatched;
+        uint32_t secretsMatchedDH;
         const char *hash;
         const char *cipher;
         const char *pubKey;
@@ -136,11 +115,11 @@ class __EXPORT ZRtp {
     } HelloPacketVersion;
 
     /**
-     * Constructor intializes all relevant data but does not start the
+     * Constructor initializes all relevant data but does not start the
      * engine.
      */
-    ZRtp(uint8_t* myZid, ZrtpCallback* cb, std::string id,
-         ZrtpConfigure* config, bool mitmm= false, bool sasSignSupport= false);
+    ZRtp(uint8_t const * myZid, ZrtpCallback & cb, const std::string& id,
+         std::shared_ptr<ZrtpConfigure>& config, bool mitm = false, bool sasSignSupport = false);
 
     /**
      * Destructor cleans up.
@@ -246,7 +225,7 @@ class __EXPORT ZRtp {
       * Check if SAS verfied by both parties, valid after received Confirm1 or Confirm2.
       *
       */
-     bool isSASVerified();
+     bool isSASVerified() { return zidRec->isSasVerified(); }
 
      /**
      * Get the ZRTP Hello Hash data.
@@ -291,47 +270,6 @@ class __EXPORT ZRtp {
     /**
      * Get Multi-stream parameters.
      *
-     * Deprecated - use  getMultiStrParams(ZRtp **zrtpMaster);
-     * 
-     * Use this method to get the Multi-stream that were computed during
-     * the ZRTP handshake. An application may use these parameters to
-     * enable multi-stream processing for an associated SRTP session.
-     *
-     * Refer to chapter 4.4.2 in the ZRTP specification for further details
-     * and restriction how and when to use multi-stream mode.
-     *
-     * @return
-     *    a string that contains the multi-stream parameters. The application
-     *    must not modify the contents of this string, it is opaque data. The
-     *    application may hand over this string to a new ZrtpQueue instance
-     *    to enable multi-stream processing for this ZrtpQueue.
-     *    If ZRTP was not started or ZRTP is not yet in secure state the method
-     *    returns an empty string.
-     */
-    DEPRECATED_ZRTP std::string getMultiStrParams() {return getMultiStrParams(NULL); }
-
-    /**
-     * Set Multi-stream parameters.
-     *
-     * Deprecated - use setMultiStrParams(std::string parameters, ZRtp* zrtpMaster);
-     * 
-     * Use this method to set the parameters required to enable Multi-stream
-     * processing of ZRTP. The multi-stream parameters must be set before the
-     * application starts the ZRTP protocol engine.
-     *
-     * Refer to chapter 4.4.2 in the ZRTP specification for further details
-     * of multi-stream mode.
-     *
-     * @param parameters
-     *     A string that contains the multi-stream parameters that this
-     *     new ZrtpQueue instanace shall use. See also
-     *     <code>getMultiStrParams()</code>
-     */
-    DEPRECATED_ZRTP void setMultiStrParams(std::string parameters) { setMultiStrParams(parameters, NULL);}
-
-    /**
-     * Get Multi-stream parameters.
-     *
      * Use this method to get the Multi-stream that were computed during
      * the ZRTP handshake. An application may use these parameters to
      * enable multi-stream processing for an associated SRTP session.
@@ -362,8 +300,7 @@ class __EXPORT ZRtp {
      * of multi-stream mode.
      *
      * @param parameters
-     *     A string that contains the multi-stream parameters that this
-     *     new ZrtpQueue instanace shall use. See also
+     *     A string that contains the multi-stream parameters. See also
      *     <code>getMultiStrParams(ZRtp **zrtpMaster)</code>
      * @param zrtpMaster
      *     The pointer of the ZRTP master stream.
@@ -451,14 +388,14 @@ class __EXPORT ZRtp {
      * @param sh the full SAS hash value, 32 bytes
      * @param render the SAS rendering algorithm
      */
-    bool sendSASRelayPacket(uint8_t* sh, std::string render);
+    bool sendSASRelayPacket(uint8_t* sh, const std::string& render);
 
     /**
-     * Get the commited SAS rendering algorithm for this ZRTP session.
+     * Get the committed SAS rendering algorithm for this ZRTP session.
      * 
-     * @return the commited SAS rendering algorithm
+     * @return the committed SAS rendering algorithm
      */
-    std::string getSasType();
+    [[nodiscard]] std::string getSasType() const { return sasType->getName(); }
  
     /**
      * Get the computed SAS hash for this ZRTP session.
@@ -467,10 +404,10 @@ class __EXPORT ZRtp {
      * hash of an enrolled client to construct the SAS relay packet for
      * the other client.
      *
-     * @return a pointer to the byte array that contains the full
+     * @return a reference to the byte array that contains the full
      *         SAS hash.
      */
-    uint8_t* getSasHash();
+    [[nodiscard]] uint8_t const * getSasHash() const {return sasHash.data();}
 
     /**
      * Set signature data.
@@ -507,9 +444,9 @@ class __EXPORT ZRtp {
      * <code>start()</code>.
      *
      * @return
-     *    Pointer to signature data.
+     *    Signature data.
      */
-    const uint8_t* getSignatureData();
+    [[nodiscard]] uint8_t const * getSignatureData() const { return signatureData; }
 
     /**
      * Get length of signature data in number of bytes.
@@ -519,9 +456,9 @@ class __EXPORT ZRtp {
      *
      * @return
      *    Length in bytes of the received signature data. The method returns
-     *    zero if no signature data is avilable.
+     *    zero if no signature data is available.
      */
-    int32_t getSignatureLength();
+    [[nodiscard]] int32_t getSignatureLength() const { return signatureLength * ZRTP_WORD_SIZE; }
 
     /**
      * Emulate a Conf2Ack packet.
@@ -551,36 +488,41 @@ class __EXPORT ZRtp {
       *    Number of bytes copied into the data buffer - must be equivalent
       *    to 96 bit, usually 12 bytes.
       */
-     int32_t getPeerZid(uint8_t* data);
+     int32_t getPeerZid(uint8_t* data) const {
+         memcpy(data, peerZid.data(), IDENTIFIER_LEN);
+         return IDENTIFIER_LEN;
+     }
 
      /**
-      * Returns a pointer to the gather detailed information structure.
+      * Return gathered detailed information structure.
       *
       * This structure contains some detailed information about the negotiated
-      * algorithms, the chached and matched shared secrets.
+      * algorithms, the cached and matched shared secrets.
       */
-     const zrtpInfo *getDetailInfo();
+     [[nodiscard]] zrtpInfo const & getDetailInfo() const { return detailInfo; }
 
      /**
       * Get peer's client id.
       *
       * @return the peer's client id or an empty @c string if not set.
       */
-     std::string getPeerClientId();
+     [[nodiscard]] std::string const & getPeerClientId() const {return peerClientId;};
 
      /**
-      * Get peer's protocl version string.
+      * Get peer's protocol version string.
       *
       * @return the peer's protocol version or an empty @c string if not set.
       */
-     std::string getPeerProtcolVersion();
+     [[nodiscard]] std::string getPeerProtocolVersion() const {
+         return (peerHelloVersion[0] == 0) ? std::string() : std::string((char*)peerHelloVersion);
+     };
 
      /**
       * Get number of supported ZRTP protocol versions.
       *
       * @return the number of supported ZRTP protocol versions.
       */
-     int32_t getNumberSupportedVersions() {return SUPPORTED_ZRTP_VERSIONS;}
+     static int32_t getNumberSupportedVersions() {return SUPPORTED_ZRTP_VERSIONS;}
 
      /**
       * Get negotiated ZRTP protocol version.
@@ -603,7 +545,9 @@ class __EXPORT ZRtp {
       * Returns the secure since field or 0 if no such field is available. Secure since
       * uses the unixepoch.
       */
-     int64_t getSecureSince();
+     [[nodiscard]] int64_t getSecureSince() const {
+         return (zidRec != nullptr) ? zidRec->getSecureSince() :  0;
+     }
 
      /**
       * Set the resend counter of timer T1 - T1 controls the Hello packets.
@@ -679,23 +623,33 @@ class __EXPORT ZRtp {
      /**
       * @brief Get the computed ZRTP exported key.
       * 
-      * Returns a pointer to the computed exported key. The application should copy
+      * Returns the computed exported key. The application should copy
       * the data it needs.
       * 
       * @param length pointer to an int, gets the length of the exported key.
       * @return pointer to the exported key data.
       */
-     uint8_t* getExportedKey(int32_t *length);
+     const uint8_t& getExportedKey(int32_t *length) const {
+         if (length != nullptr)
+             *length = hashLength;
+         return *zrtpExport.data();
+     };
 
      /**
       * @brief Return either Initiator or Responder.
       */
-     int32_t getZrtpRole() { return myRole; }
+     [[nodiscard]] int32_t getZrtpRole() const { return myRole; }
 
      /**
       * @brief Get status of our peer's disclosure flag
       */
-     bool isPeerDisclosureFlag(){ return peerDisclosureFlagSeen; }
+     [[nodiscard]] bool isPeerDisclosureFlag() const { return peerDisclosureFlagSeen; }
+
+     [[nodiscard]] std::shared_ptr<ZIDCache>& getZidCache() const { return configureAlgos->getZidCache(); }
+
+     [[nodiscard]] std::shared_ptr<ZrtpConfigure> getZrtpConfigure() const { return configureAlgos; }
+
+     void setTransportOverhead(int32_t overhead);
 
 private:
      typedef union _hashCtx {
@@ -714,46 +668,43 @@ private:
     /**
      * The state engine takes care of protocol processing.
      */
-    ZrtpStateClass* stateEngine;
+    std::unique_ptr<ZrtpStateClass> stateEngine;
 
     /**
      * This is my ZID that I send to the peer.
      */
-    uint8_t ownZid[IDENTIFIER_LEN];
+    secUtilities::SecureArray<IDENTIFIER_LEN> ownZid;
 
     /**
      * The peer's ZID
      */
-    uint8_t peerZid[IDENTIFIER_LEN];
+    secUtilities::SecureArray<IDENTIFIER_LEN> peerZid;
 
     /**
      * The callback class provides me with the interface to send
      * data and to deal with timer management of the hosting system.
      */
-    ZrtpCallback* callback;
+    ZrtpCallback * callback;
 
     /**
      * My active Diffie-Helman context
      */
-    ZrtpDH* dhContext;
+    std::unique_ptr<ZrtpDH> dhContext;
 
     /**
      * The computed DH shared secret
      */
-    uint8_t* DHss;
+    secUtilities::SecureArray<1000> DHss;
 
     /**
      * My computed public key
      */
-    uint8_t pubKeyBytes[1000];
-    /**
-     * Length off public key
-     */
-//    int32_t pubKeyLen;
+    secUtilities::SecureArray<1000> pubKeyBytes;
+
     /**
      * My Role in the game
      */
-    Role myRole;
+    Role myRole = NoRole;
 
     /**
      * The human readable SAS value
@@ -764,194 +715,177 @@ private:
      * The SAS hash for signaling and alike. Refer to chapters
      * 4.5 and 7 how sasHash, sasValue and the SAS string are derived.
      */
-    uint8_t sasHash[MAX_DIGEST_LENGTH];
+    zrtp::NegotiatedArray  sasHash;
     /**
      * The ids for the retained and other shared secrets
      */
-    uint8_t rs1IDr[MAX_DIGEST_LENGTH];
-    uint8_t rs2IDr[MAX_DIGEST_LENGTH];
-    uint8_t auxSecretIDr[MAX_DIGEST_LENGTH];
-    uint8_t pbxSecretIDr[MAX_DIGEST_LENGTH];
+    zrtp::RetainedSecArray rs1IDr;
+    zrtp::RetainedSecArray rs2IDr;
+    zrtp::RetainedSecArray auxSecretIDr;
+    zrtp::RetainedSecArray pbxSecretIDr;
 
-    uint8_t rs1IDi[MAX_DIGEST_LENGTH];
-    uint8_t rs2IDi[MAX_DIGEST_LENGTH];
-    uint8_t auxSecretIDi[MAX_DIGEST_LENGTH];
-    uint8_t pbxSecretIDi[MAX_DIGEST_LENGTH];
+    zrtp::RetainedSecArray rs1IDi;
+    zrtp::RetainedSecArray rs2IDi;
+    zrtp::RetainedSecArray auxSecretIDi;
+    zrtp::RetainedSecArray pbxSecretIDi;
 
     /**
      * pointers to aux secret storage and length of aux secret
      */
-    uint8_t* auxSecret;
-    uint32_t auxSecretLength;
+    std::unique_ptr<uint8_t[]> auxSecret;
+    uint32_t auxSecretLength = 0;
 
     /**
      * Record if valid rs1 and/or rs1 were found in the
-     * retaind secret cache.
+     * retained secret cache.
      */
-    bool rs1Valid;
-    bool rs2Valid;
+    bool rs1Valid = false;
+    bool rs2Valid = false;
     /**
      * My hvi
      */
-    uint8_t hvi[MAX_DIGEST_LENGTH];
+    uint8_t hvi[MAX_DIGEST_LENGTH]  = {0};
 
     /**
      * The peer's hvi
      */
-    uint8_t peerHvi[8*ZRTP_WORD_SIZE];
+    uint8_t peerHvi[8*ZRTP_WORD_SIZE]  = {0};
 
     /**
      * Context to compute the SHA256 hash of selected messages.
      * Used to compute the s0, refer to chapter 4.4.1.4
      */
-    void* msgShaContext;
+    void* msgShaContext = nullptr;
     /**
-     * Commited Hash, Cipher, and public key algorithms
+     * Committed Hash, Cipher, and public key algorithms
      */
-    AlgorithmEnum* hash;
-    AlgorithmEnum* cipher;
-    AlgorithmEnum* pubKey;
+    AlgorithmEnum* hash = nullptr;
+    AlgorithmEnum* cipher = nullptr;
+    AlgorithmEnum* pubKey = nullptr;
     /**
      * The selected SAS type.
      */
-    AlgorithmEnum* sasType;
+    AlgorithmEnum* sasType = nullptr;
 
     /**
      * The selected SAS type.
      */
-    AlgorithmEnum* authLength;
+    AlgorithmEnum* authLength = nullptr;
 
     /**
      * The Hash images as defined in chapter 5.1.1 (H0 is a random value,
-     * not stored here). Need full SHA 256 lenght to store hash value but
+     * not stored here). Need full SHA 256 length to store hash value but
      * only the leftmost 128 bits are used in computations and comparisons.
      */
-    uint8_t H0[IMPL_MAX_DIGEST_LENGTH];
-    uint8_t H1[IMPL_MAX_DIGEST_LENGTH];
-    uint8_t H2[IMPL_MAX_DIGEST_LENGTH];
-    uint8_t H3[IMPL_MAX_DIGEST_LENGTH];
+    uint8_t H0[IMPL_MAX_DIGEST_LENGTH] = {0};
+    uint8_t H1[IMPL_MAX_DIGEST_LENGTH] = {0};
+    uint8_t H2[IMPL_MAX_DIGEST_LENGTH] = {0};
+    uint8_t H3[IMPL_MAX_DIGEST_LENGTH] = {0};
 
-    uint8_t peerHelloHash[IMPL_MAX_DIGEST_LENGTH];
-    uint8_t peerHelloVersion[ZRTP_WORD_SIZE + 1];   // +1 for nul byte
+    uint8_t peerHelloHash[IMPL_MAX_DIGEST_LENGTH] = {0};
+    uint8_t peerHelloVersion[ZRTP_WORD_SIZE + 1] = {0};   // +1 for nul byte
 
     // We get the peer's H? from the message where length is defined as 8 words
-    uint8_t peerH0[8*ZRTP_WORD_SIZE];
-    uint8_t peerH1[8*ZRTP_WORD_SIZE];
-    uint8_t peerH2[8*ZRTP_WORD_SIZE];
-    uint8_t peerH3[8*ZRTP_WORD_SIZE];
+    uint8_t peerH2[8*ZRTP_WORD_SIZE] = {0};
+    uint8_t peerH3[8*ZRTP_WORD_SIZE] = {0};
 
     /**
-     * The SHA256 hash over selected messages
+     * The hash over selected messages, use negotiated hash function
      */
-    uint8_t messageHash[MAX_DIGEST_LENGTH];
+    zrtp::NegotiatedArray messageHash;
 
     /**
      * The s0
      */
-    uint8_t s0[MAX_DIGEST_LENGTH];
+    zrtp::NegotiatedArray s0;
 
     /**
      * The new Retained Secret
      */
-    uint8_t newRs1[MAX_DIGEST_LENGTH];
+    zrtp::NegotiatedArray  newRs1;
 
     /**
-     * The GoClear HMAC keys and confirm HMAC key
+     * The confirm HMAC key
      */
-    uint8_t hmacKeyI[MAX_DIGEST_LENGTH];
-    uint8_t hmacKeyR[MAX_DIGEST_LENGTH];
+    zrtp::NegotiatedArray  hmacKeyI;
+    zrtp::NegotiatedArray  hmacKeyR;
 
     /**
      * The Initiator's srtp key and salt
      */
-    uint8_t srtpKeyI[MAX_DIGEST_LENGTH];
-    uint8_t srtpSaltI[MAX_DIGEST_LENGTH];
+    zrtp::NegotiatedArray  srtpKeyI;
+    zrtp::NegotiatedArray  srtpSaltI;
 
     /**
      * The Responder's srtp key and salt
      */
-    uint8_t srtpKeyR[MAX_DIGEST_LENGTH];
-    uint8_t srtpSaltR[MAX_DIGEST_LENGTH];
+    zrtp::NegotiatedArray  srtpKeyR;
+    zrtp::NegotiatedArray  srtpSaltR;
 
     /**
      * The keys used to encrypt/decrypt the confirm message
      */
-    uint8_t zrtpKeyI[MAX_DIGEST_LENGTH];
-    uint8_t zrtpKeyR[MAX_DIGEST_LENGTH];
+    zrtp::NegotiatedArray  zrtpKeyI;
+    zrtp::NegotiatedArray  zrtpKeyR;
 
-    HashCtx hashCtx;
+    HashCtx hashCtx = {};
 
     /**
      * Pointers to negotiated hash and HMAC functions
      */
-    void (*hashFunction)(unsigned char *data,
-            unsigned int data_length,
-            unsigned char *digest);
+    void (*hashListFunction)(const std::vector<const uint8_t*>& data,
+                             const std::vector<uint64_t>& dataLength,
+                             uint8_t *digest) = nullptr;
 
-    void (*hashListFunction)(unsigned char *data[],
-            unsigned int data_length[],
-            unsigned char *digest);
+    void (*hmacFunction)(const uint8_t* key, uint64_t key_length,
+                         const uint8_t* data, uint64_t data_length,
+                         zrtp::RetainedSecArray & macOut) = nullptr;
 
-    void (*hmacFunction)(uint8_t* key, uint32_t key_length,
-                uint8_t* data, int32_t data_length,
-                uint8_t* mac, uint32_t* mac_length);
+    void (*hmacListFunction)(const uint8_t* key, uint64_t key_length,
+                             const std::vector<const uint8_t*>& data,
+                             const std::vector<uint64_t>& data_length,
+                             zrtp::RetainedSecArray & macOut) = nullptr;
 
-    void (*hmacListFunction)( uint8_t* key, uint32_t key_length,
-                           uint8_t* data[], uint32_t data_length[],
-                           uint8_t* mac, uint32_t* mac_length );
+    void* (*createHashCtx)(void* ctx) = nullptr;
 
-    void* (*createHashCtx)(void* ctx);
+    void (*closeHashCtx)(void* ctx, zrtp::RetainedSecArray & macOut) = nullptr;
 
-    void (*closeHashCtx)(void* ctx, unsigned char* digest);
+    void (*hashCtxFunction)(void* ctx, const uint8_t* data, uint64_t dataLength) = nullptr;
 
-    void (*hashCtxFunction)(void* ctx, unsigned char* data,
-           unsigned int dataLength);
+    uint32_t hashLength = 0;
 
-    void (*hashCtxListFunction)(void* ctx, unsigned char* dataChunks[],
-           unsigned int dataChunkLength[]);
+    // Function pointers to implicit hash and hmac functions
+    void (*hashFunctionImpl)(const uint8_t *data,
+                             uint64_t data_length,
+                             uint8_t *digest) = nullptr;
 
-    uint32_t hashLength;
+    void (*hmacFunctionImpl)(const uint8_t* key, uint64_t key_length,
+                             const uint8_t* data, uint64_t data_length,
+                             zrtp::RetainedSecArray &) = nullptr;
 
-    // Funtion pointers to implicit hash and hmac functions
-    void (*hashFunctionImpl)(unsigned char *data,
-            unsigned int data_length,
-            unsigned char *digest);
-
-    void (*hashListFunctionImpl)(unsigned char *data[],
-            unsigned int data_length[],
-            unsigned char *digest);
-
-    void (*hmacFunctionImpl)(uint8_t* key, uint32_t key_length,
-                uint8_t* data, int32_t data_length,
-                uint8_t* mac, uint32_t* mac_length);
-
-    void (*hmacListFunctionImpl)( uint8_t* key, uint32_t key_length,
-                           uint8_t* data[], uint32_t data_length[],
-                           uint8_t* mac, uint32_t* mac_length );
-
-    int32_t hashLengthImpl;
+    int32_t hashLengthImpl = 0;
 
     /**
      * The ZRTP Session Key
      * Refer to chapter 4.5.2
      */
-    uint8_t zrtpSession[MAX_DIGEST_LENGTH];
+    zrtp::NegotiatedArray  zrtpSession;
 
     /**
      * The ZRTP export Key
      * Refer to chapter 4.5.2
      */
-    uint8_t zrtpExport[MAX_DIGEST_LENGTH];
+    zrtp::NegotiatedArray  zrtpExport;
 
     /**
      * True if this ZRTP instance uses multi-stream mode.
      */
-    bool multiStream;
+    bool multiStream = false;
 
         /**
      * True if the other ZRTP client supports multi-stream mode.
      */
-    bool multiStreamAvailable;
+    bool multiStreamAvailable = false;
 
     /**
      * Enable MitM (PBX) enrollment
@@ -966,32 +900,33 @@ private:
     /**
      * True if a valid trusted MitM key of the other peer is available, i.e. enrolled.
      */
-    bool peerIsEnrolled;
+    bool peerIsEnrolled = false;
 
     /**
      * Set to true if the Hello packet contained the M-flag (MitM flag).
      * We use this later to check some stuff for SAS Relay processing
      */
-    bool mitmSeen;
+    bool mitmSeen = false;
 
     /**
      * Temporarily store computed pbxSecret, if user accepts enrollment then
      * it will copied to our ZID record of the PBX (MitM)  
      */
-    uint8_t* pbxSecretTmp;
-    uint8_t  pbxSecretTmpBuffer[MAX_DIGEST_LENGTH];
+    uint8_t* pbxSecretTmp = nullptr;
+    uint8_t  pbxSecretTmpBuffer[MAX_DIGEST_LENGTH] = {0};
 
     /**
      * If true then we will set the enrollment flag (E) in the confirm
      * packets. Set to true if the PBX enrollment service started this ZRTP 
      * session. Can be set to true only if mitmMode is also true. 
      */
-    bool enrollmentMode;
+    bool enrollmentMode = false;
 
     /**
      * Configuration data which algorithms to use.
      */
-    ZrtpConfigure configureAlgos;
+    std::shared_ptr<ZrtpConfigure> configureAlgos;
+
     /**
      * Pre-initialized packets.
      */
@@ -1001,7 +936,7 @@ private:
     ZrtpPacketHelloAck zrtpHelloAck;
     ZrtpPacketConf2Ack zrtpConf2Ack;
 //    ZrtpPacketClearAck zrtpClearAck;
-    ZrtpPacketGoClear  zrtpGoClear;
+//    ZrtpPacketGoClear  zrtpGoClear;
     ZrtpPacketError    zrtpError;
     ZrtpPacketErrorAck zrtpErrorAck;
     ZrtpPacketDHPart   zrtpDH1;
@@ -1013,8 +948,7 @@ private:
     ZrtpPacketSASrelay zrtpSasRelay;
     ZrtpPacketRelayAck zrtpRelayAck;
 
-    HelloPacketVersion helloPackets[MAX_ZRTP_VERSIONS + 1];
-    int32_t highestZrtpVersion;
+    HelloPacketVersion helloPackets[MAX_ZRTP_VERSIONS + 1] = {};
 
     /// Pointer to Hello packet sent to partner, initialized in ZRtp, modified by ZrtpStateClass
     ZrtpPacketHello* currentHelloPacket;
@@ -1022,42 +956,42 @@ private:
     /**
      * ZID cache record
      */
-    ZIDRecord *zidRec;
+    std::unique_ptr<ZIDRecord> zidRec;
 
     /**
      * Save record
      * 
      * If false don't save record until user verified and confirmed the SAS.
      */
-    bool saveZidRecord;
+    bool saveZidRecord = false;
     /**
      * Random IV data to encrypt the confirm data, 128 bit for AES
      */
-    uint8_t randomIV[16];
+    uint8_t randomIV[16] = {0};
 
-    uint8_t tempMsgBuffer[1024];
-    int32_t lengthOfMsgData;
+    uint8_t tempMsgBuffer[1024] = {0};
+    uint32_t lengthOfMsgData = 0;
 
     /**
      * Variables to store signature data. Includes the signature type block
      */
-    const uint8_t* signatureData;       // will be set when needed
-    int32_t  signatureLength;     // overall length in bytes
+    const uint8_t* signatureData = nullptr;       // will be set when needed
+    int32_t  signatureLength = 0;     // overall length in bytes
 
     /**
      * Is true if the other peer signaled SAS signature support in its Hello packet.
      */
-    bool signSasSeen;
+    bool signSasSeen = false;
 
-    uint32_t peerSSRC;           // peer's SSRC, required to setup PingAck packet
+    uint32_t peerSSRC = 0;           // peer's SSRC, required to setup PingAck packet
 
-    zrtpInfo detailInfo;         // filled with some more detailded information if application would like to know
+    zrtpInfo detailInfo = {};         // filled with some more detailed information if application would like to know
 
     std::string peerClientId;    // store the peer's client Id
 
-    ZRtp* masterStream;                    // This is the master stream in case this is a multi-stream
+    ZRtp* masterStream = nullptr;          // This is the master stream in case this is a multi-stream
     std::vector<std::string> peerNonces;   // Store nonces we got from our partner. Using std::string
-                                           // just simplifies memnory management, nonces are binary data, not strings :-)
+                                           // just simplifies memory management, nonces are binary data, not strings :-)
     /**
      * Enable or disable paranoid mode.
      *
@@ -1092,7 +1026,7 @@ private:
     /**
      * Is true if the other peer sent a Disclosure flag in its Confirm packet.
      */
-    bool peerDisclosureFlagSeen;
+    bool peerDisclosureFlagSeen = false;
 
     /**
      * Find the best Hash algorithm that is offered in Hello.
@@ -1182,7 +1116,7 @@ private:
      * @return
      *    True if multi stream mode is available, false otherwise.
      */
-    bool checkMultiStream(ZrtpPacketHello* hello);
+    static bool checkMultiStream(ZrtpPacketHello* hello);
 
     /**
      * Checks if Hello packet contains a strong (384bit) hash based on selection policy.
@@ -1265,18 +1199,18 @@ private:
      */
     void computeHvi(ZrtpPacketDHPart* dh, ZrtpPacketHello *hello);
 
-    void computeSharedSecretSet(ZIDRecord *zidRec);
+    void computeSharedSecretSet(ZIDRecord& zidRecord);
 
     void computeAuxSecretIds();
 
     void computeSRTPKeys();
 
-    void KDF(uint8_t* key, size_t keyLength, uint8_t* label, size_t labelLength,
-               uint8_t* context, size_t contextLength, size_t L, uint8_t* output);
+    void KDF(uint8_t* key, size_t keyLength, char const * label, size_t labelLength,
+               uint8_t* context, size_t contextLength, size_t L, zrtp::NegotiatedArray & output);
 
-    void generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec);
+    void generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord);
 
-    void generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord *zidRec);
+    void generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord);
 
     void generateKeysMultiStream();
 
@@ -1323,7 +1257,7 @@ private:
     /**
      * Prepare a Hello packet.
      *
-     * Just take the preinitialized Hello packet and return it. No
+     * Just take the pre-initialized Hello packet and return it. No
      * further processing required.
      *
      * @return
@@ -1492,7 +1426,7 @@ private:
      * This method prepares the RelayAck packet. The input to this method is the
      * SASrelay packet received from the peer.
      */
-    ZrtpPacketRelayAck* prepareRelayAck(ZrtpPacketSASrelay* srly, uint32_t* errMsg);
+    ZrtpPacketRelayAck* prepareRelayAck(ZrtpPacketSASrelay* srly, const uint32_t* errMsg);
 #if 0
     /**
      * Prepare a GoClearAck packet w/o HMAC
@@ -1601,14 +1535,6 @@ private:
     void srtpSecretsOff(EnableSecurity part);
 
     /**
-     * ZRTP state engine calls these methods to enter or leave its
-     * synchronization mutex.
-     */
-    void synchEnter();
-
-    void synchLeave();
-
-    /**
      * Helper function to store ZRTP message data in a temporary buffer
      *
      * This functions first clears the temporary buffer, then stores
@@ -1653,7 +1579,7 @@ private:
       * @param hpv
       *     Pointer to hello packet version structure.
       */
-     void setClientId(std::string id, HelloPacketVersion* hpv);
+     void setClientId(const std::string& id, HelloPacketVersion* hpv);
      
      /**
       * Check and set a nonce.

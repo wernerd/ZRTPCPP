@@ -1,21 +1,20 @@
 /*
-  Copyright (C) 2006-2013 Werner Dittmann
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
-#include <stdio.h>
+#include <cstdio>
 
 #include <libzrtpcpp/ZIDCache.h>
 #include <libzrtpcpp/ZIDRecordFile.h>
@@ -50,38 +49,46 @@ class __EXPORT ZIDCacheFile: public ZIDCache {
 private:
 
     FILE* zidFile;
-    unsigned char associatedZid[IDENTIFIER_LEN];
+    unsigned char associatedZid[IDENTIFIER_LEN] = {0};
+    std::string fileName;
 
     void createZIDFile(char* name);
     void checkDoMigration(char* name);
 
 public:
 
-    ZIDCacheFile(): zidFile(NULL) {};
+    ZIDCacheFile(): zidFile(nullptr) {};
 
     ~ZIDCacheFile() override;
 
     int open(char *name) override;
 
-    bool isOpen() override;
+    bool isOpen() override { return (zidFile != nullptr); };
 
     void close() override;
 
-    ZIDRecord *getRecord(unsigned char *zid) override;
+    CacheTypes getCacheType() override { return ZIDCache::File; };
 
-    unsigned int saveRecord(ZIDRecord *zidRecord) override;
+    std::unique_ptr<ZIDRecord> getRecord(unsigned char *zid) override;
 
-    const unsigned char* getZid() override;
+    unsigned int saveRecord(ZIDRecord& zidRecord) override;
+
+    const unsigned char* getZid() override { return associatedZid; };
+
+    void setZid(const uint8_t *zid) override {};
 
     int32_t getPeerName(const uint8_t *peerZid, std::string *name) override;
 
-    void putPeerName(const uint8_t *peerZid, const std::string name) override;
+    void putPeerName(const uint8_t *peerZid, const std::string& name) override;
 
     // Not implemented for file based cache
-    void cleanup() override;
-    void *prepareReadAll() override;
-    void *readNextRecord(void *stmt, std::string *output) override;
-    void closeOpenStatment(void *stmt) override;
+    void cleanup() override {};
+
+    std::string& getFileName() override { return fileName; };
+
+    void *prepareReadAll() override { return nullptr; };
+    void *readNextRecord(void *stmt, std::string *output) override { return nullptr; };
+    void closeOpenStatement(void *stmt) override {}
 
 
 };

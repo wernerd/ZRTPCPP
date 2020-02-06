@@ -1,32 +1,17 @@
 /*
-  Copyright (C) 2010 Werner Dittmann
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
- * In addition, as a special exception, the copyright holders give
- * permission to link the code of portions of this program with the
- * OpenSSL library under certain conditions as described in each
- * individual source file, and distribute linked combinations
- * including the two.
- * You must obey the GNU General Public License in all respects
- * for all of the code used other than OpenSSL.  If you modify
- * file(s) with this exception, you may extend this exception to your
- * version of the file(s), but you are not obligated to do so.  If you
- * do not wish to do so, delete this exception statement from your
- * version.  If you delete this exception statement from all source
- * files in the program, then also delete it here.
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /**
@@ -46,8 +31,9 @@
  * @{
  */
 
-#include <stdint.h>
-#include "crypto/sha1.h"
+#include <cstdint>
+#include <vector>
+#include "srtp/crypto/standalone/sha1.h"
 
 #ifndef SHA1_DIGEST_LENGTH
 #define SHA1_DIGEST_LENGTH 20
@@ -67,22 +53,22 @@ typedef struct _hmacSha1Context {
  *
  * @param key
  *    The MAC key.
- * @param key_length
+ * @param keyLength
  *    Lneght of the MAC key in bytes
  * @param data
  *    Points to the data chunk.
- * @param data_length
+ * @param dataLength
  *    Length of the data in bytes
  * @param mac
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 20 bytes (SHA1_DIGEST_LENGTH).
- * @param mac_length
+ * @param macLength
  *    Point to an integer that receives the length of the computed HMAC.
  */
 
-void hmac_sha1( uint8_t* key, int32_t key_length,
-                const uint8_t* data, uint32_t data_length,
-                uint8_t* mac, int32_t* mac_length );
+void hmac_sha1(const uint8_t* key, int64_t keyLength,
+               const uint8_t* data, uint64_t dataLength,
+               uint8_t* mac, int32_t* macLength);
 
 /**
  * Compute SHA1 HMAC over several data cunks.
@@ -91,35 +77,32 @@ void hmac_sha1( uint8_t* key, int32_t key_length,
  *
  * @param key
  *    The MAC key.
- * @param key_length
- *    Lneght of the MAC key in bytes
+ * @param keyLength
+ *    Length of the MAC key in bytes
  * @param data
- *    Points to an array of pointers that point to the data chunks. A NULL
+ *    Vector of pointers that point to the data chunks. A NULL
  *    pointer in an array element terminates the data chunks.
- * @param data_length
- *    Points to an array of integers that hold the length of each data chunk.
+ * @param dataLength
+ *    Vector of integers that hold the length of each data chunk.
  * @param mac
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 20 bytes (SHA1_DIGEST_LENGTH).
- * @param mac_length
+ * @param macLength
  *    Point to an integer that receives the length of the computed HMAC.
  */
-void hmac_sha1( uint8_t* key, int32_t key_length,
-                const uint8_t* data[], uint32_t data_length[],
-                uint8_t* mac, int32_t* mac_length );
+void hmac_sha1(const uint8_t* key, uint64_t keyLength,
+               const std::vector<const uint8_t*>& data,
+               const std::vector<uint64_t>& dataLength,
+               uint8_t* mac, int32_t* macLength);
 
 /**
- * Create and initialize a SHA1 HMAC context.
+ * Create an SHA1 HMAC context.
  *
  * An application uses this context to create several HMAC with the same key.
  *
- * @param key
- *    The MAC key.
- * @param key_length
- *    Lenght of the MAC key in bytes
- * @return Returns a pointer to the initialized context or @c NULL in case of an error.
+ * @return Returns a pointer to the initialized context or @c nullptr in case of an error.
  */
-void* createSha1HmacContext(uint8_t* key, int32_t key_length);
+void* createSha1HmacContext();
 
 /**
  * Initialize a SHA1 HMAC context.
@@ -134,7 +117,7 @@ void* createSha1HmacContext(uint8_t* key, int32_t key_length);
  *    Lenght of the MAC key in bytes
  * @return Returns a pointer to the initialized context.
  */
-void* initializeSha1HmacContext(void* ctx, uint8_t* key, int32_t key_length);
+void* initializeSha1HmacContext(void* ctx, uint8_t* key, uint64_t key_length);
 
 /**
  * Compute SHA1 HMAC.
@@ -154,8 +137,8 @@ void* initializeSha1HmacContext(void* ctx, uint8_t* key, int32_t key_length);
  * @param mac_length
  *    Point to an integer that receives the length of the computed HMAC.
  */
-void hmacSha1Ctx(void* ctx, const uint8_t* data, uint32_t data_length,
-                uint8_t* mac, int32_t* mac_length );
+void hmacSha1Ctx(void* ctx, const uint8_t* data, uint64_t data_length,
+                 uint8_t* mac, int32_t* mac_length);
 
 /**
  * Compute SHA1 HMAC over several data cunks.
@@ -166,18 +149,20 @@ void hmacSha1Ctx(void* ctx, const uint8_t* data, uint32_t data_length,
  * @param ctx 
  *     Pointer to initialized SHA1 HMAC context
  * @param data
- *    Points to an array of pointers that point to the data chunks. A NULL
+ *    Vector of pointers that point to the data chunks. A NULL
  *    pointer in an array element terminates the data chunks.
  * @param data_length
- *    Points to an array of integers that hold the length of each data chunk.
+ *    Vector of integers that hold the length of each data chunk.
  * @param mac
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 20 bytes (SHA1_DIGEST_LENGTH).
- * @param mac_length
+ * @param macLength
  *    Point to an integer that receives the length of the computed HMAC.
  */
-void hmacSha1Ctx(void* ctx, const uint8_t* data[], uint32_t data_length[],
-                uint8_t* mac, int32_t* mac_length );
+void hmacSha1Ctx(void* ctx,
+                 const std::vector<const uint8_t*>& data,
+                 const std::vector<uint64_t>& dataLength,
+                 uint8_t* mac, uint32_t* macLength);
 
 /**
  * Free SHA1 HMAC context.

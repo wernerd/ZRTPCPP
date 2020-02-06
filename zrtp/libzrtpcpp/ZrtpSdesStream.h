@@ -1,19 +1,18 @@
 /*
-  Copyright (C) 2012-2013 Werner Dittmann
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef _ZRTPSDESSTREAM_H_
 #define _ZRTPSDESSTREAM_H_
@@ -83,12 +82,10 @@
  * 
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
+#include <memory>
 
 #include <common/osSpecifics.h>
 #include <srtp/SrtpHandler.h>
-
-class CryptoContext;
-class CryptoContextCtrl;
 
 /*
  * These functions support 256 bit encryption algorithms.
@@ -139,16 +136,9 @@ public:
      * @param suite defines which crypto suite to use for this stream. The values are
      *              @c AES_CM_128_HMAC_SHA1_80 or @c AES_CM_128_HMAC_SHA1_32.
      */
-    ZrtpSdesStream(const sdesSuites suite =AES_CM_128_HMAC_SHA1_32);
+    explicit ZrtpSdesStream(sdesSuites suite =AES_CM_128_HMAC_SHA1_32);
 
-    ~ZrtpSdesStream();
-
-    /**
-     * @brief Close an SDES/ZRTP stream.
-     *
-     * Close the stream and return allocated memory to the pool.
-     */
-    void close();
+    ~ZrtpSdesStream() = default;
 
     /**
      * @brief Creates an SDES crypto string for the SDES/ZRTP stream.
@@ -208,6 +198,7 @@ public:
      */
     bool parseSdes(const char *cryptoString, size_t length, bool sipInvite);
 
+#ifdef ENABLE_SDES_MIX
     /**
      * @brief Get Crypto Mix attribute string
      *
@@ -227,7 +218,7 @@ public:
      * @return Length of algorithm names (excluding nul byte) or zero if crypto mix not supported or
      *         enabled.
      */
-    int getCryptoMixAttribute(char *algoNames, size_t length);
+    size_t getCryptoMixAttribute(char *algoNames, size_t length);
 
     /**
      * @brief Set Crypto Mix attribute string
@@ -244,7 +235,7 @@ public:
      * @return @c false if none of the offered algorithms is supported.
      */
     bool setCryptoMixAttribute(const char *algoNames);
-
+#endif
     /*
      * ******** Outgoing RTP/RTCP packet handling
      */
@@ -292,7 +283,7 @@ public:
      *  - @c true if encryption is successful, app shall send packet to the recipient.
      *  - @c false if there was an error during encryption, don't send the packet.
      */
-    bool outgoingRtcp(uint8_t *packet, size_t length, size_t *newLength);
+    // ** currently not used ** bool outgoingRtcp(uint8_t *packet, size_t length, size_t *newLength);
 
     /*
      * ******** Incoming SRTP/SRTCP packet handling
@@ -327,7 +318,7 @@ public:
      *       - -1: SRTP authentication failed,
      *       - -2: SRTP replay check failed
      */
-    int incomingRtp(uint8_t *packet, size_t length, size_t *newLength, SrtpErrorData* errorData=NULL);
+    int incomingRtp(uint8_t *packet, size_t length, size_t *newLength, SrtpErrorData* errorData= nullptr);
 
     /**
      * @brief Process an incoming RTCP or SRTCP packet
@@ -346,7 +337,7 @@ public:
      *       - -1: SRTCP authentication failed,
      *       - -2: SRTCP replay check failed
      */
-    int incomingSrtcp(uint8_t *packet, size_t length, size_t *newLength);
+    // *** Currently not used *** int incomingSrtcp(uint8_t *packet, size_t length, size_t *newLength);
 
     /**
      * @brief Process an outgoing ZRTP packet.
@@ -385,7 +376,7 @@ public:
      *       - -1: SRTP authentication failed,
      *       - -2: SRTP replay check failed
      */
-    int incomingZrtpTunnel(uint8_t *packet, size_t length, size_t *newLength, SrtpErrorData* errorData=NULL);
+    int incomingZrtpTunnel(uint8_t *packet, size_t length, size_t *newLength, SrtpErrorData* errorData=nullptr);
 
         /**
      * @brief Return state of SDES stream.
@@ -509,6 +500,7 @@ private:
      */
     void createSrtpContexts(bool sipInvite);
 
+#ifdef ENABLE_SDES_MIX
     /**
      * @brief Compute the mixed keys if SDES mixing attribute is set.
      *
@@ -520,39 +512,39 @@ private:
      *                  for the answerer otherwise.
      */
     void computeMixedKeys(bool sipInvite);
+#endif
 
+    std::unique_ptr<CryptoContext    > recvSrtp;           //!< The SRTP context for this stream
+//    std::unique_ptr<CryptoContextCtrl> recvSrtcp;          //!< The SRTCP context for this stream
+    std::unique_ptr<CryptoContext    > sendSrtp;           //!< The SRTP context for this stream
+//    std::unique_ptr<CryptoContextCtrl> sendSrtcp;          //!< The SRTCP context for this stream
+    std::unique_ptr<CryptoContext    > recvZrtpTunnel;     //!< The SRTP context for sender ZRTP tunnel
+    std::unique_ptr<CryptoContext    > sendZrtpTunnel;     //!< The SRTP context for receiver ZRTP tunnel
 
-    sdesZrtpStates state;
+    sdesZrtpStates state = STREAM_INITALIZED;
     sdesSuites     suite;
-    int32_t        tag;
-    CryptoContext     *recvSrtp;           //!< The SRTP context for this stream
-    CryptoContextCtrl *recvSrtcp;          //!< The SRTCP context for this stream
-    CryptoContext     *sendSrtp;           //!< The SRTP context for this stream
-    CryptoContextCtrl *sendSrtcp;          //!< The SRTCP context for this stream
-    uint32_t srtcpIndex;                   //!< the local SRTCP index
+    int32_t        tag = 0;
 
-    CryptoContext     *recvZrtpTunnel;     //!< The SRTP context for sender ZRTP tunnel
-    CryptoContext     *sendZrtpTunnel;     //!< The SRTP context for receiver ZRTP tunnel
-
-    int32_t cryptoMixHashLength;
-    sdesHmacTypeMix cryptoMixHashType;
+    uint32_t srtcpIndex = 0;               //!< the local SRTCP index
+    uint32_t cryptoMixHashLength = 0;
+    sdesHmacTypeMix cryptoMixHashType = MIX_NONE;
 
     // Variables for crypto that this client creates and sends to the other client, filled during SDES create
-    uint8_t localKeySalt[((MAX_KEY_LEN + MAX_SALT_LEN + 3)/4)*4];  //!< Some buffer for key and salt, multiple of 4
-    int localKeyLenBytes;
-    int localSaltLenBytes;
-    int localCipher;
-    int localAuthn;
-    int localAuthKeyLen;
-    int localTagLength;
+    uint8_t localKeySalt[((MAX_KEY_LEN + MAX_SALT_LEN + 3)/4)*4] {0};  //!< Some buffer for key and salt, multiple of 4
+    uint32_t localKeyLenBytes = 0;
+    uint32_t localSaltLenBytes = 0;
+    uint32_t localCipher = 0;
+    uint32_t localAuthn = 0;
+    uint32_t localAuthKeyLen = 0;
+    uint32_t localTagLength = 0;
 
     // Variables for crypto that this client receives from the other client, filled during SDES parse
-    uint8_t remoteKeySalt[((MAX_KEY_LEN + MAX_SALT_LEN + 3)/4)*4];  //!< Some buffer for key and salt, multiple of 4
-    int remoteKeyLenBytes;
-    int remoteSaltLenBytes;
-    int remoteCipher;
-    int remoteAuthn;
-    int remoteAuthKeyLen;
-    int remoteTagLength;
+    uint8_t remoteKeySalt[((MAX_KEY_LEN + MAX_SALT_LEN + 3)/4)*4] {0};  //!< Some buffer for key and salt, multiple of 4
+    uint32_t remoteKeyLenBytes = 0;
+    uint32_t remoteSaltLenBytes = 0;
+    uint32_t remoteCipher = 0;
+    uint32_t remoteAuthn = 0;
+    uint32_t remoteAuthKeyLen = 0;
+    uint32_t remoteTagLength = 0;
 };
 #endif

@@ -20,14 +20,14 @@ void base64_init_encodestate(base64_encodestate* state_in, int lineLength)
         state_in->lineLength = (lineLength+3) / 4;
 }
 
-char base64_encode_value(const int8_t value_in)
+static char base64_encode_value(const int8_t value_in)
 {
     static const char* encoding = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     if (value_in > 63) return '=';
     return encoding[(int)value_in];
 }
 
-int base64_encode_block(const uint8_t *plaintext_in, int length_in, char* code_out, base64_encodestate* state_in)
+ptrdiff_t base64_encode_block(const uint8_t *plaintext_in, int length_in, char* code_out, base64_encodestate* state_in)
 {
     const uint8_t *plainchar = plaintext_in;
     const uint8_t *const plaintextend = plaintext_in + length_in;
@@ -49,9 +49,9 @@ int base64_encode_block(const uint8_t *plaintext_in, int length_in, char* code_o
                 return codechar - code_out;
             }
             fragment = *plainchar++;
-            result = (fragment & 0x0fc) >> 2;
+            result = (fragment & 0x0fc) >> 2U;
             *codechar++ = base64_encode_value(result);
-            result = (fragment & 0x003) << 4;
+            result = (fragment & 0x003) << 4U;
         case step_B:
             if (plainchar == plaintextend)
             {
@@ -60,9 +60,9 @@ int base64_encode_block(const uint8_t *plaintext_in, int length_in, char* code_o
                 return codechar - code_out;
             }
             fragment = *plainchar++;
-            result |= (fragment & 0x0f0) >> 4;
+            result |= (fragment & 0x0f0) >> 4U;
             *codechar++ = base64_encode_value(result);
-            result = (fragment & 0x00f) << 2;
+            result = (fragment & 0x00f) << 2U;
         case step_C:
             if (plainchar == plaintextend)
             {
@@ -71,9 +71,9 @@ int base64_encode_block(const uint8_t *plaintext_in, int length_in, char* code_o
                 return codechar - code_out;
             }
             fragment = *plainchar++;
-            result |= (fragment & 0x0c0) >> 6;
+            result |= (fragment & 0x0c0) >> 6U;
             *codechar++ = base64_encode_value(result);
-            result  = (fragment & 0x03f) >> 0;
+            result  = (fragment & 0x03f) >> 0U;
             *codechar++ = base64_encode_value(result);
 
             if (state_in->lineLength > 0) {

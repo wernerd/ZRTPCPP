@@ -1,20 +1,18 @@
 /*
-  Copyright (C) 2006 - 2012 Werner Dittmann
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef CRYPTOCONTEXT_H
 #define CRYPTOCONTEXT_H
@@ -28,25 +26,25 @@
 
 #define REPLAY_WINDOW_SIZE 128
 
-const int SrtpAuthenticationNull      = 0;
-const int SrtpAuthenticationSha1Hmac  = 1;
-const int SrtpAuthenticationSkeinHmac = 2;
-
-const int SrtpEncryptionNull  = 0;
-const int SrtpEncryptionAESCM = 1;
-const int SrtpEncryptionAESF8 = 2;
-const int SrtpEncryptionTWOCM = 3;
-const int SrtpEncryptionTWOF8 = 4;
+constexpr int SrtpAuthenticationNull      = 0;
+constexpr int SrtpAuthenticationSha1Hmac  = 1;
+constexpr int SrtpAuthenticationSkeinHmac = 2;
+constexpr int SrtpEncryptionNull  = 0;
+constexpr int SrtpEncryptionAESCM = 1;
+constexpr int SrtpEncryptionAESF8 = 2;
+constexpr int SrtpEncryptionTWOCM = 3;
+constexpr int SrtpEncryptionTWOF8 = 4;
 
 // Check if included via CryptoContextCtrl.cpp - avoid double definitions
 #ifndef CRYPTOCONTEXTCTRL_H
 
-#include <stdint.h>
+#include <cstdint>
+#include <memory>
 #ifdef ZRTP_OPENSSL
 #include <openssl/hmac.h>
 #endif
-#include <crypto/hmac.h>
-#include <cryptcommon/macSkein.h>
+#include "crypto/hmac.h"
+#include "cryptcommon/macSkein.h"
 
 class SrtpSymCrypto;
 
@@ -214,8 +212,8 @@ public:
      */
     CryptoContext(uint32_t ssrc, int32_t roc,
                    int64_t  keyDerivRate,
-                   const  int32_t ealg,
-                   const  int32_t aalg,
+                   int32_t ealg,
+                   int32_t aalg,
                    uint8_t* masterKey,
                    int32_t  masterKeyLength,
                    uint8_t* masterSalt,
@@ -251,7 +249,7 @@ public:
      *
      * @return The roll-over-counter
      */
-    inline uint32_t getRoc() const { return roc; }
+    [[nodiscard]] inline uint32_t getRoc() const { return roc; }
 
     /**
      * @brief Perform SRTP encryption.
@@ -289,14 +287,14 @@ public:
      * @param pktlen
      *    Length of the RTP packet buffer
      *
-     * @param roc
+     * @param rocLocal
      *    The 32 bit SRTP roll-over-counter.
      *
      * @param tag
      *    Points to a buffer that hold the computed tag. This buffer must
      *    be able to hold <code>tagLength</code> bytes.
      */
-    void srtpAuthenticate(uint8_t* pkt, uint32_t pktlen, uint32_t roc, uint8_t* tag);
+    void srtpAuthenticate(uint8_t* pkt, uint32_t pktlen, uint32_t rocLocal, uint8_t* tag);
 
     /**
      * @brief Perform key derivation according to SRTP specification
@@ -361,21 +359,21 @@ public:
      *
      * @return the length of the authentication tag.
      */
-    int32_t getTagLength() const { return tagLength; }
+    [[nodiscard]] int32_t getTagLength() const { return tagLength; }
 
     /**
      * @brief Get the length of the MKI in bytes.
      *
      * @return the length of the MKI.
      */
-    int32_t getMkiLength() const { return mkiLength; }
+    [[nodiscard]] int32_t getMkiLength() const { return mkiLength; }
 
     /**
      * @brief Get the SSRC of this SRTP Cryptograhic context.
      *
      * @return the SSRC.
      */
-    uint32_t getSsrc() const { return ssrcCtx; }
+    [[nodiscard]] uint32_t getSsrc() const { return ssrcCtx; }
 
     /**
      * @brief Set the start (base) number to compute the PRF labels.
@@ -408,20 +406,22 @@ public:
      *
      * @param ssrc
      *     The SSRC for this context
-     * @param roc
+     * @param rocLocal
      *     The Roll-Over-Counter for this context, usually 0
      * @param keyDerivRate
      *     The key derivation rate for this context, usally 0
      * @return
      *     a new CryptoContext with all relevant data set.
      */
-    CryptoContext* newCryptoContextForSSRC(uint32_t ssrc, int roc, int64_t keyDerivRate);
+    CryptoContext* newCryptoContextForSSRC(uint32_t ssrc, int rocLocal, int64_t keyDerivRate);
 
 private:
     typedef union _hmacCtx {
         SkeinCtx_t       hmacSkeinCtx;
 #ifdef ZRTP_OPENSSL
+    #if OPENSSL_VERSION_NUMBER < 0x10100000L
         HMAC_CTX         hmacSha1Ctx;
+	#endif
 #else
         hmacSha1Context  hmacSha1Ctx;
 #endif
@@ -437,8 +437,8 @@ private:
     uint16_t s_l;
     int64_t  key_deriv_rate;
 
-    /* bitmask for replay check */
-    uint64_t replay_window[2];
+    /* bit mask for replay check */
+    uint64_t replay_window[2] = {0, 0};
 
     uint8_t* master_key;
     uint32_t master_key_length;
@@ -463,10 +463,10 @@ private:
     bool  seqNumSet;
 
     void*   macCtx;
-    HmacCtx hmacCtx;
+    HmacCtx hmacCtx{};
 
-    SrtpSymCrypto* cipher;
-    SrtpSymCrypto* f8Cipher;
+    std::unique_ptr<SrtpSymCrypto> cipher;
+    std::unique_ptr<SrtpSymCrypto> f8Cipher;
 };
 
 #endif

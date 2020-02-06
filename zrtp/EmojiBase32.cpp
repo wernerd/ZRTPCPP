@@ -3,7 +3,7 @@
 //
 #include <iostream>
 // stdlib.h required for Android NDK builds, not included within the above includes
-#include <stdlib.h>
+#include <cstdlib>
 
 #include <libzrtpcpp/EmojiBase32.h>
 #include <common/osSpecifics.h>
@@ -102,7 +102,7 @@ void EmojiBase32::b2a_l(const unsigned char* os, size_t len, const size_t length
 
                 FALLTHROUGH;
                 case 4:
-                    x |= ((unsigned long)(*--osp)) << 3; /* ... now we have 11 bits worth in x... */
+                    x |= ((unsigned long)(*--osp)) << 3U; /* ... now we have 11 bits worth in x... */
                     result[--resp] = emojis[x % 32];
                     x /= 32; /* ... now we have 6 bits worth in x... */
                     result[--resp] = emojis[x % 32];
@@ -110,14 +110,14 @@ void EmojiBase32::b2a_l(const unsigned char* os, size_t len, const size_t length
 
                 FALLTHROUGH;
                 case 3:
-                    x |= ((unsigned long)(*--osp)) << 1; /* The 8 bits from the 2-indexed octet.
+                    x |= ((unsigned long)(*--osp)) << 1U; /* The 8 bits from the 2-indexed octet.
 							    So now we have 9 bits worth in x... */
                     result[--resp] = emojis[x % 32];
                     x /= 32; /* ... now we have 4 bits worth in x... */
 
                 FALLTHROUGH;
                 case 2:
-                    x |= ((unsigned long)(*--osp)) << 4; /* The 8 bits from the 1-indexed octet.
+                    x |= ((unsigned long)(*--osp)) << 4U; /* The 8 bits from the 1-indexed octet.
 							    So now we have 12 bits worth in x... */
                     result[--resp] = emojis[x%32];
                     x /= 32; /* ... now we have 7 bits worth in x... */
@@ -126,7 +126,7 @@ void EmojiBase32::b2a_l(const unsigned char* os, size_t len, const size_t length
 
                 FALLTHROUGH;
                 case 1:
-                    x |= ((unsigned long)(*--osp)) << 2; /* The 8 bits from the 0-indexed octet.
+                    x |= ((unsigned long)(*--osp)) << 2U; /* The 8 bits from the 0-indexed octet.
 							    So now we have 10 bits worth in x... */
                     result[--resp] = emojis[x%32];
                     x /= 32; /* ... now we have 5 bits worth in x... */
@@ -136,7 +136,6 @@ void EmojiBase32::b2a_l(const unsigned char* os, size_t len, const size_t length
 
     /* truncate any unused trailing zero quintets */
     encoded = result.substr(0, static_cast<size_t>(divceil(static_cast<int>(lengthinbits), 5)));
-    return;
 }
 
 
@@ -178,14 +177,14 @@ void EmojiBase32::b2a_l(const unsigned char* os, size_t len, const size_t length
     } \
 }
 
-shared_ptr<string> EmojiBase32::u32StringToUtf8(const u32string& in)
+unique_ptr<string> EmojiBase32::u32StringToUtf8(const u32string& in)
 {
-    shared_ptr<string> result = make_shared<string>();
+    auto result = make_unique<string>();
 
     string out(6, '\0');
-    for (size_t n = 0; n < in.size(); ++n) {
+    for (const auto& c32 : in) {
         size_t offset = 0;
-        U8_APPEND_UNSAFE(&out[0], offset, in[n]);
+        U8_APPEND_UNSAFE(&out[0], offset, c32);
         result->append(out, 0, offset);
     }
     return result;

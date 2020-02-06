@@ -1,19 +1,18 @@
 /*
-  Copyright (C) 2006-2017 Werner Dittmann
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 /*
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
@@ -36,65 +35,30 @@ ZrtpPacketDHPart::ZrtpPacketDHPart() {
     initialize();
 }
 
-ZrtpPacketDHPart::ZrtpPacketDHPart(const char* pkt) {
-    initialize();
-    setPubKeyType(pkt);
-}
-
 void ZrtpPacketDHPart::initialize() {
-    LOGGER(DEBUGGING, __func__, " -->");
 
     void* allocated = &data;
     memset(allocated, 0, sizeof(data));
 
-    zrtpHeader = &((DHPartPacket_t *)allocated)->hdr;       // the standard header
+    zrtpHeader = &((DHPartPacket_t *)allocated)->hdr; // the standard header
     DHPartHeader = &((DHPartPacket_t *)allocated)->dhPart;
     pv = ((uint8_t*)allocated) + sizeof(DHPartPacket_t);    // point to the public key value
 
     setZrtpId();
-    LOGGER(DEBUGGING, __func__, " <--");
 }
 
 // The fixed numbers below are taken from ZRTP specification, chap 5.1.5
-void ZrtpPacketDHPart::setPubKeyType(const char* pkt) {
-    LOGGER(DEBUGGING, __func__, " -->");
-    // Well - the algorithm type is only 4 char thus cast to int32 and compare
-    if (*(int32_t*)pkt == *(int32_t*)dh2k) {
-        dhLength = DH2K_LENGTH_BYTES;
-    }
-    else if (*(int32_t*)pkt == *(int32_t*)dh3k) {
-        dhLength = DH3K_LENGTH_BYTES;
-    }
-    else if (*(int32_t*)pkt == *(int32_t*)ec25) {
-        dhLength = EC25_LENGTH_BYTES;
-    }
-    else if (*(int32_t*)pkt == *(int32_t*)ec38) {
-        dhLength = EC38_LENGTH_BYTES;
-    }
-    else if (*(int32_t*)pkt == *(int32_t*)e255) {
-        dhLength = E255_LENGTH_BYTES;
-    }
-    else if (*(int32_t*)pkt == *(int32_t*)e414) {
-        dhLength = E414_LENGTH_BYTES;
-    }
-    else if (*(int32_t*)pkt == *(int32_t*)sdh1) {
-        dhLength = SDH1_LENGTH_BYTES;
-    }
-    else {
-        LOGGER(ERROR, __func__, " Unknown DH algorithm in DH packet:", pkt);
-        return;
-    }
+void ZrtpPacketDHPart::setPacketLength(size_t pubKeyLen) {
+    dhLength = pubKeyLen;
 
-    uint16_t length = static_cast<uint16_t>(sizeof(DHPartPacket_t) + dhLength + (2 * ZRTP_WORD_SIZE)); // HMAC field is 2*ZRTP_WORD_SIZE
+    auto length = static_cast<uint16_t>(sizeof(DHPartPacket_t) + dhLength + (2 * ZRTP_WORD_SIZE)); // HMAC field is 2*ZRTP_WORD_SIZE
     setLength(static_cast<uint16_t>(length / ZRTP_WORD_SIZE));
-    LOGGER(INFO, __func__, " Computed dhLength: ", dhLength, ", length: ", length);
-
-    LOGGER(DEBUGGING, __func__, " <--");
+//    LOGGER(INFO, __func__, " Computed dhLength: ", dhLength, ", length: ", length);
+//
+//    LOGGER(DEBUGGING, __func__, " <--");
 }
 
-ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t *data) {
-    LOGGER(DEBUGGING, __func__, " --> ", SDH1_WORDS, ", ", FIXED_NUM_WORDS, ", ", SDH1_LENGTH_BYTES );
-
+ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t const * data) {
     zrtpHeader = &((DHPartPacket_t *)data)->hdr;  // the standard header
     DHPartHeader = &((DHPartPacket_t *)data)->dhPart;
 
@@ -121,15 +85,9 @@ ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t *data) {
         dhLength = SDH1_LENGTH_BYTES;
     }
     else {
-        LOGGER(ERROR, __func__, " Unknown DH algorithm in DH packet with length: ", len);
         pv = nullptr;
+//        LOGGER(ERROR, __func__, " Unknown DH algorithm in DH packet with length: ", len);
         return;
     }
-    LOGGER(INFO, __func__, " Computed dhLength: ", dhLength);
-
-    pv = data + sizeof(DHPartPacket_t);    // point to the public key value
-    LOGGER(DEBUGGING, __func__, " <--");
-}
-
-ZrtpPacketDHPart::~ZrtpPacketDHPart() {
+    pv = const_cast<uint8_t*>(data + sizeof(DHPartPacket_t));    // point to the public key value
 }

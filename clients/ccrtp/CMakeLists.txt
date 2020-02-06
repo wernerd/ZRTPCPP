@@ -10,8 +10,10 @@ set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})
 if (USES_CCRTP_INCLUDE_DIRS)
     message(STATUS "  Using local commoncpp dependency")
 else()
-    find_package(PkgConfig)
     pkg_check_modules(USES_CCRTP libccrtp>=2.0.0)
+    if (NOT USES_CCRTP_FOUND)
+        message(FATAL_ERROR "CCRTP library and development headers not found")
+    endif()
 endif()
 include_directories(${USES_CCRTP_INCLUDE_DIRS})
 link_directories(${USES_CCRTP_LIBRARY_DIRS})
@@ -24,9 +26,8 @@ include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOU
     ${CMAKE_SOURCE_DIR}/srtp ${CMAKE_SOURCE_DIR}/bnlib)
 
 # **** setup the various crypto interface implementations ***
-# Twofish is a special case: its always a standalone modlue and thus
+# Twofish is a special case: its always a standalone module and thus
 # not specific to a library.
-# NOTE: the standalone modules live in the 'crypto'
 
 set(cryptcommon_srcs
     ${CMAKE_SOURCE_DIR}/cryptcommon/macSkein.cpp
@@ -37,25 +38,23 @@ set(cryptcommon_srcs
     ${CMAKE_SOURCE_DIR}/cryptcommon/twofish_cfb.c ${zrtp_skein_src})
 
 if (OPENSSL_FOUND)
+    # openSSL crypto does not have twoFish, use the standalone implementation
     set(crypto_src
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/zrtpDH.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/hmac256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/sha256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/hmac384.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/sha384.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/aesCFB.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/InitializeOpenSSL.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.cpp)
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/zrtpDH.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/hmac256.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/sha256.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/hmac384.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/sha384.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/aesCFB.cpp
+            ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/twoCFB.cpp
+            ${zrtp_crypto_includes})
 
 endif()
 
 if (CRYPTO_STANDALONE)
     set(crypto_src
         ${CMAKE_SOURCE_DIR}/cryptcommon/ZrtpRandom.cpp
-        ${CMAKE_SOURCE_DIR}/common/Thread.cpp
-        ${CMAKE_SOURCE_DIR}/common/MutexClass.cpp
-        ${CMAKE_SOURCE_DIR}/common/EventClass.cpp
-        ${zrtp_crypto_src} ${bnlib_src})
+        ${zrtp_standalone_crypto_src} ${bnlib_src})
 
     set(cryptcommon_srcs ${cryptcommon_srcs}
         ${CMAKE_SOURCE_DIR}/cryptcommon/aescrypt.c
@@ -65,7 +64,8 @@ if (CRYPTO_STANDALONE)
 endif()
 
 set(zrtp_ccrtp_src
-    ${CMAKE_CURRENT_SOURCE_DIR}/ZrtpQueue.cpp)
+        ${CMAKE_CURRENT_SOURCE_DIR}/ZrtpQueue.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtpccrtp.h)
 
 if(SIDH_X64)
     # From Cmake doc: SOURCE scope may name zero or more source files. Note that source file properties are visible only
@@ -113,7 +113,7 @@ configure_file(${CMAKE_SOURCE_DIR}/libzrtpcpp.spec.cmake ${CMAKE_CURRENT_BINARY_
 set(ccrtp_inst
     ${CMAKE_CURRENT_SOURCE_DIR}/ZrtpQueue.h
     ${CMAKE_CURRENT_SOURCE_DIR}/zrtpccrtp.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/CcrtpTimeoutProvider.h)
+        )
 
 install(FILES
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCodes.h

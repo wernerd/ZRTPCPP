@@ -1,3 +1,21 @@
+#
+# Copyright (c) 2019 Silent Circle.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#
+# @author Werner Dittmann <Werner.Dittmann@t-online.de>
+
 cmake_minimum_required (VERSION 2.6)
 
 # setup the Thread include and lib
@@ -10,37 +28,44 @@ set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})
 #to make sure includes are first taken - it contains config.h
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
 include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/srtp
-    ${CMAKE_SOURCE_DIR}/common ${CMAKE_SOURCE_DIR}/bnlib)
+        ${CMAKE_SOURCE_DIR}/common ${CMAKE_SOURCE_DIR}/bnlib)
 
 set(cryptcommon_srcs
-    ${CMAKE_SOURCE_DIR}/cryptcommon/twofish.c
-    ${CMAKE_SOURCE_DIR}/cryptcommon/twofish_cfb.c
-    ${CMAKE_SOURCE_DIR}/cryptcommon/aescrypt.c
-    ${CMAKE_SOURCE_DIR}/cryptcommon/aeskey.c
-    ${CMAKE_SOURCE_DIR}/cryptcommon/aestab.c
-    ${CMAKE_SOURCE_DIR}/cryptcommon/aes_modes.c
-    ${CMAKE_SOURCE_DIR}/cryptcommon/macSkein.cpp
-    ${CMAKE_SOURCE_DIR}/cryptcommon/skein.c
-    ${CMAKE_SOURCE_DIR}/cryptcommon/skein_block.c
-    ${CMAKE_SOURCE_DIR}/cryptcommon/skeinApi.c
-    ${CMAKE_SOURCE_DIR}/cryptcommon/ZrtpRandom.cpp)
+        ${CMAKE_SOURCE_DIR}/cryptcommon/twofish.c
+        ${CMAKE_SOURCE_DIR}/cryptcommon/twofish.h
+        ${CMAKE_SOURCE_DIR}/cryptcommon/twofish_cfb.c
+        ${CMAKE_SOURCE_DIR}/cryptcommon/aes.h
+        ${CMAKE_SOURCE_DIR}/cryptcommon/aescpp.h
+        ${CMAKE_SOURCE_DIR}/cryptcommon/aesopt.h
+        ${CMAKE_SOURCE_DIR}/cryptcommon/aescrypt.c
+        ${CMAKE_SOURCE_DIR}/cryptcommon/aeskey.c
+        ${CMAKE_SOURCE_DIR}/cryptcommon/aestab.c
+        ${CMAKE_SOURCE_DIR}/cryptcommon/aes_modes.c
+        ${CMAKE_SOURCE_DIR}/cryptcommon/macSkein.cpp
+        ${CMAKE_SOURCE_DIR}/cryptcommon/brg_endian.h
+        ${CMAKE_SOURCE_DIR}/cryptcommon/brg_types.h
+        ${CMAKE_SOURCE_DIR}/cryptcommon/skein.c
+        ${CMAKE_SOURCE_DIR}/cryptcommon/skein_iv.h
+        ${CMAKE_SOURCE_DIR}/cryptcommon/skein_port.h
+        ${CMAKE_SOURCE_DIR}/cryptcommon/skein_block.c
+        ${CMAKE_SOURCE_DIR}/cryptcommon/skeinApi.c
+        ${CMAKE_SOURCE_DIR}/cryptcommon/skeinApi.h
+        ${CMAKE_SOURCE_DIR}/cryptcommon/ZrtpRandom.cpp)
 
 set(zrtp_tivi_src
-    ${CMAKE_CURRENT_SOURCE_DIR}/CtZrtpSession.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/CtZrtpStream.cpp
-    ${CMAKE_SOURCE_DIR}/common/Thread.cpp
-    ${CMAKE_SOURCE_DIR}/common/MutexClass.cpp
-    ${CMAKE_SOURCE_DIR}/common/EventClass.cpp)
+        ${CMAKE_CURRENT_SOURCE_DIR}/CtZrtpSession.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/CtZrtpStream.cpp
+        )
 
 set(srtp_src
-    ${CMAKE_SOURCE_DIR}/srtp/CryptoContext.cpp
-    ${CMAKE_SOURCE_DIR}/srtp/CryptoContextCtrl.cpp
-    ${CMAKE_SOURCE_DIR}/srtp/SrtpHandler.cpp)
+        ${CMAKE_SOURCE_DIR}/srtp/CryptoContext.cpp
+        ${CMAKE_SOURCE_DIR}/srtp/CryptoContextCtrl.cpp
+        ${CMAKE_SOURCE_DIR}/srtp/SrtpHandler.cpp)
 
 set(crypto_src_srtp
-   ${CMAKE_SOURCE_DIR}/srtp/crypto/hmac.cpp
-   ${CMAKE_SOURCE_DIR}/srtp/crypto/SrtpSymCrypto.cpp
-   ${CMAKE_SOURCE_DIR}/srtp/crypto/sha1.c)
+        ${CMAKE_SOURCE_DIR}/srtp/crypto/standalone/hmac.cpp
+        ${CMAKE_SOURCE_DIR}/srtp/crypto/standalone/SrtpSymCrypto.cpp
+        ${CMAKE_SOURCE_DIR}/srtp/crypto/standalone/sha1.c)
 
 if(SIDH_X64)
     # From Cmake doc: SOURCE scope may name zero or more source files. Note that source file properties are visible only
@@ -51,6 +76,9 @@ elseif(SIDH_ARM64)
 endif()
 
 set(zrtpcpp_src ${zrtp_src} ${zrtp_tivi_src} ${zrtp_crypto_src} ${zrtp_skein_src} ${bnlib_src} ${srtp_src} ${crypto_src_srtp} ${cryptcommon_srcs} ${sidh751_src})
+# TODO check set(zrtpcpp_src ${zrtp_src} ${zrtp_tivi_src}
+# TODO check         ${zrtp_standalone_crypto_src} ${zrtp_skein_src} ${bnlib_src} ${srtp_src}
+# TODO check         ${crypto_src_srtp} ${cryptcommon_srcs})
 
 # for the Thread classes etc. - remove D_WITHOUT_TIVI_ENV if you compile for/with Tivi modules, maybe build static
 # and iclude this into Tivi shared lib in the second step. Need to cross-check with Java build in case of static build.
@@ -117,11 +145,6 @@ add_custom_command(TARGET ${zrtplibName} POST_BUILD COMMAND ${CMAKE_COMMAND} -E 
 add_executable(testdriver testdriver.cpp)
 target_link_libraries(testdriver ${zrtplibName})
 add_dependencies(testdriver ${zrtplibName})
-
-add_executable(sdesTestdriver sdesTestdriver.cpp)
-target_link_libraries(sdesTestdriver ${zrtplibName})
-add_dependencies(sdesTestdriver ${zrtplibName})
-
 
 # If Java support is enabled then compile the generate Java classes, build jar
 # and compile java test program after the shared lib is ready

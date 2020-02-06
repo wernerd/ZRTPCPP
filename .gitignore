@@ -22,4 +22,5 @@ aclocal.m4
 .directory
 helper/
 docLocal/
+cmake-build-*/
 .idea/

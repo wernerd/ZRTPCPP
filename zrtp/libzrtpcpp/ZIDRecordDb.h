@@ -1,19 +1,18 @@
 /*
-  Copyright (C) 2006-2013 Werner Dittmann
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef _ZIDRECORDDB_H_
 #define _ZIDRECORDDB_H_
@@ -31,8 +30,13 @@
  * @{
  */
 
+#ifdef __cplusplus
+#include <cstring>
+#include <cstdint>
+#else
 #include <string.h>
 #include <stdint.h>
+#endif
 #include <libzrtpcpp/ZIDRecord.h>
 
 #define TIME_LENGTH      8      // 64 bit, can hold time on 64 bit systems
@@ -64,16 +68,6 @@ typedef struct {
     int64_t   secureSince;
     uint32_t  preshCounter;
 } remoteZidRecord_t;
-
-/*
- * The flag field stores the following bitflags
- */
-static const uint32_t Valid            = 0x1;
-static const uint32_t SASVerified      = 0x2;
-static const uint32_t RS1Valid         = 0x4;
-static const uint32_t RS2Valid         = 0x8;
-static const uint32_t MITMKeyAvailable = 0x10;
-static const uint32_t inUse            = 0x20;
 
 /**
  * Internal structure that holds the non-key data of a ZID name record.

@@ -1,19 +1,18 @@
 /*
-  Copyright (C) 2006-2013 Werner Dittmann
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 /*
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
@@ -33,10 +32,8 @@
  * @{
  */
 
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstdint>
+#include <string>
 
 #include <common/osSpecifics.h>
 
@@ -73,14 +70,13 @@ class __EXPORT ZrtpPacketBase {
   private:
 
   protected:
-      void* allocated;                  ///< Pointer to ZRTP message data
-      zrtpPacketHeader_t* zrtpHeader;   ///< points to the fixed ZRTP header structure
+      zrtpPacketHeader_t* zrtpHeader = nullptr;     ///< points to the fixed ZRTP header structure
 
   public:
     /**
      * Destructor is empty
      */
-    virtual ~ZrtpPacketBase() {};
+    virtual ~ZrtpPacketBase() = default ;
 
     /**
      * Get pointer to ZRTP header
@@ -88,7 +84,7 @@ class __EXPORT ZrtpPacketBase {
      * @return
      *     Pointer to ZRTP header structure.
      */
-    const uint8_t* getHeaderBase() { return (const uint8_t*)zrtpHeader; };
+    [[nodiscard]] uint8_t const * getHeaderBase() const { return (const uint8_t*)zrtpHeader; };
 
     /**
      * Check is this is a ZRTP message
@@ -96,7 +92,7 @@ class __EXPORT ZrtpPacketBase {
      * @return
      *     @c true if check was ok
      */
-    bool isZrtpPacket()            { return (zrtpNtohs(zrtpHeader->zrtpId) == zrtpId); };
+    [[nodiscard]] bool isZrtpPacket() const          { return (zrtpNtohs(zrtpHeader->zrtpId) == zrtpId); };
 
     /**
      * Get the length in words of the ZRTP message
@@ -104,7 +100,7 @@ class __EXPORT ZrtpPacketBase {
      * @return
      *     The length in words
      */
-    uint16_t getLength()           { return zrtpNtohs(zrtpHeader->length); };
+    [[nodiscard]] uint16_t getLength()  const         { return zrtpNtohs(zrtpHeader->length); };
 
     /**
      * Return pointer to fixed length message type ASCII data
@@ -112,10 +108,10 @@ class __EXPORT ZrtpPacketBase {
      * @return
      *     Pointer to ASCII character array
      */
-    uint8_t* getMessageType()      { return zrtpHeader->messageType; };
+    [[nodiscard]] uint8_t* getMessageType() const     { return zrtpHeader->messageType; };
 
     /**
-     * Set the lenght field in the ZRTP header
+     * Set the length field in the ZRTP header
      *
      * @param len
      *     The length of the ZRTP message in words, host order
@@ -128,7 +124,7 @@ class __EXPORT ZrtpPacketBase {
      * @param msg
      *     Pointer to message type ASCII character array
      */
-    void setMessageType(uint8_t *msg)
+    void setMessageType(uint8_t const * msg)
         { memcpy(zrtpHeader->messageType, msg, sizeof(zrtpHeader->messageType)); };
 
     /**

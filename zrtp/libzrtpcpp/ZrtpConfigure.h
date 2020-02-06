@@ -1,19 +1,18 @@
 /*
-  Copyright (C) 2009 - 2013 Werner Dittmann
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 /*
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
@@ -29,14 +28,15 @@
  * @{
  */
 
-#include <stdio.h>
-#include <stdint.h>
+#include <cstdint>
 #include <list>
 #include <string>
 #include <vector>
-#include <string.h>
+#include <memory>
 
 #include <libzrtpcpp/ZrtpCallback.h>
+#include "ZIDCache.h"
+#include "ZIDCacheEmpty.h"
 
 /**
  * This enumerations list all configurable algorithm types.
@@ -50,7 +50,7 @@ typedef void(*encrypt_t)(uint8_t*, int32_t, uint8_t*, uint8_t*, int32_t);
 typedef void(*decrypt_t)(uint8_t*, int32_t, uint8_t*, uint8_t*, int32_t);
 
 /**
- * The algorithm enumration class.
+ * The algorithm enumeration class.
  *
  * This simple class is just a container of an algorithm's name and
  * its associated algorithm type. We use this class together with the
@@ -59,7 +59,7 @@ typedef void(*decrypt_t)(uint8_t*, int32_t, uint8_t*, uint8_t*, int32_t);
  *
  * An application shall use the get / check methods to retrieve information.
  */
-class AlgorithmEnum {
+class __EXPORT AlgorithmEnum {
 public:
     /**
      * Create an AlgorithmEnum object.
@@ -83,13 +83,13 @@ public:
      *
      * @see AlgoTypes
      */
-    AlgorithmEnum(const AlgoTypes type, const char* name, uint32_t klen,
+    AlgorithmEnum(AlgoTypes type, const char* name, uint32_t klen,
                   const char* ra, encrypt_t en, decrypt_t de, SrtpAlgorithms alId);
 
     /**
      * AlgorithmEnum destructor
      */
-    ~AlgorithmEnum();
+    ~AlgorithmEnum() = default;
 
     /**
      * Get the algorihm's name
@@ -201,7 +201,7 @@ public:
      * @return
      *    A C++ std::list of C++ std::strings that contain the names.
      */
-    std::list<std::string>* getAllNames();
+    std::unique_ptr<std::list<std::string>> getAllNames();
 
     /**
      * Get the number of currently stored AlgorithmEnums
@@ -243,7 +243,7 @@ public:
     int getOrdinal(AlgorithmEnum& algo);
 
 protected:
-    EnumBase(AlgoTypes algo);
+    explicit EnumBase(AlgoTypes algo);
     ~EnumBase();
     void insert(const char* name);
     void insert(const char* name, uint32_t klen,
@@ -255,36 +255,36 @@ private:
 };
 
 /**
- * The enumaration subclasses that contain the supported algorithm enumerations.
+ * The enumeration subclasses that contain the supported algorithm enumerations.
  */
 class __EXPORT HashEnum : public EnumBase {
 public:
     HashEnum();
-    ~HashEnum();
+    ~HashEnum() = default;
 };
 
 class __EXPORT SymCipherEnum : public EnumBase {
 public:
     SymCipherEnum();
-    ~SymCipherEnum();
+    ~SymCipherEnum() = default;
 };
 
 class __EXPORT PubKeyEnum : public EnumBase {
 public:
     PubKeyEnum();
-    ~PubKeyEnum();
+    ~PubKeyEnum() = default;
 };
 
 class __EXPORT SasTypeEnum : public EnumBase {
 public:
     SasTypeEnum();
-    ~SasTypeEnum();
+    ~SasTypeEnum() = default;
 };
 
 class __EXPORT AuthLengthEnum : public EnumBase {
 public:
     AuthLengthEnum();
-    ~AuthLengthEnum();
+    ~AuthLengthEnum() = default;
 };
 
 extern __EXPORT HashEnum zrtpHashes;
@@ -334,11 +334,11 @@ public:
      *
      * The standard configuration consists of the following algorithms:
      * <ul>
-     * <li> Hash: SHA256 </li>
-     * <li> Symmetric Cipher: AES 128, AES 256 </li>
-     * <li> Public Key Algorithm: DH2048, DH3027, MultiStream </li>
+     * <li> Hash: SHA384, SHA256 </li>
+     * <li> Symmetric Cipher: Twofish-256, AES 256, Twofish-128, AES 128</li>
+     * <li> Public Key Algorithm: NIST ECDH-256, NIST ECDH-384, DH3072, MultiStream </li>
      * <li> SAS type: libase 32 </li>
-     * <li> SRTP Authentication lengths: 32, 80 </li>
+     * <li> SRTP Authentication lengths: Skein-MAC 32, Skein-MAC 64, HMAC-SHA1 32, HMAC-SHA1 80 </li>
      *</ul>
      */
     void setStandardConfig();
@@ -429,7 +429,7 @@ public:
      *    The number of configured algorithms (used configuration
      *    data slots)
      */
-    int32_t getNumConfiguredAlgos(AlgoTypes algoType);
+    uint32_t getNumConfiguredAlgos(AlgoTypes algoType);
 
     /**
      * Returns the identifier of the algorithm at index.
@@ -541,7 +541,15 @@ public:
     Policy getSelectionPolicy()         {return selectionPolicy;}
     void setSelectionPolicy(Policy pol) {selectionPolicy = pol;}
 
+    void setZidCache(std::shared_ptr<ZIDCache>& zf) { zidCache = zf; }
+
+    std::shared_ptr<ZIDCache>& getZidCache() { return zidCache; }
+
   private:
+
+    // Note: these vectors contain pointers to the global (static) algorithm structures,
+    // thus never call delete to free the data. The setup of the global data is in
+    // ZrtpConfigure.cpp
     std::vector<AlgorithmEnum* > hashes;
     std::vector<AlgorithmEnum* > symCiphers;
     std::vector<AlgorithmEnum* > publicKeyAlgos;
@@ -552,23 +560,19 @@ public:
     bool enableSasSignature;
     bool enableParanoidMode;
     bool enableDisclosureFlag;
-
-
-    AlgorithmEnum& getAlgoAt(std::vector<AlgorithmEnum* >& a, int32_t index);
-    int32_t addAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo);
-    int32_t addAlgoAt(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo, int32_t index);
-    int32_t removeAlgo(std::vector<AlgorithmEnum* >& a,  AlgorithmEnum& algo);
-    int32_t getNumConfiguredAlgos(std::vector<AlgorithmEnum* >& a);
-    bool containsAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo);
-    std::vector<AlgorithmEnum* >& getEnum(AlgoTypes algoType);
-
-    void printConfiguredAlgos(std::vector<AlgorithmEnum* >& a);
-
     Policy selectionPolicy;
 
-  protected:
+    std::shared_ptr<ZIDCache> zidCache = nullptr;
 
-  public:
+    static AlgorithmEnum& getAlgoAt(std::vector<AlgorithmEnum* >& a, int32_t index);
+    static int32_t addAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo);
+    static int32_t addAlgoAt(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo, int32_t index);
+    static int32_t removeAlgo(std::vector<AlgorithmEnum* >& a,  AlgorithmEnum& algo);
+    static uint32_t getNumConfiguredAlgos(std::vector<AlgorithmEnum* >& a);
+    static bool containsAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo);
+    std::vector<AlgorithmEnum* >& getEnum(AlgoTypes algoType);
+
+    static void printConfiguredAlgos(std::vector<AlgorithmEnum* >& a);
 };
 
 /**

@@ -64,7 +64,7 @@ MACRO(GENERATE_PACKAGING PACKAGE VERSION EXCLUDE_FILES)
     #  SPECFILE()
 
     ADD_CUSTOM_TARGET(gitcheck
-            COMMAND cd $(CMAKE_SOURCE_DIR) && test -z \"`git status -uno --porcelain`\")
+            COMMAND cd ${CMAKE_SOURCE_DIR} && test -z \"`git status -uno --porcelain`\")
 
     SET(AUTOBUILD_COMMAND
             COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/*.tar.bz2

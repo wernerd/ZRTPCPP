@@ -1,21 +1,21 @@
 /*
-  Copyright (C) 2006-2013 Werner Dittmann
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include <string>
+#include <memory>
 
 #include "ZIDRecord.h"
 
@@ -26,13 +26,15 @@
  * @file ZIDCache.h
  * @brief ZID cache management
  *
- * A ZID file stores (caches) some data that helps ZRTP to achives its
+ * A ZID file stores (caches) some data that helps ZRTP to achieve its
  * key continuity feature. See @c ZIDRecord for further info which data
  * the ZID file contains.
  *
  * @ingroup GNU_ZRTP
  * @{
  */
+
+class ZIDCache;
 
 /**
  * Interface for classes that implements a ZID (ZRTP Identifiers) file.
@@ -41,29 +43,27 @@
  *
  * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
-
-class ZIDCache;
-
-__EXPORT ZIDCache* getZidCacheInstance();
-
-
 class __EXPORT ZIDCache {
 
 public:
+
+    typedef enum _CacheTypes {
+        File = 1,
+        Database = 2,
+        NoCache = 4
+    } CacheTypes;
 
     /**
      * @brief Destructor.
      * Define a virtual destructor to enable cleanup in derived classes.
      */
-    virtual ~ZIDCache() {};
+    virtual ~ZIDCache() = default;
 
     /**
      * @brief Open the named ZID file and return a ZID file class.
      *
      * This static function either opens an existing ZID file or
-     * creates a new ZID file with the given name. The ZIDCache is a
-     * singleton, thus only <em>one</em> ZID file can be open at one
-     * time.
+     * creates a new ZID file with the given name.
      *
      * To open another ZID file you must close the active ZID file
      * first.
@@ -92,6 +92,14 @@ public:
     virtual void close() =0;
 
     /**
+     * @brief Get the cache type.
+     *
+     * @return
+     *    Cache type enumeration
+     */
+    virtual CacheTypes getCacheType() =0;
+
+    /**
      * @brief Get a ZID record from ZID cache or create a new record.
      *
      * The method tries to read a ZRTP cache record for the ZID.
@@ -102,7 +110,7 @@ public:
      * @return pointer to the ZID record. The call must @c delete the
      *         record if it is not longer used.
      */
-    virtual ZIDRecord *getRecord(unsigned char *zid) =0;
+    virtual std::unique_ptr<ZIDRecord> getRecord(unsigned char *zid) =0;
 
     /**
      * @brief Save a ZID record into the active ZID file.
@@ -116,15 +124,25 @@ public:
      * @return
      *    1 on success
      */
-    virtual unsigned int saveRecord(ZIDRecord *zidRecord) =0;
+    virtual unsigned int saveRecord(ZIDRecord& zidRecord) =0;
 
     /**
      * @brief Get the ZID associated with this ZID file.
      *
      * @return
-     *    Pointer to the ZID
+     *    Pointer to the ZID or @c nullptr if ZID is not yet available or was not set.
      */
     virtual const unsigned char* getZid() =0;
+
+    /**
+     * @brief Set the ZID associated with this ZID file - implemented for Empty cache only.
+     *
+     * If an application uses an empty cache it @b must set a ZID. For empty caches applications
+     * could use new random ZID for each session or choose to use the same ZID. However, ZIDs
+     * must bew unique for different devices using ZRTP.
+     *
+     */
+    virtual void setZid(const uint8_t *zid) =0;
 
     /**
      * @brief Get peer name from database.
@@ -139,7 +157,7 @@ public:
      * @param name string that will get the peer's name. The returned name will
      *             be truncated to 200 bytes
      *
-     * @return length og the name read or 0 if no name was previously stored.
+     * @return length of the name read or 0 if no name was previously stored.
      */
     virtual int32_t getPeerName(const uint8_t *peerZid, std::string *name) =0;
 
@@ -156,7 +174,7 @@ public:
      * @param name the name string
      *
      */
-    virtual void putPeerName(const uint8_t *peerZid, const std::string name) =0;
+    virtual void putPeerName(const uint8_t *peerZid, const std::string& name) =0;
 
     /**
      * @brief Clean the cache - only for ZID cache with Sqlite3 backend.
@@ -169,6 +187,13 @@ public:
     virtual void cleanup() =0;
 
     /**
+     * @brief Get the filename of the cache file.
+     *
+     * @return The filename or an empty string if not yet available.
+     */
+    virtual std::string& getFileName() = 0;
+
+    /**
      * @brief Prepare a SQL cursor to read all records from the remote (peer) ZID table.
      * 
      * The function creates a SQL cursor (prepares a statement in sqlite3 parlance) to
@@ -177,7 +202,7 @@ public:
      * This functions returns a pointer to the SQL cursor or @c NULL if it fails to
      * create a cursor.
      * 
-     * @return a void pointer to the sqlite3 statment (SQL cursor) or @c NULL
+     * @return a void pointer to the sqlite3 statement (SQL cursor) or @c NULL
      */
     virtual void *prepareReadAll() =0;
 
@@ -229,7 +254,7 @@ public:
      */
     virtual void *readNextRecord(void *stmt, std::string *output) =0;
 
-    virtual void closeOpenStatment(void *stmt) =0;
+    virtual void closeOpenStatement(void *stmt) =0;
 
 };
 

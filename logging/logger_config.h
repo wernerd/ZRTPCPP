@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 /**
- * @file logger_config.h
+ * @file
+ * @brief C++ logging functions, configuration, setup for different systems
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  * @version 1.0
  */
@@ -28,9 +29,20 @@ limitations under the License.
     #define WINDOWS_LOGGER
 #elif defined __linux__
     #define LINUX_LOGGER
+
 #elif defined __APPLE__
-    #define APPLE_LOGGER
+#include <TargetConditionals.h>
+  #if TARGET_IPHONE_SIMULATOR == 1
+  /* iOS in Xcode simulator */
+  #define APPLE_LOGGER
+  #elif TARGET_OS_IPHONE == 1
+  /* iOS on iPhone, iPad, etc. */
+  #define APPLE_LOGGER
+  #elif TARGET_OS_MAC == 1
+  /* OSX - handle like Linux, i.e. logging output to cerr */
+  #define LINUX_LOGGER
 // add other specifics here
+  #endif
 #endif
 
 #endif //LOGGING_LOGER_CONFIG_H_H

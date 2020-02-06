@@ -26,6 +26,19 @@
  *   This software may be subject to export controls by the US Commerce
  *   Department's Bureau of Industry and Security.
  *
+ * As a special exception, you may combine this library with the code
+ * of ZRTPCPP or ZRTPCPP derivatives and modify, redistribute, and use the
+ * resulting source code and executable binaries (including modified
+ * versions of each) under the Apache License Version 2.
+ *
+ * As a restatement of the above, you may use, modify, and  redistribute
+ * this library as if it were licensed under the Apache V2 license if and
+ * only if it is combined with ZRTPCPP or a derivative work of the ZRTPCPP
+ * code.  If it is not combined with anything, the terms of the GNU GPL,
+ * version 2 apply.  If it is combined with any other program that is not
+ * ZRTPCPP or a derivative work of the ZRTPCPP code but not also combined
+ * with ZRTPCPP or a derivative work of the ZRTPCPP code in the same work,
+ * the terms of the GNU GPL, version 2 apply.
  */
 
 /* Force inclusion of this copyright string.  It may be commented out only 

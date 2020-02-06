@@ -1,21 +1,20 @@
 /*
-  Copyright (C) 2017 Werner Dittmann
+Copyright 2016 Silent Circle, LLC
 
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+    http://www.apache.org/licenses/LICENSE-2.0
 
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 /**
- * @file Logger.h
+ * @file
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  * @version 1.0
  *
@@ -36,7 +35,7 @@
 #include <sstream>
 #include <iostream>
 
-#include "common/osSpecifics.h"
+#include "osSpecifics.h"
 #include "logger_config.h"
 
 /**
@@ -44,7 +43,7 @@
  */
 enum LoggingLogLevel {
     NONE = 0,   //!< No log output
-    ERROR,      //!< The Error level log output
+    ERROR_LOG,  //!< The Error level log output
     WARNING,    //!< The Warning level log output
     INFO,       //!< The Info level log output
     DEBUGGING,  //!< The Debug level log output
@@ -59,6 +58,10 @@ enum LoggingLogType {
     RAW = 0,       //!< Output the RAW format as in the LOGGER call
     FULL           //!< Add log header: log line number, date, time, etc
 };
+
+// Callback for external logging function. If set then the LOGGER call this, does not
+// use the other loggers anymore
+typedef void (*LOG_FUNC)(int32_t level, const std::string& logData);
 
 /**
  * @brief The LOGGER_INSTANCE default definition
@@ -97,10 +100,7 @@ enum LoggingLogType {
  *
  * I tweaked and enhanced the macro to be useful for this logging implementation.
  */
-#define LOGGER(level, args...) {\
-    if (level > LOG_MAX_LEVEL) ;\
-    else if (level > LOGGER_INSTANCE getLogLevel()) ; \
-    else LOGGER_INSTANCE print<LoggingLogLevel::level >(args);}
+#define LOGGER(level, ...) { if (level <= LOG_MAX_LEVEL) if (level <= LOGGER_INSTANCE getLogLevel()) LOGGER_INSTANCE print<LoggingLogLevel::level >(__VA_ARGS__);}
 
 /**
  * @brief Starts a logging code block.
@@ -108,10 +108,7 @@ enum LoggingLogType {
  * The marco works in the same way as the @c LOGGER marco, thus the code between @c LOGGER_BEGIN
  * and @c LOGGER_END exists only if the level is less or equal the value defined in @c LOG_MAX_LEVEL.
  */
-#define LOGGER_BEGIN(level) \
-    if (level > LOG_MAX_LEVEL) ;\
-    else if (level > LOGGER_INSTANCE getLogLevel()) ; \
-    else {
+#define LOGGER_BEGIN(level) if (level <= LOG_MAX_LEVEL) if (level <= LOGGER_INSTANCE getLogLevel()) {
 
 /**
  * @brief Closes a logging code block.
@@ -126,10 +123,9 @@ namespace logging {
     /**
      * Virtual logging policy
      */
-    class __EXPORT LogPolicy
+    class LogPolicy
     {
     public:
-        virtual ~LogPolicy() {};
         virtual void openStream(const std::string& name) = 0;
         virtual void closeStream() = 0;
         virtual void write(LoggingLogLevel level, const std::string& tag, const std::string& msg) = 0;
@@ -144,13 +140,13 @@ namespace logging {
         std::unique_ptr<std::ofstream> outStream;
 
     public:
-        FileLogPolicy();
-        ~FileLogPolicy() override;
+        FileLogPolicy() : outStream(new std::ofstream()) {}
+        ~FileLogPolicy();
 
-        void openStream(const std::string& name) override;
-        void closeStream() override;
-        void write(LoggingLogLevel level, const std::string& tag, const std::string& msg) override;
-        LoggingLogType getLoggingLogType() override;
+        void openStream(const std::string& name) override ;
+        void closeStream() override ;
+        void write(LoggingLogLevel level, const std::string& tag, const std::string& msg) override ;
+        LoggingLogType getLoggingLogType() override { return FULL; }
     };
 
     /**
@@ -159,13 +155,15 @@ namespace logging {
     class __EXPORT CerrLogPolicy : public LogPolicy
     {
     public:
-        CerrLogPolicy() {}
-        ~CerrLogPolicy() override {};
+        CerrLogPolicy() = default;
+        ~CerrLogPolicy() = default;
 
         void openStream(const std::string& name) override {};
         void closeStream() override {};
-        void write(LoggingLogLevel level, const std::string& tag, const std::string& msg) override;
-        LoggingLogType getLoggingLogType() override;
+        void write(LoggingLogLevel level, const std::string& tag, const std::string& msg) override {
+            std::cerr << msg << std::endl;
+        };
+        LoggingLogType getLoggingLogType() override { return FULL; }
     };
 
 #ifdef ANDROID_LOGGER
@@ -175,12 +173,12 @@ namespace logging {
     class __EXPORT AndroidLogPolicy : public LogPolicy
     {
     public:
-        AndroidLogPolicy() {}
-        ~AndroidLogPolicy() override {};
+        AndroidLogPolicy() = default;
+        ~AndroidLogPolicy() = default;
 
         void openStream(const std::string& name) override {};
         void closeStream() override {};
-        void write(LoggingLogLevel level, const std::string& tag, const std::string& msg) override;
+        void write(LoggingLogLevel level, const std::string& tag, const std::string& msg) override ;
         LoggingLogType getLoggingLogType() override { return RAW; }
     };
 #endif
@@ -192,13 +190,16 @@ namespace logging {
     class __EXPORT IosLogPolicy : public LogPolicy
     {
     public:
-        IosLogPolicy() override {}
-        ~IosLogPolicy() override {};
+        IosLogPolicy() = default;
+        ~IosLogPolicy() = default;
 
         void openStream(const std::string& name) override {};
         void closeStream() override {};
-        void write(LoggingLogLevel level, const std::string& tag, const std::string& msg) override;
-        LoggingLogType getLoggingLogType() override;
+        void write(LoggingLogLevel level, const std::string& tag, const std::string& msg)  override {
+            void zrtp_log(const char *t, const char *buf);
+            zrtp_log(tag.c_str(), msg.c_str());
+        };
+        LoggingLogType getLoggingLogType() override { return RAW; }
     };
 #endif
 
@@ -271,12 +272,12 @@ return 0;
 
     // When creating a standalone (library) version of Logger then enable the __EXPORT attribute
     template<typename log_policy >
-    class /* __EXPORT */ Logger
+    class Logger
     {
         std::string getTime();
         std::string getLogLineHeader();
         std::stringstream logStream;
-        log_policy* policy;
+        std::unique_ptr<log_policy> policy;
         std::mutex write_mutex;
 
         //Core printing functionality
@@ -311,7 +312,7 @@ return 0;
          * @param name The LogPolicy implementation may use this.
          * @param tag The LogPolicy implementation may use this.
          */
-        explicit Logger(const std::string& name, const std::string& tag);
+        Logger(const std::string& name, const std::string& tag);
         ~Logger();
 
         /**
@@ -351,6 +352,11 @@ return 0;
          */
         template<LoggingLogLevel level, typename...Args >
         void print(Args... args);
+
+        void setLogCallback(LOG_FUNC callback) { loggerCallback_ = callback; }
+
+    private:
+        LOG_FUNC loggerCallback_ = nullptr;
     };
 
     // Template implementations
@@ -358,23 +364,23 @@ return 0;
     Logger<log_policy >::Logger(const std::string& name) : logLevel(VERBOSE), currentLogLevel(NONE),
                                                            tag("Logger"), logLineNumber(0)
     {
-        policy = new log_policy;
-//        if (!policy) {
-//            throw std::runtime_error("LOGGER: Unable to create the logger instance");
-//        }
+        policy = std::make_unique<log_policy>();
+        if (!policy) {
+            throw std::runtime_error("LOGGER: Unable to create the logger instance");
+        }
         logType = policy->getLoggingLogType();
         policy->openStream( name );
     }
 
     template<typename log_policy >
-    Logger<log_policy >::Logger(const std::string& name, const std::string& inTag) : logLevel(VERBOSE),
-                                                                                     currentLogLevel(NONE), tag(inTag),
+    Logger<log_policy >::Logger(const std::string& name, const std::string& tag) : logLevel(VERBOSE),
+                                                                                     currentLogLevel(NONE), tag(tag),
                                                                                      logLineNumber(0)
     {
-        policy = new log_policy;
-//        if (!policy) {
-//            throw std::runtime_error("LOGGER: Unable to create the logger instance");
-//        }
+        policy = std::make_unique<log_policy>();
+        if (!policy) {
+            throw std::runtime_error("LOGGER: Unable to create the logger instance");
+        }
         logType = policy->getLoggingLogType();
         policy->openStream( name );
     }
@@ -384,17 +390,21 @@ return 0;
     {
         if (policy) {
             policy->closeStream();
-            delete policy;
         }
     }
 
     template< typename LogPolicy >
     void Logger< LogPolicy >::print_impl()
     {
-        if (logType == FULL)
-            policy->write(currentLogLevel, tag, getLogLineHeader() + logStream.str());
-        else
-            policy->write(currentLogLevel, tag, logStream.str());
+        if (loggerCallback_ != nullptr) {
+            loggerCallback_(currentLogLevel, logStream.str());
+        }
+        else {
+            if (logType == FULL)
+                policy->write(currentLogLevel, tag, getLogLineHeader() + logStream.str());
+            else
+                policy->write(currentLogLevel, tag, logStream.str());
+        }
         logStream.str("");
     }
 
@@ -411,25 +421,25 @@ return 0;
     void Logger<LogPolicy>::print(Args... args) {
         write_mutex.lock();
         currentLogLevel = level;
-        if (logType == FULL) {
+        if (logType == FULL && loggerCallback_ == nullptr) {
             switch (level) {
                 case DEBUGGING:
-                    logStream << "<DEBUG> :";
+                    logStream << "<DEBUG>: ";
                     break;
                 case WARNING:
-                    logStream << "<WARNING> :";
+                    logStream << "<WARNING>: ";
                     break;
-                case ERROR:
-                    logStream << "<ERROR> :";
+                case ERROR_LOG:
+                    logStream << "<ERROR>: ";
                     break;
                 case INFO:
-                    logStream << "<INFO> :";
+                    logStream << "<INFO>";
                     break;
                 case VERBOSE:
-                    logStream << "<VERBOSE> :";
+                    logStream << "<VERBOSE>";
                     break;
                 case EPIC:
-                    logStream << "<EPIC> :";
+                    logStream << "<EPIC>";
                     break;
                 default:
                     break;
@@ -443,12 +453,16 @@ return 0;
     std::string Logger< LogPolicy >::getTime()
     {
         char dateTime[128];
-        struct tm tmData;
+        struct tm tmData = {};
         time_t rawTime;
 
         // Get and format time according to ISO 8601, UTC
         time(&rawTime);
+#if defined(_MSC_VER)
+        gmtime_s(&tmData, &rawTime);
+#else
         gmtime_r(&rawTime, &tmData);
+#endif
         strftime(dateTime, sizeof(dateTime), "%FT%TZ", &tmData);
 
         return std::string(dateTime);
@@ -462,11 +476,11 @@ return 0;
         header.str("");
         header.fill('0');
         header.width(7);
-        header << logLineNumber++ << " < " << getTime() <<" - ";
+        header << logLineNumber++ << "<" << getTime() <<" - ";
 
         header.fill('0');
         header.width(7);
-        header << clock() << " > ~ ";
+        header << clock() << ">~";
 
         return header.str();
     }

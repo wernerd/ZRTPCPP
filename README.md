@@ -3,10 +3,7 @@
 This package provides a library that adds ZRTP support to the GNU
 ccRTP stack and serves as library for other RTP stacks (PJSIP, GStreamer).
 Phil Zimmermann developed ZRTP to allow ad-hoc, easy to
-use key negotiation to setup Secure RTP (SRTP) sessions. GNU ZRTP works
-together with GNU ccRTP (1.5.0 or later) and provides a ZRTP
-implementation that can be directly embedded into client and server
-applications.
+use key negotiation to setup Secure RTP (SRTP) sessions. 
 
 The GNU ZRTP implementation is compliant to [RFC 6189][] and adds some more
 algorithms. Currently GNU ZRTP C++ supports the following features:
@@ -23,7 +20,7 @@ algorithms. Currently GNU ZRTP C++ supports the following features:
 * The Short Authentication String (SAS) type with base 32 encoding (4
   characters) and the SAS 256 type using words.
 
-Some features like preshared mode are not supported but the GNU
+Some features like pre-shared mode are not supported but the GNU
 ZRTP C++ implementation defines the necessary external interfaces and
 functions for these enhanced features.
 
@@ -53,7 +50,9 @@ for SIP forking. Please look for `draft-zimmermann-mmusic-sdesc-mix-00`.
 During the development of ZRTP and its sister implementation ZRTP4J (the Java
 version of the ZRTP) Phil Zimmermann, his developers, and I worked together to
 make sure Phil's [Zfone][] implementation and the GNU ZRTP implementations can
-work together.
+work together. 
+
+**Note:** Zfone is now outdated and not supported anymore
 
 [zfone]: http://zfoneproject.com/index.html
 
@@ -73,7 +72,7 @@ functionality to C based RTP implementations. The first use of the ZRTP C
 wrapper was for the [PJSIP][] library, actually the RTP part of this
 library. The ZRTP handler for PJSIP is [here][pjzrtp]. This port enables PJSIP
 based clients to use ZRTP. One of the first clients that uses this feature is
-*[CSipSimple][]*, an very good open source Android SIP client.
+*[CSipSimple][]*, a very good open source Android SIP client.
 
 [pjsip]: http://www.pjsip.org
 [pjzrtp]: https://github.com/wernerd/ZRTP4PJ
@@ -91,32 +90,41 @@ A few weeks later I implemented the GNU ccRTP glue code and ZRTP became part
 of the official GNU ccRTP project and was named GNU ZRTP C++. The Twinkle
 softphone uses GNU ccRTP and GNU ZRTP C++ since it's 0.8.2 release and Michel
 de Boer, the implementor of Twinkle, created a nice user interface. All
-following versions of Twinkle include GNU ZRTP C++ as well.
+following versions of Twinkle included GNU ZRTP C++ as well.
+
+This is historic info, most of the named products are not supported anymore.
 
 
 ### License and further information
-I changed the license of the ZRTP core source files from GPL to LGPL. Other
+I changed the license of the ZRTP core source files from LGPL to Apache V2. Other
 sources files may have own license. Please refer to the copyright notices of
 the files.
 
-Thus most of this library is licensed under the GNU LGPL, version 3 or later.
+Thus the core ZRTP modules are is licensed under the Apache V2. Some other modules,
+mainly crypro modules, use different licenses or are even in public domain.
+Refer to the [LICENSES][] file for a summary.
+
+In general the files within the `client` directory are examples how to use the ZRTP
+library and usually belong to other project which have their own license policy. These
+files are not part of the core ZRTP code. 
 
 For further information refer to the [ZRTP FAQ][zrtpfaq] and the
 [GNU ZRTP howto][zrtphow]. Both are part of the GNU Telephony wiki and are
 located in its documentation category.
 
 Source code in the directory `clients/tivi` and below is not licensed under the
-GNU LGPL and is for reference and review only. Refer to the copyright statments
+GNU LGPL and is for reference and review only. Refer to the copyright statements
 of the source code in these directories, in particular the sqlite3 sources which
 have their own license.
 
 [zrtphow]:  http://www.gnutelephony.org/index.php/GNU_ZRTP_How_To
 [zrtpfaq]:  http://www.gnutelephony.org/index.php/ZRTP_FAQ
 [rfc 6189]: http://tools.ietf.org/html/rfc6189
+[LICENSES]: LICENSES/summary.md
 
 ## Building GNU ZRTP C++ 
 Since version 1.6 GNU ZRTP C++ supports the *cmake* based build process
-only. The cmake build process is simpler than the GNU automake/autoconf
+only. The cmake build process is (IMHO) simpler than the GNU automake/autoconf
 process. To build GNU ZRTP C++ perform the following steps after you unpacked
 the source archive or pulled the source from [Github][]:
 

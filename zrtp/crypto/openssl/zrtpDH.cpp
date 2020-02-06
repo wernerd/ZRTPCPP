@@ -1,69 +1,45 @@
 /*
-  Copyright (C) 2006, 2009 by Werner Dittmann
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-
- * In addition, as a special exception, the copyright holders give
- * permission to link the code of portions of this program with the
- * OpenSSL library under certain conditions as described in each
- * individual source file, and distribute linked combinations
- * including the two.
- * You must obey the GNU General Public License in all respects
- * for all of the code used other than OpenSSL.  If you modify
- * file(s) with this exception, you may extend this exception to your
- * version of the file(s), but you are not obligated to do so.  If you
- * do not wish to do so, delete this exception statement from your
- * version.  If you delete this exception statement from all source
- * files in the program, then also delete it here.
- */
-
-/** Copyright (C) 2006, 2009
+ * Copyright 2006 - 2018, Werner Dittmann
  *
- * @author  Werner Dittmann <Werner.Dittmann@t-online.de>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
-#include <string.h>
+#include <cstring>
+#include <mutex>
 
 #include <openssl/crypto.h>
-#include <openssl/bio.h>
 #include <openssl/bn.h>
 #include <openssl/rand.h>
-#include <openssl/err.h>
 #include <openssl/dh.h>
 #include <openssl/evp.h>
 #include <openssl/ec.h>
-#include <openssl/ecdh.h>
 
 #include <zrtp/crypto/zrtpDH.h>
 #include <zrtp/libzrtpcpp/ZrtpTextData.h>
 
-// extern void initializeOpenSSL();
+static BIGNUM* bnP2048 = nullptr;
+static BIGNUM* bnP3072 = nullptr;
+// static BIGNUM* bnP4096 = nullptr;
 
-static BIGNUM* bnP2048 = NULL;
-static BIGNUM* bnP3072 = NULL;
-// static BIGNUM* bnP4096 = NULL;
-
-static BIGNUM* bnP2048MinusOne = NULL;
-static BIGNUM* bnP3072MinusOne = NULL;
-// static BIGNUM* bnP4096MinusOne = NULL;
+static BIGNUM* bnP2048MinusOne = nullptr;
+static BIGNUM* bnP3072MinusOne = nullptr;
+// static BIGNUM* bnP4096MinusOne = nullptr;
 
 static uint8_t dhinit = 0;
+static std::mutex initMutex;
 
 void randomZRTP(uint8_t *buf, int32_t length)
 {
-//    initializeOpenSSL();
     RAND_bytes(buf, length);
 }
 
@@ -199,56 +175,81 @@ ZrtpDH::ZrtpDH(const char* type) {
         return;
     }
 
-//  initializeOpenSSL();
+    {
+        std::lock_guard<std::mutex> initLock(initMutex);
 
-    if (!dhinit) {
-        bnP2048 = BN_bin2bn(P2048,sizeof(P2048),NULL);
-        bnP3072 = BN_bin2bn(P3072,sizeof(P3072),NULL);
-//      bnP4096 = BN_bin2bn(P4096,sizeof(P4096),NULL);
+        if (!dhinit) {
+            bnP2048 = BN_bin2bn(P2048, sizeof(P2048), nullptr);
+            bnP3072 = BN_bin2bn(P3072, sizeof(P3072), nullptr);
+//      bnP4096 = BN_bin2bn(P4096,sizeof(P4096),nullptr);
 
-        bnP2048MinusOne = BN_dup(bnP2048);
-        BN_sub_word(bnP2048MinusOne, 1);
+            bnP2048MinusOne = BN_dup(bnP2048);
+            BN_sub_word(bnP2048MinusOne, 1);
 
-        bnP3072MinusOne = BN_dup(bnP3072);
-        BN_sub_word(bnP3072MinusOne, 1);
+            bnP3072MinusOne = BN_dup(bnP3072);
+            BN_sub_word(bnP3072MinusOne, 1);
 
 //      bnP4096MinusOne = BN_dup(bnP4096);
 //      BN_sub_word(bnP4096MinusOne, 1);
-        dhinit = 1;
+            dhinit = 1;
+        }
     }
 
-    DH* tmpCtx = NULL;
+    DH* tmpCtx = nullptr;
+    BIGNUM* g = BN_new();
+    BN_set_word(g, DH_GENERATOR_2);
+
     switch (pkType) {
-    case DH2K:
-    case DH3K:
-        ctx = static_cast<void*>(DH_new());
-        tmpCtx = static_cast<DH*>(ctx);
-        tmpCtx->g = BN_new();
-        BN_set_word(tmpCtx->g, DH_GENERATOR_2);
+        case DH2K:
+        case DH3K:
+            ctx = static_cast<void*>(DH_new());
+            tmpCtx = static_cast<dh_st*>(ctx);
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+            tmpCtx->g = BN_dup(g);
+#endif
+            if (pkType == DH2K) {
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+                tmpCtx->p = BN_dup(bnP2048);
+#else
+                DH_set0_pqg(tmpCtx, BN_dup(bnP2048), nullptr, g);
+#endif
+                RAND_bytes(random, 32);
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+                tmpCtx->priv_key = BN_bin2bn(random, 32, NULL);
+#else
+                DH_set0_key(tmpCtx, nullptr, BN_bin2bn(random, 32, nullptr));
+#endif
+            }
+            else if (pkType == DH3K) {
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+                tmpCtx->p = BN_dup(bnP3072);
+#else
+                DH_set0_pqg(tmpCtx, BN_dup(bnP3072), nullptr, g);
+#endif
+                RAND_bytes(random, 64);
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+                tmpCtx->priv_key = BN_bin2bn(random, 32, NULL);
+#else
+                DH_set0_key(tmpCtx, nullptr, BN_bin2bn(random, 32, nullptr));
+            }
+#endif
 
-        if (pkType == DH2K) {
-            tmpCtx->p = BN_dup(bnP2048);
-            RAND_bytes(random, 32);
-            tmpCtx->priv_key = BN_bin2bn(random, 32, NULL);
-        }
-        else if (pkType == DH3K) {
-            tmpCtx->p = BN_dup(bnP3072);
-            RAND_bytes(random, 64);
-            tmpCtx->priv_key = BN_bin2bn(random, 32, NULL);
-        }
-        break;
+            break;
 
-    case EC25:
-        ctx = static_cast<void*>(EC_KEY_new_by_curve_name(NID_X9_62_prime256v1));
-        break;
-    case EC38:
-        ctx = static_cast<void*>(EC_KEY_new_by_curve_name(NID_secp384r1));
-        break;
+        case EC25:
+            ctx = static_cast<void*>(EC_KEY_new_by_curve_name(NID_X9_62_prime256v1));
+            break;
+        case EC38:
+            ctx = static_cast<void*>(EC_KEY_new_by_curve_name(NID_secp384r1));
+            break;
+
+        default:
+            break;
     }
 }
 
 ZrtpDH::~ZrtpDH() {
-    if (ctx == NULL)
+    if (ctx == nullptr)
         return;
 
     switch (pkType) {
@@ -261,25 +262,34 @@ ZrtpDH::~ZrtpDH() {
     case EC38:
         EC_KEY_free(static_cast<EC_KEY*>(ctx));
         break;
+    default:
+        return;
     }
 }
 
-int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
+int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret) {
 
     if (pkType == DH2K || pkType == DH3K) {
-        DH* tmpCtx = static_cast<DH*>(ctx);
+        auto* tmpCtx = static_cast<DH*>(ctx);
 
-        if (tmpCtx->pub_key != NULL) {
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+        if (tmpCtx->pub_key != nullptr) {
             BN_free(tmpCtx->pub_key);
         }
-        tmpCtx->pub_key = BN_bin2bn(pubKeyBytes, getDhSize(), NULL);
-        return DH_compute_key(secret, tmpCtx->pub_key, tmpCtx);
+        tmpCtx->pub_key = BN_bin2bn(pubKeyBytes, getDhSize(), nullptr);
+        return DH_compute_key(secret.data(), tmpCtx->pub_key, tmpCtx);
+#else
+        DH_set0_key(tmpCtx, BN_bin2bn(pubKeyBytes, getDhSize(), nullptr), nullptr);
+        BIGNUM* pub_key;
+        DH_get0_key(tmpCtx, const_cast<const BIGNUM**>(&pub_key), nullptr);
+        return DH_compute_key(secret.data(), pub_key, tmpCtx);
+#endif
     }
     if (pkType == EC25 || pkType == EC38) {
         uint8_t buffer[200];
         int32_t ret;
         int32_t len = getPubKeySize();
-        if (len+1 > sizeof(buffer)) {
+        if (len+1 > 200) {
             return -1;
         }
 
@@ -288,8 +298,8 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, uint8_t *secret) {
         
         EC_POINT* point = EC_POINT_new(EC_KEY_get0_group(static_cast<EC_KEY*>(ctx)));
         EC_POINT_oct2point(EC_KEY_get0_group(static_cast<EC_KEY*>(ctx)),
-                                             point, buffer, len+1, NULL);
-        ret = ECDH_compute_key(secret, getDhSize(), point, static_cast<EC_KEY*>(ctx), NULL);
+                                             point, buffer, len+1, nullptr);
+        ret = ECDH_compute_key(secret.data(), getDhSize(), point, static_cast<EC_KEY*>(ctx), nullptr);
         EC_POINT_free(point);
         return ret;
     }
@@ -319,38 +329,53 @@ uint32_t ZrtpDH::getDhSize() const
     return 0;
 }
 
-int32_t ZrtpDH::getPubKeySize() const
-{
-    if (pkType == DH2K || pkType == DH3K)
+int32_t ZrtpDH::getPubKeySize() const {
+    if (pkType == DH2K || pkType == DH3K) {
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
         return BN_num_bytes(static_cast<DH*>(ctx)->pub_key);
+#else
+        BIGNUM *pub_key;
+        DH_get0_key(static_cast<DH *>(ctx), const_cast<const BIGNUM **>(&pub_key), nullptr);
+        return BN_num_bytes(pub_key);
+#endif
+    }
 
     if (pkType == EC25 || pkType == EC38)
         return EC_POINT_point2oct(EC_KEY_get0_group(static_cast<EC_KEY*>(ctx)),
                                   EC_KEY_get0_public_key(static_cast<EC_KEY*>(ctx)),
-                                  POINT_CONVERSION_UNCOMPRESSED, NULL, 0, NULL) - 1;
+                                  POINT_CONVERSION_UNCOMPRESSED, nullptr, 0, nullptr) - 1;
     return 0;
 
 }
 
-int32_t ZrtpDH::getPubKeyBytes(uint8_t *buf) const
+int32_t ZrtpDH::fillInPubKeyBytes(secUtilities::SecureArray<1000>& pubKey) const
 {
 
     if (pkType == DH2K || pkType == DH3K) {
         // get len of pub_key, prepend with zeros to DH size
         int32_t prepend = getDhSize() - getPubKeySize();
         if (prepend > 0) {
-            memset(buf, 0, prepend);
+            memset(pubKey.data(), 0, prepend);
         }
-        return BN_bn2bin(static_cast<DH*>(ctx)->pub_key, buf + prepend);
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+        auto len = BN_bn2bin(static_cast<DH*>(ctx)->pub_key, pubKey.data() + prepend);
+#else
+        BIGNUM* pub_key;
+        DH_get0_key(static_cast<DH*>(ctx), const_cast<const BIGNUM**>(&pub_key), nullptr);
+        auto len = BN_bn2bin(pub_key, pubKey.data() + prepend);
+#endif
+        pubKey.size(prepend + len);
+        return prepend + len;
     }
     if (pkType == EC25 || pkType == EC38) {
         uint8_t buffer[200];
 
-        int len = EC_POINT_point2oct(EC_KEY_get0_group(static_cast<EC_KEY*>(ctx)),
+        auto len = EC_POINT_point2oct(EC_KEY_get0_group(static_cast<EC_KEY*>(ctx)),
                                      EC_KEY_get0_public_key(static_cast<EC_KEY*>(ctx)),
-                                     POINT_CONVERSION_UNCOMPRESSED, buffer, 200, NULL);
-        memcpy(buf, buffer+1, len-1);
-        return len-1;
+                                     POINT_CONVERSION_UNCOMPRESSED, buffer, 200, nullptr);
+        memcpy(pubKey.data(), buffer+1, len-1);
+        pubKey.size(len-1);
+        return static_cast<int32_t>(len-1);
     }
     return 0;
 }
@@ -362,7 +387,7 @@ int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
         int32_t ret;
         int32_t len = getPubKeySize();
 
-        if (len+1 > sizeof(buffer)) {
+        if (len+1 > 200) {
             return 0;
         }
         buffer[0] = POINT_CONVERSION_UNCOMPRESSED;
@@ -370,7 +395,7 @@ int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
 
         EC_POINT* point = EC_POINT_new(EC_KEY_get0_group(static_cast<EC_KEY*>(ctx)));
         EC_POINT_oct2point(EC_KEY_get0_group(static_cast<EC_KEY*>(ctx)),
-                                             point, buffer, len+1, NULL);
+                                             point, buffer, len+1, nullptr);
         EC_KEY* chkKey = EC_KEY_new();
         EC_KEY_set_group(chkKey, EC_KEY_get0_group(static_cast<EC_KEY*>(ctx)));
         EC_KEY_set_public_key(chkKey, point);
@@ -382,7 +407,7 @@ int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
         return ret;
     }
 
-    BIGNUM* pubKeyOther = BN_bin2bn(pubKeyBytes, getDhSize(), NULL);
+    BIGNUM* pubKeyOther = BN_bin2bn(pubKeyBytes, getDhSize(), nullptr);
 
     if (pkType == DH2K) {
         if (BN_cmp(bnP2048MinusOne, pubKeyOther) == 0)
@@ -409,18 +434,15 @@ const char* ZrtpDH::getDHtype()
     switch (pkType) {
     case DH2K:
         return dh2k;
-        break;
     case DH3K:
         return dh3k;
-        break;
     case EC25:
         return ec25;
-        break;
     case EC38:
         return ec38;
-        break;
+    default:
+        return nullptr;
     }
-    return NULL;
 }
 
 /** EMACS **

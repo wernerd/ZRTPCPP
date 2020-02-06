@@ -5,12 +5,11 @@
  * inside the ZRTP implementation.
  */
 
-#include <stdio.h>
-#include <stdint.h>
+#include <cstdint>
 #include <libzrtpcpp/ZrtpCrc32.h>
 
 #define CRC32C_POLY 0x1EDC6F41
-#define CRC32C(c,d) (c=(c>>8)^crc_c[(c^(d))&0xFF])
+#define CRC32C(c,d) (c=(c>>8U)^crc_c[(c^(d))&0xFFU])
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /* Copyright 2001, D. Otis.  Use this program, code or tables    */
 /* extracted from it, as desired without restriction.            */
@@ -139,14 +138,14 @@ uint32_t zrtpEndCksum(uint32_t crc32)
      *  byteswap.  On a little-endian machine, this byteswap and
      *  the final ntohl cancel out and could be elided.
      */
-    byte0 = result & 0xff;
-    byte1 = (result>>8) & 0xff;
-    byte2 = (result>>16) & 0xff;
-    byte3 = (result>>24) & 0xff;
+    byte0 = result & 0xffU;
+    byte1 = (result>>8U) & 0xffU;
+    byte2 = (result>>16U) & 0xffU;
+    byte3 = (result>>24U) & 0xffU;
 
-    crc32 = ((byte0 << 24) |
-    (byte1 << 16) |
-    (byte2 << 8)  |
+    crc32 = ((byte0 << 24U) |
+    (byte1 << 16U) |
+    (byte2 << 8U)  |
     byte3);
     // fprintf(stderr, "Computed crc32: %x\n", crc32);
     return crc32;

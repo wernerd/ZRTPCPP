@@ -88,29 +88,29 @@ static const unsigned char revchars[]= {
 };
 
 
-Base32::Base32(const string encoded):
-    binaryResult(NULL), resultLength(0) {
+Base32::Base32(const string& encoded):
+    binaryResult(nullptr), resultLength(0) {
 
     a2b_l(encoded, encoded.size(), (encoded.size()*5/8)*8);
 }
 
-Base32::Base32(const string encoded, int noOfBits):
-    binaryResult(NULL), resultLength(0) {
+Base32::Base32(const string& encoded, int noOfBits):
+    binaryResult(nullptr), resultLength(0) {
 
     a2b_l(encoded, divceil(noOfBits, 5), noOfBits);
 }
 
 Base32::Base32(const unsigned char* data, int noOfBits):
-    binaryResult(NULL), resultLength(0) {
+    binaryResult(nullptr), resultLength(0) {
 
     b2a_l(data, (noOfBits+7)/8, noOfBits);
 }
 
 Base32::~Base32() {
-    if (binaryResult != NULL && binaryResult != smallBuffer) {
+    if (binaryResult != nullptr && binaryResult != smallBuffer) {
 	delete [] binaryResult;
     }
-    binaryResult = NULL;
+    binaryResult = nullptr;
 }
 
 const unsigned char* Base32::getDecoded(int &length) {
@@ -150,7 +150,7 @@ void Base32::b2a_l(const unsigned char* os, int len,
 
             FALLTHROUGH;
 		case 4:
-		    x |= ((unsigned long)(*--osp)) << 3; /* ... now we have 11 bits worth in x... */
+		    x |= ((unsigned long)(*--osp)) << 3U; /* ... now we have 11 bits worth in x... */
 		    result[--resp] = chars[x % 32];
 		    x /= 32; /* ... now we have 6 bits worth in x... */
 		    result[--resp] = chars[x % 32];
@@ -158,14 +158,14 @@ void Base32::b2a_l(const unsigned char* os, int len,
 
             FALLTHROUGH;
 		case 3:
-		    x |= ((unsigned long)(*--osp)) << 1; /* The 8 bits from the 2-indexed octet.
+		    x |= ((unsigned long)(*--osp)) << 1U; /* The 8 bits from the 2-indexed octet.
 							    So now we have 9 bits worth in x... */
 		    result[--resp] = chars[x % 32];
 		    x /= 32; /* ... now we have 4 bits worth in x... */
 
             FALLTHROUGH;
 		case 2:
-		    x |= ((unsigned long)(*--osp)) << 4; /* The 8 bits from the 1-indexed octet.
+		    x |= ((unsigned long)(*--osp)) << 4U; /* The 8 bits from the 1-indexed octet.
 							    So now we have 12 bits worth in x... */
 		    result[--resp] = chars[x%32];
 		    x /= 32; /* ... now we have 7 bits worth in x... */
@@ -174,7 +174,7 @@ void Base32::b2a_l(const unsigned char* os, int len,
 
             FALLTHROUGH;
 		case 1:
-		    x |= ((unsigned long)(*--osp)) << 2; /* The 8 bits from the 0-indexed octet.
+		    x |= ((unsigned long)(*--osp)) << 2U; /* The 8 bits from the 0-indexed octet.
 							    So now we have 10 bits worth in x... */
 		    result[--resp] = chars[x%32];
 		    x /= 32; /* ... now we have 5 bits worth in x... */
@@ -184,10 +184,9 @@ void Base32::b2a_l(const unsigned char* os, int len,
 
     /* truncate any unused trailing zero quintets */
     encoded = result.substr(0, divceil(lengthinbits, 5));
-    return;
 }
 
-void Base32::a2b_l(const string cs, size_t size, const size_t lengthinbits ) {
+void Base32::a2b_l(const string& cs, size_t size, const size_t lengthinbits ) {
     unsigned long x = 0;	// to hold up to 32 bits worth of the input
 
     int len = divceil(size*5, 8);
@@ -262,7 +261,6 @@ void Base32::a2b_l(const string cs, size_t size, const size_t lengthinbits ) {
 
     /* truncate any unused trailing zero octets */
     resultLength = divceil(lengthinbits, 8);
-    return;
 }
 
 #ifdef UNIT_TEST

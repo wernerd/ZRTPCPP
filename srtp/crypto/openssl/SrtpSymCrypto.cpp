@@ -1,59 +1,41 @@
 /*
-  Copyright (C) 2012 Werner Dittmann
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
-  * In addition, as a special exception, the copyright holders give
-  * permission to link the code of portions of this program with the
-  * OpenSSL library under certain conditions as described in each
-  * individual source file, and distribute linked combinations
-  * including the two.
-  * You must obey the GNU General Public License in all respects
-  * for all of the code used other than OpenSSL.  If you modify
-  * file(s) with this exception, you may extend this exception to your
-  * version of the file(s), but you are not obligated to do so.  If you
-  * do not wish to do so, delete this exception statement from your
-  * version.  If you delete this exception statement from all source
-  * files in the program, then also delete it here.
-  */
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 /**
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#define MAKE_F8_TEST
-
-#include <stdlib.h>
+#include <cstdlib>
+#include <cstring>
 #include <openssl/aes.h>                // the include of openSSL
-#include <crypto/SrtpSymCrypto.h>
+#include <srtp/crypto/SrtpSymCrypto.h>
 #include <cryptcommon/twofish.h>
-#include <string.h>
-#include <stdio.h>
-#include <common/osSpecifics.h>
+#include "common/osSpecifics.h"
 
-SrtpSymCrypto::SrtpSymCrypto(int algo):key(NULL), algorithm(algo) {
+SrtpSymCrypto::SrtpSymCrypto(int algo):key(nullptr), algorithm(algo) {
 }
 
 SrtpSymCrypto::SrtpSymCrypto( uint8_t* k, int32_t keyLength, int algo ):
-    key(NULL), algorithm(algo) {
+    key(nullptr), algorithm(algo) {
 
     setNewKey(k, keyLength);
 }
 
 SrtpSymCrypto::~SrtpSymCrypto() {
-    if (key != NULL) {
+    if (key != nullptr) {
         if (algorithm == SrtpEncryptionAESCM || algorithm == SrtpEncryptionAESF8) {
             memset(key, 0, sizeof(AES_KEY) );
         }
@@ -61,7 +43,7 @@ SrtpSymCrypto::~SrtpSymCrypto() {
             memset(key, 0, sizeof(Twofish_key));
         }
         delete[] (uint8_t*)key;
-        key = NULL;
+        key = nullptr;
     }
 }
 
@@ -69,7 +51,7 @@ static int twoFishInit = 0;
 
 bool SrtpSymCrypto::setNewKey(const uint8_t* k, int32_t keyLength) {
     // release an existing key before setting a new one
-    if (key != NULL)
+    if (key != nullptr)
         delete[] (uint8_t*)key;
 
     if (!(keyLength == 16 || keyLength == 32)) {
@@ -106,53 +88,50 @@ void SrtpSymCrypto::encrypt(const uint8_t* input, uint8_t* output ) {
     }
 }
 
-void SrtpSymCrypto::get_ctr_cipher_stream(uint8_t* output, uint32_t length,
-                                    uint8_t* iv ) {
-    uint16_t ctr = 0;
+void SrtpSymCrypto::get_ctr_cipher_stream(uint8_t* output, uint32_t length, uint8_t* iv ) {
+    uint32_t ctr = 0;
     unsigned char temp[SRTP_BLOCK_SIZE];
 
     for(ctr = 0; ctr < length/SRTP_BLOCK_SIZE; ctr++) {
         //compute the cipher stream
-        iv[14] = (uint8_t)((ctr & 0xFF00) >>  8);
-        iv[15] = (uint8_t)((ctr & 0x00FF));
+        iv[14] = (uint8_t)((ctr & 0xFF00U) >>  8U);
+        iv[15] = (uint8_t)((ctr & 0x00FFU));
 
         encrypt(iv, &output[ctr*SRTP_BLOCK_SIZE]);
     }
     if ((length % SRTP_BLOCK_SIZE) > 0) {
-        // Treat the last bytes:
-        iv[14] = (uint8_t)((ctr & 0xFF00) >>  8);
-        iv[15] = (uint8_t)((ctr & 0x00FF));
+        // Process the last bytes:
+        iv[14] = (uint8_t)((ctr & 0xFF00U) >>  8U);
+        iv[15] = (uint8_t)((ctr & 0x00FFU));
 
         encrypt(iv, temp);
         memcpy(&output[ctr*SRTP_BLOCK_SIZE], temp, length % SRTP_BLOCK_SIZE );
     }
 }
 
-void SrtpSymCrypto::ctr_encrypt(const uint8_t* input, uint32_t input_length,
-                           uint8_t* output, uint8_t* iv ) {
+void SrtpSymCrypto::ctr_encrypt(const uint8_t* input, uint32_t input_length, uint8_t* output, uint8_t* iv ) {
 
-    if (key == NULL)
+    if (key == nullptr)
         return;
 
     uint16_t ctr = 0;
     unsigned char temp[SRTP_BLOCK_SIZE];
 
-    int l = input_length/SRTP_BLOCK_SIZE;
+    uint16_t l = input_length/SRTP_BLOCK_SIZE;
     for (ctr = 0; ctr < l; ctr++ ) {
-        iv[14] = (uint8_t)((ctr & 0xFF00) >>  8);
-        iv[15] = (uint8_t)((ctr & 0x00FF));
+        iv[14] = (uint8_t)((ctr & 0xFF00U) >>  8U);
+        iv[15] = (uint8_t)((ctr & 0x00FFU));
 
         encrypt(iv, temp);
-        for (int i = 0; i < SRTP_BLOCK_SIZE; i++ ) {
-            *output++ = temp[i] ^ *input++;
+        for (unsigned char i : temp) {
+            *output++ = i ^ *input++;
         }
-
     }
     l = input_length % SRTP_BLOCK_SIZE;
     if (l > 0) {
         // Treat the last bytes:
-        iv[14] = (uint8_t)((ctr & 0xFF00) >>  8);
-        iv[15] = (uint8_t)((ctr & 0x00FF));
+        iv[14] = (uint8_t)((ctr & 0xFF00U) >>  8U);
+        iv[15] = (uint8_t)((ctr & 0x00FFU));
 
         encrypt(iv, temp);
         for (int i = 0; i < l; i++ ) {
@@ -163,28 +142,28 @@ void SrtpSymCrypto::ctr_encrypt(const uint8_t* input, uint32_t input_length,
 
 void SrtpSymCrypto::ctr_encrypt( uint8_t* data, uint32_t data_length, uint8_t* iv ) {
 
-    if (key == NULL)
+    if (key == nullptr)
         return;
 
     uint16_t ctr = 0;
     unsigned char temp[SRTP_BLOCK_SIZE];
 
-    int l = data_length/SRTP_BLOCK_SIZE;
+    uint16_t l = data_length/SRTP_BLOCK_SIZE;
     for (ctr = 0; ctr < l; ctr++ ) {
-        iv[14] = (uint8_t)((ctr & 0xFF00) >>  8);
-        iv[15] = (uint8_t)((ctr & 0x00FF));
+        iv[14] = (uint8_t)((ctr & 0xFF00U) >>  8U);
+        iv[15] = (uint8_t)((ctr & 0x00FFU));
 
         encrypt(iv, temp);
-        for (int i = 0; i < SRTP_BLOCK_SIZE; i++ ) {
-            *data++ ^= temp[i];
+        for (unsigned char i : temp) {
+            *data++ ^= i;
         }
 
     }
     l = data_length % SRTP_BLOCK_SIZE;
     if (l > 0) {
-        // Treat the last bytes:
-        iv[14] = (uint8_t)((ctr & 0xFF00) >>  8);
-        iv[15] = (uint8_t)((ctr & 0x00FF));
+        // Process the last bytes:
+        iv[14] = (uint8_t)((ctr & 0xFF00U) >>  8U);
+        iv[15] = (uint8_t)((ctr & 0x00FFU));
 
         encrypt(iv, temp);
         for (int i = 0; i < l; i++ ) {
@@ -201,8 +180,8 @@ void SrtpSymCrypto::f8_encrypt(const uint8_t* data, uint32_t data_length,
 
 #define MAX_KEYLEN 32
 
-void SrtpSymCrypto::f8_deriveForIV(SrtpSymCrypto* f8Cipher, uint8_t* key, int32_t keyLen,
-             uint8_t* salt, int32_t saltLen) {
+void SrtpSymCrypto::f8_deriveForIV(SrtpSymCrypto* f8Cipher, uint8_t* keyIn, int32_t keyLen,
+                                   uint8_t* salt, int32_t saltLen) {
 
     unsigned char *cp_in, *cp_in1, *cp_out;
 
@@ -226,7 +205,7 @@ void SrtpSymCrypto::f8_deriveForIV(SrtpSymCrypto* f8Cipher, uint8_t* key, int32_
      * get the special key.
      */
     cp_out = maskedKey;
-    cp_in = key;
+    cp_in = keyIn;
     cp_in1 = saltMask;
     for (int i = 0; i < keyLen; i++) {
         *cp_out++ = *cp_in++ ^ *cp_in1++;
@@ -238,7 +217,7 @@ void SrtpSymCrypto::f8_deriveForIV(SrtpSymCrypto* f8Cipher, uint8_t* key, int32_
 }
 
 void SrtpSymCrypto::f8_encrypt(const uint8_t* in, uint32_t in_length, uint8_t* out,
-                         uint8_t* iv, SrtpSymCrypto* f8Cipher ) {
+                               uint8_t* iv, SrtpSymCrypto* f8Cipher ) {
 
 
     int offset = 0;
@@ -248,7 +227,7 @@ void SrtpSymCrypto::f8_encrypt(const uint8_t* in, uint32_t in_length, uint8_t* o
 
     F8_CIPHER_CTX f8ctx;
 
-    if (key == NULL)
+    if (key == nullptr)
         return;
     /*
      * Get memory for the derived IV (IV')

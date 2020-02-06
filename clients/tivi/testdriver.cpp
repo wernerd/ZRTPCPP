@@ -1,11 +1,25 @@
 /*
+ * Copyright (c) 2019 Silent Circle.  All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *
  * Test program for tivi interface
  */
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -23,21 +37,6 @@ struct sockaddr_in adr_clnt;
 socklen_t lenClnt;          // length
 int s;                       // Socket
 
-static void hexdump(const char* title, const unsigned char *s, int l)
-{
-    int n=0;
-
-    if (s == NULL) return;
-
-    fprintf(stderr, "%s",title);
-    for( ; n < l ; ++n) {
-        if((n%16) == 0)
-            fprintf(stderr, "\n%04x",n);
-        fprintf(stderr, " %02x",s[n]);
-    }
-    fprintf(stderr, "\n");
-}
-
 static void displayError(const char *what) {
     fprintf(stderr, "Error: %s: %s\n", strerror(errno), what);
     exit(1);
@@ -53,19 +52,19 @@ static void sendData(uint8_t *buffer, unsigned int length)
 
 // This is the callback that we use for audio stream
 class TestCallbackAudio: public CtZrtpCb {
-    void onNewZrtpStatus(CtZrtpSession *session, char *p, CtZrtpSession::streamName streamNm) {
+    void onNewZrtpStatus(CtZrtpSession *session, char *p, CtZrtpSession::streamName streamNm) override {
         uint8_t buffer[20];
-        fprintf(stderr, "new status: %s\n", p == NULL ? "NULL" : p);
+        fprintf(stderr, "new status: %s\n", p == nullptr ? "nullptr" : p);
         session->getInfo("sec_state", buffer, 19);
         printf("secState: %s\n", buffer);
     }
 
-    void onNeedEnroll(CtZrtpSession *session, CtZrtpSession::streamName streamNm, int32_t info) {
+    void onNeedEnroll(CtZrtpSession *session, CtZrtpSession::streamName streamNm, int32_t info) override {
         fprintf(stderr, "Need enroll\n");
     }
 
-    void onPeer(CtZrtpSession *session, char *name, int iIsVerified, CtZrtpSession::streamName streamNm) {
-        fprintf(stderr, "onPeer: %s", name == NULL || strlen(name) == 0 ? "NULL" : name);
+    void onPeer(CtZrtpSession *session, char *name, int iIsVerified, CtZrtpSession::streamName streamNm) override {
+        fprintf(stderr, "onPeer: %s", name == nullptr || strlen(name) == 0 ? "nullptr" : name);
         fprintf(stderr, ", verified: %s\n", iIsVerified ? "YES" : "NO");
         uint8_t buffer[20];
 
@@ -108,17 +107,17 @@ class TestCallbackAudio: public CtZrtpCb {
         session->setLastPeerNameVerify("TestName", 0);
     }
 
-    void onZrtpWarning(CtZrtpSession *session, char *p, CtZrtpSession::streamName streamNm) {
-        fprintf(stderr, "Warning: %s\n", p == NULL ? "NULL" : p);
+    void onZrtpWarning(CtZrtpSession *session, char *p, CtZrtpSession::streamName streamNm) override {
+        fprintf(stderr, "Warning: %s\n", p == nullptr ? "nullptr" : p);
     }
 
-    void onDiscriminatorException(CtZrtpSession *session, char *p, CtZrtpSession::streamName streamNm) {
-        fprintf(stderr, "Discriminator: %s\n", p == NULL ? "NULL" : p);
+    void onDiscriminatorException(CtZrtpSession *session, char *p, CtZrtpSession::streamName streamNm) override {
+        fprintf(stderr, "Discriminator: %s\n", p == nullptr ? "nullptr" : p);
     }
 };
 
 class TestSendCallbackAudio: public CtZrtpSendCb {
-    void sendRtp(CtZrtpSession const *session, uint8_t* packet, size_t length, CtZrtpSession::streamName streamNm) {
+    void sendRtp(CtZrtpSession const *session, uint8_t* packet, size_t length, CtZrtpSession::streamName streamNm) override {
 //        hexdump("ZRTP packet", packet, length);
         fprintf(stderr, "ZRTP send packet, length: %lu, %.8s\n", length, packet+16);
         sendData(packet, length);
@@ -138,14 +137,13 @@ int main(int argc,char **argv) {
     uint32_t uiSSRC = 0xfeedbacc;
 
     fprintf(stderr, "Config info: %s\n", getZrtpBuildInfo());
-    
-    CtZrtpSession::initCache("testzid.dat");        // initialize cache file
 
-    CtZrtpSession *session = new CtZrtpSession();
-    TestCallbackAudio *callback = new TestCallbackAudio();
-    TestSendCallbackAudio *sendCallback = new TestSendCallbackAudio();
+    auto *session = new CtZrtpSession();
+    auto *callback = new TestCallbackAudio();
+    auto *sendCallback = new TestSendCallbackAudio();
 
-    session->init(true, true);                      // audio and video
+    shared_ptr<ZrtpConfigure> config;               // empty ZrtpConfig, CtZrtpSession fills it
+    session->init(true, true, 0, "testzid.dat", config);        // audio and video
 
     session->setUserCallback(callback, CtZrtpSession::AudioStream);
     session->setSendCallback(sendCallback, CtZrtpSession::AudioStream);
@@ -163,7 +161,7 @@ int main(int argc,char **argv) {
     }
     memset(&adr_inet,0,sizeof adr_inet);
     adr_inet.sin_family = AF_INET;
-    adr_inet.sin_port = htons(5002);
+    adr_inet.sin_port = htons(5002);    // NOLINT
     adr_inet.sin_addr.s_addr = inet_addr(srvr_addr);
 
     if (adr_inet.sin_addr.s_addr == INADDR_NONE ) {
@@ -171,14 +169,14 @@ int main(int argc,char **argv) {
     }
     len_inet = sizeof(adr_inet);
 
-    z = bind(s, (struct sockaddr *)&adr_inet, len_inet);
+    z = bind(s, (const struct sockaddr *)&adr_inet, len_inet);
     if ( z == -1 ) {
         displayError("bind()");
     }
 
     memset(&adr_inet,0,sizeof adr_inet);
     adr_clnt.sin_family = AF_INET;
-    adr_clnt.sin_port = htons(5004);
+    adr_clnt.sin_port = htons(5004);    // NOLINT
     adr_clnt.sin_addr.s_addr = inet_addr(srvr_addr);
 
     if (adr_clnt.sin_addr.s_addr == INADDR_NONE ) {
@@ -192,8 +190,8 @@ int main(int argc,char **argv) {
     // Now wait for requests:
     for (;;) {
 
-        len_inet = sizeof(adr_clnt);
-        length = recvfrom(s, buffer, sizeof(buffer),  0, NULL, NULL);
+//        len_inet = sizeof(adr_clnt);
+        length = recvfrom(s, buffer, sizeof(buffer),  0, nullptr, nullptr);
         if (length < 0) {
             displayError("recvfrom(2)");
         }

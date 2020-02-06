@@ -1,17 +1,31 @@
 /*
- * Tivi client glue code for ZRTP.
- * Copyright (c) 2012 Slient Circle LLC.  All rights reserved.
+ * Copyright (c) 2019 Silent Circle.  All rights reserved.
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *
+ * Tivi client glue code for ZRTP.
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 #ifndef _CTZRTPSESSION_H_
 #define _CTZRTPSESSION_H_
 
-#include <stdio.h>
-#include <stdint.h>
+#include <cstdio>
+#include <cstdint>
 #include <string>
-#include <string.h>
+#include <cstring>
+#include <zrtp/libzrtpcpp/ZIDCache.h>
 
 #ifndef __EXPORT
   #if (defined _WIN32 || defined __CYGWIN__) && defined(_DLL)
@@ -26,13 +40,15 @@
   #endif
 #endif
 
+#ifndef ZID_DATABASE
+#error "CtZrtpSession requires a database backend (Sqlite or SqlCipher) - check cmake build options (-DSQLCIPHER=ON)"
+#endif
 
 class CtZrtpStream;
 class CtZrtpCb;
 class CtZrtpSendCb;
 class ZrtpConfigure;
 class ZRtp;
-class CMutexClass;
 typedef struct _SrtpErrorData SrtpErrorData;
 
 extern "C" __EXPORT const char *getZrtpBuildInfo();
@@ -84,20 +100,6 @@ public:
 
     ~CtZrtpSession();
 
-    /**
-     * @brief Intialize the cache file singleton.
-     *
-     * Opens and initializes the cache file instance.
-     *
-     * @param zidFilename
-     *     The name of the ZID file, can be a relative or absolut
-     *     filename.
-     *
-     * @return
-     *     1 on success, -1 on failure
-     */
-    static int initCache(const char *zidFilename);
-
     /** @brief Initialize CtZrtpSession.
      *
      * Before an application can use ZRTP it has to initialize the
@@ -109,7 +111,7 @@ public:
      * If one application requires several ZRTP sessions all
      * sessions use the same timeout thread and use the same ZID
      * file. Therefore an application does not need to do any
-     * synchronisation regading ZID files or timeouts. This is
+     * synchronisation regarding timeouts. This is
      * managed by the ZRTP implementation.
      *
      * The application may specify its own ZID file name. If no
@@ -119,24 +121,29 @@ public:
      * directory is used.
      *
      * @param audio
-     *     set to @c true if audio stream shout be initialized
+     *     set to @c true to initialize the audio (master) stream.
      *
      * @param video
-     *     set to @c true if video stream shoud be initialized.
+     *     set to @c true to initialize the video stream.
      * 
      * @param callId
      *     The Tivi engine's call id.
      *
      * @param config
      *     this parameter points to ZRTP configuration data. If it is
-     *     NULL then ZrtpQueue uses a default setting. Default is NULL.
+     *     not set (empty shared_ptr) then the function sets up a default setting.
+     *
+     * @param zidFilename
+     *     The name of the ZID file, can be a relative or absolute
+     *     filename. Can be a @c nullptr. In this case the function
+     *     uses a standard name and path
      *
      * @return
      *     1 on success, ZRTP processing enabled, -1 on failure,
      *     ZRTP processing disabled.
      *
      */
-    int init(bool audio, bool video, int32_t callId = 0, ZrtpConfigure* config = NULL);
+    int init(bool audio, bool video, int32_t callId, const char *zidFilename, std::shared_ptr<ZrtpConfigure>& config);
 
     /**
      * @brief Fills a ZrtpConfiguration based on selected algorithms.
@@ -488,7 +495,7 @@ public:
      *
      * @return @c true if data could be created, @c false otherwise.
      */
-    bool createSdes(char *cryptoString, size_t *maxLen, streamName streamNm, const sdesSuites suite =AES_CM_128_HMAC_SHA1_32);
+    bool createSdes(char *cryptoString, size_t *maxLen, streamName streamNm, sdesSuites suite =AES_CM_128_HMAC_SHA1_32);
 
     /**
      * @brief Parses an SDES crypto string for the SDES/ZRTP stream.
@@ -735,15 +742,15 @@ protected:
 
 
 private:
-    void synchEnter();
-    void synchLeave();
+    static void syncEnter();
+    static void syncLeave();
 
-    CtZrtpStream *streams[AllStreams];
+    CtZrtpStream* streams[AllStreams] = { nullptr };
     std::string  clientIdString;
     std::string  multiStreamParameter;
-    const uint8_t* ownZid;
+    const uint8_t* ownZid = nullptr;
     ZRtp*    zrtpMaster;
-    int32_t callId_;
+    int32_t callId_ = 0;
 
     bool mitmMode;
     bool signSas;
@@ -752,6 +759,8 @@ private:
     bool zrtpEnabled;
     bool sdesEnabled;
     bool discriminatorMode;
+
+    static std::shared_ptr<ZIDCache> zrtpCache;     // All sessions of silent phone should use the _same_ cache file
 };
 
 #endif /* _CTZRTPSESSION_H_ */

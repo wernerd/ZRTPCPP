@@ -1,36 +1,29 @@
 /*
-  Copyright (C) 2012-2013 Werner Dittmann
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 /*
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
 
-#ifndef SQL_CIPHER
-#include <sqlite3.h>
-#else
-#include <sqlcipher/sqlite3.h>
-#endif
-
+#include <sqlite3.h>        // Note: set correct include path for compiler
 
 #include <crypto/zrtpDH.h>
 
@@ -196,6 +189,7 @@ static const char *updateZrtpNames =
 
 static int b64Encode(const uint8_t *binData, int32_t binLength, char *b64Data, int32_t b64Length)
 {
+    (void) b64Length;
     base64_encodestate _state;
     int codelength;
 
@@ -208,6 +202,7 @@ static int b64Encode(const uint8_t *binData, int32_t binLength, char *b64Data, i
 
 static int b64Decode(const char *b64Data, int32_t b64length, uint8_t *binData, int32_t binLength)
 {
+    (void) binLength;
     base64_decodestate _state;
     int codelength;
 
@@ -274,26 +269,26 @@ static int initializeRemoteTables(sqlite3 *db, char* errString)
      * deleted using DB admin command then we need to drop the remote id table
      * and names also to have a clean state.
      */
-    rc = SQLITE_PREPARE(db, dropZrtpIdRemote, strlen(dropZrtpIdRemote)+1, &stmt, NULL);
-    rc = sqlite3_step(stmt);
+    SQLITE_PREPARE(db, dropZrtpIdRemote, strlen(dropZrtpIdRemote)+1, &stmt, NULL);
+    sqlite3_step(stmt);
     sqlite3_finalize(stmt);
 
-    rc = SQLITE_PREPARE(db, dropZrtpNames, strlen(dropZrtpNames)+1, &stmt, NULL);
-    rc = sqlite3_step(stmt);
+    SQLITE_PREPARE(db, dropZrtpNames, strlen(dropZrtpNames)+1, &stmt, NULL);
+    sqlite3_step(stmt);
     sqlite3_finalize(stmt);
 
-    SQLITE_CHK(SQLITE_PREPARE(db, createZrtpIdRemote, strlen(createZrtpIdRemote)+1, &stmt, NULL));
+    SQLITE_CHK(SQLITE_PREPARE(db, createZrtpIdRemote, strlen(createZrtpIdRemote)+1, &stmt, NULL))
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
     if (rc != SQLITE_DONE) {
-        ERRMSG;
+        ERRMSG
         return rc;
     }
-    SQLITE_CHK(SQLITE_PREPARE(db, createZrtpNames, strlen(createZrtpNames)+1, &stmt, NULL));
+    SQLITE_CHK(SQLITE_PREPARE(db, createZrtpNames, strlen(createZrtpNames)+1, &stmt, NULL))
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
     if (rc != SQLITE_DONE) {
-        ERRMSG;
+        ERRMSG
         return rc;
     }
     return 0;
@@ -315,12 +310,12 @@ static int createTables(sqlite3 *db, char* errString)
     int rc;
 
     /* no ZRTP cache tables were found - create them, first the OwnId table */
-    SQLITE_CHK(SQLITE_PREPARE(db, createZrtpIdOwn, strlen(createZrtpIdOwn)+1, &stmt, NULL));
+    SQLITE_CHK(SQLITE_PREPARE(db, createZrtpIdOwn, strlen(createZrtpIdOwn)+1, &stmt, NULL))
 
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
     if (rc != SQLITE_DONE) {
-        ERRMSG;
+        ERRMSG
         return rc;
     }
     return initializeRemoteTables(db, errString);
@@ -346,27 +341,27 @@ static int insertRemoteZidRecord(void *vdb, const uint8_t *remoteZid, const uint
     /* Get B64 code for localZid now */
     b64Encode(localZid, IDENTIFIER_LEN, b64LocalZid, IDENTIFIER_LEN*2);
 
-    SQLITE_CHK(SQLITE_PREPARE(db, insertZrtpIdRemote, strlen(insertZrtpIdRemote)+1, &stmt, NULL));
+    SQLITE_CHK(SQLITE_PREPARE(db, insertZrtpIdRemote, strlen(insertZrtpIdRemote)+1, &stmt, NULL))
 
     /* For *_bind_* methods: column index starts with 1 (one), not zero */
-    SQLITE_CHK(sqlite3_bind_text(stmt,   1, b64RemoteZid, strlen(b64RemoteZid), SQLITE_STATIC));
-    SQLITE_CHK(sqlite3_bind_text(stmt,  12, b64LocalZid, strlen(b64LocalZid), SQLITE_STATIC));
-    SQLITE_CHK(sqlite3_bind_int(stmt,    2, remZid->flags));
-    SQLITE_CHK(sqlite3_bind_blob(stmt,   3, remZid->rs1, RS_LENGTH, SQLITE_STATIC));
-    SQLITE_CHK(sqlite3_bind_int64(stmt,  4, remZid->rs1LastUse));
-    SQLITE_CHK(sqlite3_bind_int64(stmt,  5, remZid->rs1Ttl));
-    SQLITE_CHK(sqlite3_bind_blob(stmt,   6, remZid->rs2, RS_LENGTH, SQLITE_STATIC));
-    SQLITE_CHK(sqlite3_bind_int64(stmt,  7, remZid->rs2LastUse));
-    SQLITE_CHK(sqlite3_bind_int64(stmt,  8, remZid->rs2Ttl));
-    SQLITE_CHK(sqlite3_bind_blob(stmt,   9, remZid->mitmKey, RS_LENGTH, SQLITE_STATIC));
-    SQLITE_CHK(sqlite3_bind_int64(stmt, 10, remZid->mitmLastUse));
-    SQLITE_CHK(sqlite3_bind_int64(stmt, 11, remZid->secureSince));
-    SQLITE_CHK(sqlite3_bind_int(stmt,   13, remZid->preshCounter));
+    SQLITE_CHK(sqlite3_bind_text(stmt,   1, b64RemoteZid, strlen(b64RemoteZid), SQLITE_STATIC))
+    SQLITE_CHK(sqlite3_bind_text(stmt,  12, b64LocalZid, strlen(b64LocalZid), SQLITE_STATIC))
+    SQLITE_CHK(sqlite3_bind_int(stmt,    2, remZid->flags))
+    SQLITE_CHK(sqlite3_bind_blob(stmt,   3, remZid->rs1, RS_LENGTH, SQLITE_STATIC))
+    SQLITE_CHK(sqlite3_bind_int64(stmt,  4, remZid->rs1LastUse))
+    SQLITE_CHK(sqlite3_bind_int64(stmt,  5, remZid->rs1Ttl))
+    SQLITE_CHK(sqlite3_bind_blob(stmt,   6, remZid->rs2, RS_LENGTH, SQLITE_STATIC))
+    SQLITE_CHK(sqlite3_bind_int64(stmt,  7, remZid->rs2LastUse))
+    SQLITE_CHK(sqlite3_bind_int64(stmt,  8, remZid->rs2Ttl))
+    SQLITE_CHK(sqlite3_bind_blob(stmt,   9, remZid->mitmKey, RS_LENGTH, SQLITE_STATIC))
+    SQLITE_CHK(sqlite3_bind_int64(stmt, 10, remZid->mitmLastUse))
+    SQLITE_CHK(sqlite3_bind_int64(stmt, 11, remZid->secureSince))
+    SQLITE_CHK(sqlite3_bind_int(stmt,   13, remZid->preshCounter))
 
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
     if (rc != SQLITE_DONE) {
-        ERRMSG;
+        ERRMSG
         return rc;
     }
     return SQLITE_OK;
@@ -393,30 +388,30 @@ static int updateRemoteZidRecord(void *vdb, const uint8_t *remoteZid, const uint
     /* Get B64 code for localZid now */
     b64Encode(localZid, IDENTIFIER_LEN, b64LocalZid, IDENTIFIER_LEN*2);
 
-    SQLITE_CHK(SQLITE_PREPARE(db, updateZrtpIdRemote, strlen(updateZrtpIdRemote)+1, &stmt, NULL));
+    SQLITE_CHK(SQLITE_PREPARE(db, updateZrtpIdRemote, strlen(updateZrtpIdRemote)+1, &stmt, NULL))
 
     /* For *_bind_* methods: column index starts with 1 (one), not zero */
     /* Select for update with the following keys */
-    SQLITE_CHK(sqlite3_bind_text(stmt,   1, b64RemoteZid, strlen(b64RemoteZid), SQLITE_STATIC));
-    SQLITE_CHK(sqlite3_bind_text(stmt,  12, b64LocalZid, strlen(b64LocalZid), SQLITE_STATIC));
+    SQLITE_CHK(sqlite3_bind_text(stmt,   1, b64RemoteZid, strlen(b64RemoteZid), SQLITE_STATIC))
+    SQLITE_CHK(sqlite3_bind_text(stmt,  12, b64LocalZid, strlen(b64LocalZid), SQLITE_STATIC))
 
     /* Update the following values */
-    SQLITE_CHK(sqlite3_bind_int(stmt,    2, remZid->flags));
-    SQLITE_CHK(sqlite3_bind_blob(stmt,   3, remZid->rs1, RS_LENGTH, SQLITE_STATIC));
-    SQLITE_CHK(sqlite3_bind_int64(stmt,  4, remZid->rs1LastUse));
-    SQLITE_CHK(sqlite3_bind_int64(stmt,  5, remZid->rs1Ttl));
-    SQLITE_CHK(sqlite3_bind_blob(stmt,   6, remZid->rs2, RS_LENGTH, SQLITE_STATIC));
-    SQLITE_CHK(sqlite3_bind_int64(stmt,  7, remZid->rs2LastUse));
-    SQLITE_CHK(sqlite3_bind_int64(stmt,  8, remZid->rs2Ttl));
-    SQLITE_CHK(sqlite3_bind_blob(stmt,   9, remZid->mitmKey, RS_LENGTH, SQLITE_STATIC));
-    SQLITE_CHK(sqlite3_bind_int64(stmt, 10, remZid->mitmLastUse));
-    SQLITE_CHK(sqlite3_bind_int64(stmt, 11, remZid->secureSince));
-    SQLITE_CHK(sqlite3_bind_int(stmt,   13, remZid->preshCounter));
+    SQLITE_CHK(sqlite3_bind_int(stmt,    2, remZid->flags))
+    SQLITE_CHK(sqlite3_bind_blob(stmt,   3, remZid->rs1, RS_LENGTH, SQLITE_STATIC))
+    SQLITE_CHK(sqlite3_bind_int64(stmt,  4, remZid->rs1LastUse))
+    SQLITE_CHK(sqlite3_bind_int64(stmt,  5, remZid->rs1Ttl))
+    SQLITE_CHK(sqlite3_bind_blob(stmt,   6, remZid->rs2, RS_LENGTH, SQLITE_STATIC))
+    SQLITE_CHK(sqlite3_bind_int64(stmt,  7, remZid->rs2LastUse))
+    SQLITE_CHK(sqlite3_bind_int64(stmt,  8, remZid->rs2Ttl))
+    SQLITE_CHK(sqlite3_bind_blob(stmt,   9, remZid->mitmKey, RS_LENGTH, SQLITE_STATIC))
+    SQLITE_CHK(sqlite3_bind_int64(stmt, 10, remZid->mitmLastUse))
+    SQLITE_CHK(sqlite3_bind_int64(stmt, 11, remZid->secureSince))
+    SQLITE_CHK(sqlite3_bind_int(stmt,   13, remZid->preshCounter))
 
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
     if (rc != SQLITE_DONE) {
-        ERRMSG;
+        ERRMSG
         return rc;
     }
     return SQLITE_OK;
@@ -443,9 +438,9 @@ static int readRemoteZidRecord(void *vdb, const uint8_t *remoteZid, const uint8_
     /* Get B64 code for localZid */
     b64Encode(localZid, IDENTIFIER_LEN, b64LocalZid, IDENTIFIER_LEN*2);
 
-    SQLITE_CHK(SQLITE_PREPARE(db, selectZrtpIdRemoteAll, strlen(selectZrtpIdRemoteAll)+1, &stmt, NULL));
-    SQLITE_CHK(sqlite3_bind_text(stmt, 1, b64RemoteZid, strlen(b64RemoteZid), SQLITE_STATIC));
-    SQLITE_CHK(sqlite3_bind_text(stmt, 2, b64LocalZid, strlen(b64LocalZid), SQLITE_STATIC));
+    SQLITE_CHK(SQLITE_PREPARE(db, selectZrtpIdRemoteAll, strlen(selectZrtpIdRemoteAll)+1, &stmt, NULL))
+    SQLITE_CHK(sqlite3_bind_text(stmt, 1, b64RemoteZid, strlen(b64RemoteZid), SQLITE_STATIC))
+    SQLITE_CHK(sqlite3_bind_text(stmt, 2, b64LocalZid, strlen(b64LocalZid), SQLITE_STATIC))
 
     /* Getting data from result set: column index starts with 0 (zero), not one */
     while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
@@ -465,7 +460,7 @@ static int readRemoteZidRecord(void *vdb, const uint8_t *remoteZid, const uint8_
     sqlite3_finalize(stmt);
 
     if (rc != SQLITE_DONE) {
-        ERRMSG;
+        ERRMSG
         return rc;
     }
     if (found == 0) {
@@ -499,10 +494,10 @@ static int readLocalZid(void *vdb, uint8_t *localZid, const char *accountInfo, c
     }
 
     /* Find a localZid record for this combination */
-    SQLITE_CHK(SQLITE_PREPARE(db, selectZrtpIdOwn, strlen(selectZrtpIdOwn)+1, &stmt, NULL));
+    SQLITE_CHK(SQLITE_PREPARE(db, selectZrtpIdOwn, strlen(selectZrtpIdOwn)+1, &stmt, NULL))
 
-    SQLITE_CHK(sqlite3_bind_int(stmt,  1, type));
-    SQLITE_CHK(sqlite3_bind_text(stmt, 2, accountInfo, strlen(accountInfo), SQLITE_STATIC));
+    SQLITE_CHK(sqlite3_bind_int(stmt,  1, type))
+    SQLITE_CHK(sqlite3_bind_text(stmt, 2, accountInfo, strlen(accountInfo), SQLITE_STATIC))
 
     /* Loop over result set and count it. However, use only the localZid of first row */
     while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
@@ -515,7 +510,7 @@ static int readLocalZid(void *vdb, uint8_t *localZid, const char *accountInfo, c
     sqlite3_finalize(stmt);
 
     if (rc != SQLITE_DONE) {
-        ERRMSG;
+        ERRMSG
         return rc;
     }
     /* No matching record found, create new local ZID for this combination and store in DB */
@@ -527,16 +522,16 @@ static int readLocalZid(void *vdb, uint8_t *localZid, const char *accountInfo, c
         randomZRTP(localZid, IDENTIFIER_LEN);
         b64len = b64Encode(localZid, IDENTIFIER_LEN, b64zid, IDENTIFIER_LEN+IDENTIFIER_LEN);
 
-        SQLITE_CHK(SQLITE_PREPARE(db, insertZrtpIdOwn, strlen(insertZrtpIdOwn)+1, &stmt, NULL));
+        SQLITE_CHK(SQLITE_PREPARE(db, insertZrtpIdOwn, strlen(insertZrtpIdOwn)+1, &stmt, NULL))
 
-        SQLITE_CHK(sqlite3_bind_text(stmt, 1, b64zid, b64len, SQLITE_STATIC));
-        SQLITE_CHK(sqlite3_bind_int(stmt,  2, type));
-        SQLITE_CHK(sqlite3_bind_text(stmt, 3, accountInfo, strlen(accountInfo), SQLITE_STATIC));
+        SQLITE_CHK(sqlite3_bind_text(stmt, 1, b64zid, b64len, SQLITE_STATIC))
+        SQLITE_CHK(sqlite3_bind_int(stmt,  2, type))
+        SQLITE_CHK(sqlite3_bind_text(stmt, 3, accountInfo, strlen(accountInfo), SQLITE_STATIC))
 
         rc = sqlite3_step(stmt);
         sqlite3_finalize(stmt);
         if (rc != SQLITE_DONE) {
-            ERRMSG;
+            ERRMSG
             return rc;
         }
     }
@@ -579,12 +574,12 @@ static int openCache(const char* name, void **vpdb, char *errString)
 #endif
     db = *pdb;
     if (rc) {
-        ERRMSG;
+        ERRMSG
         return(rc);
     }
 
     /* check if ZRTP cache tables are already available, look if zrtpIdOwn is available */
-    SQLITE_CHK(SQLITE_PREPARE(db, lookupTables, strlen(lookupTables)+1, &stmt, NULL));
+    SQLITE_CHK(SQLITE_PREPARE(db, lookupTables, strlen(lookupTables)+1, &stmt, NULL))
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
 
@@ -592,7 +587,7 @@ static int openCache(const char* name, void **vpdb, char *errString)
         found++;
     }
     else if (rc != SQLITE_DONE) {
-        ERRMSG;
+        ERRMSG
         return rc;
     }
     /* If table zrtpOwnId not found then we have an empty cache DB */
@@ -623,8 +618,8 @@ static int clearCache(void *vdb, char *errString)
     sqlite3_stmt * stmt;
     int rc;
 
-    rc = SQLITE_PREPARE(db, dropZrtpIdOwn, strlen(dropZrtpIdOwn)+1, &stmt, NULL);
-    rc = sqlite3_step(stmt);
+    SQLITE_PREPARE(db, dropZrtpIdOwn, strlen(dropZrtpIdOwn)+1, &stmt, NULL);
+    sqlite3_step(stmt);
     sqlite3_finalize(stmt);
 
     rc = createTables(db, errString);
@@ -652,24 +647,24 @@ static int insertZidNameRecord(void *vdb, const uint8_t *remoteZid, const uint8_
     /* Get B64 code for localZid */
     b64Encode(localZid, IDENTIFIER_LEN, b64LocalZid, IDENTIFIER_LEN*2);
 
-    SQLITE_CHK(SQLITE_PREPARE(db, insertZrtpNames, strlen(insertZrtpNames)+1, &stmt, NULL));
+    SQLITE_CHK(SQLITE_PREPARE(db, insertZrtpNames, strlen(insertZrtpNames)+1, &stmt, NULL))
 
     /* For *_bind_* methods: column index starts with 1 (one), not zero */
-    SQLITE_CHK(sqlite3_bind_text(stmt,  1, b64RemoteZid, strlen(b64RemoteZid), SQLITE_STATIC));
-    SQLITE_CHK(sqlite3_bind_text(stmt,  2, b64LocalZid, strlen(b64LocalZid), SQLITE_STATIC));
-    SQLITE_CHK(sqlite3_bind_text(stmt,  3, accountInfo, strlen(accountInfo), SQLITE_STATIC));
-    SQLITE_CHK(sqlite3_bind_int(stmt,   4, zidName->flags));
-    SQLITE_CHK(sqlite3_bind_int64(stmt, 5, (int64_t)time(NULL)));
+    SQLITE_CHK(sqlite3_bind_text(stmt,  1, b64RemoteZid, strlen(b64RemoteZid), SQLITE_STATIC))
+    SQLITE_CHK(sqlite3_bind_text(stmt,  2, b64LocalZid, strlen(b64LocalZid), SQLITE_STATIC))
+    SQLITE_CHK(sqlite3_bind_text(stmt,  3, accountInfo, strlen(accountInfo), SQLITE_STATIC))
+    SQLITE_CHK(sqlite3_bind_int(stmt,   4, zidName->flags))
+    SQLITE_CHK(sqlite3_bind_int64(stmt, 5, (int64_t)time(NULL)))
     if (zidName->name != NULL) {
-        SQLITE_CHK(sqlite3_bind_text(stmt,   6, zidName->name, strlen(zidName->name), SQLITE_STATIC));
+        SQLITE_CHK(sqlite3_bind_text(stmt,   6, zidName->name, strlen(zidName->name), SQLITE_STATIC))
     }
     else {
-        SQLITE_CHK(sqlite3_bind_text(stmt,   6, "_NO_NAME_", 9, SQLITE_STATIC));
+        SQLITE_CHK(sqlite3_bind_text(stmt,   6, "_NO_NAME_", 9, SQLITE_STATIC))
     }
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
     if (rc != SQLITE_DONE) {
-        ERRMSG;
+        ERRMSG
         return rc;
     }
     return SQLITE_OK;
@@ -700,27 +695,27 @@ static int updateZidNameRecord(void *vdb, const uint8_t *remoteZid, const uint8_
     /* Get B64 code for localZid */
     b64Encode(localZid, IDENTIFIER_LEN, b64LocalZid, IDENTIFIER_LEN*2);
 
-    SQLITE_CHK(SQLITE_PREPARE(db, updateZrtpNames, strlen(updateZrtpNames)+1, &stmt, NULL));
+    SQLITE_CHK(SQLITE_PREPARE(db, updateZrtpNames, strlen(updateZrtpNames)+1, &stmt, NULL))
 
     /* For *_bind_* methods: column index starts with 1 (one), not zero */
     /* Select for update with the following values */
-    SQLITE_CHK(sqlite3_bind_text(stmt,   1, b64RemoteZid, strlen(b64RemoteZid), SQLITE_STATIC));
-    SQLITE_CHK(sqlite3_bind_text(stmt,   2, b64LocalZid, strlen(b64LocalZid), SQLITE_STATIC));
-    SQLITE_CHK(sqlite3_bind_text(stmt,   3, accountInfo, strlen(accountInfo), SQLITE_STATIC));
+    SQLITE_CHK(sqlite3_bind_text(stmt,   1, b64RemoteZid, strlen(b64RemoteZid), SQLITE_STATIC))
+    SQLITE_CHK(sqlite3_bind_text(stmt,   2, b64LocalZid, strlen(b64LocalZid), SQLITE_STATIC))
+    SQLITE_CHK(sqlite3_bind_text(stmt,   3, accountInfo, strlen(accountInfo), SQLITE_STATIC))
 
     /* Update the following vaulues */
-    SQLITE_CHK(sqlite3_bind_int(stmt,    4, zidName->flags));
-    SQLITE_CHK(sqlite3_bind_int64(stmt,  5, (int64_t)time(NULL)));
+    SQLITE_CHK(sqlite3_bind_int(stmt,    4, zidName->flags))
+    SQLITE_CHK(sqlite3_bind_int64(stmt,  5, (int64_t)time(NULL)))
     if (zidName->name != NULL) {
-        SQLITE_CHK(sqlite3_bind_text(stmt,   6, zidName->name, strlen(zidName->name), SQLITE_STATIC));
+        SQLITE_CHK(sqlite3_bind_text(stmt,   6, zidName->name, strlen(zidName->name), SQLITE_STATIC))
     }
     else {
-        SQLITE_CHK(sqlite3_bind_text(stmt,   6, "_NO_NAME_", 9, SQLITE_STATIC));
+        SQLITE_CHK(sqlite3_bind_text(stmt,   6, "_NO_NAME_", 9, SQLITE_STATIC))
     }
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
     if (rc != SQLITE_DONE) {
-        ERRMSG;
+        ERRMSG
         return rc;
     }
     return SQLITE_OK;
@@ -751,11 +746,11 @@ static int readZidNameRecord(void *vdb, const uint8_t *remoteZid, const uint8_t 
     /* Get B64 code for localZid */
     b64Encode(localZid, IDENTIFIER_LEN, b64LocalZid, IDENTIFIER_LEN*2);
 
-    SQLITE_CHK(SQLITE_PREPARE(db, selectZrtpNames, strlen(selectZrtpNames)+1, &stmt, NULL));
+    SQLITE_CHK(SQLITE_PREPARE(db, selectZrtpNames, strlen(selectZrtpNames)+1, &stmt, NULL))
 
-    SQLITE_CHK(sqlite3_bind_text(stmt, 1, b64RemoteZid, strlen(b64RemoteZid), SQLITE_STATIC));
-    SQLITE_CHK(sqlite3_bind_text(stmt, 2, b64LocalZid, strlen(b64LocalZid), SQLITE_STATIC));
-    SQLITE_CHK(sqlite3_bind_text(stmt, 3, accountInfo, strlen(accountInfo), SQLITE_STATIC));
+    SQLITE_CHK(sqlite3_bind_text(stmt, 1, b64RemoteZid, strlen(b64RemoteZid), SQLITE_STATIC))
+    SQLITE_CHK(sqlite3_bind_text(stmt, 2, b64LocalZid, strlen(b64LocalZid), SQLITE_STATIC))
+    SQLITE_CHK(sqlite3_bind_text(stmt, 3, accountInfo, strlen(accountInfo), SQLITE_STATIC))
 
     /* Getting data from result set: column index starts with 0 (zero), not one */
     while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
@@ -767,7 +762,7 @@ static int readZidNameRecord(void *vdb, const uint8_t *remoteZid, const uint8_t 
     sqlite3_finalize(stmt);
 
     if (rc != SQLITE_DONE) {
-        ERRMSG;
+        ERRMSG
         return rc;
     }
     if (found == 0)
@@ -790,7 +785,7 @@ static void *prepareReadAllZid(void *vdb, char *errString)
     sqlite3_stmt *stmt;
     int rc;
 
-    SQLITE_CHK(SQLITE_PREPARE(db, selectZrtpIdRemoteAllNoCondition, strlen(selectZrtpIdRemoteAllNoCondition)+1, &stmt, NULL));
+    SQLITE_CHK(SQLITE_PREPARE(db, selectZrtpIdRemoteAllNoCondition, strlen(selectZrtpIdRemoteAllNoCondition)+1, &stmt, NULL))
     return stmt;
 
   cleanup:
@@ -829,7 +824,7 @@ static void *readNextZidRecord(void *vdb, void *vstmt, remoteZidRecord_t *remZid
     sqlite3_finalize(stmt);
 
     if (rc != SQLITE_DONE)
-        ERRMSG;
+        ERRMSG
     return NULL;
 }
 

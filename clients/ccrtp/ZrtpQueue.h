@@ -15,6 +15,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
 #ifndef _ZRTPQUEUE_H_
 #define _ZRTPQUEUE_H_
 
@@ -22,7 +24,7 @@
 #include <ccrtp/rtppkt.h>
 #include <libzrtpcpp/ZrtpCallback.h>
 #include <libzrtpcpp/ZrtpConfigure.h>
-#include <CcrtpTimeoutProvider.h>
+#include <mutex>
 
 class __EXPORT ZrtpUserCallback;
 class __EXPORT ZRtp;
@@ -233,8 +235,8 @@ public:
      *     ZRTP processing disabled.
      *
      */
-    int32_t initialize(const char *zidFilename, bool autoEnable = true,
-                       ZrtpConfigure* config = NULL);
+    int32_t initialize(const char *zidFilename, bool autoEnable,
+                       std::shared_ptr<ZrtpConfigure>& config);
 
     /*
      * Applications use the following methods to control ZRTP, for example
@@ -312,7 +314,7 @@ public:
      *
      * Call this method if the user confirmed a go clear (secure mode off).
      */
-    void goClearOk();
+    static void goClearOk();
 
     /**
      * Request to switch off secure mode.
@@ -322,7 +324,7 @@ public:
      * ZRTP immediatly switch off SRTP processing. Every RTP data is sent
      * in clear after the go clear request.
      */
-    void requestGoClear();
+    static void requestGoClear();
 
     /**
      * Set the auxilliary secret.
@@ -381,7 +383,7 @@ public:
      * Refer to ZRTP specification, chapter 8.
      *
      * @param index
-     *     Hello hash of the Hello packet identfied by index. Index must be 0 <= index < getNumberSupportedVersions().
+     *     Hello hash of the Hello packet identified by index. Index must be 0 <= index < getNumberSupportedVersions().
      *
      * @return
      *    a std::string formatted according to RFC6189 section 8 without the leading 'a=zrtp-hash:'
@@ -407,50 +409,6 @@ public:
      *    a std:string containing the Hello version and the hello hash as hex digits.
      */
     std::string getPeerHelloHash();
-
-    /**
-     * Get Multi-stream parameters.
-     *
-     * Deprecated - use getMultiStrParams(ZRtp **zrtpMaster);
-     * 
-     * Use this method to get the Multi-stream that were computed during
-     * the ZRTP handshake. An application may use these parameters to
-     * enable multi-stream processing for an associated SRTP session.
-     *
-     * Refer to chapter 5.4.2 in the ZRTP specification for further details
-     * and restriction how and when to use multi-stream mode.
-     *
-     * @return
-     *    a string that contains the multi-stream parameters. The application
-     *    must not modify the contents of this string, it is opaque data. The
-     *    application may hand over this string to a new ZrtpQueue instance
-     *    to enable multi-stream processing for this ZrtpQueue. If ZRTP was
-     *    not started or ZRTP is not yet in secure state the method returns an
-     *    empty string.
-     *
-     * @see setMultiStrParams()
-     */
-    DEPRECATED_ZRTP std::string getMultiStrParams() {return getMultiStrParams(NULL); }
-
-    /**
-     * Set Multi-stream parameters.
-     *
-     * Deprecated - use setMultiStrParams(std::string parameters, ZRtp* zrtpMaster);
-     * 
-     * Use this method to set the parameters required to enable Multi-stream
-     * processing of ZRTP. The multi-stream parameters must be set before the
-     * application starts the ZRTP protocol engine.
-     *
-     * Refer to chapter 5.4.2 in the ZRTP specification for further details
-     * of multi-stream mode.
-     *
-     * @param parameters
-     *     A string that contains the multi-stream parameters that this
-     *     new ZrtpQueue instanace shall use.
-     *
-     * @see getMultiStrParams()
-     */
-    DEPRECATED_ZRTP void setMultiStrParams(std::string parameters) { setMultiStrParams(parameters, NULL);}
 
     /**
      * Get Multi-stream parameters.
@@ -545,10 +503,10 @@ public:
      * hash of an enrolled client to construct the SAS relay packet for
      * the other client.
      *
-     * @return a refernce to the byte array that contains the full
+     * @return a pointer to the constant byte array that contains the full
      *         SAS hash.
      */
-    uint8_t* getSasHash();
+    uint8_t const * getSasHash();
 
     /**
      * Send the SAS relay packet.
@@ -560,7 +518,7 @@ public:
      * @param sh the full SAS hash value
      * @param render the SAS rendering algorithm
      */
-    bool sendSASRelayPacket(uint8_t* sh, std::string render);
+    bool sendSASRelayPacket(uint8_t* sh, std::string const &render);
 
     /**
      * Check the state of the MitM mode flag.
@@ -667,7 +625,7 @@ public:
     /**
      * Set signature data
      *
-     * This functions stores signature data and transmitts it during ZRTP
+     * This functions stores signature data and transmits it during ZRTP
      * processing to the other party as part of the Confirm packets. Refer to
      * chapters 6.7 and 8.2 in the ZRTP specification.
      *
@@ -685,7 +643,7 @@ public:
     /**
      * Get signature data
      *
-     * This functions returns signature data that was receivied during ZRTP
+     * This functions returns signature data that was received during ZRTP
      * processing. Refer to chapters 6.7 and 8.2.
      *
      * @return
@@ -703,7 +661,7 @@ public:
      *
      * @return
      *    Length in bytes of the received signature data. The method returns
-     *    zero if no signature data avilable.
+     *    zero if no signature data available.
      */
     int32 getSignatureLength();
 
@@ -726,7 +684,7 @@ public:
      * @param len May be 0 to indicate a default by payload type.
      **/
     void
-    putData(uint32 stamp, const unsigned char* data = NULL, size_t len = 0);
+    putData(uint32 stamp, const unsigned char* data = nullptr, size_t len = 0);
 
     /**
      * Immediatly send a data packet.
@@ -748,7 +706,7 @@ public:
      * @param len May be 0 to indicate a default by payload type.
      **/
     void
-    sendImmediate(uint32 stamp, const unsigned char* data = NULL, size_t len = 0);
+    sendImmediate(uint32 stamp, const unsigned char* data = nullptr, size_t len = 0);
 
     /**
      * Starts the ZRTP protocol engine.
@@ -801,7 +759,7 @@ public:
       *
       * @return the number of supported ZRTP protocol versions.
       */
-     int32_t getNumberSupportedVersions();
+     static int32_t getNumberSupportedVersions();
 
      /**
       * Get negotiated ZRTP protocol version.
@@ -811,8 +769,6 @@ public:
      int32_t getCurrentProtocolVersion();
 
 protected:
-    friend class TimeoutProvider<std::string, ost::ZrtpQueue*>;
-
     /**
      * A hook that gets called if the decoding of an incoming SRTP
      * was erroneous
@@ -827,15 +783,8 @@ protected:
      *     by the applications; false: dismiss packet. The default
      *     implementation returns false.
      */
-    virtual bool
-    onSRTPPacketError(IncomingRTPPkt& pkt, int32 errorCode);
-
-    /**
-     * Handle timeout event forwarded by the TimeoutProvider.
-     *
-     * Just call the ZRTP engine for further processing.
-     */
-    void handleTimeout(const std::string &c);
+    bool
+    onSRTPPacketError(IncomingRTPPkt& pkt, int32 errorCode) override;
 
     /**
      * This function is used by the service thread to process
@@ -846,59 +795,56 @@ protected:
      *
      * @return number of payload bytes received,  <0 if error.
      */
-    virtual size_t takeInDataPacket();
+    size_t takeInDataPacket() override;
 
     /*
      * The following methods implement the GNU ZRTP callback interface.
      * For detailed documentation refer to file ZrtpCallback.h
      */
-    int32_t sendDataZRTP(const unsigned char* data, int32_t length);
+    int32_t sendDataZRTP(const unsigned char* data, int32_t length) override;
 
-    int32_t activateTimer(int32_t time);
+    int32_t activateTimer(int32_t time) override;
 
-    int32_t cancelTimer();
+    int32_t cancelTimer() override;
 
-    void sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t subCode);
+    void sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) override;
 
-    bool srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part);
+    bool srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part) override;
 
-    void srtpSecretsOff(EnableSecurity part);
+    void srtpSecretsOff(EnableSecurity part) override;
 
-    void srtpSecretsOn(std::string c, std::string s, bool verified);
+    void srtpSecretsOn(std::string c, std::string s, bool verified) override;
 
-    void handleGoClear();
+    void handleGoClear() override;
 
-    void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode);
+    void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) override;
 
-    void zrtpNotSuppOther();
+    void zrtpNotSuppOther() override;
 
-    void synchEnter();
+    void synchEnter() override;
 
-    void synchLeave();
+    void synchLeave() override;
 
-    void zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info);
+    void zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info) override;
 
-    void zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment  info);
+    void zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment  info) override;
 
-    void signSAS(uint8_t* sasHash);
+    void signSAS(uint8_t* sasHash) override;
 
-    bool checkSASSignature(uint8_t* sasHash);
+    bool checkSASSignature(uint8_t* sasHash) override;
 
     /*
      * End of ZrtpCallback functions.
      */
 
-    ZrtpQueue(uint32 size = RTPDataQueue::defaultMembersHashSize,
-              RTPApplication& app = defaultApplication());
+    explicit ZrtpQueue(uint32 size = RTPDataQueue::defaultMembersHashSize, RTPApplication& app = defaultApplication());
 
     /**
      * Local SSRC is given instead of computed by the queue.
      */
-    ZrtpQueue(uint32 ssrc, uint32 size =
-                  RTPDataQueue::defaultMembersHashSize,
-              RTPApplication& app = defaultApplication());
+    explicit ZrtpQueue(uint32 ssrc, uint32 size = RTPDataQueue::defaultMembersHashSize, RTPApplication& app = defaultApplication());
 
-    virtual ~ZrtpQueue();
+    ~ZrtpQueue() override ;
 
 private:
     void init();
@@ -906,23 +852,25 @@ private:
                          InetHostAddress network_address,
                          tpport_t transport_port);
 
-    ZRtp *zrtpEngine;
-    ZrtpUserCallback* zrtpUserCallback;
+    ZRtp *zrtpEngine = nullptr;
+    ZrtpUserCallback* zrtpUserCallback = nullptr;
 
     std::string clientIdString;
 
-    bool enableZrtp;
+    std::mutex syncLock;   // Mutex for ZRTP (used by ZrtpStateClass)
 
-    int32 secureParts;
+    uint32 peerSSRC = 0;
+    int32_t timeoutId = -1;
+    uint64 zrtpUnprotect = 0;
+    bool enableZrtp = false;
+    bool started = false;
+    bool mitmMode = false;
+    bool signSas = false;
+    bool enableParanoidMode = false;
+    int16 senderZrtpSeqNo = 1;
 
-    int16 senderZrtpSeqNo;
-    ost::Mutex synchLock;   // Mutex for ZRTP (used by ZrtpStateClass)
-    uint32 peerSSRC;
-    uint64 zrtpUnprotect;
-    bool started;
-    bool mitmMode;
-    bool signSas;
-    bool enableParanoidMode;
+    static std::shared_ptr<ZIDCache> zrtpCache;     // All sessions should use the _same_ cache file
+
 };
 
 class IncomingZRTPPkt : public IncomingRTPPkt {
@@ -938,14 +886,11 @@ public:
 
     IncomingZRTPPkt(const unsigned char* block, size_t len);
 
-    ~IncomingZRTPPkt()
-    { }
+    ~IncomingZRTPPkt() override = default;
 
-    uint32
-    getZrtpMagic() const;
+    [[nodiscard]] uint32_t getZrtpMagic() const;
 
-    uint32
-    getSSRC() const;
+    [[nodiscard]] uint32_t getSSRC() const;
 };
 
 class OutgoingZRTPPkt : public OutgoingRTPPkt {
@@ -960,9 +905,8 @@ public:
      * @param hdrext whole header extension.
      * @param hdrextlen size of whole header extension, in octets.
      **/
-    OutgoingZRTPPkt(const unsigned char* const hdrext, uint32 hdrextlen);
-    ~OutgoingZRTPPkt()
-    { }
+    OutgoingZRTPPkt(unsigned char const * hdrext, uint32_t hdrextlen);
+    ~OutgoingZRTPPkt() override = default;
 };
 
 END_NAMESPACE
@@ -977,3 +921,5 @@ END_NAMESPACE
  * End:
  */
 
+
+#pragma clang diagnostic pop

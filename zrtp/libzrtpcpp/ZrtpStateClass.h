@@ -1,19 +1,18 @@
 /*
-  Copyright (C) 2006-2013 Werner Dittmann
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef _ZRTPSTATECLASS_H_
 #define _ZRTPSTATECLASS_H_
@@ -53,12 +52,8 @@ enum zrtpStates {
     numberOfStates      ///< Gives total number of protocol states
 };
 
-enum EventReturnCodes {
-    Fail = 0,           ///< ZRTP event processing failed.
-    Done = 1            ///< Event processing ok.
-};
-
 enum EventDataType {
+    NoEvent = 0,
     ZrtpInitial = 1,    ///< Initial event, enter Initial state
     ZrtpClose,          ///< Close event, shut down state engine
     ZrtpPacket,         ///< Normal ZRTP message event, process according to state
@@ -69,15 +64,17 @@ enum EventDataType {
 enum SecureSubStates {
     Normal,
     WaitSasRelayAck,
-    numberofSecureSubStates
+    numberOfSecureSubStates
 };
 
 /// A ZRTP state event
-typedef struct Event {
+struct Event {
+    Event(): type(NoEvent), length(0), packet(nullptr) {}
+
     EventDataType type; ///< Type of event
     size_t   length;    ///< length of the message data
-    uint8_t* packet;    ///< Event data if availabe, usually a ZRTP message
-} Event_t;
+    uint8_t* packet;    ///< Event data if available, usually a ZRTP message
+};
 
 
 /**
@@ -117,9 +114,9 @@ class ZRtp;
 class __EXPORT ZrtpStateClass {
 
 private:
-    ZRtp* parent;           ///< The ZRTP implmentation
-    ZrtpStates* engine;     ///< The state switching engine
-    Event_t* event;         ///< Current event to process
+    ZRtp* parent;           ///< The ZRTP implementation
+    ZrtpStates* engine = nullptr;     ///< The state switching engine
+    Event* event = nullptr;           ///< Current event to process
 
     /**
      * The last packet that was sent.
@@ -127,15 +124,15 @@ private:
      * If we are <code>Initiator</code> then resend this packet in case of
      * timeout.
      */
-    ZrtpPacketBase* sentPacket;
+    ZrtpPacketBase* sentPacket = nullptr;
 
     /**
      * Points to prepared Commit packet after receiving a Hello packet
      */
     ZrtpPacketCommit* commitPkt;
 
-    zrtpTimer_t T1;         ///< The Hello message timeout timer
-    zrtpTimer_t T2;         ///< Timeout timer for other messages
+    zrtpTimer_t T1 = {};         ///< The Hello message timeout timer
+    zrtpTimer_t T2 = {};         ///< Timeout timer for other messages
 
     int32_t t1Resend;       ///< configurable resend counter for T1 (Hello packets)
     int32_t t1ResendExtend; ///< configurable extended resend counter for T1 (Hello packets)
@@ -171,11 +168,13 @@ private:
      */
     int32_t sentVersion;
     
-    int32_t retryCounters[ErrorRetry+1];  // TODO adjust
+    int32_t retryCounters[ErrorRetry+1] = {0};  // TODO adjust
+
+    int32_t transportOverhead = RTP_HEADER_LENGTH;
 
 public:
     /// Create a ZrtpStateClass
-    ZrtpStateClass(ZRtp *p);
+    explicit ZrtpStateClass(ZRtp *p);
     ~ZrtpStateClass();
 
     /// Check if in a specified state
@@ -185,7 +184,7 @@ public:
     void nextState(int32_t state)        { engine->nextState(state); };
 
     /// Process an event, the main entry point into the state engine
-    void processEvent(Event_t *ev);
+    void processEvent(Event *ev);
 
     /**
      * The state event handling methods.
@@ -375,6 +374,18 @@ public:
      * @return number of 32-bit counters returned in buffer or < 0 on error
      */
     int getRetryCounters(int32_t* counters);
+
+    /**
+     * Set length in bytes of transport over head, default is @c RTP_HEADER_LENGTH
+     *
+     * State engine uses this overhead length to validate the packet length of a ZRTP
+     * packet including the transport header/footer. For example overhead of RTP is
+     * 12 bytes (RTP header) and this is also the default value that the ZRTP state
+     * engine uses.
+     *
+     * @param overhead
+     */
+    void setTransportOverhead(int32_t overhead) { transportOverhead = overhead; }
 
 };
 

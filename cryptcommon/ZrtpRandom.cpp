@@ -1,32 +1,31 @@
 /*
- *  Copyright (C) 2006-2013 Werner Dittmann
+ * Copyright 2006 - 2018, Werner Dittmann
  *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Lesser General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ *         http://www.apache.org/licenses/LICENSE-2.0
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include <fcntl.h>
 #include <mutex>
+#include <cstring>
 
 #include <cryptcommon/ZrtpRandom.h>
 #include <cryptcommon/aescpp.h>
 #include <zrtp/crypto/sha2.h>
-
-using namespace std;
+#include "common/osSpecifics.h"
 
 static sha512_ctx mainCtx;
 
-static mutex lockRandom;
+static std::mutex lockRandom;
 
 static bool initialized = false;
 
@@ -49,7 +48,7 @@ static void * (*volatile memset_volatile)(void *, int, size_t) = memset;
  * per block, until we have produced the desired quantity of data.
  */
 /*----------------------------------------------------------------------------*/
-uint32_t ZrtpRandom::getRandomData(uint8_t* buffer, uint32_t length) {
+int ZrtpRandom::getRandomData(uint8_t* buffer, uint32_t length) {
 
     AESencrypt aesCtx;
     sha512_ctx randCtx2;
@@ -62,9 +61,8 @@ uint32_t ZrtpRandom::getRandomData(uint8_t* buffer, uint32_t length) {
      * Add entropy from system state
      * We will include whatever happens to be in the buffer, it can't hurt
      */
-    ZrtpRandom::addEntropy(buffer, length);
-
     lockRandom.lock();
+    ZrtpRandom::addEntropy(buffer, length, true);
 
     /* Copy the mainCtx and finalize it into the md buffer */
     memcpy(&randCtx2, &mainCtx, sizeof(sha512_ctx));
@@ -112,13 +110,14 @@ uint32_t ZrtpRandom::getRandomData(uint8_t* buffer, uint32_t length) {
 }
 
 
-int ZrtpRandom::addEntropy(const uint8_t *buffer, uint32_t length)
+int ZrtpRandom::addEntropy(const uint8_t *buffer, uint32_t length, bool isLocked)
 {
 
     uint8_t newSeed[64];
     size_t len = getSystemSeed(newSeed, sizeof(newSeed));
 
-    lockRandom.lock();
+    if (!isLocked) lockRandom.lock();
+
     initialize();
 
     if (buffer && length) {
@@ -128,7 +127,8 @@ int ZrtpRandom::addEntropy(const uint8_t *buffer, uint32_t length)
         sha512_hash(newSeed, len, &mainCtx);
         length += len;
     }
-    lockRandom.unlock();
+    if (!isLocked) lockRandom.unlock();
+
     return length;
 }
 
@@ -159,12 +159,14 @@ size_t ZrtpRandom::getSystemSeed(uint8_t *seed, size_t length)
     }
     else
         return num;
+#else
+#error "No random soure defined"
 #endif
     return num;
 }
 
-int zrtp_AddEntropy(const uint8_t *buffer, uint32_t length) {
-    return ZrtpRandom::addEntropy(buffer, length);
+int zrtp_AddEntropy(const uint8_t *buffer, uint32_t length, int isLocked) {
+    return ZrtpRandom::addEntropy(buffer, length, isLocked != 0);
 }
 
 int zrtp_getRandomData(uint8_t *buffer, uint32_t length) {

@@ -1,19 +1,18 @@
 /*
-  Copyright (C) 2006-2013 Werner Dittmann
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 /*
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
@@ -34,31 +33,14 @@
 #include <libzrtpcpp/ZIDCacheFile.h>
 
 
-static ZIDCacheFile* instance;
 static int errors = 0;  // maybe we will use as member of ZIDCache later...
-
-
-/**
- * A poor man's factory.
- *
- * The build process must not allow two cache file implementation classes linked
- * into the same library.
- */
-
-ZIDCache* getZidCacheInstance() {
-
-    if (instance == NULL) {
-        instance = new ZIDCacheFile();
-    }
-    return instance;
-}
 
 
 void ZIDCacheFile::createZIDFile(char* name) {
     zidFile = fopen(name, "wb+");
     // New file, generate an associated random ZID and save
     // it as first record
-    if (zidFile != NULL) {
+    if (zidFile != nullptr) {
         randomZRTP(associatedZid, IDENTIFIER_LEN);
 
         ZIDRecordFile rec;
@@ -94,7 +76,7 @@ void ZIDCacheFile::checkDoMigration(char* name) {
         return;
     }
     fclose(zidFile);            // close old ZID file
-    zidFile = NULL;
+    zidFile = nullptr;
 
     // create save file name, rename and re-open
     // if rename fails, just unlink old ZID file and create a brand new file
@@ -118,7 +100,7 @@ void ZIDCacheFile::checkDoMigration(char* name) {
         return;
     }
     zidFile = fopen(name, "wb+");    // create new format file in binary r/w mode
-    if (zidFile == NULL) {
+    if (zidFile == nullptr) {
         fclose(fdOld);
         return;
     }
@@ -164,45 +146,48 @@ ZIDCacheFile::~ZIDCacheFile() {
 int ZIDCacheFile::open(char* name) {
 
     // check for an already active ZID file
-    if (zidFile != NULL) {
+    if (zidFile != nullptr) {
         return 0;
     }
-    if ((zidFile = fopen(name, "rb+")) == NULL) {
+    fileName = name;
+
+    if ((zidFile = fopen(name, "rb+")) == nullptr) {
         createZIDFile(name);
     } else {
         checkDoMigration(name);
-        if (zidFile != NULL) {
+        if (zidFile != nullptr) {
             ZIDRecordFile rec;
             fseek(zidFile, 0L, SEEK_SET);
             if (fread(rec.getRecordData(), rec.getRecordLength(), 1, zidFile) != 1) {
                 fclose(zidFile);
-                zidFile = NULL;
+                zidFile = nullptr;
                 return -1;
             }
             if (!rec.isOwnZIDRecord()) {
                 fclose(zidFile);
-                zidFile = NULL;
+                zidFile = nullptr;
                 return -1;
             }
             memcpy(associatedZid, rec.getIdentifier(), IDENTIFIER_LEN);
         }
     }
-    return ((zidFile == NULL) ? -1 : 1);
+    return ((zidFile == nullptr) ? -1 : 1);
 }
 
 void ZIDCacheFile::close() {
 
-    if (zidFile != NULL) {
+    if (zidFile != nullptr) {
         fclose(zidFile);
-        zidFile = NULL;
+        zidFile = nullptr;
     }
 }
 
-ZIDRecord *ZIDCacheFile::getRecord(unsigned char *zid) {
+std::unique_ptr<ZIDRecord>
+ZIDCacheFile::getRecord(unsigned char *zid) {
     unsigned long pos;
     int numRead;
     //    ZIDRecordFile rec;
-    ZIDRecordFile *zidRecord = new ZIDRecordFile();
+    auto zidRecord = std::make_unique<ZIDRecordFile>();
 
     // set read pointer behind first record (
     fseek(zidFile, zidRecord->getRecordLength(), SEEK_SET);
@@ -226,8 +211,7 @@ ZIDRecord *ZIDCacheFile::getRecord(unsigned char *zid) {
     // found. We need to create a new ZID record.
     if (numRead == 0) {
         // create new record
-        delete(zidRecord);
-        zidRecord = new ZIDRecordFile();
+        zidRecord = std::make_unique<ZIDRecordFile>();
         zidRecord->setZid(zid);
         zidRecord->setValid();
         if (fwrite(zidRecord->getRecordData(), zidRecord->getRecordLength(), 1, zidFile) < 1)
@@ -238,11 +222,11 @@ ZIDRecord *ZIDCacheFile::getRecord(unsigned char *zid) {
     return zidRecord;
 }
 
-unsigned int ZIDCacheFile::saveRecord(ZIDRecord *zidRec) {
-    ZIDRecordFile *zidRecord = reinterpret_cast<ZIDRecordFile *>(zidRec);
+unsigned int ZIDCacheFile::saveRecord(ZIDRecord& zidRec) {
+    auto zidRecord = reinterpret_cast<ZIDRecordFile&>(zidRec);
 
-    fseek(zidFile, zidRecord->getPosition(), SEEK_SET);
-    if (fwrite(zidRecord->getRecordData(), zidRecord->getRecordLength(), 1, zidFile) < 1)
+    fseek(zidFile, zidRecord.getPosition(), SEEK_SET);
+    if (fwrite(zidRecord.getRecordData(), zidRecord.getRecordLength(), 1, zidFile) < 1)
         ++errors;
     fflush(zidFile);
     return 1;
@@ -252,19 +236,4 @@ int32_t ZIDCacheFile::getPeerName(const uint8_t *peerZid, std::string *name) {
     return 0;
 }
 
-void ZIDCacheFile::putPeerName(const uint8_t *peerZid, const std::string name) {
-    return;
-}
-
-
-bool ZIDCacheFile::isOpen() { return (zidFile != NULL); };
-
-const unsigned char* ZIDCacheFile::getZid() { return associatedZid; };
-
-void ZIDCacheFile::cleanup() {};
-
-void* ZIDCacheFile::prepareReadAll() { return NULL; };
-
-void* ZIDCacheFile::readNextRecord(void *stmt, std::string *output) { return NULL; };
-
-void  ZIDCacheFile::closeOpenStatment(void *stmt) {}
+void ZIDCacheFile::putPeerName(const uint8_t *peerZid, const std::string& name) { }

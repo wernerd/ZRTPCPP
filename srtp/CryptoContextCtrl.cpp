@@ -1,35 +1,32 @@
 /*
-  Copyright (C) 2011 - 2012 Werner Dittmann
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-*/
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 /* 
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <string.h>
-#include <stdio.h>
-#include <stdint.h>
+#include <cstring>
+#include <cstdint>
 
 #include <common/osSpecifics.h>
 
-#include <CryptoContextCtrl.h>
-#include <CryptoContext.h>
+#include "srtp/CryptoContextCtrl.h"
+#include "srtp/CryptoContext.h"
 
-#include <crypto/SrtpSymCrypto.h>
+#include "srtp/crypto/SrtpSymCrypto.h"
 
 
 CryptoContextCtrl::CryptoContextCtrl(uint32_t ssrc,
@@ -43,8 +40,8 @@ CryptoContextCtrl::CryptoContextCtrl(uint32_t ssrc,
                                 int32_t akeyl,
                                 int32_t skeyl,
                                 int32_t tagLength):
-ssrcCtx(ssrc), mkiLength(0),mki(NULL), replay_window(0), srtcpIndex(0),
-labelBase(3), macCtx(NULL), cipher(NULL), f8Cipher(NULL)        // SRTCP labels start at 3
+ssrcCtx(ssrc), mkiLength(0),mki(nullptr), replay_window(0), srtcpIndex(0),
+labelBase(3), macCtx(nullptr), cipher(nullptr), f8Cipher(nullptr)        // SRTCP labels start at 3
 
 {
     this->ealg = ealg;
@@ -64,13 +61,13 @@ labelBase(3), macCtx(NULL), cipher(NULL), f8Cipher(NULL)        // SRTCP labels 
     switch (ealg) {
         case SrtpEncryptionNull:
             n_e = 0;
-            k_e = NULL;
+            k_e = nullptr;
             n_s = 0;
-            k_s = NULL;
+            k_s = nullptr;
             break;
 
         case SrtpEncryptionTWOF8:
-            f8Cipher = new SrtpSymCrypto(SrtpEncryptionTWOF8);
+            f8Cipher = std::make_unique<SrtpSymCrypto>(SrtpEncryptionTWOF8);
 
             FALLTHROUGH;
         case SrtpEncryptionTWOCM:
@@ -78,11 +75,11 @@ labelBase(3), macCtx(NULL), cipher(NULL), f8Cipher(NULL)        // SRTCP labels 
             k_e = new uint8_t[n_e];
             n_s = skeyl;
             k_s = new uint8_t[n_s];
-            cipher = new SrtpSymCrypto(SrtpEncryptionTWOCM);
+            cipher = std::make_unique<SrtpSymCrypto>(SrtpEncryptionTWOCM);
             break;
 
         case SrtpEncryptionAESF8:
-            f8Cipher = new SrtpSymCrypto(SrtpEncryptionAESF8);
+            f8Cipher = std::make_unique<SrtpSymCrypto>(SrtpEncryptionAESF8);
 
             FALLTHROUGH;
         case SrtpEncryptionAESCM:
@@ -90,14 +87,17 @@ labelBase(3), macCtx(NULL), cipher(NULL), f8Cipher(NULL)        // SRTCP labels 
             k_e = new uint8_t[n_e];
             n_s = skeyl;
             k_s = new uint8_t[n_s];
-            cipher = new SrtpSymCrypto(SrtpEncryptionAESCM);
+            cipher = std::make_unique<SrtpSymCrypto>(SrtpEncryptionAESCM);
             break;
+
+        default:
+            break;      // TODO: throw exception? - cannot handle unknown encryption - what else?
     }
 
     switch (aalg) {
         case SrtpAuthenticationNull:
             n_a = 0;
-            k_a = NULL;
+            k_a = nullptr;
             this->tagLength = 0;
             break;
 
@@ -107,6 +107,9 @@ labelBase(3), macCtx(NULL), cipher(NULL), f8Cipher(NULL)        // SRTCP labels 
             k_a = new uint8_t[n_a];
             this->tagLength = tagLength;
             break;
+
+        default:
+            break;      // TODO: throw exception? - cannot handle unknown encryption - what else?
     }
 }
 
@@ -121,8 +124,7 @@ static void * (*volatile memset_volatile)(void *, int, size_t) = memset;
 
 CryptoContextCtrl::~CryptoContextCtrl(){
 
-    if (mki)
-        delete [] mki;
+    delete [] mki;
 
     if (master_key_length > 0) {
         memset_volatile(master_key, 0, master_key_length);
@@ -148,14 +150,6 @@ CryptoContextCtrl::~CryptoContextCtrl(){
         n_a = 0;
         memset_volatile(k_a, 0, n_a);
         delete [] k_a;
-    }
-    if (cipher != NULL) {
-        delete cipher;
-        cipher = NULL;
-    }
-    if (f8Cipher != NULL) {
-        delete f8Cipher;
-        f8Cipher = NULL;
     }
 }
 
@@ -183,18 +177,18 @@ void CryptoContextCtrl::srtcpEncrypt( uint8_t* rtp, int32_t len, uint32_t index,
         iv[3] = k_s[3];
 
         // The shifts transform the ssrc and index into network order
-        iv[4] = ((ssrc >> 24) & 0xff) ^ k_s[4];
-        iv[5] = ((ssrc >> 16) & 0xff) ^ k_s[5];
-        iv[6] = ((ssrc >> 8) & 0xff) ^ k_s[6];
-        iv[7] = (ssrc & 0xff) ^ k_s[7];
+        iv[4] = ((ssrc >> 24U) & 0xffU) ^ k_s[4];
+        iv[5] = ((ssrc >> 16U) & 0xffU) ^ k_s[5];
+        iv[6] = ((ssrc >> 8U) & 0xffU) ^ k_s[6];
+        iv[7] = (ssrc & 0xffU) ^ k_s[7];
 
         iv[8] = k_s[8];
         iv[9] = k_s[9];
 
-        iv[10] = ((index >> 24) & 0xff) ^ k_s[10];
-        iv[11] = ((index >> 16) & 0xff) ^ k_s[11];
-        iv[12] = ((index >> 8) & 0xff) ^ k_s[12];
-        iv[13] = (index & 0xff) ^ k_s[13];
+        iv[10] = ((index >> 24U) & 0xffU) ^ k_s[10];
+        iv[11] = ((index >> 16U) & 0xffU) ^ k_s[11];
+        iv[12] = ((index >> 8U) & 0xffU) ^ k_s[12];
+        iv[13] = (index & 0xffU) ^ k_s[13];
 
         iv[14] = iv[15] = 0;
 
@@ -216,15 +210,15 @@ void CryptoContextCtrl::srtcpEncrypt( uint8_t* rtp, int32_t len, uint32_t index,
         index = index | 0x80000000;
 
         // set the index and the encrypt flag in network order into IV
-        iv[4] = index >> 24;
-        iv[5] = index >> 16;
-        iv[6] = index >> 8;
+        iv[4] = index >> 24U;
+        iv[5] = index >> 16U;
+        iv[6] = index >> 8U;
         iv[7] = index;
 
         // The fixed header follows and fills the rest of the IV
         memcpy(iv+8, rtp, 8);
 
-        cipher->f8_encrypt(rtp, len, iv, f8Cipher);
+        cipher->f8_encrypt(rtp, len, iv, f8Cipher.get());
     }
 }
 
@@ -234,19 +228,18 @@ void CryptoContextCtrl::srtcpAuthenticate(uint8_t* rtp, int32_t len, uint32_t in
     if (aalg == SrtpAuthenticationNull) {
         return;
     }
-    int32_t macL;
+    uint32_t macL;
 
     unsigned char temp[20];
-    const unsigned char* chunks[3];
-    unsigned int chunkLength[3];
+    std::vector<const uint8_t*>chunks;
+    std::vector<uint64_t> chunkLength;
     uint32_t beIndex = zrtpHtonl(index);
 
-    chunks[0] = rtp;
-    chunkLength[0] = len;
+    chunks.push_back(rtp);
+    chunkLength.push_back(len);
 
-    chunks[1] = (unsigned char *)&beIndex;
-    chunkLength[1] = 4;
-    chunks[2] = NULL;
+    chunks.push_back((unsigned char *)&beIndex);
+    chunkLength.push_back(4);
 
     switch (aalg) {
     case SrtpAuthenticationSha1Hmac:
@@ -328,8 +321,8 @@ void CryptoContextCtrl::deriveSrtcpKeys()
 
     // as last step prepare cipher with derived key.
     cipher->setNewKey(k_e, n_e);
-    if (f8Cipher != NULL)
-        cipher->f8_deriveForIV(f8Cipher, k_e, n_e, k_s, n_s);
+    if (f8Cipher != nullptr)
+        SrtpSymCrypto::f8_deriveForIV(f8Cipher.get(), k_e, n_e, k_s, n_s);
     memset(k_e, 0, n_e);
 }
 
@@ -346,16 +339,12 @@ bool CryptoContextCtrl::checkReplay( uint32_t index )
         return true;
     }
     else {
-        if( -delta >= REPLAY_WINDOW_SIZE ) {
+        delta = -delta;
+        if (delta >= REPLAY_WINDOW_SIZE ) {
             return false;       /* Packet too old */
         }
         else {
-            if((replay_window >> (-delta)) & 0x1) {
-                return false;   /* Packet already received ! */
-            }
-            else {
-                return true;    /* Packet not yet received */
-            }
+            return ((replay_window >> (static_cast<uint64_t>(delta))) & 0x1U) == 0;
         }
     }
 }
@@ -364,13 +353,13 @@ void CryptoContextCtrl::update(uint32_t index)
 {
     int64_t delta = index - s_l;
 
-    /* update the replay bitmask */
+    /* update the replay bit mask */
     if( delta > 0 ){
-        replay_window = replay_window << delta;
-        replay_window |= 1;
+        replay_window = replay_window << static_cast<uint64_t>(delta);
+        replay_window |= 1U;
     }
     else {
-        replay_window |= ( (uint64_t)1 << -delta );
+        replay_window |= ((uint64_t)1 << static_cast<uint64_t>(-delta));
     }
     if (index > s_l)
         s_l = index;
@@ -378,7 +367,7 @@ void CryptoContextCtrl::update(uint32_t index)
 
 CryptoContextCtrl* CryptoContextCtrl::newCryptoContextForSSRC(uint32_t ssrc)
 {
-    CryptoContextCtrl* pcc = new CryptoContextCtrl(
+    auto* pcc = new CryptoContextCtrl(
             ssrc,
             this->ealg,                              // encryption algo
             this->aalg,                              // authentication algo

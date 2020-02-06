@@ -1,25 +1,27 @@
 /*
-  Copyright (C) 2017 Werner Dittmann
+Copyright 2016 Silent Circle, LLC
 
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+    http://www.apache.org/licenses/LICENSE-2.0
 
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
+//
+// Created by werner on 30.11.15.
+//
 
-#ifndef LIBZRTP_ZRTPLOGGING_H
-#define LIBZRTP_ZRTPLOGGING_H
+#ifndef LIBZINA_ZINALOGGING_H
+#define LIBZINA_ZINALOGGING_H
 
 /**
- * @file ZinaLogging.h
+ * @file
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  * @version 1.0
  *
@@ -35,19 +37,23 @@
  */
 
 #ifndef LOG_MAX_LEVEL
-#define LOG_MAX_LEVEL WARNING
+#define LOG_MAX_LEVEL VERBOSE
 #endif
 
-#define LOGGER_INSTANCE _globalZrtpLogger->
+#define LOGGER_INSTANCE _globalLogger->
 #include "Logger.h"
 
 #ifdef ANDROID_LOGGER
-extern std::shared_ptr<logging::Logger<logging::AndroidLogPolicy> > _globalZrtpLogger;
+extern std::shared_ptr<logging::Logger<logging::AndroidLogPolicy> > _globalLogger;
 
 #elif defined(LINUX_LOGGER)
-extern std::shared_ptr<logging::Logger<logging::CerrLogPolicy> > _globalZrtpLogger;
+extern std::unique_ptr<logging::Logger<logging::CerrLogPolicy> > _globalLogger;
 #elif defined(APPLE_LOGGER)
-extern std::shared_ptr<logging::Logger<logging::IosLogPolicy> > _globalZrtpLogger;
+extern void set_zina_log_cb(void *pRet, void (*cb)(void *ret, const char *tag, const char *buf));
+extern std::shared_ptr<logging::Logger<logging::IosLogPolicy> > _globalLogger;
+#elif defined(WINDOWS_LOGGER)
+// mhi: add logging for windows
+extern std::shared_ptr<logging::Logger<logging::CerrLogPolicy> > _globalLogger;
 #else
 #error "Define Logger instance according to the system in use."
 #endif
@@ -57,7 +63,7 @@ extern "C"
 {
 #endif
 
-__EXPORT extern void setZrtpLogLevel(int32_t level);
+extern void setZrtpLogLevel(int32_t level);
 
 #if defined(__cplusplus)
 }
@@ -66,4 +72,4 @@ __EXPORT extern void setZrtpLogLevel(int32_t level);
  * @}
  */
 
-#endif //LIBZRTP_ZRTPLOGGING_H
+#endif //LIBZINA_ZINALOGGING_CPP_H

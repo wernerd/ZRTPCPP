@@ -1,28 +1,28 @@
 /*
-  Copyright (C) 2010-2013 Werner Dittmann
+ * Copyright 2006 - 2018, Werner Dittmann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
 
 #include <cryptcommon/macSkein.h>
-#include <stdlib.h>
+#include <cstdlib>
 
-void macSkein(uint8_t* key, int32_t key_length,
-               const uint8_t* data, uint32_t data_length,
-               uint8_t* mac, int32_t mac_length, SkeinSize_t skeinSize)
+void macSkein(const uint8_t* key, uint64_t key_length,
+              const uint8_t* data, uint64_t data_length,
+              uint8_t* mac, size_t mac_length, SkeinSize_t skeinSize)
 {
-    SkeinCtx_t ctx;
+    SkeinCtx_t ctx = {};
 
     skeinCtxPrepare(&ctx, skeinSize);
 
@@ -31,63 +31,61 @@ void macSkein(uint8_t* key, int32_t key_length,
     skeinFinal(&ctx, mac);
 }
 
-void macSkein(uint8_t* key, int32_t key_length,
-               const uint8_t* data[], uint32_t data_length[],
-               uint8_t* mac, int32_t mac_length, SkeinSize_t skeinSize)
+void macSkein(const uint8_t* key, uint64_t key_length,
+              std::vector<const uint8_t*> data,
+              std::vector<uint64_t> dataLength,
+              uint8_t* mac, size_t mac_length, SkeinSize_t skeinSize)
 {
-    SkeinCtx_t ctx;
+    SkeinCtx_t ctx = {};
 
     skeinCtxPrepare(&ctx, skeinSize);
 
     skeinMacInit(&ctx, key, key_length, mac_length);
-    while (*data) {
-        skeinUpdate(&ctx, *data, *data_length);
-        data++;
-        data_length ++;
+    for (size_t i = 0, size = data.size(); i < size; i++) {
+        skeinUpdate(&ctx, data[i], dataLength[i]);
     }
     skeinFinal(&ctx, mac);
 }
 
-void* createSkeinMacContext(uint8_t* key, int32_t key_length, 
-                            int32_t mac_length, SkeinSize_t skeinSize)
+void* createSkeinMacContext(const uint8_t* key, uint64_t key_length,
+                            size_t mac_length, SkeinSize_t skeinSize)
 {
-    SkeinCtx_t* ctx = (SkeinCtx_t*)malloc(sizeof(SkeinCtx_t));
-    if (ctx == NULL)
-        return NULL;
+    auto* ctx = (SkeinCtx_t*)malloc(sizeof(SkeinCtx_t));
+    if (ctx == nullptr)
+        return nullptr;
 
     skeinCtxPrepare(ctx, skeinSize);
     skeinMacInit(ctx, key, key_length, mac_length);
     return ctx;
 }
 
-void* initializeSkeinMacContext(void* ctx, uint8_t* key, int32_t key_length, int32_t mac_length, SkeinSize_t skeinSize)
+void* initializeSkeinMacContext(void* ctx, const uint8_t* key, uint64_t key_length, size_t mac_length, SkeinSize_t skeinSize)
 {
-    SkeinCtx_t* pctx = (SkeinCtx_t*)ctx;
+    auto* pctx = (SkeinCtx_t*)ctx;
 
     skeinCtxPrepare(pctx, skeinSize);
     skeinMacInit(pctx, key, key_length, mac_length);
     return (void*)pctx;
 }
 
-void macSkeinCtx(void* ctx, const uint8_t* data, uint32_t data_length,
-                uint8_t* mac)
+void macSkeinCtx(void* ctx, const uint8_t* data, uint64_t data_length, uint8_t* mac)
 {
-    SkeinCtx_t* pctx = (SkeinCtx_t*)ctx;
+    auto* pctx = (SkeinCtx_t*)ctx;
 
     skeinUpdate(pctx, data, data_length);
     skeinFinal(pctx, mac);
     skeinReset(pctx);
 }
 
-void macSkeinCtx(void* ctx, const uint8_t* data[], uint32_t data_length[],
-                uint8_t* mac)
+void macSkeinCtx(void* ctx,
+                 const std::vector<const uint8_t*>& data,
+                 const std::vector<uint64_t>& dataLength,
+                 uint8_t* mac)
 {
-    SkeinCtx_t* pctx = (SkeinCtx_t*)ctx;
+    auto* pctx = (SkeinCtx_t*)ctx;
 
-    while (*data) {
-        skeinUpdate(pctx, *data, *data_length);
-        data++;
-        data_length++;
+    for (size_t i = 0, size = data.size(); i < size; i++) {
+        skeinUpdate(pctx, data[i], dataLength[i]);
     }
     skeinFinal(pctx, mac);
     skeinReset(pctx);

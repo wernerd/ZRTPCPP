@@ -1,25 +1,22 @@
 /*
-  Copyright (C) 2017 Werner Dittmann
+Copyright 2016 Silent Circle, LLC
 
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+    http://www.apache.org/licenses/LICENSE-2.0
 
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 #include "Logger.h"
 
 using namespace std;
 using namespace logging;
-
-FileLogPolicy::FileLogPolicy() : outStream(new std::ofstream()) {}
 
 FileLogPolicy::~FileLogPolicy()
 {
@@ -31,9 +28,9 @@ FileLogPolicy::~FileLogPolicy()
 void FileLogPolicy::openStream(const std::string& name)
 {
     outStream->open(name.c_str(), std::ios_base::binary|std::ios_base::out);
-//    if (!outStream->is_open()) {
-//        throw(std::runtime_error("LOGGER: Unable to open an output stream"));
-//    }
+    if (!outStream->is_open()) {
+        throw(std::runtime_error("LOGGER: Unable to open an output stream"));
+    }
 }
 
 void FileLogPolicy::closeStream()
@@ -51,20 +48,6 @@ void FileLogPolicy::write(LoggingLogLevel level, const std::string& tag, const s
     (*outStream) << msg << std::endl;
 }
 
-LoggingLogType FileLogPolicy::getLoggingLogType() {
-    return FULL;
-}
-
-
-// Stderr (cerr) log output policy
-void CerrLogPolicy::write(LoggingLogLevel level, const std::string& tag, const std::string& msg) {
-    std::cerr << msg << std::endl;
-}
-
-LoggingLogType CerrLogPolicy::getLoggingLogType() {
-    return FULL;
-}
-
 #ifdef ANDROID_LOGGER
 void AndroidLogPolicy::write(LoggingLogLevel level, const std::string& tag, const std::string& msg)
 {
@@ -76,7 +59,7 @@ void AndroidLogPolicy::write(LoggingLogLevel level, const std::string& tag, cons
         case WARNING:
             priority = ANDROID_LOG_WARN;
             break;
-        case ERROR:
+        case ERROR_LOG:
             priority = ANDROID_LOG_ERROR;
             break;
         case INFO:
@@ -91,20 +74,5 @@ void AndroidLogPolicy::write(LoggingLogLevel level, const std::string& tag, cons
     }
     if (priority != ANDROID_LOG_UNKNOWN)
         __android_log_print(priority, tag.c_str(), "%s", msg.c_str());
-}
-
-LoggingLogType AndroidLogPolicy::getLoggingLogType() {
-    return RAW;
-}
-#endif
-
-#ifdef APPLE_LOGGER
-void IosLogPolicy::write(LoggingLogLevel level, const std::string& tag, const std::string& msg) {
-            void zrtp_log(const char *t, const char *buf);
-            zrtp_log(tag.c_str(), msg.c_str());
-        }
-
-LoggingLogType IosLogPolicy::getLoggingLogType() {
-    return RAW;
 }
 #endif

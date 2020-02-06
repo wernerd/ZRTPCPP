@@ -1,55 +1,56 @@
 /*
-  Copyright (C) 2017 Werner Dittmann
+Copyright 2016 Silent Circle, LLC
 
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+    http://www.apache.org/licenses/LICENSE-2.0
 
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
+//
+// Created by werner on 30.11.15.
+//
 
 #include "ZrtpLogging.h"
 
 
 #ifdef ANDROID_LOGGER
-std::shared_ptr<logging::Logger<logging::AndroidLogPolicy> >
-        _globalZrtpLogger = std::make_shared<logging::Logger<logging::AndroidLogPolicy> >(std::string(""), std::string("libzrtp"));
+std::unique_ptr<logging::Logger<logging::AndroidLogPolicy> >
+        _globalLogger = std::make_unique<logging::Logger<logging::AndroidLogPolicy> >(std::string(""),  std::string("ZRTP"));
 
 #elif defined(LINUX_LOGGER)
 
-std::shared_ptr<logging::Logger<logging::CerrLogPolicy> >
-        _globalZrtpLogger = std::make_shared<logging::Logger<logging::CerrLogPolicy> >(std::string(""), std::string("libzrtp"));
+__EXPORT std::unique_ptr<logging::Logger<logging::CerrLogPolicy> >
+        _globalLogger = std::make_unique<logging::Logger<logging::CerrLogPolicy> >(std::string(""), std::string("ZRTP"));
 
 #elif defined(APPLE_LOGGER)
 
 /**
- * The following code is for internal iOS (APPLE) logging only
+ * The following code is for internal iOS (APPLE)logging only
  *
  */
 static void (*_zrtp_log_cb)(void *ret, const char *tag, const char *buf) = nullptr;
 static void *pLogRet = nullptr;
 
-// this function must be public. Tivi C++ code set its internal log function
 void set_zrtp_log_cb(void *pRet, void (*cb)(void *ret, const char *tag, const char *buf)){
     _zina_log_cb = cb;
     pLogRet = pRet;
 }
 
 void logging::zrtp_log(const char *tag, const char *buf) {
-    if(_zrtp_log_cb){
-        _zrtp_log_cb(pLogRet, tag, buf);
+    if(_zina_log_cb){
+        _zina_log_cb(pLogRet, tag, buf);
     }
 }
 
-std::shared_ptr<logging::Logger<logging::IosLogPolicy> >
-        _globalZrtpLogger = std::make_shared<logging::Logger<logging::IosLogPolicy> >(std::string(""), std::string("libzrt"));
+std::unique_ptr<logging::Logger<logging::IosLogPolicy> >
+        _globalLogger = std::make_unique<logging::Logger<logging::IosLogPolicy> >(std::string(""), std::string("ZRTP"));
 
 #else
 #error "Define Logger instance according to the system in use."
@@ -57,5 +58,5 @@ std::shared_ptr<logging::Logger<logging::IosLogPolicy> >
 
 void setZrtpLogLevel(int32_t level)
 {
-    _globalZrtpLogger->setLogLevel(static_cast<LoggingLogLevel>(level));
+    _globalLogger->setLogLevel(static_cast<LoggingLogLevel>(level));
 }
