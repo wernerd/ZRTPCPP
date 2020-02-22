@@ -41,7 +41,7 @@
 #endif
 
 #ifndef ZID_DATABASE
-#error "CtZrtpSession requires a database backend (Sqlite or SqlCipher) - check cmake build options (-DSQLCIPHER=ON)"
+#warning "CtZrtpSession should use a database backend (Sqlite or SqlCipher) - check cmake build options (-DSQLCIPHER=ON)"
 #endif
 
 class CtZrtpStream;

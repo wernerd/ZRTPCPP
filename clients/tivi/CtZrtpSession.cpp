@@ -30,7 +30,9 @@
 #include <CtZrtpCallback.h>
 #include <CtZrtpSession.h>
 
+#ifdef ZID_DATABASE
 #include <zrtp/libzrtpcpp/ZIDCacheDb.h>
+#endif
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
@@ -50,6 +52,7 @@ CtZrtpSession::CtZrtpSession() : zrtpMaster(nullptr), mitmMode(false), signSas(f
     clientIdString = clientId;          // Client id is ZRTP global text data
 }
 
+#ifdef ZID_DATABASE
 // Specific initialization for SilentPhone: use _one_ ZRTP cache file for _all_ sessions, even
 // for conference calls. This simplifies handling of cache data.
 // If another app likes to have different cache files (or even open the same file several times ? )
@@ -85,6 +88,32 @@ initCache(const char *zidFilename, std::shared_ptr<ZIDCache> cache) {
     }
     return zf;
 }
+#else
+
+#include "../cryptcommon/ZrtpRandom.h"
+// Setup an 'empty cache'. Use this only if you really need no cached ZRTP session
+// data. In this case the app shall force the user to check and confirm the SAS data
+// on each call to make sure nobody tampered with the ZRTP key negotiation.
+//
+// If an empty cache already exists, return it and thus also reuse the existing
+// random ZID.
+//
+// Otherwise the code generates a new random ZID and sets it as ZID in the empty cache
+// instance.
+static std::shared_ptr<ZIDCache>
+initNoCache(const char *zidFilename, std::shared_ptr<ZIDCache> cache) {
+    // Check if a cache is available.
+    // If yes -> use it
+    if (cache) {
+        return cache;
+    }
+    auto zf = std::make_shared<ZIDCacheEmpty>();
+    uint8_t newZid[IDENTIFIER_LEN] = {0};
+    ZrtpRandom::getRandomData(newZid, IDENTIFIER_LEN);
+    zf->setZid(newZid);
+    return zf;
+}
+#endif
 
 int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidFilename, std::shared_ptr<ZrtpConfigure>& config) {
     int32_t ret = 1;
@@ -100,10 +129,14 @@ int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidF
     // both boolean parameters set to true).
     if (audio) {
 
-        // If we got no config -> initialize all necessary stuff here. This is for backward compat mainly.
+        // If we got no config -> initialize all necessary stuff here. This is for backward compatibily.
         // Otherwise we expect to get a fully initialized config, including an initialized cache file instance
         if (!config) {
+#ifdef ZID_DATABASE
             auto zf = initCache(zidFilename, zrtpCache);
+#else
+            auto zf = initNoCache(zidFilename, zrtpCache);
+#endif
             if (!zf) {
                 return -1;
             }
