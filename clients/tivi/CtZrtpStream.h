@@ -58,6 +58,16 @@ public:
 
     CtZrtpSession::tiviStatus getPreviousState() {return prevTiviState;}
 
+    /**
+     * @brief Deletes the timeout provider - use with care.
+     *
+     * The timeout provider is a global singleton and usually lives forever once
+     * created. An VoIP app which uses ZRTP needs a timeout provider and only
+     * gets rid of it once the whole app exits. One timeout provider can serve
+     * all ZRTP instances, thus it's a global, long-living singleton.
+     */
+    static void releaseTimeoutProvider();
+
 protected:
 
     CtZrtpSession::streamName  index;      //!< either audio or video. Index in stream array
@@ -82,16 +92,6 @@ protected:
     friend class CtZrtpSession;
 
     ~CtZrtpStream() override;
-
-    /**
-     * @brief Deletes the timeout provider - use with care.
-     *
-     * The timeout provider is a global singleton and usually lives forever once
-     * created. An VoIP app which uses ZRTP needs a timeout provider and only
-     * gets rid of it once the whole app exits. One timeout provider can serve
-     * all ZRTP instances, thus it's a global, long-living singleton.
-     */
-    static void releaseTimeoutProvider();
 
     /**
      * Set the application's callback class.
