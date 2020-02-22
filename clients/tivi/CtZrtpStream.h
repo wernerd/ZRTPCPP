@@ -91,7 +91,7 @@ protected:
      * gets rid of it once the whole app exits. One timeout provider can serve
      * all ZRTP instances, thus it's a global, long-living singleton.
      */
-    void releaseTimeoutProvider();
+    static void releaseTimeoutProvider();
 
     /**
      * Set the application's callback class.
