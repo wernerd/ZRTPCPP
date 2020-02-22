@@ -110,6 +110,12 @@ CtZrtpStream::CtZrtpStream():
     memset((void*)srtpErrorInfo, 0, sizeof(srtpErrorInfo));
 }
 
+void CtZrtpStream::releaseTimeoutProvider() {
+    auto timeoutProvider = staticTimeoutProvider;       // clear first before deleting
+    staticTimeoutProvider = nullptr;
+    delete timeoutProvider;
+}
+
 void CtZrtpStream::setUserCallback(CtZrtpCb* ucb) {
     zrtpUserCallback = ucb;
 }

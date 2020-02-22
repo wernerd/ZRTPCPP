@@ -84,6 +84,16 @@ protected:
     ~CtZrtpStream() override;
 
     /**
+     * @brief Deletes the timeout provider - use with care.
+     *
+     * The timeout provider is a global singleton and usually lives forever once
+     * created. An VoIP app which uses ZRTP needs a timeout provider and only
+     * gets rid of it once the whole app exits. One timeout provider can serve
+     * all ZRTP instances, thus it's a global, long-living singleton.
+     */
+    void releaseTimeoutProvider();
+
+    /**
      * Set the application's callback class.
      *
      * @param ucb
