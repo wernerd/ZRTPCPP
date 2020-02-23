@@ -1,0 +1,63 @@
+plugins {
+    id 'com.android.library'
+    id 'maven-publish'
+}
+
+android {
+    compileSdkVersion 29
+
+    // Encapsulates your external native build configurations.
+    externalNativeBuild {
+
+        // Encapsulates our CMake build configurations.
+        cmake {
+            // Provides a relative path to our CMake build script.
+            path "../../CMakeLists.txt"
+        }
+    }
+
+    defaultConfig {
+        minSdkVersion 21
+        targetSdkVersion 29
+        versionCode 1
+        versionName "1.0"
+
+        // This block is different from the one you use to link Gradle
+        // to your CMake or ndk-build script.
+        externalNativeBuild {
+            // For ndk-build, instead use the ndkBuild block.
+            cmake {
+                // Passes optional arguments to CMake. Make sure it is a list, not just a string :-) .
+                arguments "-DANDROID_NATIVE_API_LEVEL=21", "-DANDROID=true", "-DCORE_LIB=true", "-DCRYPTO_STANDALONE=true", "-DSRTP=true"
+                targets "zrtpcppcore"
+
+              // Sets a flag to enable format macro constants for the C compiler.
+              // cFlags "-D__STDC_FORMAT_MACROS"
+
+              // Sets optional flags for the C++ compiler. In our case these are set in the CMakeLists.txt
+              // cppFlags "-fexceptions", "-frtti"
+            }
+        }
+
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64', 'x86'
+        }
+    }
+    // Set path to our Java/Kotlin sources that implement the interface to the native functions
+//     sourceSets {
+//         main {
+//             java.srcDirs = ['../cpp/javaNative']
+//         }
+//     }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+}
+
+// dependencies {
+//     compileOnly fileTree(include: ['*.jar'], dir: '../cpp/javaNative')
+// //    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+// }

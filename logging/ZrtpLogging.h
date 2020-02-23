@@ -44,7 +44,7 @@ limitations under the License.
 #include "Logger.h"
 
 #ifdef ANDROID_LOGGER
-extern std::shared_ptr<logging::Logger<logging::AndroidLogPolicy> > _globalLogger;
+extern std::unique_ptr<logging::Logger<logging::AndroidLogPolicy> > _globalLogger;
 
 #elif defined(LINUX_LOGGER)
 extern std::unique_ptr<logging::Logger<logging::CerrLogPolicy> > _globalLogger;

@@ -49,6 +49,9 @@ void FileLogPolicy::write(LoggingLogLevel level, const std::string& tag, const s
 }
 
 #ifdef ANDROID_LOGGER
+
+#include <android/log.h>
+
 void AndroidLogPolicy::write(LoggingLogLevel level, const std::string& tag, const std::string& msg)
 {
     android_LogPriority priority = ANDROID_LOG_UNKNOWN;

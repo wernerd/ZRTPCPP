@@ -42,6 +42,13 @@ option(TESTS "Generate Unit test." OFF)
 option(ANDROID "Generate Android makefiles (Android.mk)" OFF)
 option(JAVA "Generate Java support files (requires JDK and SWIG)" OFF)
 
+if(MSVC60)
+    set(BUILD_STATIC ON CACHE BOOL "static linking only" FORCE)
+    MARK_AS_ADVANCED(BUILD_STATIC)
+else()
+    option(BUILD_STATIC "Set to OFF to build shared libraries" OFF)
+endif()
+
 #
 # If your project needs SAS relay support (refer to RFC6189 chapter 7.3) then
 # uncomment the following add_definitiones statement. Make sure you understand
@@ -58,7 +65,6 @@ if (SQLITE AND SQLCIPHER)
     MESSAGE(FATAL_ERROR "Cannot build with multiple DB backends.")
 endif()
 
-
 if (CCRTP)
     set (PACKAGE libzrtpcpp)
     set(zrtplibName zrtpcpp)
@@ -72,16 +78,11 @@ elseif (TIVI)
 elseif (CORE_LIB)
     set (PACKAGE libzrtpcore)
     set(zrtplibName zrtpcppcore)
+    if (ANDROID)
+        set(BUILD_STATIC ON)
+    endif()
 else()
     MESSAGE(FATAL_ERROR "No client defined: define client using -DCCRTP=true, or -DTIVI=true, or -DCORE_LIB=true.")
-endif()
-
-
-if(MSVC60)
-    set(BUILD_STATIC ON CACHE BOOL "static linking only" FORCE)
-    MARK_AS_ADVANCED(BUILD_STATIC)
-else()
-    option(BUILD_STATIC "Set to OFF to build shared libraries" OFF)
 endif()
 
 # set to true for debug and trace during CMakeLists development

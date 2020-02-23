@@ -24,3 +24,6 @@ helper/
 docLocal/
 cmake-build-*/
 .idea/
+
+**/.cxx/
+**/.gradle/

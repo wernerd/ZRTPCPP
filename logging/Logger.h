@@ -141,7 +141,7 @@ namespace logging {
 
     public:
         FileLogPolicy() : outStream(new std::ofstream()) {}
-        ~FileLogPolicy();
+        virtual ~FileLogPolicy();
 
         void openStream(const std::string& name) override ;
         void closeStream() override ;
@@ -156,7 +156,7 @@ namespace logging {
     {
     public:
         CerrLogPolicy() = default;
-        ~CerrLogPolicy() = default;
+        virtual ~CerrLogPolicy() = default;
 
         void openStream(const std::string& name) override {};
         void closeStream() override {};
@@ -174,7 +174,7 @@ namespace logging {
     {
     public:
         AndroidLogPolicy() = default;
-        ~AndroidLogPolicy() = default;
+        virtual ~AndroidLogPolicy() = default;
 
         void openStream(const std::string& name) override {};
         void closeStream() override {};
