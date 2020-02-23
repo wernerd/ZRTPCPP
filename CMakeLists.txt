@@ -367,7 +367,7 @@ if (TIVI)
 endif()
 
 if (CORE_LIB)
-    add_subdirectory(clients/no_client)
+    add_subdirectory(clients/genericClient)
 endif()
 
 if (TESTS)

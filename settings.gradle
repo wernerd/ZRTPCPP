@@ -1,1 +1,1 @@
-include ':AndroidZrtpLib:noClient'
+include ':AndroidZrtpLib:zrtpLib'
