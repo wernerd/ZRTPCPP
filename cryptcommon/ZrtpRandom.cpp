@@ -23,6 +23,11 @@
 #include <zrtp/crypto/sha2.h>
 #include "common/osSpecifics.h"
 
+#if defined(_WINDOWS)
+#include <windows.h>
+#include <ntsecapi.h>
+#endif
+
 static sha512_ctx mainCtx;
 
 static std::mutex lockRandom;
@@ -151,7 +156,7 @@ size_t ZrtpRandom::getSystemSeed(uint8_t *seed, size_t length)
 {
     size_t num = 0;
 
-#if !(defined(_WIN32) || defined(_WIN64))
+#if !defined(_WINDOWS)
     int rnd = open("/dev/urandom", O_RDONLY);
     if (rnd >= 0) {
         num = read(rnd, seed, length);
@@ -160,7 +165,15 @@ size_t ZrtpRandom::getSystemSeed(uint8_t *seed, size_t length)
     else
         return num;
 #else
-#error "No random soure defined"
+    //--------------------------------------------------------------------
+    // Generate a random initialization vector.
+
+    if (RtlGenRandom(seed, length)) {
+        return static_cast<size_t >(length);
+    }
+    else {
+        return 0;
+    }
 #endif
     return num;
 }
