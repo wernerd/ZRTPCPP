@@ -47,17 +47,17 @@ public:
     }
 };
 
-TEST_F(UtilityTestFixture, TimeTest) {
-
-    constexpr uint64_t ms = 1555521975329;
-    constexpr time_t sec = 1555522670;
-    const string expectedMs("2019-04-17T17:26:15.329Z");
-    const string expectedSec("2019-04-17T17:37:50Z");
-
-    auto fmtMs = zrtp::Utilities::getIsoTimeUtcMs(ms);
-    ASSERT_EQ(expectedMs, fmtMs);
-
-    auto fmtSec = zrtp::Utilities::getIsoTimeUtc(sec);
-    ASSERT_EQ(expectedSec, fmtSec);
-}
+//TEST_F(UtilityTestFixture, TimeTest) {
+//
+//    constexpr uint64_t ms = 1555521975329;
+//    constexpr time_t sec = 1555522670;
+//    const string expectedMs("2019-04-17T17:26:15.329Z");
+//    const string expectedSec("2019-04-17T17:37:50Z");
+//
+//    auto fmtMs = zrtp::Utilities::getIsoTimeUtcMs(ms);
+//    ASSERT_EQ(expectedMs, fmtMs);
+//
+//    auto fmtSec = zrtp::Utilities::getIsoTimeUtc(sec);
+//    ASSERT_EQ(expectedSec, fmtSec);
+//}
 
