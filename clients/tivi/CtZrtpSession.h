@@ -21,7 +21,7 @@
 #ifndef _CTZRTPSESSION_H_
 #define _CTZRTPSESSION_H_
 
-#include <cstdio>
+#include <stdio.h>
 #include <cstdint>
 #include <string>
 #include <cstring>
@@ -40,9 +40,9 @@
   #endif
 #endif
 
-#ifndef ZID_DATABASE
-#warning "CtZrtpSession should use a database backend (Sqlite or SqlCipher) - check cmake build options (-DSQLCIPHER=ON)"
-#endif
+//#ifndef ZID_DATABASE
+//#warning "CtZrtpSession should use a database backend (Sqlite or SqlCipher) - check cmake build options (-DSQLCIPHER=ON)"
+//#endif
 
 class CtZrtpStream;
 class CtZrtpCb;

@@ -18,6 +18,7 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
+#include <cstdio>
 #include <cstring>
 #include <cstdint>
 

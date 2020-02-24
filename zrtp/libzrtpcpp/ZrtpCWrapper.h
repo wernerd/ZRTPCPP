@@ -32,8 +32,8 @@
  * @see ZRtp
  */
 
-#include <stdint.h>
-#include <stddef.h>
+#include <cstdint>
+#include <cstddef>
 
 /**
  * Defines to specify the role a ZRTP peer has.
