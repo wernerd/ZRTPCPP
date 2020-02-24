@@ -32,20 +32,19 @@ __EXPORT std::unique_ptr<logging::Logger<logging::CerrLogPolicy> >
 #elif defined(APPLE_LOGGER)
 
 /**
- * The following code is for internal iOS (APPLE)logging only
- *
+ * The following code is for logging with specific app defined callback function, usually used in iOS apps
  */
-static void (*_zrtp_log_cb)(void *ret, const char *tag, const char *buf) = nullptr;
+static void (*_zrtpLogCb)(void *ret, const char *tag, const char *buf) = nullptr;
 static void *pLogRet = nullptr;
 
-void set_zrtp_log_cb(void *pRet, void (*cb)(void *ret, const char *tag, const char *buf)){
-    _zina_log_cb = cb;
+void setZrtpLogCb(void *pRet, void (*cb)(void *ret, const char *tag, const char *buf)){
+    _zrtpLogCb = cb;
     pLogRet = pRet;
 }
 
-void logging::zrtp_log(const char *tag, const char *buf) {
-    if(_zina_log_cb){
-        _zina_log_cb(pLogRet, tag, buf);
+void logging::zrtpLog(const char *tag, const char *buf) {
+    if(_zrtpLogCb){
+        _zrtpLogCb(pLogRet, tag, buf);
     }
 }
 
