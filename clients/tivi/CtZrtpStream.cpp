@@ -20,6 +20,7 @@
  */
 
 #include <cinttypes>
+#include <cstdio>
 
 #include <common/osSpecifics.h>
 
@@ -473,19 +474,19 @@ int CtZrtpStream::isSecure() {
 
 #define T_ZRTP_LB(_K,_V)                                               \
         if(iLen+1 == sizeof(_K) && strncmp(key, _K, iLen) == 0) {      \
-            return snprintf(p, maxLen, "%s", _V);}
+            return ::snprintf(p, maxLen, "%s", _V);}
 
 #define T_ZRTP_F(_K,_FV)                                               \
         if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0) {       \
-            return snprintf(p, maxLen, "%d", (!!(info->secretsCached & _FV)) << (!!(info->secretsMatchedDH & _FV)));}
+            return ::snprintf(p, maxLen, "%d", (!!(info->secretsCached & _FV)) << (!!(info->secretsMatchedDH & _FV)));}
 
 #define T_ZRTP_I(_K,_I)                                                \
         if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0) {       \
-            return snprintf(p, maxLen, "%d", _I);}
+            return ::snprintf(p, maxLen, "%d", _I);}
 
 #define T_ZRTP_L(_K,_I)                                                \
         if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0) {       \
-            return snprintf(p, maxLen, "%" PRId64, _I);}
+            return ::snprintf(p, maxLen, "%" PRId64, _I);}
 
 int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
 
