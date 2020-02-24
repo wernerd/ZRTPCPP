@@ -9,7 +9,7 @@ For details, see http://sourceforge.net/projects/libb64
 #define BASE64_CDECODE_H
 
 #include <stdint.h>
-#include <zconf.h>
+#include <stddef.h>
 
 #if defined(__cplusplus)
 extern "C"
