@@ -129,6 +129,7 @@ void Utilities::store16(uint16_t val, uint8_t *ptr)
     *ptr = (uint8_t)val;
 }
 
+#if 0
 string
 Utilities::getIsoTimeUtc(time_t theTime)
 {
@@ -156,6 +157,7 @@ Utilities::getIsoTimeUtcMs(int64_t theTime)
 
     return string(outBuffer);
 }
+#endif
 
 StringUnique
 Utilities::hexdump(const char* title, const unsigned char *s, size_t l) {
