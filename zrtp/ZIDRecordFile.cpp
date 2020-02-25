@@ -98,3 +98,49 @@ void ZIDRecordFile::setMiTMData(const unsigned char* data) {
     memcpy(record.mitmKey, data, RS_LENGTH);
     setMITMKeyAvailable();
 }
+
+void ZIDRecordFile::setZid(const unsigned char *zid) {
+    memcpy(record.identifier, zid, IDENTIFIER_LEN);
+}
+
+void ZIDRecordFile::setRs1Valid()    { record.flags |= RS1Valid; }
+
+void ZIDRecordFile::resetRs1Valid()  { record.flags &= ~RS1Valid; }
+
+bool ZIDRecordFile::isRs1Valid()     { return ((record.flags & RS1Valid) == RS1Valid); }
+
+void ZIDRecordFile::setRs2Valid()    { record.flags |= RS2Valid; }
+
+void ZIDRecordFile::resetRs2Valid()  { record.flags &= ~RS2Valid; }
+
+bool ZIDRecordFile::isRs2Valid()     { return ((record.flags & RS2Valid) == RS2Valid); }
+
+void ZIDRecordFile::setMITMKeyAvailable()     { record.flags |= MITMKeyAvailable; }
+
+void ZIDRecordFile::resetMITMKeyAvailable()   { record.flags &= ~MITMKeyAvailable; }
+
+bool ZIDRecordFile::isMITMKeyAvailable()      { return ((record.flags & MITMKeyAvailable) == MITMKeyAvailable); }
+
+void ZIDRecordFile::setOwnZIDRecord()   { record.flags = OwnZIDRecord; }
+
+void ZIDRecordFile::resetOwnZIDRecord()  { record.flags = 0; }
+
+bool ZIDRecordFile::isOwnZIDRecord()    { return (record.flags == OwnZIDRecord); }  // no other flag allowed if own ZID
+
+void ZIDRecordFile::setSasVerified()    { record.flags |= SASVerified; }
+
+void ZIDRecordFile::resetSasVerified()  { record.flags &= ~SASVerified; }
+
+bool ZIDRecordFile::isSasVerified()     { return ((record.flags & SASVerified) == SASVerified); }
+
+const uint8_t* ZIDRecordFile::getIdentifier()  {return record.identifier; }
+
+const unsigned char* ZIDRecordFile::getRs1()   { return record.rs1Data; }
+
+const unsigned char* ZIDRecordFile::getRs2()  { return record.rs2Data; }
+
+const unsigned char* ZIDRecordFile::getMiTMData()  {return record.mitmKey; }
+
+int ZIDRecordFile::getRecordType()  {return FILE_TYPE_RECORD; }
+
+int64_t ZIDRecordFile::getSecureSince()  { return 0; }

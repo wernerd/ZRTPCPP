@@ -23,9 +23,13 @@
  */
 #ifndef UNIT_TEST
 #include <libzrtpcpp/Base32.h>
+#include <common/osSpecifics.h>
+
 #else
 #include "libzrtpcpp/Base32.h"
 #endif
+
+using namespace std;
 
 int divceil(int a, int b) {
 	int c;
@@ -143,17 +147,20 @@ void Base32::b2a_l(const unsigned char* os, int len,
 		x = *--osp;
 		result[--resp] = chars[x % 32]; /* The least sig 5 bits go into the final quintet. */
 		x /= 32;	/* ... now we have 3 bits worth in x... */
+
 		case 4:
 		    x |= ((unsigned long)(*--osp)) << 3U; /* ... now we have 11 bits worth in x... */
 		    result[--resp] = chars[x % 32];
 		    x /= 32; /* ... now we have 6 bits worth in x... */
 		    result[--resp] = chars[x % 32];
 		    x /= 32; /* ... now we have 1 bits worth in x... */
+
 		case 3:
 		    x |= ((unsigned long)(*--osp)) << 1U; /* The 8 bits from the 2-indexed octet.
 							    So now we have 9 bits worth in x... */
 		    result[--resp] = chars[x % 32];
 		    x /= 32; /* ... now we have 4 bits worth in x... */
+
 		case 2:
 		    x |= ((unsigned long)(*--osp)) << 4U; /* The 8 bits from the 1-indexed octet.
 							    So now we have 12 bits worth in x... */
@@ -161,6 +168,7 @@ void Base32::b2a_l(const unsigned char* os, int len,
 		    x /= 32; /* ... now we have 7 bits worth in x... */
 		    result[--resp] = chars[x%32];
 		    x /= 32; /* ... now we have 2 bits worth in x... */
+
 		case 1:
 		    x |= ((unsigned long)(*--osp)) << 2U; /* The 8 bits from the 0-indexed octet.
 							    So now we have 10 bits worth in x... */
@@ -207,26 +215,33 @@ void Base32::a2b_l(const string& cs, size_t size, const size_t lengthinbits ) {
 	case 0:
 	    do {
 		x = revchars[cs[--csp]&0xff]; /* 5 bits... */
+
 		case 7:
 		    x |= revchars[cs[--csp]&0xff] << 5; /* 10 bits... */
 		    *--resp = x % 256;
 		    x /= 256; /* 2 bits... */
+
 		case 6:
 		    x |= revchars[cs[--csp]&0xff] << 2; /* 7 bits... */
+
 		case 5:
 		    x |= revchars[cs[--csp]&0xff] << 7; /* 12 bits... */
 		    *--resp = x % 256;
 		    x /= 256; /* 4 bits... */
+
 		case 4:
 		    x |= revchars[cs[--csp]&0xff] << 4; /* 9 bits... */
 		    *--resp = x % 256;
 		    x /= 256; /* 1 bit... */
+
 		case 3:
 		    x |= revchars[cs[--csp]&0xff] << 1; /* 6 bits... */
+
 		case 2:
 		    x |= revchars[cs[--csp]&0xff] << 6; /* 11 bits... */
 		    *--resp = x % 256;
 		    x /= 256; /* 3 bits... */
+
 		case 1:
 		    x |= revchars[cs[--csp]&0xff] << 3; /* 8 bits... */
 		    *--resp = x % 256;

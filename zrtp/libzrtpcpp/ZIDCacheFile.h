@@ -85,7 +85,7 @@ public:
     void cleanup() override {};
 
     std::string& getFileName() override { return fileName; };
-    
+
     void *prepareReadAll() override { return nullptr; };
     void *readNextRecord(void *stmt, std::string *output) override { return nullptr; };
     void closeOpenStatement(void *stmt) override {}

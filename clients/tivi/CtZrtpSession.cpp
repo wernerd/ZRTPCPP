@@ -201,6 +201,7 @@ CtZrtpSession::~CtZrtpSession() {
 }
 
 void zrtp_log(const char *tag, const char *buf);
+extern "C" void setZrtpLogLevel(int32_t level);
 void CtZrtpSession::setupConfiguration(ZrtpConfigure *conf) {
 
 // Set _WITHOUT_TIVI_ENV to a real name that is TRUE if the Tivi client is compiled/built.
@@ -240,6 +241,7 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
     GET_CFG_I(iDisableBernsteinCurve3617, "iDisableBernsteinCurve3617");
     GET_CFG_I(iEnableDisclosure, "iEnableDisclosure");
 
+    setZrtpLogLevel(4);
     conf->clear();
 
     /*
@@ -262,6 +264,8 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
      * 
      */
     if (iPreferNIST == 0) {
+        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("SDH1"));
+
         if (iDisableBernsteinCurve3617 == 0)
             conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));
         if (iDisableECDH384 == 0)
@@ -301,7 +305,7 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
 
 
     // Handling of Hash algorithms: similar to PK, if PreferNIST is false
-    // then put Skein in fromt oF SHA. Regardless if the Hash is enabled or
+    // then put Skein in front oF SHA. Regardless if the Hash is enabled or
     // not: if configuration enables a large curve then also use the large
     // hashes.
     if (iPreferNIST == 0) {

@@ -52,37 +52,37 @@ public:
      */
     ZrtpCallbackWrapper(zrtp_Callbacks* cb, ZrtpContext* ctx);
 
-    int32_t sendDataZRTP ( const unsigned char* data, int32_t length );
+    int32_t sendDataZRTP ( const unsigned char* data, int32_t length ) override;
 
-    int32_t activateTimer ( int32_t time );
+    int32_t activateTimer ( int32_t time ) override;
 
-    int32_t cancelTimer();
+    int32_t cancelTimer() override;
 
-    void sendInfo ( GnuZrtpCodes::MessageSeverity severity, int32_t subCode );
+    void sendInfo ( GnuZrtpCodes::MessageSeverity severity, int32_t subCode ) override;
 
-    bool srtpSecretsReady ( SrtpSecret_t* secrets, EnableSecurity part );
+    bool srtpSecretsReady ( SrtpSecret_t* secrets, EnableSecurity part ) override;
 
-    void srtpSecretsOff ( EnableSecurity part );
+    void srtpSecretsOff ( EnableSecurity part ) override;
 
-    void srtpSecretsOn ( std::string c, std::string s, bool verified );
+    void srtpSecretsOn ( std::string c, std::string s, bool verified ) override;
 
-    void handleGoClear();
+    void handleGoClear() override;
 
-    void zrtpNegotiationFailed ( GnuZrtpCodes::MessageSeverity severity, int32_t subCode );
+    void zrtpNegotiationFailed ( GnuZrtpCodes::MessageSeverity severity, int32_t subCode ) override;
 
-    void zrtpNotSuppOther();
+    void zrtpNotSuppOther() override;
 
-    void synchEnter();
+    void synchEnter() override;
 
-    void synchLeave();
+    void synchLeave() override;
 
-    void zrtpAskEnrollment (GnuZrtpCodes::InfoEnrollment info );
+    void zrtpAskEnrollment (GnuZrtpCodes::InfoEnrollment info ) override;
 
-    void zrtpInformEnrollment (GnuZrtpCodes::InfoEnrollment info );
+    void zrtpInformEnrollment (GnuZrtpCodes::InfoEnrollment info ) override;
 
-    void signSAS (uint8_t* sasHash );
+    void signSAS (uint8_t* sasHash ) override;
 
-    bool checkSASSignature (uint8_t* sasHash );
+    bool checkSASSignature (uint8_t* sasHash ) override;
 
 private:
     void init();

@@ -18,13 +18,13 @@ if [ "x$ANDROID_NDK" = "x" ]; then
     exit 1
 fi
 
-#if [ "x$SC_BUILD_TYPE" = "xDEVELOP" ]; then
-#    BUILD_TYPE=Debug
-#    echo "*** building develop configuration"
-#else
-#   BUILD_TYPE="Release"
-#   echo "*** building release configuration"
-#fi
+if [ "x$SC_BUILD_TYPE" = "xDEVELOP" ]; then
+    BUILD_TYPE=Debug
+    echo "*** building develop configuration"
+else
+   BUILD_TYPE="Release"
+   echo "*** building release configuration"
+fi
 
 # remove old build dir and files that may hang around after an unsuccessful build
 rm -rf buildTiviAndroid
@@ -33,7 +33,7 @@ rm -f buildinfo_*.c
 mkdir buildTiviAndroid
 pushd buildTiviAndroid
 
-cmake -DTIVI=true -DBUILD_STATIC=true -DAXO=true -DANDROID=true ..  # -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
+cmake -DTIVI=true -DBUILD_STATIC=true -DAXO=true -DANDROID=true -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
 
 pushd clients/tivi/android
 

@@ -150,7 +150,7 @@ int ZIDCacheFile::open(char* name) {
         return 0;
     }
     fileName = name;
-    
+
     if ((zidFile = fopen(name, "rb+")) == nullptr) {
         createZIDFile(name);
     } else {

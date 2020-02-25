@@ -738,15 +738,15 @@ void ZrtpStateClass::evWaitCommit() {
  * Responder.
  *
  * When entering this transition function
- * - assume Initiator mode, may change if we reveice a Commit here
+ * - assume Initiator mode, may change if we receive a Commit here
  * - sentPacket contains Commit packet
  * - Commit timer (T2) active
  *
  * Possible events in this state are:
  * - timeout for sent Commit packet: causes a resend check and repeat sending
  *   of Commit packet
- * - Commit: This is a Commit clash. Break the tie accroding to chapter 5.2
- * - DHPart1: start first half of DH key agreement. Perpare and send own DHPart2
+ * - Commit: This is a Commit clash. Break the tie according to chapter 5.2
+ * - DHPart1: start first half of DH key agreement. Prepare and send own DHPart2
  *   and switch to state WaitConfirm1.
  */
 
@@ -802,7 +802,7 @@ void ZrtpStateClass::evCommitSent() {
             }
 
             // if our hvi is less than peer's hvi: switch to Responder mode and
-            // send DHPart1 or Confirm1 packet. Peer (as Initiator) will retrigger if
+            // send DHPart1 or Confirm1 packet. Peer (as Initiator) will re-trigger if
             // necessary
             //
             if (parent->compareCommit(&zpCo) < 0) {

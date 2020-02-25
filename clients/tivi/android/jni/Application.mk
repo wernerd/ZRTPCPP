@@ -20,7 +20,7 @@
 APP_PLATFORM := android-14
 APP_STL := gnustl_shared
 APP_MODULES := zrtpcpp
-APP_ABI := armeabi-v7a x86
+APP_ABI := armeabi-v7a x86 arm64-v8a
 APP_CPPFLAGS += -std=c++11
 NDK_TOOLCHAIN_VERSION=clang
 

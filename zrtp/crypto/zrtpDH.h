@@ -56,15 +56,16 @@ void randomZRTP(uint8_t *buf, int32_t length);
 #if defined(__cplusplus)
 
 #include <libzrtpcpp/ZrtpConfigure.h>
-#include <common/SecureArray.h>
+#include "../common/SecureArray.h"
+#include <cryptcommon/sidhp751/keymanagement/SidhKeyManagement.h>
 
-const int32_t DH2K = 0;
-const int32_t DH3K = 1;
-const int32_t EC25 = 2;
-const int32_t EC38 = 3;
-const int32_t E255 = 4;
-const int32_t E414 = 5;
-
+static const uint DH2K_LENGTH_BYTES = 2048 / 8;
+static const uint DH3K_LENGTH_BYTES = 3072 / 8;
+static const uint EC25_LENGTH_BYTES = 2*(256 / 8);
+static const uint EC38_LENGTH_BYTES = 2*(384 / 8);
+static const uint E255_LENGTH_BYTES = 32 ;
+static const uint E414_LENGTH_BYTES = 2*((414+7) / 8);
+static const uint SDH1_LENGTH_BYTES = sidh751KM::PUBLIC_KEY_LENGTH_BYTES;
 
 /**
  * Implementation of Diffie-Helman for ZRTP
@@ -79,18 +80,35 @@ const int32_t E414 = 5;
 
 class ZrtpDH {
 
-private:
-    void* ctx;      ///< Context the DH
-    int pkType;     ///< Which type of DH to use
-
 public:
+
+    enum ProtocolState {
+        Commit,
+        DhPart1
+    };
+
+    enum ErrorCode {
+        SUCCESS = 0,
+        ILLEGAL_ARGUMENT = -5,
+        UNKNOWN_ALGORITHM = -6,
+
+        SDH1_INIT_FAILED = -10,
+        SDH1_KEY_A_FAILED = -11,
+        SDH1_KEY_B_FAILED = -12,
+        SDH1_KEY_A_SECRET_FAILED = -13,
+        SDH1_KEY_B_SECRET_FAILED = -14,
+
+    };
+
     /**
      * Create a Diffie-Hellman key agreement algorithm
      * 
      * @param type
      *     Name of the DH algorithm to use
+     * @param state
+     *     At which protocol state ZRTP needs a new DH
      */
-    explicit ZrtpDH(const char* type);
+    explicit ZrtpDH(const char* type, ProtocolState state);
     
     ~ZrtpDH();
 
@@ -103,11 +121,11 @@ public:
     int32_t generatePublicKey();
 
     /**
-     * Returns the size in bytes of the DH parameter p.
+     * Returns the size in bytes of the DH parameter p which is the size of the shared secret.
      *
      * @return Size in bytes.
      */
-    [[nodiscard]] uint32_t getDhSize() const;
+    [[nodiscard]] uint32_t getSharedSecretSize() const;
 
     /**
      * Returns the size in bytes of computed public key.
@@ -166,6 +184,26 @@ public:
      *     Pointer to DH algorithm name
      */
     const char* getDHtype();
+
+    ErrorCode getErrorCode() const { return errorCode; }
+
+private:
+
+    enum Algorithm {
+        DH2K,
+        DH3K,
+        EC25,
+        EC38,
+        E255,
+        E414,
+        SDH1
+    };
+
+    void* ctx;                      ///< Context the DH
+    int pkType;                     ///< Which type of DH to use
+    ProtocolState protocolState;    ///< Create DH for this protocol state
+    ErrorCode errorCode;
+
 };
 #endif /*__cpluscplus */
 #endif

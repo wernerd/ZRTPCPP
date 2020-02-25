@@ -40,6 +40,7 @@
 #include <string>
 #include <memory>
 
+
 extern int divceil(int a, int b);
 
 class EmojiBase32 {

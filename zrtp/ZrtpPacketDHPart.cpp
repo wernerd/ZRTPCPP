@@ -19,6 +19,17 @@
  */
 
 #include <libzrtpcpp/ZrtpPacketDHPart.h>
+#include <zrtp/crypto/zrtpDH.h>
+#include <logging/ZrtpLogging.h>
+
+static const int FIXED_NUM_WORDS = sizeof(DHPartPacket_t) / ZRTP_WORD_SIZE + 2;         // +2 for MAC
+static const int DH2K_WORDS = FIXED_NUM_WORDS + DH2K_LENGTH_BYTES / ZRTP_WORD_SIZE;     // 2048 / 8 / ZRTP_WORD_SIZE
+static const int DH3K_WORDS = FIXED_NUM_WORDS + DH3K_LENGTH_BYTES / ZRTP_WORD_SIZE;     // 3072 / 8 / ZRTP_WORD_SIZE
+static const int EC25_WORDS = FIXED_NUM_WORDS + EC25_LENGTH_BYTES / ZRTP_WORD_SIZE;     // 2*(256 / 8 / ZRTP_WORD_SIZE)
+static const int EC38_WORDS = FIXED_NUM_WORDS + EC38_LENGTH_BYTES / ZRTP_WORD_SIZE;     // 2*(384 / 8 / ZRTP_WORD_SIZE)
+static const int E255_WORDS = FIXED_NUM_WORDS + E255_LENGTH_BYTES / ZRTP_WORD_SIZE;     // 32 / ZRTP_WORD_SIZE
+static const int E414_WORDS = FIXED_NUM_WORDS + E414_LENGTH_BYTES / ZRTP_WORD_SIZE;     // 2*((414+7) / 8 / ZRTP_WORD_SIZE)
+static const int SDH1_WORDS = FIXED_NUM_WORDS + SDH1_LENGTH_BYTES / ZRTP_WORD_SIZE;
 
 ZrtpPacketDHPart::ZrtpPacketDHPart() {
     initialize();
@@ -42,6 +53,9 @@ void ZrtpPacketDHPart::setPacketLength(size_t pubKeyLen) {
 
     auto length = static_cast<uint16_t>(sizeof(DHPartPacket_t) + dhLength + (2 * ZRTP_WORD_SIZE)); // HMAC field is 2*ZRTP_WORD_SIZE
     setLength(static_cast<uint16_t>(length / ZRTP_WORD_SIZE));
+//    LOGGER(INFO, __func__, " Computed dhLength: ", dhLength, ", length: ", length);
+//
+//    LOGGER(DEBUGGING, __func__, " <--");
 }
 
 ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t const * data) {
@@ -49,26 +63,30 @@ ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t const * data) {
     DHPartHeader = &((DHPartPacket_t *)data)->dhPart;
 
     int16_t len = getLength();
-    if (len == 85) {         // Dh2k
-        dhLength = 256;
+    if (len == DH2K_WORDS) {         // Dh2k
+        dhLength = DH2K_LENGTH_BYTES;
     }
-    else if (len == 117) {   // Dh3k
-        dhLength = 384;
+    else if (len == DH3K_WORDS) {    // Dh3k
+        dhLength = DH3K_LENGTH_BYTES;
     }
-    else if (len == 37) {    // EC256
-        dhLength = 64;
+    else if (len == EC25_WORDS) {    // EC256
+        dhLength = EC25_LENGTH_BYTES;
     }
-    else if (len == 45) {    // EC384
-        dhLength = 96;
+    else if (len == EC38_WORDS) {    // EC384
+        dhLength = EC38_LENGTH_BYTES;
     }
-    else if (len == 29) {    // E255
-        dhLength = 32;
+    else if (len == E255_WORDS) {    // E255
+        dhLength = E255_LENGTH_BYTES;
     }
-    else if (len == 47) {    // E414
-        dhLength = 104;
+    else if (len == E414_WORDS) {    // E414
+        dhLength = E414_LENGTH_BYTES;
+    }
+    else if (len == SDH1_WORDS) {    // SDH1
+        dhLength = SDH1_LENGTH_BYTES;
     }
     else {
         pv = nullptr;
+//        LOGGER(ERROR, __func__, " Unknown DH algorithm in DH packet with length: ", len);
         return;
     }
     pv = const_cast<uint8_t*>(data + sizeof(DHPartPacket_t));    // point to the public key value

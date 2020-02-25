@@ -35,6 +35,7 @@
 #include <cryptcommon/aes.h>
 #include <cryptcommon/ZrtpRandom.h>
 #include <common/ZrtpTimeoutProvider.h>
+#include <cryptcommon/sidhp751/keymanagement/SidhKeyManagement.h>
 
 // #define DEBUG_CTSTREAM
 #ifdef DEBUG_CTSTREAM
@@ -131,13 +132,15 @@ CtZrtpStream::~CtZrtpStream() {
 
 void CtZrtpStream::stopStream() {
 
-    // If we got only a small amout of valid SRTP packets after ZRTP negotiation then
+    // If we got only a small amount of valid SRTP packets after ZRTP negotiation then
     // assume that our peer couldn't store the RS data, thus make sure we have a second
     // retained shared secret available. Refer to RFC 6189bis, chapter 4.6.1
     // 50 packets are about 1 second of audio data
     if (zrtpEngine != nullptr && zrtpUnprotect < 10 && !zrtpEngine->isMultiStream()) {
         zrtpEngine->setRs2Valid();
     }
+
+    sidh751KM::SidhKeyManagement::stopKeyGeneration();
 
     index = CtZrtpSession::AudioStream;
     type = CtZrtpSession::NoStream;
@@ -408,9 +411,13 @@ int CtZrtpStream::getSignalingHelloHash(char *hHash, int32_t idx) {
 }
 
 void CtZrtpStream::setSignalingHelloHash(const char *hHash) {
+    sidh751KM::SidhKeyManagement::initialize();
     synchEnter();
 
     // set new timer values for ZRTP retransmission
+    // Reason: if the SIP packet contains a hello hash then we know that the other client
+    // support ZRTP, thus we can safely extend the number of Hello (T1) resend counters and
+    // also set the other resend counters (T2) to indefinite (-1).
     zrtpEngine->setT1Resend(100);
     zrtpEngine->setT1ResendExtend(200);
     zrtpEngine->setT2Resend(-1);

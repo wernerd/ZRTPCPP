@@ -21,6 +21,9 @@
 
 #include <zrtpccrtp.h>
 #include <libzrtpcpp/ZrtpUserCallback.h>
+#include <logging/ZrtpLogging.h>
+#include <cryptcommon/sidhp751/keymanagement/SidhKeyManagement.h>
+#include <common/osSpecifics.h>
 #include <zrtp/libzrtpcpp/ZIDCacheFile.h>
 
 using namespace ost;
@@ -480,7 +483,7 @@ map<int32, std::string *>MyUserCallback::zrtpMap;
 
 bool MyUserCallback::initialized = false;
 
-static unsigned char transmAuxSecret[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
+static unsigned char transmAuxSecret[] = {1,2,3,4,5,6,7,8,9,0};
 
 static std::shared_ptr<ZIDCache> zrtpCache = nullptr;
 
@@ -557,6 +560,7 @@ public:
         // config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));
 
         // This ordering prefers NIST
+//        config->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("SDH1"));
         config->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
         config->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));
 
@@ -648,6 +652,7 @@ public:
 
         config->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));
         config->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
+        config->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("SDH1"));
 
         config->addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
         config->addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN3"));
@@ -777,18 +782,21 @@ int main(int argc, char *argv[]) {
     ZrtpSendPacketTransmissionTestCB *ztxcb;
 
     if (send) {
-        ztxcb = new ZrtpSendPacketTransmissionTestCB();
-        ztxcb->start();
-        ztxcb->join();
-        delete ztxcb;
-    } else {
-        zrxcb = new ZrtpRecvPacketTransmissionTestCB();
-        zrxcb->start();
-        zrxcb->join();
-        delete zrxcb;
+//    setZrtpLogLevel(DEBUGGING);
+        if (send) {
+            ztxcb = new ZrtpSendPacketTransmissionTestCB();
+            ztxcb->start();
+            ztxcb->join();
+            delete ztxcb;
+        } else {
+            zrxcb = new ZrtpRecvPacketTransmissionTestCB();
+            zrxcb->start();
+            zrxcb->join();
+            delete zrxcb;
+        }
+        Thread::sleep(1000);
+        exit(result);
     }
-    Thread::sleep(1000);
-    exit(result);
 }
 
 /** EMACS **

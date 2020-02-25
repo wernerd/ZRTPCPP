@@ -263,7 +263,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
 
     /*
      * The Following section extracts the algorithm from the peer's Hello
-     * packet. Always the preferend offered algorithms are
+     * packet. Always the prefered offered algorithms are
      * used. If the received Hello does not contain algo specifiers
      * or offers only unsupported optional algos then replace
      * these with mandatory algos and put them into the Commit packet.
@@ -303,7 +303,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
 
     // Modify here when introducing new DH key agreement, for example
     // elliptic curves.
-    dhContext = make_unique<ZrtpDH>(pubKey->getName());
+    dhContext = make_unique<ZrtpDH>(pubKey->getName(), ZrtpDH::Commit);
     dhContext->generatePublicKey();
 
     dhContext->fillInPubKeyBytes(pubKeyBytes);
@@ -532,8 +532,14 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     // check if we can use the dhContext prepared by prepareCommit(),
     // if not delete old DH context and generate new one
     // The algorithm names are 4 chars only, thus we can cast to int32_t
-    if (*(int32_t*)(dhContext->getDHtype()) != *(int32_t*)(pubKey->getName())) {
-        dhContext = make_unique<ZrtpDH>(pubKey->getName());
+
+    // For Post-quantum SIDH we always need to generate a new key pair. The
+    // Initiator uses a Key-A type key pair (created during prepareCommit) and
+    // the Responder (that's the case here) uses a Key-B type key pair. SIDH
+    // keys are precomputed, thus it's a fast operation at this point
+    if (*(int32_t*)(dhContext->getDHtype()) != *(int32_t*)(pubKey->getName()) ||
+            *(int32_t*)(pubKey->getName()) == *(int32_t*)sdh1) {
+        dhContext = make_unique<ZrtpDH>(pubKey->getName(), ZrtpDH::DhPart1);
         dhContext->generatePublicKey();
     }
     sendInfo(Info, InfoDH1DHGenerated);
@@ -646,6 +652,8 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
     // Compute the message Hash
     closeHashCtx(msgShaContext, messageHash);
     msgShaContext = nullptr;
+    // Now compute the S0, all dependent keys and the new RS1. The function
+    msgShaContext = NULL;
     // Now compute the S0, all dependent keys and the new RS1. The function
     // also performs sign SAS callback if it's active.
     generateKeysInitiator(dhPart1, *zidRec);
@@ -1482,7 +1490,7 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
 
     // Build list of own pubkey algorithm names, must follow the order
     // defined in RFC 6189, chapter 4.1.2.
-    const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38};
+    const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38, sdh1};
     int numOrderedAlgos = sizeof(orderedAlgos) / sizeof(const char*);
 
     int numAlgosPeer = hello->getNumPubKeys();
@@ -1490,9 +1498,9 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
         hash = findBestHash(hello);                    // find a hash algorithm
         return &zrtpPubKeys.getByName(mandatoryPubKey);
     }
-    // Build own list of intersecting algos, keep own order or algorithms
-    // The list must include real public key algorithms only, so skip mult-stream mode, 
-    // preshared and alike.
+    // Build own list of intersecting algos, keep own order of algorithms
+    // The list must include real public key algorithms only, so skip multi-stream mode,
+    // pre-shared and alike.
     int numAlgosOwn = configureAlgos->getNumConfiguredAlgos(PubKeyAlgorithm);
     int numOwnIntersect = 0;
     for (int i = 0; i < numAlgosOwn; i++) {
@@ -1556,7 +1564,7 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
     int32_t algoName = *(int32_t*)(useAlgo->getName());
 
     // select a corresponding strong hash if necessary.
-    if (algoName == *(int32_t*)ec38 || algoName == *(int32_t*)e414) {
+    if (algoName == *(int32_t*)ec38 || algoName == *(int32_t*)e414 || algoName == *(int32_t*)sdh1) {
         hash = getStrongHashOffered(hello, algoName);
         cipher = getStrongCipherOffered(hello, algoName);
     }
@@ -2808,6 +2816,10 @@ bool ZRtp::checkAndSetNonce(uint8_t* nonce) {
     masterStream->peerNonces.push_back(str);
     return true;
 }
+
+//srtpSecrets::srtpSecrets() {}
+//srtpSecrets::~srtpSecrets() {}
+
 
 /** EMACS **
  * Local variables:

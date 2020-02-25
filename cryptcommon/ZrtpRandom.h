@@ -65,7 +65,7 @@ public:
      *
      * @return the number of generated random data bytes
      */
-    static int getRandomData(uint8_t *buffer, uint32_t length);
+    static int32_t getRandomData(uint8_t *buffer, uint32_t length);
 
 private:
     static void initialize();
