@@ -1,0 +1,4 @@
+[submodule "sidh"]
+	path = sidh
+	url = https://github.com/wernerd/PQCrypto-SIDH.git
+	branch = wdi
