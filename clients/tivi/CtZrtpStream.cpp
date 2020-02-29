@@ -140,7 +140,7 @@ void CtZrtpStream::stopStream() {
         zrtpEngine->setRs2Valid();
     }
 
-    sidh751KM::SidhKeyManagement::stopKeyGeneration();
+    // sidh751KM::SidhKeyManagement::stopKeyGeneration();
 
     index = CtZrtpSession::AudioStream;
     type = CtZrtpSession::NoStream;
@@ -411,7 +411,7 @@ int CtZrtpStream::getSignalingHelloHash(char *hHash, int32_t idx) {
 }
 
 void CtZrtpStream::setSignalingHelloHash(const char *hHash) {
-    sidh751KM::SidhKeyManagement::initialize();
+    // sidh751KM::SidhKeyManagement::initialize();
     synchEnter();
 
     // set new timer values for ZRTP retransmission

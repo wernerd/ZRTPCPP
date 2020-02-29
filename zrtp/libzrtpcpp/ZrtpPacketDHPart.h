@@ -69,7 +69,7 @@ class __EXPORT ZrtpPacketDHPart : public ZrtpPacketBase {
     [[nodiscard]] uint8_t* getH1() const            { return DHPartHeader->hashH1; };
 
     /// Get pointer to HMAC, fixed length byte array
-    [[nodiscard]] uint8_t* getHMAC() const          { return pv+dhLength; };
+    [[nodiscard]] uint8_t* getHMAC() const          { return pv+roundUp; };
 
     /// Check if packet length makes sense. DHPart packets are 29 words at minumum, using E255
     [[nodiscard]] bool isLengthOk() const           {return (getLength() >= 29);}
@@ -96,13 +96,14 @@ class __EXPORT ZrtpPacketDHPart : public ZrtpPacketBase {
     void setPacketLength(size_t pubKeyLen);
 
     /// Set first MAC, fixed length byte array
-    void setHMAC(zrtp::ImplicitDigest const & hmac) { memcpy(pv+dhLength, hmac.data(), 2*ZRTP_WORD_SIZE); };
+    void setHMAC(zrtp::ImplicitDigest const & hmac) { memcpy(pv+roundUp, hmac.data(), 2*ZRTP_WORD_SIZE); };
 
  private:
     void initialize();
-    uint8_t  * pv = nullptr;        ///< points to public key value inside DH message
-    DHPart_t* DHPartHeader = nullptr;     ///< points to DH message structure
-    int32_t dhLength = 0;                 ///< length of DH message, DH message has variable length
+    uint8_t  * pv = nullptr;                  ///< points to public key value inside DH message
+    DHPart_t* DHPartHeader = nullptr;         ///< points to DH message structure
+    int32_t dhLength = 0;                     ///< length of public key
+    int32_t roundUp = 0;                      ///< Public key length, rounded up to ZRTP_WORD_SIZE
 
      // SupportedPubKeys pktype;
      // DHPart packet is of variable length. It maximum size is 141 words:

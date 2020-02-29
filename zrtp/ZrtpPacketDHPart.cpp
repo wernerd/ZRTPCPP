@@ -20,8 +20,10 @@
 
 #include <libzrtpcpp/ZrtpPacketDHPart.h>
 #include <zrtp/crypto/zrtpDH.h>
-#include <logging/ZrtpLogging.h>
 
+#ifdef SIDH_SUPPORT
+#include "../sidh/cpp/SidhWrapper.h"
+#endif
 static const int FIXED_NUM_WORDS = sizeof(DHPartPacket_t) / ZRTP_WORD_SIZE + 2;         // +2 for MAC
 static const int DH2K_WORDS = FIXED_NUM_WORDS + DH2K_LENGTH_BYTES / ZRTP_WORD_SIZE;     // 2048 / 8 / ZRTP_WORD_SIZE
 static const int DH3K_WORDS = FIXED_NUM_WORDS + DH3K_LENGTH_BYTES / ZRTP_WORD_SIZE;     // 3072 / 8 / ZRTP_WORD_SIZE
@@ -29,7 +31,7 @@ static const int EC25_WORDS = FIXED_NUM_WORDS + EC25_LENGTH_BYTES / ZRTP_WORD_SI
 static const int EC38_WORDS = FIXED_NUM_WORDS + EC38_LENGTH_BYTES / ZRTP_WORD_SIZE;     // 2*(384 / 8 / ZRTP_WORD_SIZE)
 static const int E255_WORDS = FIXED_NUM_WORDS + E255_LENGTH_BYTES / ZRTP_WORD_SIZE;     // 32 / ZRTP_WORD_SIZE
 static const int E414_WORDS = FIXED_NUM_WORDS + E414_LENGTH_BYTES / ZRTP_WORD_SIZE;     // 2*((414+7) / 8 / ZRTP_WORD_SIZE)
-static const int SDH1_WORDS = FIXED_NUM_WORDS + SDH1_LENGTH_BYTES / ZRTP_WORD_SIZE;
+// static const int SDH1_WORDS = FIXED_NUM_WORDS + SDH1_LENGTH_BYTES / ZRTP_WORD_SIZE;
 
 ZrtpPacketDHPart::ZrtpPacketDHPart() {
     initialize();
@@ -48,19 +50,38 @@ void ZrtpPacketDHPart::initialize() {
 }
 
 // The fixed numbers below are taken from ZRTP specification, chap 5.1.5
+// pubKeyLen must be a multiple of ZRTP_WORD_SIZE
 void ZrtpPacketDHPart::setPacketLength(size_t pubKeyLen) {
     dhLength = pubKeyLen;
+    // always round to multiple number of ZRTP_WORD_SIZE bytes
+    roundUp = ((pubKeyLen + (ZRTP_WORD_SIZE - 1)) / ZRTP_WORD_SIZE) * ZRTP_WORD_SIZE;
 
-    auto length = static_cast<uint16_t>(sizeof(DHPartPacket_t) + dhLength + (2 * ZRTP_WORD_SIZE)); // HMAC field is 2*ZRTP_WORD_SIZE
+    // Compute total length in bytes, is always a multiple of ZRTP_WORD_SIZE, the computer number of ZRTP_WORDS
+    auto length = static_cast<uint16_t>(sizeof(DHPartPacket_t) + roundUp + (2 * ZRTP_WORD_SIZE)); // HMAC field is 2*ZRTP_WORD_SIZE
     setLength(static_cast<uint16_t>(length / ZRTP_WORD_SIZE));
-//    LOGGER(INFO, __func__, " Computed dhLength: ", dhLength, ", length: ", length);
-//
-//    LOGGER(DEBUGGING, __func__, " <--");
+}
+
+static size_t determineSidhLength(int16_t len) {
+    // Convert the SIDH public kex length into number of ZRTP_WORD_SIZE words
+    auto lengths = SidhWrapper::getFieldLengths(SidhWrapper::P503);
+    auto lenInWords = (lengths->publicKey + (ZRTP_WORD_SIZE - 1)) / ZRTP_WORD_SIZE;
+    if (len == lenInWords + FIXED_NUM_WORDS) {
+        return lengths->publicKey;
+    }
+
+    lengths = SidhWrapper::getFieldLengths(SidhWrapper::P751);
+    lenInWords = (lengths->publicKey + (ZRTP_WORD_SIZE - 1)) / ZRTP_WORD_SIZE;
+    if (len == lenInWords + FIXED_NUM_WORDS) {
+        return lengths->publicKey;
+    }
+    return 0;
 }
 
 ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t const * data) {
     zrtpHeader = &((DHPartPacket_t *)data)->hdr;  // the standard header
     DHPartHeader = &((DHPartPacket_t *)data)->dhPart;
+
+    size_t tmpLen = 0;
 
     int16_t len = getLength();
     if (len == DH2K_WORDS) {         // Dh2k
@@ -81,8 +102,8 @@ ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t const * data) {
     else if (len == E414_WORDS) {    // E414
         dhLength = E414_LENGTH_BYTES;
     }
-    else if (len == SDH1_WORDS) {    // SDH1
-        dhLength = SDH1_LENGTH_BYTES;
+    else if ((tmpLen = determineSidhLength(len)) > 0) {    // SDH5 or SDH7
+        dhLength = tmpLen;
     }
     else {
         pv = nullptr;

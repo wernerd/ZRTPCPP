@@ -52,20 +52,21 @@ void randomZRTP(uint8_t *buf, int32_t length);
 }
 #endif
 
-// Exclude the whole code if not compile with c++ - needed for C-wrapper code.
+// Exclude the whole code if not compiled with c++ - needed for C-wrapper code.
 #if defined(__cplusplus)
 
+#include <bn.h>
+#include <ec/ec.h>
+#include <ec/ecdh.h>
 #include <libzrtpcpp/ZrtpConfigure.h>
 #include "../common/SecureArray.h"
-#include <cryptcommon/sidhp751/keymanagement/SidhKeyManagement.h>
 
 static const uint DH2K_LENGTH_BYTES = 2048 / 8;
 static const uint DH3K_LENGTH_BYTES = 3072 / 8;
 static const uint EC25_LENGTH_BYTES = 2*(256 / 8);
 static const uint EC38_LENGTH_BYTES = 2*(384 / 8);
 static const uint E255_LENGTH_BYTES = 32 ;
-static const uint E414_LENGTH_BYTES = 2*((414+7) / 8);
-static const uint SDH1_LENGTH_BYTES = sidh751KM::PUBLIC_KEY_LENGTH_BYTES;
+static const uint E414_LENGTH_BYTES = 2*((414+7) / 8);  // -> computes to 104 byte for x and y coordinate of curve
 
 /**
  * Implementation of Diffie-Helman for ZRTP
@@ -91,13 +92,6 @@ public:
         SUCCESS = 0,
         ILLEGAL_ARGUMENT = -5,
         UNKNOWN_ALGORITHM = -6,
-
-        SDH1_INIT_FAILED = -10,
-        SDH1_KEY_A_FAILED = -11,
-        SDH1_KEY_B_FAILED = -12,
-        SDH1_KEY_A_SECRET_FAILED = -13,
-        SDH1_KEY_B_SECRET_FAILED = -14,
-
     };
 
     /**
@@ -196,13 +190,20 @@ private:
         EC38,
         E255,
         E414,
-        SDH1
+        SDH5,
+        SDH7
     };
 
-    void* ctx;                      ///< Context the DH
+    struct _dhCtx;
+
+    void generateSidhKeyPair();
+    size_t computeSidhSharedSecret(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret);
+    size_t getSidhSharedSecretLength() const ;
+
     int pkType;                     ///< Which type of DH to use
     ProtocolState protocolState;    ///< Create DH for this protocol state
     ErrorCode errorCode;
+    std::unique_ptr<_dhCtx> ctx;    ///< Context the DH
 
 };
 #endif /*__cpluscplus */

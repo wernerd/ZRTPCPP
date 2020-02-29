@@ -71,7 +71,6 @@ CryptoContext::CryptoContext( uint32_t ssrc,
         case SrtpEncryptionTWOF8:
             f8Cipher = std::make_unique<SrtpSymCrypto>(SrtpEncryptionTWOF8);
 
-            FALLTHROUGH;
         case SrtpEncryptionTWOCM:
             n_e = ekeyl;
             k_e = new uint8_t[n_e];
@@ -83,7 +82,6 @@ CryptoContext::CryptoContext( uint32_t ssrc,
         case SrtpEncryptionAESF8:
             f8Cipher = std::make_unique<SrtpSymCrypto>(SrtpEncryptionAESF8);
 
-            FALLTHROUGH;
         case SrtpEncryptionAESCM:
             n_e = ekeyl;
             k_e = new uint8_t[n_e];

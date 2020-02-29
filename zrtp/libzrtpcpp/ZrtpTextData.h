@@ -110,7 +110,8 @@ extern char ec25[];
 extern char ec38[];
 extern char e255[];
 extern char e414[];
-extern char sdh1[];
+extern char sdh5[];
+extern char sdh7[];
 
 extern char mult[];
 

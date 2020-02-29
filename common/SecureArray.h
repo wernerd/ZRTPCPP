@@ -444,7 +444,7 @@ namespace secUtilities {
             other.clear();
         }
 
-        ~SecureArrayFlex() { reset(); }
+        virtual ~SecureArrayFlex() { reset(); }
 
         auto
         operator=(const SecureArrayFlex &x) -> SecureArrayFlex & {
@@ -537,7 +537,7 @@ namespace secUtilities {
             other.clear();
         }
 
-        ~SecureArray() { reset(); }
+        virtual ~SecureArray() { reset(); }
 
         auto
         operator=(const SecureArray &x) -> SecureArray & {

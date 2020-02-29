@@ -70,7 +70,6 @@ labelBase(3), macCtx(nullptr), cipher(nullptr), f8Cipher(nullptr)        // SRTC
         case SrtpEncryptionTWOF8:
             f8Cipher = std::make_unique<SrtpSymCrypto>(SrtpEncryptionTWOF8);
 
-            FALLTHROUGH;
         case SrtpEncryptionTWOCM:
             n_e = ekeyl;
             k_e = new uint8_t[n_e];
@@ -82,7 +81,6 @@ labelBase(3), macCtx(nullptr), cipher(nullptr), f8Cipher(nullptr)        // SRTC
         case SrtpEncryptionAESF8:
             f8Cipher = std::make_unique<SrtpSymCrypto>(SrtpEncryptionAESF8);
 
-            FALLTHROUGH;
         case SrtpEncryptionAESCM:
             n_e = ekeyl;
             k_e = new uint8_t[n_e];

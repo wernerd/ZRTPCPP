@@ -33,7 +33,7 @@ option(CCRTP "Build library to use with GNU ccRTP." OFF)
 option(CORE_LIB "Build core library only, no spcific client support." OFF)
 option(CRYPTO_STANDALONE "Use embedded crypto and big number modules." ON)
 option(TIVI "Build library for the tivi client, implies '-DCRYPTO_STNDALONE=ON' and '-DSDES=ON'." OFF)
-option(WEBRTC "Create static lib for webRTC, with SIDH support." OFF)
+# option(WEBRTC "Create static lib for webRTC, with SIDH support." OFF)
 option(SQLITE "Use SQLite DB as backend for ZRTP cache." OFF)
 option(SQLCIPHER "Use SQLCipher DB as backend for ZRTP cache." OFF)
 option(SRTP "Include SRTP when not building for CCRTP." OFF)
@@ -41,15 +41,15 @@ option(AXO "Include Axolotl support when not building for CCRTP." OFF)
 option(TESTS "Generate Unit test." OFF)
 
 option(ANDROID "Generate Android makefiles (Android.mk)" OFF)
-option(JAVA "Generate Java support files (requires JDK and SWIG)" OFF)
+# option(JAVA "Generate Java support files (requires JDK and SWIG)" OFF)
 
 ## The following option are used for SIDH mainly
 option(SIDH "Include SIDH Post-Quantum algorithm." OFF)
 
-option(X64 "Set this to true to build for a x64 (64 bit) architecture." OFF)
-option(X86 "Set this to true to build for a x86 (32 bit) architecture." OFF)
-option(ARM "Set this to true to build for a ARM (32 bit) architecture." OFF)
-option(ARM64 "Set this to true to build for a ARM64 (64 bit) architecture." OFF)
+option(x64 "Set this to true to build for a x64 (64 bit) architecture." OFF)
+option(x86 "Set this to true to build for a x86 (32 bit) architecture." OFF)
+option(arm "Set this to true to build for a arm (32 bit) architecture." OFF)
+option(arm64 "Set this to true to build for a arm64 (64 bit) architecture." OFF)
 option(GENERIC "Set this to true to use the portable implementation." OFF)
 
 if(MSVC60)
@@ -79,9 +79,9 @@ if (CORE_LIB AND (CCRTP OR TIVI OR WEBRTC))
     MESSAGE(FATAL_ERROR "Cannot build more than one client at once. Use different build directories.")
 endif()
 
-if (WEBRTC AND (CCRTP OR TIVI OR CORE_LIB))
-    MESSAGE(FATAL_ERROR "Cannot build more than one client at once. Use different build directories.")
-endif()
+#if (WEBRTC AND (CCRTP OR TIVI OR CORE_LIB))
+#    MESSAGE(FATAL_ERROR "Cannot build more than one client at once. Use different build directories.")
+#endif()
 
 if (SQLITE AND SQLCIPHER)
     MESSAGE(FATAL_ERROR "Cannot build with multiple DB backends.")
@@ -103,35 +103,19 @@ elseif (CORE_LIB)
     if (ANDROID)
         set(BUILD_STATIC ON)
     endif()
-elseif (WEBRTC)
-    set (PACKAGE libzrtpwebrtc)
-    set(zrtplibName zrtpcppwebrtc)
-    set(SQLITE true)
-    set(ANDROID true)
-    set(SIDH true)      ## For SIDH testing
+#elseif (WEBRTC)
+#    set (PACKAGE libzrtpwebrtc)
+#    set(zrtplibName zrtpcppwebrtc)
+#    set(SQLITE true)
+#    set(ANDROID true)
+#    set(SIDH true)      ## For SIDH testing
 else()
     MESSAGE(FATAL_ERROR "No client defined: define client using -DCCRTP=true, or -DTIVI=true, or -DCORE_LIB=true.")
 endif()
 
 if (SIDH)
-    if(X64)
-        set(SIDH_ARCHITECTURE -D_AMD64_)
-        set(SIDH_X64 true)
-    elseif(X86)
-        set (SIDH_ARCHITECTURE -D_X86_)
-        set(SIDH_X86 true)
-    elseif(ARM)
-        set(SIDH_ARCHITECTURE -D_ARM_)
-        set(SIDH_ARM true)
-    elseif(ARM64)
-        set(SIDH_ARCHITECTURE -D_ARM64_)
-        set(SIDH_ARM64 true)
-    elseif()
+    if(NOT x64 AND NOT x86 AND NOT arm AND NOT arm64)
         message(FATAL_ERROR "No SIDH architecture selected.")
-    endif()
-    if (GENERIC OR SIDH_ARM OR SIDH_X86)        # No ASM module available for x86 and ARM, use generic
-        set (USE_GENERIC -D_GENERIC_)
-        set(SIDH_GENERIC true)
     endif()
 endif()
 
@@ -255,30 +239,13 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -std=c++17 -g -O2 -fno-strict-aliasing -Wno-unknown-pragmas ${LOG_MAX_LEVEL}")
 endif()
 
+set(sidhLibNameStatic)
 if (SIDH)
-    add_definitions(-DENABLE_SIDH ${SIDH_ARCHITECTURE} ${USE_GENERIC} -D__LINUX__)
-
-    ## The common SIDH sources
-    set(sidh751_src
-            ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/ec_isogeny.c
-            ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/fpx.c
-            ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/kex.c
-            ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/SIDH.c
-            ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/SIDH_setup.c
-            ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/keymanagement/SidhKeyManagement.cpp)
-
-    ## Use generic portable variant
-    # NOTE: see client specific CMakeLists.txt setting the properties for the *.S files
-    if (SIDH_GENERIC)
-        set (sidh751_extra_src ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/generic/fp_generic.c)
-    elseif(SIDH_X64)
-        set(sidh751_extra_src ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/AMD64/fp_x64.c
-                ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/AMD64/fp_x64_asm.S)
-    elseif(SIDH_ARM64)
-        set (sidh751_extra_src ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/ARM64/fp_arm64.c
-                ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/ARM64/fp_arm64_asm.S)
-    endif()
-    set (has_sidh TRUE)
+    include_directories (${CMAKE_SOURCE_DIR}/sidh/src)
+    add_subdirectory(sidh)
+    set(sidhLibNameStatic sidhCppStatic)
+#    set(sidhLibNameStatic sidhCpp)
+    add_definitions(-DSIDH_SUPPORT)
 endif()
 
 include_directories(BEFORE ${CMAKE_BINARY_DIR})

@@ -25,6 +25,14 @@ target_link_libraries(zrtpRun_test gmock_main ${zrtplibName})
 add_executable(zrtpTimedRun_test ZrtpTimedRun_test.cpp ZrtpTestCommon.h NetworkSimulation.h)
 target_link_libraries(zrtpTimedRun_test gmock_main ${zrtplibName})
 
+if (SIDH)
+    add_executable(zrtpSidh503_test ZrtpSidh503_test.cpp)
+    target_link_libraries(zrtpSidh503_test gtest_main ${zrtplibName})
+
+    add_executable(zrtpSidh751_test ZrtpSidh751_test.cpp)
+    target_link_libraries(zrtpSidh751_test gtest_main ${zrtplibName})
+endif()
+
 if(SDES)
     add_executable(sdesRun_test sdesRun_test.cpp)
     target_link_libraries(sdesRun_test gtest_main ${zrtplibName})

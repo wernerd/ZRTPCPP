@@ -538,7 +538,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     // the Responder (that's the case here) uses a Key-B type key pair. SIDH
     // keys are precomputed, thus it's a fast operation at this point
     if (*(int32_t*)(dhContext->getDHtype()) != *(int32_t*)(pubKey->getName()) ||
-            *(int32_t*)(pubKey->getName()) == *(int32_t*)sdh1) {
+            *(int32_t*)(pubKey->getName()) == *(int32_t*)sdh5 || *(int32_t*)(pubKey->getName()) == *(int32_t*)sdh7) {
         dhContext = make_unique<ZrtpDH>(pubKey->getName(), ZrtpDH::DhPart1);
         dhContext->generatePublicKey();
     }
@@ -652,7 +652,6 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
     // Compute the message Hash
     closeHashCtx(msgShaContext, messageHash);
     msgShaContext = nullptr;
-    // Now compute the S0, all dependent keys and the new RS1. The function
     msgShaContext = NULL;
     // Now compute the S0, all dependent keys and the new RS1. The function
     // also performs sign SAS callback if it's active.
@@ -661,6 +660,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
     dhContext.reset(nullptr);
 
     // store DHPart1 data temporarily until we can check HMAC after receiving Confirm1
+    int32_t len = dhPart1->getLength() * ZRTP_WORD_SIZE;
     storeMsgTemp(dhPart1);
     return &zrtpDH2;
 }
@@ -1490,7 +1490,7 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
 
     // Build list of own pubkey algorithm names, must follow the order
     // defined in RFC 6189, chapter 4.1.2.
-    const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38, sdh1};
+    const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38, sdh5, sdh7};
     int numOrderedAlgos = sizeof(orderedAlgos) / sizeof(const char*);
 
     int numAlgosPeer = hello->getNumPubKeys();
@@ -1564,7 +1564,7 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
     int32_t algoName = *(int32_t*)(useAlgo->getName());
 
     // select a corresponding strong hash if necessary.
-    if (algoName == *(int32_t*)ec38 || algoName == *(int32_t*)e414 || algoName == *(int32_t*)sdh1) {
+    if (algoName == *(int32_t*)ec38 || algoName == *(int32_t*)e414 || algoName == *(int32_t*)sdh5 || algoName == *(int32_t*)sdh7) {
         hash = getStrongHashOffered(hello, algoName);
         cipher = getStrongCipherOffered(hello, algoName);
     }
@@ -2026,7 +2026,6 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord)
         }
     }
     hashListFunction(data, length, s0.data());
-//  hexdump("S0 I", s0, hashLength);
 
     DHss.clear();
 
@@ -2185,7 +2184,6 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord)
         }
     }
     hashListFunction(data, length, s0.data());
-//  hexdump("S0 R", s0, hashLength);
 
     DHss.clear();
 

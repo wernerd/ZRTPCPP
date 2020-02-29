@@ -86,7 +86,8 @@ char dh3k[] = "DH3k";
 char ec38[] = "EC38";
 char e255[] = "E255";
 char e414[] = "E414";
-char sdh1[] = "SDH1";
+char sdh5[] = "SDH5";
+char sdh7[] = "SDH7";
 char mult[] = "Mult";
 const char* mandatoryPubKey = dh3k;
 

@@ -94,9 +94,9 @@ else()
     endif()
 endif()
 
-add_library(${zrtplibName} ${LIBRARY_BUILD_TYPE} ${zrtpcpp_src} ${logLib})
+add_library(${zrtplibName} ${LIBRARY_BUILD_TYPE} ${zrtpcpp_src} )
 set_target_properties(${zrtplibName} PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
-target_link_libraries(${zrtplibName} ${LIBS})
+target_link_libraries(${zrtplibName} ${logLib} ${sidhLibNameStatic} ${LIBS})
 
 if (NOT ANDROID)
     # **** Setup packing environment ****
@@ -104,7 +104,7 @@ if (NOT ANDROID)
     if(${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
         include(${CMAKE_SOURCE_DIR}/cmake/Modules/GeneratePackage.cmake)
 
-        GENERATE_PACKAGING(${PACKAGE} ${VERSION})
+        GENERATE_PACKAGING(${PACKAGE} ${VERSION} "")
     endif()
 
     # **** Create the external files for RPM and pkgconfig ****

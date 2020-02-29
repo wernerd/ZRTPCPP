@@ -171,7 +171,8 @@ PubKeyEnum::PubKeyEnum() : EnumBase(PubKeyAlgorithm) {
 #ifdef SUPPORT_NON_NIST
     insert(e255, 0, "ECDH-255", NULL, NULL, None);
     insert(e414, 0, "ECDH-414", NULL, NULL, None);
-    insert(sdh1, 0, "SIDHp751", NULL, NULL, None);
+    insert(sdh5, 0, "SIDHp503", NULL, NULL, None);
+    insert(sdh7, 0, "SIDHp751", NULL, NULL, None);
 #endif
 }
 
