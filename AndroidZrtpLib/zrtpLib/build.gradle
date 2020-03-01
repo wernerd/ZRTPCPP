@@ -28,7 +28,8 @@ android {
             // For ndk-build, instead use the ndkBuild block.
             cmake {
                 // Passes optional arguments to CMake. Make sure it is a list, not just a string :-) .
-                arguments "-DANDROID_NATIVE_API_LEVEL=21", "-DANDROID=true", "-DCORE_LIB=true", "-DCRYPTO_STANDALONE=true", "-DSRTP=true"
+                arguments "-DANDROID_NATIVE_API_LEVEL=21", "-DANDROID_STL=c++_shared",
+                            "-DANDROID=true", "-DSIDH=true", "-DCORE_LIB=true", "-DCRYPTO_STANDALONE=true", "-DSRTP=true"
                 targets "zrtpcppcore"
 
               // Sets a flag to enable format macro constants for the C compiler.

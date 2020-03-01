@@ -40,10 +40,10 @@ option(SRTP "Include SRTP when not building for CCRTP." OFF)
 option(AXO "Include Axolotl support when not building for CCRTP." OFF)
 option(TESTS "Generate Unit test." OFF)
 
-option(ANDROID "Generate Android makefiles (Android.mk)" OFF)
+option(ANDROID "Generate Android libraries" OFF)
 # option(JAVA "Generate Java support files (requires JDK and SWIG)" OFF)
 
-## The following option are used for SIDH mainly
+## The following options are used for SIDH mainly
 option(SIDH "Include SIDH Post-Quantum algorithm." OFF)
 
 option(x64 "Set this to true to build for a x64 (64 bit) architecture." OFF)
@@ -100,9 +100,6 @@ elseif (TIVI)
 elseif (CORE_LIB)
     set (PACKAGE libzrtpcore)
     set(zrtplibName zrtpcppcore)
-    if (ANDROID)
-        set(BUILD_STATIC ON)
-    endif()
 #elseif (WEBRTC)
 #    set (PACKAGE libzrtpwebrtc)
 #    set(zrtplibName zrtpcppwebrtc)
@@ -112,13 +109,6 @@ elseif (CORE_LIB)
 else()
     MESSAGE(FATAL_ERROR "No client defined: define client using -DCCRTP=true, or -DTIVI=true, or -DCORE_LIB=true.")
 endif()
-
-if (SIDH)
-    if(NOT x64 AND NOT x86 AND NOT arm AND NOT arm64)
-        message(FATAL_ERROR "No SIDH architecture selected.")
-    endif()
-endif()
-
 
 string(TOLOWER "${CMAKE_BUILD_TYPE}" build_type)
 if ("debug" STREQUAL build_type)
@@ -244,7 +234,6 @@ if (SIDH)
     include_directories (${CMAKE_SOURCE_DIR}/sidh/src)
     add_subdirectory(sidh)
     set(sidhLibNameStatic sidhCppStatic)
-#    set(sidhLibNameStatic sidhCpp)
     add_definitions(-DSIDH_SUPPORT)
 endif()
 

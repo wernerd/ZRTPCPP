@@ -660,7 +660,6 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
     dhContext.reset(nullptr);
 
     // store DHPart1 data temporarily until we can check HMAC after receiving Confirm1
-    int32_t len = dhPart1->getLength() * ZRTP_WORD_SIZE;
     storeMsgTemp(dhPart1);
     return &zrtpDH2;
 }

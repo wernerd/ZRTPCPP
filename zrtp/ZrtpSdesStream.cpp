@@ -99,19 +99,6 @@ static const char parseKeyParam[] = " inline:%[A-Za-z0-9+/=]|%[0-9^]|%[0-9]:%d";
 
 static const int minElementsKeyParam = 1;
 
-typedef struct _cryptoMix {
-    const char* name;
-    uint32_t hashLength;
-    ZrtpSdesStream::sdesHmacTypeMix hashType;
-} cryptoMix;
-
-static const size_t MIX_HMAC_STRING_MIN_LEN = sizeof("HMAC-SHA-384");
-
-static cryptoMix knownMixAlgos[] = {
-    {"HMAC-SHA-384", 384, ZrtpSdesStream::MIX_HMAC_SHA},
-    {nullptr, 0, ZrtpSdesStream::MIX_NONE}
-};
-
 typedef struct _suite {
     ZrtpSdesStream::sdesSuites suite;
     const char *name;
@@ -281,6 +268,20 @@ const char* ZrtpSdesStream::getAuthAlgo() {
 }
 
 #ifdef ENABLE_SDES_MIX
+
+typedef struct _cryptoMix {
+    const char* name;
+    uint32_t hashLength;
+    ZrtpSdesStream::sdesHmacTypeMix hashType;
+} cryptoMix;
+
+static const size_t MIX_HMAC_STRING_MIN_LEN = sizeof("HMAC-SHA-384");
+
+static cryptoMix knownMixAlgos[] = {
+    {"HMAC-SHA-384", 384, ZrtpSdesStream::MIX_HMAC_SHA},
+    {nullptr, 0, ZrtpSdesStream::MIX_NONE}
+};
+
 size_t ZrtpSdesStream::getCryptoMixAttribute(char *algoNames, size_t length) {
 
     if (length < MIX_HMAC_STRING_MIN_LEN)

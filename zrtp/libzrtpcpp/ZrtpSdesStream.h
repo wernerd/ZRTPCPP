@@ -385,13 +385,14 @@ public:
      */
     sdesZrtpStates getState() {return state;}
 
+#ifdef ENABLE_SDES_MIX
     /**
      * @brief Return SDES crypto mixer HMAC type.
      *
      * @return HMAC type
      */
     sdesHmacTypeMix getHmacTypeMix() {return cryptoMixHashType;}
-
+#endif
     /**
      * @brief Return name of active cipher algorithm.
      *
@@ -512,22 +513,23 @@ private:
      *                  for the answerer otherwise.
      */
     void computeMixedKeys(bool sipInvite);
+
+    uint32_t cryptoMixHashLength = 0;
+    sdesHmacTypeMix cryptoMixHashType = MIX_NONE;
 #endif
 
-    std::unique_ptr<CryptoContext    > recvSrtp;           //!< The SRTP context for this stream
-//    std::unique_ptr<CryptoContextCtrl> recvSrtcp;          //!< The SRTCP context for this stream
-    std::unique_ptr<CryptoContext    > sendSrtp;           //!< The SRTP context for this stream
-//    std::unique_ptr<CryptoContextCtrl> sendSrtcp;          //!< The SRTCP context for this stream
-    std::unique_ptr<CryptoContext    > recvZrtpTunnel;     //!< The SRTP context for sender ZRTP tunnel
-    std::unique_ptr<CryptoContext    > sendZrtpTunnel;     //!< The SRTP context for receiver ZRTP tunnel
+    std::unique_ptr<CryptoContext> recvSrtp;           //!< The SRTP context for this stream
+    std::unique_ptr<CryptoContext> sendSrtp;           //!< The SRTP context for this stream
+    std::unique_ptr<CryptoContext> recvZrtpTunnel;     //!< The SRTP context for sender ZRTP tunnel
+    std::unique_ptr<CryptoContext> sendZrtpTunnel;     //!< The SRTP context for receiver ZRTP tunnel
 
     sdesZrtpStates state = STREAM_INITALIZED;
     sdesSuites     suite;
     int32_t        tag = 0;
 
-    uint32_t srtcpIndex = 0;               //!< the local SRTCP index
-    uint32_t cryptoMixHashLength = 0;
-    sdesHmacTypeMix cryptoMixHashType = MIX_NONE;
+//    std::unique_ptr<CryptoContextCtrl> sendSrtcp;          //!< The SRTCP context for this stream
+//    std::unique_ptr<CryptoContextCtrl> recvSrtcp;          //!< The SRTCP context for this stream
+//    uint32_t srtcpIndex = 0;               //!< the local SRTCP index
 
     // Variables for crypto that this client creates and sends to the other client, filled during SDES create
     uint8_t localKeySalt[((MAX_KEY_LEN + MAX_SALT_LEN + 3)/4)*4] {0};  //!< Some buffer for key and salt, multiple of 4
