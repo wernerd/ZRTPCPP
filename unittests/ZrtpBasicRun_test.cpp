@@ -297,52 +297,52 @@ TEST_F(ZrtpBasicRunFixture, full_run_test) {
     bool failure = false;
 
     // No timeout happens in this test: Start and cancel timer calls must match
-    ON_CALL(aliceCb, activateTimer).WillByDefault(DoAll(([&aliceTimers](int32_t time) { aliceTimers++; }), Return(1)));
-    ON_CALL(aliceCb, cancelTimer).WillByDefault(DoAll([&aliceTimers]() { aliceTimers--; }, Return(1)));
-    ON_CALL(bobCb, activateTimer).WillByDefault(DoAll(([&bobTimers](int32_t time) { bobTimers++; }), Return(1)));
-    ON_CALL(bobCb, cancelTimer).WillByDefault(DoAll([&bobTimers]() { bobTimers--; }, Return(1)));
+    ON_CALL(*aliceCb, activateTimer).WillByDefault(DoAll(([&aliceTimers](int32_t time) { aliceTimers++; }), Return(1)));
+    ON_CALL(*aliceCb, cancelTimer).WillByDefault(DoAll([&aliceTimers]() { aliceTimers--; }, Return(1)));
+    ON_CALL(*bobCb, activateTimer).WillByDefault(DoAll(([&bobTimers](int32_t time) { bobTimers++; }), Return(1)));
+    ON_CALL(*bobCb, cancelTimer).WillByDefault(DoAll([&bobTimers]() { bobTimers--; }, Return(1)));
 
     // send data just forwards the data, no further checks yet.
     // When Alice sends data put the data into Bob's receive queue and signal 'data available'
-    ON_CALL(aliceCb, sendDataZRTP(_, _))
+    ON_CALL(*aliceCb, sendDataZRTP(_, _))
             .WillByDefault(DoAll(([this](const uint8_t* data, int32_t length) { bobQueueData(data, length); }), Return(1)));
 
     // When Bob sends data put the data into Alice's receive queue and signal 'data available'
-    ON_CALL(bobCb, sendDataZRTP(_, _))
+    ON_CALL(*bobCb, sendDataZRTP(_, _))
             .WillByDefault(DoAll(([this](const uint8_t* data, int32_t length) { aliceQueueData(data, length); }), Return(1)));
 
-    ON_CALL(aliceCb, sendInfo)
+    ON_CALL(*aliceCb, sendInfo)
             .WillByDefault([](GnuZrtpCodes::MessageSeverity severity, int32_t subCode) { LOGGER(DEBUGGING, "SendInfo Alice: ", severity, ", code: ", subCode) });
 
-    ON_CALL(bobCb, sendInfo)
+    ON_CALL(*bobCb, sendInfo)
             .WillByDefault([](GnuZrtpCodes::MessageSeverity severity, int32_t subCode) { LOGGER(DEBUGGING, "SendInfo Bob  : ", severity, ", code: ", subCode) });
 
     // We don't expect failures during the ZRTP protocol
-    ON_CALL(aliceCb, zrtpNegotiationFailed)
+    ON_CALL(*aliceCb, zrtpNegotiationFailed)
             .WillByDefault([&failure, this](GnuZrtpCodes::MessageSeverity severity, int32_t subCode) {
                 LOGGER(ERROR_LOG, "zrtpNegotiationFailed Alice: ", severity, ", code: ", subCode)
                 failure = true;
                 this->securityOnCv.notify_all();
             });
 
-    ON_CALL(bobCb, zrtpNegotiationFailed)
+    ON_CALL(*bobCb, zrtpNegotiationFailed)
             .WillByDefault([&failure, this](GnuZrtpCodes::MessageSeverity severity, int32_t subCode) {
                 LOGGER(ERROR_LOG, "zrtpNegotiationFailed Bob  : ", severity, ", code: ", subCode)
                 failure = true;
                 this->securityOnCv.notify_all();
             });
 
-    ON_CALL(aliceCb, zrtpNotSuppOther)
+    ON_CALL(*aliceCb, zrtpNotSuppOther)
             .WillByDefault([&failure, this]() { failure = true; this->securityOnCv.notify_all(); });
 
-    ON_CALL(bobCb, zrtpNotSuppOther)
+    ON_CALL(*bobCb, zrtpNotSuppOther)
             .WillByDefault([&failure, this]() { failure = true; this->securityOnCv.notify_all(); });
 
-    EXPECT_CALL(aliceCb, zrtpNegotiationFailed(_, _)).Times(0);
-    EXPECT_CALL(bobCb, zrtpNegotiationFailed(_, _)).Times(0);
+    EXPECT_CALL(*aliceCb, zrtpNegotiationFailed(_, _)).Times(0);
+    EXPECT_CALL(*bobCb, zrtpNegotiationFailed(_, _)).Times(0);
 
-    EXPECT_CALL(aliceCb, zrtpNotSuppOther).Times(0);
-    EXPECT_CALL(bobCb, zrtpNotSuppOther).Times(0);
+    EXPECT_CALL(*aliceCb, zrtpNotSuppOther).Times(0);
+    EXPECT_CALL(*bobCb, zrtpNotSuppOther).Times(0);
 
     string aliceCipher;
     string aliceSas;
@@ -358,11 +358,11 @@ TEST_F(ZrtpBasicRunFixture, full_run_test) {
 
         // Expect the srtpSecretsReady two times: one call sets up the Initiator, the other the Responder
         // i.e. the two send/receive endpoints. Each endpoint has its own set of SRTP secrets.
-        EXPECT_CALL(aliceCb, srtpSecretsReady(_, _)).Times(2).WillRepeatedly(Return(true));
+        EXPECT_CALL(*aliceCb, srtpSecretsReady(_, _)).Times(2).WillRepeatedly(Return(true));
 
         // Once all secrets set and the two endpoints are active report the ciphers and the
         // SAS. One call only.
-        EXPECT_CALL(aliceCb, srtpSecretsOn(_, _, Eq(false)))
+        EXPECT_CALL(*aliceCb, srtpSecretsOn(_, _, Eq(false)))
                 .WillOnce([this, &aliceCipher, &aliceSas, &aliceSecureOn](string c, string s, bool v) {
                     aliceCipher = move(c);
                     aliceSas = move(s);
@@ -372,15 +372,15 @@ TEST_F(ZrtpBasicRunFixture, full_run_test) {
                 });
 
         // Terminating the ZRTP session calls the srtpSecretsOff two times: for Initiator and for Responder.
-        EXPECT_CALL(aliceCb, srtpSecretsOff(_)).Times(2);
+        EXPECT_CALL(*aliceCb, srtpSecretsOff(_)).Times(2);
     }
 
     {
         testing::InSequence bobSequence;
 
-        EXPECT_CALL(bobCb, srtpSecretsReady(_, _)).Times(2).WillRepeatedly(Return(true));
+        EXPECT_CALL(*bobCb, srtpSecretsReady(_, _)).Times(2).WillRepeatedly(Return(true));
 
-        EXPECT_CALL(bobCb, srtpSecretsOn(_, _, Eq(false)))
+        EXPECT_CALL(*bobCb, srtpSecretsOn(_, _, Eq(false)))
                 .WillOnce([this, &bobCipher, &bobSas, &bobSecureOn](string c, string s, bool v) {
                     bobCipher = move(c);
                     bobSas = move(s);
@@ -389,7 +389,7 @@ TEST_F(ZrtpBasicRunFixture, full_run_test) {
                     LOGGER(INFO, "  Bob cipher: ", bobCipher, ", SAS: ", bobSas)
                 });
 
-        EXPECT_CALL(bobCb, srtpSecretsOff(_)).Times(2);
+        EXPECT_CALL(*bobCb, srtpSecretsOff(_)).Times(2);
     }
 
     aliceSetupThread(aliceConfigure);
@@ -446,58 +446,61 @@ TEST_F(ZrtpBasicRunFixture, full_run_test_sidh503) {
     bobCache->setZid(bobZid);
     bobConfigure->setZidCache(bobCache);
 
+    aliceCb = make_shared<testing::NiceMock<MockZrtpCallback>>();
+    bobCb = make_shared<testing::NiceMock<MockZrtpCallback>>();
+
     int32_t aliceTimers = 0;
     int32_t bobTimers = 0;
 
     bool failure = false;
 
     // No timeout happens in this test: Start and cancel timer calls must match
-    ON_CALL(aliceCb, activateTimer).WillByDefault(DoAll(([&aliceTimers](int32_t time) { aliceTimers++; }), Return(1)));
-    ON_CALL(aliceCb, cancelTimer).WillByDefault(DoAll([&aliceTimers]() { aliceTimers--; }, Return(1)));
-    ON_CALL(bobCb, activateTimer).WillByDefault(DoAll(([&bobTimers](int32_t time) { bobTimers++; }), Return(1)));
-    ON_CALL(bobCb, cancelTimer).WillByDefault(DoAll([&bobTimers]() { bobTimers--; }, Return(1)));
+    ON_CALL(*aliceCb, activateTimer).WillByDefault(DoAll(([&aliceTimers](int32_t time) { aliceTimers++; }), Return(1)));
+    ON_CALL(*aliceCb, cancelTimer).WillByDefault(DoAll([&aliceTimers]() { aliceTimers--; }, Return(1)));
+    ON_CALL(*bobCb, activateTimer).WillByDefault(DoAll(([&bobTimers](int32_t time) { bobTimers++; }), Return(1)));
+    ON_CALL(*bobCb, cancelTimer).WillByDefault(DoAll([&bobTimers]() { bobTimers--; }, Return(1)));
 
     // send data just forwards the data, no further checks yet.
     // When Alice sends data put the data into Bob's receive queue and signal 'data available'
-    ON_CALL(aliceCb, sendDataZRTP(_, _))
+    ON_CALL(*aliceCb, sendDataZRTP(_, _))
             .WillByDefault(DoAll(([this](const uint8_t* data, int32_t length) { bobQueueData(data, length); }), Return(1)));
 
     // When Bob sends data put the data into Alice's receive queue and signal 'data available'
-    ON_CALL(bobCb, sendDataZRTP(_, _))
+    ON_CALL(*bobCb, sendDataZRTP(_, _))
             .WillByDefault(DoAll(([this](const uint8_t* data, int32_t length) { aliceQueueData(data, length); }), Return(1)));
 
-    ON_CALL(aliceCb, sendInfo)
+    ON_CALL(*aliceCb, sendInfo)
             .WillByDefault([](GnuZrtpCodes::MessageSeverity severity, int32_t subCode) { LOGGER(DEBUGGING, "SendInfo Alice: ", severity, ", code: ", subCode) });
 
-    ON_CALL(bobCb, sendInfo)
+    ON_CALL(*bobCb, sendInfo)
             .WillByDefault([](GnuZrtpCodes::MessageSeverity severity, int32_t subCode) { LOGGER(DEBUGGING, "SendInfo Bob  : ", severity, ", code: ", subCode) });
 
     // We don't expect failures during the ZRTP protocol
-    ON_CALL(aliceCb, zrtpNegotiationFailed)
+    ON_CALL(*aliceCb, zrtpNegotiationFailed)
             .WillByDefault([&failure, this](GnuZrtpCodes::MessageSeverity severity, int32_t subCode) {
                 LOGGER(ERROR_LOG, "zrtpNegotiationFailed Alice: ", severity, ", code: ", subCode)
                 failure = true;
                 this->securityOnCv.notify_all();
             });
 
-    ON_CALL(bobCb, zrtpNegotiationFailed)
+    ON_CALL(*bobCb, zrtpNegotiationFailed)
             .WillByDefault([&failure, this](GnuZrtpCodes::MessageSeverity severity, int32_t subCode) {
                 LOGGER(ERROR_LOG, "zrtpNegotiationFailed Bob  : ", severity, ", code: ", subCode)
                 failure = true;
                 this->securityOnCv.notify_all();
             });
 
-    ON_CALL(aliceCb, zrtpNotSuppOther)
+    ON_CALL(*aliceCb, zrtpNotSuppOther)
             .WillByDefault([&failure, this]() { failure = true; this->securityOnCv.notify_all(); });
 
-    ON_CALL(bobCb, zrtpNotSuppOther)
+    ON_CALL(*bobCb, zrtpNotSuppOther)
             .WillByDefault([&failure, this]() { failure = true; this->securityOnCv.notify_all(); });
 
-    EXPECT_CALL(aliceCb, zrtpNegotiationFailed(_, _)).Times(0);
-    EXPECT_CALL(bobCb, zrtpNegotiationFailed(_, _)).Times(0);
+    EXPECT_CALL(*aliceCb, zrtpNegotiationFailed(_, _)).Times(0);
+    EXPECT_CALL(*bobCb, zrtpNegotiationFailed(_, _)).Times(0);
 
-    EXPECT_CALL(aliceCb, zrtpNotSuppOther).Times(0);
-    EXPECT_CALL(bobCb, zrtpNotSuppOther).Times(0);
+    EXPECT_CALL(*aliceCb, zrtpNotSuppOther).Times(0);
+    EXPECT_CALL(*bobCb, zrtpNotSuppOther).Times(0);
 
     string aliceCipher;
     string aliceSas;
@@ -513,11 +516,11 @@ TEST_F(ZrtpBasicRunFixture, full_run_test_sidh503) {
 
         // Expect the srtpSecretsReady two times: one call sets up the Initiator, the other the Responder
         // i.e. the two send/receive endpoints. Each endpoint has its own set of SRTP secrets.
-        EXPECT_CALL(aliceCb, srtpSecretsReady(_, _)).Times(2).WillRepeatedly(Return(true));
+        EXPECT_CALL(*aliceCb, srtpSecretsReady(_, _)).Times(2).WillRepeatedly(Return(true));
 
         // Once all secrets set and the two endpoints are active report the ciphers and the
         // SAS. One call only.
-        EXPECT_CALL(aliceCb, srtpSecretsOn(_, _, Eq(false)))
+        EXPECT_CALL(*aliceCb, srtpSecretsOn(_, _, Eq(false)))
                 .WillOnce([this, &aliceCipher, &aliceSas, &aliceSecureOn](string c, string s, bool v) {
                     aliceCipher = move(c);
                     aliceSas = move(s);
@@ -527,15 +530,15 @@ TEST_F(ZrtpBasicRunFixture, full_run_test_sidh503) {
                 });
 
         // Terminating the ZRTP session calls the srtpSecretsOff two times: for Initiator and for Responder.
-        EXPECT_CALL(aliceCb, srtpSecretsOff(_)).Times(2);
+        EXPECT_CALL(*aliceCb, srtpSecretsOff(_)).Times(2);
     }
 
     {
         testing::InSequence bobSequence;
 
-        EXPECT_CALL(bobCb, srtpSecretsReady(_, _)).Times(2).WillRepeatedly(Return(true));
+        EXPECT_CALL(*bobCb, srtpSecretsReady(_, _)).Times(2).WillRepeatedly(Return(true));
 
-        EXPECT_CALL(bobCb, srtpSecretsOn(_, _, Eq(false)))
+        EXPECT_CALL(*bobCb, srtpSecretsOn(_, _, Eq(false)))
                 .WillOnce([this, &bobCipher, &bobSas, &bobSecureOn](string c, string s, bool v) {
                     bobCipher = move(c);
                     bobSas = move(s);
@@ -544,7 +547,7 @@ TEST_F(ZrtpBasicRunFixture, full_run_test_sidh503) {
                     LOGGER(INFO, "  Bob cipher: ", bobCipher, ", SAS: ", bobSas)
                 });
 
-        EXPECT_CALL(bobCb, srtpSecretsOff(_)).Times(2);
+        EXPECT_CALL(*bobCb, srtpSecretsOff(_)).Times(2);
     }
 
     aliceSetupThread(aliceConfigure);
@@ -601,6 +604,9 @@ TEST_F(ZrtpBasicRunFixture, full_run_test_sidh751) {
     bobCache->setZid(bobZid);
     bobConfigure->setZidCache(bobCache);
 
+    aliceCb = make_shared<testing::NiceMock<MockZrtpCallback>>();
+    bobCb = make_shared<testing::NiceMock<MockZrtpCallback>>();
+
     int32_t aliceTimers = 0;
     int32_t bobTimers = 0;
 
@@ -621,37 +627,35 @@ TEST_F(ZrtpBasicRunFixture, full_run_test_sidh751) {
     ON_CALL(*bobCb, sendDataZRTP(_, _))
             .WillByDefault(DoAll(([this](const uint8_t* data, int32_t length) { aliceQueueData(data, length); }), Return(1)));
 
-    ON_CALL(aliceCb, sendInfo)
+    ON_CALL(*aliceCb, sendInfo)
             .WillByDefault([](GnuZrtpCodes::MessageSeverity severity, int32_t subCode) { LOGGER(DEBUGGING, "SendInfo Alice: ", severity, ", code: ", subCode) });
 
-    ON_CALL(bobCb, sendInfo)
+    ON_CALL(*bobCb, sendInfo)
             .WillByDefault([](GnuZrtpCodes::MessageSeverity severity, int32_t subCode) { LOGGER(DEBUGGING, "SendInfo Bob  : ", severity, ", code: ", subCode) });
 
     // We don't expect failures during the ZRTP protocol
-    EXPECT_CALL(*aliceCb, zrtpNegotiationFailed(_, _)).Times(0);
-    EXPECT_CALL(*bobCb, zrtpNegotiationFailed(_, _)).Times(0);
-    ON_CALL(aliceCb, zrtpNegotiationFailed)
+    ON_CALL(*aliceCb, zrtpNegotiationFailed)
             .WillByDefault([&failure, this](GnuZrtpCodes::MessageSeverity severity, int32_t subCode) {
                 LOGGER(ERROR_LOG, "zrtpNegotiationFailed Alice: ", severity, ", code: ", subCode)
                 failure = true;
                 this->securityOnCv.notify_all();
             });
 
-    ON_CALL(bobCb, zrtpNegotiationFailed)
+    ON_CALL(*bobCb, zrtpNegotiationFailed)
             .WillByDefault([&failure, this](GnuZrtpCodes::MessageSeverity severity, int32_t subCode) {
                 LOGGER(ERROR_LOG, "zrtpNegotiationFailed Bob  : ", severity, ", code: ", subCode)
                 failure = true;
                 this->securityOnCv.notify_all();
             });
 
-    ON_CALL(aliceCb, zrtpNotSuppOther)
+    ON_CALL(*aliceCb, zrtpNotSuppOther)
             .WillByDefault([&failure, this]() { failure = true; this->securityOnCv.notify_all(); });
 
-    ON_CALL(bobCb, zrtpNotSuppOther)
+    ON_CALL(*bobCb, zrtpNotSuppOther)
             .WillByDefault([&failure, this]() { failure = true; this->securityOnCv.notify_all(); });
 
-    EXPECT_CALL(aliceCb, zrtpNegotiationFailed(_, _)).Times(0);
-    EXPECT_CALL(bobCb, zrtpNegotiationFailed(_, _)).Times(0);
+    EXPECT_CALL(*aliceCb, zrtpNegotiationFailed(_, _)).Times(0);
+    EXPECT_CALL(*bobCb, zrtpNegotiationFailed(_, _)).Times(0);
 
     EXPECT_CALL(*aliceCb, zrtpNotSuppOther).Times(0);
     EXPECT_CALL(*bobCb, zrtpNotSuppOther).Times(0);
