@@ -119,14 +119,14 @@ NAMESPACE_COMMONCPP
  *
 @verbatim
 
-                      +----------+
-                      |  ccRTP   |
-                      | RTP/SRTP |
-                      |          |
-                      +----------+
-                           ^
-                           | extends
-                           |
+                         +----------+
+                         |  ccRTP   |
+                         | RTP/SRTP |
+                         |          |
+                         +----------+
+                              ^
+                              | extends
+                              |
 +----------------+      +-----+------+
 |  Application   |      |            |      +-----------------+
 |  instantiates  | uses | ZrtpQueue  | uses |                 |
@@ -134,8 +134,8 @@ NAMESPACE_COMMONCPP
 |  and provides  |      |ZrtpCallback|      |      core       |
 |ZrtpUserCallback|      |            |      | implementation  |
 +----------------+      +------------+      |  (ZRtp et al)   |
-                                         |                 |
-                                         +-----------------+
+                                            |                 |
+                                            +-----------------+
 @endverbatim
  *
  * Because ZrtpQueue extends the ccRTP RTP/SRTP implementation

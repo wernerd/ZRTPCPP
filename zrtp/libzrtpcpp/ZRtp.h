@@ -59,16 +59,8 @@ class ZRtp;
  * user of this class needs to know only a few methods and needs to
  * provide only a few external functions to connect to a Timer
  * mechanism and to send data via RTP and SRTP. Refer to the
- * ZrtpCallback class to get detailed information regading the
+ * ZrtpCallback class to get detailed information regarding the
  * callback methods required by GNU RTP.
- *
- * The class ZrtpQueue is the GNU ccRTP specific implementation that
- * extends standard ccRTP RTP provide ZRTP support. Refer to the
- * documentation of ZrtpQueue to get more information about the usage
- * of ZRtp and associated classes.
- *
- * The main entry into the ZRTP class is the processExtensionHeader()
- * method.
  *
  * This class does not directly handle the protocol states, timers,
  * and packet resend. The protocol state engine is responsible for
@@ -137,7 +129,6 @@ class __EXPORT ZRtp {
 
     /**
      * Stop ZRTP security.
-     *
      */
     void stopZrtp();
 
@@ -153,11 +144,11 @@ class __EXPORT ZRtp {
      * @param peerSSRC
      *    The peer's SSRC.
      * @param length
-     *     of the received data packet, this includes the RTP like header
-     *     and the ZRTP CRC field - used to do santity checks.
+     *     of the received data packet, this includes the length of the ZRTP CRC field and
+     *     may include length of transport header, for example length of RTP header. Use
+     *     setTransportOverhead(int32_t overhead) to set the length of the transport overhead.
      *
-     * @return
-     *    Code indicating further packet handling, see description above.
+     * @sa  setTransportOverhead(int32_t)
      */
     void processZrtpMessage(uint8_t *extHeader, uint32_t peerSSRC, size_t length);
 
@@ -185,15 +176,15 @@ class __EXPORT ZRtp {
     bool handleGoClear(uint8_t *extHeader);
 #endif
     /**
-     * Set the auxilliary secret.
+     * Set the auxiliary secret.
      *
-     * Use this method to set the auxilliary secret data. Refer to ZRTP
+     * Use this method to set the auxiliary secret data. Refer to ZRTP
      * specification, chapter 4.3 ff
      *
      * @param data
      *     Points to the secret data.
      * @param length
-     *     Length of the auxilliary secrect in bytes
+     *     Length of the auxiliary secret in bytes
      */
     void setAuxSecret(uint8_t* data, uint32_t length);
 
