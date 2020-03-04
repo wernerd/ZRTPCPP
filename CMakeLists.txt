@@ -30,9 +30,9 @@ set (SOVERSION 5)
 # Without any options cmake generates libzrtpcpp for use with GNU ccRTP
 #
 option(CCRTP "Build library to use with GNU ccRTP." OFF)
-option(CORE_LIB "Build core library only, no spcific client support." OFF)
+option(CORE_LIB "Build core library only, no specific client support." OFF)
 option(CRYPTO_STANDALONE "Use embedded crypto and big number modules." ON)
-option(TIVI "Build library for the tivi client, implies '-DCRYPTO_STNDALONE=ON' and '-DSDES=ON'." OFF)
+option(TIVI "Build library for the Tivi client, implies '-DCRYPTO_STANDALONE=ON' and '-DSDES=ON'." OFF)
 # option(WEBRTC "Create static lib for webRTC, with SIDH support." OFF)
 option(SQLITE "Use SQLite DB as backend for ZRTP cache." OFF)
 option(SQLCIPHER "Use SQLCipher DB as backend for ZRTP cache." OFF)
@@ -40,17 +40,17 @@ option(SRTP "Include SRTP when not building for CCRTP." OFF)
 option(AXO "Include Axolotl support when not building for CCRTP." OFF)
 option(TESTS "Generate Unit test." OFF)
 
-option(ANDROID "Generate Android libraries" OFF)
+option(ANDROID "Generate Android libraries, use if via Gradle build script" OFF)
 # option(JAVA "Generate Java support files (requires JDK and SWIG)" OFF)
 
 ## The following options are used for SIDH mainly
 option(SIDH "Include SIDH Post-Quantum algorithm." OFF)
 
-option(x64 "Set this to true to build for a x64 (64 bit) architecture." OFF)
-option(x86 "Set this to true to build for a x86 (32 bit) architecture." OFF)
-option(arm "Set this to true to build for a arm (32 bit) architecture." OFF)
-option(arm64 "Set this to true to build for a arm64 (64 bit) architecture." OFF)
-option(GENERIC "Set this to true to use the portable implementation." OFF)
+option(x64 "Set this to true to build SIDH for a x64 (64 bit) architecture." OFF)
+option(x86 "Set this to true to build SIDH for a x86 (32 bit) architecture." OFF)
+option(arm "Set this to true to build SIDH for a arm (32 bit) architecture." OFF)
+option(arm64 "Set this to true to build SIDH for a arm64 (64 bit) architecture." OFF)
+option(GENERIC "Set this to true to use the portable SIDH implementation." OFF)
 
 if(MSVC60)
     set(BUILD_STATIC ON CACHE BOOL "static linking only" FORCE)

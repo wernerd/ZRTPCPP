@@ -8,7 +8,7 @@ endif()
 set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})
 
 
-#to make sure includes are first taken - it contains config.h
+# to make sure these includes are taken first - it contains config.h
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
 include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/zrtp ${CMAKE_SOURCE_DIR}/srtp
         ${CMAKE_SOURCE_DIR}/bnlib
