@@ -118,7 +118,7 @@ class __EXPORT ZRtp {
      * Constructor initializes all relevant data but does not start the
      * engine.
      */
-    ZRtp(uint8_t const * myZid, ZrtpCallback & cb, const std::string& id,
+    ZRtp(uint8_t const * myZid, std::shared_ptr<ZrtpCallback>& userCallback, const std::string& id,
          std::shared_ptr<ZrtpConfigure>& config, bool mitm = false, bool sasSignSupport = false);
 
     /**
@@ -684,7 +684,7 @@ private:
      * The callback class provides me with the interface to send
      * data and to deal with timer management of the hosting system.
      */
-    ZrtpCallback * callback;
+    std::weak_ptr<ZrtpCallback> callback;
 
     /**
      * My active Diffie-Helman context

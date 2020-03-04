@@ -54,6 +54,9 @@ class __EXPORT CtZrtpStream: public ZrtpCallback  {
 
 public:
 
+    CtZrtpStream();
+    ~CtZrtpStream() override;
+
     CtZrtpSession::tiviStatus getCurrentState() {return tiviState;}
 
     CtZrtpSession::tiviStatus getPreviousState() {return prevTiviState;}
@@ -88,10 +91,7 @@ protected:
     bool              discriminatorMode;   //!< If true use the security discriminator mode
     CtZrtpSession     *session;
 
-    CtZrtpStream();
     friend class CtZrtpSession;
-
-    ~CtZrtpStream() override;
 
     /**
      * Set the application's callback class.

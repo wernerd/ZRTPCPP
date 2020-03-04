@@ -98,10 +98,11 @@ TEST_F(ZrtpHelloTestFixture, check_timer_start_cancel) {
 
     int32_t timers = 0;
 
-    testing::NiceMock<MockZrtpCallback> callback;
+    auto mockCallback = make_shared<testing::NiceMock<MockZrtpCallback>>();
+    std::shared_ptr<ZrtpCallback> callback = mockCallback;      // perform implicit up-cast to base
 
-    ON_CALL(callback, activateTimer).WillByDefault(DoAll(([&timers](int32_t time) { timers++; }), Return(1)));
-    ON_CALL(callback, cancelTimer).WillByDefault(DoAll([&timers]() { timers--; }, Return(1)));
+    ON_CALL(*mockCallback, activateTimer).WillByDefault(DoAll(([&timers](int32_t time) { timers++; }), Return(1)));
+    ON_CALL(*mockCallback, cancelTimer).WillByDefault(DoAll([&timers]() { timers--; }, Return(1)));
 
     ZRtp zrtp(aliceZid, callback, aliceId, configure, false, false);
     zrtp.startZrtpEngine();
@@ -114,15 +115,16 @@ TEST_F(ZrtpHelloTestFixture, check_first_sent_Hello) {
     // Configure with mandatory algorithms only
     shared_ptr<ZrtpConfigure> configure = make_shared<ZrtpConfigure>();
 
-    testing::NiceMock<MockZrtpCallback> callback;
+    auto mockCallback = make_shared<testing::NiceMock<MockZrtpCallback>>();
+    std::shared_ptr<ZrtpCallback> callback = mockCallback;      // perform implicit up-cast to base
 
     uint8_t const * packetData;
     int32_t dataLength;
 
-    EXPECT_CALL(callback, sendDataZRTP(_, _))
+    EXPECT_CALL(*mockCallback, sendDataZRTP(_, _))
             .WillOnce(DoAll(testing::SaveArg<0>(&packetData), SaveArg<1>(&dataLength), Return(1)));
 
-    EXPECT_CALL(callback, zrtpNegotiationFailed(_, _)).Times(0);
+    EXPECT_CALL(*mockCallback, zrtpNegotiationFailed(_, _)).Times(0);
 
     ZRtp zrtp(aliceZid, callback, aliceId, configure, false, false);
     zrtp.startZrtpEngine();

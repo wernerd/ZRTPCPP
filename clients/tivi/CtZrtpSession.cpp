@@ -117,7 +117,7 @@ initNoCache(const char *zidFilename, std::shared_ptr<ZIDCache> cache) {
 
 int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidFilename, std::shared_ptr<ZrtpConfigure>& config) {
     int32_t ret = 1;
-    CtZrtpStream *stream;
+    std::shared_ptr<ZrtpCallback> stream;
 
     syncEnter();
 
@@ -162,17 +162,17 @@ int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidF
 
         // Create CTZrtpStream object only once, they are available for the whole lifetime of the session.
         if (streams[AudioStream] == nullptr)
-            streams[AudioStream] = new CtZrtpStream();
+            streams[AudioStream] = std::make_shared<CtZrtpStream>();
         stream = streams[AudioStream];
-        stream->zrtpEngine = new ZRtp((uint8_t*)ownZidFromCache, *stream, clientIdString, configOwn, mitmMode, signSas);
-        stream->type = Master;
-        stream->index = AudioStream;
-        stream->session = this;
-        stream->discriminatorMode = discriminatorMode;
+        streams[AudioStream]->zrtpEngine = new ZRtp((uint8_t*)ownZidFromCache, stream, clientIdString, configOwn, mitmMode, signSas);
+        streams[AudioStream]->type = Master;
+        streams[AudioStream]->index = AudioStream;
+        streams[AudioStream]->session = this;
+        streams[AudioStream]->discriminatorMode = discriminatorMode;
     }
     if (video) {
         if (streams[VideoStream] == nullptr)
-            streams[VideoStream] = new CtZrtpStream();
+            streams[VideoStream] = std::make_shared<CtZrtpStream>();
 
         // Get the ZRTP Configure from master and forward it to the slave stream. Slave stream should have the same
         // configuration and cache as the master stream. ZRTP configuration is managed via shared_ptr.
@@ -180,11 +180,11 @@ int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidF
         const uint8_t* ownZidFromCache = videoConfig->getZidCache()->getZid();
 
         stream = streams[VideoStream];
-        stream->zrtpEngine = new ZRtp(ownZidFromCache, *stream, clientIdString, videoConfig);
-        stream->type = Slave;
-        stream->index = VideoStream;
-        stream->session = this;
-        stream->discriminatorMode = discriminatorMode;
+        streams[VideoStream]->zrtpEngine = new ZRtp(ownZidFromCache, stream, clientIdString, videoConfig);
+        streams[VideoStream]->type = Slave;
+        streams[VideoStream]->index = VideoStream;
+        streams[VideoStream]->session = this;
+        streams[VideoStream]->discriminatorMode = discriminatorMode;
     }
     callId_ = callId;
 
@@ -192,12 +192,6 @@ int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidF
 
     syncLeave();
     return ret;
-}
-
-CtZrtpSession::~CtZrtpSession() {
-
-    delete streams[AudioStream];
-    delete streams[VideoStream];
 }
 
 void zrtp_log(const char *tag, const char *buf);
@@ -407,7 +401,7 @@ void CtZrtpSession::masterStreamSecure(CtZrtpStream *masterStream) {
     // Otherwise we need to loop and find the Master stream and the Slave streams.
 
     multiStreamParameter = masterStream->zrtpEngine->getMultiStrParams(&zrtpMaster);
-    CtZrtpStream *strm = streams[VideoStream];
+    auto strm = streams[VideoStream];
     if (strm->enableZrtp) {
         strm->zrtpEngine->setMultiStrParams(multiStreamParameter, zrtpMaster);
         strm->zrtpEngine->startZrtpEngine();
@@ -434,7 +428,7 @@ void CtZrtpSession::start(unsigned int uiSSRC, CtZrtpSession::streamName streamN
     if (!zrtpEnabled || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return;
 
-    CtZrtpStream *stream = streams[streamNm];
+    auto stream = streams[streamNm];
 
     stream->ownSSRC = uiSSRC;
     stream->enableZrtp = true;
@@ -473,14 +467,12 @@ void CtZrtpSession::release() {
 void CtZrtpSession::release(streamName streamNm) {
     if (!(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return;
-
-    CtZrtpStream *stream = streams[streamNm];
-    stream->stopStream();                      // stop and reset stream
+    streams[streamNm]->stopStream();                      // stop and reset stream
 }
 
 void CtZrtpSession::setLastPeerNameVerify(const char *name, int iIsMitm) {
     (void) iIsMitm;
-    CtZrtpStream *stream = streams[AudioStream];
+    auto stream = streams[AudioStream];
 
     if (!isReady || !stream || stream->isStopped)
         return;
@@ -495,31 +487,27 @@ void CtZrtpSession::setLastPeerNameVerify(const char *name, int iIsMitm) {
 int CtZrtpSession::isSecure(streamName streamNm) {
     if (!(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return 0;
-
-    CtZrtpStream *stream = streams[streamNm];
-    return stream->isSecure();
+    return streams[streamNm]->isSecure();
 }
 
 bool CtZrtpSession::processOutoingRtp(uint8_t *buffer, size_t length, size_t *newLength, streamName streamNm) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return false;
 
-    CtZrtpStream *stream = streams[streamNm];
-    if (stream->isStopped)
+    if (streams[streamNm]->isStopped)
         return false;
 
-    return stream->processOutgoingRtp(buffer, length, newLength);
+    return streams[streamNm]->processOutgoingRtp(buffer, length, newLength);
 }
 
 int32_t CtZrtpSession::processIncomingRtp(uint8_t *buffer, size_t length, size_t *newLength, streamName streamNm) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return fail;
 
-    CtZrtpStream *stream = streams[streamNm];
-    if (stream->isStopped)
+    if (streams[streamNm]->isStopped)
         return fail;
 
-    return stream->processIncomingRtp(buffer, length, newLength);
+    return streams[streamNm]->processIncomingRtp(buffer, length, newLength);
 }
 
 bool CtZrtpSession::isStarted(streamName streamNm) {
@@ -533,33 +521,30 @@ bool CtZrtpSession::isEnabled(streamName streamNm) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return false;
 
-    CtZrtpStream *stream = streams[streamNm];
-    if (stream->isStopped)
+    if (streams[streamNm]->isStopped)
         return false;
 
-    return stream->isEnabled();
+    return streams[streamNm]->isEnabled();
 }
 
 CtZrtpSession::tiviStatus CtZrtpSession::getCurrentState(streamName streamNm) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return eWrongStream;
 
-    CtZrtpStream *stream = streams[streamNm];
-    if (stream->isStopped)
+    if (streams[streamNm]->isStopped)
         return eWrongStream;
 
-    return stream->getCurrentState();
+    return streams[streamNm]->getCurrentState();
 }
 
 CtZrtpSession::tiviStatus CtZrtpSession::getPreviousState(streamName streamNm) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return eWrongStream;
 
-    CtZrtpStream *stream = streams[streamNm];
-    if (stream->isStopped)
+    if (streams[streamNm]->isStopped)
         return eWrongStream;
 
-    return stream->getPreviousState();
+    return streams[streamNm]->getPreviousState();
 }
 
 bool CtZrtpSession::isZrtpEnabled() {
@@ -582,26 +567,24 @@ int CtZrtpSession::getSignalingHelloHash(char *helloHash, streamName streamNm, i
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return 0;
 
-    CtZrtpStream *stream = streams[streamNm];
-    if (stream->isStopped)
+    if (streams[streamNm]->isStopped)
         return 0;
 
-    return stream->getSignalingHelloHash(helloHash, index);
+    return streams[streamNm]->getSignalingHelloHash(helloHash, index);
 }
 
 void CtZrtpSession::setSignalingHelloHash(const char *helloHash, streamName streamNm) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return;
 
-    CtZrtpStream *stream = streams[streamNm];
-    if (stream->isStopped)
+    if (streams[streamNm]->isStopped)
         return;
 
-    stream->setSignalingHelloHash(helloHash);
+    streams[streamNm]->setSignalingHelloHash(helloHash);
 }
 
 void CtZrtpSession::setVerify(int iVerified) {
-    CtZrtpStream *stream = streams[AudioStream];
+    auto stream = streams[AudioStream];
 
     if (!isReady || !stream || stream->isStopped)
         return;
@@ -620,24 +603,21 @@ int CtZrtpSession::getInfo(const char *key, uint8_t *buffer, size_t maxLen, stre
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return fail;
 
-    CtZrtpStream *stream = streams[streamNm];
-    return stream->getInfo(key, (char*)buffer, (int)maxLen);
+    return streams[streamNm]->getInfo(key, (char*)buffer, (int)maxLen);
 }
 
 int CtZrtpSession::getNumberOfCountersZrtp(streamName streamNm) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return -1;
 
-    CtZrtpStream *stream = streams[streamNm];
-    return stream->getNumberOfCountersZrtp();
+    return streams[streamNm]->getNumberOfCountersZrtp();
 }
 
 int CtZrtpSession::getCountersZrtp(int32_t* counters, streamName streamNm) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return -1;
 
-    CtZrtpStream *stream = streams[streamNm];
-    return stream->getCountersZrtp(counters);
+    return streams[streamNm]->getCountersZrtp(counters);
 }
 
 
@@ -645,8 +625,7 @@ int CtZrtpSession::enrollAccepted(char *p) {
     if (!isReady || streams[AudioStream] == nullptr)
         return fail;
 
-    CtZrtpStream *stream = streams[AudioStream];
-    int ret = stream->enrollAccepted(p);
+    int ret = streams[AudioStream]->enrollAccepted(p);
     setVerify(true);
     return ret;
 }
@@ -655,8 +634,7 @@ int CtZrtpSession::enrollDenied() {
     if (!isReady || streams[AudioStream] == nullptr)
         return fail;
 
-    CtZrtpStream *stream = streams[AudioStream];
-    int ret = stream->enrollDenied();
+    int ret = streams[AudioStream]->enrollDenied();
     setVerify(true);                        // TODO : Janis -> is that correct in this case?
     return ret;
 }
@@ -670,8 +648,7 @@ bool CtZrtpSession::createSdes(char *cryptoString, size_t *maxLen, streamName st
     if (!isReady || !sdesEnabled || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return fail;
 
-    CtZrtpStream *stream = streams[streamNm];
-    return stream->createSdes(cryptoString, maxLen, static_cast<ZrtpSdesStream::sdesSuites>(suite));
+    return streams[streamNm]->createSdes(cryptoString, maxLen, static_cast<ZrtpSdesStream::sdesSuites>(suite));
 }
 
 bool CtZrtpSession::parseSdes(char *recvCryptoStr, size_t recvLength, char *sendCryptoStr,
@@ -680,48 +657,42 @@ bool CtZrtpSession::parseSdes(char *recvCryptoStr, size_t recvLength, char *send
     if (!isReady || !sdesEnabled || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return fail;
 
-    CtZrtpStream *stream = streams[streamNm];
-    return stream->parseSdes(recvCryptoStr, recvLength, sendCryptoStr, sendLength, sipInvite);
+    return streams[streamNm]->parseSdes(recvCryptoStr, recvLength, sendCryptoStr, sendLength, sipInvite);
 }
 
 bool CtZrtpSession::getSavedSdes(char *sendCryptoStr, size_t *sendLength, streamName streamNm) {
     if (!isReady || !sdesEnabled || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return fail;
 
-    CtZrtpStream *stream = streams[streamNm];
-    return stream->getSavedSdes(sendCryptoStr, sendLength);
+    return streams[streamNm]->getSavedSdes(sendCryptoStr, sendLength);
 }
 
 bool CtZrtpSession::isSdesActive(streamName streamNm) {
     if (!isReady || !sdesEnabled || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return fail;
 
-    CtZrtpStream *stream = streams[streamNm];
-    return stream->isSdesActive();
+    return streams[streamNm]->isSdesActive();
 }
 
 int CtZrtpSession::getCryptoMixAttribute(char *algoNames, size_t length, streamName streamNm) {
     if (!isReady || !sdesEnabled || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return 0;
 
-    CtZrtpStream *stream = streams[streamNm];
-    return stream->getCryptoMixAttribute(algoNames, length);
+    return streams[streamNm]->getCryptoMixAttribute(algoNames, length);
 }
 
 bool CtZrtpSession::setCryptoMixAttribute(const char *algoNames, streamName streamNm) {
     if (!isReady || !sdesEnabled || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return fail;
 
-    CtZrtpStream *stream = streams[streamNm];
-    return stream->setCryptoMixAttribute(algoNames);
+    return streams[streamNm]->setCryptoMixAttribute(algoNames);
 }
 
 void CtZrtpSession::resetSdesContext(streamName streamNm, bool force) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return;
 
-    CtZrtpStream *stream = streams[streamNm];
-    stream->resetSdesContext(force);
+    streams[streamNm]->resetSdesContext(force);
 }
 
 
@@ -735,8 +706,7 @@ const char* CtZrtpSession::getZrtpEncapAttribute(streamName streamNm) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return nullptr;
 
-    CtZrtpStream *stream = streams[streamNm];
-    if (stream->isStopped)
+    if (streams[streamNm]->isStopped)
         return nullptr;
 
     return CtZrtpStream::getZrtpEncapAttribute();
@@ -746,22 +716,20 @@ void CtZrtpSession::setZrtpEncapAttribute(const char *attribute, streamName stre
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return;
 
-    CtZrtpStream *stream = streams[streamNm];
-    if (stream->isStopped)
+    if (streams[streamNm]->isStopped)
         return;
 
-    stream->setZrtpEncapAttribute(attribute);
+    streams[streamNm]->setZrtpEncapAttribute(attribute);
 }
 
 void CtZrtpSession::setAuxSecret(const unsigned char *secret, int length) {
     if (!isReady || streams[AudioStream] == nullptr)
         return;
 
-    CtZrtpStream *stream = streams[AudioStream];
-    if (stream->isStopped)
+    if (streams[AudioStream]->isStopped)
         return;
 
-    stream->setAuxSecret(secret, length);
+    streams[AudioStream]->setAuxSecret(secret, length);
 }
 
 void CtZrtpSession::setDiscriminatorMode ( bool on ) {
@@ -776,8 +744,7 @@ int32_t CtZrtpSession::getSrtpTraceData(SrtpErrorData* data, streamName streamNm
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
         return 0;
 
-    CtZrtpStream *stream = streams[streamNm];
-    return stream->getSrtpTraceData(data);
+    return streams[streamNm]->getSrtpTraceData(data);
 }
 
 void CtZrtpSession::cleanCache() {
