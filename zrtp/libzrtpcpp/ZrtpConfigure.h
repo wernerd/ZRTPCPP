@@ -46,8 +46,8 @@ enum AlgoTypes {
     Invalid = 0, HashAlgorithm = 1, CipherAlgorithm, PubKeyAlgorithm, SasType, AuthLength
 };
 
-typedef void(*encrypt_t)(uint8_t*, int32_t, uint8_t*, uint8_t*, int32_t);
-typedef void(*decrypt_t)(uint8_t*, int32_t, uint8_t*, uint8_t*, int32_t);
+using encrypt_t = void(*)(uint8_t*, int32_t, uint8_t*, uint8_t*, int32_t);
+using decrypt_t = void(*)(uint8_t*, int32_t, uint8_t*, uint8_t*, int32_t);
 
 /**
  * The algorithm enumeration class.
@@ -538,8 +538,8 @@ public:
     /// Helper function to print some internal data
     void printConfiguredAlgos(AlgoTypes algoTyp);
 
-    Policy getSelectionPolicy()         {return selectionPolicy;}
-    void setSelectionPolicy(Policy pol) {selectionPolicy = pol;}
+    Policy getSelectionPolicy()         { return selectionPolicy; }
+    void setSelectionPolicy(Policy pol) { selectionPolicy = pol; }
 
     void setZidCache(std::shared_ptr<ZIDCache>& zf) { zidCache = zf; }
 
