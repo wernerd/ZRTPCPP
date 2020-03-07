@@ -115,7 +115,7 @@ public:
     static int32_t unprotectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t length, size_t* newLength);
 
 private:
-    static bool decodeRtp(uint8_t* buffer, int32_t length, uint32_t *ssrc, uint16_t *seq, uint8_t** payload, int32_t *payloadlen);
+    static bool decodeRtp(uint8_t* buffer, size_t length, uint32_t *ssrc, uint16_t *seq, uint8_t** payload, int32_t *payloadlen);
 
 };
 #endif // _SRTPHANDLER_H_

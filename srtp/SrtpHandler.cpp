@@ -18,7 +18,7 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <cstdio>
+#include <cstdio>               // Keep it -> compiling with mingw (Windows) complains if not included here
 #include <cstring>
 #include <cstdint>
 
@@ -28,9 +28,9 @@
 #include "srtp/CryptoContext.h"
 #include "srtp/CryptoContextCtrl.h"
 
-bool SrtpHandler::decodeRtp(uint8_t* buffer, int32_t length, uint32_t *ssrc, uint16_t *seq, uint8_t** payload, int32_t *payloadlen)
+bool SrtpHandler::decodeRtp(uint8_t* buffer, size_t length, uint32_t *ssrc, uint16_t *seq, uint8_t** payload, int32_t *payloadlen)
 {
-    int offset;
+    size_t offset;
     uint16_t *pus;
     uint32_t *pui;
 
@@ -46,11 +46,8 @@ bool SrtpHandler::decodeRtp(uint8_t* buffer, int32_t length, uint32_t *ssrc, uin
     pus = (uint16_t*)buffer;
     pui = (uint32_t*)buffer;
 
-    uint16_t tmp16 = pus[1];                    // get seq number
-    *seq = zrtpNtohs(tmp16);                        // and return in host oder
-
-    uint32_t tmp32 = pui[2];                    // get SSRC
-    *ssrc = zrtpNtohl(tmp32);                       // and return in host order
+    *seq = zrtpNtohs(pus[1]);                        // and return in host oder
+    *ssrc = zrtpNtohl(pui[2]);                       // and return in host order
 
     /* Payload is located right after header plus CSRC */
     int32_t numCC = buffer[0] & 0x0fU;           // lower 4 bits in first byte is num of contrib SSRC
@@ -63,9 +60,7 @@ bool SrtpHandler::decodeRtp(uint8_t* buffer, int32_t length, uint32_t *ssrc, uin
     /* Adjust payload offset if RTP extension is used. */
     if ((*buffer & 0x10U) == 0x10) {             // packet contains RTP extension
         pus = (uint16_t*)(buffer + offset);     // pus points to extension as 16bit pointer
-        tmp16 = pus[1];                         // the second 16 bit word is the length
-        tmp16 = zrtpNtohs(tmp16);                   // to host order
-        offset += (tmp16 + 1) * sizeof(uint32_t);
+        offset += (zrtpNtohs(pus[1]) + 1) * sizeof(uint32_t);
     }
     /* Sanity check */
     if (offset > length)

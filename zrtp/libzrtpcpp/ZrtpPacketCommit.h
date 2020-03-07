@@ -45,7 +45,6 @@
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
-
 class __EXPORT ZrtpPacketCommit : public ZrtpPacketBase {
 
  public:

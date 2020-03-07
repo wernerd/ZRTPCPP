@@ -23,6 +23,12 @@
 /* Version number of package */
 #define  VERSION ${VERSION}
 
+/* Define to 1 if you have the <sqlite3.h> header file. */
+#cmakedefine  HAVE_SQLITE_H 1
+
+/* Define to 1 if you have the <sqlite3.h> header file with sqlcipher support. */
+#cmakedefine  HAVE_SQLCIPHER_H 1
+
 /* Define to empty if `const' does not conform to ANSI C. */
 #undef const
 

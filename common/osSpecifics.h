@@ -17,6 +17,7 @@
 #ifndef _OSSPECIFICS_H_
 #define _OSSPECIFICS_H_
 
+#include <stdint.h>
 /**
  * @file osSpecifics.h
  * @brief Some functions to adapt to OS and/or compiler specific handling
