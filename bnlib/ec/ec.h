@@ -40,7 +40,7 @@ typedef enum {
     NIST384P = 4,
     NIST521P = 5,
     Curve25519 = 10,
-    Curve3617  = 11
+    Curve3617  = 11     // misnomer: actually Curve41417
 } Curves;
 
 /**

@@ -42,3 +42,6 @@ if (NOT CCRTP)
     add_executable(srtpCrypto_test SrtpCrypto_test.cpp ZrtpTestCommon.h)
     target_link_libraries(srtpCrypto_test gtest_main ${zrtplibName})
 endif()
+
+add_executable(genricFilter_test GenericFilter_test.cpp)
+target_link_libraries(genricFilter_test gtest_main ${zrtplibName})

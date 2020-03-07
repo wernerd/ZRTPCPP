@@ -337,6 +337,8 @@ set(zrtp_src_no_cache
         ${CMAKE_SOURCE_DIR}/common/ZrtpTimeoutProvider.h
         ${CMAKE_SOURCE_DIR}/common/SecureArray.h
         ${CMAKE_SOURCE_DIR}/common/Constants.h
+        ${CMAKE_SOURCE_DIR}/common/ZrtpConfigureBuilder.h
+        ${CMAKE_SOURCE_DIR}/common/ZrtpConfigureBuilder.cpp
         ${CMAKE_SOURCE_DIR}/logging/Logger.cpp
         ${CMAKE_SOURCE_DIR}/logging/ZrtpLogging.cpp
         ${CMAKE_SOURCE_DIR}/logging/logger_config.h

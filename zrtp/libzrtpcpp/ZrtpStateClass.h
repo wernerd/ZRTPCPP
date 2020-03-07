@@ -358,8 +358,6 @@ public:
     /**
      * @brief Get required buffer size to get all 32-bit retry counters
      *
-     * @param streamNm stream, if not specified the default is @c AudioStream
-     * 
      * @return number of 32 bit integer elements required or < 0 on error
      */
     int getNumberOfRetryCounters();
@@ -367,10 +365,9 @@ public:
     /**
      * @brief Read retry counters
      * 
-     * @param buffer Pointer to buffer of 32-bit integers. The buffer must be able to
+     * @param counters Pointer to buffer of 32-bit integers. The buffer must be able to
      *         hold at least getNumberOfRetryCounters() 32-bit integers
-     * @param streamNm stream, if not specified the default is @c AudioStream
-     * 
+     *
      * @return number of 32-bit counters returned in buffer or < 0 on error
      */
     int getRetryCounters(int32_t* counters);

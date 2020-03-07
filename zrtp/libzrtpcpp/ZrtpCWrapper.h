@@ -32,8 +32,8 @@
  * @see ZRtp
  */
 
-#include <cstdint>
-#include <cstddef>
+#include <stdint.h>
+#include <stddef.h>
 
 /**
  * Defines to specify the role a ZRTP peer has.
@@ -662,6 +662,7 @@ extern "C"
      * may use different ZID for each sessions (generate new random data each time) of it may generate one
      * ZID and reuse it. In any case the ZID shall conform to the requirements defined in RFC6189.
      *
+     * @param zrtpContext Pointer to the opaque ZrtpContext structure.
      * @param zid pointer to a array of random data. Must contains at least IDENTIFIER_LEN bytes.
      */
     void zrtp_setZidForEmptyCache(ZrtpContext* zrtpContext, uint8_t const * zid);

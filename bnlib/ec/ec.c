@@ -111,7 +111,7 @@ static curveData nist521 = {
 
 
 /*
- * The data for curve3617 copied from:
+ * The data for curve3617 (actually Curve41417) copied from:
  * http://safecurves.cr.yp.to/field.html
  * http://safecurves.cr.yp.to/base.html
  */

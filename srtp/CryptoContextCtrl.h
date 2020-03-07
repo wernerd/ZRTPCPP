@@ -272,7 +272,7 @@ class CryptoContextCtrl {
      * The CryptoContextCtrl constructor initializes CryptoContextCtrl#labelBase
      * with 3 to comply with RFC 3711 label values.
      *
-     * Applications may set #labelBase to other values to use CryptoContextCtrl
+     * Applications may set `labelBase` to other values to use CryptoContextCtrl
      * for other purposes.
      */
     void setLabelbase(uint8_t base) { labelBase = base; }

@@ -388,7 +388,7 @@ public:
      * The CryptoContext constructor initializes CryptoContext::labelBase
      * with 0 to comply with RFC 3711 label values.
      *
-     * Applications may set the #labelBase to other values to use the CryptoContext
+     * Applications may set the `labelBase` to other values to use the CryptoContext
      * for other purposes.
      */
     void setLabelbase(uint8_t base) { labelBase = base; }

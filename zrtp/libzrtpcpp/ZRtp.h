@@ -594,8 +594,6 @@ class __EXPORT ZRtp {
      /**
       * @brief Get required buffer size to get all 32-bit statistic counters of ZRTP
       *
-      * @param streamNm stream, if not specified the default is @c AudioStream
-      * 
       * @return number of 32 bit integer elements required or < 0 on error
       */
      int getNumberOfCountersZrtp();
@@ -603,10 +601,8 @@ class __EXPORT ZRtp {
      /**
       * @brief Read statistic counters of ZRTP
       * 
-      * @param buffer Pointer to buffer of 32-bit integers. The buffer must be able to
+      * @param counters Pointer to buffer of 32-bit integers. The buffer must be able to
       *         hold at least getNumberOfCountersZrtp() 32-bit integers
-      * @param streamNm stream, if not specified the default is @c AudioStream
-      * 
       * @return number of 32-bit counters returned in buffer or < 0 on error
       */
      int getCountersZrtp(int32_t* counters);
@@ -636,11 +632,25 @@ class __EXPORT ZRtp {
       */
      [[nodiscard]] bool isPeerDisclosureFlag() const { return peerDisclosureFlagSeen; }
 
+    /**
+     * @brief Get the ZID cache instance of this ZRTP connection.
+     */
      [[nodiscard]] std::shared_ptr<ZIDCache>& getZidCache() const { return configureAlgos->getZidCache(); }
 
+    /**
+     * @brief Get the configuration data of this ZRTP connection.
+     */
      [[nodiscard]] std::shared_ptr<ZrtpConfigure> getZrtpConfigure() const { return configureAlgos; }
 
-     void setTransportOverhead(int32_t overhead);
+    /**
+     * @brief Set the length of the transport protocol overhead in bytes.
+     *
+     * ZRTP uses this to check consitency of input data. For example the transport protocol
+     * overhead of an RTP packet that contains ZRTP data is the fixed length 12.
+     *
+     * @param overhead Length of the transport overhead.
+     */
+    void setTransportOverhead(int32_t overhead);
 
 private:
      typedef union _hashCtx {

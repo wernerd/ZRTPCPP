@@ -40,6 +40,7 @@
  * The following defines match the ZRTP specification, chapter 5
  */
 #define ZRTP_MAGIC       0x5a525450
+#define ZRTP_PREAMBLE    0x505a
 
 //#define ZRTP_WORD_SIZE   4
 static const uint16_t ZRTP_WORD_SIZE = 4;

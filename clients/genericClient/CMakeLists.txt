@@ -81,8 +81,11 @@ if (OPENSSL_FOUND)
             ${CMAKE_SOURCE_DIR}/srtp/crypto/openssl/SrtpSymCrypto.cpp)
 endif()
 
+set(genericFilter_src
+        GenericPacketFilter.cpp
+        GenericPacketFilter.h)
 
-set(zrtpcpp_src ${zrtp_src} ${crypto_src} ${cryptcommon_srcs} ${zrtp_srtp_src}
+set(zrtpcpp_src ${zrtp_src} ${crypto_src} ${cryptcommon_srcs} ${zrtp_srtp_src} ${genericFilter_src}
         ${crypto_src_srtp} ${srtp_src})
 
 if(BUILD_STATIC AND NOT BUILD_SHARED)

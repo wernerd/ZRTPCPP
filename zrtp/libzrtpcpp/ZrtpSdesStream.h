@@ -549,4 +549,7 @@ private:
     uint32_t remoteAuthKeyLen = 0;
     uint32_t remoteTagLength = 0;
 };
+/**
+ * @}
+ */
 #endif

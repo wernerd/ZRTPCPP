@@ -46,7 +46,7 @@
  * @param key
  *    The MAC key.
  * @param key_length
- *    Lneght of the MAC key in bytes
+ *    Length of the MAC key in bytes
  * @param data
  *    Points to the data chunk.
  * @param data_length
@@ -56,10 +56,10 @@
  */
 void hmac_sha384(const uint8_t* key, uint64_t key_length,
                  const uint8_t* data, uint64_t data_length,
-                 zrtp::RetainedSecArray &);
+                 zrtp::RetainedSecArray &macOut);
 
 /**
- * Compute SHA384 HMAC over several data cunks.
+ * Compute SHA384 HMAC over several data chunks.
  *
  * This functions takes several data chunk and computes the SHA384 HMAC
  *
@@ -74,11 +74,10 @@ void hmac_sha384(const uint8_t* key, uint64_t key_length,
  * @param macOut
  *    Reference to a secure array that receives the computed digest..
  */
-
 void hmacSha384(const uint8_t* key, uint64_t key_length,
                 const std::vector<const uint8_t*>& data,
                 const std::vector<uint64_t>& dataLength,
-                zrtp::RetainedSecArray &);
+                zrtp::RetainedSecArray &macOut);
 /**
  * @}
  */

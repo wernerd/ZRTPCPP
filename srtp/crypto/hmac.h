@@ -129,7 +129,7 @@ void* initializeSha1HmacContext(void* ctx, uint8_t* key, uint64_t key_length);
  *     Pointer to initialized SHA1 HMAC context
  * @param data
  *    Points to the data chunk.
- * @param data_length
+ * @param dataLength
  *    Length of the data in bytes
  * @param mac
  *    Points to a buffer that receives the computed digest. This
@@ -137,7 +137,7 @@ void* initializeSha1HmacContext(void* ctx, uint8_t* key, uint64_t key_length);
  * @param mac_length
  *    Point to an integer that receives the length of the computed HMAC.
  */
-void hmacSha1Ctx(void* ctx, const uint8_t* data, uint64_t data_length,
+void hmacSha1Ctx(void* ctx, const uint8_t* data, uint64_t dataLength,
                  uint8_t* mac, int32_t* mac_length);
 
 /**
@@ -151,7 +151,7 @@ void hmacSha1Ctx(void* ctx, const uint8_t* data, uint64_t data_length,
  * @param data
  *    Vector of pointers that point to the data chunks. A NULL
  *    pointer in an array element terminates the data chunks.
- * @param data_length
+ * @param dataLength
  *    Vector of integers that hold the length of each data chunk.
  * @param mac
  *    Points to a buffer that receives the computed digest. This

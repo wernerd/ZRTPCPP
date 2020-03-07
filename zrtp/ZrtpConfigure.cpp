@@ -169,8 +169,8 @@ PubKeyEnum::PubKeyEnum() : EnumBase(PubKeyAlgorithm) {
     insert(ec38, 0, "NIST ECDH-384", nullptr, nullptr, None);
     insert(mult, 0, "Multi-stream",  nullptr, nullptr, None);
 #ifdef SUPPORT_NON_NIST
-    insert(e255, 0, "ECDH-255", NULL, NULL, None);
-    insert(e414, 0, "ECDH-414", NULL, NULL, None);
+    insert(e255, 0, "Curve 255", nullptr, nullptr, None);
+    insert(e414, 0, "Curve 414", nullptr, nullptr, None);
 #ifdef SIDH_SUPPORT
     insert(sdh5, 0, "SIDHp503", NULL, NULL, None);
     insert(sdh7, 0, "SIDHp751", NULL, NULL, None);
@@ -220,7 +220,9 @@ ZrtpConfigure::~ZrtpConfigure() = default;
 
 void ZrtpConfigure::setStandardConfig() {
     clear();
-
+    addStandardConfig();
+}
+void ZrtpConfigure::addStandardConfig() {
     addAlgo(HashAlgorithm, zrtpHashes.getByName(s384));
     addAlgo(HashAlgorithm, zrtpHashes.getByName(s256));
 
@@ -245,7 +247,10 @@ void ZrtpConfigure::setStandardConfig() {
 
 void ZrtpConfigure::setMandatoryOnly() {
     clear();
+    addMandatoryOnly();
+}
 
+void ZrtpConfigure::addMandatoryOnly() {
     addAlgo(HashAlgorithm, zrtpHashes.getByName(s256));
 
     addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName(aes1));
@@ -257,7 +262,6 @@ void ZrtpConfigure::setMandatoryOnly() {
 
     addAlgo(AuthLength, zrtpAuthLengths.getByName(hs32));
     addAlgo(AuthLength, zrtpAuthLengths.getByName(hs80));
-
 }
 
 void ZrtpConfigure::clear() {
@@ -398,7 +402,6 @@ bool ZrtpConfigure::containsAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum&
 }
 
 void ZrtpConfigure::printConfiguredAlgos(std::vector<AlgorithmEnum* >& a) {
-
     for (auto b : a) {
         printf("print configured: name: %s\n", b->getName());
     }

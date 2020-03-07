@@ -320,8 +320,8 @@ public:
      * Define the algorithm selection policies.
      */
     typedef enum _policies {
-        Standard = 1,
-        PreferNonNist = 2
+        Standard = 1,           //!< Standard algorithms
+        PreferNonNist = 2       //!< Prefer non-NIST defined algorithms, e.g. Twofish instead of AES, Curve 414 instead of ECDH-384
     } Policy;
 
     /**
@@ -329,22 +329,43 @@ public:
      * configure.
      */
     static const int maxNoOfAlgos = 7;
+
     /**
      * Convenience function that sets a pre-defined standard configuration.
+     *
+     * The function first clears all configured alrogithms and then adds a new
+     * set of pre-defined algorithms.
+     *
+     * @sa addStandardConfig()
+     */
+    void setStandardConfig();
+
+    /**
+     * Convenience function to add a pre-defined standard configuration.
      *
      * The standard configuration consists of the following algorithms:
      * <ul>
      * <li> Hash: SHA384, SHA256 </li>
      * <li> Symmetric Cipher: Twofish-256, AES 256, Twofish-128, AES 128</li>
      * <li> Public Key Algorithm: NIST ECDH-256, NIST ECDH-384, DH3072, MultiStream </li>
-     * <li> SAS type: libase 32 </li>
+     * <li> SAS type: base 32 </li>
      * <li> SRTP Authentication lengths: Skein-MAC 32, Skein-MAC 64, HMAC-SHA1 32, HMAC-SHA1 80 </li>
      *</ul>
      */
-    void setStandardConfig();
+    void addStandardConfig();
 
     /**
      * Convenience function that sets the mandatory algorithms only.
+     *
+     * The function first clears all configured alrogithms and then adds a new
+     * set of pre-defined algorithms.
+     *
+     * @sa addMandatoryOnly()
+     */
+    void setMandatoryOnly();
+
+    /**
+     * Convenience function to add the mandatory algorithms only.
      *
      * Mandatory algorithms are:
      * <ul>
@@ -355,7 +376,7 @@ public:
      * <li> SRTP Authentication lengths: 32, 80 </li>
      *</ul>
      */
-    void setMandatoryOnly();
+    void addMandatoryOnly();
 
     /**
      * Clear all configuration data.
@@ -400,7 +421,7 @@ public:
     int32_t addAlgoAt(AlgoTypes algoType, AlgorithmEnum& algo, int32_t index);
 
     /**
-     * Remove a algorithm from configuration data.
+     * Remove an algorithm from configuration data.
      *
      * Removes the specified algorithm from configuration data. If
      * the algorithm was not configured previously the function does
@@ -531,7 +552,7 @@ public:
      * Check if the protocol should set the disclosure flag.
      *
      * @return
-     *    Returns true if disclosure falg should be set.
+     *    Returns true if disclosure flag should be set.
      */
     bool isDisclosureFlag();
 
