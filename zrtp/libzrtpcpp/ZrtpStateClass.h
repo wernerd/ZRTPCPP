@@ -73,7 +73,7 @@ struct Event {
 
     EventDataType type; ///< Type of event
     size_t   length;    ///< length of the message data
-    uint8_t* packet;    ///< Event data if available, usually a ZRTP message
+    uint8_t const * packet;    ///< Event data if available, usually a ZRTP message
 };
 
 
@@ -114,9 +114,9 @@ class ZRtp;
 class __EXPORT ZrtpStateClass {
 
 private:
-    ZRtp* parent;           ///< The ZRTP implementation
-    ZrtpStates* engine = nullptr;     ///< The state switching engine
-    Event* event = nullptr;           ///< Current event to process
+    ZRtp * parent;                           ///< The ZRTP implementation
+    ZrtpStates * engine = nullptr;           ///< The state switching engine
+    Event * event = nullptr;                 ///< Current event to process
 
     /**
      * The last packet that was sent.
@@ -178,13 +178,13 @@ public:
     ~ZrtpStateClass();
 
     /// Check if in a specified state
-    bool inState(const int32_t state) { return engine->inState(state); };
+    bool inState(const int32_t state) const { return engine->inState(state); };
 
     /// Switch to the specified state
     void nextState(int32_t state)        { engine->nextState(state); };
 
     /// Process an event, the main entry point into the state engine
-    void processEvent(Event *ev);
+    void processEvent(Event * ev);
 
     /**
      * The state event handling methods.

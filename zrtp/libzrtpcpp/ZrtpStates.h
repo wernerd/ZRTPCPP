@@ -67,7 +67,7 @@ class __EXPORT ZrtpStates {
     }
 
     /// Check if in specified state
-    bool inState(const int32_t s) { return ((s == state)); }
+    bool inState(const int32_t s) const { return ((s == state)); }
 
     /// Set the next state
     void nextState(int32_t s)     { state = s; }

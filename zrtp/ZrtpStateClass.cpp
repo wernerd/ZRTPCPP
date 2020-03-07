@@ -77,15 +77,15 @@ ZrtpStateClass::~ZrtpStateClass() {
     delete engine;
 }
 
-void ZrtpStateClass::processEvent(Event *ev) {
+void ZrtpStateClass::processEvent(Event * ev) {
 
     char *msg, first, middle, last;
-    uint8_t *pkt;
+    uint8_t const * pkt;
 
     std::mutex stateMutex;
     lock_guard<std::mutex> stateGuard(stateMutex);  // process only one packet at a time
 
-    event = ev;
+    event = ev;                                     // make available to other member functions
     if (event->type == ZrtpPacket) {
         pkt = event->packet;
         msg = (char *)pkt + 4;
@@ -216,7 +216,7 @@ void ZrtpStateClass::evInitial() {
 void ZrtpStateClass::evDetect() {
 
     char *msg, first, last;
-    uint8_t *pkt;
+    uint8_t const * pkt;
     uint32_t errorCode = 0;
 
     /*
@@ -400,7 +400,7 @@ void ZrtpStateClass::evDetect() {
 void ZrtpStateClass::evAckSent() {
 
     char *msg, first, last;
-    uint8_t *pkt;
+    uint8_t const * pkt;
     uint32_t errorCode = 0;
 
     /*
@@ -559,7 +559,7 @@ void ZrtpStateClass::evAckSent() {
 void ZrtpStateClass::evAckDetected() {
 
     char *msg, first, last;
-    uint8_t *pkt;
+    uint8_t const * pkt;
     uint32_t errorCode = 0;
 
     if (event->type == ZrtpPacket) {
@@ -659,7 +659,7 @@ void ZrtpStateClass::evAckDetected() {
 void ZrtpStateClass::evWaitCommit() {
 
     char *msg, first, last;
-    uint8_t *pkt;
+    uint8_t const * pkt;
     uint32_t errorCode = 0;
 
     if (event->type == ZrtpPacket) {
@@ -753,7 +753,7 @@ void ZrtpStateClass::evWaitCommit() {
 void ZrtpStateClass::evCommitSent() {
 
     char *msg, first, middle, last, secondLast;
-    uint8_t *pkt;
+    uint8_t const * pkt;
     uint32_t errorCode = 0;
 
     if (event->type == ZrtpPacket) {
@@ -961,7 +961,7 @@ void ZrtpStateClass::evCommitSent() {
 void ZrtpStateClass::evWaitDHPart2() {
 
     char *msg, first, secondLast, last;
-    uint8_t *pkt;
+    uint8_t const * pkt;
     uint32_t errorCode = 0;
 
     if (event->type == ZrtpPacket) {
@@ -1037,7 +1037,7 @@ void ZrtpStateClass::evWaitDHPart2() {
 void ZrtpStateClass::evWaitConfirm1() {
 
     char *msg, first, last;
-    uint8_t *pkt;
+    uint8_t const * pkt;
     uint32_t errorCode = 0;
 
     if (event->type == ZrtpPacket) {
@@ -1128,7 +1128,7 @@ void ZrtpStateClass::evWaitConfirm1() {
 void ZrtpStateClass::evWaitConfirm2() {
 
     char *msg, first, secondLast, last;
-    uint8_t *pkt;
+    uint8_t const * pkt;
     uint32_t errorCode = 0;
 
     if (event->type == ZrtpPacket) {
@@ -1209,7 +1209,7 @@ void ZrtpStateClass::evWaitConfirm2() {
 void ZrtpStateClass::evWaitConfAck() {
 
     char *msg, first, last;
-    uint8_t *pkt;
+    uint8_t const *pkt;
 
     if (event->type == ZrtpPacket) {
         pkt = event->packet;
@@ -1290,7 +1290,7 @@ void ZrtpStateClass::evWaitClearAck() {
 void ZrtpStateClass::evWaitErrorAck() {
 
     char *msg, first, last;
-    uint8_t *pkt;
+    uint8_t const *pkt;
 
     if (event->type == ZrtpPacket) {
         pkt = event->packet;
@@ -1334,7 +1334,7 @@ void ZrtpStateClass::evWaitErrorAck() {
 void ZrtpStateClass::evSecureState() {
 
     char *msg, first, last;
-    uint8_t *pkt;
+    uint8_t const *pkt;
 
     /*
      * Handle a possible sub-state. If sub-state handling was ok just return.
@@ -1401,7 +1401,7 @@ void ZrtpStateClass::evSecureState() {
 
 bool ZrtpStateClass::subEvWaitRelayAck() {
     char *msg, first, last;
-    uint8_t* pkt;
+    uint8_t const * pkt;
 
     /*
      * First check the general event type, then discriminate the real event.
