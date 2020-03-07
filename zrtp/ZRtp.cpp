@@ -144,13 +144,13 @@ ZRtp::~ZRtp() {
     peerNonces.clear();
 }
 
-void ZRtp::processZrtpMessage(uint8_t *message, uint32_t pSSRC, size_t length) {
+void ZRtp::processZrtpMessage(uint8_t const * zrtpMessage, uint32_t pSSRC, size_t length) {
     Event ev;
 
     peerSSRC = pSSRC;
     ev.type = ZrtpPacket;
     ev.length = length;
-    ev.packet = message;
+    ev.packet = zrtpMessage;
 
     if (stateEngine) {
         stateEngine->processEvent(&ev);

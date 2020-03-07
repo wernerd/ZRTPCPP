@@ -133,13 +133,13 @@ class __EXPORT ZRtp {
     void stopZrtp();
 
     /**
-     * Process ZRTP message.
+     * @brief Process ZRTP message.
      *
      * The method takes the data and forwards it to the ZRTP state engine for further
      * processing. It's the caller's duty to check the ZRTP CRC and the ZRTP magic
      * cookie before calling this function.
      *
-     * @param extHeader
+     * @param zrtpMessage
      *    A pointer to the first byte of the ZRTP message. Refer to RFC6189.
      * @param peerSSRC
      *    The peer's SSRC.
@@ -150,7 +150,7 @@ class __EXPORT ZRtp {
      *
      * @sa  setTransportOverhead(int32_t)
      */
-    void processZrtpMessage(uint8_t *extHeader, uint32_t peerSSRC, size_t length);
+    void processZrtpMessage(uint8_t const * zrtpMessage, uint32_t peerSSRC, size_t length);
 
     /**
      * Process a timeout event.
