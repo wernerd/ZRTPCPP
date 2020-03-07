@@ -29,7 +29,7 @@
  * @{
  */
 
-#include <libzrtpcpp/ZrtpConfigure.h>
+#include <common/osSpecifics.h>
 
 /**
  * The extern references to the global data.
@@ -88,47 +88,44 @@ extern char zrtpExportedKey[];
 extern char zrtpMsk[];
 extern char zrtpTrustedMitm[];
 
+// Make these constants accessible to external functions
+__EXPORT constexpr char s256[] = "S256";
+__EXPORT constexpr char s384[] = "S384";
+__EXPORT constexpr char skn2[] = "SKN2";
+__EXPORT constexpr char skn3[] = "SKN3";
+constexpr const char* mandatoryHash = s256;
 
-extern char s256[];
-extern char s384[];
-extern char skn2[];
-extern char skn3[];
-extern const char* mandatoryHash;
+__EXPORT constexpr char aes3[] = "AES3";
+__EXPORT constexpr char aes2[] = "AES2";
+__EXPORT constexpr char aes1[] = "AES1";
+__EXPORT constexpr char two3[] = "2FS3";
+__EXPORT constexpr char two2[] = "2FS2";
+__EXPORT constexpr char two1[] = "2FS1";
+constexpr const char* mandatoryCipher = aes1;
 
-extern char aes3[];
-extern char aes2[];
-extern char aes1[];
-extern char two3[];
-extern char two2[];
-extern char two1[];
+__EXPORT constexpr char dh2k[] = "DH2k";
+__EXPORT constexpr char ec25[] = "EC25";
+__EXPORT constexpr char dh3k[] = "DH3k";
+__EXPORT constexpr char ec38[] = "EC38";
+__EXPORT constexpr char e255[] = "E255";
+__EXPORT constexpr char e414[] = "E414";
+__EXPORT constexpr char sdh5[] = "SDH5";
+__EXPORT constexpr char sdh7[] = "SDH7";
+__EXPORT constexpr char mult[] = "Mult";
+constexpr const char* mandatoryPubKey = dh3k;
 
-extern const char* mandatoryCipher;
+__EXPORT constexpr char b32[] =  "B32 ";
+__EXPORT constexpr char b256[] = "B256";
+__EXPORT constexpr char b32e[] = "B32E";       // Use Emojis instead of letters/digits
+__EXPORT constexpr char b10d[] = "B10D";       // Use 6 digits, this may be used for international SAS values
+constexpr const char* mandatorySasType = b32;
 
-extern char dh2k[];
-extern char dh3k[];
-extern char ec25[];
-extern char ec38[];
-extern char e255[];
-extern char e414[];
-extern char sdh5[];
-extern char sdh7[];
-
-extern char mult[];
-
-extern const char* mandatoryPubKey;
-
-extern char b32[];
-extern char b256[];
-extern char b32e[];
-extern char b10d[];
-extern const char* mandatorySasType;
-
-extern char hs32[];
-extern char hs80[];
-extern char sk32[];
-extern char sk64[];
-extern const char* mandatoryAuthLen_1;
-extern const char* mandatoryAuthLen_2;
+__EXPORT constexpr char hs32[] = "HS32";
+__EXPORT constexpr char hs80[] = "HS80";
+__EXPORT constexpr char sk32[] = "SK32";
+__EXPORT constexpr char sk64[] = "SK64";
+constexpr const char* mandatoryAuthLen_1 = hs32;
+constexpr const char* mandatoryAuthLen_2 = hs80;
 
 extern const char* sas256WordsOdd[];
 extern const char* sas256WordsEven[];

@@ -66,45 +66,6 @@ char zrtpExportedKey[] = "Exported key";
 char zrtpMsk[] = "ZRTP MSK";
 char zrtpTrustedMitm[] = "Trusted MiTM key";
 
-char s256[] = "S256";
-char s384[] = "S384";
-char skn2[] = "SKN2";
-char skn3[] = "SKN3";
-const char* mandatoryHash = s256;
-
-char aes3[] = "AES3";
-char aes2[] = "AES2";
-char aes1[] = "AES1";
-char two3[] = "2FS3";
-char two2[] = "2FS2";
-char two1[] = "2FS1";
-const char* mandatoryCipher = aes1;
-
-char dh2k[] = "DH2k";
-char ec25[] = "EC25";
-char dh3k[] = "DH3k";
-char ec38[] = "EC38";
-char e255[] = "E255";
-char e414[] = "E414";
-char sdh5[] = "SDH5";
-char sdh7[] = "SDH7";
-char mult[] = "Mult";
-const char* mandatoryPubKey = dh3k;
-
-char b32[] =  "B32 ";
-char b256[] = "B256";
-char b32e[] = "B32E";       // Use Emojis instead of letters/digits
-char b10d[] = "B10D";       // Use 6 digits, this may be used for international SAS values
-
-const char* mandatorySasType = b32;
-
-char hs32[] = "HS32";
-char hs80[] = "HS80";
-char sk32[] = "SK32";
-char sk64[] = "SK64";
-const char* mandatoryAuthLen_1 = hs32;
-const char* mandatoryAuthLen_2 = hs80;
-
 const char* sas256WordsOdd[] = {
     "adroitness",
     "adviser",
