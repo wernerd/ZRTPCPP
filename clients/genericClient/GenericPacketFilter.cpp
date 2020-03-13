@@ -41,7 +41,8 @@ GenericPacketFilter::FilterResult
 GenericPacketFilter::filterPacket(uint8_t const * packetData, size_t packetLength, CheckFunction const & checkFunction) {
 
     size_t offset = 0;
-    auto const checkResult = checkFunction(packetData, packetLength, offset);
+    uint32_t ssrc = 0;
+    auto const checkResult = checkFunction(packetData, packetLength, offset, ssrc);
     if (checkResult == DontProcess) {
         return NotProcessed;
     }
@@ -49,11 +50,16 @@ GenericPacketFilter::filterPacket(uint8_t const * packetData, size_t packetLengt
         return Discarded;
     }
 
+    if (peerSSRC == 0) {    // used when creating the CryptoContext
+        peerSSRC = ssrc;
+    }
+    zrtpEngine->processZrtpMessage(packetData + offset, peerSSRC, packetLength);
+
     return Processed;
 }
 
 GenericPacketFilter::DataCheckResult
-GenericPacketFilter::checkRtpData(uint8_t const * packetData, size_t packetLength, size_t & offset) {
+GenericPacketFilter::checkRtpData(uint8_t const * packetData, size_t packetLength, size_t & offset, uint32_t & ssrc) {
     if ((*packetData & 0xc0U) == 0x80) {            // Most probably a real RTP packet -> no ZRTP data
         return DontProcess;
     }
@@ -76,6 +82,9 @@ GenericPacketFilter::checkRtpData(uint8_t const * packetData, size_t packetLengt
     if (preamble != ZRTP_PREAMBLE) {
         return Discard;
     }
+    // return peer's SSRC in host order
+    ssrc = *(uint32_t*)(packetData + 8);
+    ssrc = zrtpNtohl(ssrc);
     offset = RTPHeaderLength;
 
     return Process;

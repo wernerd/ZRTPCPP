@@ -26,13 +26,13 @@ using namespace std;
 static
 uint8_t rtpPacket[] = {
 //        V2 | PT  |   seqnum  |        timestamp      |          SSRC        |
-        0x80, 0x03, 0x47, 0x11, 0x01, 0x01, 0x01, 0x01, 0xfe, 0xed, 0xba, 0xac,  // Header
+        0x80, 0x03, 0x47, 0x11, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x01,  // Header
         0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x20};
 
 static
 uint8_t zrtpPacket[] = {
 //      V0,X | PT  |   seqnum  |   ZRTP magic cookie   |          SSRC        |
-        0x01, 0x00, 0x47, 0x11, 0x5a, 0x52, 0x54, 0x50, 0xfe, 0xed, 0xba, 0xac,  // Header
+        0x01, 0x00, 0x47, 0x11, 0x5a, 0x52, 0x54, 0x50, 0x00, 0x00, 0x00, 0x02,  // Header
         0x50, 0x5a, 0x03, 0x00, 'H', 'e', 'l', 'l', 'o', 'A', 'C', 'K', 'c', 'r', 'c', 'x'};    // simulate a crc field
 
 static
@@ -68,11 +68,14 @@ public:
 
 TEST_F(GenericFilterTestFixture, zrtpDetection) {
     size_t offset = 0;
-    ASSERT_EQ(GenericPacketFilter::DontProcess, GenericPacketFilter::checkRtpData(rtpPacket, sizeof(rtpPacket), offset));
+    uint32_t ssrc = 0;
+    ASSERT_EQ(GenericPacketFilter::DontProcess, GenericPacketFilter::checkRtpData(rtpPacket, sizeof(rtpPacket), offset, ssrc));
     ASSERT_EQ(0, offset);
+    ASSERT_EQ(0, ssrc);
 
-    ASSERT_EQ(GenericPacketFilter::Process, GenericPacketFilter::checkRtpData(zrtpPacket, sizeof(zrtpPacket), offset));
+    ASSERT_EQ(GenericPacketFilter::Process, GenericPacketFilter::checkRtpData(zrtpPacket, sizeof(zrtpPacket), offset, ssrc));
     ASSERT_EQ(12, offset);          // 12 -> RTP header length, first byte of ZRTP data
+    ASSERT_EQ(2, ssrc);
 
 }
 
@@ -87,7 +90,8 @@ TEST_F(GenericFilterTestFixture, prepareRtp) {
     // real data first.
     auto ptr = static_pointer_cast<secUtilities::SecureArrayFlex>(protocolData.ptr);
     size_t offset = 0;
-    ASSERT_EQ(GenericPacketFilter::Process, GenericPacketFilter::checkRtpData(ptr->data(), protocolData.length, offset));
+    uint32_t ssrc = 0;
+    ASSERT_EQ(GenericPacketFilter::Process, GenericPacketFilter::checkRtpData(ptr->data(), protocolData.length, offset, ssrc));
     ASSERT_EQ(12, offset);          // 12 -> RTP header length, first byte of ZRTP data
 }
 
@@ -121,4 +125,13 @@ TEST_F(GenericFilterTestFixture, buildConfigure) {
     struct stat fileStatus = {};
     auto result = stat("file.data", &fileStatus);
     ASSERT_EQ(0, result);
+}
+
+TEST_F(GenericFilterTestFixture, SetterGetter) {
+    GenericPacketFilter filter;
+
+    filter.setOwnRtpSsrc(1471).setZrtpSequenceNo(815);
+
+    ASSERT_EQ(1471, filter.getOwnRtpSsrc());
+    ASSERT_EQ(815, filter.getZrtpSequenceNo());
 }

@@ -95,9 +95,14 @@ public:
      * This `GenericPacketFilter` provides a ready-to-use static function to check ZRTP
      * wrapped in an RTP packet.
      *
-     * @sa checkRtpData(uint8_t const * packetData, size_t packetLength, size_t & offset);
+     * @param[in] packetData Pointer to the packet data
+     * @param[in] packetLength Length of the packet data in bytes
+     * @param[out] offset Returns offset to first ZRTP byte in packet data if return value is `Process`
+     * @param[out] ssrc Returns the other party's RTP SSRC value in host order
+     * @return DataCheckResult.
+     * @sa checkRtpData(uint8_t const * packetData, size_t packetLength, size_t & offset, uint32_t & ssrc);
      */
-    using CheckFunction = std::function<DataCheckResult(uint8_t const * packetData, size_t packetLength, size_t & offset)>;
+    using CheckFunction = std::function<DataCheckResult(uint8_t const * packetData, size_t packetLength, size_t & offset, uint32_t & ssrc)>;
 
     /**
      * @brief Callback function to prepare a ZRTP packet to send using transport protocol.
@@ -108,8 +113,8 @@ public:
      *
      * This `GenericPacketFilter` provides a ready-to-use static function to prepare an RTP packet.
      *
-     * @param zrtpData ZRTP packet data
-     * @param length Length of the ZRTP date in bytes.
+     * @param[in] zrtpData ZRTP packet data
+     * @param[in] length Length of the ZRTP date in bytes.
      * @sa prepareToSendRtp(const uint8_t *zrtpData, int32_t length);
      */
     using PrepareToSendFunction = std::function<ProtocolData(GenericPacketFilter& thisFilter, const uint8_t *zrtpData, int32_t length)>;
@@ -120,7 +125,7 @@ public:
      * This is a requiered callback fcuntion. The GenericPacketFilter does not implement
      * a functions to send data using a transport protocol.
      *
-     * @param protocolData Contains pointer to packet data and its length. Same data as returned
+     * @param[in] protocolData Contains pointer to packet data and its length. Same data as returned
      *        by the prepare to send function.
      *
      * @return `true` if no error occured, `false` in case of failure.
@@ -137,12 +142,12 @@ public:
      * If the application does not set the prepare to send callback the `GenericPacketFilter` uses this
      * function to setup an RTP packet which contains a ZRTP packet.
      *
-     * @param thisFilter Reference to the packet filter instance
-     * @param zrtpData pointer to the ZRTP raw data
-     * @param length length of the ZRTP raw data including space for CRC (the last `CRC_SIZE` bytes)
+     * @param[in] thisFilter Reference to the packet filter instance
+     * @param[in] zrtpData pointer to the ZRTP raw data
+     * @param[in] length length of the ZRTP raw data including space for CRC (the last `CRC_SIZE` bytes)
      * @return ProtocolData structure, `ptr` holds a `secUtilities::SecureArrayFlex` instance
      */
-    static ProtocolData prepareToSendRtp(GenericPacketFilter& thisFilter, const uint8_t *zrtpData, int32_t length);
+    static ProtocolData prepareToSendRtp(GenericPacketFilter& thisFilter, uint8_t const *zrtpData, int32_t length);
 
      /**
       * @brief Standard constructor.
@@ -157,9 +162,9 @@ public:
     /**
      * @brief Check for ZRTP packet and process it.
      *
-     * @param packetData Pointer to the packet data
-     * @param packetLength Length of the packet data in bytes
-     * @param checkFunction `filterPacket` calls this function to check for ZRTP data.
+     * @param[in] packetData Pointer to the packet data
+     * @param[in] packetLength Length of the packet data in bytes
+     * @param[in] checkFunction `filterPacket` calls this function to check for ZRTP data.
      * @return FilterResult
      */
     virtual FilterResult
@@ -172,17 +177,18 @@ public:
      * pointer to the first byte of the ZRTP packet. If this is no a valid ZRTP packet
      * the function returns `NotProcessed`.
      *
-     * @param packetData Pointer to the packet data
-     * @param packetLength Length of the packet data in bytes
-     * @param offset Contains offset to first ZRTP byte in packet data if return value is `Process`
+     * @param[in] packetData Pointer to the packet data
+     * @param[in] packetLength Length of the packet data in bytes
+     * @param[out] offset Returns offset to first ZRTP byte in packet data if return value is `Process`
+     * @param[out] ssrc Returns the other party's RTP SSRC value in host order
      * @return DataCheckResult.
      */
-    static DataCheckResult checkRtpData(uint8_t const * packetData, size_t packetLength, size_t & offset);
+    static DataCheckResult checkRtpData(uint8_t const * packetData, size_t packetLength, size_t & offset, uint32_t & ssrc);
 
     /**
      * @brief Set ZrtpConfiguration.
      *
-     * @param config Shared pointer to ZRtpConfiguration
+     * @param[in] config Shared pointer to ZRtpConfiguration
      * @return reference of the current instance.
      */
      virtual GenericPacketFilter&
@@ -194,7 +200,7 @@ public:
      * If the application does not set the prepare to send callback funtion the `GenericPacketFilter` uses
      * the static function `prepareToSendRtp()` to setup an RTP packet.
      *
-     * @param pTS Functions pointer to PrepareToSendFunction.
+     * @param[in] pTS Functions pointer to PrepareToSendFunction.
      * @return reference of the current instance.
      */
     virtual GenericPacketFilter&
@@ -205,7 +211,7 @@ public:
      *
      * When using RTP as transport protocol this is a required value.
      *
-     * @param ssrc SSRC value in host order
+     * @param[in] ssrc SSRC value in host order
      * @return reference of the current instance.
      */
     virtual GenericPacketFilter&
@@ -213,14 +219,22 @@ public:
 
     /**
      * @brief Get own RTP SSRC.
+     *
      * @return Own SSRC in host order.
      */
-    virtual uint32_t getOwnRtpSsrc() const { return senderZrtpSeqNo; }
+    virtual uint32_t getOwnRtpSsrc() const { return ownSSRC; }
+
+    /**
+    * @brief Get other party's RTP SSRC.
+    *
+    * @return Other party's (peer's) SSRC in host order.
+    */
+    virtual uint32_t getPeerRtpSsrc() const { return peerSSRC; }
 
     /**
      * @brief Set ZRTP packet sequence number.
      *
-     * @param sequence number in host order
+     * @param[in] sequence number in host order
      */
     virtual void setZrtpSequenceNo(uint16_t sequence) { senderZrtpSeqNo = sequence; }
 
@@ -279,6 +293,7 @@ private:
 
     int32_t  timeoutId = -1;
     uint32_t ownSSRC = 0;             //!< Our own SSRC, in host order, required when using RTP prepare function
+    uint32_t peerSSRC = 0;            //!< Our peer's SSRC, in host order, required when using RTP prepare function
 
     uint16_t senderZrtpSeqNo = 0;
 
