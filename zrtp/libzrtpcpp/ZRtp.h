@@ -111,9 +111,24 @@ class __EXPORT ZRtp {
     /**
      * Constructor initializes all relevant data but does not start the
      * engine.
+     *
+     * @param id Client id, maximum length is 16 characters, will be truncated if it is too long
+     * @param callback pointer to helper functions in filter/glue code
+     * @param config pointer to algorithm configuration flags
+     *
+     * @deprecated Use new, streamlined constructor ZRtp(const std::string& , std::shared_ptr<ZrtpCallback>& , std::shared_ptr<ZrtpConfigure>& );
      */
-    ZRtp(uint8_t const * myZid, std::shared_ptr<ZrtpCallback>& userCallback, const std::string& id,
+    DEPRECATED_ZRTP ZRtp(uint8_t const * myZid, std::shared_ptr<ZrtpCallback>& callback, const std::string& id,
          std::shared_ptr<ZrtpConfigure>& config, bool mitm = false, bool sasSignSupport = false);
+
+    /**
+     * @brief Constructor initializes all relevant data but does not start the engine.
+     *
+     * @param id Client id, maximum length is 16 characters, will be truncated if it is too long
+     * @param callback pointer to helper functions in filter/glue code
+     * @param config pointer to algorithm configuration flags
+     */
+    ZRtp(const std::string& id, std::shared_ptr<ZrtpCallback>& callback, std::shared_ptr<ZrtpConfigure>& config);
 
     /**
      * Destructor cleans up.
@@ -1030,6 +1045,12 @@ private:
      * Is true if the other peer sent a Disclosure flag in its Confirm packet.
      */
     bool peerDisclosureFlagSeen = false;
+
+    /**
+     * @brief Initialize ZRTP data, packets etc
+     * @param id the client id to use in Hello packet
+     */
+    void initialize(const std::string& id);
 
     /**
      * Find the best Hash algorithm that is offered in Hello.

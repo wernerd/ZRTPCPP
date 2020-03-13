@@ -55,7 +55,19 @@ extern "C" {
 
 ZRtp::ZRtp(uint8_t const * myZid, std::shared_ptr<ZrtpCallback>& userCallback, const string& id, shared_ptr<ZrtpConfigure>& config, bool mitm, bool sasSignSupport):
         callback(userCallback), configureAlgos(config) {
+    configureAlgos->setTrustedMitM(mitm);
+    configureAlgos->setSasSignature(sasSignSupport);
 
+    initialize(id);
+}
+
+ZRtp::ZRtp(const std::string& id, std::shared_ptr<ZrtpCallback>& userCallback, std::shared_ptr<ZrtpConfigure>& config) :
+        callback(userCallback), configureAlgos(config) {
+
+    initialize(id);
+}
+
+void ZRtp::initialize(const std::string& id) {
 #ifdef ZRTP_SAS_RELAY_SUPPORT
     enableMitmEnrollment = config->isTrustedMitM();
 #pragma message "ZRTP SAS relay support is enabled."
@@ -63,8 +75,7 @@ ZRtp::ZRtp(uint8_t const * myZid, std::shared_ptr<ZrtpCallback>& userCallback, c
     enableMitmEnrollment = false;
 #endif
 
-    paranoidMode = config->isParanoidMode();
-    sasSignSupport = config->isSasSignature();
+    paranoidMode = configureAlgos->isParanoidMode();
 
     // setup the implicit hash function pointers and length. The casts show that we use different
     // functions
@@ -73,7 +84,7 @@ ZRtp::ZRtp(uint8_t const * myZid, std::shared_ptr<ZrtpCallback>& userCallback, c
 
     hmacFunctionImpl = static_cast<void (*)(const uint8_t*, uint64_t, const uint8_t *, uint64_t, zrtp::RetainedSecArray &)>(hmac_sha256);
 
-    ownZid.assign(myZid, ZID_SIZE);        // save the ZID
+    ownZid.assign(configureAlgos->getZidCache()->getZid(), ZID_SIZE);        // save the ZID
 
     /*
      * Generate H0 as a random number (256 bits, 32 bytes) and then
@@ -96,11 +107,11 @@ ZRtp::ZRtp(uint8_t const * myZid, std::shared_ptr<ZrtpCallback>& userCallback, c
     zrtpHello_12.setZid(ownZid.data());
     zrtpHello_12.setVersion((uint8_t*)zrtpVersion_12);
 
-    if (mitm) {                             // this session acts for a trusted MitM (PBX)
+    if (enableMitmEnrollment) {                    // this session acts for a trusted MitM (PBX)
         zrtpHello_11.setMitmMode();
         zrtpHello_12.setMitmMode();
     }
-    if (sasSignSupport) {                   // the application supports SAS signing
+    if (configureAlgos->isSasSignature()) {                   // the application supports SAS signing
         zrtpHello_11.setSasSign();
         zrtpHello_12.setSasSign();
     }
@@ -2381,6 +2392,9 @@ bool ZRtp::srtpSecretsReady(EnableSecurity part) {
         rc = ucb->srtpSecretsReady(&sec, part);
     }
 
+    if (!rc) {
+        return false;
+    }
     // The call state engine calls ForSender always after ForReceiver.
     if (part == ForSender) {
         string cs(cipher->getReadable());
@@ -2401,7 +2415,7 @@ bool ZRtp::srtpSecretsReady(EnableSecurity part) {
             }
         }
     }
-    return rc;
+    return true;
 }
 
 void ZRtp::setNegotiatedHash(AlgorithmEnum* hashNegotiated) {
@@ -2557,7 +2571,7 @@ void ZRtp::setAuxSecret(uint8_t* data, uint32_t length) {
 
 void ZRtp::setClientId(const string& id, HelloPacketVersion* hpv) {
 
-    unsigned char tmp[CLIENT_ID_SIZE +1] = {' '};
+    unsigned char tmp[CLIENT_ID_SIZE + 1] = {' '};
     memcpy(tmp, id.c_str(), id.size() > CLIENT_ID_SIZE ? CLIENT_ID_SIZE : id.size());
     tmp[CLIENT_ID_SIZE] = 0;
 

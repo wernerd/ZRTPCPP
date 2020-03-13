@@ -237,6 +237,10 @@ TEST_F(ZrtpBasicRunFixture, alice_check_thread_start_stop) {
     // Configure with mandatory algorithms only
     shared_ptr<ZrtpConfigure> configure = make_shared<ZrtpConfigure>();
 
+    shared_ptr<ZIDCache> aliceCache = std::make_shared<ZIDCacheEmpty>();
+    aliceCache->setZid(aliceZid);
+    configure->setZidCache(aliceCache);
+
     aliceCb = make_shared<testing::NiceMock<MockZrtpCallback>>();
     bobCb = make_shared<testing::NiceMock<MockZrtpCallback>>();
 
@@ -257,6 +261,10 @@ TEST_F(ZrtpBasicRunFixture, alice_check_thread_start_stop) {
 TEST_F(ZrtpBasicRunFixture, bob_check_thread_start_stop) {
     // Configure with mandatory algorithms only
     shared_ptr<ZrtpConfigure> configure = make_shared<ZrtpConfigure>();
+
+    shared_ptr<ZIDCache>  bobCache = std::make_shared<ZIDCacheEmpty>();
+    bobCache->setZid(bobZid);
+    configure->setZidCache(bobCache);
 
     aliceCb = make_shared<testing::NiceMock<MockZrtpCallback>>();
     bobCb = make_shared<testing::NiceMock<MockZrtpCallback>>();
