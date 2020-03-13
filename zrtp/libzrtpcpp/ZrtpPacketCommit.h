@@ -24,7 +24,7 @@
  * @file ZrtpPacketCommit.h
  * @brief The ZRTP Commit message
  *
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

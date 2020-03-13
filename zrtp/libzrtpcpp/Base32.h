@@ -32,7 +32,7 @@
  * ZRTP uses the base 32 encoding and decoding to generate the Short 
  * Authentication String (SAS).
  * 
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

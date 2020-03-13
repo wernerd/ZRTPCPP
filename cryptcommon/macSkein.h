@@ -27,7 +27,7 @@
  *
  * Functions to compute Skein MAC.
  *
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

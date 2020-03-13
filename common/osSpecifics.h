@@ -21,7 +21,7 @@
 /**
  * @file osSpecifics.h
  * @brief Some functions to adapt to OS and/or compiler specific handling
- * @defgroup GNU_ZRTP The GNU ZRTP C++ implementation
+ * @ingroup ZRTP
  * @{
  *
  * This modules contains some functions that are either specific for a particular

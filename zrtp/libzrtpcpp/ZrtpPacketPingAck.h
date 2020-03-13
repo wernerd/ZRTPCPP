@@ -22,7 +22,7 @@
  * @file ZrtpPacketPingAck.h
  * @brief The ZRTP PingAck message
  *
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

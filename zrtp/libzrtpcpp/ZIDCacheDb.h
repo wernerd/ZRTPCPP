@@ -32,7 +32,7 @@
  * key continuity feature. See @c ZIDRecordDb for further info which data
  * the ZID file contains.
  *
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

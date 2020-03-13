@@ -21,7 +21,7 @@
  * @file ZrtpPacketConf2Ack.h
  * @brief The ZRTP Conf2Ack message
  *
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

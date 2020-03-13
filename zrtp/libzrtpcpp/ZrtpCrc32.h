@@ -22,7 +22,7 @@
  * @file ZrtpCrc32.h
  * @brief Methods to compute the CRC32 checksum for ZRTP packets
  * 
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  * 
  * @see ZrtpCallback

@@ -30,7 +30,7 @@
  * chapter 5 of the ZRTP specification which defines the ZRTP messages and
  * the transport format.
  * 
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

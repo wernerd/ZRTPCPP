@@ -16,7 +16,7 @@
 /**
  * @file
  * @brief UTF support functions
- * @defgroup GNU_ZRTP The GNU ZRTP C++ implementation
+ * @ingroup ZRTP
  * @{
  */
 

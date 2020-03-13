@@ -35,7 +35,7 @@ extern "C"
  * @file twofish.h
  * @brief Function that provide basic Twofish crypto support
  * 
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
  

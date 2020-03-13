@@ -20,7 +20,7 @@
  * @file ZrtpPacketSASrelay.h
  * @brief The ZRTP SAS Relay message
  *
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

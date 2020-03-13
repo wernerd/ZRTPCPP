@@ -29,7 +29,7 @@
  * @file skeinMac384.h
  * @brief Function that provide Skein384 HMAC support
  * 
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

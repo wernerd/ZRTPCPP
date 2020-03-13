@@ -27,7 +27,7 @@
  * @file skein256.h
  * @brief Functions that provide Skein256 support
  * 
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

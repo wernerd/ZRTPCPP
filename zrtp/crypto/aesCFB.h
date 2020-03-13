@@ -27,7 +27,7 @@
  * @file aesCFB.h
  * @brief Function that provide AES CFB mode support
  * 
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

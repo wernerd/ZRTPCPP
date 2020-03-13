@@ -24,7 +24,7 @@ limitations under the License.
 /**
  * @file SidhKeyManagement.h
  * @brief 
- * @ingroup 
+ * @ingroup ZRTP
  * @{
  */
 

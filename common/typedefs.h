@@ -14,7 +14,7 @@
 
 /**
  * @file
- * @ingroup Zina
+ * @ingroup ZRTP
  * @{
  *
  * This file contains constants some commonly used typedefs to simplify use of complex types.

@@ -19,7 +19,7 @@
 /**
  * @file ZrtpSdesStream.h
  * @brief The ZRTP main engine
- * @defgroup GNU_ZRTP The GNU ZRTP C++ implementation
+ * @ingroup ZRTP
  * @{
  *
  * This class implements SDES and provides a simple to use API for applications.

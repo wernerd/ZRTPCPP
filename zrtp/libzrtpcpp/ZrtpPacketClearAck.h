@@ -21,7 +21,7 @@
  * @file ZrtpPacketClearAck.h
  * @brief The ZRTP ClearAck message
  *
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

@@ -21,7 +21,7 @@
  * @file ZrtpPacketErrorAck.h
  * @brief The ZRTP ErrorAck message
  *
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

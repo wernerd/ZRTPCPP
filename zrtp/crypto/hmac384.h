@@ -25,7 +25,7 @@
  * @file hmac384.h
  * @brief Function that provide SHA384 HMAC support
  * 
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

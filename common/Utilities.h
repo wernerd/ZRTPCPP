@@ -8,7 +8,7 @@
 /**
  * @file
  * @brief Some utility and helper functions
- * @ingroup Zina
+ * @ingroup ZRTP
  * @{
  */
 

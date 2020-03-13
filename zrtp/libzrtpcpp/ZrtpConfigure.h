@@ -24,7 +24,7 @@
 /**
  * @file ZrtpConfigure.h
  * @brief The ZRTP configure functions
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

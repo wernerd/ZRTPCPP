@@ -20,7 +20,7 @@
 /**
  * @file ZrtpCommon.h
  * @brief ZRTP standalone random number generator
- * @defgroup GNU_ZRTP The GNU ZRTP C++ implementation
+ * @ingroup ZRTP
  * @{
  */
 

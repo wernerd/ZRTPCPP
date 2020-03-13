@@ -21,7 +21,7 @@
  * @file ZrtpPacketRelayAck.h
  * @brief The ZRTP RelayAck message
  *
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

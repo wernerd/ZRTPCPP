@@ -22,7 +22,7 @@
  * @brief The ZRTP GoClear message
  *
  * GNU ZRTP does not implement GoClear feature
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

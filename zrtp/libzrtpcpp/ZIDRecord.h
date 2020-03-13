@@ -32,7 +32,7 @@
  * to achives its key continuity feature. Please refer to the ZRTP
  * specification to get detailed information about the ZID.
  *
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

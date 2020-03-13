@@ -27,7 +27,7 @@
  * @file hmac.h
  * @brief Functions that provide SHA1 HMAC support
  * 
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

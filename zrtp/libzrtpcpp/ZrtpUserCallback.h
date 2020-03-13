@@ -21,7 +21,7 @@
  * @file ZrtpUserCallback.h
  * @brief The ZRTP UserCallback class
  *
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

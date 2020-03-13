@@ -26,7 +26,7 @@
  * enumerations are repeated in this file. Refer to the inline comments if
  * you modify the file.
  *
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  *
  * @see ZRtp

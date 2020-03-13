@@ -20,7 +20,7 @@
  * @file ZrtpPacketConfirm.h
  * @brief The ZRTP Confirm message
  *
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

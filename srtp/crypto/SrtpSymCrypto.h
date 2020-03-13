@@ -21,7 +21,7 @@
  * @file SrtpSymCrypto.h
  * @brief Class which implements SRTP cryptographic functions
  * 
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

@@ -26,7 +26,7 @@
  * @file zrtpDH.h
  * @brief Class that implements Diffie-Hellman key agreement for ZRTP
  * 
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

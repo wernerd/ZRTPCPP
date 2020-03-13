@@ -21,7 +21,7 @@
 /**
  * @file
  * @brief Generic packet filter
- * @defgroup GNU_ZRTP The ZRTP C++ implementation
+ * @ingroup ZRTP
  * @{
  */
 
@@ -171,9 +171,6 @@ public:
      * This functions checks if `packetData` contains valid ZRTP data and returns a
      * pointer to the first byte of the ZRTP packet. If this is no a valid ZRTP packet
      * the function returns `NotProcessed`.
-     *
-     * If the application does not set the check function callback the `GenericPacketFilter` uses this
-     * function to check for ZRTP data in an RTP packet.
      *
      * @param packetData Pointer to the packet data
      * @param packetLength Length of the packet data in bytes

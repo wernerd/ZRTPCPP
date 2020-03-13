@@ -21,7 +21,7 @@
  * @file ZrtpPacketError.h
  * @brief The ZRTP Error message
  *
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

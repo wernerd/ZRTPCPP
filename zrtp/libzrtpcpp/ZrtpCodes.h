@@ -21,7 +21,7 @@
 /**
  * @file ZrtpCodes.h
  * @brief The ZRTP info, warning, error codes, and other contants and enums that applications may use.
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

@@ -31,7 +31,7 @@
  * This is a helper class for for the C wrapper and implements
  * the GNU ZRTP callback interface. For detailed documentation about
  * the callback method refer to file <code>ZrtpCallback</code>
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  *
  * @see ZrtpCallback

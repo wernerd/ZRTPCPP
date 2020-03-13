@@ -21,7 +21,7 @@
  * @file ZrtpStateClass.h
  * @brief The ZRTP state handling class
  *
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

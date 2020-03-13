@@ -19,7 +19,7 @@
 /**
  * @file ZRtp.h
  * @brief The ZRTP main engine
- * @defgroup GNU_ZRTP The GNU ZRTP C++ implementation
+ * @defgroup ZRTP ZRTP C++ implementation
  * @{
  */
 

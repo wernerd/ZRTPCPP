@@ -25,7 +25,7 @@
  * @file ZrtpTextData.h
  * @brief The ZRTP ASCII texts - extern references
  *  
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

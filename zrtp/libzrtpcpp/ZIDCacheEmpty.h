@@ -31,7 +31,7 @@
  * require a cache. However, applications using ZRTP without cache
  * should check SAS on every session.
  *
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

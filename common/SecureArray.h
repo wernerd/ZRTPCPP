@@ -29,7 +29,7 @@
 
 /**
  * @file
- * @ingroup secUtilities
+ * @ingroup ZRTP
  * @{
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
@@ -141,7 +141,7 @@ namespace secUtilities {
          * @c out_of_range exception because the instance is a @c const_reference and the function
          * cannot modify the instance.
          *
-         * @param index Index into SecureArray
+         * @param idx Index into SecureArray
          * @return the value at index
          * @throws out_of_range
          */
@@ -195,7 +195,7 @@ namespace secUtilities {
          *
          * Throws an exception in case the data would overflow the capacity.
          *
-         * @param from Secure array to append from.
+         * @param other Secure array to append from.
          * @return Reference to the same secure array.
          * @throws out_of_range
          */
@@ -232,7 +232,7 @@ namespace secUtilities {
          *
          * If @c index exceeds @c capacity the function throws an @c out_of_range exception.
          *
-         * @param index Index into SecureArray
+         * @param idx Index into SecureArray
          * @return the value at index
          * @throws out_of_range
          */
@@ -246,7 +246,7 @@ namespace secUtilities {
          * @c out_of_range exception because the instance is a @c const_reference and the function
          * cannot modify the instance.
          *
-         * @param index Index into SecureArray
+         * @param idx Index into SecureArray
          * @return the value at index
          * @throws out_of_range
          */
@@ -303,7 +303,7 @@ namespace secUtilities {
          * capacity/length that's less or equal to the specified length. Otherwise memory access violation
          * may occur.
          *
-         * @param other secure byte array to compare with.
+         * @param otherData secure byte array to compare with.
          * @param len number of elements
          * @return @c true if data elements are equal
          */

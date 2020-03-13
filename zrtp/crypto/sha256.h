@@ -28,7 +28,7 @@
  * @file sha256.h
  * @brief Function that provide SHA256 support
  * 
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

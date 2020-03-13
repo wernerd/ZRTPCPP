@@ -28,7 +28,7 @@
  * @file skein384.h
  * @brief Functions that provide Skein384 support
  * 
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

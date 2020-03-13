@@ -33,7 +33,7 @@
  * @brief C++ Implementation of the Base32 encoding and decoding using Emojis
  *
  * ZRTP uses the base 32 encoding to generate the Short Authentication String (SAS).
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

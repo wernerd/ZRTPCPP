@@ -21,7 +21,7 @@
  * @file ZrtpPacketDHPart.h
  * @brief The ZRTP DHPart message
  *
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

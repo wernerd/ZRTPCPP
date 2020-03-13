@@ -28,7 +28,7 @@
  * This class defines the ZRTP message header and provides access and
  * check methods.
  *
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

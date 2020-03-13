@@ -26,7 +26,7 @@
  * @file hmac256.h
  * @brief Function that provide SHA256 HMAC support
  * 
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

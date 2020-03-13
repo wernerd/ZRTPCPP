@@ -21,7 +21,7 @@
  * @file ZrtpPacketHello.h
  * @brief The ZRTP Hello message
  *
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

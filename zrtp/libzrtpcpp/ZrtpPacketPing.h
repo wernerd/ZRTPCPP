@@ -21,7 +21,7 @@
  * @file ZrtpPacketPing.h
  * @brief The ZRTP Ping message
  *
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 

@@ -25,7 +25,7 @@
  * This empty ZID record does not store any data, thus implements an empty or non-existent
  * ZRTP cache.
  *
- * @ingroup GNU_ZRTP
+ * @ingroup ZRTP
  * @{
  */
 
