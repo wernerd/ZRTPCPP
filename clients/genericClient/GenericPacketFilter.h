@@ -37,7 +37,7 @@
 /**
  * @brief Packet filter and implementation of ZRTP callback functions.
  */
-class GenericPacketFilter : public ZrtpCallback {
+class GenericPacketFilter : public ZrtpCallback, public std::enable_shared_from_this<GenericPacketFilter> {
 
 public:
     /**
@@ -72,6 +72,16 @@ public:
          SecondaryStream
      };
 
+     /**
+      * @brief Return codes used by several functions.
+      *
+      * Error codes are always negative, never 0.
+      */
+     enum PacketFilterReturnCodes {
+         Success = 1,
+         NoConfiguration = -10,
+
+     };
      /**
       * @brief Returned by the `PrepareToSendFunction` implementation.
       */
@@ -149,27 +159,6 @@ public:
      */
     static ProtocolData prepareToSendRtp(GenericPacketFilter& thisFilter, uint8_t const *zrtpData, int32_t length);
 
-     /**
-      * @brief Standard constructor.
-      *
-      * Create an genetic packet filter, initializes the timeout helper, and sets
-      * some sensible defaults:
-      *
-      * - filter type is `MasterStream`
-      */
-     GenericPacketFilter();
-
-    /**
-     * @brief Check for ZRTP packet and process it.
-     *
-     * @param[in] packetData Pointer to the packet data
-     * @param[in] packetLength Length of the packet data in bytes
-     * @param[in] checkFunction `filterPacket` calls this function to check for ZRTP data.
-     * @return FilterResult
-     */
-    virtual FilterResult
-    filterPacket(uint8_t const * packetData, size_t packetLength, CheckFunction const & checkFunction);
-
     /**
      * @brief Check if an RTP packet contains valid ZRTP data.
      *
@@ -184,6 +173,44 @@ public:
      * @return DataCheckResult.
      */
     static DataCheckResult checkRtpData(uint8_t const * packetData, size_t packetLength, size_t & offset, uint32_t & ssrc);
+
+    /**
+     * @brief Create a GenericPacketFilter.
+     *
+     * Create an genetic packet filter, initializes the timeout helper, and sets
+     * some sensible defaults:
+     *
+     * - filter type is `MasterStream`
+     *
+     * @return Shared pointer to GenericPacketFilter instance.
+     */
+    static std::shared_ptr<GenericPacketFilter>
+    createGenericFilter() { return std::shared_ptr<GenericPacketFilter>(new GenericPacketFilter()); }
+
+    /**
+     * @brief Destructor stops ZRTP engine.
+     *
+     */
+    virtual ~GenericPacketFilter();
+
+    /**
+     * @brief Start the ZRTP engine.
+     *
+     * @return
+     */
+    virtual PacketFilterReturnCodes
+    startZrtpEngine();
+
+    /**
+     * @brief Check for ZRTP packet and process it.
+     *
+     * @param[in] packetData Pointer to the packet data
+     * @param[in] packetLength Length of the packet data in bytes
+     * @param[in] checkFunction `filterPacket` calls this function to check for ZRTP data.
+     * @return FilterResult
+     */
+    virtual FilterResult
+    filterPacket(uint8_t const * packetData, size_t packetLength, CheckFunction const & checkFunction);
 
     /**
      * @brief Set ZrtpConfiguration.
@@ -205,6 +232,17 @@ public:
      */
     virtual GenericPacketFilter&
     setPrepareToSendFunction(PrepareToSendFunction pTS) { prepareToSend = pTS; return *this; }
+
+    /**
+     * @brief Set do send callback function.
+     *
+     * If the application must set this function and handle the sending of packets.
+     *
+     * @param[in] dsf Functions pointer to DoSend function.
+     * @return reference of the current instance.
+     */
+    virtual GenericPacketFilter&
+    setDoSendFunction(DoSendFunction dsf) { doSend = dsf; return *this; }
 
     /**
      * @brief Set own RTP SSRC.
@@ -282,6 +320,17 @@ public:
 
 private:
 
+    /**
+     * @brief Private constructor - force a shared pointer to GenericPacketFilter using `createGenericFilter()`
+     *
+     * Create an genetic packet filter, initializes the timeout helper, and sets
+     * some sensible defaults:
+     *
+     * - filter type is `MasterStream`
+     */
+    GenericPacketFilter();
+
+
     std::unique_ptr<ZRtp> zrtpEngine = nullptr;
     std::shared_ptr<ZrtpConfigure> configuration = nullptr;
     PrepareToSendFunction prepareToSend = nullptr;
@@ -296,6 +345,8 @@ private:
     uint32_t peerSSRC = 0;            //!< Our peer's SSRC, in host order, required when using RTP prepare function
 
     uint16_t senderZrtpSeqNo = 0;
+
+    bool zrtpStarted = false;
 
 };
 

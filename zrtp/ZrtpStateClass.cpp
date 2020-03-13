@@ -102,7 +102,7 @@ void ZrtpStateClass::processEvent(Event * ev) {
             totalLength += transportOverhead + sizeof(uint32_t);        // add transport overhead and CRC (uint32_t)
 
             if (totalLength != ev->length) {
-                LOGGER(ERROR_LOG, "Total length does not match received length: %d - %ld\n", totalLength, (long int)(ev->length & 0xffffU));
+                LOGGER(ERROR_LOG, "Total length does not match received length: %d - %ld\n", totalLength, (long int)(ev->length & 0xffffU))
                 sendErrorPacket(MalformedPacket);
                 return;
             }

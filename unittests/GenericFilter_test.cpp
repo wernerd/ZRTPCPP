@@ -80,9 +80,9 @@ TEST_F(GenericFilterTestFixture, zrtpDetection) {
 }
 
 TEST_F(GenericFilterTestFixture, prepareRtp) {
-    GenericPacketFilter filter;
+    auto filter = GenericPacketFilter::createGenericFilter();
 
-    auto protocolData = GenericPacketFilter::prepareToSendRtp(filter, zrtpRawData, sizeof(zrtpRawData));
+    auto protocolData = GenericPacketFilter::prepareToSendRtp(*filter, zrtpRawData, sizeof(zrtpRawData));
     ASSERT_EQ(sizeof(zrtpRawData) + 12, protocolData.length);
     ASSERT_TRUE(protocolData.ptr);
 
@@ -128,10 +128,38 @@ TEST_F(GenericFilterTestFixture, buildConfigure) {
 }
 
 TEST_F(GenericFilterTestFixture, SetterGetter) {
-    GenericPacketFilter filter;
+    auto filter = GenericPacketFilter::createGenericFilter();
 
-    filter.setOwnRtpSsrc(1471).setZrtpSequenceNo(815);
+    filter->setOwnRtpSsrc(1471).setZrtpSequenceNo(815);
 
-    ASSERT_EQ(1471, filter.getOwnRtpSsrc());
-    ASSERT_EQ(815, filter.getZrtpSequenceNo());
+    ASSERT_EQ(1471, filter->getOwnRtpSsrc());
+    ASSERT_EQ(815, filter->getZrtpSequenceNo());
+}
+
+TEST_F(GenericFilterTestFixture, startStopZrtp) {
+
+    bool cacheIsOk = false;
+    auto config = ZrtpConfigureBuilder::builder()
+            .publicKeyAlgorithms(ec25, ec38)
+            .cipherAlgorithms(aes3, two3)
+            .initializeCache("file.data", ZrtpConfigureBuilder::FileCache, cacheIsOk)
+            .build();
+
+    // Just to check if doSend was called.
+    bool doSendCalled = false;
+    auto doSend = [& doSendCalled](GenericPacketFilter::ProtocolData& protocolData) -> bool {
+        if (protocolData.length > 0 && protocolData.ptr) {
+            doSendCalled = true;
+        }
+        return true;
+    };
+
+    auto filter = GenericPacketFilter::createGenericFilter();
+    filter->setZrtpConfiguration(config)
+            .setOwnRtpSsrc(1471)
+            .setDoSendFunction(doSend);
+
+    auto result = filter->startZrtpEngine();
+    ASSERT_EQ(GenericPacketFilter::Success, result);
+    ASSERT_TRUE(doSendCalled);
 }

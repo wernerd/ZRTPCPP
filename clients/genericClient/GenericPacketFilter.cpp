@@ -19,7 +19,6 @@
 #include <common/osSpecifics.h>
 #include <common/ZrtpTimeoutProvider.h>
 #include <cryptcommon/ZrtpRandom.h>
-#include "../common/SecureArray.h"
 #include "../logging/ZrtpLogging.h"
 
 #include "GenericPacketFilter.h"
@@ -36,9 +35,36 @@ GenericPacketFilter::GenericPacketFilter() {
     }
 }
 
+GenericPacketFilter::~GenericPacketFilter() {
+    std::lock_guard<std::mutex> guard(syncLock);
+    if (zrtpStarted && zrtpEngine) {
+        zrtpEngine->stopZrtp();
+        zrtpStarted = false;
+    }
+}
+
+GenericPacketFilter::PacketFilterReturnCodes
+GenericPacketFilter::startZrtpEngine() {
+    std::lock_guard<std::mutex> guard(syncLock);
+
+    if (!zrtpStarted) {
+        if (!configuration) {
+            return NoConfiguration;
+        }
+        std::shared_ptr<ZrtpCallback> mySelf = shared_from_this();
+        zrtpEngine = std::make_unique<ZRtp>(clientId, mySelf, configuration);
+        zrtpEngine->startZrtpEngine();
+        zrtpStarted = true;
+    }
+    return Success;
+}
 
 GenericPacketFilter::FilterResult
 GenericPacketFilter::filterPacket(uint8_t const * packetData, size_t packetLength, CheckFunction const & checkFunction) {
+
+    if (!zrtpStarted) {
+        return NotProcessed;
+    }
 
     size_t offset = 0;
     uint32_t ssrc = 0;
@@ -151,10 +177,7 @@ GenericPacketFilter::sendDataZRTP(const unsigned char *data, int32_t length) {
         return 0;
     }
     // Check the callback here - the prepareToSend may set it.
-    if (doSend == nullptr) {
-        return 0;
-    }
-    if (!doSend(protocolData)) {
+    if (doSend == nullptr || !doSend(protocolData)) {
         return 0;
     }
     return 1;
@@ -187,7 +210,7 @@ GenericPacketFilter::cancelTimer() {
 
 void
 GenericPacketFilter::handleGoClear() {
-    LOGGER(ERROR_LOG, "GoClear feature is not supported!\n");
+    LOGGER(ERROR_LOG, "GoClear feature is not supported!\n")
 }
 
 
