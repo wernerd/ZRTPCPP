@@ -95,14 +95,14 @@ void ZrtpStateClass::processEvent(Event * ev) {
 
         // Sanity check of packet size for all states except WaitErrorAck.
         // Actual packet type not known yet, thus use internal knowledge of ZRTP
-        // packet layout as specified in ZRTP RFC.
+        // packet layout as specified in RFC6189.
         if (!inState(WaitErrorAck)) {
-            uint16_t totalLength = *(uint16_t*)(pkt+2);                 // packet length stored in bytes 3 and 4, big endian
-            totalLength = zrtpNtohs(totalLength) * ZRTP_WORD_SIZE;      // packet length is in number of ZRTP words
+            uint16_t totalLength = *(uint16_t*)(pkt+2);                 // ZRTP packet length stored in bytes 3 and 4, big endian
+            totalLength = zrtpNtohs(totalLength) * ZRTP_WORD_SIZE;      // ZRTP packet length is in number of ZRTP words
             totalLength += transportOverhead + sizeof(uint32_t);        // add transport overhead and CRC (uint32_t)
 
             if (totalLength != ev->length) {
-                fprintf(stderr, "Total length does not match received length: %d - %ld\n", totalLength, (long int)(ev->length & 0xffffU));
+                LOGGER(ERROR_LOG, "Total length does not match received length: %d - %ld\n", totalLength, (long int)(ev->length & 0xffffU));
                 sendErrorPacket(MalformedPacket);
                 return;
             }

@@ -47,6 +47,8 @@
 
 #include "common/typedefs.h"
 
+#include "../logging/ZrtpLogging.h"
+
 class __EXPORT ZrtpStateClass;
 class ZrtpDH;
 class ZRtp;
