@@ -83,7 +83,7 @@ GenericPacketFilter::checkRtpData(uint8_t const * packetData, size_t packetLengt
         return Discard;
     }
     // return peer's SSRC in host order
-    ssrc = *(uint32_t*)(packetData + 8);
+    ssrc = *(uint32_t*)(packetData + 8);    // RTP fixed offset to SSRC
     ssrc = zrtpNtohl(ssrc);
     offset = RTPHeaderLength;
 

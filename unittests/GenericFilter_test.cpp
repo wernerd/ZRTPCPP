@@ -38,7 +38,7 @@ uint8_t zrtpPacket[] = {
 static
 uint8_t zrtpRawData[] = {
 //      preamble   | length    | ZRTP content                          | space for CRC
-        0x50, 0x5a, 0x03, 0x00, 'H', 'e', 'l', 'l', 'o', 'A', 'C', 'K', 'c', 'r', 'c', 'x'};    // simulate a crc field
+        0x50, 0x5a, 0x00, 0x03, 'H', 'e', 'l', 'l', 'o', 'A', 'C', 'K', 'c', 'r', 'c', 'x'};    // simulate a crc field
 
 class GenericFilterTestFixture: public ::testing::Test {
 public:
