@@ -19,7 +19,7 @@
 
 /**
  * @file ZrtpCallback.h
- * @brief Callback interface between ZRTP and the RTP stack implementation
+ * @brief Callback interface between ZRTP and the transport stack implementation
  * @ingroup GNU_ZRTP
  * @{
  */

@@ -45,7 +45,7 @@
  * ~~~~~{.cpp}
     bool cacheIsOk = false;
 
-    config = ZrtpConfigureBuilder::builder()
+    auto config = ZrtpConfigureBuilder::builder()
             .publicKeyAlgorithms(ec25, ec38)
             .cipherAlgorithms(aes3, two3)
             .initializeCache("file.data", ZrtpConfigureBuilder::FileCache, cacheIsOk)
@@ -57,6 +57,10 @@
     // If application needs the cache instance
     auto zidCache = config->getZidCache();
  * ~~~~~
+ *
+ * The builder currently does not support mostly unused flags to enable PBX support, request SAS
+ * signing or the 'paranoid' mode. Applications can set these flags directly using the returned
+ * ZrtpConfigure instance.
  *
  */
 class __EXPORT ZrtpConfigureBuilder {
@@ -98,7 +102,7 @@ public:
      * available.
      *
      * @param name Short name(s) of the public key algorithm
-     * @return Reference to this ZrtpConfigureBuilder
+     * @return reference of the current instance.
      * @sa ZrtpTextData.h
      */
     ZrtpConfigureBuilder&  publicKeyAlgorithms(char const* name) { addAlgorithm(name, PubKeyAlgorithm);return *this; }
@@ -118,7 +122,7 @@ public:
      * available.
      *
      * @param name Short name(s) of the hash algorithm
-     * @return Reference to this ZrtpConfigureBuilder
+     * @return reference of the current instance.
      * @sa ZrtpTextData.h
      */
     ZrtpConfigureBuilder&  hashAlgorithms(char const* name) { addAlgorithm(name, HashAlgorithm); return *this; }
@@ -138,7 +142,7 @@ public:
      * available.
      *
      * @param name Short name(s) of the symmetric cipher algorithm
-     * @return Reference to this ZrtpConfigureBuilder
+     * @return reference of the current instance.
      * @sa ZrtpTextData.h
      */
     ZrtpConfigureBuilder&  cipherAlgorithms(char const* name)  { addAlgorithm(name, CipherAlgorithm); return *this; }
@@ -158,7 +162,7 @@ public:
      * available.
      *
      * @param name Short name(s) of the SAS types
-     * @return Reference to this ZrtpConfigureBuilder
+     * @return reference of the current instance.
      * @sa ZrtpTextData.h
      */
     ZrtpConfigureBuilder&  sasTypes(char const* name) { addAlgorithm(name, SasType); return *this; }
@@ -178,7 +182,7 @@ public:
      * available.
      *
      * @param name Short name(s) of the SRTP authentication length
-     * @return Reference to this ZrtpConfigureBuilder
+     * @return reference of the current instance.
      * @sa ZrtpTextData.h
      */
     ZrtpConfigureBuilder&  authLengths(char const* name) { addAlgorithm(name, AuthLength); return *this; }
@@ -195,7 +199,7 @@ public:
      *
      * The function adds a defined set of algorithms to the configuration.
      *
-     * @return Reference to this ZrtpConfigureBuilder
+     * @return reference of the current instance.
      * @sa ZrtpConfigure::addStandardConfig()
      */
     ZrtpConfigureBuilder& addStandardConfig() { configuration->addStandardConfig(); return *this; }
@@ -209,7 +213,7 @@ public:
      *
      * The function adds a defined set of mandatory algorithms to the configuration.
      *
-     * @return Reference to this ZrtpConfigureBuilder
+     * @return reference of the current instance.
      * @sa ZrtpConfigure::addMandatoryOnly()
      */
     ZrtpConfigureBuilder& addMandatoryOnly() { configuration->addMandatoryOnly(); return *this; }
@@ -237,7 +241,7 @@ public:
      *      type is `NoCache`.
      * @param cacheType Store data in simple file, database or not at all.
      * @param isSet functions sets it to `true` if ZID cache open was OK, `false` in case of failure
-     * @return Reference to this ZrtpConfigureBuilder
+     * @return reference of the current instance.
      */
     ZrtpConfigureBuilder&
     initializeCache(const std::string & zidFilename, ZidCacheType cacheType, bool & isSet);
@@ -254,7 +258,7 @@ public:
      * defined algorithms, e.g. Twofish instead of AES, Curve 414 instead of ECDH-384.
      *
      * @param pol The policy to use.
-     * @return Reference to this ZrtpConfigureBuilder
+     * @return reference of the current instance.
      */
     ZrtpConfigureBuilder&
     setSelectionPolicy(ZrtpConfigure::Policy pol) { configuration->setSelectionPolicy(pol);return *this;}
