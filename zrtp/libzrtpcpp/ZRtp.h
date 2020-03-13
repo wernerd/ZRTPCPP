@@ -1414,10 +1414,10 @@ private:
     ZrtpPacketClearAck* prepareClearAck(ZrtpPacketGoClear* gpkt);
 #endif
     /**
-     * Prepare the ErrorAck packet.
+     * Prepare the PingAck packet.
      *
-     * This method prepares the ErrorAck packet. The input to this method is the
-     * Error packet received from the peer.
+     * This method prepares the PingAck packet. The input to this method is the
+     * Ping packet received from the peer.
      */
     ZrtpPacketPingAck* preparePingAck(ZrtpPacketPing* ppkt);
 
