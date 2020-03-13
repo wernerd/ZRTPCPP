@@ -35,6 +35,11 @@ uint8_t zrtpPacket[] = {
         0x01, 0x00, 0x47, 0x11, 0x5a, 0x52, 0x54, 0x50, 0xfe, 0xed, 0xba, 0xac,  // Header
         0x50, 0x5a, 0x03, 0x00, 'H', 'e', 'l', 'l', 'o', 'A', 'C', 'K', 'c', 'r', 'c', 'x'};    // simulate a crc field
 
+static
+uint8_t zrtpRawData[] = {
+//      preamble   | length    | ZRTP content                          | space for CRC
+        0x50, 0x5a, 0x03, 0x00, 'H', 'e', 'l', 'l', 'o', 'A', 'C', 'K', 'c', 'r', 'c', 'x'};    // simulate a crc field
+
 class GenericFilterTestFixture: public ::testing::Test {
 public:
     GenericFilterTestFixture() = default;
@@ -69,6 +74,21 @@ TEST_F(GenericFilterTestFixture, zrtpDetection) {
     ASSERT_EQ(GenericPacketFilter::Process, GenericPacketFilter::checkRtpData(zrtpPacket, sizeof(zrtpPacket), offset));
     ASSERT_EQ(12, offset);          // 12 -> RTP header length, first byte of ZRTP data
 
+}
+
+TEST_F(GenericFilterTestFixture, prepareRtp) {
+    GenericPacketFilter filter;
+
+    auto protocolData = GenericPacketFilter::prepareToSendRtp(filter, zrtpRawData, sizeof(zrtpRawData));
+    ASSERT_EQ(sizeof(zrtpRawData) + 12, protocolData.length);
+    ASSERT_TRUE(protocolData.ptr);
+
+    // the ProtocolData structure contains a shared_ptr<void>, thus we need to cast to the
+    // real data first.
+    auto ptr = static_pointer_cast<secUtilities::SecureArrayFlex>(protocolData.ptr);
+    size_t offset = 0;
+    ASSERT_EQ(GenericPacketFilter::Process, GenericPacketFilter::checkRtpData(ptr->data(), protocolData.length, offset));
+    ASSERT_EQ(12, offset);          // 12 -> RTP header length, first byte of ZRTP data
 }
 
 TEST_F(GenericFilterTestFixture, buildConfigure) {
