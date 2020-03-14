@@ -15,7 +15,7 @@
 // Copyright (c) 2020 Werner Dittmann. All rights reserved.
 //
 
-#include "../sidh/cpp/SidhWrapper.cpp"
+#include "../sidh/cpp/SidhWrapper.h"
 #include "../sidh/src/P503/P503_api.h"
 #include "gtest/gtest.h"
 
