@@ -31,14 +31,14 @@
 
 #include <libzrtpcpp/ZrtpUserCallback.h>
 
-class __EXPORT ZrtpUserCallbackEmpty {
+class __EXPORT ZrtpUserCallbackEmpty : public ZrtpUserCallback {
 
 public:
 
     /// Create the standard user callback class.
-    ZrtpUserCallback() = default;
+    ZrtpUserCallbackEmpty() = default;
 
-    ~ZrtpUserCallback() = default;
+    ~ZrtpUserCallbackEmpty() = default;
 
     /**
      * Inform user interface that security is active now.
@@ -49,7 +49,7 @@ public:
      * @param cipher
      *    Name and mode of cipher used to encrypt the SRTP stream
      */
-    void secureOn(std::string cipher) {}
+    void virtual secureOn(std::string cipher) {}
     /**
      * Inform user interface that security is not active any more.
      *
@@ -57,7 +57,7 @@ public:
      * left secure mode.
      *
      */
-    void secureOff() {}
+    void virtual secureOff() {}
 
     /**
      * Show the Short Authentication String (SAS) on user interface.
@@ -73,7 +73,7 @@ public:
      *    If <code>verified</code> is true then SAS was verified by both
      *    parties during a previous call, otherwise it is set to false.
      */
-    void showSAS(std::string sas, bool verified) {}
+    void virtual showSAS(std::string sas, bool verified) {}
 
     /**
      * Inform the user that ZRTP received "go clear" message from its peer.
@@ -82,7 +82,7 @@ public:
      * a switch to unsecure (clear) modus. Until the user confirms ZRTP
      * (and the underlying RTP) does not send any data.
      */
-    void confirmGoClear() {}
+    void virtual confirmGoClear() {}
 
     /**
      * Show some information to user.
@@ -98,7 +98,7 @@ public:
      * @param subCode
      *     The subcode identifying the reason.
      */
-    void showMessage(GnuZrtpCodes::MessageSeverity sev, int32_t subCode) {}
+    void virtual showMessage(GnuZrtpCodes::MessageSeverity sev, int32_t subCode) {}
 
     /**
      * ZRTPQueue calls this if the negotiation failed.
@@ -112,7 +112,7 @@ public:
      * @param subCode
      *     The subcode identifying the reason.
      */
-    void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) {}
+    void virtual zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) {}
 
     /**
      * ZRTPQueue calls this method if the other side does not support ZRTP.
@@ -121,7 +121,7 @@ public:
      * ZRTP calls this method.
      *
      */
-    void zrtpNotSuppOther() {}
+    void virtual zrtpNotSuppOther() {}
 
     /**
      * ZRTPQueue calls this method to inform about a PBX enrollment request.
@@ -134,7 +134,7 @@ public:
      *    enrollment.
      *
      */
-    void zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info) {}
+    void virtual zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info) {}
 
     /**
      * ZRTPQueue calls this method to inform about PBX enrollment result.
@@ -147,7 +147,7 @@ public:
      *    enrollment.
      *
      */
-    void zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment info) {}
+    void virtual zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment info) {}
 
     /**
      * ZRTPQueue calls this method to request a SAS signature.
@@ -164,7 +164,7 @@ public:
      * @see ZrtpQueue#setSignatureData
      *
      */
-    void signSAS(uint8_t* sasHash) {}
+    void virtual signSAS(uint8_t* sasHash) {}
 
     /**
      * ZRTPQueue calls this method to request a SAS signature check.
@@ -185,7 +185,7 @@ public:
      *    true if the signature was ok, false otherwise.
      *
      */
-    bool checkSASSignature(uint8_t* sasHash) {
+    bool virtual checkSASSignature(uint8_t* sasHash) {
         return true;
     }
 };
