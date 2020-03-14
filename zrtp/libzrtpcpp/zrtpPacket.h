@@ -328,11 +328,12 @@ typedef struct RelayAckPacket {
     uint8_t crc[ZRTP_WORD_SIZE];    ///< CRC of ZRTP message
 } RelayAckPacket_t;
 
-#endif // ZRTPPACKET_H
-
 /**
  * @}
  */
+
+#endif // ZRTPPACKET_H
+
 
 /** EMACS **
  * Local variables:

@@ -18,7 +18,7 @@
 #include <zrtp/libzrtpcpp/ZrtpTextData.h>
 #include "../logging/ZrtpLogging.h"
 #include "../clients/genericClient/GenericPacketFilter.h"
-#include "../common/ZrtpConfigureBuilder.h"
+#include "helpers/ZrtpConfigureBuilder.h"
 #include "gtest/gtest.h"
 
 using namespace std;
