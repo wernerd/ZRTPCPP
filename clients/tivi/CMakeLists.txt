@@ -75,10 +75,8 @@ elseif(SIDH_ARM64)
     set_property(SOURCE ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/ARM64/fp_arm_asm.S PROPERTY LANGUAGE C)
 endif()
 
-set(zrtpcpp_src ${zrtp_src} ${zrtp_tivi_src} ${zrtp_crypto_src} ${zrtp_skein_src} ${bnlib_src} ${srtp_src} ${crypto_src_srtp} ${cryptcommon_srcs} ${sidh751_src})
-# TODO check set(zrtpcpp_src ${zrtp_src} ${zrtp_tivi_src}
-# TODO check         ${zrtp_standalone_crypto_src} ${zrtp_skein_src} ${bnlib_src} ${srtp_src}
-# TODO check         ${crypto_src_srtp} ${cryptcommon_srcs})
+set(zrtpcpp_src ${zrtp_src} ${zrtp_tivi_src} ${zrtp_standalone_crypto_src} ${zrtp_skein_src}
+        ${bnlib_src} ${srtp_src} ${crypto_src_srtp} ${cryptcommon_srcs} ${sidh751_src})
 
 # for the Thread classes etc. - remove D_WITHOUT_TIVI_ENV if you compile for/with Tivi modules, maybe build static
 # and iclude this into Tivi shared lib in the second step. Need to cross-check with Java build in case of static build.
