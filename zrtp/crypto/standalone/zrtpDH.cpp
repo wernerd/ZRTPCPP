@@ -24,12 +24,11 @@
 
 #include <zrtp/crypto/zrtpDH.h>
 #include <zrtp/libzrtpcpp/ZrtpTextData.h>
-#include <zrtp/libzrtpcpp/zrtpPacket.h>
 #include <cryptcommon/ZrtpRandom.h>
 
-#include "../sidh/cpp/SidhWrapper.cpp"
-#include "../common/Utilities.h"
-#include "../logging/ZrtpLogging.h"
+#ifdef SIDH_SUPPORT
+#include "../sidh/cpp/SidhWrapper.h"
+#endif
 
 static BigNum bnP2048 = {nullptr};
 static BigNum bnP3072 = {nullptr};
@@ -163,8 +162,10 @@ typedef struct ZrtpDH::_dhCtx {
     BigNum pubKey;
     EcCurve curve;
     EcPoint pubPoint;
+#ifdef SIDH_SUPPORT
     std::unique_ptr<secUtilities::SecureArrayFlex> sidhPrivKey;
     std::unique_ptr<secUtilities::SecureArrayFlex> sidhPubKey;
+#endif
 } dhCtx;
 
 ZrtpDH::ZrtpDH(const char* type, ProtocolState state) : protocolState(state), ctx(std::make_unique<_dhCtx>()) {
@@ -193,9 +194,11 @@ ZrtpDH::ZrtpDH(const char* type, ProtocolState state) : protocolState(state), ct
     else if (*(int32_t*)type == *(int32_t*)sdh5) {
         pkType = SDH5;
     }
+#ifdef SIDH_SUPPORT
     else if (*(int32_t*)type == *(int32_t*)sdh7) {
         pkType = SDH7;
     }
+#endif
     else {
         errorCode = UNKNOWN_ALGORITHM;
         return;
@@ -257,11 +260,12 @@ ZrtpDH::ZrtpDH(const char* type, ProtocolState state) : protocolState(state), ct
             ecGenerateRandomNumber(&ctx->curve, &ctx->privKey);
             break;
 
+#ifdef SIDH_SUPPORT
         case SDH5:
         case SDH7:
             generateSidhKeyPair();
             break;
-
+#endif
         default:
             errorCode = UNKNOWN_ALGORITHM;
             break;
@@ -296,6 +300,7 @@ ZrtpDH::~ZrtpDH() {
     }
 }
 
+#ifdef SIDH_SUPPORT
 void ZrtpDH::generateSidhKeyPair() {
     SidhWrapper::SidhType sidhType;
 
@@ -321,6 +326,7 @@ void ZrtpDH::generateSidhKeyPair() {
         SidhWrapper::EphemeralKeyGeneration_B(sidhType, ctx->sidhPrivKey->data(), ctx->sidhPubKey->data());
     }
 }
+#endif
 
 int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret) {
 
@@ -390,12 +396,15 @@ int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, secUtilities::SecureArray
 
         return length;
     }
+#ifdef SIDH_SUPPORT
     if (pkType == SDH5 || pkType == SDH7) {
         return computeSidhSharedSecret(pubKeyBytes, secret);
     }
+#endif
     return -1;
 }
 
+#ifdef SIDH_SUPPORT
 size_t ZrtpDH::computeSidhSharedSecret(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret)
 {
     SidhWrapper::SidhType sidhType;
@@ -420,6 +429,7 @@ size_t ZrtpDH::computeSidhSharedSecret(uint8_t *pubKeyBytes, secUtilities::Secur
     secret.size(lengths->sharedSecret);
     return lengths->sharedSecret;
 }
+#endif
 
 int32_t ZrtpDH::generatePublicKey()
 {
@@ -449,6 +459,7 @@ int32_t ZrtpDH::generatePublicKey()
     return 0;
 }
 
+#ifdef SIDH_SUPPORT
 size_t ZrtpDH::getSidhSharedSecretLength() const {
     SidhWrapper::SidhType sidhType;
 
@@ -463,6 +474,7 @@ size_t ZrtpDH::getSidhSharedSecretLength() const {
     auto lengths = SidhWrapper::getFieldLengths(sidhType);
     return lengths->sharedSecret;
 }
+#endif
 
 uint32_t ZrtpDH::getSharedSecretSize() const
 {
@@ -485,10 +497,11 @@ uint32_t ZrtpDH::getSharedSecretSize() const
         case E414:
             return 52;
 
+#ifdef SIDH_SUPPORT
         case SDH5:
         case SDH7:
             return getSidhSharedSecretLength();
-
+#endif
         default:
             return 0;
     }
@@ -505,9 +518,11 @@ int32_t ZrtpDH::getPubKeySize() const
     if (pkType == E255)
         return bnBytes(ctx->curve.p);       // is 32 -> multiples of 4
 
+#ifdef SIDH_SUPPORT
     if (pkType == SDH5 || pkType == SDH7) {
         return ctx->sidhPubKey->capacity();
     }
+#endif
 //    LOGGER(DEBUGGING, __func__, " <-- Error return");
 
     return 0;
@@ -542,12 +557,14 @@ int32_t ZrtpDH::fillInPubKeyBytes(secUtilities::SecureArray<1000>& pubKey) const
         pubKey.size(len);
         return len;
     }
+#ifdef SIDH_SUPPORT
     if (pkType == SDH5 || pkType == SDH7) {
         int32_t len = getPubKeySize();
         memcpy(pubKey.data(), ctx->sidhPubKey->data(), len);
         pubKey.size(len);
         return len;
     }
+#endif
 //    LOGGER(DEBUGGING, __func__, " <-- Error return");
     return 0;
 }

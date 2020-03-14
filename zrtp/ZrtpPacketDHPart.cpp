@@ -61,6 +61,7 @@ void ZrtpPacketDHPart::setPacketLength(size_t pubKeyLen) {
     setLength(static_cast<uint16_t>(length / ZRTP_WORD_SIZE));
 }
 
+#ifdef SIDH_SUPPORT
 static size_t determineSidhLength(int16_t len) {
     // Convert the SIDH public kex length into number of ZRTP_WORD_SIZE words
     auto lengths = SidhWrapper::getFieldLengths(SidhWrapper::P503);
@@ -76,6 +77,7 @@ static size_t determineSidhLength(int16_t len) {
     }
     return 0;
 }
+#endif
 
 ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t const * data) {
     zrtpHeader = &((DHPartPacket_t *)data)->hdr;  // the standard header
@@ -102,9 +104,11 @@ ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t const * data) {
     else if (len == E414_WORDS) {    // E414
         dhLength = E414_LENGTH_BYTES;
     }
+#ifdef SIDH_SUPPORT
     else if ((tmpLen = determineSidhLength(len)) > 0) {    // SDH5 or SDH7
         dhLength = tmpLen;
     }
+#endif
     else {
         pv = nullptr;
 //        LOGGER(ERROR, __func__, " Unknown DH algorithm in DH packet with length: ", len);
