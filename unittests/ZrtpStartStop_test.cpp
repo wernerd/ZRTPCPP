@@ -67,14 +67,19 @@ TEST_F(ZrtpStartStopFixture, check_timer_start_cancel) {
     // Configure with mandatory algorithms only
     shared_ptr<ZrtpConfigure> configure = make_shared<ZrtpConfigure>();
 
+    shared_ptr<ZIDCache> aliceCache = std::make_shared<ZIDCacheEmpty>();
+    aliceCache->setZid(aliceZid);
+    configure->setZidCache(aliceCache);
+
     int32_t timers = 0;
 
-    testing::NiceMock<MockZrtpCallback> callback;
+    auto callback = std::make_shared<testing::NiceMock<MockZrtpCallback>>();
 
-    ON_CALL(callback, activateTimer).WillByDefault(DoAll(([&timers](int32_t time) { timers++; }), Return(1)));
-    ON_CALL(callback, cancelTimer).WillByDefault(DoAll([&timers]() { timers--; }, Return(1)));
+    ON_CALL(*callback, activateTimer).WillByDefault(DoAll(([&timers](int32_t time) { timers++; }), Return(1)));
+    ON_CALL(*callback, cancelTimer).WillByDefault(DoAll([&timers]() { timers--; }, Return(1)));
 
-    ZRtp zrtp(aliceZid, callback, aliceId, configure, false, false);
+    auto castedCallback = static_cast<shared_ptr<ZrtpCallback>>(callback);
+    ZRtp zrtp(aliceId, castedCallback, configure);
     zrtp.startZrtpEngine();
     zrtp.stopZrtp();
 
