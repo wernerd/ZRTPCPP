@@ -263,19 +263,16 @@ typedef enum _CacheTypes {
 extern "C"
 {
     typedef class ZRtp ZRtp;
-    typedef class ZrtpCallbackWrapper ZrtpCallbackWrapper;
-    typedef class ZrtpConfigure ZrtpConfigure;
+    typedef class ZrtpConfigureWrapper ZrtpConfigureWrapper;
 #else
     typedef struct ZRtp ZRtp;
-    typedef struct ZrtpCallbackWrapper ZrtpCallbackWrapper;
-    typedef struct ZrtpConfigure ZrtpConfigure;
+    typedef struct ZrtpConfigureWrapper ZrtpConfigureWrapper;
 #endif
 
     typedef struct zrtpContext
     {
         ZRtp* zrtpEngine;                   /*!< Holds the real ZRTP engine */
-        std::shared_ptr<ZrtpCallback> zrtpCallback;  /*!< Helper class Callback wrapper */
-        ZrtpConfigure* configure;           /*!< Optional configuration data */
+        ZrtpConfigureWrapper* configure;           /*!< Optional configuration data */
         ZRtp* zrtpMaster;                   /*!< Holds the master ZRTP stream in case this is a multi-stream */
         void* userData;                     /*!< User data, set by application */
     } ZrtpContext;

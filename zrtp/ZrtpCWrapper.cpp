@@ -28,6 +28,11 @@
 #include <zrtp/libzrtpcpp/ZIDCacheDb.h>
 #endif
 
+class __EXPORT ZrtpConfigureWrapper: public ZrtpConfigure {
+public:
+    std::shared_ptr<ZrtpCallback> saveCallback;
+};
+
 static std::shared_ptr<ZIDCache>
 zrtp_initZidFile(const char* zidFilename, CacheTypes cacheType) {
 
@@ -70,10 +75,9 @@ ZrtpContext* zrtp_CreateWrapper()
     // Functions zrtp_initializeZrtpEngine takes ownership of the raw pointer and manages it
     // with a shared_pointer. Thus only clear the raw pointer in zrtp_DestroyWrapper() below.
     // Kids, don't do this at home ;-)
-    zc->configure = new ZrtpConfigure();
+    zc->configure = new ZrtpConfigureWrapper();
     zc->configure->setStandardConfig();
     zc->zrtpEngine = nullptr;
-    zc->zrtpCallback = nullptr;
     zc->userData = nullptr;
 
     return zc;
@@ -89,37 +93,44 @@ int32_t zrtp_initializeZrtpEngine(ZrtpContext* zrtpContext,
     std::string clientIdString(id);
 
     std::shared_ptr<ZrtpConfigure> configOwn;
+    std::shared_ptr<ZrtpConfigureWrapper> configOwnWrapper;
 
-    zrtpContext->zrtpCallback = std::make_shared<ZrtpCallbackWrapper>(cb, zrtpContext);
+    std::shared_ptr<ZrtpCallback> callback = std::make_shared<ZrtpCallbackWrapper>(cb, zrtpContext);
     zrtpContext->userData = userData;
 
     // don't copy from another context: take over ZrtpConfigure raw pointer,  check and
     // possibly set up ZID cache
     if (!copyConfigFrom) {
         // Take ownership of ZrtpConfigure raw pointer
-        configOwn = std::shared_ptr<ZrtpConfigure>(zrtpContext->configure);
+        configOwnWrapper = std::shared_ptr<ZrtpConfigureWrapper>(zrtpContext->configure);
+        configOwnWrapper->setTrustedMitM(mitmMode != 0);
 
-        if (!configOwn->getZidCache()) {        // ZID Cache not set (shared ZID cache pointer is empty)
+        if (!configOwnWrapper->getZidCache()) {        // ZID Cache not set (shared ZID cache pointer is empty)
             auto zf = zrtp_initZidFile(zidFilename, cacheType);
             if (!zf) {
                 return false;
             }
-            configOwn->setZidCache(zf);
+            configOwnWrapper->setZidCache(zf);
         }
     }
     else {
-        // use ZrtpConfigure of another, existing ZRTP stream
+        // **** NOTE:
+        // **** Only use ZrtpConfigure of another, existing ZRTP stream which was created with * a ZrtpCWrapper* because
+        // **** the ZrtpCWrapper use an extended ZrtpConfigure class to store. Thus ZRtp must also store this extended
+        // **** class. The code below relies on this when it down-casts the shared pointer returned from ZRtp.
+        // ****
         delete zrtpContext->configure;              // delete initialized configure - we copy it from another context
         configOwn = copyConfigFrom->zrtpEngine->getZrtpConfigure(); // get pointer to ZrtpConfigure from other stream
-        zrtpContext->configure = configOwn.get();   // set raw pointer in ZrtpContext
+        configOwnWrapper = std::static_pointer_cast<ZrtpConfigureWrapper>(configOwn);   // *** pay attention -> downcast here ***
+        zrtpContext->configure = configOwnWrapper.get();   // set raw pointer in ZrtpContext
     }
 
-    const unsigned char *myZid = configOwn->getZidCache()->getZid();
+    const unsigned char *myZid = configOwnWrapper->getZidCache()->getZid();
     if (!myZid) {
         return false;
     }
-    zrtpContext->zrtpEngine = new ZRtp((uint8_t*)myZid, zrtpContext->zrtpCallback,
-                                       clientIdString, configOwn, mitmMode != 0);
+    configOwn = configOwnWrapper;           // implicit up-cast to have correct reference to base class
+    zrtpContext->zrtpEngine = new ZRtp(clientIdString, callback, configOwn);
     return true;
 }
 
