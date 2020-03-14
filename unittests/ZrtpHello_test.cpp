@@ -96,6 +96,10 @@ TEST_F(ZrtpHelloTestFixture, check_timer_start_cancel) {
     // Configure with mandatory algorithms only
     shared_ptr<ZrtpConfigure> configure = make_shared<ZrtpConfigure>();
 
+    shared_ptr<ZIDCache> aliceCache = std::make_shared<ZIDCacheEmpty>();
+    aliceCache->setZid(aliceZid);
+    configure->setZidCache(aliceCache);
+
     int32_t timers = 0;
 
     auto mockCallback = make_shared<testing::NiceMock<MockZrtpCallback>>();
@@ -104,7 +108,7 @@ TEST_F(ZrtpHelloTestFixture, check_timer_start_cancel) {
     ON_CALL(*mockCallback, activateTimer).WillByDefault(DoAll(([&timers](int32_t time) { timers++; }), Return(1)));
     ON_CALL(*mockCallback, cancelTimer).WillByDefault(DoAll([&timers]() { timers--; }, Return(1)));
 
-    ZRtp zrtp(aliceZid, callback, aliceId, configure, false, false);
+    ZRtp zrtp(aliceId, callback, configure);
     zrtp.startZrtpEngine();
     zrtp.stopZrtp();
 
@@ -114,6 +118,9 @@ TEST_F(ZrtpHelloTestFixture, check_timer_start_cancel) {
 TEST_F(ZrtpHelloTestFixture, check_first_sent_Hello) {
     // Configure with mandatory algorithms only
     shared_ptr<ZrtpConfigure> configure = make_shared<ZrtpConfigure>();
+    shared_ptr<ZIDCache> aliceCache = std::make_shared<ZIDCacheEmpty>();
+    aliceCache->setZid(aliceZid);
+    configure->setZidCache(aliceCache);
 
     auto mockCallback = make_shared<testing::NiceMock<MockZrtpCallback>>();
     std::shared_ptr<ZrtpCallback> callback = mockCallback;      // perform implicit up-cast to base
@@ -126,7 +133,7 @@ TEST_F(ZrtpHelloTestFixture, check_first_sent_Hello) {
 
     EXPECT_CALL(*mockCallback, zrtpNegotiationFailed(_, _)).Times(0);
 
-    ZRtp zrtp(aliceZid, callback, aliceId, configure, false, false);
+    ZRtp zrtp(aliceId, callback, configure);
     zrtp.startZrtpEngine();
     zrtp.stopZrtp();
 
