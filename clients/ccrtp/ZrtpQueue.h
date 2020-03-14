@@ -186,7 +186,7 @@ NAMESPACE_COMMONCPP
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-class __EXPORT ZrtpQueue : public AVPQueue, ZrtpCallback {
+class __EXPORT ZrtpQueue : public AVPQueue, public std::enable_shared_from_this<ZrtpQueue>, public ZrtpCallback  {
 
 public:
 
@@ -837,9 +837,41 @@ protected:
      * End of ZrtpCallback functions.
      */
 
+    /**
+     * @brief ZrtpQueue constructor - never use it directly - derive from it and use a factory method.
+     *
+     * This is required because ZrtpQueue() derives from `std::enable_shared_from_this to be able
+     * to get a shared pointer to itself and hand it over to `ZRtp` constructor.
+     *
+     * Example of a derived class and a factory method to create this class:
+     *
+     * @code
+     class ExtZrtpSession : public SymmetricZRTPSession { // , public std::enable_shared_from_this<ExtZrtpSession> {
+
+     public:
+
+         // factory function that perfect-forwards args  to a private ctor
+         template<typename ... T>
+         static std::shared_ptr<ExtZrtpSession> create(T&& ... t) {
+             return std::shared_ptr<ExtZrtpSession>(new ExtZrtpSession(std::forward<T>(t)...));
+
+        ...
+     private:
+         ExtZrtpSession(uint32 ssrc, const InetHostAddress &ia, tpport_t dataPort) :
+             SingleThreadRTPSession(ssrc, ia, dataPort) {
+                 ...
+         }
+     }
+     * @endcode
+     *
+     * @param size
+     * @param app
+     */
     explicit ZrtpQueue(uint32 size = RTPDataQueue::defaultMembersHashSize, RTPApplication& app = defaultApplication());
 
     /**
+     * @brief ZrtpQueue constructor - never use it directly - derive from it and use a factory method.
+     *
      * Local SSRC is given instead of computed by the queue.
      */
     explicit ZrtpQueue(uint32 ssrc, uint32 size = RTPDataQueue::defaultMembersHashSize, RTPApplication& app = defaultApplication());

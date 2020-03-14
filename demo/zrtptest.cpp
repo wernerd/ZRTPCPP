@@ -20,7 +20,7 @@
 #include <memory>
 
 #include <zrtpccrtp.h>
-#include <libzrtpcpp/ZrtpUserCallback.h>
+#include <helpers/ZrtpUserCallbackEmpty.h>
 #include <logging/ZrtpLogging.h>
 #include <cryptcommon/sidhp751/keymanagement/SidhKeyManagement.h>
 #include <common/osSpecifics.h>
@@ -78,7 +78,7 @@ const unsigned char *PacketsPattern::data[] = {
 
 PacketsPattern pattern;
 
-class ExtZrtpSession : public SymmetricZRTPSession {
+class ExtZrtpSession : public SymmetricZRTPSession { // , public std::enable_shared_from_this<ExtZrtpSession> {
 //     ExtZrtpSession(InetMcastAddress& ima, tpport_t port) :
 //     RTPSession(ima,port) {}
 // 
@@ -86,13 +86,11 @@ class ExtZrtpSession : public SymmetricZRTPSession {
 //     RTPSession(ia,port) {}
 
 public:
-    ExtZrtpSession(uint32 ssrc, const InetHostAddress &ia, tpport_t dataPort) :
-            SingleThreadRTPSession(ssrc, ia, dataPort) {
-        cout << "Extended" << endl;
-    }
 
-    ExtZrtpSession(const InetHostAddress &ia, tpport_t dataPort) : SingleThreadRTPSession(ia, dataPort) {
-        cout << "Extended" << endl;
+    // factory function that perfect-forwards args to a private ctor
+    template<typename ... T>
+    static std::shared_ptr<ExtZrtpSession> create(T&& ... t) {
+        return std::shared_ptr<ExtZrtpSession>(new ExtZrtpSession(std::forward<T>(t)...));
     }
 
     void onGotGoodbye(const SyncSource &source, const std::string &reason) override {
@@ -112,6 +110,16 @@ public:
              << dec
              << source.getNetworkAddress() << ":"
              << source.getControlTransportPort() << '\n';
+    }
+
+private:
+    ExtZrtpSession(uint32 ssrc, const InetHostAddress &ia, tpport_t dataPort) :
+            SingleThreadRTPSession(ssrc, ia, dataPort) {
+        cout << "Extended" << endl;
+    }
+
+    ExtZrtpSession(const InetHostAddress &ia, tpport_t dataPort) : SingleThreadRTPSession(ia, dataPort) {
+        cout << "Extended" << endl;
     }
 };
 
@@ -140,32 +148,32 @@ public:
     int doTest() {
         // should be valid?
         //RTPSession tx();
-        ExtZrtpSession tx(pattern.getSsrc(), pattern.getSenderAddress(), pattern.getSenderPort());
+        auto tx = ExtZrtpSession::create(pattern.getSsrc(), pattern.getSenderAddress(), pattern.getSenderPort());
 //        SymmetricZRTPSession tx(pattern.getSsrc(), InetHostAddress("localhost"));
-        tx.setSchedulingTimeout(10000);
-        tx.setExpireTimeout(1000000);
+        tx->setSchedulingTimeout(10000);
+        tx->setExpireTimeout(1000000);
 
-        tx.startRunning();
+        tx->startRunning();
 
-        tx.setPayloadFormat(StaticPayloadFormat(sptPCMU));
+        tx->setPayloadFormat(StaticPayloadFormat(sptPCMU));
 
         // We are sender:
-        if (!tx.addDestination(pattern.getReceiverAddress(), pattern.getReceiverPort())) {
+        if (!tx->addDestination(pattern.getReceiverAddress(), pattern.getReceiverPort())) {
             return 1;
         }
 
         // 2 packets per second (packet duration of 500ms)
         uint32 period = 500;
-        uint16 inc = tx.getCurrentRTPClockRate() / 2;
+        uint16 inc = tx->getCurrentRTPClockRate() / 2;
         TimerPort::setTimer(period);
         uint32 i;
         for (i = 0; i < pattern.getPacketsNumber(); i++) {
-            tx.putData(i * inc, PacketsPattern::getPacketData(i), PacketsPattern::getPacketSize(i));
+            tx->putData(i * inc, PacketsPattern::getPacketData(i), PacketsPattern::getPacketSize(i));
             cout << "Sent some data: " << i << endl;
             Thread::sleep(TimerPort::getTimer());
             TimerPort::incTimer(period);
         }
-        tx.putData(i * inc, (unsigned char *) "exit", 5);
+        tx->putData(i * inc, (unsigned char *) "exit", 5);
         Thread::sleep(TimerPort::getTimer());
         return 0;
     }
@@ -181,22 +189,22 @@ public:
 
     static int
     doTest() {
-        ExtZrtpSession rx(pattern.getSsrc() + 1, pattern.getReceiverAddress(), pattern.getReceiverPort());
+        auto rx = ExtZrtpSession::create(pattern.getSsrc() + 1, pattern.getReceiverAddress(), pattern.getReceiverPort());
 
 //         SymmetricZRTPSession rx(pattern.getSsrc()+1, pattern.getDestinationAddress(),
 //                                 pattern.getDestinationPort());
-        rx.setSchedulingTimeout(10000);
-        rx.setExpireTimeout(1000000);
+        rx->setSchedulingTimeout(10000);
+        rx->setExpireTimeout(1000000);
 
-        rx.startRunning();
-        rx.setPayloadFormat(StaticPayloadFormat(sptPCMU));
+        rx->startRunning();
+        rx->setPayloadFormat(StaticPayloadFormat(sptPCMU));
         // arbitrary number of loops to provide time to start transmitter
-        if (!rx.addDestination(pattern.getSenderAddress(), pattern.getSenderPort())) {
+        if (!rx->addDestination(pattern.getSenderAddress(), pattern.getSenderPort())) {
             return 1;
         }
         for (int i = 0; i < 5000; i++) {
             const AppDataUnit *adu;
-            while ((adu = rx.getData(rx.getFirstTimestamp()))) {
+            while ((adu = rx->getData(rx->getFirstTimestamp()))) {
                 cerr << "got some data: " << adu->getData() << endl;
                 if (*adu->getData() == 'e') {
                     delete adu;
@@ -231,35 +239,32 @@ public:
         // should be valid?
         //RTPSession tx();
         // Initialize with local address and Local port is detination port +2 - keep RTP/RTCP port pairs
-        ExtZrtpSession tx(pattern.getSsrc(), pattern.getSenderAddress(), pattern.getSenderPort());
+        auto tx = ExtZrtpSession::create(pattern.getSsrc(), pattern.getSenderAddress(), pattern.getSenderPort());
 
         std::shared_ptr<ZrtpConfigure> config;      // empty shared pointer, no own configuration
-        tx.initialize("test_t.zid", true, config);
-
-        tx.setSchedulingTimeout(10000);
-        tx.setExpireTimeout(1000000);
-
-        tx.startRunning();
-
-        tx.setPayloadFormat(StaticPayloadFormat(sptPCMU));
-        if (!tx.addDestination(pattern.getReceiverAddress(), pattern.getReceiverPort())) {
+        tx->initialize("test_t.zid", true, config);
+        tx->setSchedulingTimeout(10000);
+        tx->setExpireTimeout(1000000);
+        tx->startRunning();
+        tx->setPayloadFormat(StaticPayloadFormat(sptPCMU));
+        if (!tx->addDestination(pattern.getReceiverAddress(), pattern.getReceiverPort())) {
             return 1;
         }
-        tx.startZrtp();
+        tx->startZrtp();
         // 2 packets per second (packet duration of 500ms)
         uint32 period = 500;
-        uint16 inc = tx.getCurrentRTPClockRate() / 2;
+        uint16 inc = tx->getCurrentRTPClockRate() / 2;
         TimerPort::setTimer(period);
         uint32 i;
         for (i = 0; i < pattern.getPacketsNumber(); i++) {
-            tx.putData(i * inc,
+            tx->putData(i * inc,
                        PacketsPattern::getPacketData(i),
                        PacketsPattern::getPacketSize(i));
             cout << "Sent some data: " << i << endl;
             Thread::sleep(TimerPort::getTimer());
             TimerPort::incTimer(period);
         }
-        tx.putData(i * inc, (unsigned char *) "exit", 5);
+        tx->putData(i * inc, (unsigned char *) "exit", 5);
         Thread::sleep(200);
         return 0;
     }
@@ -274,24 +279,22 @@ public:
 
     static int
     doTest() {
-        ExtZrtpSession rx(pattern.getSsrc() + 1, pattern.getReceiverAddress(), pattern.getReceiverPort());
+        auto rx = ExtZrtpSession::create(pattern.getSsrc() + 1, pattern.getReceiverAddress(), pattern.getReceiverPort());
 
         std::shared_ptr<ZrtpConfigure> config;      // empty shared pointer, no own configuration
-        rx.initialize("test_r.zid", true, config);
-
-        rx.setSchedulingTimeout(10000);
-        rx.setExpireTimeout(1000000);
-
-        rx.startRunning();
-        rx.setPayloadFormat(StaticPayloadFormat(sptPCMU));
+        rx->initialize("test_r.zid", true, config);
+        rx->setSchedulingTimeout(10000);
+        rx->setExpireTimeout(1000000);
+        rx->startRunning();
+        rx->setPayloadFormat(StaticPayloadFormat(sptPCMU));
         // arbitrary number of loops to provide time to start transmitter
-        if (!rx.addDestination(pattern.getSenderAddress(), pattern.getSenderPort())) {
+        if (!rx->addDestination(pattern.getSenderAddress(), pattern.getSenderPort())) {
             return 1;
         }
-        rx.startZrtp();
+        rx->startZrtp();
         for (int i = 0; i < 5000; i++) {
             const AppDataUnit *adu;
-            while ((adu = rx.getData(rx.getFirstTimestamp()))) {
+            while ((adu = rx->getData(rx->getFirstTimestamp()))) {
                 cerr << "got some data: " << adu->getData() << endl;
                 if (*adu->getData() == 'e') {
                     delete adu;
@@ -313,7 +316,7 @@ public:
  * implementation of this class just perform return, thus effectively
  * supressing any callback or trigger.
  */
-class MyUserCallback : public ZrtpUserCallback {
+class MyUserCallback : public ZrtpUserCallbackEmpty {
 
     static map<int32, std::string *> infoMap;
     static map<int32, std::string *> warningMap;
@@ -322,10 +325,8 @@ class MyUserCallback : public ZrtpUserCallback {
 
     static bool initialized;
 
-    SymmetricZRTPSession *session;
 public:
-    explicit MyUserCallback(SymmetricZRTPSession *s) {
-        session = s;
+    explicit MyUserCallback()  {
         if (initialized) {
             return;
         }
@@ -543,7 +544,7 @@ public:
     int doTest() {
         // should be valid?
         //RTPSession tx();
-        ExtZrtpSession tx(/*pattern.getSsrc(),*/ pattern.getSenderAddress(), pattern.getSenderPort());
+        auto tx = ExtZrtpSession::create(/*pattern.getSsrc(),*/ pattern.getSenderAddress(), pattern.getSenderPort());
         config->clear();
 
         auto zf = initCache("test_t.zid", zrtpCache);
@@ -580,44 +581,41 @@ public:
         config->addAlgo(AuthLength, zrtpAuthLengths.getByName("SK32"));
         config->addAlgo(AuthLength, zrtpAuthLengths.getByName("SK64"));
 
-        tx.initialize("test_t.zid", true, config);
+        tx->initialize("test_t.zid", true, config);
         // At this point the Hello hash is available. See ZRTP specification
         // chapter 9.1 for further information when an how to use the Hello
         // hash.
-        int numSupportedVersion = tx.getNumberSupportedVersions();
-        cout << "TX Hello hash 0: " << tx.getHelloHash(0) << endl;
-        cout << "TX Hello hash 0 length: " << tx.getHelloHash(0).length() << endl;
+        int numSupportedVersion = tx->getNumberSupportedVersions();
+        cout << "TX Hello hash 0: " << tx->getHelloHash(0) << endl;
+        cout << "TX Hello hash 0 length: " << tx->getHelloHash(0).length() << endl;
         if (numSupportedVersion > 1) {
-            cout << "TX Hello hash 1: " << tx.getHelloHash(1) << endl;
-            cout << "TX Hello hash 1 length: " << tx.getHelloHash(1).length() << endl;
+            cout << "TX Hello hash 1: " << tx->getHelloHash(1) << endl;
+            cout << "TX Hello hash 1 length: " << tx->getHelloHash(1).length() << endl;
         }
-        tx.setUserCallback(new MyUserCallback(&tx));
-        tx.setAuxSecret(transmAuxSecret, sizeof(transmAuxSecret));
+        tx->setUserCallback(new MyUserCallback());
+        tx->setAuxSecret(transmAuxSecret, sizeof(transmAuxSecret));
+        tx->setSchedulingTimeout(10000);
+        tx->setExpireTimeout(1000000);
+        tx->startRunning();
+        tx->setPayloadFormat(StaticPayloadFormat(sptPCMU));
 
-        tx.setSchedulingTimeout(10000);
-        tx.setExpireTimeout(1000000);
-
-        tx.startRunning();
-
-        tx.setPayloadFormat(StaticPayloadFormat(sptPCMU));
-
-        if (!tx.addDestination(pattern.getReceiverAddress(), pattern.getReceiverPort())) {
+        if (!tx->addDestination(pattern.getReceiverAddress(), pattern.getReceiverPort())) {
             return 1;
         }
-        tx.startZrtp();
+        tx->startZrtp();
 
         // 2 packets per second (packet duration of 500ms)
         uint32 period = 500;
-        uint16 inc = tx.getCurrentRTPClockRate() / 2;
+        uint16 inc = tx->getCurrentRTPClockRate() / 2;
         TimerPort::setTimer(period);
         uint32 i;
         for (i = 0; i < pattern.getPacketsNumber(); i++) {
-            tx.putData(i * inc, PacketsPattern::getPacketData(i), PacketsPattern::getPacketSize(i));
+            tx->putData(i * inc, PacketsPattern::getPacketData(i), PacketsPattern::getPacketSize(i));
             cout << "Sent some data: " << i << endl;
             Thread::sleep(TimerPort::getTimer());
             TimerPort::incTimer(period);
         }
-        tx.putData(i * inc, (unsigned char *) "exit", 5);
+        tx->putData(i * inc, (unsigned char *) "exit", 5);
         Thread::sleep(TimerPort::getTimer());
         return 0;
     }
@@ -635,7 +633,7 @@ public:
     }
 
     int doTest() {
-        ExtZrtpSession rx( /*pattern.getSsrc()+1,*/ pattern.getReceiverAddress(), pattern.getReceiverPort());
+        auto rx = ExtZrtpSession::create( /*pattern.getSsrc()+1,*/ pattern.getReceiverAddress(), pattern.getReceiverPort());
         config->clear();
 
         auto zf = initCache("test_r.zid", zrtpCache);
@@ -663,34 +661,32 @@ public:
         config->addAlgo(SasType, zrtpSasTypes.getByName("B256"));
 
 
-        rx.initialize("test_r.zid", true, config);
+        rx->initialize("test_r.zid", true, config);
         // At this point the Hello hash is available. See ZRTP specification
         // chapter 9.1 for further information when an how to use the Hello
         // hash.
-        int numSupportedVersion = rx.getNumberSupportedVersions();
-        cout << "RX Hello hash 0: " << rx.getHelloHash(0) << endl;
-        cout << "RX Hello hash 0 length: " << rx.getHelloHash(0).length() << endl;
+        int numSupportedVersion = rx->getNumberSupportedVersions();
+        cout << "RX Hello hash 0: " << rx->getHelloHash(0) << endl;
+        cout << "RX Hello hash 0 length: " << rx->getHelloHash(0).length() << endl;
         if (numSupportedVersion > 1) {
-            cout << "RX Hello hash 1: " << rx.getHelloHash(1) << endl;
-            cout << "RX Hello hash 1 length: " << rx.getHelloHash(1).length() << endl;
+            cout << "RX Hello hash 1: " << rx->getHelloHash(1) << endl;
+            cout << "RX Hello hash 1 length: " << rx->getHelloHash(1).length() << endl;
         }
-        rx.setUserCallback(new MyUserCallback(&rx));
-        rx.setAuxSecret(recvAuxSecret, sizeof(recvAuxSecret));
-
-        rx.setSchedulingTimeout(10000);
-        rx.setExpireTimeout(1000000);
-
-        rx.startRunning();
-        rx.setPayloadFormat(StaticPayloadFormat(sptPCMU));
+        rx->setUserCallback(new MyUserCallback());
+        rx->setAuxSecret(recvAuxSecret, sizeof(recvAuxSecret));
+        rx->setSchedulingTimeout(10000);
+        rx->setExpireTimeout(1000000);
+        rx->startRunning();
+        rx->setPayloadFormat(StaticPayloadFormat(sptPCMU));
         // arbitrary number of loops to provide time to start transmitter
-        if (!rx.addDestination(pattern.getSenderAddress(), pattern.getSenderPort())) {
+        if (!rx->addDestination(pattern.getSenderAddress(), pattern.getSenderPort())) {
             return 1;
         }
-        rx.startZrtp();
+        rx->startZrtp();
 
         for (int i = 0; i < 5000; i++) {
             const AppDataUnit *adu;
-            while ((adu = rx.getData(rx.getFirstTimestamp()))) {
+            while ((adu = rx->getData(rx->getFirstTimestamp()))) {
                 cerr << "got some data: " << adu->getData() << endl;
                 if (*adu->getData() == 'e') {
                     delete adu;

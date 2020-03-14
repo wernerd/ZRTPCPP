@@ -142,13 +142,14 @@ ZrtpQueue::initialize(const char *zidFilename, bool autoEnable, std::shared_ptr<
     enableZrtp = autoEnable;
 
     configOwn->setParanoidMode(enableParanoidMode);
+    configOwn->setTrustedMitM(mitmMode);
+    configOwn->setSasSignature(signSas);
 
     if (staticTimeoutProvider == nullptr) {
         staticTimeoutProvider = new zrtp::ZrtpTimeoutProvider();
     }
-    const uint8_t* ownZidFromCache = configOwn->getZidCache()->getZid();
-
-    zrtpEngine = new ZRtp(ownZidFromCache, *(ZrtpCallback*)this, clientIdString, configOwn, mitmMode, signSas);
+    std::shared_ptr<ZrtpCallback> mySelf = shared_from_this();
+    zrtpEngine = new ZRtp(clientIdString, mySelf, configOwn);
 
     synchLeave();
     return ret;

@@ -18,7 +18,7 @@
 #include <cstdlib>
 #include <map>
 #include <zrtpccrtp.h>
-#include <libzrtpcpp/ZrtpUserCallback.h>
+#include <helpers/ZrtpUserCallbackEmpty.h>
 #include <libzrtpcpp/ZrtpConfigure.h>
 #include <zrtp/libzrtpcpp/ZIDCacheFile.h>
 
@@ -110,7 +110,7 @@ static bool signsas = false;
 class ZrtpSendPacketTransmissionTestCB : public Thread, public TimerPort {
 
 private:
-    SymmetricZRTPSession *tx;
+    std::shared_ptr<SymmetricZRTPSession> tx;
     string multiParams;
     string prefix;
     ZRtp *zrtpMaster = nullptr;
@@ -139,7 +139,7 @@ public:
 class ZrtpRecvPacketTransmissionTestCB : public Thread {
 
 private:
-    SymmetricZRTPSession *rx;
+    std::shared_ptr<SymmetricZRTPSession> rx;
     string multiParams;
     string prefix;
     ZRtp *zrtpMaster = nullptr;
@@ -171,7 +171,7 @@ public:
  * implementation of this class just perform return, thus effectively
  * supressing any callback or trigger.
  */
-class MyUserCallback : public ZrtpUserCallback {
+class MyUserCallback : public ZrtpUserCallbackEmpty {
 
 protected:
     static map<int32, std::string *> infoMap;
@@ -183,12 +183,12 @@ protected:
 
     static bool initialized;
 
-    SymmetricZRTPSession *session;
+    SymmetricZRTPSession &session;
 
     std::string prefix;
 
 public:
-    explicit MyUserCallback(SymmetricZRTPSession *s) : session(s), prefix("default: ") {
+    explicit MyUserCallback(SymmetricZRTPSession &s) : session(s), prefix("default: ") {
 
         if (initialized) {
             return;
@@ -215,11 +215,11 @@ public:
 
         warningMap.insert(pair<int32, std::string *>(WarningDHAESmismatch,
                                                      new string(
-                                                             "Commit contains an AES256 cipher but does not offer a Diffie-Helman 4096")));
+                                                             "Commit contains an AES256 cipher but does not offer a Diffie-Hellman 4096")));
         warningMap.insert(pair<int32, std::string *>(WarningGoClearReceived, new string("Received a GoClear message")));
         warningMap.insert(pair<int32, std::string *>(WarningDHShort,
                                                      new string(
-                                                             "Hello offers an AES256 cipher but does not offer a Diffie-Helman 4096")));
+                                                             "Hello offers an AES256 cipher but does not offer a Diffie-Hellman 4096")));
         warningMap.insert(
                 pair<int32, std::string *>(WarningNoRSMatch, new string("No retained secret matches - verify SAS")));
         warningMap.insert(pair<int32, std::string *>(WarningCRCmismatch, new string(
@@ -297,33 +297,33 @@ public:
                 ZRtp *zrtpMaster = nullptr;
                 std::string str;
                 if (zrxcbMulti != nullptr) {
-                    str = session->getMultiStrParams(&zrtpMaster);
+                    str = session.getMultiStrParams(&zrtpMaster);
                     zrxcbMulti->setMultiStrParams(str, zrtpMaster);
                     fprintf(stderr, "Master (test r): %p\n", static_cast<void *>(zrtpMaster));
                     zrxcbMulti->start();
                 }
                 if (ztxcbMulti != nullptr) {
-                    str = session->getMultiStrParams(&zrtpMaster);
+                    str = session.getMultiStrParams(&zrtpMaster);
                     ztxcbMulti->setMultiStrParams(str, zrtpMaster);
                     fprintf(stderr, "Master (test t): %p\n", static_cast<void *>(zrtpMaster));
                     ztxcbMulti->start();
                 }
                 if (sender) {
                     if (mitm && !enroll) {  // sender now acts as trusted PBX in normal mode, not in enrollement service
-                        std::string render = session->getSasType();
+                        std::string render = session.getSasType();
                         for (unsigned char &i : sasHash) {
                             i = 0;
                         }
                         if (untrusted) {    // treat receiver as non-enrolled receiver
                             cout << prefix << "send SAS relay to non-enrolled receiver" << endl;
-                            session->sendSASRelayPacket(sasHash, render);
+                            session.sendSASRelayPacket(sasHash, render);
                         } else {
                             sasHash[0] = 0x11;
                             sasHash[1] = 0x22;
                             sasHash[2] = 0x33;
                             sasHash[4] = 0x44;
                             cout << prefix << "send SAS relay to enrolled receiver" << endl;
-                            session->sendSASRelayPacket(sasHash, render);
+                            session.sendSASRelayPacket(sasHash, render);
                         }
                     }
                 }
@@ -377,7 +377,7 @@ public:
     void zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info) override {
         string *msg = enrollMap[info];
         cout << prefix << *msg << endl;
-        session->acceptEnrollment(true);
+        session.acceptEnrollment(true);
     }
 
     void zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment info) override {
@@ -387,7 +387,7 @@ public:
 
     void secureOn(std::string cipher) override {
         cout << prefix << "Using cipher:" << cipher << endl;
-        cout << prefix << "peer hello hash: " << session->getPeerHelloHash() << endl;
+        cout << prefix << "peer hello hash: " << session.getPeerHelloHash() << endl;
     }
 
     void showSAS(std::string sas, bool verified) override {
@@ -421,12 +421,12 @@ public:
             sign[10] = 'I';
             sign[11] = 'T';
         }
-        cout << prefix << "set signature data result: " << session->setSignatureData(sign, 12) << endl;
+        cout << prefix << "set signature data result: " << session.setSignatureData(sign, 12) << endl;
     }
 
     bool checkSASSignature(uint8_t *sasHash) override {
         cout << prefix << "check signature" << endl;
-        const uint8_t *sign = session->getSignatureData();
+        const uint8_t *sign = session.getSignatureData();
         cout << prefix << "signature: " << sign << endl;
         return true;
     }
@@ -449,7 +449,7 @@ class MyUserCallbackMulti : public MyUserCallback {
 
 public:
 
-    explicit MyUserCallbackMulti(SymmetricZRTPSession *s) : MyUserCallback(s) {
+    explicit MyUserCallbackMulti(SymmetricZRTPSession &s) : MyUserCallback(s) {
     }
 
     void showMessage(GnuZrtpCodes::MessageSeverity sev, int32_t subCode) override {
@@ -521,25 +521,29 @@ initCache(const char *zidFilename, std::shared_ptr<ZIDCache> cache) {
     return zf;
 }
 
+// factory function that perfect-forwards args to a private ctor
+template<typename ... T>
+static std::shared_ptr<SymmetricZRTPSession> create(T&& ... t) {
+    return std::shared_ptr<SymmetricZRTPSession>(new SymmetricZRTPSession(std::forward<T>(t)...));
+}
+
 int ZrtpSendPacketTransmissionTestCB::doTest() {
 
     std::shared_ptr<ZrtpConfigure> config;
 
     MyUserCallback *mcb;
     if (!multiParams.empty()) {
-        tx = new SymmetricZRTPSession(pattern.getDestinationAddress(),
-                                      pattern.getDestinationPort() + 2 + 10);
+        tx = create(pattern.getDestinationAddress(), pattern.getDestinationPort() + 2 + 10);
 
         tx->initialize("test_t.zid", true, config);
         // tx->initialize("test_t.zid", true);
         tx->setMultiStrParams(multiParams, zrtpMaster);
 
         prefix = "TX Multi: ";
-        mcb = new MyUserCallbackMulti(tx);
+        mcb = new MyUserCallbackMulti(*tx);
         mcb->setPrefix(prefix);
     } else {
-        tx = new SymmetricZRTPSession(pattern.getDestinationAddress(),
-                                      pattern.getDestinationPort() + 2);
+        tx = create(pattern.getDestinationAddress(), pattern.getDestinationPort() + 2);
         if (mitm) {                      // Act as trusted MitM - could be enrolled
             tx->setMitmMode(true);
         }
@@ -548,11 +552,11 @@ int ZrtpSendPacketTransmissionTestCB::doTest() {
         tx->initialize("test_t.zid", true, config);
         // tx->initialize("test_t.zid", true);
 
-        if (enroll)                     // act as PBX enrollement service
+        if (enroll)                     // act as PBX enrollment service
             tx->setEnrollmentMode(true);
 
         prefix = "TX: ";
-        mcb = new MyUserCallback(tx);
+        mcb = new MyUserCallback(*tx);
         mcb->setPrefix(prefix);
     }
     // At this point the Hello hash is available. See ZRTP specification
@@ -601,7 +605,6 @@ int ZrtpSendPacketTransmissionTestCB::doTest() {
     }
     tx->putData(i * inc, (unsigned char *) "exit", 5);
     Thread::sleep(TimerPort::getTimer());
-    delete tx;
     return 0;
 }
 
@@ -612,17 +615,17 @@ int ZrtpRecvPacketTransmissionTestCB::doTest() {
 
     MyUserCallback *mcb;
     if (!multiParams.empty()) {
-        rx = new SymmetricZRTPSession(pattern.getDestinationAddress(), pattern.getDestinationPort() + 10);
+        rx = create(pattern.getDestinationAddress(), pattern.getDestinationPort() + 10);
 
         rx->initialize("test_r.zid", true, config);
         // rx->initialize("test_r.zid", true);
         rx->setMultiStrParams(multiParams, zrtpMaster);
 
         prefix = "RX Multi: ";
-        mcb = new MyUserCallbackMulti(rx);
+        mcb = new MyUserCallbackMulti(*rx);
         mcb->setPrefix(prefix);
     } else {
-        rx = new SymmetricZRTPSession(pattern.getDestinationAddress(), pattern.getDestinationPort());
+        rx = create(pattern.getDestinationAddress(), pattern.getDestinationPort());
         auto zf = initCache("test_r.zid", zrtpCache);
         if (!zf) {
             return -1;
@@ -647,7 +650,7 @@ int ZrtpRecvPacketTransmissionTestCB::doTest() {
 //            rx->initialize("test_r.zid", true);
 
         prefix = "RX: ";
-        mcb = new MyUserCallback(rx);
+        mcb = new MyUserCallback(*rx);
         mcb->setPrefix(prefix);
     }
     // At this point the Hello hash is available. See ZRTP specification
@@ -684,14 +687,12 @@ int ZrtpRecvPacketTransmissionTestCB::doTest() {
             cerr << prefix << "got some data: " << adu->getData() << endl;
             if (*adu->getData() == 'e') {
                 delete adu;
-                delete rx;
                 return 0;
             }
             delete adu;
         }
         Thread::sleep(70);
     }
-    delete rx;
     return 0;
 }
 
