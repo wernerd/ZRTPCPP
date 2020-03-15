@@ -496,6 +496,7 @@ int CtZrtpStream::isSecure() {
             return ::snprintf(p, maxLen, "%" PRId64, _I);}
 
 int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
+    extern char zrtpBuildInfo[];
 
 //     if ((sdes == nullptr /*&& !started*/) || isStopped || !isSecure())
 //         return 0;

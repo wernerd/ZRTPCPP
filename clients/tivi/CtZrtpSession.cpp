@@ -41,6 +41,7 @@ static std::mutex sessionLock;
 
 const char *getZrtpBuildInfo()
 {
+    extern char zrtpBuildInfo[];
     return zrtpBuildInfo;
 }
 

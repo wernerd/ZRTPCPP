@@ -320,7 +320,6 @@ set(zrtp_src_no_cache
         ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketSASrelay.cpp
         ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketRelayAck.cpp
         ${CMAKE_SOURCE_DIR}/zrtp/ZrtpStateClass.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZrtpTextData.cpp
         ${CMAKE_SOURCE_DIR}/zrtp/ZrtpConfigure.cpp
         ${CMAKE_SOURCE_DIR}/zrtp/ZrtpCWrapper.cpp
         ${CMAKE_SOURCE_DIR}/zrtp/Base32.cpp
