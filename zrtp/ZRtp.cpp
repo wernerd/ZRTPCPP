@@ -1000,8 +1000,9 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
         }
     }
 #endif
-    if (saveZidRecord)
+    if (saveZidRecord) {
         getZidCache()->saveRecord(*zidRec);
+    }
 
     // Encrypt and HMAC with Initiator's key - we are Initiator here
     hmlen = (zrtpConfirm2.getLength() - (uint)9) * ZRTP_WORD_SIZE;
@@ -1164,8 +1165,9 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
         }
         // save new RS1, this inherits the verified flag from old RS1
         zidRec->setNewRs1(newRs1.data());
-        if (saveZidRecord)
+        if (saveZidRecord) {
             getZidCache()->saveRecord(*zidRec);
+        }
 
 #ifdef ZRTP_SAS_RELAY_SUPPORT
         // Ask for enrollment only if enabled via configuration and the
@@ -1955,7 +1957,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord)
         if (rs1Valid || rs2Valid) {            // but valid RS records in cache
             sendInfo(Warning, WarningNoExpectedRSMatch);
             zidRecord.resetSasVerified();
-            saveZidRecord = false;             // Don't save RS until user verfied/confirmed SAS
+            saveZidRecord = false;             // Don't save RS until user verified/confirmed SAS
         }
         else {                                 // No valid RS record in cache
             sendInfo(Warning, WarningNoRSMatch);
@@ -2505,8 +2507,9 @@ void ZRtp::setRs2Valid() {
 
     if (zidRec != nullptr) {
         zidRec->setRs2Valid();
-        if (saveZidRecord)
+        if (saveZidRecord) {
             getZidCache()->saveRecord(*zidRec);
+        }
     }
 }
 

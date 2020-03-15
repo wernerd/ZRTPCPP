@@ -979,9 +979,10 @@ private:
     /**
      * Save record
      * 
-     * If false don't save record until user verified and confirmed the SAS.
+     * If false don't save record until user verified and confirmed the SAS after a cache mismatch.
+     * See RFC6189, sections 4.6.1 and 4.6.1.1 and explanation.
      */
-    bool saveZidRecord = false;
+    bool saveZidRecord = true;
     /**
      * Random IV data to encrypt the confirm data, 128 bit for AES
      */
@@ -1014,7 +1015,7 @@ private:
      * Enable or disable paranoid mode.
      *
      * The Paranoid mode controls the behaviour and handling of the SAS verify flag. If
-     * Paranoid mode is set to flase then ZRtp applies the normal handling. If Paranoid
+     * Paranoid mode is set to false then ZRtp applies the normal handling. If Paranoid
      * mode is set to true then the handling is:
      *
      * <ul>
