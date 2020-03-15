@@ -21,6 +21,7 @@
 
 #include <zrtpccrtp.h>
 #include <helpers/ZrtpUserCallbackEmpty.h>
+#include <helpers/ZrtpCodeToString.h>
 #include <logging/ZrtpLogging.h>
 #include <cryptcommon/sidhp751/keymanagement/SidhKeyManagement.h>
 #include <common/osSpecifics.h>
@@ -77,6 +78,8 @@ const unsigned char *PacketsPattern::data[] = {
 };
 
 PacketsPattern pattern;
+
+static ZrtpCodeToString codeToString;
 
 class ExtZrtpSession : public SymmetricZRTPSession { // , public std::enable_shared_from_this<ExtZrtpSession> {
 //     ExtZrtpSession(InetMcastAddress& ima, tpport_t port) :
@@ -318,153 +321,15 @@ public:
  */
 class MyUserCallback : public ZrtpUserCallbackEmpty {
 
-    static map<int32, std::string *> infoMap;
-    static map<int32, std::string *> warningMap;
-    static map<int32, std::string *> severeMap;
-    static map<int32, std::string *> zrtpMap;
-
-    static bool initialized;
-
 public:
-    explicit MyUserCallback()  {
-        if (initialized) {
-            return;
-        }
-        infoMap.insert(pair<int32, std::string *>(InfoHelloReceived, new string("Hello received, preparing a Commit")));
-        infoMap.insert(
-                pair<int32, std::string *>(InfoCommitDHGenerated, new string("Commit: Generated a public DH key")));
-        infoMap.insert(pair<int32, std::string *>(InfoRespCommitReceived,
-                                                  new string("Responder: Commit received, preparing DHPart1")));
-        infoMap.insert(
-                pair<int32, std::string *>(InfoDH1DHGenerated, new string("DH1Part: Generated a public DH key")));
-        infoMap.insert(pair<int32, std::string *>(InfoInitDH1Received,
-                                                  new string("Initiator: DHPart1 received, preparing DHPart2")));
-        infoMap.insert(pair<int32, std::string *>(InfoRespDH2Received,
-                                                  new string("Responder: DHPart2 received, preparing Confirm1")));
-        infoMap.insert(pair<int32, std::string *>(InfoInitConf1Received,
-                                                  new string("Initiator: Confirm1 received, preparing Confirm2")));
-        infoMap.insert(pair<int32, std::string *>(InfoRespConf2Received,
-                                                  new string("Responder: Confirm2 received, preparing Conf2Ack")));
-        infoMap.insert(pair<int32, std::string *>(InfoRSMatchFound,
-                                                  new string("At least one retained secrets matches - security OK")));
-        infoMap.insert(pair<int32, std::string *>(InfoSecureStateOn, new string("Entered secure state")));
-        infoMap.insert(pair<int32, std::string *>(InfoSecureStateOff, new string("No more security for this session")));
-
-        warningMap.insert(pair<int32, std::string *>(WarningDHAESmismatch,
-                                                     new string(
-                                                             "Commit contains an AES256 cipher but does not offer a Diffie-Helman 4096")));
-        warningMap.insert(pair<int32, std::string *>(WarningGoClearReceived, new string("Received a GoClear message")));
-        warningMap.insert(pair<int32, std::string *>(WarningDHShort,
-                                                     new string(
-                                                             "Hello offers an AES256 cipher but does not offer a Diffie-Helman 4096")));
-        warningMap.insert(
-                pair<int32, std::string *>(WarningNoRSMatch, new string("No retained secret matches - verify SAS")));
-        warningMap.insert(pair<int32, std::string *>(WarningCRCmismatch, new string(
-                "Internal ZRTP packet checksum mismatch - packet dropped")));
-        warningMap.insert(pair<int32, std::string *>(WarningSRTPauthError, new string(
-                "Dropping packet because SRTP authentication failed!")));
-        warningMap.insert(pair<int32, std::string *>(WarningSRTPreplayError,
-                                                     new string("Dropping packet because SRTP replay check failed!")));
-        warningMap.insert(pair<int32, std::string *>(WarningNoExpectedRSMatch,
-                                                     new string("No RS match found - but ZRTP expected a match.")));
-        warningMap.insert(pair<int32, std::string *>(WarningNoExpectedAuxMatch,
-                                                     new string("The auxlliary secrets do not match.")));
-
-        severeMap.insert(
-                pair<int32, std::string *>(SevereHelloHMACFailed, new string("Hash HMAC check of Hello failed!")));
-        severeMap.insert(
-                pair<int32, std::string *>(SevereCommitHMACFailed, new string("Hash HMAC check of Commit failed!")));
-        severeMap.insert(
-                pair<int32, std::string *>(SevereDH1HMACFailed, new string("Hash HMAC check of DHPart1 failed!")));
-        severeMap.insert(
-                pair<int32, std::string *>(SevereDH2HMACFailed, new string("Hash HMAC check of DHPart2 failed!")));
-        severeMap.insert(pair<int32, std::string *>(SevereCannotSend,
-                                                    new string("Cannot send data - connection or peer down?")));
-        severeMap.insert(
-                pair<int32, std::string *>(SevereProtocolError, new string("Internal protocol error occured!")));
-        severeMap.insert(pair<int32, std::string *>(SevereNoTimer, new string(
-                "Cannot start a timer - internal resources exhausted?")));
-        severeMap.insert(pair<int32, std::string *>(SevereTooMuchRetries,
-                                                    new string(
-                                                            "Too much retries during ZRTP negotiation - connection or peer down?")));
-
-        zrtpMap.insert(pair<int32, std::string *>(MalformedPacket,
-                                                  new string("Malformed packet (CRC OK, but wrong structure)")));
-        zrtpMap.insert(pair<int32, std::string *>(CriticalSWError, new string("Critical software error")));
-        zrtpMap.insert(pair<int32, std::string *>(UnsuppZRTPVersion, new string("Unsupported ZRTP version")));
-        zrtpMap.insert(pair<int32, std::string *>(HelloCompMismatch, new string("Hello components mismatch")));
-        zrtpMap.insert(pair<int32, std::string *>(UnsuppHashType, new string("Hash type not supported")));
-        zrtpMap.insert(pair<int32, std::string *>(UnsuppCiphertype, new string("Cipher type not supported")));
-        zrtpMap.insert(pair<int32, std::string *>(UnsuppPKExchange, new string("Public key exchange not supported")));
-        zrtpMap.insert(pair<int32, std::string *>(UnsuppSRTPAuthTag, new string("SRTP auth. tag not supported")));
-        zrtpMap.insert(pair<int32, std::string *>(UnsuppSASScheme, new string("SAS scheme not supported")));
-        zrtpMap.insert(
-                pair<int32, std::string *>(NoSharedSecret, new string("No shared secret available, DH mode required")));
-        zrtpMap.insert(
-                pair<int32, std::string *>(DHErrorWrongPV, new string("DH Error: bad pvi or pvr ( == 1, 0, or p-1)")));
-        zrtpMap.insert(pair<int32, std::string *>(DHErrorWrongHVI, new string("DH Error: hvi != hashed data")));
-        zrtpMap.insert(
-                pair<int32, std::string *>(SASuntrustedMiTM, new string("Received relayed SAS from untrusted MiTM")));
-        zrtpMap.insert(pair<int32, std::string *>(ConfirmHMACWrong, new string("Auth. Error: Bad Confirm pkt HMAC")));
-        zrtpMap.insert(pair<int32, std::string *>(NonceReused, new string("Nonce reuse")));
-        zrtpMap.insert(pair<int32, std::string *>(EqualZIDHello, new string("Equal ZIDs in Hello")));
-        zrtpMap.insert(
-                pair<int32, std::string *>(GoCleatNotAllowed, new string("GoClear packet received, but not allowed")));
-
-        initialized = true;
-    }
+    explicit MyUserCallback()  = default;
 
     void showMessage(GnuZrtpCodes::MessageSeverity sev, int32_t subCode) override {
-        string *msg;
-        if (sev == Info) {
-            msg = infoMap[subCode];
-            if (msg != nullptr) {
-                cout << *msg << endl;
-            }
-        }
-        if (sev == Warning) {
-            msg = warningMap[subCode];
-            if (msg != nullptr) {
-                cout << *msg << endl;
-            }
-        }
-        if (sev == Severe) {
-            msg = severeMap[subCode];
-            if (msg != nullptr) {
-                cout << *msg << endl;
-            }
-        }
-        if (sev == ZrtpError) {
-            if (subCode < 0) {  // received an error packet from peer
-                subCode *= -1;
-                cout << "Received error packet: ";
-            } else {
-                cout << "Sent error packet: ";
-            }
-            msg = zrtpMap[subCode];
-            if (msg != nullptr) {
-                cout << *msg << endl;
-            }
-        }
+        cout << codeToString.getStringForCode(sev, subCode) << '\n';
     }
 
     void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity sev, int32_t subCode) override {
-        string *msg;
-        if (sev == ZrtpError) {
-            if (subCode < 0) {  // received an error packet from peer
-                subCode *= -1;
-                cout << "Received error packet: ";
-            } else {
-                cout << "Sent error packet: ";
-            }
-            msg = zrtpMap[subCode];
-            if (msg != nullptr) {
-                cout << *msg << endl;
-            }
-        } else {
-            msg = severeMap[subCode];
-            cout << *msg << endl;
-        }
+        cout << codeToString.getStringForCode(sev, subCode) << '\n';
     }
 
     void secureOn(std::string cipher) override {
@@ -473,16 +338,8 @@ public:
 
     void showSAS(std::string sas, bool verified) override {
         cout << "SAS is: " << sas << endl;
-
     }
 };
-
-map<int32, std::string *>MyUserCallback::infoMap;
-map<int32, std::string *>MyUserCallback::warningMap;
-map<int32, std::string *>MyUserCallback::severeMap;
-map<int32, std::string *>MyUserCallback::zrtpMap;
-
-bool MyUserCallback::initialized = false;
 
 static unsigned char transmAuxSecret[] = {1,2,3,4,5,6,7,8,9,0};
 

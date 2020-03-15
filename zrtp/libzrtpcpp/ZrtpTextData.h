@@ -22,7 +22,7 @@
 #define _ZRTPTEXTDATA_H_
 
 /**
- * @file ZrtpTextData.h
+ * @file
  * @brief The ZRTP ASCII texts - extern references
  *  
  * @ingroup ZRTP
