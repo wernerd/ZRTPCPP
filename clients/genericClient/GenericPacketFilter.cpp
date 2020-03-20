@@ -129,12 +129,12 @@ GenericPacketFilter::prepareToSendRtp(GenericPacketFilter& thisFilter, const uin
     if ((totalLen) > maxZrtpSize)
         return protocolData;
 
-    if (thisFilter.getZrtpSequenceNo() == 0) {
+    if (thisFilter.zrtpSequenceNo() == 0) {
         uint16_t seqNumber = 0;
         while (seqNumber == 0) {
             ZrtpRandom::getRandomData((uint8_t *) &seqNumber, 2);
         }
-        thisFilter.setZrtpSequenceNo(seqNumber & 0x7fffU);
+        thisFilter.zrtpSequenceNo(seqNumber & 0x7fffU);
     }
     auto ptr = std::make_shared<secUtilities::SecureArrayFlex>(totalLen);
     /* Get some handy pointers */
@@ -144,12 +144,12 @@ GenericPacketFilter::prepareToSendRtp(GenericPacketFilter& thisFilter, const uin
     // set up fixed ZRTP header - simulates RTP
     ptr->at(0) = 0x10;                             // invalid RTP version - refer to RFC6189
     ptr->at(1) = 0;
-    auto seqNumber = thisFilter.getZrtpSequenceNo();
+    auto seqNumber = thisFilter.zrtpSequenceNo();
     pus[1] = zrtpHtons(seqNumber++);
-    thisFilter.setZrtpSequenceNo(seqNumber);
+    thisFilter.zrtpSequenceNo(seqNumber);
 
     pui[1] = zrtpHtonl(ZRTP_MAGIC);
-    pui[2] = zrtpHtonl(thisFilter.getOwnRtpSsrc());      // ownSSRC is stored in host order
+    pui[2] = zrtpHtonl(thisFilter.ownRtpSsrc());      // ownSSRC is stored in host order
 
     memcpy(ptr->data()+12, zrtpData, length);       // Copy ZRTP message data after the header data
 

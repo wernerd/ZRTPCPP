@@ -27,44 +27,40 @@
 
 namespace GnuZrtpCodes {
 /**
- * \namespace GnuZrtpCodes
- * 
+ *
  * This enum defines the information message severity.
  *
  * The ZRTP implementation issues information messages to inform the user
  * about ongoing processing, unusual behavior, or alerts in case of severe
  * problems. Each main severity code a number of sub-codes exist that
  * specify the exact nature of the problem. 
- *
- * An application gets message severity codes and the associated sub-codes
- * via the ZrtpUserCallback#showMessage method.
- * 
- * The severity levels and their meaning are:
- *
- * <dl>
- * <dt>Info</dt> <dd>keeps the user informed about ongoing processing and
- *     security setup. The enumeration InfoCodes defines the subcodes.
- * </dd>
- * <dt>Warning</dt> <dd>is an information about some security issues, e.g. if
- *     an AES 256 encryption is request but only DH 3072 as public key scheme
- *     is supported. ZRTP will establish a secure session (SRTP). The
- *     enumeration WarningCodes defines the sub-codes.
- * </dd>
- * <dt>Severe</dt> <dd>is used if an error occured during ZRTP protocol usage.
- *     In case of <em>Severe</em> ZRTP will <b>not</b> establish a secure session.
- *     The enumeration SevereCodes defines the sub-codes.
- * </dd>
- * <dt>Zrtp</dt> <dd>shows a ZRTP security problem. Refer to the enumeration
- *     ZrtpErrorCodes for sub-codes. GNU ZRTP of course will <b>not</b> 
- *     establish a secure session.
- * </dd>
- * </dl>
- *
  */
 enum MessageSeverity {
+    /**
+     * Information about ongoing processing and security setup.
+     * The enumeration GnuZrtpCodes::InfoCodes defines the sub-codes.
+     */
     Info = 1,
+
+    /** information about some minor security issues.
+     * For example if an AES 256 encryption is requested but only DH 3072
+     * as public key scheme is supported. ZRTP continues key negotiation,
+     * however application may warn the user to change/adapt ZrtpConfiguration.
+     * The enumeration GnuZrtpCodes::WarningCodes defines the sub-codes. */
     Warning,
+
+    /**
+     * An error occurred during ZRTP key negotiation.
+     * In case of _Severe_ ZRTP will **not** establish a secure session.
+     * The enumeration GnuZrtpCodes::SevereCodes defines the sub-codes.
+     */
     Severe,
+
+    /**
+     * Reports a ZRTP security problem.
+     * Refer to the enumeration GnuZrtpCodes::ZrtpErrorCodes for sub-codes.
+     * ZRTP does **not** establish a secure session.
+     */
     ZrtpError
 };
 

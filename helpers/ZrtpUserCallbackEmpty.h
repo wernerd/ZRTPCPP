@@ -50,6 +50,7 @@ public:
      *    Name and mode of cipher used to encrypt the SRTP stream
      */
     void virtual secureOn(std::string cipher) {}
+
     /**
      * Inform user interface that security is not active any more.
      *

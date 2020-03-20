@@ -80,8 +80,33 @@ public:
      enum PacketFilterReturnCodes {
          Success = 1,
          NoConfiguration = -10,
-
      };
+
+     /**
+      * @brief Generic filter reports state changes to the caller/application.
+      *
+      * ZRTP performs its operation in several steps:
+      *  - Discovery: check if the other party supports ZRTP
+      *  - Key negotiation: exchange data and parameters to negotiate keys and algorithms
+      *  - Secure: key negotiation was successful and keys are ready to set up encrypted communication
+      *
+      * During key negotiation ZRTP may detect Error or warning conditions/states.
+      *
+      *  Generic filter supports two levels of reporting:
+      *   - report error, warning, and major state changes only
+      *   - report all state changes, many of them are informational only
+      *
+      *  The callback function receives state details in `StateData` structure.
+      */
+     enum ZrtpAppStates {
+         InfoOnly = 1,              //!< This state change is informational
+         Warning,                   //!< A minor problem detected
+         Error,                     //!< An error occurred, `StateData` contains detail information
+         Discovery,                 //!< ZRTP entered its discovery state, major state
+         KeyNegotiation,            //!< ZRTP entered the key negotiation state, major state
+         Secure,                    //!< ZRTP switched to secure state, major state
+     };
+
      /**
       * @brief Returned by the `PrepareToSendFunction` implementation.
       */
@@ -89,6 +114,36 @@ public:
         std::shared_ptr<void> ptr = nullptr;    //!< Pointer to prepared data
         int32_t length = 0;                     //!< Length of prepare data in bytes
     };
+
+    /**
+     * @brief ZRTP state change detail information.
+     *
+     * For all state changes except errors or warnings StateData::severity is set to GnuZrtpCodes::Info.
+     * This is also true for the major state changes because these are not errors or warnings.
+     *
+     * StateData::subCode contains GnuZrtpCodes::InfoCodes and StateData::infoText holds a human readable (english)
+     * text which describes the state, warning or error. Application may use this text for logging.
+     *
+     * When changing to GenericPacketFilter::Secure state then generic filter sets StateData::infoText to the
+     * computed Short Authentication String (SAS, may use UTF-8 encoding if SAS contains Emojis). An application
+     * may also use getComputedSas() to get the SAS at any time after ZRTP entered GenericPacketFilter::Secure state.
+     *
+     * In all other cases StateData::severity is set to either GnuZrtpCodes::Warning, GnuZrtpCodes::Severe, or GnuZrtpCodes::ZrtpError.
+     *
+     * @sa ZrtpAppStates
+     * @sa StateChangeFunction
+     * @sa GnuZrtpCodes::MessageSeverity
+     * @sa GnuZrtpCodes::InfoCodes
+     * @sa GnuZrtpCodes::WarningCodes
+     * @sa GnuZrtpCodes::SevereCodes
+     * @sa GnuZrtpCodes::ZrtpErrorCodes
+     */
+    struct StateData {
+        GnuZrtpCodes::MessageSeverity severity; //!< Contains a MessageSeverity::MessageSeverity code
+        int32_t subCode;
+        std::string &infoText;
+    };
+    using StateDataUnique = std::unique_ptr<StateData>;
 
     /**
      * @brief Signature of ZRTP packet check function.
@@ -132,7 +187,7 @@ public:
     /**
      * @brief Callback function to actually send the packet.
      *
-     * This is a requiered callback fcuntion. The GenericPacketFilter does not implement
+     * This is a required callback function. The GenericPacketFilter does not implement
      * a functions to send data using a transport protocol.
      *
      * @param[in] protocolData Contains pointer to packet data and its length. Same data as returned
@@ -142,6 +197,16 @@ public:
      *
      */
     using DoSendFunction = std::function<bool(ProtocolData& protocolData)>;
+
+    /**
+     * @brief ZRTP state change callback function.
+     *
+     * Generic filter calls this function to report state changes during ZRTP key negotiation.
+     *
+     * @sa ZrtpAppStates
+     * @sa StateData
+     */
+    using StateChangeFunction = std::function<void(ZrtpAppStates state, StateDataUnique stateData)>;
 
     /**
      * @brief Prepare a RTP packet that contains ZRTP data.
@@ -157,7 +222,8 @@ public:
      * @param[in] length length of the ZRTP raw data including space for CRC (the last `CRC_SIZE` bytes)
      * @return ProtocolData structure, `ptr` holds a `secUtilities::SecureArrayFlex` instance
      */
-    static ProtocolData prepareToSendRtp(GenericPacketFilter& thisFilter, uint8_t const *zrtpData, int32_t length);
+    static ProtocolData
+    prepareToSendRtp(GenericPacketFilter& thisFilter, uint8_t const *zrtpData, int32_t length);
 
     /**
      * @brief Check if an RTP packet contains valid ZRTP data.
@@ -172,7 +238,8 @@ public:
      * @param[out] ssrc Returns the other party's RTP SSRC value in host order
      * @return DataCheckResult.
      */
-    static DataCheckResult checkRtpData(uint8_t const * packetData, size_t packetLength, size_t & offset, uint32_t & ssrc);
+    static DataCheckResult
+    checkRtpData(uint8_t const * packetData, size_t packetLength, size_t & offset, uint32_t & ssrc);
 
     /**
      * @brief Create a GenericPacketFilter.
@@ -231,7 +298,7 @@ public:
      * @return reference of the current instance.
      */
     virtual GenericPacketFilter&
-    setPrepareToSendFunction(PrepareToSendFunction pTS) { prepareToSend = pTS; return *this; }
+    onPrepareToSend(PrepareToSendFunction pTS) { prepareToSend = pTS; return *this; }
 
     /**
      * @brief Set do send callback function.
@@ -242,7 +309,7 @@ public:
      * @return reference of the current instance.
      */
     virtual GenericPacketFilter&
-    setDoSendFunction(DoSendFunction dsf) { doSend = dsf; return *this; }
+    onDoSend(DoSendFunction dsf) { doSend = dsf; return *this; }
 
     /**
      * @brief Set own RTP SSRC.
@@ -253,77 +320,159 @@ public:
      * @return reference of the current instance.
      */
     virtual GenericPacketFilter&
-    setOwnRtpSsrc(uint32_t ssrc) { ownSSRC = ssrc; return *this; }
+    ownRtpSsrc(uint32_t ssrc) { ownSSRC = ssrc; return *this; }
+
+    /**
+      * @brief Enable SRTP processing.
+      *
+      * @param[in] yesNo If set to `true` GenericPacketFilter sets up an SRTP handler, manages keys and
+      *        application can forward packet to encrypt or decrypt.
+      * @return reference of the current instance.
+      */
+    virtual GenericPacketFilter&
+    processSrtp(bool yesNo) { doProcessSrtp = yesNo; return *this; }
+
+    /**
+     * @brief Current value of `processSrtp`.
+     *
+     * @return Value of `processSrtp`.
+     */
+    virtual bool
+    processSrtp() const { return doProcessSrtp; }
+
+    /**
+     * @brief Set to enable full state reports, including Info states.
+     *
+     * Default is to report only error, warning and major states.
+     *
+     * @param[in] yesNo If set to `true` GenericPacketFilter reports any state changes which include Info states.
+     * @return reference of the current instance.
+     */
+    virtual GenericPacketFilter&
+    allStateReports(bool yesNo) { reportAllStates = yesNo; return *this; }
+
+    /**
+     * @brief Set ZRTP state change callback.
+     *
+     * If this function is not set, caller/application does not receive any state changes.
+     * It's strongly advised to set this callback and act on error, warning and possibly
+     * major state changes.
+     *
+     * @param[in] stateHandlerFunction callback function which receives state changes
+     * @return reference of the current instance.
+     */
+    virtual GenericPacketFilter&
+    onStateReport(StateChangeFunction stateHandlerFunction) { stateHandler = stateHandlerFunction; return *this; }
+
+    /**
+     * @brief Get the SAS (Short Authentication String).
+     *
+     * Generic filter also stores the SAS in `StateData::infoText` when changing to `Secure` state.
+     *
+     * @return Computed SAS, ready to compare with other user.
+     */
+    virtual std::string const &
+    getComputedSas() const { return computedSas; }
+
+    /**
+     * @brief Get the cipher information.
+     *
+     * Information about negotiated cipher, hash algorithm, and SRTP authetication length and algorithm.
+     *
+     * @return Cipher information.
+     */
+    virtual std::string const &
+    getCipherInfo() const { return cipherInfo; }
 
     /**
      * @brief Get own RTP SSRC.
      *
      * @return Own SSRC in host order.
      */
-    virtual uint32_t getOwnRtpSsrc() const { return ownSSRC; }
+    virtual uint32_t
+    ownRtpSsrc() const { return ownSSRC; }
 
     /**
     * @brief Get other party's RTP SSRC.
     *
     * @return Other party's (peer's) SSRC in host order.
     */
-    virtual uint32_t getPeerRtpSsrc() const { return peerSSRC; }
+    virtual uint32_t
+    peerRtpSsrc() const { return peerSSRC; }
 
     /**
      * @brief Set ZRTP packet sequence number.
      *
      * @param[in] sequence number in host order
      */
-    virtual void setZrtpSequenceNo(uint16_t sequence) { senderZrtpSeqNo = sequence; }
+    virtual void
+    zrtpSequenceNo(uint16_t sequence) { senderZrtpSeqNo = sequence; }
 
     /**
      * @brief Get ZRTP packet sequence number.
      * @return sequence number in host order
      */
-    virtual uint16_t getZrtpSequenceNo() const { return senderZrtpSeqNo; }
+    virtual uint16_t
+    zrtpSequenceNo() const { return senderZrtpSeqNo; }
 
     /*
      * The following methods implement the GNU ZRTP callback interface.
      * See file ZrtpCallback.h
      */
-    int32_t sendDataZRTP(const unsigned char* data, int32_t length) override;
+    int32_t
+    sendDataZRTP(const unsigned char* data, int32_t length) override;
 
-    int32_t activateTimer(int32_t time) override;
+    int32_t
+    activateTimer(int32_t time) override;
 
-    int32_t cancelTimer() override;
+    int32_t
+    cancelTimer() override;
 
-    void sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) override {}
+    void
+    sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) override {}
 
-    bool srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part) override  {}
+    bool
+    srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part) override  { return true; }
 
-    void srtpSecretsOff(EnableSecurity part) override  {}
+    void
+    srtpSecretsOff(EnableSecurity part) override  {}
 
-    void srtpSecretsOn(std::string c, std::string s, bool verified) override {}
+    void
+    srtpSecretsOn(std::string c, std::string s, bool verified) override {}
 
-    void handleGoClear() override;
+    void
+    handleGoClear() override;
 
-    void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) override {}
+    void
+    zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) override {}
 
-    void zrtpNotSuppOther() override  {}
+    void
+    zrtpNotSuppOther() override  {}
 
-    void synchEnter() override { syncLock.lock(); }
+    void
+    synchEnter() override { syncLock.lock(); }
 
-    void synchLeave() override {syncLock.unlock(); }
+    void
+    synchLeave() override {syncLock.unlock(); }
 
-    void zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info) override {}
+    void
+    zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info) override {}
 
-    void zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment  info) override {}
+    void
+    zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment  info) override {}
 
-    void signSAS(uint8_t* sasHash) override {}
+    void
+    signSAS(uint8_t* sasHash) override {}
 
-    bool checkSASSignature(uint8_t* sasHash) override {}
+    bool
+    checkSASSignature(uint8_t* sasHash) override { return true; }
 
 private:
 
     /**
      * @brief Private constructor - force a shared pointer to GenericPacketFilter using `createGenericFilter()`
      *
-     * Create an genetic packet filter, initializes the timeout helper, and sets
+     * Creates a generic packet filter, initializes the timeout helper, and sets
      * some sensible defaults:
      *
      * - filter type is `MasterStream`
@@ -333,10 +482,16 @@ private:
 
     std::unique_ptr<ZRtp> zrtpEngine = nullptr;
     std::shared_ptr<ZrtpConfigure> configuration = nullptr;
+
+    // Callback functions
     PrepareToSendFunction prepareToSend = nullptr;
     DoSendFunction doSend = nullptr;
+    StateChangeFunction stateHandler = nullptr;
 
     std::mutex syncLock;
+
+    std::string computedSas;        //!< Short authentication string, possibly UTF-8 code (Emojis)
+    std::string cipherInfo;         //!< Information about negotiated cipher and hash algorithm
 
     FilterType filterType = MasterStream;
 
@@ -347,6 +502,8 @@ private:
     uint16_t senderZrtpSeqNo = 0;
 
     bool zrtpStarted = false;
+    bool doProcessSrtp = false;
+    bool reportAllStates = false;
 
 };
 

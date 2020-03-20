@@ -2397,7 +2397,13 @@ bool ZRtp::srtpSecretsReady(EnableSecurity part) {
     if (!rc) {
         return false;
     }
-    // The call state engine calls ForSender always after ForReceiver.
+    // The call state engine calls 'srtpSecretsReady' with part 'ForSender'
+    // always after 'ForReceiver'. Because of this fixed sequence forward
+    // cipher info and SAS only if this call is 'ForSender'.
+
+    // The state machine enters secure state if this function returns
+    // and part is 'ForSender'. The state machine sends an Info with
+    // sub-state InfoSecureStateOn once its state is 'Secure'
     if (part == ForSender) {
         string cs(cipher->getReadable());
         if (!multiStream) {
