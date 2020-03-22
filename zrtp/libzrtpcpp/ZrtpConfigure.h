@@ -84,7 +84,7 @@ public:
      * @see AlgoTypes
      */
     AlgorithmEnum(AlgoTypes type, const char* name, uint32_t klen,
-                  const char* ra, encrypt_t en, decrypt_t de, SrtpAlgorithms alId);
+                  const char* ra, encrypt_t en, decrypt_t de, NegotiatedAlgorithms alId);
 
     /**
      * AlgorithmEnum destructor
@@ -123,7 +123,7 @@ public:
      * @returns
      *    An integer that defines the algorithm.
      */
-    SrtpAlgorithms getAlgoId();
+    NegotiatedAlgorithms getAlgoId();
     /**
      * Get the algorihm's key length.
      *
@@ -165,7 +165,7 @@ private:
     std::string readable;
     encrypt_t encrypt;
     decrypt_t decrypt;
-    SrtpAlgorithms   algoId;
+    NegotiatedAlgorithms   algoId;
 };
 
 /**
@@ -247,7 +247,7 @@ protected:
     ~EnumBase();
     void insert(const char* name);
     void insert(const char* name, uint32_t klen,
-                const char* ra, encrypt_t en, decrypt_t de, SrtpAlgorithms alId);
+                const char* ra, encrypt_t en, decrypt_t de, NegotiatedAlgorithms alId);
 
 private:
     AlgoTypes algoType;

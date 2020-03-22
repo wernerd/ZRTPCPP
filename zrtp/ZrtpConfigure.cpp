@@ -23,9 +23,9 @@
 #include <libzrtpcpp/ZrtpConfigure.h>
 #include <libzrtpcpp/ZrtpTextData.h>
 
-AlgorithmEnum::AlgorithmEnum(const AlgoTypes type, const char* name, 
+AlgorithmEnum::AlgorithmEnum(const AlgoTypes type, const char* name,
                              uint32_t klen, const char* ra, encrypt_t en,
-                             decrypt_t de, SrtpAlgorithms alId):
+                             decrypt_t de, NegotiatedAlgorithms alId):
     algoType(type) , algoName(name), keyLen(klen), readable(ra), encrypt(en),
     decrypt(de), algoId(alId) {
 }
@@ -42,7 +42,7 @@ uint32_t AlgorithmEnum::getKeylen() {
     return keyLen;
 }
 
-SrtpAlgorithms AlgorithmEnum::getAlgoId() {
+NegotiatedAlgorithms AlgorithmEnum::getAlgoId() {
     return algoId;
 }
 
@@ -81,7 +81,7 @@ void EnumBase::insert(const char* name) {
 }
 
 void EnumBase::insert(const char* name, uint32_t klen, const char* ra,
-                      encrypt_t enc, decrypt_t dec, SrtpAlgorithms alId) {
+                      encrypt_t enc, decrypt_t dec, NegotiatedAlgorithms alId) {
     if (!name)
         return;
     auto* e = new AlgorithmEnum(algoType, name, klen, ra, enc, dec, alId);

@@ -44,20 +44,22 @@
  * </li>
  * </ul>
  */
-typedef enum  {
+enum Role  {
     NoRole = 0,     ///< ZRTP role not yet set
     Responder = 1,  ///< This client is in ZRTP Responder mode
     Initiator       ///< This client is in ZRTP Initiator mode
-} Role;
+};
 
-/// The algorihms that we support in SRTP and that ZRTP can negotiate.
-typedef enum {
+/**
+ * @brief Negotiated cipher and hash algorithms.
+ */
+enum NegotiatedAlgorithms {
     None,
     Aes = 1,        ///< Use AES as symmetrical cipher algorithm
     TwoFish,        ///< Use TwoFish as symmetrical cipher algorithm
     Sha1,           ///< Use Sha1 as authentication algorithm
     Skein           ///< Use Skein as authentication algorithm
-} SrtpAlgorithms;
+} ;
 
 /**
  * This structure contains pointers to the SRTP secrets and the role info.
@@ -68,11 +70,11 @@ typedef enum {
  * lifetime you may copy the data into a save place. The destructor
  * of ZRtp clears the data.
  */
-typedef struct srtpSecrets {
+struct SrtpSecret_t {
 //    srtpSecrets();
 //    ~srtpSecrets();
 
-    SrtpAlgorithms symEncAlgorithm;     ///< symmetrical cipher algorithm
+    NegotiatedAlgorithms symEncAlgorithm;     ///< symmetrical cipher algorithm
     const uint8_t* keyInitiator;        ///< Initiator's key
     int32_t initKeyLen;                 ///< Initiator's key length
     const uint8_t* saltInitiator;       ///< Initiator's salt
@@ -81,12 +83,21 @@ typedef struct srtpSecrets {
     int32_t respKeyLen;                 ///< Responder's key length
     const uint8_t* saltResponder;       ///< Responder's salt
     int32_t respSaltLen;                ///< Responder's salt length
-    SrtpAlgorithms authAlgorithm;       ///< SRTP authentication algorithm
+    NegotiatedAlgorithms authAlgorithm;       ///< SRTP authentication algorithm
     int32_t srtpAuthTagLen;             ///< SRTP authentication length
     std::string sas;                    ///< The SAS string
     Role  role;                         ///< ZRTP role of this client
-} SrtpSecret_t;
+};
 
+/**
+ * @brief Which part of the keys is ready.
+ *
+ * ZRTP negotiates different keys for each direction (refer to RFC6189, section 4.5.3).
+ *
+ * ZRTP reports the `Sender` keys _always_ after the `Receiver` keys. Thus, if an application
+ * handles the keys this fixed sequence may help to setup the encryption/decryption context
+ * and/or setup an UI.
+ */
 enum EnableSecurity {
     ForReceiver = 1,        ///< Enable security for SRTP receiver
     ForSender   = 2         ///< Enable security for SRTP sender

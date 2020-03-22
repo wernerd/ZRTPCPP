@@ -49,7 +49,6 @@ class CtZrtpCb;
 class CtZrtpSendCb;
 class ZrtpConfigure;
 class ZRtp;
-typedef struct _SrtpErrorData SrtpErrorData;
 
 extern "C" __EXPORT const char *getZrtpBuildInfo();
 

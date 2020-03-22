@@ -169,9 +169,6 @@ enum InfoEnrollment {
 #define Confirm2Retry   4
 //!< How many Error packet retries
 #define ErrorRetry      5
-
-
-
 }
 
 /**
@@ -189,12 +186,12 @@ typedef enum {
 /**
  * @brief Trace data of SRTP packet in case of unprotect error.
  */
-typedef struct _SrtpErrorData {
+struct SrtpErrorData {
     SrtpErrorType errorType;
     uint32_t rtpHeader[RTP_HEADER_LENGTH / sizeof(uint32_t)];
     size_t length;
     uint64_t guessedIndex;
-} SrtpErrorData;
+};
 
 
 /**

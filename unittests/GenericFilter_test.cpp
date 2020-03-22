@@ -69,11 +69,11 @@ public:
 TEST_F(GenericFilterTestFixture, zrtpDetection) {
     size_t offset = 0;
     uint32_t ssrc = 0;
-    ASSERT_EQ(GenericPacketFilter::DontProcess, GenericPacketFilter::checkRtpData(rtpPacket, sizeof(rtpPacket), offset, ssrc));
+    ASSERT_EQ(GenericPacketFilter::NotZrtp, GenericPacketFilter::checkRtpData(rtpPacket, sizeof(rtpPacket), offset, ssrc));
     ASSERT_EQ(0, offset);
     ASSERT_EQ(0, ssrc);
 
-    ASSERT_EQ(GenericPacketFilter::Process, GenericPacketFilter::checkRtpData(zrtpPacket, sizeof(zrtpPacket), offset, ssrc));
+    ASSERT_EQ(GenericPacketFilter::IsZrtp, GenericPacketFilter::checkRtpData(zrtpPacket, sizeof(zrtpPacket), offset, ssrc));
     ASSERT_EQ(12, offset);          // 12 -> RTP header length, first byte of ZRTP data
     ASSERT_EQ(2, ssrc);
 
@@ -91,7 +91,7 @@ TEST_F(GenericFilterTestFixture, prepareRtp) {
     auto ptr = static_pointer_cast<secUtilities::SecureArrayFlex>(protocolData.ptr);
     size_t offset = 0;
     uint32_t ssrc = 0;
-    ASSERT_EQ(GenericPacketFilter::Process, GenericPacketFilter::checkRtpData(ptr->data(), protocolData.length, offset, ssrc));
+    ASSERT_EQ(GenericPacketFilter::IsZrtp, GenericPacketFilter::checkRtpData(ptr->data(), protocolData.length, offset, ssrc));
     ASSERT_EQ(12, offset);          // 12 -> RTP header length, first byte of ZRTP data
 }
 
@@ -130,10 +130,10 @@ TEST_F(GenericFilterTestFixture, buildConfigure) {
 TEST_F(GenericFilterTestFixture, SetterGetter) {
     auto filter = GenericPacketFilter::createGenericFilter();
 
-    filter->setOwnRtpSsrc(1471).setZrtpSequenceNo(815);
+    filter->ownRtpSsrc(1471).zrtpSequenceNo(815);
 
-    ASSERT_EQ(1471, filter->getOwnRtpSsrc());
-    ASSERT_EQ(815, filter->getZrtpSequenceNo());
+    ASSERT_EQ(1471, filter->ownRtpSsrc());
+    ASSERT_EQ(815, filter->zrtpSequenceNo());
 }
 
 TEST_F(GenericFilterTestFixture, startStopZrtp) {
@@ -156,8 +156,8 @@ TEST_F(GenericFilterTestFixture, startStopZrtp) {
 
     auto filter = GenericPacketFilter::createGenericFilter();
     filter->setZrtpConfiguration(config)
-            .setOwnRtpSsrc(1471)
-            .setDoSendFunction(doSend);
+            .ownRtpSsrc(1471)
+            .onDoSend(doSend);
 
     auto result = filter->startZrtpEngine();
     ASSERT_EQ(GenericPacketFilter::Success, result);
