@@ -61,6 +61,11 @@ GenericPacketFilter::startZrtpEngine() {
         }
         std::shared_ptr<ZrtpCallback> mySelf = shared_from_this();
         zrtpEngine = std::make_unique<ZRtp>(clientId, mySelf, configuration);
+
+        // Check data that must be set before start of ZRTP engine
+        if (tpOverhead >= 0) {
+            zrtpEngine->setTransportOverhead(tpOverhead);
+        }
         zrtpEngine->startZrtpEngine();
         zrtpStarted = true;
 
@@ -468,11 +473,8 @@ GenericPacketFilter::srtpSecretsOn(std::string cipher, std::string sas, bool ver
 
     sasVerified_ = verified;
     cipherInfo_ = cipher;
-    computedSas = sas;
+    computedSAS = sas;
 
-    // Send this when receiving Info, InfoSecureStateOn from ZRTP engine
-//        StateData stateData(GnuZrtpCodes::Info, GnuZrtpCodes::InfoSecureStateOn, computedSas);
-//        stateHandler(currentState, stateData);
 }
 
 void
@@ -499,15 +501,13 @@ GenericPacketFilter::sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t su
     StateData stateData(severity, subCode, codeToString.getStringForCode(severity, subCode));
     switch (severity) {
         case GnuZrtpCodes::Info:
-            if (reportAllStates) {
-                stateHandler(InfoOnly, stateData);
-                return;
-            }
             if (subCode == GnuZrtpCodes::InfoSecureStateOn) {
-                StateData sasData(GnuZrtpCodes::Info, GnuZrtpCodes::InfoSecureStateOn, computedSas);
+                StateData sasData(GnuZrtpCodes::Info, GnuZrtpCodes::InfoSecureStateOn, computedSAS);
                 stateHandler(Secure, sasData);
             } else if (subCode == GnuZrtpCodes::InfoRespCommitReceived || subCode == GnuZrtpCodes::InfoInitDH1Received) {
                 stateHandler(KeyNegotiation, stateData);
+            } else if (reportAll) {
+                stateHandler(InfoOnly, stateData);
             }
             break;
 

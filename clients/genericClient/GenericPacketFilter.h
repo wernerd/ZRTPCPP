@@ -42,6 +42,9 @@
 class GenericPacketFilter : public ZrtpCallback, public std::enable_shared_from_this<GenericPacketFilter> {
 
 public:
+
+    using GenericPacketFilterPtr = std::shared_ptr<GenericPacketFilter>;
+
     /**
      * @brief Result of packet filter function.
      *
@@ -309,8 +312,8 @@ public:
      *
      * @return Shared pointer to GenericPacketFilter instance.
      */
-    static std::shared_ptr<GenericPacketFilter>
-    createGenericFilter() { return std::shared_ptr<GenericPacketFilter>(new GenericPacketFilter()); }
+    static GenericPacketFilterPtr
+    createGenericFilter() { return GenericPacketFilterPtr(new GenericPacketFilter()); }
 
     /**
      * @brief Destructor stops ZRTP engine.
@@ -395,12 +398,12 @@ public:
     /**
       * @brief Enable SRTP processing.
       *
-      * @param[in] yesNo If set to `true` GenericPacketFilter sets up an SRTP handler, manages keys and
+      * @param[in] yes If set to `true` GenericPacketFilter sets up an SRTP handler, manages keys and
       *        application can forward packet to encrypt or decrypt.
       * @return reference of the current instance.
       */
     virtual GenericPacketFilter&
-    processSrtp(bool yesNo) { doProcessSrtp = yesNo; return *this; }
+    processSrtp(bool yes) { doProcessSrtp = yes; return *this; }
 
     /**
      * @brief Current value of `processSrtp`.
@@ -415,11 +418,11 @@ public:
      *
      * Default is to report only error, warning and major states.
      *
-     * @param[in] yesNo If set to `true` GenericPacketFilter reports any state changes which include Info states.
+     * @param[in] yes If set to `true` GenericPacketFilter reports any state changes which include Info states.
      * @return reference of the current instance.
      */
     virtual GenericPacketFilter&
-    allStateReports(bool yesNo) { reportAllStates = yesNo; return *this; }
+    reportAllStates(bool yes) { reportAll = yes; return *this; }
 
     /**
      * @brief Set ZRTP state change callback.
@@ -457,7 +460,19 @@ public:
      * @return Computed SAS, ready to compare with other user.
      */
     virtual std::string const &
-    getComputedSas() const { return computedSas; }
+    computedSas() const { return computedSAS; }
+
+    /**
+     * @brief Set the length of the transport protocol overhead in bytes.
+     *
+     * ZRTP uses this to check consitency of input data. For example the transport protocol
+     * overhead of an RTP packet that contains ZRTP data is the fixed length 12.
+     *
+     * @param overhead Length of the transport overhead.
+     * @return reference of the current instance.
+     */
+    virtual GenericPacketFilter&
+    transportOverhead(int32_t overhead) { tpOverhead = overhead; return *this; }
 
     /**
      * @brief Get the cipher information.
@@ -611,7 +626,7 @@ private:
 
     std::mutex syncLock;
 
-    std::string computedSas;        //!< Short authentication string, possibly UTF-8 code (Emojis)
+    std::string computedSAS;        //!< Short authentication string, possibly UTF-8 code (Emojis)
     std::string cipherInfo_;   //!< Information about negotiated cipher and hash algorithm
 
     FilterType filterType = MasterStream;
@@ -619,6 +634,7 @@ private:
     Role role = NoRole;               //!< Initiator or Responder role
 
     int32_t  timeoutId = -1;
+    int32_t  tpOverhead = -1;         //!< not set if it's -1, transport overhead must be >= 0
     uint32_t ownSSRC = 0;             //!< Our own SSRC, in host order, required when using RTP prepare function
     uint32_t peerSSRC = 0;            //!< Our peer's SSRC, in host order, required when using RTP prepare function
 
@@ -629,7 +645,7 @@ private:
 
     bool zrtpStarted = false;
     bool doProcessSrtp = false;
-    bool reportAllStates = false;
+    bool reportAll = false;
     bool sasVerified_ = false;
 };
 

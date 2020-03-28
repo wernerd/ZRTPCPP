@@ -44,6 +44,9 @@ if (NOT CCRTP)
 endif()
 
 if (CORE_LIB)
-add_executable(genricFilter_test GenericFilter_test.cpp)
-target_link_libraries(genricFilter_test gtest_main ${zrtplibName})
+    add_executable(genericFilter_test GenericFilter_test.cpp)
+    target_link_libraries(genericFilter_test gtest_main ${zrtplibName})
+
+    add_executable(genericTimed_test GenericFilterTimed_test.cpp)
+    target_link_libraries(genericTimed_test gtest_main ${zrtplibName})
 endif()

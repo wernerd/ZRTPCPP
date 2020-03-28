@@ -78,7 +78,7 @@ TEST_F(ZrtpStartStopFixture, check_timer_start_cancel) {
     ON_CALL(*callback, activateTimer).WillByDefault(DoAll(([&timers](int32_t time) { timers++; }), Return(1)));
     ON_CALL(*callback, cancelTimer).WillByDefault(DoAll([&timers]() { timers--; }, Return(1)));
 
-    auto castedCallback = static_cast<shared_ptr<ZrtpCallback>>(callback);
+    auto castedCallback = static_pointer_cast<ZrtpCallback>(callback);
     ZRtp zrtp(aliceId, castedCallback, configure);
     zrtp.startZrtpEngine();
     zrtp.stopZrtp();
