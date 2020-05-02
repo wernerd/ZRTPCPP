@@ -25,6 +25,18 @@ target_link_libraries(zrtpRun_test gmock_main ${zrtplibName})
 add_executable(zrtpTimedRun_test ZrtpTimedRun_test.cpp ZrtpTestCommon.h NetworkSimulation.h)
 target_link_libraries(zrtpTimedRun_test gmock_main ${zrtplibName})
 
+add_executable(zrtpNewCrypto_test ZrtpNewCrypto_test.cpp )
+target_link_libraries(zrtpNewCrypto_test gtest_main ${zrtplibName})
+
+add_executable(botanSkein_test BotanSkein_test.cpp )
+target_link_libraries(botanSkein_test gtest_main ${zrtplibName})
+
+add_executable(bignum_test BignumTemp_test.cpp )
+target_link_libraries(bignum_test gtest_main ${zrtplibName})
+
+add_executable(ec41417_test BotanEc41417_test.cpp )
+target_link_libraries(ec41417_test gtest_main ${zrtplibName})
+
 if (SIDH)
     add_executable(zrtpSidh503_test ZrtpSidh503_test.cpp)
     target_link_libraries(zrtpSidh503_test gtest_main ${zrtplibName})
@@ -39,7 +51,7 @@ if(SDES)
 endif()
 
 if (NOT CCRTP)
-    add_executable(srtpCrypto_test SrtpCrypto_test.cpp ZrtpTestCommon.h)
+    add_executable(srtpCrypto_test SrtpCrypto_test.cpp)
     target_link_libraries(srtpCrypto_test gtest_main ${zrtplibName})
 endif()
 
@@ -47,6 +59,6 @@ if (CORE_LIB)
     add_executable(genericFilter_test GenericFilter_test.cpp)
     target_link_libraries(genericFilter_test gtest_main ${zrtplibName})
 
-    add_executable(genericTimed_test GenericFilterTimed_test.cpp)
+    add_executable(genericTimed_test GenericFilterTimed_test.cpp  NetworkSimulation.h)
     target_link_libraries(genericTimed_test gtest_main ${zrtplibName})
 endif()

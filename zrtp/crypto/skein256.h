@@ -24,8 +24,13 @@
 #define _SKEIN256_H
 
 /**
- * @file skein256.h
- * @brief Functions that provide Skein256 support
+ * @file
+ * @brief Functions that provide Skein256 support.
+ *
+ * **NOTE:** These functions use Skein-512 to compute the hash and just reduce the output size
+ * to 256 bits. Using Skein-256 and the full size gives different results. Skein-512 uses
+ * Threefish-512 as tweakable cipher, Skein-256 uses Threefish-256. Thes ciphers have different
+ * key lengths and different blocksizes.
  * 
  * @ingroup ZRTP
  * @{

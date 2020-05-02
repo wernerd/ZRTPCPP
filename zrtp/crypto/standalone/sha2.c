@@ -135,7 +135,7 @@ extern "C"
     vf(3,i) += vf(7,i);                             \
     vf(7,i) += s_0(vf(0,i))+ maj(vf(0,i),vf(1,i),vf(2,i))
 
-#if defined(SHA_224) || defined(SHA_256)
+#if defined(SHA_224_Z) || defined(SHA_256_Z)
 
 #define SHA256_MASK (SHA256_BLOCK_SIZE - 1)
 
@@ -368,7 +368,7 @@ static void sha_end1(unsigned char hval[], sha256_ctx ctx[1], const unsigned int
 
 #endif
 
-#if defined(SHA_224)
+#if defined(SHA_224_Z)
 
 const uint_32t i224[8] =
 {
@@ -397,7 +397,7 @@ VOID_RETURN sha224_zrtp(unsigned char hval[], const unsigned char data[], unsign
 
 #endif
 
-#if defined(SHA_256)
+#if defined(SHA_256_Z)
 
 const uint_32t i256[8] =
 {
@@ -426,7 +426,7 @@ VOID_RETURN sha256_zrtp(unsigned char hval[], const unsigned char data[], unsign
 
 #endif
 
-#if defined(SHA_384) || defined(SHA_512)
+#if defined(SHA_384_Z) || defined(SHA_512_Z)
 
 #define SHA512_MASK (SHA512_BLOCK_SIZE - 1)
 
@@ -609,7 +609,7 @@ static void sha_end2(unsigned char hval[], sha512_ctx ctx[1], const unsigned int
 
 #endif
 
-#if defined(SHA_384)
+#if defined(SHA_384_Z)
 
 /* SHA384 initialisation data   */
 
@@ -642,7 +642,7 @@ VOID_RETURN sha384_zrtp(unsigned char hval[], const unsigned char data[], unsign
 
 #endif
 
-#if defined(SHA_512)
+#if defined(SHA_512_Z)
 
 /* SHA512 initialisation data   */
 
@@ -688,25 +688,25 @@ INT_RETURN sha2_begin(unsigned long len, sha2_ctx ctx[1])
 {
     switch(len)
     {
-#if defined(SHA_224)
+#if defined(SHA_224_Z)
         case 224:
         case  28:   CTX_256(ctx)->count[0] = CTX_256(ctx)->count[1] = 0;
                     memcpy(CTX_256(ctx)->hash, i224, 32);
                     ctx->sha2_len = 28; return EXIT_SUCCESS;
 #endif
-#if defined(SHA_256)
+#if defined(SHA_256_Z)
         case 256:
         case  32:   CTX_256(ctx)->count[0] = CTX_256(ctx)->count[1] = 0;
                     memcpy(CTX_256(ctx)->hash, i256, 32);
                     ctx->sha2_len = 32; return EXIT_SUCCESS;
 #endif
-#if defined(SHA_384)
+#if defined(SHA_384_Z)
         case 384:
         case  48:   CTX_384(ctx)->count[0] = CTX_384(ctx)->count[1] = 0;
                     memcpy(CTX_384(ctx)->hash, i384, 64);
                     ctx->sha2_len = 48; return EXIT_SUCCESS;
 #endif
-#if defined(SHA_512)
+#if defined(SHA_512_Z)
         case 512:
         case  64:   CTX_512(ctx)->count[0] = CTX_512(ctx)->count[1] = 0;
                     memcpy(CTX_512(ctx)->hash, i512, 64);
@@ -720,16 +720,16 @@ VOID_RETURN sha2_hash(const unsigned char data[], unsigned long len, sha2_ctx ct
 {
     switch(ctx->sha2_len)
     {
-#if defined(SHA_224)
+#if defined(SHA_224_Z)
         case 28: sha224_hash(data, len, CTX_224(ctx)); return;
 #endif
-#if defined(SHA_256)
+#if defined(SHA_256_Z)
         case 32: sha256_hash(data, len, CTX_256(ctx)); return;
 #endif
-#if defined(SHA_384)
+#if defined(SHA_384_Z)
         case 48: sha384_hash(data, len, CTX_384(ctx)); return;
 #endif
-#if defined(SHA_512)
+#if defined(SHA_512_Z)
         case 64: sha512_hash(data, len, CTX_512(ctx)); return;
 #endif
     }
@@ -739,16 +739,16 @@ VOID_RETURN sha2_end(unsigned char hval[], sha2_ctx ctx[1])
 {
     switch(ctx->sha2_len)
     {
-#if defined(SHA_224)
+#if defined(SHA_224_Z)
         case 28: sha_end1(hval, CTX_224(ctx), SHA224_DIGEST_SIZE); return;
 #endif
-#if defined(SHA_256)
+#if defined(SHA_256_Z)
         case 32: sha_end1(hval, CTX_256(ctx), SHA256_DIGEST_SIZE); return;
 #endif
-#if defined(SHA_384)
+#if defined(SHA_384_Z)
         case 48: sha_end2(hval, CTX_384(ctx), SHA384_DIGEST_SIZE); return;
 #endif
-#if defined(SHA_512)
+#if defined(SHA_512_Z)
         case 64: sha_end2(hval, CTX_512(ctx), SHA512_DIGEST_SIZE); return;
 #endif
     }

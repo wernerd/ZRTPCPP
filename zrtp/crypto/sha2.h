@@ -39,11 +39,11 @@
 
 /* define the hash functions that you need  */
 #define SHA_2   /* for dynamic hash length  */
-#define SHA_224
-#define SHA_256
+#define SHA_224_Z
+#define SHA_256_Z
 #ifdef SHA_64BIT
-#  define SHA_384
-#  define SHA_512
+#  define SHA_384_Z
+#  define SHA_512_Z
 #  define NEED_UINT_64T
 #endif
 

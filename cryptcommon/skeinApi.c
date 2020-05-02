@@ -40,7 +40,7 @@ int skeinInit(SkeinCtx_t* ctx, size_t hashBitLen)
 
     Skein_Assert(ctx, SKEIN_FAIL);
     /*
-     * The following two lines rely of the fact that the real Skein contexts are
+     * The following two lines rely on the fact that the real Skein contexts are
      * a union in out context and thus have tha maximum memory available.
      * The beauty of C :-) .
      */

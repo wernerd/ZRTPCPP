@@ -154,7 +154,7 @@ static const uint8_t P4096[] =
 };
 *************** */
 
-ZrtpDH::ZrtpDH(const char* type) {
+ZrtpDH::ZrtpDH(const char* type, ProtocolState state) : protocolState(state) {
 
     uint8_t random[64];
 

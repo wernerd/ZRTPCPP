@@ -40,7 +40,7 @@ if (OPENSSL_FOUND)
 
 endif()
 
-if (CRYPTO_STANDALONE)
+if (CRYPTO_STANDALONE AND NOT USE_BOTAN)
     set(crypto_src
         ${CMAKE_SOURCE_DIR}/cryptcommon/ZrtpRandom.cpp
         ${zrtp_standalone_crypto_src} ${bnlib_src})
@@ -50,6 +50,18 @@ if (CRYPTO_STANDALONE)
         ${CMAKE_SOURCE_DIR}/cryptcommon/aeskey.c
         ${CMAKE_SOURCE_DIR}/cryptcommon/aestab.c
         ${CMAKE_SOURCE_DIR}/cryptcommon/aes_modes.c)
+endif()
+
+if (USE_BOTAN)
+    set(crypto_src
+            ${CMAKE_SOURCE_DIR}/cryptcommon/ZrtpRandom.cpp
+            ${zrtp_botan_crypto_src} ${bnlib_src})
+
+    set(cryptcommon_srcs ${cryptcommon_srcs}
+            ${CMAKE_SOURCE_DIR}/cryptcommon/aescrypt.c
+            ${CMAKE_SOURCE_DIR}/cryptcommon/aeskey.c
+            ${CMAKE_SOURCE_DIR}/cryptcommon/aestab.c
+            ${CMAKE_SOURCE_DIR}/cryptcommon/aes_modes.c)
 endif()
 
 if (SRTP)

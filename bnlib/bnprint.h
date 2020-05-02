@@ -27,7 +27,7 @@ int bnPrint(FILE *f, char const *prefix, struct BigNum const *bn,
  *
  * @param radix the function can use radix between 2 and 16
  */
-int bnReadAscii(struct BigNum *X, char *s, int radix);
+int bnReadAscii(struct BigNum *X, char const *s, int radix);
 #ifdef __cplusplus
 }
 #endif

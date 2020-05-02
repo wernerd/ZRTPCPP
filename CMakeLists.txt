@@ -183,6 +183,19 @@ else()
 
 endif()
 
+#### For Botan migration tests only - remove once Botan migration done
+#pkg_check_modules(BOTAN botan-2)
+#if (BOTAN_FOUND)
+#    set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES} ${BOTAN_INCLUDE_DIRS}) #update include files search directory
+#    set(LIBS ${LIBS} ${BOTAN_LDFLAGS})
+#    include_directories(${BOTAN_INCLUDE_DIRS}) #update includes directory from pkg-config
+#    MESSAGE(STATUS "Botan-2: ${BOTAN_LIBRARIES} ${BOTAN_LIBRARY_DIRS} ${BOTAN_LDFLAGS}")
+#    MESSAGE(STATUS "Botan-2 lib found")
+#    set(USE_BOTAN true)
+#endif()
+
+set (USE_BOTAN true)
+
 if (NOT ANDROID)
     if (SQLITE)
         pkg_check_modules(SQLITE3 sqlite3>=3.7)
@@ -256,6 +269,28 @@ endif()
 
 # **** The following source files are common for all clients ****
 #
+set(BOTAN_AMAL true)
+if (USE_BOTAN)
+    set(botan_src
+            ${CMAKE_SOURCE_DIR}/botancrypto/ZrtpBotanRng.cpp
+            ${CMAKE_SOURCE_DIR}/botancrypto/ZrtpBotanRng.h
+            ${CMAKE_SOURCE_DIR}/botancrypto/ZrtpCurve41417.cpp
+            ${CMAKE_SOURCE_DIR}/botancrypto/ZrtpCurve41417.h
+            ${CMAKE_SOURCE_DIR}/botancrypto/Ec41417Group.cpp
+            ${CMAKE_SOURCE_DIR}/botancrypto/Ec41417Group.h
+            ${CMAKE_SOURCE_DIR}/botancrypto/Point41417.cpp
+            ${CMAKE_SOURCE_DIR}/botancrypto/Point41417.h
+            )
+
+    if (BOTAN_AMAL)
+        add_definitions(-DBOTAN_AMAL)
+        include_directories (${CMAKE_SOURCE_DIR}/botancrypto/x86_64)
+        set (botan_src ${botan_src}
+                ${CMAKE_SOURCE_DIR}/botancrypto/x86_64/botan_all.cpp
+                ${CMAKE_SOURCE_DIR}/botancrypto/x86_64/botan_all.h)
+    endif()
+endif()
+
 set(zrtp_src_include
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/Base32.h
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/EmojiBase32.h
@@ -343,7 +378,7 @@ set(zrtp_src_no_cache
         ${CMAKE_SOURCE_DIR}/logging/ZrtpLogging.cpp
         ${CMAKE_SOURCE_DIR}/logging/logger_config.h
         ${CMAKE_SOURCE_DIR}/logging/osSpecifics.h
-        ${sdes_src} ${zrtp_src_include})
+        ${sdes_src} ${zrtp_src_include} ${botan_src} )
 
 set(bnlib_src
         ${CMAKE_SOURCE_DIR}/bnlib/bn00.c
@@ -382,6 +417,18 @@ set(zrtp_crypto_includes
 
 set(zrtp_standalone_crypto_src
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/zrtpDH.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/hmac256.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/sha256.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/hmac384.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/sha384.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/aesCFB.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/twoCFB.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/sha2.c
+        ${zrtp_crypto_includes})
+
+set(zrtp_botan_crypto_src
+        ${botan_src}
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/zrtpDH.cpp
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/hmac256.cpp
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/sha256.cpp
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/hmac384.cpp

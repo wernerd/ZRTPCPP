@@ -157,7 +157,7 @@ static const uint8_t P4096[] =
 };
 *************** */
 
-typedef struct ZrtpDH::_dhCtx {
+struct ZrtpDH::dhCtx {
     BigNum privKey;
     BigNum pubKey;
     EcCurve curve;
@@ -166,9 +166,9 @@ typedef struct ZrtpDH::_dhCtx {
     std::unique_ptr<secUtilities::SecureArrayFlex> sidhPrivKey;
     std::unique_ptr<secUtilities::SecureArrayFlex> sidhPubKey;
 #endif
-} dhCtx;
+};
 
-ZrtpDH::ZrtpDH(const char* type, ProtocolState state) : protocolState(state), ctx(std::make_unique<_dhCtx>()) {
+ZrtpDH::ZrtpDH(const char* type, ProtocolState state) : protocolState(state), ctx(std::make_unique<dhCtx>()) {
 
     uint8_t random[64];
 
@@ -456,7 +456,7 @@ int32_t ZrtpDH::generatePublicKey()
         case SDH7:
             break;
     }
-    return 0;
+    return 1;
 }
 
 #ifdef SIDH_SUPPORT
@@ -569,7 +569,7 @@ int32_t ZrtpDH::fillInPubKeyBytes(secUtilities::SecureArray<1000>& pubKey) const
     return 0;
 }
 
-int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
+int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes)
 {
 
     /* ECC validation (partial), NIST SP800-56A, section 5.6.2.6 */
@@ -620,7 +620,7 @@ int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes) const
     return 1;
 }
 
-const char* ZrtpDH::getDHtype()
+const char* ZrtpDH::getDHtype() const
 {
     switch (pkType) {
         case DH2K:

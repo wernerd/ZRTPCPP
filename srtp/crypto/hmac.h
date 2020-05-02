@@ -66,8 +66,8 @@ typedef struct _hmacSha1Context {
  *    Point to an integer that receives the length of the computed HMAC.
  */
 
-void hmac_sha1(const uint8_t* key, int64_t keyLength,
-               const uint8_t* data, uint64_t dataLength,
+void hmac_sha1(const uint8_t* key, uint64_t keyLength,
+               const uint8_t* data, uint32_t dataLength,
                uint8_t* mac, int32_t* macLength);
 
 /**

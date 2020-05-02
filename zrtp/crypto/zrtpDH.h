@@ -169,7 +169,7 @@ public:
      *
      * @return 0 if check failed, 1 if public key value is ok.
      */
-    int32_t checkPubKey(uint8_t* pubKeyBytes) const;
+    int32_t checkPubKey([[maybe_unused]] uint8_t* pubKeyBytes);
 
     /**
      * Get type of DH algorithm.
@@ -177,9 +177,11 @@ public:
      * @return
      *     Pointer to DH algorithm name
      */
-    const char* getDHtype();
+    const char* getDHtype() const;
 
     ErrorCode getErrorCode() const { return errorCode; }
+
+    std::string const version() const;
 
 private:
 
@@ -194,7 +196,7 @@ private:
         SDH7
     };
 
-    struct _dhCtx;
+    struct dhCtx;
 
     void generateSidhKeyPair();
     size_t computeSidhSharedSecret(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret);
@@ -203,7 +205,7 @@ private:
     int pkType;                     ///< Which type of DH to use
     ProtocolState protocolState;    ///< Create DH for this protocol state
     ErrorCode errorCode;
-    std::unique_ptr<_dhCtx> ctx;    ///< Context the DH
+    std::unique_ptr<dhCtx> ctx;
 
 };
 #endif /*__cpluscplus */

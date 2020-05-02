@@ -114,6 +114,10 @@ static curveData nist521 = {
  * The data for curve3617 (actually Curve41417) copied from:
  * http://safecurves.cr.yp.to/field.html
  * http://safecurves.cr.yp.to/base.html
+ *
+ * 5288447750321988791615322464262168318627237463714249754277190328831105466135348245791335989419337099796002495788978276839289
+ * = 0x07ffffffffffffffffffffffffffffffffffffffffffffffffffeb3cc92414cf706022b36f1c0338ad63cf181b0e71a5e106af79
+ * = 2^411 - 33364140863755142520810177694098385178984727200411208589594759
  */
 static curveData curve3617 = {
     "3fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffef",  /* Prime */
