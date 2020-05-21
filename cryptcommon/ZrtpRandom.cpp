@@ -161,7 +161,7 @@ size_t ZrtpRandom::getSystemSeed(uint8_t *seed, size_t length)
     return num;
 }
 
-int zrtp_AddEntropy(const uint8_t *buffer, uint32_t length, bool isLocked) {
+int zrtp_AddEntropy(const uint8_t *buffer, uint32_t length, int32_t isLocked) {
     return ZrtpRandom::addEntropy(buffer, length, isLocked);
 }
 

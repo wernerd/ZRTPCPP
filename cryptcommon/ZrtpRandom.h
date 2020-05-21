@@ -42,14 +42,14 @@ public:
      * entropy.
      *
      * @param buffer some entropy data to add
-     *
      * @param length length of entropy data in bytes
+     * @param isLocked Set to true when randomLock mutex is already set.
      *
      * @return on success: number of entropy bytes added, on failure: -1. Number of
      *         bytes added may be bigger then @c length because of added system
      *         entropy.
      */
-    static int addEntropy(const uint8_t *buffer, uint32_t length, bool isLocked = false);
+    static int addEntropy(const uint8_t *buffer, uint32_t length, int32_t isLocked = false);
 
     /**
      * @brief Get some random data.
