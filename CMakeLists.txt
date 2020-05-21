@@ -429,10 +429,10 @@ set(zrtp_standalone_crypto_src
 set(zrtp_botan_crypto_src
         ${botan_src}
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/zrtpDH.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/hmac256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/sha256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/hmac384.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/sha384.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/hmac256.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/sha256.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/hmac384.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/sha384.cpp
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/aesCFB.cpp
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/twoCFB.cpp
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/sha2.c
