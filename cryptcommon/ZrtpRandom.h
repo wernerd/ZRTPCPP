@@ -49,15 +49,13 @@ public:
      *         bytes added may be bigger then @c length because of added system
      *         entropy.
      */
-    static int addEntropy(const uint8_t *buffer, uint32_t length, int32_t isLocked = false);
+    static int addEntropy(const uint8_t *buffer, uint32_t length, bool isLocked = false);
 
     /**
      * @brief Get some random data.
      *
      * @param buffer that will contain the random data
-     *
      * @param length how many bytes of random data to generate
-     *
      * @return the number of generated random data bytes
      */
     static int getRandomData(uint8_t *buffer, uint32_t length);
@@ -74,7 +72,7 @@ extern "C"
 {
 #endif
 
-int zrtp_AddEntropy(const uint8_t *buffer, uint32_t length, bool isLocked);
+int zrtp_AddEntropy(const uint8_t *buffer, uint32_t length, int32_t isLocked);
 
 int zrtp_getRandomData(uint8_t *buffer, uint32_t length);
 
