@@ -397,8 +397,6 @@ set(bnlib_src
 set(zrtp_skein_src
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein256.h
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein384.h
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skeinMac256.h
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skeinMac384.h
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/skeinMac256.cpp
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/skein256.cpp
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/skeinMac384.cpp
@@ -411,6 +409,8 @@ set(zrtp_crypto_includes
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha2.h
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha256.h
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha384.h
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skeinMac256.h
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skeinMac384.h
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.h
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/zrtpDH.h
         )

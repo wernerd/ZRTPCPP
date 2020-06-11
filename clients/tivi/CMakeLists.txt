@@ -27,56 +27,23 @@ set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})
 
 #to make sure includes are first taken - it contains config.h
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
-include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/srtp
-        ${CMAKE_SOURCE_DIR}/common ${CMAKE_SOURCE_DIR}/bnlib)
-
-set(cryptcommon_srcs
-        ${CMAKE_SOURCE_DIR}/cryptcommon/twofish.c
-        ${CMAKE_SOURCE_DIR}/cryptcommon/twofish.h
-        ${CMAKE_SOURCE_DIR}/cryptcommon/twofish_cfb.c
-        ${CMAKE_SOURCE_DIR}/cryptcommon/aes.h
-        ${CMAKE_SOURCE_DIR}/cryptcommon/aescpp.h
-        ${CMAKE_SOURCE_DIR}/cryptcommon/aesopt.h
-        ${CMAKE_SOURCE_DIR}/cryptcommon/aescrypt.c
-        ${CMAKE_SOURCE_DIR}/cryptcommon/aeskey.c
-        ${CMAKE_SOURCE_DIR}/cryptcommon/aestab.c
-        ${CMAKE_SOURCE_DIR}/cryptcommon/aes_modes.c
-        ${CMAKE_SOURCE_DIR}/cryptcommon/macSkein.cpp
-        ${CMAKE_SOURCE_DIR}/cryptcommon/brg_endian.h
-        ${CMAKE_SOURCE_DIR}/cryptcommon/brg_types.h
-        ${CMAKE_SOURCE_DIR}/cryptcommon/skein.c
-        ${CMAKE_SOURCE_DIR}/cryptcommon/skein_iv.h
-        ${CMAKE_SOURCE_DIR}/cryptcommon/skein_port.h
-        ${CMAKE_SOURCE_DIR}/cryptcommon/skein_block.c
-        ${CMAKE_SOURCE_DIR}/cryptcommon/skeinApi.c
-        ${CMAKE_SOURCE_DIR}/cryptcommon/skeinApi.h
-        ${CMAKE_SOURCE_DIR}/cryptcommon/ZrtpRandom.cpp)
+include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/srtp ${CMAKE_SOURCE_DIR}/common)
 
 set(zrtp_tivi_src
         ${CMAKE_CURRENT_SOURCE_DIR}/CtZrtpSession.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/CtZrtpStream.cpp
-        )
+        ${CMAKE_CURRENT_SOURCE_DIR}/CtZrtpStream.cpp)
 
 set(srtp_src
         ${CMAKE_SOURCE_DIR}/srtp/CryptoContext.cpp
         ${CMAKE_SOURCE_DIR}/srtp/CryptoContextCtrl.cpp
-        ${CMAKE_SOURCE_DIR}/srtp/SrtpHandler.cpp)
+        ${CMAKE_SOURCE_DIR}/srtp/SrtpHandler.cpp
+        ${CMAKE_SOURCE_DIR}/srtp/crypto/hmac.h
+        ${CMAKE_SOURCE_DIR}/srtp/crypto/SrtpSymCrypto.h
+        ${CMAKE_SOURCE_DIR}/srtp/crypto/botan/hmac.cpp
+        ${CMAKE_SOURCE_DIR}/srtp/crypto/botan/macSkein.cpp
+        ${CMAKE_SOURCE_DIR}/srtp/crypto/botan/SrtpSymCrypto.cpp)
 
-set(crypto_src_srtp
-        ${CMAKE_SOURCE_DIR}/srtp/crypto/standalone/hmac.cpp
-        ${CMAKE_SOURCE_DIR}/srtp/crypto/standalone/SrtpSymCrypto.cpp
-        ${CMAKE_SOURCE_DIR}/srtp/crypto/standalone/sha1.c)
-
-if(SIDH_X64)
-    # From Cmake doc: SOURCE scope may name zero or more source files. Note that source file properties are visible only
-    # to targets added in the same directory (CMakeLists.txt).
-    set_property(SOURCE ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/AMD64/fp_x64_asm.S PROPERTY LANGUAGE C)
-elseif(SIDH_ARM64)
-    set_property(SOURCE ${CMAKE_SOURCE_DIR}/cryptcommon/sidhp751/ARM64/fp_arm_asm.S PROPERTY LANGUAGE C)
-endif()
-
-set(zrtpcpp_src ${zrtp_src} ${zrtp_tivi_src} ${zrtp_standalone_crypto_src} ${zrtp_skein_src}
-        ${bnlib_src} ${srtp_src} ${crypto_src_srtp} ${cryptcommon_srcs} ${sidh751_src})
+set(zrtpcpp_src ${zrtp_src} ${zrtp_tivi_src} ${zrtp_botan_crypto_src} ${srtp_src})
 
 # for the Thread classes etc. - remove D_WITHOUT_TIVI_ENV if you compile for/with Tivi modules, maybe build static
 # and iclude this into Tivi shared lib in the second step. Need to cross-check with Java build in case of static build.

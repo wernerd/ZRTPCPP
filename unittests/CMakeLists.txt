@@ -31,9 +31,6 @@ target_link_libraries(zrtpNewCrypto_test gtest_main ${zrtplibName})
 add_executable(botanSkein_test BotanSkein_test.cpp )
 target_link_libraries(botanSkein_test gtest_main ${zrtplibName})
 
-add_executable(bignum_test BignumTemp_test.cpp )
-target_link_libraries(bignum_test gtest_main ${zrtplibName})
-
 add_executable(ec41417_test BotanEc41417_test.cpp )
 target_link_libraries(ec41417_test gtest_main ${zrtplibName})
 
