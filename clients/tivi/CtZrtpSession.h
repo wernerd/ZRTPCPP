@@ -26,6 +26,7 @@
 #include <string>
 #include <cstring>
 #include <zrtp/libzrtpcpp/ZIDCache.h>
+#include <zrtp/libzrtpcpp/ZrtpCodes.h>
 
 #ifndef __EXPORT
   #if (defined _WIN32 || defined __CYGWIN__) && defined(_DLL)
