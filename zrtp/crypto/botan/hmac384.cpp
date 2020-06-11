@@ -52,3 +52,36 @@ void hmacSha384(const uint8_t* key, uint64_t keyLength,
     hmac->final(macOut.data());
     macOut.size(SHA384_DIGEST_SIZE);
 }
+
+void* createSha384HmacContext(const uint8_t* key, uint64_t keyLength)
+{
+    auto *ctx = new shaCtx;
+    ctx->mac = Botan::MessageAuthenticationCode::create("HMAC(SHA-384)");
+    ctx->mac->set_key(key, keyLength);
+
+    return (void*)ctx;
+}
+
+void hmacSha384Ctx(void* ctx,
+                 const std::vector<const uint8_t*>& data,
+                 const std::vector<uint64_t>& dataLength,
+                 uint8_t* mac, uint32_t* macLength )
+{
+    auto *pctx = reinterpret_cast<shaCtx *>(ctx);
+
+    for (size_t i = 0, size = data.size(); i < size; i++) {
+        pctx->mac->update(data[i], dataLength[i]);
+    }
+    pctx->mac->final(mac);
+    *macLength = SHA384_BLOCK_SIZE;
+}
+
+void freeSha384HmacContext(void* ctx)
+{
+    auto *pctx = reinterpret_cast<shaCtx *>(ctx);
+    if (pctx != nullptr && pctx->mac) {
+        pctx->mac->clear();
+        pctx->mac.reset();
+        delete pctx;
+    }
+}

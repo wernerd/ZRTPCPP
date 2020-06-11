@@ -20,7 +20,7 @@
 #include <cstdlib>
 
 struct macCtx {
-    std::unique_ptr<Botan::Skein_512> hmac;
+    std::unique_ptr<Botan::Skein_512> hmac = nullptr;
 };
 
 void macSkein(const uint8_t* key, uint64_t keyLength,
@@ -28,7 +28,7 @@ void macSkein(const uint8_t* key, uint64_t keyLength,
               uint8_t* mac, size_t macLength, SkeinSize_t skeinSize)
 {
     (void) skeinSize;
-    auto hmac = std::make_unique<Botan::Skein_512>(Botan::Skein_512(macLength, "" ));
+    auto hmac = std::make_unique<Botan::Skein_512>(macLength, "" );
 
     hmac->setMacKey(key, keyLength);
     hmac->update(data, dataLength);
@@ -40,7 +40,7 @@ void macSkein(const uint8_t* key, uint64_t keyLength,
               std::vector<uint64_t> dataLength,
               uint8_t* mac, size_t mac_length, SkeinSize_t skeinSize)
 {
-    auto hmac = std::make_unique<Botan::Skein_512>(Botan::Skein_512(mac_length, "" ));
+    auto hmac = std::make_unique<Botan::Skein_512>(mac_length, "" );
 
     hmac->setMacKey(key, keyLength);
     for (size_t i = 0, size = data.size(); i < size; i++) {
@@ -53,11 +53,9 @@ void* createSkeinMacContext(const uint8_t* key, uint64_t keyLength,
                             size_t macLength, SkeinSize_t skeinSize)
 {
     (void) skeinSize;
-    auto* ctx = (macCtx*)malloc(sizeof(macCtx));
-    if (ctx == nullptr)
-        return nullptr;
+    auto* ctx = new macCtx;
 
-    ctx->hmac = std::make_unique<Botan::Skein_512>(Botan::Skein_512(macLength, "" ));
+    ctx->hmac = std::make_unique<Botan::Skein_512>(macLength, "" );
     ctx->hmac->setMacKey(key, keyLength);
     return ctx;
 }
@@ -69,7 +67,7 @@ void* initializeSkeinMacContext(void* ctx, const uint8_t* key, uint64_t keyLengt
 
     if (hd != nullptr) {
         if (hd->hmac == nullptr) {
-            hd->hmac = std::make_unique<Botan::Skein_512>(Botan::Skein_512(macLength, "" ));
+            hd->hmac = std::make_unique<Botan::Skein_512>(macLength, "" );
         }
         else {
             // clears internal buffer only, keeps current key, MAC length and re-initializes initial block

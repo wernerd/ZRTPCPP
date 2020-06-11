@@ -29,13 +29,12 @@ struct shaCtx {
 
 void macSkein384(const uint8_t *key, uint64_t keyLength, const uint8_t* data, uint64_t dataLength, zrtp::RetainedSecArray & macOut)
 {
-    auto hmac(new Botan::Skein_512(384, "" ));
+    auto hmac = std::make_unique<Botan::Skein_512>(384, "" );
 
     hmac->setMacKey(key, keyLength);
     hmac->update(data, dataLength);
     hmac->final(macOut.data());
     macOut.size(SHA384_DIGEST_SIZE);
-
 }
 
 void macSkein384(const uint8_t* key, uint64_t keyLength,
@@ -43,7 +42,7 @@ void macSkein384(const uint8_t* key, uint64_t keyLength,
                 const std::vector<uint64_t>& dataChunkLength,
                 zrtp::RetainedSecArray & macOut)
 {
-    auto hmac(new Botan::Skein_512(384, "" ));
+    auto hmac = std::make_unique<Botan::Skein_512>(384, "" );
 
     hmac->setMacKey(key, keyLength);
 

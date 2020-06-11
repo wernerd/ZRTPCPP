@@ -27,14 +27,14 @@ struct hashCtx{
 
 void skein256(const uint8_t *data, uint64_t dataLength, uint8_t *digest )
 {
-    auto hash(Botan::HashFunction::create("Skein-512(256)"));
+    auto hash = Botan::HashFunction::create("Skein-512(256)");
     hash->update(data, dataLength);
     hash->final(digest);
 }
 
 void skein256(const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength, uint8_t *digest)
 {
-    auto hash(Botan::HashFunction::create("Skein-512(256)"));
+    auto hash = Botan::HashFunction::create("Skein-512(256)");
 
     for (size_t i = 0, size = data.size(); i < size; i++) {
         hash->update(data[i], dataLength[i]);
