@@ -23,52 +23,18 @@ set (LIBS ${LIBS} ${USES_CCRTP_LDFLAGS} ${USES_CCRTP_LIBRARIES})
 #to make sure includes are first taken - it contains config.h
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
 include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/zrtp
-    ${CMAKE_SOURCE_DIR}/srtp ${CMAKE_SOURCE_DIR}/bnlib)
+    ${CMAKE_SOURCE_DIR}/srtp)
 
 # **** setup the various crypto interface implementations ***
 # Twofish is a special case: its always a standalone module and thus
 # not specific to a library.
-
-set(cryptcommon_srcs
-    ${CMAKE_SOURCE_DIR}/cryptcommon/macSkein.cpp
-    ${CMAKE_SOURCE_DIR}/cryptcommon/skein.c
-    ${CMAKE_SOURCE_DIR}/cryptcommon/skein_block.c
-    ${CMAKE_SOURCE_DIR}/cryptcommon/skeinApi.c
-    ${CMAKE_SOURCE_DIR}/cryptcommon/twofish.c
-    ${CMAKE_SOURCE_DIR}/cryptcommon/twofish_cfb.c ${zrtp_skein_src})
-
-if (OPENSSL_FOUND)
-    # openSSL crypto does not have twoFish, use the standalone implementation
-    set(crypto_src
-            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/zrtpDH.cpp
-            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/hmac256.cpp
-            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/sha256.cpp
-            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/hmac384.cpp
-            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/sha384.cpp
-            ${CMAKE_SOURCE_DIR}/zrtp/crypto/openssl/aesCFB.cpp
-            ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/twoCFB.cpp
-            ${zrtp_crypto_includes})
-
-endif()
-
-if (CRYPTO_STANDALONE)
-    set(crypto_src
-        ${CMAKE_SOURCE_DIR}/cryptcommon/ZrtpRandom.cpp
-        ${zrtp_standalone_crypto_src} ${bnlib_src})
-
-    set(cryptcommon_srcs ${cryptcommon_srcs}
-        ${CMAKE_SOURCE_DIR}/cryptcommon/aescrypt.c
-        ${CMAKE_SOURCE_DIR}/cryptcommon/aeskey.c
-        ${CMAKE_SOURCE_DIR}/cryptcommon/aestab.c
-        ${CMAKE_SOURCE_DIR}/cryptcommon/aes_modes.c)
-endif()
 
 set(zrtp_ccrtp_src
         ${CMAKE_CURRENT_SOURCE_DIR}/ZrtpQueue.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtpccrtp.h)
 
 
-set(zrtpcpp_src ${zrtp_src} ${zrtp_ccrtp_src} ${crypto_src} ${cryptcommon_srcs} )
+set(zrtpcpp_src ${zrtp_src} ${zrtp_ccrtp_src} ${zrtp_botan_crypto_src})
 
 if(BUILD_STATIC AND NOT BUILD_SHARED)
     set(LIBRARY_BUILD_TYPE STATIC)

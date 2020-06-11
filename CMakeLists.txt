@@ -505,10 +505,12 @@ if (TESTS)
     endif()
 
     add_subdirectory(unittests)
-    add_subdirectory(demo)
 endif()
 
-##very useful for macosx, specially when using gtkosx bundler
+if (CCRTP)
+    add_subdirectory(demo)
+endif()
+    ##very useful for macosx, specially when using gtkosx bundler
 if(APPLE)
     if (NOT CMAKE_INSTALL_NAME_DIR)
         set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib" CACHE STRING "CMAKE_INSTALL_NAME_DIR set for macosx" )
