@@ -70,7 +70,7 @@ int ZrtpRandom::getRandomData(uint8_t* buffer, uint32_t length) {
     ZrtpRandom::addEntropy(buffer, length, true);
 
     /* Copy the mainCtx and finalize it into the md buffer */
-    memcpy(&randCtx2, &mainCtx, sizeof(sha512_ctx));
+    memcpy(&randCtx2, &mainCtx, sizeof(sha512_ctx));        // Botan: hash->copy_state()
     sha512_end(md, &randCtx2);
 
     lockRandom.unlock();

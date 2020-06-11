@@ -39,6 +39,7 @@ option(SQLCIPHER "Use SQLCipher DB as backend for ZRTP cache." OFF)
 option(SRTP "Include SRTP when not building for CCRTP." OFF)
 option(AXO "Include Axolotl support when not building for CCRTP." OFF)
 option(TESTS "Generate Unit test." OFF)
+option(USE_BOTAN "Use Botan crypto library" OFF)
 
 option(ANDROID "Generate Android libraries, use if via Gradle build script" OFF)
 # option(JAVA "Generate Java support files (requires JDK and SWIG)" OFF)
@@ -194,7 +195,6 @@ endif()
 #    set(USE_BOTAN true)
 #endif()
 
-set (USE_BOTAN true)
 
 if (NOT ANDROID)
     if (SQLITE)
@@ -269,8 +269,8 @@ endif()
 
 # **** The following source files are common for all clients ****
 #
-set(BOTAN_AMAL true)
 if (USE_BOTAN)
+    set(BOTAN_AMAL true)
     set(botan_src
             ${CMAKE_SOURCE_DIR}/botancrypto/ZrtpBotanRng.cpp
             ${CMAKE_SOURCE_DIR}/botancrypto/ZrtpBotanRng.h
@@ -433,9 +433,12 @@ set(zrtp_botan_crypto_src
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/sha256.cpp
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/hmac384.cpp
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/sha384.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/aesCFB.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/twoCFB.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/sha2.c
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/skeinMac256.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/skein256.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/skeinMac384.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/skein384.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/aesCFB.cpp
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/twoCFB.cpp
         ${zrtp_crypto_includes})
 
 set(zrtp_src ${zrtp_src_no_cache}

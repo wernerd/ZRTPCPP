@@ -55,7 +55,52 @@ public:
     void reseed_from_rng(RandomNumberGenerator& rng,
                          size_t poll_bits = BOTAN_RNG_RESEED_POLL_BITS) override {  }
 
+    /**
+     * @brief This method adds entropy to the PRNG.
+     *
+     * An application may seed some entropy data to the PRNG. If the @c buffer is
+     * @c NULL or the @c length is zero then the method adds at least some system
+     * entropy.
+     *
+     * @param buffer some entropy data to add
+     *
+     * @param length length of entropy data in bytes
+     *
+     * @return on success: number of entropy bytes added, on failure: -1. Number of
+     *         bytes added may be bigger then @c length because of added system
+     *         entropy.
+     */
+    static int addEntropy(const uint8_t *buffer, uint32_t length, bool isLocked = false);
+
+    /**
+     * @brief Get some random data.
+     *
+     * @param buffer that will contain the random data
+     *
+     * @param length how many bytes of random data to generate
+     *
+     * @return the number of generated random data bytes
+     */
+    static int32_t getRandomData(uint8_t *buffer, uint32_t length);
+
+private:
+    static void initialize();
+    static size_t getSystemSeed(uint8_t *seed, size_t length);
+
 };
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+int zrtp_AddEntropy(const uint8_t *buffer, uint32_t length, int isLocked);
+
+int zrtp_getRandomData(uint8_t *buffer, uint32_t length);
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif //LIBZRTPCPP_ZRTPBOTANRNG_H

@@ -44,7 +44,7 @@ constexpr int SrtpEncryptionTWOF8 = 4;
 #include <openssl/hmac.h>
 #endif
 #include "crypto/hmac.h"
-#include "cryptcommon/macSkein.h"
+#include "crypto/macSkein.h"
 
 class SrtpSymCrypto;
 

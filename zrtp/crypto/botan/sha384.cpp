@@ -65,7 +65,12 @@ void* initializeSha384Context(void* ctx)
     auto* hd = reinterpret_cast<shaCtx *>(ctx);
 
     if (hd != nullptr) {
-        hd->hash->clear();
+        if (hd->hash == nullptr) {
+            hd->hash = Botan::HashFunction::create("SHA-256");
+        }
+        else {
+            hd->hash->clear();
+        }
     }
     return (void*)hd;
 }

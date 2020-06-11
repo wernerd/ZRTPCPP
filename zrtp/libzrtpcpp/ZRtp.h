@@ -44,6 +44,7 @@
 #include <libzrtpcpp/ZIDCache.h>
 
 #include <cryptcommon/skeinApi.h>
+#include <botan_all.h>
 
 #include "common/typedefs.h"
 
@@ -670,7 +671,9 @@ class __EXPORT ZRtp {
     void setTransportOverhead(int32_t overhead);
 
 private:
-     typedef union _hashCtx {
+     typedef struct _hashCtx {
+         ~_hashCtx() { hash.reset(); }
+         std::unique_ptr<Botan::HashFunction> hash;     // TODO : change initialization
          SkeinCtx_t  skeinCtx;
 #ifdef ZRTP_OPENSSL
          SHA256_CTX  sha256Ctx;

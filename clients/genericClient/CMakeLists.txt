@@ -18,6 +18,7 @@ include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOU
 # Twofish is a special case: its always a standalone module and thus
 # not specific to a library. Same is true for Skein hash.
 
+if (NOT USE_BOTAN)
 set(cryptcommon_srcs
         ${CMAKE_SOURCE_DIR}/cryptcommon/macSkein.cpp
         ${CMAKE_SOURCE_DIR}/cryptcommon/skein.c
@@ -26,6 +27,7 @@ set(cryptcommon_srcs
         ${CMAKE_SOURCE_DIR}/cryptcommon/twofish.c
         ${CMAKE_SOURCE_DIR}/cryptcommon/twofish_cfb.c
         ${zrtp_skein_src})
+endif()
 
 if (OPENSSL_FOUND)
     set(crypto_src
@@ -54,14 +56,7 @@ endif()
 
 if (USE_BOTAN)
     set(crypto_src
-            ${CMAKE_SOURCE_DIR}/cryptcommon/ZrtpRandom.cpp
             ${zrtp_botan_crypto_src} ${bnlib_src})
-
-    set(cryptcommon_srcs ${cryptcommon_srcs}
-            ${CMAKE_SOURCE_DIR}/cryptcommon/aescrypt.c
-            ${CMAKE_SOURCE_DIR}/cryptcommon/aeskey.c
-            ${CMAKE_SOURCE_DIR}/cryptcommon/aestab.c
-            ${CMAKE_SOURCE_DIR}/cryptcommon/aes_modes.c)
 endif()
 
 if (SRTP)
@@ -79,12 +74,17 @@ set(srtp_src
         ${CMAKE_SOURCE_DIR}/srtp/crypto/hmac.h
         ${CMAKE_SOURCE_DIR}/srtp/crypto/SrtpSymCrypto.h)
 
-if (CRYPTO_STANDALONE)
+if (CRYPTO_STANDALONE AND NOT USE_BOTAN)
     set(crypto_src_srtp
             ${CMAKE_SOURCE_DIR}/srtp/crypto/standalone/hmac.cpp
-            ${CMAKE_SOURCE_DIR}/srtp/crypto/standalone/sha1.c
-            ${CMAKE_SOURCE_DIR}/srtp/crypto/standalone/sha1.h
             ${CMAKE_SOURCE_DIR}/srtp/crypto/standalone/SrtpSymCrypto.cpp)
+endif()
+
+if (USE_BOTAN)
+    set(crypto_src_srtp
+            ${CMAKE_SOURCE_DIR}/srtp/crypto/botan/hmac.cpp
+            ${CMAKE_SOURCE_DIR}/srtp/crypto/botan/macSkein.cpp
+            ${CMAKE_SOURCE_DIR}/srtp/crypto/botan/SrtpSymCrypto.cpp)
 endif()
 
 if (OPENSSL_FOUND)

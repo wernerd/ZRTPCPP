@@ -2437,7 +2437,11 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hashNegotiated) {
                                                 const vector<uint64_t>&, zrtp::RetainedSecArray &)>(hmacSha256);
 
         createHashCtx = initializeSha256Context;
+#ifdef BOTAN_AMAL
+        msgShaContext = createSha256Context();
+#else
         msgShaContext = &hashCtx.sha256Ctx;
+#endif
         closeHashCtx = finalizeSha256Context;
         hashCtxFunction = sha256Ctx;
         break;
@@ -2451,7 +2455,11 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hashNegotiated) {
                                                 const vector<uint64_t>&, zrtp::RetainedSecArray & )>(hmacSha384);
 
         createHashCtx = initializeSha384Context;
-        msgShaContext = &hashCtx.sha384Ctx;
+#ifdef BOTAN_AMAL
+            msgShaContext = createSha384Context();
+#else
+            msgShaContext = &hashCtx.sha384Ctx;
+#endif
         closeHashCtx = finalizeSha384Context;
         hashCtxFunction = sha384Ctx;
         break;
@@ -2464,6 +2472,11 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hashNegotiated) {
         hmacListFunction = static_cast<void (*)(const uint8_t*, uint64_t, const vector<const uint8_t*>&, const vector<uint64_t>&, zrtp::RetainedSecArray &)>(macSkein256);
 
         createHashCtx = initializeSkein256Context;
+#ifdef BOTAN_AMAL
+            msgShaContext = createSha256Context();
+#else
+            msgShaContext = &hashCtx.sha256Ctx;
+#endif
         msgShaContext = &hashCtx.skeinCtx;
         closeHashCtx = finalizeSkein256Context;
         hashCtxFunction = skein256Ctx;

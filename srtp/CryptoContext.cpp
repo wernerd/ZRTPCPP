@@ -152,12 +152,20 @@ CryptoContext::~CryptoContext() {
         delete [] k_a;
     }
 
-#ifdef ZRTP_OPENSSL
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+#ifdef BOTAN_AMAL
+    if (aalg == SrtpAuthenticationSha1Hmac) {
+        freeSha1HmacContext(macCtx);
+    }
+    else {
+        freeSkeinMacContext(macCtx);
+    }
+#else
+  #ifdef ZRTP_OPENSSL
+    #if OPENSSL_VERSION_NUMBER >= 0x10100000L
     freeSha1HmacContext(macCtx);
+    #endif
+  #endif
 #endif
-#endif
-
 }
 
 void CryptoContext::srtpEncrypt(uint8_t* pkt, uint8_t* payload, uint32_t paylen, uint64_t index, uint32_t ssrc ) {
@@ -310,22 +318,31 @@ void CryptoContext::deriveSrtpKeys(uint64_t index)
     // Initialize MAC context with the derived key
     switch (aalg) {
     case SrtpAuthenticationSha1Hmac:
-#ifdef ZRTP_OPENSSL
+#ifdef BOTAN_AMAL
+    macCtx = createSha1HmacContext();
+#else
+  #ifdef ZRTP_OPENSSL
     #if OPENSSL_VERSION_NUMBER < 0x10100000L
             macCtx = &hmacCtx.hmacSha1Ctx;
     #else
             macCtx = createSha1HmacContext();
     #endif
-#else
+  #else
             macCtx = &hmacCtx.hmacSha1Ctx;
+  #endif
 #endif
         macCtx = initializeSha1HmacContext(macCtx, k_a, n_a);
         break;
     case SrtpAuthenticationSkeinHmac:
-        macCtx = &hmacCtx.hmacSkeinCtx;
+#ifdef  BOTAN_AMAL
+       macCtx = createSkeinMacContext(k_a, n_a, tagLength*8, Skein512);
 
+#else
+        macCtx = &hmacCtx.hmacSkeinCtx;
         // Skein MAC uses number of bits as MAC size, not just bytes
         macCtx = initializeSkeinMacContext(macCtx, k_a, n_a, tagLength*8, Skein512);
+#endif
+
         break;
     }
     memset(k_a, 0, n_a);

@@ -19,22 +19,22 @@
  */
 
 #include <botan_all.h>
-#include <zrtp/crypto/sha256.h>
+#include <zrtp/crypto/skein384.h>
 
-struct shaCtx {
+struct hashCtx{
     std::unique_ptr<Botan::HashFunction> hash;
 };
 
-void sha256(const uint8_t *data, uint64_t dataLength, uint8_t *digest )
+void skein384(const uint8_t *data, uint64_t dataLength, uint8_t *digest )
 {
-    auto hash(Botan::HashFunction::create("SHA-256"));
+    auto hash(Botan::HashFunction::create("Skein-512(384)"));
     hash->update(data, dataLength);
     hash->final(digest);
 }
 
-void sha256(const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength, uint8_t *digest)
+void skein384(const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength, uint8_t *digest)
 {
-    auto hash(Botan::HashFunction::create("SHA-256"));
+    auto hash(Botan::HashFunction::create("Skein-512(384)"));
 
     for (size_t i = 0, size = data.size(); i < size; i++) {
         hash->update(data[i], dataLength[i]);
@@ -42,16 +42,16 @@ void sha256(const std::vector<const uint8_t*>& data, const std::vector<uint64_t>
     hash->final(digest);
 }
 
-void* createSha256Context()
+void* createSkein384Context()
 {
-    auto *ctx = new shaCtx;
-    ctx->hash = Botan::HashFunction::create("SHA-256");
+    auto *ctx = new hashCtx;
+    ctx->hash = Botan::HashFunction::create("Skein-512(384)");
     return (void*)ctx;
 }
 
-void closeSha256Context(void* ctx, uint8_t * digest)
+void closeSkein384Context(void* ctx, uint8_t * digest)
 {
-    auto* hd = reinterpret_cast<shaCtx *>(ctx);
+    auto* hd = reinterpret_cast<hashCtx*>(ctx);
 
     if (digest != nullptr && hd != nullptr) {
         hd->hash->final(digest);
@@ -60,13 +60,13 @@ void closeSha256Context(void* ctx, uint8_t * digest)
     delete hd;
 }
 
-void* initializeSha256Context(void* ctx)
+void* initializeSkein384Context(void* ctx)
 {
-    auto* hd = reinterpret_cast<shaCtx *>(ctx);
+    auto* hd = reinterpret_cast<hashCtx*>(ctx);
 
     if (hd != nullptr) {
         if (hd->hash == nullptr) {
-            hd->hash = Botan::HashFunction::create("SHA-256");
+            hd->hash = Botan::HashFunction::create("Skein-512(384)");
         }
         else {
             hd->hash->clear();
@@ -75,23 +75,23 @@ void* initializeSha256Context(void* ctx)
     return (void*)hd;
 }
 
-void finalizeSha256Context(void* ctx, zrtp::RetainedSecArray & digestOut)
+void finalizeSkein384Context(void* ctx, zrtp::RetainedSecArray & digestOut)
 {
-    auto* hd = reinterpret_cast<shaCtx *>(ctx);
+    auto* hd = reinterpret_cast<hashCtx*>(ctx);
     hd->hash->final(digestOut.data());
-    digestOut.size(SHA256_DIGEST_SIZE);
+    digestOut.size(SHA384_DIGEST_SIZE);
 }
 
-void sha256Ctx(void* ctx, const uint8_t* data, uint64_t dataLength)
+void skein384Ctx(void* ctx, const uint8_t* data, uint64_t dataLength)
 {
-    auto* hd = reinterpret_cast<shaCtx *>(ctx);
+    auto* hd = reinterpret_cast<hashCtx*>(ctx);
 
     hd->hash->update(data, dataLength);
 }
 
-void sha256Ctx(void* ctx, const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength)
+void skein384Ctx(void* ctx, const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength)
 {
-    auto* hd = reinterpret_cast<shaCtx *>(ctx);
+    auto* hd = reinterpret_cast<hashCtx*>(ctx);
 
     for (size_t i = 0, size = data.size(); i < size; i++) {
         hd->hash->update(data[i], dataLength[i]);

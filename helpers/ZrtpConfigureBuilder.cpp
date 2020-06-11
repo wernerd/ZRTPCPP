@@ -21,7 +21,11 @@
 #include <zrtp/libzrtpcpp/ZIDCacheDb.h>
 #endif
 
+#ifdef BOTAN_AMAL
+#include <botancrypto/ZrtpBotanRng.h>
+#else
 #include <cryptcommon/ZrtpRandom.h>
+#endif
 #include "ZrtpConfigureBuilder.h"
 
 void ZrtpConfigureBuilder::addAlgorithm(char const * name, AlgoTypes type ) {
@@ -58,7 +62,11 @@ ZrtpConfigureBuilder::initializeCache(const std::string & zidFilename, ZidCacheT
     switch (cacheType) {
         case NoCache:
             zf = std::make_shared<ZIDCacheEmpty>();
+#ifdef BOTAN_AMAL
+            ZrtpBotanRng::getRandomData(newZid, IDENTIFIER_LEN);
+#else
             ZrtpRandom::getRandomData(newZid, IDENTIFIER_LEN);
+#endif
             zf->setZid(newZid);
             configuration->setZidCache(zf);
             return *this;

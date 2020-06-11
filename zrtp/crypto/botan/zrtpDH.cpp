@@ -23,7 +23,7 @@
 
 #include <zrtp/crypto/zrtpDH.h>
 #include <zrtp/libzrtpcpp/ZrtpTextData.h>
-#include <cryptcommon/ZrtpRandom.h>
+#include <botancrypto/ZrtpBotanRng.h>
 
 #ifdef BOTAN_AMAL
 #include "botan_all.h"
@@ -48,7 +48,7 @@
 
 void randomZRTP(uint8_t *buf, int32_t length)
 {
-    ZrtpRandom::getRandomData(buf, length);
+    ZrtpBotanRng::getRandomData(buf, length);
 }
 
 // ZRTP does not use any built-in KDF because it defines own KDFs

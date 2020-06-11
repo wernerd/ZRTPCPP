@@ -24,11 +24,19 @@ limitations under the License.
 #include "../SIDH_api.h"
 #include "SidhKeyManagement.h"
 
+#ifdef BOTAN_AMAL
+#include <botancrypto/ZrtpBotanRng.h>
+#else
 #include "../../ZrtpRandom.h"
+#endif
 
 static CRYPTO_STATUS getRandomBytes(unsigned int numBytes, unsigned char* random_array)
 {
+#ifdef BOTAN_AMAL
+    uint32_t length = ZrtpBotanRng::getRandomData(random_array, numBytes);
+#else
     uint32_t length = ZrtpRandom::getRandomData(random_array, numBytes);
+#endif
     return (length == numBytes) ? CRYPTO_SUCCESS : CRYPTO_ERROR;
 }
 
