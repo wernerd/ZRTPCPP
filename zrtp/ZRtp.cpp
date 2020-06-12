@@ -1805,7 +1805,7 @@ bool ZRtp::verifyH2(ZrtpPacketCommit *commit) {
 
 void ZRtp::computeHvi(ZrtpPacketDHPart* dh, ZrtpPacketHello *hello) {
 
-    std::vector<const uint_8t *>data(3);
+    std::vector<const uint8_t *>data(3);
     std::vector<uint64_t >length(3);
     /*
      * populate the vector to compute the HVI hash according to the
@@ -1981,7 +1981,7 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord)
      * hashed to create S0.  According to the formula the max number of
      * elements to hash is 12, add one for the terminating "nullptr"
      */
-    std::vector<uint_8t const *> data(15);
+    std::vector<uint8_t const *> data(15);
     std::vector<uint64_t> length(15);
 
     // we need a number of length data items, so define them here
@@ -2139,7 +2139,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord)
      * These vectors hold the pointers and lengths of the data that must be
      * hashed to create S0.
      */
-    std::vector<uint_8t const *> data(15);
+    std::vector<uint8_t const *> data(15);
     std::vector<uint64_t> length(15);
 
     // we need a number of length data items, so define them here
@@ -2216,7 +2216,7 @@ void ZRtp::KDF(uint8_t* key, size_t keyLength, char const * label, size_t labelL
     // Very first element is a fixed counter, big endian
     uint32_t counter = 1;
     counter = zrtpHtonl(counter);
-    data.push_back(reinterpret_cast<uint_8t *>(&counter));
+    data.push_back(reinterpret_cast<uint8_t *>(&counter));
     length.push_back(sizeof(uint32_t));
 
     // Next element is the label, null terminated, labelLength includes null byte.
@@ -2229,7 +2229,7 @@ void ZRtp::KDF(uint8_t* key, size_t keyLength, char const * label, size_t labelL
 
     // last element is HMAC length in bits, big endian
     uint32_t len = zrtpHtonl(static_cast<uint32_t>(L));
-    data.push_back(reinterpret_cast<uint_8t *>(&len));
+    data.push_back(reinterpret_cast<uint8_t *>(&len));
     length.push_back(sizeof(uint32_t));
 
     // Use negotiated hash.

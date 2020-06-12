@@ -315,7 +315,7 @@ void CryptoContext::deriveSrtpKeys(uint64_t index)
         break;
 
     case SrtpAuthenticationSkeinHmac:
-        macCtx = createSkeinMacContext(k_a, n_a, tagLength*8, Skein512);
+        macCtx = createSkeinMacContext(k_a, n_a, tagLength*8, 0);
         break;
     }
     memset(k_a, 0, n_a);

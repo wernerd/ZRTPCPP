@@ -24,10 +24,12 @@
 #include <cstdlib>
 
 #include <libzrtpcpp/ZIDCacheDb.h>
-#include <cryptcommon/aes.h>
 
 ZIDCacheDb::~ZIDCacheDb() {
-    close();
+    if (zidFile != nullptr) {
+        cacheOps.closeCache(zidFile);
+        zidFile = nullptr;
+    }
 }
 
 int ZIDCacheDb::open(char* name) {
@@ -136,7 +138,7 @@ void ZIDCacheDb::formatOutput(remoteZidRecord_t *remZid, const char *nameBuffer,
     stm.fill('0');
     formatHex(stm, associatedZid, IDENTIFIER_LEN); stm << '|';
     formatHex(stm, remZid->identifier, IDENTIFIER_LEN); stm << '|';
-    uint_8t flag = remZid->flags & 0xffU;
+    uint8_t flag = remZid->flags & 0xffU;
     formatHex(stm, &flag, 1); stm << '|';
 
     formatHex(stm, remZid->rs1, RS_LENGTH); stm << '|';

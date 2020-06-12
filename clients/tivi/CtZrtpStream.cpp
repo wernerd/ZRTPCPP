@@ -32,7 +32,6 @@
 
 #include <CtZrtpStream.h>
 #include <CtZrtpCallback.h>
-#include <cryptcommon/aes.h>
 #include <cryptcommon/ZrtpRandom.h>
 #include <common/ZrtpTimeoutProvider.h>
 #include <cryptcommon/sidhp751/keymanagement/SidhKeyManagement.h>

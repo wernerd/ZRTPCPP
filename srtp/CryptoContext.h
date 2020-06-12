@@ -40,9 +40,6 @@ constexpr int SrtpEncryptionTWOF8 = 4;
 
 #include <cstdint>
 #include <memory>
-#ifdef ZRTP_OPENSSL
-#include <openssl/hmac.h>
-#endif
 #include "crypto/hmac.h"
 #include "crypto/macSkein.h"
 

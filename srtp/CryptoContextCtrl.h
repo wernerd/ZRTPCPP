@@ -27,7 +27,7 @@
 
 #include <memory>
 #include "crypto/hmac.h"
-#include "cryptcommon/macSkein.h"
+#include "crypto/macSkein.h"
 
 class SrtpSymCrypto;
 

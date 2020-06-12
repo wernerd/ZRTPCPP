@@ -43,7 +43,6 @@
 #include <libzrtpcpp/ZrtpCallback.h>
 #include <libzrtpcpp/ZIDCache.h>
 
-#include <cryptcommon/skeinApi.h>
 #include <botan_all.h>
 
 #include "common/typedefs.h"

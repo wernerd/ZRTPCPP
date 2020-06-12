@@ -18,8 +18,8 @@
 #ifndef MAC_SKEIN_H
 #define MAC_SKEIN_H
 
-#include <cryptcommon/skeinApi.h>
 #include <vector>
+#include <cstdint>
 /**
  * @file macSkein.h
  * @brief Function that provide Skein MAC support
@@ -53,7 +53,7 @@
  */
 void macSkein(const uint8_t* key, uint64_t keyLength,
               const uint8_t* data, uint64_t dataLength,
-              uint8_t* mac, size_t macLength, SkeinSize_t skeinSize );
+              uint8_t* mac, size_t macLength, int skeinSize );
 
 /**
  * Compute Skein MAC over several data chunks.
@@ -79,7 +79,7 @@ void macSkein(const uint8_t* key, uint64_t keyLength,
 void macSkein(const uint8_t* key, uint64_t keyLength,
               std::vector<const uint8_t*> data,
               std::vector<uint64_t> dataLength,
-              uint8_t* mac, size_t macLength, SkeinSize_t skeinSize);
+              uint8_t* mac, size_t macLength, int skeinSize);
 
 /**
  * Create and initialize a Skein MAC context.
@@ -97,7 +97,7 @@ void macSkein(const uint8_t* key, uint64_t keyLength,
  *    The Skein size to use.
  * @return Returns a pointer to the initialized context or @c NULL in case of an error.
  */
-void* createSkeinMacContext(const uint8_t* key, uint64_t keyLength, size_t macLength, SkeinSize_t skeinSize);
+void* createSkeinMacContext(const uint8_t* key, uint64_t keyLength, size_t macLength, int skeinSize);
 
 /**
  * Initialize a Skein MAC context.
@@ -117,7 +117,7 @@ void* createSkeinMacContext(const uint8_t* key, uint64_t keyLength, size_t macLe
  *    The Skein size to use.
  * @return Returns a pointer to the initialized context
  */
-void* initializeSkeinMacContext(void* ctx, const uint8_t* key, uint64_t keyLength, size_t macLength, SkeinSize_t skeinSize);
+void* initializeSkeinMacContext(void* ctx, const uint8_t* key, uint64_t keyLength, size_t macLength, int skeinSize);
 
 /**
  * Compute Skein MAC.

@@ -25,7 +25,7 @@ struct macCtx {
 
 void macSkein(const uint8_t* key, uint64_t keyLength,
               const uint8_t* data, uint64_t dataLength,
-              uint8_t* mac, size_t macLength, SkeinSize_t skeinSize)
+              uint8_t* mac, size_t macLength, int skeinSize)
 {
     (void) skeinSize;
     auto hmac = std::make_unique<Botan::Skein_512>(macLength, "" );
@@ -38,7 +38,7 @@ void macSkein(const uint8_t* key, uint64_t keyLength,
 void macSkein(const uint8_t* key, uint64_t keyLength,
               std::vector<const uint8_t*> data,
               std::vector<uint64_t> dataLength,
-              uint8_t* mac, size_t mac_length, SkeinSize_t skeinSize)
+              uint8_t* mac, size_t mac_length, int skeinSize)
 {
     auto hmac = std::make_unique<Botan::Skein_512>(mac_length, "" );
 
@@ -50,7 +50,7 @@ void macSkein(const uint8_t* key, uint64_t keyLength,
 }
 
 void* createSkeinMacContext(const uint8_t* key, uint64_t keyLength,
-                            size_t macLength, SkeinSize_t skeinSize)
+                            size_t macLength, int skeinSize)
 {
     (void) skeinSize;
     auto* ctx = new macCtx;
@@ -60,7 +60,7 @@ void* createSkeinMacContext(const uint8_t* key, uint64_t keyLength,
     return ctx;
 }
 
-void* initializeSkeinMacContext(void* ctx, const uint8_t* key, uint64_t keyLength, size_t macLength, SkeinSize_t skeinSize)
+void* initializeSkeinMacContext(void* ctx, const uint8_t* key, uint64_t keyLength, size_t macLength, int skeinSize)
 {
     (void) skeinSize;
     auto* hd = reinterpret_cast<macCtx *>(ctx);

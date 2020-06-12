@@ -311,7 +311,7 @@ void CryptoContextCtrl::deriveSrtcpKeys()
         break;
     case SrtpAuthenticationSkeinHmac:
         // Skein MAC uses number of bits as MAC size, not just bytes
-        macCtx = createSkeinMacContext(k_a, n_a, tagLength*8, Skein512);
+        macCtx = createSkeinMacContext(k_a, n_a, tagLength*8, 0);
         break;
     }
     memset(k_a, 0, n_a);
