@@ -94,13 +94,10 @@ void* createSha384Context();
  *
  * @param ctx
  *    Points to the SHA384 context.
- * @param digest
- *    If this pointer is not NULL then it must point to a byte array that
- *    is big enough to hold the SHA384 digest (384 bit = 48 Bytes). If this
- *    pointer is NULL then the functions does not compute the digest but
- *    closes the context only. The context cannot be used anymore.
+ * @param digestOut
+ *    Reference to a secure array that receives the computed digest.
  */
-void closeSha384Context(void* ctx, uint8_t* digest);
+void closeSha384Context(void* ctx, zrtp::RetainedSecArray & digestOut);
 
 /**
  * Initialize a SHA384 context.

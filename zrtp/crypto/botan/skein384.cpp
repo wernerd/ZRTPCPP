@@ -49,12 +49,13 @@ void* createSkein384Context()
     return (void*)ctx;
 }
 
-void closeSkein384Context(void* ctx, uint8_t * digest)
+void closeSkein384Context(void* ctx, zrtp::RetainedSecArray & digestOut)
 {
     auto* hd = reinterpret_cast<hashCtx*>(ctx);
 
-    if (digest != nullptr && hd != nullptr) {
-        hd->hash->final(digest);
+    if (hd != nullptr) {
+        hd->hash->final(digestOut.data());
+        digestOut.size(SHA384_DIGEST_SIZE);
     }
     hd->hash.reset();
     delete hd;

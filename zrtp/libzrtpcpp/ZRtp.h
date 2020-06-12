@@ -671,18 +671,6 @@ class __EXPORT ZRtp {
     void setTransportOverhead(int32_t overhead);
 
 private:
-     typedef struct _hashCtx {
-         ~_hashCtx() { hash.reset(); }
-         std::unique_ptr<Botan::HashFunction> hash;     // TODO : change initialization
-         SkeinCtx_t  skeinCtx;
-#ifdef ZRTP_OPENSSL
-         SHA256_CTX  sha256Ctx;
-         SHA512_CTX  sha384Ctx;
-#else
-         sha256_ctx  sha256Ctx;
-         sha384_ctx  sha384Ctx;
-#endif
-     } HashCtx;
 
      friend class ZrtpStateClass;
 
@@ -849,8 +837,6 @@ private:
     zrtp::NegotiatedArray  zrtpKeyI;
     zrtp::NegotiatedArray  zrtpKeyR;
 
-    HashCtx hashCtx = {};
-
     /**
      * Pointers to negotiated hash and HMAC functions
      */
@@ -867,7 +853,7 @@ private:
                              const std::vector<uint64_t>& data_length,
                              zrtp::RetainedSecArray & macOut) = nullptr;
 
-    void* (*createHashCtx)(void* ctx) = nullptr;
+    void* (*createHashCtx)() = nullptr;
 
     void (*closeHashCtx)(void* ctx, zrtp::RetainedSecArray & macOut) = nullptr;
 

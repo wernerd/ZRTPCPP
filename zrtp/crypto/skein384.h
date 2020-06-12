@@ -97,13 +97,10 @@ void* createSkein384Context();
  *
  * @param ctx
  *    Points to the Skein384 context.
- * @param digest
- *    If this pointer is not NULL then it must point to a byte array that
- *    is big enough to hold the Skein384 digest (384 bit = 48 Bytes). If this
- *    pointer is NULL then the functions does not compute the digest but
- *    closes the context only. The context cannot be used anymore.
+ * @param digestOut
+ *    Reference to a secure array that receives the computed digest.
  */
-void closeSkein384Context(void* ctx, uint8_t* digest);
+void closeSkein384Context(void* ctx, zrtp::RetainedSecArray & digestOut);
 
 /**
  * Initialize a Skein384 context.

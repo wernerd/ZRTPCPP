@@ -94,13 +94,10 @@ void* createSha256Context();
  *
  * @param ctx
  *    Points to the SHA256 context.
- * @param digest
- *    If this pointer is not NULL then it must point to a byte array that
- *    is big enough to hold the SHA256 digest (256 bit = 32 Bytes). If this
- *    pointer is NULL then the functions does not compute the digest but
- *    closes the context only. The context cannot be used anymore.
+ * @param digestOut
+ *    Reference to a secure array that receives the computed digest.
  */
-void closeSha256Context(void* ctx, uint8_t * digest);
+void closeSha256Context(void* ctx, zrtp::RetainedSecArray & digestOut);
 
 /**
  * Initialize a SHA256 context.

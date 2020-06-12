@@ -98,13 +98,10 @@ void* createSkein256Context();
  *
  * @param ctx
  *    Points to the Skein256 context.
- * @param digest
- *    If this pointer is not NULL then it must point to a byte array that
- *    is big enough to hold the Skein256 digest (256 bit = 32 Bytes). If this
- *    pointer is NULL then the functions does not compute the digest but
- *    closes the context only. The context cannot be used anymore.
+ * @param digestOut
+ *    Reference to a secure array that receives the computed digest.
  */
-void closeSkein256Context(void* ctx, uint8_t* digest);
+void closeSkein256Context(void* ctx, zrtp::RetainedSecArray & digestOut);
 
 /**
  * Initialize a Skein256 context.

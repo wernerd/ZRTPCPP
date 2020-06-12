@@ -49,12 +49,13 @@ void* createSha256Context()
     return (void*)ctx;
 }
 
-void closeSha256Context(void* ctx, uint8_t * digest)
+void closeSha256Context(void* ctx, zrtp::RetainedSecArray & digestOut)
 {
     auto* hd = reinterpret_cast<shaCtx *>(ctx);
 
-    if (digest != nullptr && hd != nullptr) {
-        hd->hash->final(digest);
+    if (hd != nullptr) {
+        hd->hash->final(digestOut.data());
+        digestOut.size(SHA256_DIGEST_SIZE);
     }
     hd->hash.reset();
     delete hd;

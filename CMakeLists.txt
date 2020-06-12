@@ -31,7 +31,6 @@ set (SOVERSION 5)
 #
 option(CCRTP "Build library to use with GNU ccRTP." OFF)
 option(CORE_LIB "Build core library only, no specific client support." OFF)
-option(CRYPTO_STANDALONE "Use embedded crypto and big number modules." ON)
 option(TIVI "Build library for the Tivi client, implies '-DCRYPTO_STANDALONE=ON' and '-DSDES=ON'." OFF)
 # option(WEBRTC "Create static lib for webRTC, with SIDH support." OFF)
 option(SQLITE "Use SQLite DB as backend for ZRTP cache." OFF)
@@ -39,7 +38,6 @@ option(SQLCIPHER "Use SQLCipher DB as backend for ZRTP cache." OFF)
 option(SRTP "Include SRTP when not building for CCRTP." OFF)
 option(AXO "Include Axolotl support when not building for CCRTP." OFF)
 option(TESTS "Generate Unit test." OFF)
-option(USE_BOTAN "Use Botan crypto library" OFF)
 
 option(ANDROID "Generate Android libraries, use if via Gradle build script" OFF)
 # option(JAVA "Generate Java support files (requires JDK and SWIG)" OFF)
@@ -95,7 +93,6 @@ if (CCRTP)
 elseif (TIVI)
     set (PACKAGE libzrtptivi)
     set(zrtplibName zrtptivi)
-    set(CRYPTO_STANDALONE true)
     set(SDES true)
     set(SRTP true)
 elseif (CORE_LIB)
@@ -150,39 +147,6 @@ set(CMAKE_MACOSX_RPATH 1)
 
 check_include_files(stdlib.h HAVE_STDLIB_H)
 check_include_files(string.h HAVE_STRING_H)
-
-if (NOT CRYPTO_STANDALONE)
-    pkg_check_modules(OPENSSL libcrypto>=0.9.8)
-    if (OPENSSL_FOUND)
-      set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES} ${OPENSSL_INCLUDE_DIRS}) #update include files search directory
-      check_include_files(openssl/bn.h HAVE_OPENSSL_BN_H)
-      check_include_files(openssl/aes.h HAVE_OPENSSL_AES_H)
-      check_include_files(openssl/sha.h HAVE_OPENSSL_SHA_H)
-      check_library_exists(crypto EVP_CipherInit_ex "${OPENSSL_LIBDIR}" HAVE_SSL_CRYPT) #use search lib directory from pkg-config
-      set(LIBS ${LIBS} -lcrypto)
-      set(CRYPTOBACKEND "libcrypto >= 0.9.8")
-      set(BUILD_REQ "libopenssl-devel >= 0.9.8")
-      set(PACKAGE_REQ "libopenssl >= 0.9.8")
-      add_definitions(-DZRTP_OPENSSL)
-      include_directories(${OPENSSL_INCLUDE_DIRS}) #update includes directory from pkg-config
-      MESSAGE(STATUS "Using OpenSSL crypto backend")
-  else()
-      message(FATAL_ERROR "No crypto library found")
-  endif()
-else()
-    # For crypto standalone mode we need to configure the bnlib.
-    check_include_files(stdint.h HAVE_STDINT_H)
-    check_include_files(stdint.h HAVE_ASSERT_H)
-    check_include_files(limits.h HAVE_LIMITS_H)
-
-    check_function_exists(memmove HAVE_MEMMOVE)
-    check_function_exists(memcpy HAVE_MEMCPY)
-
-    # necessary and required modules checked, ready to generate config.h
-    configure_file(${CMAKE_SOURCE_DIR}/bnlib/bnconfig.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/bnconfig.h)
-    MESSAGE(STATUS "Using internal (standalone) crypto functions")
-
-endif()
 
 #### For Botan migration tests only - remove once Botan migration done
 #pkg_check_modules(BOTAN botan-2)
@@ -251,45 +215,36 @@ endif()
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
 include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/zrtp)
 
-if(CRYPTO_STANDALONE)
-    add_definitions(-DSUPPORT_NON_NIST)
-    include_directories (${CMAKE_SOURCE_DIR}/bnlib)
-endif()
+add_definitions(-DSUPPORT_NON_NIST)
 
 if (SRTP)
     set (sdes_src
             ${CMAKE_SOURCE_DIR}/zrtp/ZrtpSdesStream.cpp
             ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpSdesStream.h)
 
-    if (SDES AND CRYPTO_STANDALONE)
-        add_definitions(-DENABLE_SDES_MIX)  ## SDES mixer currently with standalone crypto (no openSSL)
+    if (SDES)
+        add_definitions(-DENABLE_SDES_MIX)  ## SDES mixer
     endif()
 
 endif()
 
 # **** The following source files are common for all clients ****
 #
-if (USE_BOTAN)
-    set(BOTAN_AMAL true)
-    set(botan_src
-            ${CMAKE_SOURCE_DIR}/botancrypto/ZrtpBotanRng.cpp
-            ${CMAKE_SOURCE_DIR}/botancrypto/ZrtpBotanRng.h
-            ${CMAKE_SOURCE_DIR}/botancrypto/ZrtpCurve41417.cpp
-            ${CMAKE_SOURCE_DIR}/botancrypto/ZrtpCurve41417.h
-            ${CMAKE_SOURCE_DIR}/botancrypto/Ec41417Group.cpp
-            ${CMAKE_SOURCE_DIR}/botancrypto/Ec41417Group.h
-            ${CMAKE_SOURCE_DIR}/botancrypto/Point41417.cpp
-            ${CMAKE_SOURCE_DIR}/botancrypto/Point41417.h
-            )
+set(botan_src
+        ${CMAKE_SOURCE_DIR}/botancrypto/ZrtpBotanRng.cpp
+        ${CMAKE_SOURCE_DIR}/botancrypto/ZrtpBotanRng.h
+        ${CMAKE_SOURCE_DIR}/botancrypto/ZrtpCurve41417.cpp
+        ${CMAKE_SOURCE_DIR}/botancrypto/ZrtpCurve41417.h
+        ${CMAKE_SOURCE_DIR}/botancrypto/Ec41417Group.cpp
+        ${CMAKE_SOURCE_DIR}/botancrypto/Ec41417Group.h
+        ${CMAKE_SOURCE_DIR}/botancrypto/Point41417.cpp
+        ${CMAKE_SOURCE_DIR}/botancrypto/Point41417.h
+        ${CMAKE_SOURCE_DIR}/botancrypto/x86_64/botan_all.cpp
+        ${CMAKE_SOURCE_DIR}/botancrypto/x86_64/botan_all.h
+)
 
-    if (BOTAN_AMAL)
-        add_definitions(-DBOTAN_AMAL)
-        include_directories (${CMAKE_SOURCE_DIR}/botancrypto/x86_64)
-        set (botan_src ${botan_src}
-                ${CMAKE_SOURCE_DIR}/botancrypto/x86_64/botan_all.cpp
-                ${CMAKE_SOURCE_DIR}/botancrypto/x86_64/botan_all.h)
-    endif()
-endif()
+add_definitions(-DBOTAN_AMAL)
+include_directories (${CMAKE_SOURCE_DIR}/botancrypto/x86_64)
 
 set(zrtp_src_include
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/Base32.h
@@ -380,28 +335,6 @@ set(zrtp_src_no_cache
         ${CMAKE_SOURCE_DIR}/logging/osSpecifics.h
         ${sdes_src} ${zrtp_src_include} ${botan_src} )
 
-set(bnlib_src
-        ${CMAKE_SOURCE_DIR}/bnlib/bn00.c
-        ${CMAKE_SOURCE_DIR}/bnlib/lbn00.c
-        ${CMAKE_SOURCE_DIR}/bnlib/bn.c
-        ${CMAKE_SOURCE_DIR}/bnlib/lbnmem.c
-        ${CMAKE_SOURCE_DIR}/bnlib/sieve.c
-        ${CMAKE_SOURCE_DIR}/bnlib/prime.c
-        ${CMAKE_SOURCE_DIR}/bnlib/bnprint.c
-        ${CMAKE_SOURCE_DIR}/bnlib/jacobi.c
-        ${CMAKE_SOURCE_DIR}/bnlib/germain.c
-        ${CMAKE_SOURCE_DIR}/bnlib/ec/ec.c
-        ${CMAKE_SOURCE_DIR}/bnlib/ec/ecdh.c
-        ${CMAKE_SOURCE_DIR}/bnlib/ec/curve25519-donna.c)
-
-set(zrtp_skein_src
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein256.h
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein384.h
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/skeinMac256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/skein256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/skeinMac384.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/skein384.cpp)
-
 set(zrtp_crypto_includes
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/aesCFB.h
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/hmac256.h
@@ -414,17 +347,6 @@ set(zrtp_crypto_includes
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.h
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/zrtpDH.h
         )
-
-set(zrtp_standalone_crypto_src
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/zrtpDH.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/hmac256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/sha256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/hmac384.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/sha384.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/aesCFB.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/twoCFB.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/standalone/sha2.c
-        ${zrtp_crypto_includes})
 
 set(zrtp_botan_crypto_src
         ${botan_src}
@@ -457,6 +379,7 @@ endif()
 
 if (CCRTP)
     add_subdirectory(clients/ccrtp)
+    add_subdirectory(demo)
 endif()
 
 if (TIVI)
@@ -507,9 +430,6 @@ if (TESTS)
     add_subdirectory(unittests)
 endif()
 
-if (CCRTP)
-    add_subdirectory(demo)
-endif()
     ##very useful for macosx, specially when using gtkosx bundler
 if(APPLE)
     if (NOT CMAKE_INSTALL_NAME_DIR)

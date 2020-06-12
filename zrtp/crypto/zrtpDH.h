@@ -55,9 +55,6 @@ void randomZRTP(uint8_t *buf, int32_t length);
 // Exclude the whole code if not compiled with c++ - needed for C-wrapper code.
 #if defined(__cplusplus)
 
-#include <bn.h>
-#include <ec/ec.h>
-#include <ec/ecdh.h>
 #include <libzrtpcpp/ZrtpConfigure.h>
 #include "../common/SecureArray.h"
 

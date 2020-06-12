@@ -80,9 +80,8 @@ void ZRtp::initialize(const std::string& id) {
     // setup the implicit hash function pointers and length. The casts show that we use different
     // functions
     hashLengthImpl = SHA256_DIGEST_LENGTH;
-    hashFunctionImpl = static_cast<void (*)(const uint8_t *, uint64_t, uint8_t *)>(sha256);
-
-    hmacFunctionImpl = static_cast<void (*)(const uint8_t*, uint64_t, const uint8_t *, uint64_t, zrtp::RetainedSecArray &)>(hmac_sha256);
+    hashFunctionImpl = sha256;
+    hmacFunctionImpl = hmac_sha256;
 
     ownZid.assign(configureAlgos->getZidCache()->getZid(), ZID_SIZE);        // save the ZID
 
@@ -387,7 +386,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     // hash first messages to produce overall message hash
     // First the Responder's Hello message, second the Commit (always Initiator's).
     // Must use negotiated hash.
-    msgShaContext = createHashCtx(msgShaContext);
+    msgShaContext = createHashCtx();
     hashCtxFunction(msgShaContext, (unsigned char*)hello->getHeaderBase(), helloLen);
     hashCtxFunction(msgShaContext, (unsigned char*)zrtpCommit.getHeaderBase(), len);
 
@@ -425,7 +424,7 @@ ZrtpPacketCommit* ZRtp::prepareCommitMultiStream(ZrtpPacketHello *hello) {
     // First the Responder's Hello message, second the Commit
     // (always Initator's).
     // Must use the negotiated hash.
-    msgShaContext = createHashCtx(msgShaContext);
+    msgShaContext = createHashCtx();
 
     uint32_t helloLen = hello->getLength() * ZRTP_WORD_SIZE;
     hashCtxFunction(msgShaContext, (unsigned char*)hello->getHeaderBase(), helloLen);
@@ -583,13 +582,13 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     // We are definitely responder. Save the peer's hvi for later compare.
     memcpy(peerHvi, commit->getHvi(), HVI_SIZE);
 
-    // We are responder. Release the pre-computed SHA context because it was prepared for Initiator.
+    // We are responder. Release the pre-computed hash context because it was prepared for Initiator.
     // Setup and compute for Responder.
     if (msgShaContext != nullptr) {
         zrtp::NegotiatedArray dummy;
         closeHashCtx(msgShaContext, dummy);
     }
-    msgShaContext = createHashCtx(msgShaContext);
+    msgShaContext = createHashCtx();
 
     // Hash messages to produce overall message hash:
     // First the Responder's (my) Hello message, second the Commit (always Initator's), 
@@ -856,13 +855,13 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1MultiStream(ZrtpPacketCommit* commit, ui
     }
     myRole = Responder;
 
-    // We are responder. Release a possibly pre-computed SHA256 context
+    // We are responder. Release a possibly pre-computed hash context
     // because this was prepared for Initiator. Then create a new one.
     if (msgShaContext != nullptr) {
         zrtp::NegotiatedArray dummy;
         closeHashCtx(msgShaContext, dummy);
     }
-    msgShaContext = createHashCtx(msgShaContext);
+    msgShaContext = createHashCtx();
 
     // Hash messages to produce overall message hash:
     // First the Responder's (my) Hello message, second the Commit
@@ -2436,13 +2435,8 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hashNegotiated) {
         hmacListFunction = static_cast<void (*)(const uint8_t*, uint64_t, const vector<const uint8_t*>&,
                                                 const vector<uint64_t>&, zrtp::RetainedSecArray &)>(hmacSha256);
 
-        createHashCtx = initializeSha256Context;
-#ifdef BOTAN_AMAL
-        msgShaContext = createSha256Context();
-#else
-        msgShaContext = &hashCtx.sha256Ctx;
-#endif
-        closeHashCtx = finalizeSha256Context;
+        createHashCtx = createSha256Context;
+        closeHashCtx = closeSha256Context;
         hashCtxFunction = sha256Ctx;
         break;
 
@@ -2454,13 +2448,8 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hashNegotiated) {
         hmacListFunction = static_cast<void (*)(const uint8_t*, uint64_t, const vector<const uint8_t*>&,
                                                 const vector<uint64_t>&, zrtp::RetainedSecArray & )>(hmacSha384);
 
-        createHashCtx = initializeSha384Context;
-#ifdef BOTAN_AMAL
-            msgShaContext = createSha384Context();
-#else
-            msgShaContext = &hashCtx.sha384Ctx;
-#endif
-        closeHashCtx = finalizeSha384Context;
+        createHashCtx = createSha384Context;
+        closeHashCtx = closeSha384Context;
         hashCtxFunction = sha384Ctx;
         break;
 
@@ -2471,14 +2460,8 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hashNegotiated) {
         hmacFunction = macSkein256;
         hmacListFunction = static_cast<void (*)(const uint8_t*, uint64_t, const vector<const uint8_t*>&, const vector<uint64_t>&, zrtp::RetainedSecArray &)>(macSkein256);
 
-        createHashCtx = initializeSkein256Context;
-#ifdef BOTAN_AMAL
-            msgShaContext = createSha256Context();
-#else
-            msgShaContext = &hashCtx.sha256Ctx;
-#endif
-        msgShaContext = &hashCtx.skeinCtx;
-        closeHashCtx = finalizeSkein256Context;
+        createHashCtx = createSkein256Context;
+        closeHashCtx = closeSkein256Context;
         hashCtxFunction = skein256Ctx;
         break;
 
@@ -2489,9 +2472,8 @@ void ZRtp::setNegotiatedHash(AlgorithmEnum* hashNegotiated) {
         hmacFunction = macSkein384;
         hmacListFunction = static_cast<void (*)(const uint8_t*, uint64_t, const vector<const uint8_t*>&, const vector<uint64_t>&, zrtp::RetainedSecArray &)>(macSkein384);
 
-        createHashCtx = initializeSkein384Context;
-        msgShaContext = &hashCtx.skeinCtx;
-        closeHashCtx = finalizeSkein384Context;
+        createHashCtx = createSkein384Context;
+        closeHashCtx = closeSkein384Context;
         hashCtxFunction = skein384Ctx;
         break;
 
