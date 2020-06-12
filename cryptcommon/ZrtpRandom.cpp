@@ -20,7 +20,6 @@
 
 #include <cryptcommon/ZrtpRandom.h>
 #include <cryptcommon/aescpp.h>
-#include <zrtp/crypto/sha2.h>
 #include "common/osSpecifics.h"
 
 #if defined(_WINDOWS)

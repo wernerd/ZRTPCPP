@@ -34,7 +34,7 @@ void hmac_sha1(const uint8_t *key, uint64_t keyLength, const uint8_t* data, uint
     hmac->set_key(key, keyLength);
     hmac->update(data, dataLength);
     hmac->final(mac);
-    *macLength = SHA1_BLOCK_SIZE;
+    *macLength = hmac->output_length();
 }
 
 void hmac_sha1(const uint8_t* key, uint64_t keyLength,
@@ -50,7 +50,7 @@ void hmac_sha1(const uint8_t* key, uint64_t keyLength,
         hmac->update(data[i], dataLength[i]);
     }
     hmac->final(mac);
-    *macLength = SHA1_BLOCK_SIZE;
+    *macLength = hmac->output_length();
 }
 
 void* createSha1HmacContext()
@@ -83,7 +83,7 @@ void hmacSha1Ctx(void* ctx, const uint8_t* data, uint64_t dataLength,
 
     pctx->hmac->update(data, dataLength);
     pctx->hmac->final(mac);
-    *macLength = SHA1_BLOCK_SIZE;
+    *macLength = pctx->hmac->output_length();
 }
 
 void hmacSha1Ctx(void* ctx,
@@ -97,7 +97,7 @@ void hmacSha1Ctx(void* ctx,
         pctx->hmac->update(data[i], dataLength[i]);
     }
     pctx->hmac->final(mac);
-    *macLength = SHA1_BLOCK_SIZE;
+    *macLength = pctx->hmac->output_length();
 }
 
 void freeSha1HmacContext(void* ctx)

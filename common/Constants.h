@@ -18,15 +18,20 @@
 #ifndef LIBZRTPCPP_CONSTANTS_H
 #define LIBZRTPCPP_CONSTANTS_H
 
-#ifdef ZRTP_OPENSSL
-#include <openssl/crypto.h>
-#include <openssl/sha.h>
-#else
-#include <zrtp/crypto/sha2.h>
-#endif
-
 #ifndef SHA256_DIGEST_LENGTH
 #define SHA256_DIGEST_LENGTH 32
+#endif
+
+#ifndef SHA384_DIGEST_LENGTH
+#define SHA384_DIGEST_LENGTH 48
+#endif
+
+#ifndef SKEIN256_DIGEST_LENGTH
+#define SKEIN256_DIGEST_LENGTH  32
+#endif
+
+#ifndef SKEIN384_DIGEST_LENGTH
+#define SKEIN384_DIGEST_LENGTH  48
 #endif
 
 // Prepare to support digest algorithms up to 512 bit (64 bytes)

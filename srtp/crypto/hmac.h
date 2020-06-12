@@ -33,18 +33,10 @@
 
 #include <cstdint>
 #include <vector>
-#include "srtp/crypto/standalone/sha1.h"
 
 #ifndef SHA1_DIGEST_LENGTH
 #define SHA1_DIGEST_LENGTH 20
 #endif
-
-typedef struct _hmacSha1Context {
-    sha1_ctx ctx;
-    sha1_ctx innerCtx;
-    sha1_ctx outerCtx;
-} hmacSha1Context;
-
 
 /**
  * Compute SHA1 HMAC.

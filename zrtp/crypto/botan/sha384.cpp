@@ -55,7 +55,7 @@ void closeSha384Context(void* ctx, zrtp::RetainedSecArray & digestOut)
 
     if (hd != nullptr) {
         hd->hash->final(digestOut.data());
-        digestOut.size(SHA384_DIGEST_SIZE);
+        digestOut.size(hd->hash->output_length());
     }
     hd->hash.reset();
     delete hd;
@@ -80,7 +80,7 @@ void finalizeSha384Context(void* ctx, zrtp::RetainedSecArray & digestOut)
 {
     auto* hd = reinterpret_cast<shaCtx *>(ctx);
     hd->hash->final(digestOut.data());
-    digestOut.size(SHA384_DIGEST_SIZE);
+    digestOut.size(hd->hash->output_length());
 }
 
 void sha384Ctx(void* ctx, const uint8_t* data, uint64_t dataLength)

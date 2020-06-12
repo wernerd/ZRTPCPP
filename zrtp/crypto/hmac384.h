@@ -34,10 +34,6 @@
 
 #include "common/typedefs.h"
 
-#ifndef SHA384_DIGEST_LENGTH
-#define SHA384_DIGEST_LENGTH 48
-#endif
-
 /**
  * Compute SHA384 HMAC.
  *

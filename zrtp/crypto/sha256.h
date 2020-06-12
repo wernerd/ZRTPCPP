@@ -36,10 +36,6 @@
 #include <vector>
 #include <common/typedefs.h>
 
-#ifndef SHA256_DIGEST_LENGTH
-#define SHA256_DIGEST_LENGTH 32
-#endif
-
 /**
  * Compute SHA256 digest.
  *

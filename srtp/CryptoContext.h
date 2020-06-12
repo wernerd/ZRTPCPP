@@ -416,17 +416,6 @@ public:
     CryptoContext* newCryptoContextForSSRC(uint32_t ssrc, int rocLocal, int64_t keyDerivRate);
 
 private:
-    typedef union _hmacCtx {
-        SkeinCtx_t       hmacSkeinCtx;
-#ifdef ZRTP_OPENSSL
-    #if OPENSSL_VERSION_NUMBER < 0x10100000L
-        HMAC_CTX         hmacSha1Ctx;
-	#endif
-#else
-        hmacSha1Context  hmacSha1Ctx;
-#endif
-    } HmacCtx;
-
 
     uint32_t ssrcCtx;
     uint32_t mkiLength;
@@ -463,7 +452,6 @@ private:
     bool  seqNumSet;
 
     void*   macCtx;
-    HmacCtx hmacCtx{};
 
     std::unique_ptr<SrtpSymCrypto> cipher;
     std::unique_ptr<SrtpSymCrypto> f8Cipher;

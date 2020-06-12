@@ -97,7 +97,7 @@ int ZrtpBotanRng::getRandomData(uint8_t* buffer, uint32_t length) {
     auto aes = Botan::BlockCipher::create_or_throw("AES-256");
     std::unique_ptr<Botan::HashFunction> hashInternal;
 
-    uint8_t    md[SHA512_DIGEST_SIZE];
+    uint8_t    md[SHA512_DIGEST_LENGTH];
     uint8_t    ctr[Botan::AES_256::BLOCK_SIZE];
     uint8_t    rdata[Botan::AES_256::BLOCK_SIZE];
     uint32_t   generated = length;
@@ -120,8 +120,8 @@ int ZrtpBotanRng::getRandomData(uint8_t* buffer, uint32_t length) {
 
     /* Initialize counter, using excess from md if available */
     memset (ctr, 0, sizeof(ctr));
-    if (SHA512_DIGEST_SIZE > (256/8)) {
-        uint32_t ctrbytes = SHA512_DIGEST_SIZE - (256/8);
+    if (SHA512_DIGEST_LENGTH > (256/8)) {
+        uint32_t ctrbytes = SHA512_DIGEST_LENGTH - (256/8);
         if (ctrbytes > Botan::AES_256::BLOCK_SIZE)
             ctrbytes = Botan::AES_256::BLOCK_SIZE;
         memcpy(ctr + sizeof(ctr) - ctrbytes, md + (256/8), ctrbytes);

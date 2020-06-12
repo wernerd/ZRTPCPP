@@ -34,7 +34,7 @@ void hmac_sha384(const uint8_t *key, uint64_t keyLength, const uint8_t* data, ui
     hmac->set_key(key, keyLength);
     hmac->update(data, dataLength);
     hmac->final(macOut.data());
-    macOut.size(SHA384_DIGEST_SIZE);
+    macOut.size(hmac->output_length());
 }
 
 void hmacSha384(const uint8_t* key, uint64_t keyLength,
@@ -50,7 +50,7 @@ void hmacSha384(const uint8_t* key, uint64_t keyLength,
         hmac->update(dataChunks[i], dataChunkLength[i]);
     }
     hmac->final(macOut.data());
-    macOut.size(SHA384_DIGEST_SIZE);
+    macOut.size(hmac->output_length());
 }
 
 void* createSha384HmacContext(const uint8_t* key, uint64_t keyLength)
@@ -73,7 +73,7 @@ void hmacSha384Ctx(void* ctx,
         pctx->mac->update(data[i], dataLength[i]);
     }
     pctx->mac->final(mac);
-    *macLength = SHA384_BLOCK_SIZE;
+    *macLength = pctx->mac->output_length();
 }
 
 void freeSha384HmacContext(void* ctx)

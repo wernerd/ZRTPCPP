@@ -34,7 +34,7 @@ void hmac_sha256(const uint8_t *key, uint64_t keyLength, const uint8_t* data, ui
     hmac->set_key(key, keyLength);
     hmac->update(data, dataLength);
     hmac->final(macOut.data());
-    macOut.size(SHA256_DIGEST_SIZE);
+    macOut.size(hmac->output_length());
 }
 
 void hmacSha256(const uint8_t* key, uint64_t keyLength,
@@ -50,5 +50,5 @@ void hmacSha256(const uint8_t* key, uint64_t keyLength,
         hmac->update(dataChunks[i], dataChunkLength[i]);
     }
     hmac->final(macOut.data());
-    macOut.size(SHA256_DIGEST_SIZE);
+    macOut.size(hmac->output_length());
 }

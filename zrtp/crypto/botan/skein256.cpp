@@ -55,7 +55,7 @@ void closeSkein256Context(void* ctx, zrtp::RetainedSecArray & digestOut)
 
     if (hd != nullptr) {
         hd->hash->final(digestOut.data());
-        digestOut.size(SHA256_DIGEST_SIZE);
+        digestOut.size(hd->hash->output_length());
     }
     hd->hash.reset();
     delete hd;
@@ -80,7 +80,7 @@ void finalizeSkein256Context(void* ctx, zrtp::RetainedSecArray & digestOut)
 {
     auto* hd = reinterpret_cast<hashCtx*>(ctx);
     hd->hash->final(digestOut.data());
-    digestOut.size(SHA256_DIGEST_SIZE);
+    digestOut.size(hd->hash->output_length());
 }
 
 void skein256Ctx(void* ctx, const uint8_t* data, uint64_t dataLength)

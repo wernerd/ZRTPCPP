@@ -18,10 +18,10 @@
 #ifndef LIBZRTPCPP_ZRTPBOTANRNG_H
 #define LIBZRTPCPP_ZRTPBOTANRNG_H
 
-#ifdef BOTAN_AMAL
 #include "botan_all.h"
-#else
-#include <botan/rng.h>
+
+#ifndef SHA512_DIGEST_LENGTH
+#define SHA512_DIGEST_LENGTH 64
 #endif
 
 class ZrtpBotanRng : public Botan::RandomNumberGenerator {

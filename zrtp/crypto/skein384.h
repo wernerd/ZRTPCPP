@@ -36,12 +36,6 @@
 #include <vector>
 #include <common/typedefs.h>
 
-#ifndef SKEIN384_DIGEST_LENGTH
-#define SKEIN384_DIGEST_LENGTH  48
-#endif
-#define SKEIN_SIZE Skein512
-
-
 /**
  * Compute Skein384 digest.
  *

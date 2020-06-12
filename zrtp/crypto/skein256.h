@@ -40,12 +40,6 @@
 #include <vector>
 #include <common/typedefs.h>
 
-#ifndef SKEIN256_DIGEST_LENGTH
-#define SKEIN256_DIGEST_LENGTH  32
-#endif
-#define SKEIN_SIZE Skein512
-
-
 /**
  * Compute Skein256 digest.
  *
