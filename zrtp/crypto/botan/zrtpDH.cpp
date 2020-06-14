@@ -24,23 +24,8 @@
 #include <zrtp/crypto/zrtpDH.h>
 #include <zrtp/libzrtpcpp/ZrtpTextData.h>
 #include <botancrypto/ZrtpBotanRng.h>
-
-#ifdef BOTAN_AMAL
 #include "botan_all.h"
-#include "botancrypto/ZrtpBotanRng.h"
 #include "botancrypto/ZrtpCurve41417.h"
-#else
-#include <botan/botan.h>
-#include <botan/dl_group.h>
-#include <botan/dh.h>
-#include <botan/ecdh.h>
-#include <botan/pubkey.h>
-#include <botan/hex.h>
-#include <botan/skein_512.h>
-#include <botan/curve25519.h>
-#include <botan/hmac.h>
-#include <bnlib/bnprint.h>
-#endif
 
 #ifdef SIDH_SUPPORT
 #include "../sidh/cpp/SidhWrapper.h"

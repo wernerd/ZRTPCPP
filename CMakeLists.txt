@@ -31,7 +31,7 @@ set (SOVERSION 5)
 #
 option(CCRTP "Build library to use with GNU ccRTP." OFF)
 option(CORE_LIB "Build core library only, no specific client support." OFF)
-option(TIVI "Build library for the Tivi client, implies '-DCRYPTO_STANDALONE=ON' and '-DSDES=ON'." OFF)
+option(TIVI "Build library for the Tivi client, implies '-DSDES=ON' and '-DSRTP=ON'." OFF)
 # option(WEBRTC "Create static lib for webRTC, with SIDH support." OFF)
 option(SQLITE "Use SQLite DB as backend for ZRTP cache." OFF)
 option(SQLCIPHER "Use SQLCipher DB as backend for ZRTP cache." OFF)
@@ -39,7 +39,7 @@ option(SRTP "Include SRTP when not building for CCRTP." OFF)
 option(AXO "Include Axolotl support when not building for CCRTP." OFF)
 option(TESTS "Generate Unit test." OFF)
 
-option(ANDROID "Generate Android libraries, use if via Gradle build script" OFF)
+option(ANDROID "Generate Android libraries, use it via Gradle build script" OFF)
 # option(JAVA "Generate Java support files (requires JDK and SWIG)" OFF)
 
 ## The following options are used for SIDH mainly
@@ -47,8 +47,8 @@ option(SIDH "Include SIDH Post-Quantum algorithm." OFF)
 
 option(x64 "Set this to true to build SIDH for a x64 (64 bit) architecture." OFF)
 option(x86 "Set this to true to build SIDH for a x86 (32 bit) architecture." OFF)
-option(arm "Set this to true to build SIDH for a arm (32 bit) architecture." OFF)
-option(arm64 "Set this to true to build SIDH for a arm64 (64 bit) architecture." OFF)
+option(arm "Set this to true to build SIDH for an arm (32 bit) architecture." OFF)
+option(arm64 "Set this to true to build SIDH for an arm64 (64 bit) architecture." OFF)
 option(GENERIC "Set this to true to use the portable SIDH implementation." OFF)
 
 if(MSVC60)
@@ -98,6 +98,12 @@ elseif (TIVI)
 elseif (CORE_LIB)
     set (PACKAGE libzrtpcore)
     set(zrtplibName zrtpcppcore)
+    if (ANDROID AND (SQLITE OR SQLCIPHER))
+        MESSAGE(STATUS "No support for SQLITE or SQLCIPHER when building core library for Android. Options set to false." )
+        MESSAGE(STATUS "This requires a special setup with SQLite or SQLCipher.")
+        set(SQLITE false)
+        set(SQLCIPHER false)
+    endif()
 #elseif (WEBRTC)
 #    set (PACKAGE libzrtpwebrtc)
 #    set(zrtplibName zrtpcppwebrtc)
@@ -115,6 +121,31 @@ if ("debug" STREQUAL build_type)
 else()
     set (LOG_MAX_LEVEL "-DLOG_MAX_LEVEL=WARNING")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DLOG_MAX_LEVEL=WARNING")
+endif()
+
+if (ANDROID)
+    if (ANDROID_ABI STREQUAL "armeabi-v7a")
+        set (arm true)
+        set (botan_all "android/armeabi-v7a")
+    elseif(ANDROID_ABI STREQUAL "arm64-v8a")
+        set(arm64 true)
+        set (botan_all "android/arm64-v8a")
+    elseif(ANDROID_ABI STREQUAL "x86")
+        set(x86 true)
+        set (botan_all "android/x86")
+    elseif(ANDROID_ABI STREQUAL "x86_64")
+        set(x64 true)
+        set (botan_all "android/x86_64")
+    else()
+        message(FATAL_ERROR "Unknown Android ABI: ${ANDROID_ABI}.")
+    endif()
+elseif(IOS)
+    message(FATAL_ERROR "iOS currently not supported.")
+elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
+        set(x64 true)
+        set (botan_all "x86_64")
+else()
+    message(FATAL_ERROR "Architecture currently not supported: ${CMAKE_SYSTEM_PROCESSOR}.")
 endif()
 
 # set to true for debug and trace during CMakeLists development
@@ -212,9 +243,10 @@ if (SIDH)
     add_definitions(-DSIDH_SUPPORT)
 endif()
 
+# to make sure these includes are taken first - it contains config.h
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
-include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/zrtp)
-
+include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/zrtp ${CMAKE_SOURCE_DIR}/srtp)
+include_directories (${CMAKE_SOURCE_DIR}/botancrypto/${botan_all})
 add_definitions(-DSUPPORT_NON_NIST)
 
 if (SRTP)
@@ -242,9 +274,6 @@ set(botan_src
         ${CMAKE_SOURCE_DIR}/botancrypto/x86_64/botan_all.cpp
         ${CMAKE_SOURCE_DIR}/botancrypto/x86_64/botan_all.h
 )
-
-add_definitions(-DBOTAN_AMAL)
-include_directories (${CMAKE_SOURCE_DIR}/botancrypto/x86_64)
 
 set(zrtp_src_include
         ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/Base32.h
@@ -339,9 +368,10 @@ set(zrtp_crypto_includes
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/aesCFB.h
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/hmac256.h
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/hmac384.h
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha2.h
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha256.h
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha384.h
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein256.h
+        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein384.h
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/skeinMac256.h
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/skeinMac384.h
         ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.h

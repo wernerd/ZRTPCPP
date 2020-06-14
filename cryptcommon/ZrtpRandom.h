@@ -24,9 +24,8 @@
  * @{
  */
 
-#ifdef BOTAN_AMAL
 #include <botancrypto/ZrtpBotanRng.h>
-#endif
+
 #ifdef __cplusplus
 #include <string>
 #include <cstdint>
@@ -34,6 +33,7 @@
 #include <string.h>
 #include <stdint.h>
 #endif
+
 #if !(defined(_WIN32) || defined(_WIN64))
 #include <unistd.h>
 #endif
@@ -58,11 +58,7 @@ public:
      *         entropy.
      */
     static int addEntropy(const uint8_t *buffer, uint32_t length, bool isLocked = false)
-#ifdef BOTAN_AMAL
     { return ZrtpBotanRng::addEntropy(buffer, length, isLocked); }
-#else
-    ;
-#endif
 
     /**
      * @brief Get some random data.
@@ -74,12 +70,7 @@ public:
      * @return the number of generated random data bytes
      */
     static int32_t getRandomData(uint8_t *buffer, uint32_t length)
-#ifdef BOTAN_AMAL
     { return ZrtpBotanRng::getRandomData(buffer, length); }
-#else
-    ;
-#endif
-
 
 private:
     static void initialize();

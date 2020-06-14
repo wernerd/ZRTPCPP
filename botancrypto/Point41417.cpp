@@ -171,8 +171,6 @@ namespace Botan {
         BigInt Rx;
         BigInt Ry;
 
-        secure_vector<word>& ws = workspace[4].get_word_vector();
-
         EC41417_Group m_group;
 
         /* affine x = X / Z */
@@ -230,15 +228,13 @@ namespace Botan {
 
     BOTAN_PUBLIC_API(2,0) Point41417p operator*(const BigInt& scalar, const Point41417p& point)
     {
-        int ret = 0;
-
         const size_t bits = scalar.bits();
         Point41417p n(point);
         Point41417p R = point.zero();
 
         std::vector<BigInt> workspace(Point41417p::WORKSPACE_SIZE);
 
-        for (int i = 0; i < bits; i++) {
+        for (uint32_t i = 0; i < bits; i++) {
             const size_t b = scalar.get_bit(i);
             if (b)
                 R.add(n, workspace);

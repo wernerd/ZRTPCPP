@@ -18,11 +18,8 @@
 #ifndef LIBZRTPCPP_POINT41417_H
 #define LIBZRTPCPP_POINT41417_H
 
-#ifdef BOTAN_AMAL
 #include "botan_all.h"
 #include "botancrypto/ZrtpBotanRng.h"
-#endif
-
 #include "botancrypto/Ec41417Group.h"
 
 namespace Botan {

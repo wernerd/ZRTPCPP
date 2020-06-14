@@ -19,13 +19,7 @@
 #include "gtest/gtest.h"
 #include "../common/Utilities.h"
 
-#ifdef BOTAN_AMAL
 #include "botan_all.h"
-#else
-#include <botan/botan.h>
-#include <botan/hex.h>
-#include <botan/skein_512.h>
-#endif
 
 // The data was copied from Skein's test vectors, contained on the official Skein NIST CD
 

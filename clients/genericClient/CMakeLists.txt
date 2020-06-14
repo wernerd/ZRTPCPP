@@ -7,10 +7,7 @@ if(CMAKE_HAVE_PTHREAD_H)
 endif()
 set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})
 
-
-# to make sure these includes are taken first - it contains config.h
-include_directories(BEFORE ${CMAKE_BINARY_DIR})
-include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/zrtp ${CMAKE_SOURCE_DIR}/srtp)
+include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
 set(crypto_src
         ${zrtp_botan_crypto_src})

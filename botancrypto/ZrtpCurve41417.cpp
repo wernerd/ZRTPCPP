@@ -30,14 +30,15 @@ namespace Botan {
 
             Curve41417_KA_Operation(const Curve41417_PrivateKey &key, const std::string &kdf) :
                     PK_Ops::Key_Agreement(),
-                    m_group(key.domain()),
-                    m_key(key) {}
+                    m_key(key),
+                    m_group(key.domain()) {}
 
             [[nodiscard]] size_t agreed_value_size() const override { return 52; }
 
             secure_vector<uint8_t> agree(size_t key_len,
                                          const uint8_t other_key[], size_t other_key_len,
-                                         const uint8_t salt[], size_t salt_len) override {
+                                         const uint8_t salt[], size_t salt_len) override
+            {
 
                 auto x = BigInt::decode(&other_key[1], 52);
                 auto y = BigInt::decode(&other_key[52+1], 52);
@@ -57,8 +58,7 @@ namespace Botan {
 
     }
 
-    Curve41417_PrivateKey::Curve41417_PrivateKey(RandomNumberGenerator & rng,
-                                                 const BigInt& x)
+    Curve41417_PrivateKey::Curve41417_PrivateKey(RandomNumberGenerator & rng, const BigInt& x)
     {
         if (x == 0) {
             m_private_key = m_domain_params.random_scalar(rng);
@@ -73,7 +73,8 @@ namespace Botan {
     std::unique_ptr<PK_Ops::Key_Agreement>
     Curve41417_PrivateKey::create_key_agreement_op(RandomNumberGenerator & /*rng*/,
                                                    const std::string &params,
-                                                   const std::string &provider) const {
+                                                   const std::string &provider) const
+    {
         if (provider == "base" || provider.empty())
             return std::unique_ptr<PK_Ops::Key_Agreement>(new Curve41417_KA_Operation(*this, params));
         throw Provider_Not_Found(algo_name(), provider);

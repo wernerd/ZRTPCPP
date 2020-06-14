@@ -27,10 +27,7 @@
 
 #include <cstdint>
 #include <srtp/CryptoContext.h>
-
-#ifdef BOTAN_AMAL
 #include <botan_all.h>
-#endif
 
 #ifndef SRTP_BLOCK_SIZE
 #define SRTP_BLOCK_SIZE 16
@@ -241,11 +238,7 @@ public:
 
 private:
     int processBlock(F8_CIPHER_CTX* f8ctx, const uint8_t* in, int32_t length, uint8_t* out);
-#ifdef BOTAN_AMAL
     std::unique_ptr<Botan::BlockCipher> crypto = nullptr;
-#else
-    void* key;
-#endif
     int32_t algorithm;
 };
 /**

@@ -23,7 +23,6 @@
 #include <helpers/ZrtpUserCallbackEmpty.h>
 #include <helpers/ZrtpCodeToString.h>
 #include <logging/ZrtpLogging.h>
-#include <cryptcommon/sidhp751/keymanagement/SidhKeyManagement.h>
 #include <common/osSpecifics.h>
 #include <zrtp/libzrtpcpp/ZIDCacheFile.h>
 

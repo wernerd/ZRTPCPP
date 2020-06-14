@@ -34,7 +34,6 @@
 #include <CtZrtpCallback.h>
 #include <cryptcommon/ZrtpRandom.h>
 #include <common/ZrtpTimeoutProvider.h>
-#include <cryptcommon/sidhp751/keymanagement/SidhKeyManagement.h>
 
 // #define DEBUG_CTSTREAM
 #ifdef DEBUG_CTSTREAM

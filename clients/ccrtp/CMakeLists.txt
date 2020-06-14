@@ -20,10 +20,7 @@ link_directories(${USES_CCRTP_LIBRARY_DIRS})
 add_definitions(${USES_CCRTP_CFLAGS})
 set (LIBS ${LIBS} ${USES_CCRTP_LDFLAGS} ${USES_CCRTP_LIBRARIES})
 
-#to make sure includes are first taken - it contains config.h
-include_directories(BEFORE ${CMAKE_BINARY_DIR})
-include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/zrtp
-    ${CMAKE_SOURCE_DIR}/srtp)
+include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
 # **** setup the various crypto interface implementations ***
 # Twofish is a special case: its always a standalone module and thus

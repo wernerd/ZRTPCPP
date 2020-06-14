@@ -18,9 +18,7 @@
 #ifndef LIBZRTPCPP_EC41417GROUP_H
 #define LIBZRTPCPP_EC41417GROUP_H
 
-#ifdef BOTAN_AMAL
 #include "botan_all.h"
-#endif
 
 #include "botancrypto/ZrtpBotanRng.h"
 

@@ -19,11 +19,7 @@
 #include <zrtp/libzrtpcpp/zrtpPacket.h>
 #include <common/osSpecifics.h>
 #include <common/ZrtpTimeoutProvider.h>
-#ifdef BOTAN_AMAL
 #include <botancrypto/ZrtpBotanRng.h>
-#else
-#include <cryptcommon/ZrtpRandom.h>
-#endif
 #include "../logging/ZrtpLogging.h"
 
 #include "GenericPacketFilter.h"
@@ -205,11 +201,7 @@ GenericPacketFilter::prepareToSendRtp(GenericPacketFilter& thisFilter, const uin
     if (thisFilter.zrtpSequenceNo() == 0) {
         uint16_t seqNumber = 0;
         while (seqNumber == 0) {
-#ifdef BOTAN_AMAL
             ZrtpBotanRng::getRandomData((uint8_t *) &seqNumber, 2);
-#else
-            ZrtpRandom::getRandomData((uint8_t *) &seqNumber, 2);
-#endif
         }
         thisFilter.zrtpSequenceNo(seqNumber & 0x7fffU);
     }
