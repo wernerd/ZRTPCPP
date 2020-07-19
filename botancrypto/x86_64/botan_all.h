@@ -30,10 +30,10 @@
 
 /*
 * This file was automatically generated running
-* 'configure.py --minimized-build --amalgamation --with-build-dir=amal_x86-64 --enable-modules=sha2_32,sha2_64,sha1,twofish,aes,skein,hmac,pubkey,curve25519,cfb,ec_group,ecdh,dh,dl_group'
+* 'configure.py --minimized-build --cc=clang --amalgamation --with-build-dir=amal_x86_64 --enable-modules=sha2_32,sha2_64,sha1,twofish,aes,skein,hmac,pubkey,curve25519,cfb,ec_group,ecdh,dh,dl_group'
 *
 * Target
-*  - Compiler: g++ -fstack-protector -m64 -pthread -std=c++11 -D_REENTRANT -O3
+*  - Compiler: clang++ -fstack-protector -m64 -pthread -std=c++11 -D_REENTRANT -O3
 *  - Arch: x86_64
 *  - OS: linux
 */
@@ -45,7 +45,7 @@
 
 #define BOTAN_VERSION_RELEASE_TYPE "unreleased"
 
-#define BOTAN_VERSION_VC_REVISION "git:00168ed8c2cf8fe3205a65e545a377e5ccccdaae"
+#define BOTAN_VERSION_VC_REVISION "git:63c0545914accbbd9e5ba069f1f4151dbf48439c"
 
 #define BOTAN_DISTRIBUTION_INFO "unspecified"
 
@@ -82,7 +82,7 @@
 #define BOTAN_TARGET_OS_HAS_THREADS
 
 
-#define BOTAN_BUILD_COMPILER_IS_GCC
+#define BOTAN_BUILD_COMPILER_IS_CLANG
 
 
 
@@ -224,13 +224,10 @@
 
 /*
 * Specifies (in order) the list of entropy sources that will be used
-* to seed an in-memory RNG. The first in the default list: "rdseed"
-* and "rdrand" do not count as contributing any entropy but are
-* included as they are fast and help protect against a seriously
-* broken system RNG.
+* to seed an in-memory RNG.
 */
 #define BOTAN_ENTROPY_DEFAULT_SOURCES \
-   { "rdseed", "rdrand", "p9_darn", "getentropy", "dev_random", \
+   { "rdseed", "hwrng", "p9_darn", "getentropy", "dev_random", \
      "system_rng", "proc_walk", "system_stats" }
 
 /* Multiplier on a block cipher's native parallelism */
@@ -699,7 +696,7 @@ namespace Botan {
 * <dt>Message Authentication Codes<dd>
 *        @ref CBC_MAC "CBC-MAC", CMAC, HMAC, Poly1305, SipHash, ANSI_X919_MAC
 * <dt>Random Number Generators<dd>
-*        AutoSeeded_RNG, HMAC_DRBG, RDRAND_RNG, System_RNG
+*        AutoSeeded_RNG, HMAC_DRBG, Processor_RNG, System_RNG
 * <dt>Key Derivation<dd>
 *        HKDF, @ref KDF1 "KDF1 (IEEE 1363)", @ref KDF1_18033 "KDF1 (ISO 18033-2)", @ref KDF2 "KDF2 (IEEE 1363)",
 *        @ref sp800_108.h "SP800-108", @ref SP800_56C "SP800-56C", @ref PKCS5_PBKDF1 "PBKDF1 (PKCS#5),
@@ -1827,23 +1824,15 @@ class BOTAN_PUBLIC_API(2,0) AES_128 final : public Block_Cipher_Fixed_Params<16,
 #endif
 
 #if defined(BOTAN_HAS_AES_NI)
-      void aesni_encrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
-      void aesni_decrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
       void aesni_key_schedule(const uint8_t key[], size_t length);
 #endif
 
-#if defined(BOTAN_HAS_AES_ARMV8)
-      void armv8_encrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
-      void armv8_decrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
-#endif
-
-#if defined(BOTAN_HAS_AES_POWER8)
-      void power8_encrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
-      void power8_decrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
+#if defined(BOTAN_HAS_AES_POWER8) || defined(BOTAN_HAS_AES_ARMV8) || defined(BOTAN_HAS_AES_NI)
+      void hw_aes_encrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
+      void hw_aes_decrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
 #endif
 
       secure_vector<uint32_t> m_EK, m_DK;
-      secure_vector<uint8_t> m_ME, m_MD;
    };
 
 /**
@@ -1870,25 +1859,17 @@ class BOTAN_PUBLIC_API(2,0) AES_192 final : public Block_Cipher_Fixed_Params<16,
 #endif
 
 #if defined(BOTAN_HAS_AES_NI)
-      void aesni_encrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
-      void aesni_decrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
       void aesni_key_schedule(const uint8_t key[], size_t length);
 #endif
 
-#if defined(BOTAN_HAS_AES_ARMV8)
-      void armv8_encrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
-      void armv8_decrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
-#endif
-
-#if defined(BOTAN_HAS_AES_POWER8)
-      void power8_encrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
-      void power8_decrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
+#if defined(BOTAN_HAS_AES_POWER8) || defined(BOTAN_HAS_AES_ARMV8) || defined(BOTAN_HAS_AES_NI)
+      void hw_aes_encrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
+      void hw_aes_decrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
 #endif
 
       void key_schedule(const uint8_t key[], size_t length) override;
 
       secure_vector<uint32_t> m_EK, m_DK;
-      secure_vector<uint8_t> m_ME, m_MD;
    };
 
 /**
@@ -1916,25 +1897,17 @@ class BOTAN_PUBLIC_API(2,0) AES_256 final : public Block_Cipher_Fixed_Params<16,
 #endif
 
 #if defined(BOTAN_HAS_AES_NI)
-      void aesni_encrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
-      void aesni_decrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
       void aesni_key_schedule(const uint8_t key[], size_t length);
 #endif
 
-#if defined(BOTAN_HAS_AES_ARMV8)
-      void armv8_encrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
-      void armv8_decrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
-#endif
-
-#if defined(BOTAN_HAS_AES_POWER8)
-      void power8_encrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
-      void power8_decrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
+#if defined(BOTAN_HAS_AES_POWER8) || defined(BOTAN_HAS_AES_ARMV8) || defined(BOTAN_HAS_AES_NI)
+      void hw_aes_encrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
+      void hw_aes_decrypt_n(const uint8_t in[], uint8_t out[], size_t blocks) const;
 #endif
 
       void key_schedule(const uint8_t key[], size_t length) override;
 
       secure_vector<uint32_t> m_EK, m_DK;
-      secure_vector<uint8_t> m_ME, m_MD;
    };
 
 }
@@ -2702,6 +2675,14 @@ class BOTAN_PUBLIC_API(2,0) AlgorithmIdentifier final : public ASN1_Object
 
       const OID& get_oid() const { return oid; }
       const std::vector<uint8_t>& get_parameters() const { return parameters; }
+
+      bool parameters_are_null() const;
+      bool parameters_are_empty() const { return parameters.empty(); }
+
+      bool parameters_are_null_or_empty() const
+         {
+         return parameters_are_empty() || parameters_are_null();
+         }
 
    BOTAN_DEPRECATED_PUBLIC_MEMBER_VARIABLES:
       /*
@@ -6191,6 +6172,22 @@ class BOTAN_PUBLIC_API(2,1) CPUID final
          }
 
       /**
+      * Check if the processor supports hardware AES instructions
+      */
+      static bool has_hw_aes()
+         {
+#if defined(BOTAN_TARGET_CPU_IS_X86_FAMILY)
+         return has_aes_ni();
+#elif defined(BOTAN_TARGET_CPU_IS_ARM_FAMILY)
+         return has_arm_aes();
+#elif defined(BOTAN_TARGET_CPU_IS_PPC_FAMILY)
+         return has_power_crypto();
+#else
+         return false;
+#endif
+         }
+
+      /**
       * Check if the processor supports carryless multiply
       * (CLMUL, PMULL)
       */
@@ -9321,7 +9318,7 @@ class BOTAN_PUBLIC_API(2,0) RandomNumberGenerator
 typedef RandomNumberGenerator RNG;
 
 /**
-* Hardware_RNG exists to tag hardware RNG types (PKCS11_RNG, TPM_RNG, RDRAND_RNG)
+* Hardware_RNG exists to tag hardware RNG types (PKCS11_RNG, TPM_RNG, Processor_RNG)
 */
 class BOTAN_PUBLIC_API(2,0) Hardware_RNG : public RandomNumberGenerator
    {
