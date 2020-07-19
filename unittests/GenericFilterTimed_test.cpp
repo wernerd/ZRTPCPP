@@ -55,10 +55,14 @@ public:
         aliceId = "Alice";
         bobId = "Bob";
 
-        aliceNetwork = std::make_unique<zrtp::NetworkSimulation>(aliceTimoutProvider,
-                std::bind(&GenericTimedFixture::bobQueueData, this, std::placeholders::_1, std::placeholders::_2));
-        bobNetwork = std::make_unique<zrtp::NetworkSimulation>(bobTimoutProvider,
-                std::bind(&GenericTimedFixture::aliceQueueData, this, std::placeholders::_1, std::placeholders::_2));
+        aliceNetwork = std::make_unique<zrtp::NetworkSimulation>(
+                aliceTimoutProvider,
+                [this](zrtp::ZrtpDataPairPtr dataPtr, int64_t tts) { bobQueueData(move(dataPtr), tts); }
+        );
+        bobNetwork = std::make_unique<zrtp::NetworkSimulation>(
+                bobTimoutProvider,
+                [this](zrtp::ZrtpDataPairPtr dataPtr, int64_t tts) { aliceQueueData(move(dataPtr), tts); }
+        );
     }
 
     void TearDown() override {
