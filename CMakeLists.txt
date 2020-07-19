@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.2)
 
 PROJECT(libzrtpcpp)
 
@@ -271,8 +271,8 @@ set(botan_src
         ${CMAKE_SOURCE_DIR}/botancrypto/Ec41417Group.h
         ${CMAKE_SOURCE_DIR}/botancrypto/Point41417.cpp
         ${CMAKE_SOURCE_DIR}/botancrypto/Point41417.h
-        ${CMAKE_SOURCE_DIR}/botancrypto/x86_64/botan_all.cpp
-        ${CMAKE_SOURCE_DIR}/botancrypto/x86_64/botan_all.h
+        ${CMAKE_SOURCE_DIR}/botancrypto/${botan_all}/botan_all.cpp
+        ${CMAKE_SOURCE_DIR}/botancrypto/${botan_all}/botan_all.h
 )
 
 set(zrtp_src_include
