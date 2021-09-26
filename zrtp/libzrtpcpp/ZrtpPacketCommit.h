@@ -93,7 +93,7 @@ class __EXPORT ZrtpPacketCommit : public ZrtpPacketBase {
     [[nodiscard]] uint8_t* getHMAC() const       { return commitHeader->hmac; };
 
     /// Get pointer to MAC field during multi-stream mode, a fixed length byte array
-    [[nodiscard]] uint8_t* getHMACMulti() const  { return commitHeader->hmac-4*ZRTP_WORD_SIZE; };
+    [[maybe_unused]] [[nodiscard]] uint8_t* getHMACMulti() const  { return commitHeader->hmac-4*ZRTP_WORD_SIZE; };
 
     /// Check if packet length makes sense.
     [[nodiscard]] bool isLengthOk(commitType type) const  {int32_t len = getLength();
@@ -129,8 +129,8 @@ class __EXPORT ZrtpPacketCommit : public ZrtpPacketBase {
     /// Set MAC field, a fixed length byte array
     void setHMAC(zrtp::ImplicitDigest const & hmac) { memcpy(commitHeader->hmac, hmac.data(), sizeof(commitHeader->hmac)); };
 
-    /// Set MAC field during multi-stream mode, a fixed length byte array
-    void setHMACMulti(zrtp::ImplicitDigest const & hmac) { memcpy(commitHeader->hmac-4*ZRTP_WORD_SIZE, hmac.data(), sizeof(commitHeader->hmac)); };
+    /// Set MAC field during multi-stream mode, a fixed length byte array - triggers compiler warning, but it's OK
+    void setHMACMulti(zrtp::ImplicitDigest const & hmac) { uint8_t *p = commitHeader->hmac-4*ZRTP_WORD_SIZE; memcpy(p, hmac.data(), sizeof(commitHeader->hmac)); };
 
  private:
      Commit_t* commitHeader;     ///< Points to Commit message part
@@ -140,5 +140,5 @@ class __EXPORT ZrtpPacketCommit : public ZrtpPacketBase {
 /**
  * @}
  */
-#endif // ZRTPPACKETCOMMIT
+#endif // _ZRTPPACKETCOMMIT_H_
 

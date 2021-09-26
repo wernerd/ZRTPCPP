@@ -116,11 +116,11 @@ typedef struct HelloAckPacket {
 typedef struct Commit {
     uint8_t hashH2[HASH_IMAGE_SIZE];        ///< The second hash of the hash chain (chap. 9)
     uint8_t	zid[ZID_SIZE];                  ///< ZID - 3 word identifier for the ZRTP endpoint
-    uint8_t hash[ZRTP_WORD_SIZE];           ///< Commited hash algorithm
-    uint8_t cipher[ZRTP_WORD_SIZE];         ///< Commited symmetrical cipher algorithm
-    uint8_t authlengths[ZRTP_WORD_SIZE];    ///< Commited SRTP authentication algorithm
-    uint8_t	pubkey[ZRTP_WORD_SIZE];         ///< Commited key agreement algorithm
-    uint8_t	sas[ZRTP_WORD_SIZE];            ///< Commited SAS algorithm
+    uint8_t hash[ZRTP_WORD_SIZE];           ///< Committed hash algorithm
+    uint8_t cipher[ZRTP_WORD_SIZE];         ///< Committed symmetrical cipher algorithm
+    uint8_t authlengths[ZRTP_WORD_SIZE];    ///< Committed SRTP authentication algorithm
+    uint8_t	pubkey[ZRTP_WORD_SIZE];         ///< Committed key agreement algorithm
+    uint8_t	sas[ZRTP_WORD_SIZE];            ///< Committed SAS algorithm
     uint8_t	hvi[HVI_SIZE];                  ///< Hash value Initiator - chap 4.4.1.1
     uint8_t	hmac[HMAC_SIZE];                ///< MAC of the Commit message
 } Commit_t;
@@ -145,7 +145,7 @@ typedef struct DHPart {
     uint8_t hashH1[HASH_IMAGE_SIZE];        ///< The first hash of the hash chain (chap. 9)
     uint8_t rs1Id[ID_SIZE];                 ///< Id of first retained secret
     uint8_t rs2Id[ID_SIZE];                 ///< Id of second retained secret
-    uint8_t auxSecretId[ID_SIZE];           ///< Id of additional (auxilliary) secret
+    uint8_t auxSecretId[ID_SIZE];           ///< Id of additional (auxiliary) secret
     uint8_t pbxSecretId[ID_SIZE];           ///< Id of PBX secret (chap 7.3.1)
 }  DHPart_t;
 
