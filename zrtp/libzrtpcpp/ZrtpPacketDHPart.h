@@ -102,19 +102,19 @@ class __EXPORT ZrtpPacketDHPart : public ZrtpPacketBase {
     void initialize();
     uint8_t  * pv = nullptr;                  ///< points to public key value inside DH message
     DHPart_t* DHPartHeader = nullptr;         ///< points to DH message structure
-    int32_t dhLength = 0;                     ///< length of public key
-    int32_t roundUp = 0;                      ///< Public key length, rounded up to ZRTP_WORD_SIZE
+    size_t dhLength = 0;                      ///< length of public key
+    size_t roundUp = 0;                       ///< Public key length, rounded up to ZRTP_WORD_SIZE
 
      // SupportedPubKeys pktype;
-     // DHPart packet is of variable length. It maximum size is 141 words:
+     // DHPart packet is of variable length. Its maximum size is 188 words:
      // - 21 words fixed size
-     // - up to 144 words variable part, depending on DH algorithm
-     //   leads to a maximum of 4*165=660 bytes.
-     uint8_t data[768];       // large enough to hold a full blown DHPart packet
+     // - up to 167 words variable part, depending on DH algorithm (SIDHp7 + E414 = 668 bytes -> 167 Words)
+     //   leads to a maximum of 4*188=752 bytes.
+     uint8_t data[1000] = {};       // large enough to hold a full-blown DHPart packet
 };
 
 /**
  * @}
  */
-#endif // ZRTPPACKETDHPART
+#endif // _ZRTPPACKETDHPART_H_
 

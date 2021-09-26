@@ -172,8 +172,9 @@ PubKeyEnum::PubKeyEnum() : EnumBase(PubKeyAlgorithm) {
     insert(e255, 0, "Curve 255", nullptr, nullptr, None);
     insert(e414, 0, "Curve 414", nullptr, nullptr, None);
 #ifdef SIDH_SUPPORT
-    insert(sdh5, 0, "SIDHp503", NULL, NULL, None);
-    insert(sdh7, 0, "SIDHp751", NULL, NULL, None);
+    insert(sdh5, 0, "SIDHp503", nullptr, nullptr, None);
+    insert(sdh7, 0, "SIDHp751", nullptr, nullptr, None);
+    insert(pq54, 0, "SIDHp503/Curve 414", nullptr, nullptr, None);
 #endif
 #endif
 }

@@ -20,6 +20,7 @@
 
 #include <libzrtpcpp/ZrtpPacketDHPart.h>
 #include <zrtp/crypto/zrtpDH.h>
+#include "logging/ZrtpLogging.h"
 
 #ifdef SIDH_SUPPORT
 #include "../sidh/cpp/SidhWrapper.h"
@@ -62,7 +63,7 @@ void ZrtpPacketDHPart::setPacketLength(size_t pubKeyLen) {
 }
 
 #ifdef SIDH_SUPPORT
-static size_t determineSidhLength(int16_t len) {
+static size_t determineSidhLength(uint16_t len) {
     // Convert the SIDH public kex length into number of ZRTP_WORD_SIZE words
     auto lengths = SidhWrapper::getFieldLengths(SidhWrapper::P503);
     auto lenInWords = (lengths->publicKey + (ZRTP_WORD_SIZE - 1)) / ZRTP_WORD_SIZE;
@@ -77,15 +78,25 @@ static size_t determineSidhLength(int16_t len) {
     }
     return 0;
 }
+
+static size_t determineHybridLength(uint16_t len) {
+    // Convert the SIDH public kex length into number of ZRTP_WORD_SIZE words
+    auto lengths = SidhWrapper::getFieldLengths(SidhWrapper::P503);
+    auto lenInWords = (lengths->publicKey + E414_LENGTH_BYTES + (ZRTP_WORD_SIZE - 1)) / ZRTP_WORD_SIZE;
+    if (len == lenInWords + FIXED_NUM_WORDS) {
+        return lengths->publicKey + E414_LENGTH_BYTES;
+    }
+    return 0;
+}
 #endif
 
 ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t const * data) {
     zrtpHeader = &((DHPartPacket_t *)data)->hdr;  // the standard header
     DHPartHeader = &((DHPartPacket_t *)data)->dhPart;
 
-    size_t tmpLen = 0;
+    size_t tmpLen;
 
-    int16_t len = getLength();
+    uint16_t len = getLength();
     if (len == DH2K_WORDS) {         // Dh2k
         dhLength = DH2K_LENGTH_BYTES;
     }
@@ -108,10 +119,13 @@ ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t const * data) {
     else if ((tmpLen = determineSidhLength(len)) > 0) {    // SDH5 or SDH7
         dhLength = tmpLen;
     }
+    else if ((tmpLen = determineHybridLength(len)) > 0) {  // PQ54
+        dhLength = tmpLen;
+    }
 #endif
     else {
         pv = nullptr;
-//        LOGGER(ERROR, __func__, " Unknown DH algorithm in DH packet with length: ", len);
+        LOGGER(ERROR_LOG, __func__, " Unknown DH algorithm in DH packet with length: ", len)
         return;
     }
     pv = const_cast<uint8_t*>(data + sizeof(DHPartPacket_t));    // point to the public key value

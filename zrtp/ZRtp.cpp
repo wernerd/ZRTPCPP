@@ -548,7 +548,9 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     // the Responder (that's the case here) uses a Key-B type key pair. SIDH
     // keys are precomputed, thus it's a fast operation at this point
     if (*(int32_t*)(dhContext->getDHtype()) != *(int32_t*)(pubKey->getName()) ||
-            *(int32_t*)(pubKey->getName()) == *(int32_t*)sdh5 || *(int32_t*)(pubKey->getName()) == *(int32_t*)sdh7) {
+            *(int32_t*)(pubKey->getName()) == *(int32_t*)sdh5 ||
+            *(int32_t*)(pubKey->getName()) == *(int32_t*)sdh7 ||
+            *(int32_t*)(pubKey->getName()) == *(int32_t*)pq54) {
         dhContext = make_unique<ZrtpDH>(pubKey->getName(), ZrtpDH::DhPart1);
         dhContext->generatePublicKey();
     }
@@ -618,7 +620,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
         return nullptr;
     }
     // Because we are initiator the protocol engine didn't receive Commit
-    // thus could not store a peer's H2. A two step SHA256 is required to
+    // thus could not store a peer's H2. A two-step SHA256 is required to
     // re-compute H3. Then compare with peer's H3 from peer's Hello packet.
     // Must use implicit hash function.
     uint8_t tmpHash[IMPL_MAX_DIGEST_LENGTH];
@@ -662,7 +664,6 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
     // Compute the message Hash
     closeHashCtx(msgShaContext, messageHash);
     msgShaContext = nullptr;
-    msgShaContext = NULL;
     // Now compute the S0, all dependent keys and the new RS1. The function
     // also performs sign SAS callback if it's active.
     generateKeysInitiator(dhPart1, *zidRec);
@@ -1505,7 +1506,7 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
 
     // Build list of own pubkey algorithm names, must follow the order
     // defined in RFC 6189, chapter 4.1.2.
-    const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38, sdh5, sdh7};
+    const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38, sdh5, sdh7, pq54};
     int numOrderedAlgos = sizeof(orderedAlgos) / sizeof(const char*);
 
     int numAlgosPeer = hello->getNumPubKeys();
@@ -1549,7 +1550,7 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
     }
 
     // If we have only one algorithm in common or if the first entry matches - take it.
-    // Otherwise determine which algorithm from the intersection lists is first in the 
+    // Otherwise, determine which algorithm from the intersection lists is first in the
     // list of ordered algorithms and select it (RFC6189, section 4.1.2).
     AlgorithmEnum* useAlgo;
     if (numPeerIntersect > 1 && *(int32_t*)(ownIntersect[0]->getName()) != *(int32_t*)(peerIntersect[0]->getName())) {
@@ -1579,7 +1580,9 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
     int32_t algoName = *(int32_t*)(useAlgo->getName());
 
     // select a corresponding strong hash if necessary.
-    if (algoName == *(int32_t*)ec38 || algoName == *(int32_t*)e414 || algoName == *(int32_t*)sdh5 || algoName == *(int32_t*)sdh7) {
+    if (algoName == *(int32_t*)ec38 || algoName == *(int32_t*)e414 ||
+        algoName == *(int32_t*)sdh5 || algoName == *(int32_t*)sdh7 ||
+        algoName == *(int32_t*)pq54) {
         hash = getStrongHashOffered(hello, algoName);
         cipher = getStrongCipherOffered(hello, algoName);
     }

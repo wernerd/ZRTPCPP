@@ -190,7 +190,8 @@ private:
         E255,
         E414,
         SDH5,
-        SDH7
+        SDH7,
+        PQ54
     };
 
     struct dhCtx;
@@ -198,6 +199,9 @@ private:
     void generateSidhKeyPair();
     size_t computeSidhSharedSecret(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret);
     size_t getSidhSharedSecretLength() const ;
+
+    int32_t secretKeyComputation(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret, int algorithm);
+    size_t getPubKeyBytes(secUtilities::SecureArray<1000>& pubKey, int algorithm) const;
 
     int pkType;                     ///< Which type of DH to use
     ProtocolState protocolState;    ///< Create DH for this protocol state
