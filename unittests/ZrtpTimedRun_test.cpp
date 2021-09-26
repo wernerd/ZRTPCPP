@@ -59,9 +59,9 @@ public:
         bobId = "Bob";
 
         aliceNetwork = std::make_unique<zrtp::NetworkSimulation>(aliceTimoutProvider,
-                std::bind(&ZrtpTimedRunFixture::bobQueueData, this, std::placeholders::_1, std::placeholders::_2));
+                [this](auto && PH1, auto && PH2) { bobQueueData(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2)); });
         bobNetwork = std::make_unique<zrtp::NetworkSimulation>(bobTimoutProvider,
-                std::bind(&ZrtpTimedRunFixture::aliceQueueData, this, std::placeholders::_1, std::placeholders::_2));
+                [this](auto && PH1, auto && PH2) { aliceQueueData(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2)); });
     }
 
     void TearDown() override {
