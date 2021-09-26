@@ -1,5 +1,5 @@
 /*
-* Botan 2.15.0 Amalgamation
+* Botan 2.17.3 Amalgamation
 * (C) 1999-2020 The Botan Authors
 *
 * Botan is released under the Simplified BSD License (see license.txt)
@@ -537,6 +537,30 @@ class Mask
       static Mask<T> is_gte(T x, T y)
          {
          return ~Mask<T>::is_lt(x, y);
+         }
+
+      static Mask<T> is_within_range(T v, T l, T u)
+         {
+         //return Mask<T>::is_gte(v, l) & Mask<T>::is_lte(v, u);
+
+         const T v_lt_l = v^((v^l) | ((v-l)^v));
+         const T v_gt_u = u^((u^v) | ((u-v)^u));
+         const T either = v_lt_l | v_gt_u;
+         return ~Mask<T>(expand_top_bit(either));
+         }
+
+      static Mask<T> is_any_of(T v, std::initializer_list<T> accepted)
+         {
+         T accept = 0;
+
+         for(auto a: accepted)
+            {
+            const T diff = a ^ v;
+            const T eq_zero = ~diff & (diff - 1);
+            accept |= eq_zero;
+            }
+
+         return Mask<T>(expand_top_bit(accept));
          }
 
       /**
@@ -2972,6 +2996,7 @@ class PointGFp_Multi_Point_Precompute final
                          const BigInt& k2) const;
    private:
       std::vector<PointGFp> m_M;
+      bool m_no_infinity;
    };
 
 }
@@ -4044,18 +4069,34 @@ void aes_decrypt_n(const uint8_t in[], uint8_t out[], size_t blocks,
       }
    }
 
-inline constexpr uint8_t xtime(uint8_t s) { return static_cast<uint8_t>(s << 1) ^ ((s >> 7) * 0x1B); }
-
-inline uint32_t InvMixColumn(uint8_t s1)
+inline uint32_t xtime32(uint32_t s)
    {
-   const uint8_t s2 = xtime(s1);
-   const uint8_t s4 = xtime(s2);
-   const uint8_t s8 = xtime(s4);
-   const uint8_t s9 = s8 ^ s1;
-   const uint8_t s11 = s9 ^ s2;
-   const uint8_t s13 = s9 ^ s4;
-   const uint8_t s14 = s8 ^ s4 ^ s2;
-   return make_uint32(s14, s9, s13, s11);
+   const uint32_t lo_bit = 0x01010101;
+   const uint32_t mask = 0x7F7F7F7F;
+   const uint32_t poly = 0x1B;
+
+   return ((s & mask) << 1) ^ (((s >> 7) & lo_bit) * poly);
+   }
+
+inline uint32_t InvMixColumn(uint32_t s1)
+   {
+   const uint32_t s2 = xtime32(s1);
+   const uint32_t s4 = xtime32(s2);
+   const uint32_t s8 = xtime32(s4);
+   const uint32_t s9 = s8 ^ s1;
+   const uint32_t s11 = s9 ^ s2;
+   const uint32_t s13 = s9 ^ s4;
+   const uint32_t s14 = s8 ^ s4 ^ s2;
+
+   return s14 ^ rotr<8>(s9) ^ rotr<16>(s13) ^ rotr<24>(s11);
+   }
+
+void InvMixColumn_x4(uint32_t x[4])
+   {
+   x[0] = InvMixColumn(x[0]);
+   x[1] = InvMixColumn(x[1]);
+   x[2] = InvMixColumn(x[2]);
+   x[3] = InvMixColumn(x[3]);
    }
 
 uint32_t SE_word(uint32_t x)
@@ -4091,6 +4132,9 @@ void aes_key_schedule(const uint8_t key[], size_t length,
 
    const size_t rounds = (length / 4) + 6;
 
+   // Help the optimizer
+   BOTAN_ASSERT_NOMSG(rounds == 10 || rounds == 12 || rounds == 14);
+
    CT::poison(key, length);
 
    EK.resize(length + 28);
@@ -4114,29 +4158,18 @@ void aes_key_schedule(const uint8_t key[], size_t length,
          }
       }
 
-   DK[0] = EK[4*rounds  ];
-   DK[1] = EK[4*rounds+1];
-   DK[2] = EK[4*rounds+2];
-   DK[3] = EK[4*rounds+3];
-
-   for(size_t i = 4; i != 4*rounds; ++i)
+   for(size_t i = 0; i != 4*(rounds+1); i += 4)
       {
-      const uint32_t K = EK[4*rounds - 4*(i/4) + (i%4)];
-      const uint8_t s0 = get_byte(0, K);
-      const uint8_t s1 = get_byte(1, K);
-      const uint8_t s2 = get_byte(2, K);
-      const uint8_t s3 = get_byte(3, K);
-
-      DK[i] = InvMixColumn(s0) ^
-         rotr<8>(InvMixColumn(s1)) ^
-         rotr<16>(InvMixColumn(s2)) ^
-         rotr<24>(InvMixColumn(s3));
+      DK[i  ] = EK[4*rounds - i  ];
+      DK[i+1] = EK[4*rounds - i+1];
+      DK[i+2] = EK[4*rounds - i+2];
+      DK[i+3] = EK[4*rounds - i+3];
       }
 
-   DK[4*rounds  ] = EK[0];
-   DK[4*rounds+1] = EK[1];
-   DK[4*rounds+2] = EK[2];
-   DK[4*rounds+3] = EK[3];
+   for(size_t i = 4; i != 4*rounds; i += 4)
+      {
+      InvMixColumn_x4(&DK[i]);
+      }
 
    if(bswap_keys)
       {
@@ -4525,60 +4558,6 @@ void AlgorithmIdentifier::decode_from(BER_Decoder& codec)
    codec.start_cons(SEQUENCE)
       .decode(oid)
       .raw_bytes(parameters)
-   .end_cons();
-   }
-
-}
-/*
-* Attribute
-* (C) 1999-2007 Jack Lloyd
-*
-* Botan is released under the Simplified BSD License (see license.txt)
-*/
-
-
-namespace Botan {
-
-/*
-* Create an Attribute
-*/
-Attribute::Attribute(const OID& attr_oid, const std::vector<uint8_t>& attr_value) :
-   oid(attr_oid),
-   parameters(attr_value)
-   {}
-
-/*
-* Create an Attribute
-*/
-Attribute::Attribute(const std::string& attr_oid,
-                     const std::vector<uint8_t>& attr_value) :
-   oid(OID::from_string(attr_oid)),
-   parameters(attr_value)
-   {}
-
-/*
-* DER encode a Attribute
-*/
-void Attribute::encode_into(DER_Encoder& codec) const
-   {
-   codec.start_cons(SEQUENCE)
-      .encode(oid)
-      .start_cons(SET)
-         .raw_bytes(parameters)
-      .end_cons()
-   .end_cons();
-   }
-
-/*
-* Decode a BER encoded Attribute
-*/
-void Attribute::decode_from(BER_Decoder& codec)
-   {
-   codec.start_cons(SEQUENCE)
-      .decode(oid)
-      .start_cons(SET)
-         .raw_bytes(parameters)
-      .end_cons()
    .end_cons();
    }
 
@@ -5246,7 +5225,7 @@ void ASN1_Formatter::decode(std::ostream& output,
          }
       else if(type_tag == UTC_TIME || type_tag == GENERALIZED_TIME)
          {
-         X509_Time time;
+         ASN1_Time time;
          data.decode(time);
          output << format(type_tag, class_tag, level, length, time.readable_string());
          }
@@ -5504,7 +5483,7 @@ void ASN1_String::decode_from(BER_Decoder& source)
 
 namespace Botan {
 
-X509_Time::X509_Time(const std::chrono::system_clock::time_point& time)
+ASN1_Time::ASN1_Time(const std::chrono::system_clock::time_point& time)
    {
    calendar_point cal = calendar_value(time);
 
@@ -5518,37 +5497,37 @@ X509_Time::X509_Time(const std::chrono::system_clock::time_point& time)
    m_tag = (m_year >= 2050) ? GENERALIZED_TIME : UTC_TIME;
    }
 
-X509_Time::X509_Time(const std::string& t_spec, ASN1_Tag tag)
+ASN1_Time::ASN1_Time(const std::string& t_spec, ASN1_Tag tag)
    {
    set_to(t_spec, tag);
    }
 
-void X509_Time::encode_into(DER_Encoder& der) const
+void ASN1_Time::encode_into(DER_Encoder& der) const
    {
    BOTAN_ARG_CHECK(m_tag == UTC_TIME || m_tag == GENERALIZED_TIME,
-                   "X509_Time: Bad encoding tag");
+                   "ASN1_Time: Bad encoding tag");
 
    der.add_object(m_tag, UNIVERSAL, to_string());
    }
 
-void X509_Time::decode_from(BER_Decoder& source)
+void ASN1_Time::decode_from(BER_Decoder& source)
    {
    BER_Object ber_time = source.get_next_object();
 
    set_to(ASN1::to_string(ber_time), ber_time.type());
    }
 
-std::string X509_Time::to_string() const
+std::string ASN1_Time::to_string() const
    {
    if(time_is_set() == false)
-      throw Invalid_State("X509_Time::to_string: No time set");
+      throw Invalid_State("ASN1_Time::to_string: No time set");
 
    uint32_t full_year = m_year;
 
    if(m_tag == UTC_TIME)
       {
       if(m_year < 1950 || m_year >= 2050)
-         throw Encoding_Error("X509_Time: The time " + readable_string() +
+         throw Encoding_Error("ASN1_Time: The time " + readable_string() +
                               " cannot be encoded as a UTCTime");
 
       full_year = (m_year >= 2000) ? (m_year - 2000) : (m_year - 1900);
@@ -5578,10 +5557,10 @@ std::string X509_Time::to_string() const
    return repr;
    }
 
-std::string X509_Time::readable_string() const
+std::string ASN1_Time::readable_string() const
    {
    if(time_is_set() == false)
-      throw Invalid_State("X509_Time::readable_string: No time set");
+      throw Invalid_State("ASN1_Time::readable_string: No time set");
 
    // desired format: "%04d/%02d/%02d %02d:%02d:%02d UTC"
    std::stringstream output;
@@ -5598,15 +5577,15 @@ std::string X509_Time::readable_string() const
    return output.str();
    }
 
-bool X509_Time::time_is_set() const
+bool ASN1_Time::time_is_set() const
    {
    return (m_year != 0);
    }
 
-int32_t X509_Time::cmp(const X509_Time& other) const
+int32_t ASN1_Time::cmp(const ASN1_Time& other) const
    {
    if(time_is_set() == false)
-      throw Invalid_State("X509_Time::cmp: No time set");
+      throw Invalid_State("ASN1_Time::cmp: No time set");
 
    const int32_t EARLIER = -1, LATER = 1, SAME_TIME = 0;
 
@@ -5626,7 +5605,7 @@ int32_t X509_Time::cmp(const X509_Time& other) const
    return SAME_TIME;
    }
 
-void X509_Time::set_to(const std::string& t_spec, ASN1_Tag spec_tag)
+void ASN1_Time::set_to(const std::string& t_spec, ASN1_Tag spec_tag)
    {
    if(spec_tag == UTC_OR_GENERALIZED_TIME)
       {
@@ -5703,7 +5682,7 @@ void X509_Time::set_to(const std::string& t_spec, ASN1_Tag spec_tag)
 /*
 * Do a general sanity check on the time
 */
-bool X509_Time::passes_sanity_check() const
+bool ASN1_Time::passes_sanity_check() const
    {
    // AppVeyor's trust store includes a cert with expiration date in 3016 ...
    if(m_year < 1950 || m_year > 3100)
@@ -5746,33 +5725,33 @@ bool X509_Time::passes_sanity_check() const
    return true;
    }
 
-std::chrono::system_clock::time_point X509_Time::to_std_timepoint() const
+std::chrono::system_clock::time_point ASN1_Time::to_std_timepoint() const
    {
    return calendar_point(m_year, m_month, m_day, m_hour, m_minute, m_second).to_std_timepoint();
    }
 
-uint64_t X509_Time::time_since_epoch() const
+uint64_t ASN1_Time::time_since_epoch() const
    {
    auto tp = this->to_std_timepoint();
    return std::chrono::duration_cast<std::chrono::seconds>(tp.time_since_epoch()).count();
    }
 
 /*
-* Compare two X509_Times for in various ways
+* Compare two ASN1_Times for in various ways
 */
-bool operator==(const X509_Time& t1, const X509_Time& t2)
+bool operator==(const ASN1_Time& t1, const ASN1_Time& t2)
    { return (t1.cmp(t2) == 0); }
-bool operator!=(const X509_Time& t1, const X509_Time& t2)
+bool operator!=(const ASN1_Time& t1, const ASN1_Time& t2)
    { return (t1.cmp(t2) != 0); }
 
-bool operator<=(const X509_Time& t1, const X509_Time& t2)
+bool operator<=(const ASN1_Time& t1, const ASN1_Time& t2)
    { return (t1.cmp(t2) <= 0); }
-bool operator>=(const X509_Time& t1, const X509_Time& t2)
+bool operator>=(const ASN1_Time& t1, const ASN1_Time& t2)
    { return (t1.cmp(t2) >= 0); }
 
-bool operator<(const X509_Time& t1, const X509_Time& t2)
+bool operator<(const ASN1_Time& t1, const ASN1_Time& t2)
    { return (t1.cmp(t2) < 0); }
-bool operator>(const X509_Time& t1, const X509_Time& t2)
+bool operator>(const ASN1_Time& t1, const ASN1_Time& t2)
    { return (t1.cmp(t2) > 0); }
 
 }
@@ -7444,8 +7423,11 @@ std::string make_arg(const std::vector<std::pair<size_t, std::string>>& name, si
          }
       else if(name[i].first < level)
          {
-         output += ")," + name[i].second;
-         --paren_depth;
+         for (size_t j = name[i].first; j < level; j++) {
+            output += ")";
+            --paren_depth;
+         }
+         output += "," + name[i].second;
          }
       else
          {
@@ -7470,7 +7452,7 @@ SCAN_Name::SCAN_Name(const char* algo_spec) : SCAN_Name(std::string(algo_spec))
    }
 
 SCAN_Name::SCAN_Name(std::string algo_spec) : m_orig_algo_spec(algo_spec), m_alg_name(), m_args(), m_mode_info()
-   {
+   { 
    if(algo_spec.size() == 0)
       throw Invalid_Argument("Expected algorithm name, got empty string");
 
@@ -7710,7 +7692,7 @@ OctetString operator^(const OctetString& k1, const OctetString& k2)
 }
 /*
 * Base64 Encoding and Decoding
-* (C) 2010,2015 Jack Lloyd
+* (C) 2010,2015,2020 Jack Lloyd
 *
 * Botan is released under the Simplified BSD License (see license.txt)
 */
@@ -7764,41 +7746,11 @@ class Base64 final
          return (round_up(input_length, m_encoding_bytes_out) * m_encoding_bytes_in) / m_encoding_bytes_out;
          }
 
-      static void encode(char out[8], const uint8_t in[5]) noexcept
-         {
-         out[0] = Base64::m_bin_to_base64[(in[0] & 0xFC) >> 2];
-         out[1] = Base64::m_bin_to_base64[((in[0] & 0x03) << 4) | (in[1] >> 4)];
-         out[2] = Base64::m_bin_to_base64[((in[1] & 0x0F) << 2) | (in[2] >> 6)];
-         out[3] = Base64::m_bin_to_base64[in[2] & 0x3F];
-         }
+      static void encode(char out[8], const uint8_t in[5]) noexcept;
 
-      static inline uint8_t lookup_binary_value(char input) noexcept
-         {
-         return Base64::m_base64_to_bin[static_cast<uint8_t>(input)];
-         }
+      static uint8_t lookup_binary_value(char input) noexcept;
 
-      static inline bool check_bad_char(uint8_t bin, char input, bool ignore_ws)
-         {
-         if(bin <= 0x3F)
-            {
-            return true;
-            }
-         else if(!(bin == 0x81 || (bin == 0x80 && ignore_ws)))
-            {
-            std::string bad_char(1, input);
-            if(bad_char == "\t")
-               { bad_char = "\\t"; }
-            else if(bad_char == "\n")
-               { bad_char = "\\n"; }
-            else if(bad_char == "\r")
-               { bad_char = "\\r"; }
-
-            throw Invalid_Argument(
-               std::string("base64_decode: invalid base64 character '") +
-               bad_char + "'");
-            }
-         return false;
-         }
+      static bool check_bad_char(uint8_t bin, char input, bool ignore_ws);
 
       static void decode(uint8_t* out_ptr, const uint8_t decode_buf[4])
          {
@@ -7816,57 +7768,105 @@ class Base64 final
       static const size_t m_encoding_bits = 6;
       static const size_t m_remaining_bits_before_padding = 8;
 
-
       static const size_t m_encoding_bytes_in = 3;
       static const size_t m_encoding_bytes_out = 4;
-
-
-      static const uint8_t m_bin_to_base64[64];
-      static const uint8_t m_base64_to_bin[256];
    };
 
-const uint8_t Base64::m_bin_to_base64[64] =
+char lookup_base64_char(uint8_t x)
    {
-   'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-   'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-   'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-   'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-   '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'
-   };
+   BOTAN_DEBUG_ASSERT(x < 64);
 
-/*
-* base64 Decoder Lookup Table
-* Warning: assumes ASCII encodings
-*/
-const uint8_t Base64::m_base64_to_bin[256] =
+   const auto in_az = CT::Mask<uint8_t>::is_within_range(x, 26, 51);
+   const auto in_09 = CT::Mask<uint8_t>::is_within_range(x, 52, 61);
+   const auto eq_plus = CT::Mask<uint8_t>::is_equal(x, 62);
+   const auto eq_slash = CT::Mask<uint8_t>::is_equal(x, 63);
+
+   const char c_AZ = 'A' + x;
+   const char c_az = 'a' + (x - 26);
+   const char c_09 = '0' + (x - 2*26);
+   const char c_plus = '+';
+   const char c_slash = '/';
+
+   char ret = c_AZ;
+   ret = in_az.select(c_az, ret);
+   ret = in_09.select(c_09, ret);
+   ret = eq_plus.select(c_plus, ret);
+   ret = eq_slash.select(c_slash, ret);
+
+   return ret;
+   }
+
+//static
+void Base64::encode(char out[8], const uint8_t in[5]) noexcept
    {
-   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x80,
-   0x80, 0xFF, 0xFF, 0x80, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-   0xFF, 0xFF, 0x80, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-   0xFF, 0xFF, 0xFF, 0x3E, 0xFF, 0xFF, 0xFF, 0x3F, 0x34, 0x35,
-   0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0xFF, 0xFF,
-   0xFF, 0x81, 0xFF, 0xFF, 0xFF, 0x00, 0x01, 0x02, 0x03, 0x04,
-   0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
-   0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
-   0x19, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x1A, 0x1B, 0x1C,
-   0x1D, 0x1E, 0x1F, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26,
-   0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F, 0x30,
-   0x31, 0x32, 0x33, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
-   };
+   const uint8_t b0 = (in[0] & 0xFC) >> 2;
+   const uint8_t b1 = ((in[0] & 0x03) << 4) | (in[1] >> 4);
+   const uint8_t b2 = ((in[1] & 0x0F) << 2) | (in[2] >> 6);
+   const uint8_t b3 = in[2] & 0x3F;
+   out[0] = lookup_base64_char(b0);
+   out[1] = lookup_base64_char(b1);
+   out[2] = lookup_base64_char(b2);
+   out[3] = lookup_base64_char(b3);
+   }
+
+//static
+uint8_t Base64::lookup_binary_value(char input) noexcept
+   {
+   const uint8_t c = static_cast<uint8_t>(input);
+
+   const auto is_alpha_upper = CT::Mask<uint8_t>::is_within_range(c, uint8_t('A'), uint8_t('Z'));
+   const auto is_alpha_lower = CT::Mask<uint8_t>::is_within_range(c, uint8_t('a'), uint8_t('z'));
+   const auto is_decimal     = CT::Mask<uint8_t>::is_within_range(c, uint8_t('0'), uint8_t('9'));
+
+   const auto is_plus        = CT::Mask<uint8_t>::is_equal(c, uint8_t('+'));
+   const auto is_slash       = CT::Mask<uint8_t>::is_equal(c, uint8_t('/'));
+   const auto is_equal       = CT::Mask<uint8_t>::is_equal(c, uint8_t('='));
+
+   const auto is_whitespace  = CT::Mask<uint8_t>::is_any_of(c, {
+         uint8_t(' '), uint8_t('\t'), uint8_t('\n'), uint8_t('\r')
+      });
+
+   const uint8_t c_upper = c - uint8_t('A');
+   const uint8_t c_lower = c - uint8_t('a') + 26;
+   const uint8_t c_decim = c - uint8_t('0') + 2*26;
+
+   uint8_t ret = 0xFF; // default value
+
+   ret = is_alpha_upper.select(c_upper, ret);
+   ret = is_alpha_lower.select(c_lower, ret);
+   ret = is_decimal.select(c_decim, ret);
+   ret = is_plus.select(62, ret);
+   ret = is_slash.select(63, ret);
+   ret = is_equal.select(0x81, ret);
+   ret = is_whitespace.select(0x80, ret);
+
+   return ret;
+   }
+
+//static
+bool Base64::check_bad_char(uint8_t bin, char input, bool ignore_ws)
+   {
+   if(bin <= 0x3F)
+      {
+      return true;
+      }
+   else if(!(bin == 0x81 || (bin == 0x80 && ignore_ws)))
+      {
+      std::string bad_char(1, input);
+      if(bad_char == "\t")
+         { bad_char = "\\t"; }
+      else if(bad_char == "\n")
+         { bad_char = "\\n"; }
+      else if(bad_char == "\r")
+         { bad_char = "\\r"; }
+
+      throw Invalid_Argument(
+         std::string("base64_decode: invalid base64 character '") +
+         bad_char + "'");
+      }
+   return false;
+   }
+
 }
 
 size_t base64_encode(char out[],
@@ -8588,11 +8588,37 @@ BigInt operator*(const BigInt& x, word y)
 */
 BigInt operator/(const BigInt& x, const BigInt& y)
    {
-   if(y.sig_words() == 1 && is_power_of_2(y.word_at(0)))
-      return (x >> (y.bits() - 1));
+   if(y.sig_words() == 1)
+      {
+      return x / y.word_at(0);
+      }
 
    BigInt q, r;
-   divide(x, y, q, r);
+   vartime_divide(x, y, q, r);
+   return q;
+   }
+
+/*
+* Division Operator
+*/
+BigInt operator/(const BigInt& x, word y)
+   {
+   if(y == 0)
+      throw BigInt::DivideByZero();
+   else if(y == 1)
+      return x;
+   else if(y == 2)
+      return (x >> 1);
+   else if(y <= 255)
+      {
+      BigInt q;
+      uint8_t r;
+      ct_divide_u8(x, static_cast<uint8_t>(y), q, r);
+      return q;
+      }
+
+   BigInt q, r;
+   vartime_divide(x, y, q, r);
    return q;
    }
 
@@ -8608,8 +8634,13 @@ BigInt operator%(const BigInt& n, const BigInt& mod)
    if(n.is_positive() && mod.is_positive() && n < mod)
       return n;
 
+   if(mod.sig_words() == 1)
+      {
+      return n % mod.word_at(0);
+      }
+
    BigInt q, r;
-   divide(n, mod, q, r);
+   vartime_divide(n, mod, q, r);
    return r;
    }
 
@@ -8824,14 +8855,13 @@ BigInt::BigInt(const uint8_t input[], size_t length, Base base)
 
 BigInt::BigInt(const uint8_t buf[], size_t length, size_t max_bits)
    {
-   const size_t max_bytes = std::min(length, (max_bits + 7) / 8);
-   binary_decode(buf, max_bytes);
+   if(8 * length > max_bits)
+      length = (max_bits + 7) / 8;
 
-   const size_t b = this->bits();
-   if(b > max_bits)
-      {
-      *this >>= (b - max_bits);
-      }
+   binary_decode(buf, length);
+
+   if(8 * length > max_bits)
+      *this >>= (8 - (max_bits % 8));
    }
 
 /*
@@ -9438,7 +9468,7 @@ BigInt ct_modulo(const BigInt& x, const BigInt& y)
 *
 * See Handbook of Applied Cryptography section 14.2.5
 */
-void divide(const BigInt& x, const BigInt& y_arg, BigInt& q_out, BigInt& r_out)
+void vartime_divide(const BigInt& x, const BigInt& y_arg, BigInt& q_out, BigInt& r_out)
    {
    if(y_arg.is_zero())
       throw BigInt::DivideByZero();
@@ -10117,6 +10147,9 @@ std::string CPUID::to_string()
    CPUID_PRINT(sse42);
    CPUID_PRINT(avx2);
    CPUID_PRINT(avx512f);
+   CPUID_PRINT(avx512dq);
+   CPUID_PRINT(avx512bw);
+   CPUID_PRINT(avx512_icelake);
 
    CPUID_PRINT(rdtsc);
    CPUID_PRINT(bmi1);
@@ -10128,6 +10161,8 @@ std::string CPUID::to_string()
    CPUID_PRINT(rdrand);
    CPUID_PRINT(rdseed);
    CPUID_PRINT(intel_sha);
+   CPUID_PRINT(avx512_aes);
+   CPUID_PRINT(avx512_clmul);
 #endif
 
 #if defined(BOTAN_TARGET_CPU_IS_PPC_FAMILY)
@@ -10169,11 +10204,13 @@ void CPUID::initialize()
 
 CPUID::CPUID_Data::CPUID_Data()
    {
+   m_cache_line_size = 0;
+   m_processor_features = 0;
+
 #if defined(BOTAN_TARGET_CPU_IS_PPC_FAMILY) || \
     defined(BOTAN_TARGET_CPU_IS_ARM_FAMILY) || \
     defined(BOTAN_TARGET_CPU_IS_X86_FAMILY)
 
-   m_cache_line_size = 0;
    m_processor_features = detect_cpu_features(&m_cache_line_size);
 
 #endif
@@ -10239,6 +10276,8 @@ CPUID::bit_from_string(const std::string& tok)
       return {Botan::CPUID::CPUID_AVX2_BIT};
    if(tok == "avx512f")
       return {Botan::CPUID::CPUID_AVX512F_BIT};
+   if(tok == "avx512_icelake")
+      return {Botan::CPUID::CPUID_AVX512_ICL_BIT};
    // there were two if statements testing "sha" and "intel_sha" separately; combined
    if(tok == "sha" || tok=="intel_sha")
       return {Botan::CPUID::CPUID_SHA_BIT};
@@ -10254,6 +10293,10 @@ CPUID::bit_from_string(const std::string& tok)
       return {Botan::CPUID::CPUID_RDRAND_BIT};
    if(tok == "rdseed")
       return {Botan::CPUID::CPUID_RDSEED_BIT};
+   if(tok == "avx512_aes")
+      return {Botan::CPUID::CPUID_AVX512_AES_BIT};
+   if(tok == "avx512_clmul")
+      return {Botan::CPUID::CPUID_AVX512_CLMUL_BIT};
 
 #elif defined(BOTAN_TARGET_CPU_IS_PPC_FAMILY)
    if(tok == "altivec" || tok == "simd")
@@ -10781,12 +10824,22 @@ uint64_t CPUID::CPUID_Data::detect_cpu_features(size_t* cache_line_size)
          BMI1 = (1ULL << 3),
          AVX2 = (1ULL << 5),
          BMI2 = (1ULL << 8),
-         AVX512F = (1ULL << 16),
+         AVX512_F = (1ULL << 16),
+         AVX512_DQ = (1ULL << 17),
          RDSEED = (1ULL << 18),
          ADX = (1ULL << 19),
+         AVX512_IFMA = (1ULL << 21),
          SHA = (1ULL << 29),
+         AVX512_BW = (1ULL << 30),
+         AVX512_VL = (1ULL << 31),
+         AVX512_VBMI = (1ULL << 33),
+         AVX512_VBMI2 = (1ULL << 38),
+         AVX512_VAES = (1ULL << 41),
+         AVX512_VCLMUL = (1ULL << 42),
+         AVX512_VBITALG = (1ULL << 44),
       };
-      uint64_t flags7 = (static_cast<uint64_t>(cpuid[2]) << 32) | cpuid[1];
+
+      const uint64_t flags7 = (static_cast<uint64_t>(cpuid[2]) << 32) | cpuid[1];
 
       if(flags7 & x86_CPUID_7_bits::AVX2)
          features_detected |= CPUID::CPUID_AVX2_BIT;
@@ -10802,8 +10855,34 @@ uint64_t CPUID::CPUID_Data::detect_cpu_features(size_t* cache_line_size)
             features_detected |= CPUID::CPUID_BMI2_BIT;
          }
 
-      if(flags7 & x86_CPUID_7_bits::AVX512F)
+      if(flags7 & x86_CPUID_7_bits::AVX512_F)
+         {
          features_detected |= CPUID::CPUID_AVX512F_BIT;
+
+         if(flags7 & x86_CPUID_7_bits::AVX512_DQ)
+            features_detected |= CPUID::CPUID_AVX512DQ_BIT;
+         if(flags7 & x86_CPUID_7_bits::AVX512_BW)
+            features_detected |= CPUID::CPUID_AVX512BW_BIT;
+
+         const uint64_t ICELAKE_FLAGS =
+            x86_CPUID_7_bits::AVX512_F |
+            x86_CPUID_7_bits::AVX512_DQ |
+            x86_CPUID_7_bits::AVX512_IFMA |
+            x86_CPUID_7_bits::AVX512_BW |
+            x86_CPUID_7_bits::AVX512_VL |
+            x86_CPUID_7_bits::AVX512_VBMI |
+            x86_CPUID_7_bits::AVX512_VBMI2 |
+            x86_CPUID_7_bits::AVX512_VBITALG;
+
+         if((flags7 & ICELAKE_FLAGS) == ICELAKE_FLAGS)
+            features_detected |= CPUID::CPUID_AVX512_ICL_BIT;
+
+         if(flags7 & x86_CPUID_7_bits::AVX512_VAES)
+            features_detected |= CPUID::CPUID_AVX512_AES_BIT;
+         if(flags7 & x86_CPUID_7_bits::AVX512_VCLMUL)
+            features_detected |= CPUID::CPUID_AVX512_CLMUL_BIT;
+         }
+
       if(flags7 & x86_CPUID_7_bits::RDSEED)
          features_detected |= CPUID::CPUID_RDSEED_BIT;
       if(flags7 & x86_CPUID_7_bits::ADX)
@@ -11661,7 +11740,7 @@ namespace Botan {
 class DL_Group_Data final
    {
    public:
-      DL_Group_Data(const BigInt& p, const BigInt& q, const BigInt& g) :
+      DL_Group_Data(const BigInt& p, const BigInt& q, const BigInt& g, DL_Group_Source source) :
          m_p(p), m_q(q), m_g(g),
          m_mod_p(p),
          m_mod_q(q),
@@ -11670,7 +11749,8 @@ class DL_Group_Data final
          m_p_bits(p.bits()),
          m_q_bits(q.bits()),
          m_estimated_strength(dl_work_factor(m_p_bits)),
-         m_exponent_bits(dl_exponent_size(m_p_bits))
+         m_exponent_bits(dl_exponent_size(m_p_bits)),
+         m_source(source)
          {
          }
 
@@ -11727,6 +11807,8 @@ class DL_Group_Data final
             throw Invalid_State("DL_Group::" + function + " q is not set for this group");
          }
 
+      DL_Group_Source source() const { return m_source; }
+
    private:
       BigInt m_p;
       BigInt m_q;
@@ -11739,10 +11821,13 @@ class DL_Group_Data final
       size_t m_q_bits;
       size_t m_estimated_strength;
       size_t m_exponent_bits;
+      DL_Group_Source m_source;
    };
 
 //static
-std::shared_ptr<DL_Group_Data> DL_Group::BER_decode_DL_group(const uint8_t data[], size_t data_len, DL_Group::Format format)
+std::shared_ptr<DL_Group_Data> DL_Group::BER_decode_DL_group(const uint8_t data[], size_t data_len,
+                                                             DL_Group::Format format,
+                                                             DL_Group_Source source)
    {
    BigInt p, q, g;
 
@@ -11773,7 +11858,7 @@ std::shared_ptr<DL_Group_Data> DL_Group::BER_decode_DL_group(const uint8_t data[
    else
       throw Invalid_Argument("Unknown DL_Group encoding " + std::to_string(format));
 
-   return std::make_shared<DL_Group_Data>(p, q, g);
+   return std::make_shared<DL_Group_Data>(p, q, g, source);
    }
 
 //static
@@ -11786,7 +11871,7 @@ DL_Group::load_DL_group_info(const char* p_str,
    const BigInt q(q_str);
    const BigInt g(g_str);
 
-   return std::make_shared<DL_Group_Data>(p, q, g);
+   return std::make_shared<DL_Group_Data>(p, q, g, DL_Group_Source::Builtin);
    }
 
 //static
@@ -11798,7 +11883,7 @@ DL_Group::load_DL_group_info(const char* p_str,
    const BigInt q = (p - 1) / 2;
    const BigInt g(g_str);
 
-   return std::make_shared<DL_Group_Data>(p, q, g);
+   return std::make_shared<DL_Group_Data>(p, q, g, DL_Group_Source::Builtin);
    }
 
 namespace {
@@ -11833,7 +11918,7 @@ DL_Group::DL_Group(const std::string& str)
          const std::vector<uint8_t> ber = unlock(PEM_Code::decode(str, label));
          Format format = pem_label_to_dl_format(label);
 
-         m_data = BER_decode_DL_group(ber.data(), ber.size(), format);
+         m_data = BER_decode_DL_group(ber.data(), ber.size(), format, DL_Group_Source::ExternalSource);
          }
       catch(...) {}
       }
@@ -11849,9 +11934,10 @@ namespace {
 */
 BigInt make_dsa_generator(const BigInt& p, const BigInt& q)
    {
-   const BigInt e = (p - 1) / q;
+   BigInt e, r;
+   vartime_divide(p - 1, q, e, r);
 
-   if(e == 0 || (p - 1) % q > 0)
+   if(e == 0 || r > 0)
       throw Invalid_Argument("make_dsa_generator q does not divide p-1");
 
    for(size_t i = 0; i != PRIME_TABLE_SIZE; ++i)
@@ -11900,7 +11986,7 @@ DL_Group::DL_Group(RandomNumberGenerator& rng,
             }
          }
 
-      m_data = std::make_shared<DL_Group_Data>(p, q, g);
+      m_data = std::make_shared<DL_Group_Data>(p, q, g, DL_Group_Source::RandomlyGenerated);
       }
    else if(type == Prime_Subgroup)
       {
@@ -11918,7 +12004,7 @@ DL_Group::DL_Group(RandomNumberGenerator& rng,
          }
 
       const BigInt g = make_dsa_generator(p, q);
-      m_data = std::make_shared<DL_Group_Data>(p, q, g);
+      m_data = std::make_shared<DL_Group_Data>(p, q, g, DL_Group_Source::RandomlyGenerated);
       }
    else if(type == DSA_Kosherizer)
       {
@@ -11928,7 +12014,7 @@ DL_Group::DL_Group(RandomNumberGenerator& rng,
       BigInt p, q;
       generate_dsa_primes(rng, p, q, pbits, qbits);
       const BigInt g = make_dsa_generator(p, q);
-      m_data = std::make_shared<DL_Group_Data>(p, q, g);
+      m_data = std::make_shared<DL_Group_Data>(p, q, g, DL_Group_Source::RandomlyGenerated);
       }
    else
       {
@@ -11950,7 +12036,7 @@ DL_Group::DL_Group(RandomNumberGenerator& rng,
 
    BigInt g = make_dsa_generator(p, q);
 
-   m_data = std::make_shared<DL_Group_Data>(p, q, g);
+   m_data = std::make_shared<DL_Group_Data>(p, q, g, DL_Group_Source::RandomlyGenerated);
    }
 
 /*
@@ -11958,7 +12044,7 @@ DL_Group::DL_Group(RandomNumberGenerator& rng,
 */
 DL_Group::DL_Group(const BigInt& p, const BigInt& g)
    {
-   m_data = std::make_shared<DL_Group_Data>(p, 0, g);
+   m_data = std::make_shared<DL_Group_Data>(p, 0, g, DL_Group_Source::ExternalSource);
    }
 
 /*
@@ -11966,7 +12052,7 @@ DL_Group::DL_Group(const BigInt& p, const BigInt& g)
 */
 DL_Group::DL_Group(const BigInt& p, const BigInt& q, const BigInt& g)
    {
-   m_data = std::make_shared<DL_Group_Data>(p, q, g);
+   m_data = std::make_shared<DL_Group_Data>(p, q, g, DL_Group_Source::ExternalSource);
    }
 
 const DL_Group_Data& DL_Group::data() const
@@ -12013,6 +12099,11 @@ bool DL_Group::verify_element_pair(const BigInt& y, const BigInt& x) const
 bool DL_Group::verify_group(RandomNumberGenerator& rng,
                             bool strong) const
    {
+   const bool from_builtin = (source() == DL_Group_Source::Builtin);
+
+   if(!strong && from_builtin)
+      return true;
+
    const BigInt& p = get_p();
    const BigInt& q = get_q();
    const BigInt& g = get_g();
@@ -12020,7 +12111,8 @@ bool DL_Group::verify_group(RandomNumberGenerator& rng,
    if(g < 2 || p < 3 || q < 0)
       return false;
 
-   const size_t prob = (strong) ? 128 : 10;
+   const size_t test_prob = 128;
+   const bool is_randomly_generated = (source() != DL_Group_Source::ExternalSource);
 
    if(q != 0)
       {
@@ -12032,16 +12124,17 @@ bool DL_Group::verify_group(RandomNumberGenerator& rng,
          {
          return false;
          }
-      if(!is_prime(q, rng, prob))
+      if(!is_prime(q, rng, test_prob, is_randomly_generated))
          {
          return false;
          }
       }
 
-   if(!is_prime(p, rng, prob))
+   if(!is_prime(p, rng, test_prob, is_randomly_generated))
       {
       return false;
       }
+
    return true;
    }
 
@@ -12168,6 +12261,11 @@ BigInt DL_Group::power_g_p(const BigInt& x, size_t max_x_bits) const
    return data().power_g_p(x, max_x_bits);
    }
 
+DL_Group_Source DL_Group::source() const
+   {
+   return data().source();
+   }
+
 /*
 * DER encode the parameters
 */
@@ -12227,12 +12325,21 @@ std::string DL_Group::PEM_encode(Format format) const
 
 DL_Group::DL_Group(const uint8_t ber[], size_t ber_len, Format format)
    {
-   m_data = BER_decode_DL_group(ber, ber_len, format);
+   m_data = BER_decode_DL_group(ber, ber_len, format, DL_Group_Source::ExternalSource);
    }
 
 void DL_Group::BER_decode(const std::vector<uint8_t>& ber, Format format)
    {
-   m_data = BER_decode_DL_group(ber.data(), ber.size(), format);
+   m_data = BER_decode_DL_group(ber.data(), ber.size(), format, DL_Group_Source::ExternalSource);
+   }
+
+//static
+DL_Group DL_Group::DL_Group_from_PEM(const std::string& pem)
+   {
+   std::string label;
+   const std::vector<uint8_t> ber = unlock(PEM_Code::decode(pem, label));
+   Format format = pem_label_to_dl_format(label);
+   return DL_Group(ber, format);
    }
 
 /*
@@ -12244,7 +12351,7 @@ void DL_Group::PEM_decode(const std::string& pem)
    const std::vector<uint8_t> ber = unlock(PEM_Code::decode(pem, label));
    Format format = pem_label_to_dl_format(label);
 
-   m_data = BER_decode_DL_group(ber.data(), ber.size(), format);
+   m_data = BER_decode_DL_group(ber.data(), ber.size(), format, DL_Group_Source::ExternalSource);
    }
 
 //static
@@ -13017,7 +13124,8 @@ class EC_Group_Data final
                     const BigInt& g_y,
                     const BigInt& order,
                     const BigInt& cofactor,
-                    const OID& oid) :
+                    const OID& oid,
+                    EC_Group_Source source) :
          m_curve(p, a, b),
          m_base_point(m_curve, g_x, g_y),
          m_g_x(g_x),
@@ -13030,7 +13138,8 @@ class EC_Group_Data final
          m_p_bits(p.bits()),
          m_order_bits(order.bits()),
          m_a_is_minus_3(a == p - 3),
-         m_a_is_zero(a.is_zero())
+         m_a_is_zero(a.is_zero()),
+         m_source(source)
          {
          }
 
@@ -13103,6 +13212,8 @@ class EC_Group_Data final
          return m_base_mult.mul(k, rng, m_order, ws);
          }
 
+      EC_Group_Source source() const { return m_source; }
+
    private:
       CurveGFp m_curve;
       PointGFp m_base_point;
@@ -13118,6 +13229,7 @@ class EC_Group_Data final
       size_t m_order_bits;
       bool m_a_is_minus_3;
       bool m_a_is_zero;
+      EC_Group_Source m_source;
    };
 
 class EC_Group_Data_Map final
@@ -13163,7 +13275,8 @@ class EC_Group_Data_Map final
                                                       const BigInt& g_y,
                                                       const BigInt& order,
                                                       const BigInt& cofactor,
-                                                      const OID& oid)
+                                                      const OID& oid,
+                                                      EC_Group_Source source)
          {
          lock_guard_type<mutex_type> lock(m_mutex);
 
@@ -13220,7 +13333,7 @@ class EC_Group_Data_Map final
 
          // Not found or no OID, add data and return
          std::shared_ptr<EC_Group_Data> d =
-            std::make_shared<EC_Group_Data>(p, a, b, g_x, g_y, order, cofactor, oid);
+            std::make_shared<EC_Group_Data>(p, a, b, g_x, g_y, order, cofactor, oid, source);
 
          m_registered_curves.push_back(d);
          return d;
@@ -13268,11 +13381,12 @@ EC_Group::load_EC_group_info(const char* p_str,
    const BigInt order(order_str);
    const BigInt cofactor(1); // implicit
 
-   return std::make_shared<EC_Group_Data>(p, a, b, g_x, g_y, order, cofactor, oid);
+   return std::make_shared<EC_Group_Data>(p, a, b, g_x, g_y, order, cofactor, oid, EC_Group_Source::Builtin);
    }
 
 //static
-std::shared_ptr<EC_Group_Data> EC_Group::BER_decode_EC_group(const uint8_t bits[], size_t len)
+std::shared_ptr<EC_Group_Data> EC_Group::BER_decode_EC_group(const uint8_t bits[], size_t len,
+                                                             EC_Group_Source source)
    {
    BER_Decoder ber(bits, len);
    BER_Object obj = ber.get_next_object();
@@ -13329,7 +13443,8 @@ std::shared_ptr<EC_Group_Data> EC_Group::BER_decode_EC_group(const uint8_t bits[
 
       std::pair<BigInt, BigInt> base_xy = Botan::OS2ECP(base_pt.data(), base_pt.size(), p, a, b);
 
-      return ec_group_data().lookup_or_create(p, a, b, base_xy.first, base_xy.second, order, cofactor, OID());
+      return ec_group_data().lookup_or_create(p, a, b, base_xy.first, base_xy.second,
+                                              order, cofactor, OID(), source);
       }
    else
       {
@@ -13374,12 +13489,19 @@ EC_Group::EC_Group(const std::string& str)
          {
          // OK try it as PEM ...
          secure_vector<uint8_t> ber = PEM_Code::decode_check_label(str, "EC PARAMETERS");
-         this->m_data = BER_decode_EC_group(ber.data(), ber.size());
+         this->m_data = BER_decode_EC_group(ber.data(), ber.size(), EC_Group_Source::ExternalSource);
          }
       }
 
    if(m_data == nullptr)
       throw Invalid_Argument("Unknown ECC group '" + str + "'");
+   }
+
+//static
+EC_Group EC_Group::EC_Group_from_PEM(const std::string& pem)
+   {
+   const auto ber = PEM_Code::decode_check_label(pem, "EC PARAMETERS");
+   return EC_Group(ber.data(), ber.size());
    }
 
 //static
@@ -13405,12 +13527,13 @@ EC_Group::EC_Group(const BigInt& p,
                    const BigInt& cofactor,
                    const OID& oid)
    {
-   m_data = ec_group_data().lookup_or_create(p, a, b, base_x, base_y, order, cofactor, oid);
+   m_data = ec_group_data().lookup_or_create(p, a, b, base_x, base_y, order, cofactor, oid,
+                                             EC_Group_Source::ExternalSource);
    }
 
-EC_Group::EC_Group(const std::vector<uint8_t>& ber)
+EC_Group::EC_Group(const uint8_t ber[], size_t ber_len)
    {
-   m_data = BER_decode_EC_group(ber.data(), ber.size());
+   m_data = BER_decode_EC_group(ber, ber_len, EC_Group_Source::ExternalSource);
    }
 
 const EC_Group_Data& EC_Group::data() const
@@ -13523,6 +13646,11 @@ BigInt EC_Group::inverse_mod_order(const BigInt& x) const
 const OID& EC_Group::get_curve_oid() const
    {
    return data().oid();
+   }
+
+EC_Group_Source EC_Group::source() const
+   {
+   return data().source();
    }
 
 size_t EC_Group::point_size(PointGFp::Compression_Type format) const
@@ -13686,29 +13814,37 @@ bool EC_Group::verify_public_element(const PointGFp& point) const
    }
 
 bool EC_Group::verify_group(RandomNumberGenerator& rng,
-                            bool) const
+                            bool strong) const
    {
+   const bool is_builtin = source() == EC_Group_Source::Builtin;
+
+   if(is_builtin && !strong)
+      return true;
+
    const BigInt& p = get_p();
    const BigInt& a = get_a();
    const BigInt& b = get_b();
    const BigInt& order = get_order();
    const PointGFp& base_point = get_base_point();
 
+   if(p <= 3 || order <= 0)
+      return false;
    if(a < 0 || a >= p)
       return false;
    if(b <= 0 || b >= p)
       return false;
-   if(order <= 0)
-      return false;
+
+   const size_t test_prob = 128;
+   const bool is_randomly_generated = is_builtin;
 
    //check if field modulus is prime
-   if(!is_prime(p, rng, 128))
+   if(!is_prime(p, rng, test_prob, is_randomly_generated))
       {
       return false;
       }
 
    //check if order is prime
-   if(!is_prime(order, rng, 128))
+   if(!is_prime(order, rng, test_prob, is_randomly_generated))
       {
       return false;
       }
@@ -14474,6 +14610,12 @@ void PointGFp::force_all_affine(std::vector<PointGFp>& points,
       return;
       }
 
+   for(size_t i = 0; i != points.size(); ++i)
+      {
+      if(points[i].is_zero())
+         throw Invalid_State("Cannot convert zero ECC point to affine");
+      }
+
    /*
    For >= 2 points use Montgomery's trick
 
@@ -14776,6 +14918,7 @@ std::pair<BigInt, BigInt> OS2ECP(const uint8_t data[], size_t data_len,
 * Botan is released under the Simplified BSD License (see license.txt)
 */
 
+#include <iostream>
 
 namespace Botan {
 
@@ -15142,7 +15285,19 @@ PointGFp_Multi_Point_Precompute::PointGFp_Multi_Point_Precompute(const PointGFp&
    m_M.push_back(y3.plus(x2, ws));
    m_M.push_back(y3.plus(x3, ws));
 
-   PointGFp::force_all_affine(m_M, ws[0].get_word_vector());
+   bool no_infinity = true;
+   for(auto& pt : m_M)
+      {
+      if(pt.is_zero())
+         no_infinity = false;
+      }
+
+   if(no_infinity)
+      {
+      PointGFp::force_all_affine(m_M, ws[0].get_word_vector());
+      }
+
+   m_no_infinity = no_infinity;
    }
 
 PointGFp PointGFp_Multi_Point_Precompute::multi_exp(const BigInt& z1,
@@ -15169,7 +15324,10 @@ PointGFp PointGFp_Multi_Point_Precompute::multi_exp(const BigInt& z1,
       // This function is not intended to be const time
       if(z12)
          {
-         H.add_affine(m_M[z12-1], ws);
+         if(m_no_infinity)
+            H.add_affine(m_M[z12-1], ws);
+         else
+            H.add(m_M[z12-1], ws);
          }
       }
 
@@ -16020,7 +16178,7 @@ std::vector<std::string> HashFunction::providers(const std::string& algo_spec)
 
 /*
 * Hex Encoding and Decoding
-* (C) 2010 Jack Lloyd
+* (C) 2010,2020 Jack Lloyd
 *
 * Botan is released under the Simplified BSD License (see license.txt)
 */
@@ -16028,26 +16186,34 @@ std::vector<std::string> HashFunction::providers(const std::string& algo_spec)
 
 namespace Botan {
 
+namespace {
+
+char hex_encode_nibble(uint8_t n, bool uppercase)
+   {
+   BOTAN_DEBUG_ASSERT(n <= 15);
+
+   const auto in_09 = CT::Mask<uint8_t>::is_lt(n, 10);
+
+   const char c_09 = n + '0';
+   const char c_af = n + (uppercase ? 'A' : 'a') - 10;
+
+   return in_09.select(c_09, c_af);
+   }
+
+}
+
 void hex_encode(char output[],
                 const uint8_t input[],
                 size_t input_length,
                 bool uppercase)
    {
-   static const uint8_t BIN_TO_HEX_UPPER[16] = {
-      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-      'A', 'B', 'C', 'D', 'E', 'F' };
-
-   static const uint8_t BIN_TO_HEX_LOWER[16] = {
-      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-      'a', 'b', 'c', 'd', 'e', 'f' };
-
-   const uint8_t* tbl = uppercase ? BIN_TO_HEX_UPPER : BIN_TO_HEX_LOWER;
-
    for(size_t i = 0; i != input_length; ++i)
       {
-      uint8_t x = input[i];
-      output[2*i  ] = tbl[(x >> 4) & 0x0F];
-      output[2*i+1] = tbl[(x     ) & 0x0F];
+      const uint8_t n0 = (input[i] >> 4) & 0xF;
+      const uint8_t n1 = (input[i]     ) & 0xF;
+
+      output[2*i  ] = hex_encode_nibble(n0, uppercase);
+      output[2*i+1] = hex_encode_nibble(n1, uppercase);
       }
    }
 
@@ -16063,49 +16229,43 @@ std::string hex_encode(const uint8_t input[],
    return output;
    }
 
+namespace {
+
+uint8_t hex_char_to_bin(char input)
+   {
+   const uint8_t c = static_cast<uint8_t>(input);
+
+   const auto is_alpha_upper = CT::Mask<uint8_t>::is_within_range(c, uint8_t('A'), uint8_t('F'));
+   const auto is_alpha_lower = CT::Mask<uint8_t>::is_within_range(c, uint8_t('a'), uint8_t('f'));
+   const auto is_decimal     = CT::Mask<uint8_t>::is_within_range(c, uint8_t('0'), uint8_t('9'));
+
+   const auto is_whitespace  = CT::Mask<uint8_t>::is_any_of(c, {
+         uint8_t(' '), uint8_t('\t'), uint8_t('\n'), uint8_t('\r')
+      });
+
+   const uint8_t c_upper = c - uint8_t('A') + 10;
+   const uint8_t c_lower = c - uint8_t('a') + 10;
+   const uint8_t c_decim = c - uint8_t('0');
+
+   uint8_t ret = 0xFF; // default value
+
+   ret = is_alpha_upper.select(c_upper, ret);
+   ret = is_alpha_lower.select(c_lower, ret);
+   ret = is_decimal.select(c_decim, ret);
+   ret = is_whitespace.select(0x80, ret);
+
+   return ret;
+   }
+
+}
+
+
 size_t hex_decode(uint8_t output[],
                   const char input[],
                   size_t input_length,
                   size_t& input_consumed,
                   bool ignore_ws)
    {
-   /*
-   * Mapping of hex characters to either their binary equivalent
-   * or to an error code.
-   *  If valid hex (0-9 A-F a-f), the value.
-   *  If whitespace, then 0x80
-   *  Otherwise 0xFF
-   * Warning: this table assumes ASCII character encodings
-   */
-
-   static const uint8_t HEX_TO_BIN[256] = {
-      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x80,
-      0x80, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-      0xFF, 0xFF, 0x80, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x01,
-      0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0xFF, 0xFF,
-      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
-      0x0F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x0A, 0x0B, 0x0C,
-      0x0D, 0x0E, 0x0F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-
    uint8_t* out_ptr = output;
    bool top_nibble = true;
 
@@ -16113,7 +16273,7 @@ size_t hex_decode(uint8_t output[],
 
    for(size_t i = 0; i != input_length; ++i)
       {
-      const uint8_t bin = HEX_TO_BIN[static_cast<uint8_t>(input[i])];
+      const uint8_t bin = hex_char_to_bin(input[i]);
 
       if(bin >= 0x10)
          {
@@ -24823,7 +24983,10 @@ bool is_prime(const BigInt& n,
       if(is_miller_rabin_probable_prime(n, mod_n, rng, t) == false)
          return false;
 
-      return is_lucas_probable_prime(n, mod_n);
+      if(is_random)
+         return true;
+      else
+         return is_lucas_probable_prime(n, mod_n);
       }
    else
       {
@@ -26073,8 +26236,7 @@ void Modular_Reducer::reduce(BigInt& t1, const BigInt& x, secure_vector<word>& w
 
 }
 /*
-* Shanks-Tonnelli (RESSOL)
-* (C) 2007-2008 Falko Strenzke, FlexSecure GmbH
+* (C) 2007,2008 Falko Strenzke, FlexSecure GmbH
 * (C) 2008 Jack Lloyd
 *
 * Botan is released under the Simplified BSD License (see license.txt)
@@ -26084,10 +26246,13 @@ void Modular_Reducer::reduce(BigInt& t1, const BigInt& x, secure_vector<word>& w
 namespace Botan {
 
 /*
-* Shanks-Tonnelli algorithm
+* Tonelli-Shanks algorithm
 */
 BigInt ressol(const BigInt& a, const BigInt& p)
    {
+   if(p <= 1 || p.is_even())
+      throw Invalid_Argument("ressol: invalid prime");
+
    if(a == 0)
       return 0;
    else if(a < 0)
@@ -26097,16 +26262,14 @@ BigInt ressol(const BigInt& a, const BigInt& p)
 
    if(p == 2)
       return a;
-   else if(p <= 1)
-      throw Invalid_Argument("ressol: prime must be > 1 a");
-   else if(p.is_even())
-      throw Invalid_Argument("ressol: invalid prime");
 
    if(jacobi(a, p) != 1) // not a quadratic residue
       return -BigInt(1);
 
-   if(p % 4 == 3)
+   if(p % 4 == 3) // The easy case
+      {
       return power_mod(a, ((p+1) >> 2), p);
+      }
 
    size_t s = low_zero_bits(p - 1);
    BigInt q = p >> s;
@@ -26123,10 +26286,23 @@ BigInt ressol(const BigInt& a, const BigInt& p)
    if(n == 1)
       return r;
 
-   // find random non quadratic residue z
-   BigInt z = 2;
-   while(jacobi(z, p) == 1) // while z quadratic residue
-      ++z;
+   // find random quadratic nonresidue z
+   word z = 2;
+   for(;;)
+      {
+      if(jacobi(z, p) == -1) // found one
+         break;
+
+      z += 1; // try next z
+
+      /*
+      * The expected number of tests to find a non-residue modulo a
+      * prime is 2. If we have not found one after 256 then almost
+      * certainly we have been given a non-prime p.
+      */
+      if(z >= 256)
+         return -BigInt(1);
+      }
 
    BigInt c = power_mod(z, (q << 1) + 1, p);
 
@@ -28126,6 +28302,12 @@ SymmetricKey PK_Key_Agreement::derive_key(size_t key_len,
    return m_op->agree(key_len, in, in_len, salt, salt_len);
    }
 
+static void check_der_format_supported(Signature_Format format, size_t parts)
+   {
+      if(format != IEEE_1363 && parts == 1)
+         throw Invalid_Argument("PK: This algorithm does not support DER encoding");
+   }
+
 PK_Signer::PK_Signer(const Private_Key& key,
                      RandomNumberGenerator& rng,
                      const std::string& emsa,
@@ -28138,6 +28320,7 @@ PK_Signer::PK_Signer(const Private_Key& key,
    m_sig_format = format;
    m_parts = key.message_parts();
    m_part_size = key.message_part_size();
+   check_der_format_supported(format, m_parts);
    }
 
 PK_Signer::~PK_Signer() { /* for unique_ptr */ }
@@ -28213,14 +28396,14 @@ PK_Verifier::PK_Verifier(const Public_Key& key,
    m_sig_format = format;
    m_parts = key.message_parts();
    m_part_size = key.message_part_size();
+   check_der_format_supported(format, m_parts);
    }
 
 PK_Verifier::~PK_Verifier() { /* for unique_ptr */ }
 
 void PK_Verifier::set_input_format(Signature_Format format)
    {
-   if(format != IEEE_1363 && m_parts == 1)
-      throw Invalid_Argument("PK_Verifier: This algorithm does not support DER encoding");
+   check_der_format_supported(format, m_parts);
    m_sig_format = format;
    }
 
@@ -30130,7 +30313,7 @@ void Twofish::clear()
 
 namespace Botan {
 
-const uint8_t Twofish::Q0[256] = {
+alignas(64) const uint8_t Twofish::Q0[256] = {
    0xA9, 0x67, 0xB3, 0xE8, 0x04, 0xFD, 0xA3, 0x76, 0x9A, 0x92, 0x80, 0x78,
    0xE4, 0xDD, 0xD1, 0x38, 0x0D, 0xC6, 0x35, 0x98, 0x18, 0xF7, 0xEC, 0x6C,
    0x43, 0x75, 0x37, 0x26, 0xFA, 0x13, 0x94, 0x48, 0xF2, 0xD0, 0x8B, 0x30,
@@ -30154,7 +30337,7 @@ const uint8_t Twofish::Q0[256] = {
    0xCA, 0x10, 0x21, 0xF0, 0xD3, 0x5D, 0x0F, 0x00, 0x6F, 0x9D, 0x36, 0x42,
    0x4A, 0x5E, 0xC1, 0xE0 };
 
-const uint8_t Twofish::Q1[256] = {
+alignas(64) const uint8_t Twofish::Q1[256] = {
    0x75, 0xF3, 0xC6, 0xF4, 0xDB, 0x7B, 0xFB, 0xC8, 0x4A, 0xD3, 0xE6, 0x6B,
    0x45, 0x7D, 0xE8, 0x4B, 0xD6, 0x32, 0xD8, 0xFD, 0x37, 0x71, 0xF1, 0xE1,
    0x30, 0x0F, 0xF8, 0x1B, 0x87, 0xFA, 0x06, 0x3F, 0x5E, 0xBA, 0xAE, 0x5B,
@@ -30178,12 +30361,12 @@ const uint8_t Twofish::Q1[256] = {
    0xD7, 0x61, 0x1E, 0xB4, 0x50, 0x04, 0xF6, 0xC2, 0x16, 0x25, 0x86, 0x56,
    0x55, 0x09, 0xBE, 0x91 };
 
-const uint8_t Twofish::RS[32] = {
+alignas(64) const uint8_t Twofish::RS[32] = {
    0x01, 0xA4, 0x02, 0xA4, 0xA4, 0x56, 0xA1, 0x55, 0x55, 0x82, 0xFC, 0x87,
    0x87, 0xF3, 0xC1, 0x5A, 0x5A, 0x1E, 0x47, 0x58, 0x58, 0xC6, 0xAE, 0xDB,
    0xDB, 0x68, 0x3D, 0x9E, 0x9E, 0xE5, 0x19, 0x03 };
 
-const uint8_t Twofish::EXP_TO_POLY[255] = {
+alignas(64) const uint8_t Twofish::EXP_TO_POLY[255] = {
    0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x4D, 0x9A, 0x79, 0xF2,
    0xA9, 0x1F, 0x3E, 0x7C, 0xF8, 0xBD, 0x37, 0x6E, 0xDC, 0xF5, 0xA7, 0x03,
    0x06, 0x0C, 0x18, 0x30, 0x60, 0xC0, 0xCD, 0xD7, 0xE3, 0x8B, 0x5B, 0xB6,
@@ -30207,7 +30390,7 @@ const uint8_t Twofish::EXP_TO_POLY[255] = {
    0x3B, 0x76, 0xEC, 0x95, 0x67, 0xCE, 0xD1, 0xEF, 0x93, 0x6B, 0xD6, 0xE1,
    0x8F, 0x53, 0xA6 };
 
-const uint8_t Twofish::POLY_TO_EXP[255] = {
+alignas(64) const uint8_t Twofish::POLY_TO_EXP[255] = {
    0x00, 0x01, 0x17, 0x02, 0x2E, 0x18, 0x53, 0x03, 0x6A, 0x2F, 0x93, 0x19,
    0x34, 0x54, 0x45, 0x04, 0x5C, 0x6B, 0xB6, 0x30, 0xA6, 0x94, 0x4B, 0x1A,
    0x8C, 0x35, 0x81, 0x55, 0xAA, 0x46, 0x0D, 0x05, 0x24, 0x5D, 0x87, 0x6C,
@@ -30231,7 +30414,7 @@ const uint8_t Twofish::POLY_TO_EXP[255] = {
    0xB4, 0x0B, 0x7F, 0x51, 0x15, 0x43, 0x91, 0x10, 0x71, 0xBB, 0xEE, 0xBF,
    0x85, 0xC8, 0xA1 };
 
-const uint32_t Twofish::MDS0[256] = {
+alignas(64) const uint32_t Twofish::MDS0[256] = {
    0xBCBC3275, 0xECEC21F3, 0x202043C6, 0xB3B3C9F4, 0xDADA03DB, 0x02028B7B,
    0xE2E22BFB, 0x9E9EFAC8, 0xC9C9EC4A, 0xD4D409D3, 0x18186BE6, 0x1E1E9F6B,
    0x98980E45, 0xB2B2387D, 0xA6A6D2E8, 0x2626B74B, 0x3C3C57D6, 0x93938A32,
@@ -30276,7 +30459,7 @@ const uint32_t Twofish::MDS0[256] = {
    0x04047FF6, 0x272746C2, 0xACACA716, 0xD0D07625, 0x50501386, 0xDCDCF756,
    0x84841A55, 0xE1E15109, 0x7A7A25BE, 0x1313EF91 };
 
-const uint32_t Twofish::MDS1[256] = {
+alignas(64) const uint32_t Twofish::MDS1[256] = {
    0xA9D93939, 0x67901717, 0xB3719C9C, 0xE8D2A6A6, 0x04050707, 0xFD985252,
    0xA3658080, 0x76DFE4E4, 0x9A084545, 0x92024B4B, 0x80A0E0E0, 0x78665A5A,
    0xE4DDAFAF, 0xDDB06A6A, 0xD1BF6363, 0x38362A2A, 0x0D54E6E6, 0xC6432020,
@@ -30321,7 +30504,7 @@ const uint32_t Twofish::MDS1[256] = {
    0x0FE25151, 0x00000000, 0x6F9A1919, 0x9DE01A1A, 0x368F9494, 0x42E6C7C7,
    0x4AECC9C9, 0x5EFDD2D2, 0xC1AB7F7F, 0xE0D8A8A8 };
 
-const uint32_t Twofish::MDS2[256] = {
+alignas(64) const uint32_t Twofish::MDS2[256] = {
    0xBC75BC32, 0xECF3EC21, 0x20C62043, 0xB3F4B3C9, 0xDADBDA03, 0x027B028B,
    0xE2FBE22B, 0x9EC89EFA, 0xC94AC9EC, 0xD4D3D409, 0x18E6186B, 0x1E6B1E9F,
    0x9845980E, 0xB27DB238, 0xA6E8A6D2, 0x264B26B7, 0x3CD63C57, 0x9332938A,
@@ -30366,7 +30549,7 @@ const uint32_t Twofish::MDS2[256] = {
    0x04F6047F, 0x27C22746, 0xAC16ACA7, 0xD025D076, 0x50865013, 0xDC56DCF7,
    0x8455841A, 0xE109E151, 0x7ABE7A25, 0x139113EF };
 
-const uint32_t Twofish::MDS3[256] = {
+alignas(64) const uint32_t Twofish::MDS3[256] = {
    0xD939A9D9, 0x90176790, 0x719CB371, 0xD2A6E8D2, 0x05070405, 0x9852FD98,
    0x6580A365, 0xDFE476DF, 0x08459A08, 0x024B9202, 0xA0E080A0, 0x665A7866,
    0xDDAFE4DD, 0xB06ADDB0, 0xBF63D1BF, 0x362A3836, 0x54E60D54, 0x4320C643,
@@ -33060,7 +33243,11 @@ const char* short_version_cstr()
    {
    return STR(BOTAN_VERSION_MAJOR) "."
           STR(BOTAN_VERSION_MINOR) "."
-          STR(BOTAN_VERSION_PATCH);
+          STR(BOTAN_VERSION_PATCH)
+#if defined(BOTAN_VERSION_SUFFIX)
+          STR(BOTAN_VERSION_SUFFIX)
+#endif
+      ;
    }
 
 const char* version_cstr()
@@ -33073,7 +33260,11 @@ const char* version_cstr()
 
    return "Botan " STR(BOTAN_VERSION_MAJOR) "."
                    STR(BOTAN_VERSION_MINOR) "."
-                   STR(BOTAN_VERSION_PATCH) " ("
+                   STR(BOTAN_VERSION_PATCH)
+#if defined(BOTAN_VERSION_SUFFIX)
+                   STR(BOTAN_VERSION_SUFFIX)
+#endif
+                   " ("
 #if defined(BOTAN_UNSAFE_FUZZER_MODE)
                    "UNSAFE FUZZER MODE BUILD "
 #endif

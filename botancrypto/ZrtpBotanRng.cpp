@@ -98,8 +98,8 @@ int ZrtpBotanRng::getRandomData(uint8_t* buffer, uint32_t length) {
     std::unique_ptr<Botan::HashFunction> hashInternal;
 
     uint8_t    md[SHA512_DIGEST_LENGTH];
-    uint8_t    ctr[Botan::AES_256::BLOCK_SIZE];
-    uint8_t    rdata[Botan::AES_256::BLOCK_SIZE];
+    uint8_t    ctr[16];
+    uint8_t    rdata[16];
     uint32_t   generated = length;
 
     /*
