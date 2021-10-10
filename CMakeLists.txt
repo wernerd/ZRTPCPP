@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.18)
 
 PROJECT(libzrtpcpp)
 
@@ -32,24 +32,25 @@ set (SOVERSION 5)
 option(CCRTP "Build library to use with GNU ccRTP." OFF)
 option(CORE_LIB "Build core library only, no specific client support." OFF)
 option(TIVI "Build library for the Tivi client, implies '-DSDES=ON' and '-DSRTP=ON'." OFF)
-# option(WEBRTC "Create static lib for webRTC, with SIDH support." OFF)
 option(SQLITE "Use SQLite DB as backend for ZRTP cache." OFF)
 option(SQLCIPHER "Use SQLCipher DB as backend for ZRTP cache." OFF)
 option(SRTP "Include SRTP when not building for CCRTP." OFF)
 option(AXO "Include Axolotl support when not building for CCRTP." OFF)
 option(TESTS "Generate Unit test." OFF)
 
-option(ANDROID "Generate Android libraries, use it via Gradle build script" OFF)
-# option(JAVA "Generate Java support files (requires JDK and SWIG)" OFF)
-
 ## The following options are used for SIDH mainly
 option(SIDH "Include SIDH Post-Quantum algorithm." OFF)
 
-option(x64 "Set this to true to build SIDH for a x64 (64 bit) architecture." OFF)
-option(x86 "Set this to true to build SIDH for a x86 (32 bit) architecture." OFF)
-option(arm "Set this to true to build SIDH for an arm (32 bit) architecture." OFF)
-option(arm64 "Set this to true to build SIDH for an arm64 (64 bit) architecture." OFF)
-option(GENERIC "Set this to true to use the portable SIDH implementation." OFF)
+## Set based on system, for example ANDROID or CMAKE_SYSTEM_PROCESSOR, etc
+#option(x64 "Set this to true to build SIDH for a x64 (64 bit) architecture." OFF)
+#option(x86 "Set this to true to build SIDH for a x86 (32 bit) architecture." OFF)
+#option(arm "Set this to true to build SIDH for an arm (32 bit) architecture." OFF)
+#option(arm64 "Set this to true to build SIDH for an arm64 (64 bit) architecture." OFF)
+#option(GENERIC "Set this to true to use the portable SIDH implementation." OFF)
+
+if (ANDROID OR IOS)
+    set (EMBEDDED true)
+endif()
 
 if(MSVC60)
     set(BUILD_STATIC ON CACHE BOOL "static linking only" FORCE)
@@ -60,9 +61,9 @@ endif()
 
 #
 # If your project needs SAS relay support (refer to RFC6189 chapter 7.3) then
-# uncomment the following add_definitiones statement. Make sure you understand
+# uncomment the following add_definitions statement. Make sure you understand
 # the consequences.
-## add_definitions(-DZRTP_SAS_RELAY_SUPPORT)
+## add_compile_definitions(ZRTP_SAS_RELAY_SUPPORT)
 
 # **** Check what and how to build ****
 #
@@ -77,10 +78,6 @@ endif()
 if (CORE_LIB AND (CCRTP OR TIVI OR WEBRTC))
     MESSAGE(FATAL_ERROR "Cannot build more than one client at once. Use different build directories.")
 endif()
-
-#if (WEBRTC AND (CCRTP OR TIVI OR CORE_LIB))
-#    MESSAGE(FATAL_ERROR "Cannot build more than one client at once. Use different build directories.")
-#endif()
 
 if (SQLITE AND SQLCIPHER)
     MESSAGE(FATAL_ERROR "Cannot build with multiple DB backends.")
@@ -104,12 +101,6 @@ elseif (CORE_LIB)
         set(SQLITE false)
         set(SQLCIPHER false)
     endif()
-#elseif (WEBRTC)
-#    set (PACKAGE libzrtpwebrtc)
-#    set(zrtplibName zrtpcppwebrtc)
-#    set(SQLITE true)
-#    set(ANDROID true)
-#    set(SIDH true)      ## For SIDH testing
 else()
     MESSAGE(FATAL_ERROR "No client defined: define client using -DCCRTP=true, or -DTIVI=true, or -DCORE_LIB=true.")
 endif()
@@ -179,18 +170,6 @@ set(CMAKE_MACOSX_RPATH 1)
 check_include_files(stdlib.h HAVE_STDLIB_H)
 check_include_files(string.h HAVE_STRING_H)
 
-#### For Botan migration tests only - remove once Botan migration done
-#pkg_check_modules(BOTAN botan-2)
-#if (BOTAN_FOUND)
-#    set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES} ${BOTAN_INCLUDE_DIRS}) #update include files search directory
-#    set(LIBS ${LIBS} ${BOTAN_LDFLAGS})
-#    include_directories(${BOTAN_INCLUDE_DIRS}) #update includes directory from pkg-config
-#    MESSAGE(STATUS "Botan-2: ${BOTAN_LIBRARIES} ${BOTAN_LIBRARY_DIRS} ${BOTAN_LDFLAGS}")
-#    MESSAGE(STATUS "Botan-2 lib found")
-#    set(USE_BOTAN true)
-#endif()
-
-
 if (NOT ANDROID)
     if (SQLITE)
         pkg_check_modules(SQLITE3 sqlite3>=3.7)
@@ -222,7 +201,6 @@ configure_file(config.h.cmake ${CMAKE_BINARY_DIR}/config.h)
 if(CMAKE_COMPILER_IS_GNUCXX)
     add_definitions(-DNEW_STDCPP)
 endif()
-
 
 if (AXO)
     add_definitions(-DAXO_SUPPORT)
@@ -257,154 +235,153 @@ if (SRTP)
     if (SDES)
         add_definitions(-DENABLE_SDES_MIX)  ## SDES mixer
     endif()
-
 endif()
 
 # **** The following source files are common for all clients ****
 #
 set(botan_src
-        ${CMAKE_SOURCE_DIR}/botancrypto/ZrtpBotanRng.cpp
-        ${CMAKE_SOURCE_DIR}/botancrypto/ZrtpBotanRng.h
-        ${CMAKE_SOURCE_DIR}/botancrypto/ZrtpCurve41417.cpp
-        ${CMAKE_SOURCE_DIR}/botancrypto/ZrtpCurve41417.h
-        ${CMAKE_SOURCE_DIR}/botancrypto/Ec41417Group.cpp
-        ${CMAKE_SOURCE_DIR}/botancrypto/Ec41417Group.h
-        ${CMAKE_SOURCE_DIR}/botancrypto/Point41417.cpp
-        ${CMAKE_SOURCE_DIR}/botancrypto/Point41417.h
-        ${CMAKE_SOURCE_DIR}/botancrypto/${botan_all}/botan_all.cpp
-        ${CMAKE_SOURCE_DIR}/botancrypto/${botan_all}/botan_all.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/botancrypto/ZrtpBotanRng.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/botancrypto/ZrtpBotanRng.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/botancrypto/ZrtpCurve41417.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/botancrypto/ZrtpCurve41417.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/botancrypto/Ec41417Group.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/botancrypto/Ec41417Group.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/botancrypto/Point41417.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/botancrypto/Point41417.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/botancrypto/${botan_all}/botan_all.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/botancrypto/${botan_all}/botan_all.h
 )
 
 set(zrtp_src_include
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/Base32.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/EmojiBase32.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDCacheDb.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDCacheFile.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDCacheEmpty.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDCache.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDRecordDb.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDRecordFile.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDRecord.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDRecordEmpty.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/zrtpB64Decode.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/zrtpB64Encode.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/zrtpCacheDbBackend.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCallback.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCallbackWrapper.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCodes.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpConfigure.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCrc32.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCWrapper.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZRtp.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketBase.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketClearAck.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketCommit.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketConf2Ack.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketConfirm.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketDHPart.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketErrorAck.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketError.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketGoClear.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/zrtpPacket.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketHelloAck.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketHello.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketPingAck.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketPing.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketRelayAck.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketSASrelay.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpStateClass.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpStates.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpTextData.h
-        ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpUserCallback.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/Base32.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/EmojiBase32.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDCacheDb.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDCacheFile.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDCacheEmpty.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDCache.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDRecordDb.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDRecordFile.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDRecord.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDRecordEmpty.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/zrtpB64Decode.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/zrtpB64Encode.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/zrtpCacheDbBackend.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCallback.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCallbackWrapper.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCodes.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpConfigure.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCrc32.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCWrapper.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZRtp.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketBase.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketClearAck.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketCommit.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketConf2Ack.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketConfirm.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketDHPart.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketErrorAck.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketError.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketGoClear.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/zrtpPacket.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketHelloAck.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketHello.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketPingAck.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketPing.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketRelayAck.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketSASrelay.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpStateClass.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpStates.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpTextData.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpUserCallback.h
         )
 
 set(zrtp_src_no_cache
-        ${CMAKE_SOURCE_DIR}/zrtp/ZrtpCallbackWrapper.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZRtp.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZrtpCrc32.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketCommit.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketConf2Ack.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketConfirm.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketDHPart.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketGoClear.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketClearAck.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketHelloAck.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketHello.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketError.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketErrorAck.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketPingAck.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketPing.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketSASrelay.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZrtpPacketRelayAck.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZrtpStateClass.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZrtpConfigure.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZrtpCWrapper.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/Base32.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/EmojiBase32.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/zrtpB64Encode.c
-        ${CMAKE_SOURCE_DIR}/zrtp/zrtpB64Decode.c
-        ${CMAKE_SOURCE_DIR}/common/icuUtf8.c
-        ${CMAKE_SOURCE_DIR}/common/icuUtf.h
-        ${CMAKE_SOURCE_DIR}/common/osSpecifics.c
-        ${CMAKE_SOURCE_DIR}/common/osSpecifics.h
-        ${CMAKE_SOURCE_DIR}/common/Utilities.cpp
-        ${CMAKE_SOURCE_DIR}/common/Utilities.h
-        ${CMAKE_SOURCE_DIR}/common/typedefs.h
-        ${CMAKE_SOURCE_DIR}/common/ZrtpTimeoutProvider.h
-        ${CMAKE_SOURCE_DIR}/common/SecureArray.h
-        ${CMAKE_SOURCE_DIR}/common/Constants.h
-        ${CMAKE_SOURCE_DIR}/helpers/ZrtpConfigureBuilder.h
-        ${CMAKE_SOURCE_DIR}/helpers/ZrtpConfigureBuilder.cpp
-        ${CMAKE_SOURCE_DIR}/helpers/ZrtpUserCallbackEmpty.h
-        ${CMAKE_SOURCE_DIR}/helpers/ZrtpCodeToString.h
-        ${CMAKE_SOURCE_DIR}/helpers/ZrtpCodeToString.cpp
-        ${CMAKE_SOURCE_DIR}/logging/Logger.cpp
-        ${CMAKE_SOURCE_DIR}/logging/ZrtpLogging.cpp
-        ${CMAKE_SOURCE_DIR}/logging/logger_config.h
-        ${CMAKE_SOURCE_DIR}/logging/osSpecifics.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpCallbackWrapper.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZRtp.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpCrc32.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpPacketCommit.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpPacketConf2Ack.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpPacketConfirm.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpPacketDHPart.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpPacketGoClear.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpPacketClearAck.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpPacketHelloAck.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpPacketHello.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpPacketError.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpPacketErrorAck.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpPacketPingAck.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpPacketPing.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpPacketSASrelay.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpPacketRelayAck.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpStateClass.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpConfigure.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpCWrapper.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/Base32.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/EmojiBase32.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/zrtpB64Encode.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/zrtpB64Decode.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/common/icuUtf8.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/common/icuUtf.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/common/osSpecifics.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/common/osSpecifics.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/common/Utilities.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/common/Utilities.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/common/typedefs.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/common/ZrtpTimeoutProvider.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/common/SecureArray.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/common/Constants.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/helpers/ZrtpConfigureBuilder.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/helpers/ZrtpConfigureBuilder.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/helpers/ZrtpUserCallbackEmpty.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/helpers/ZrtpCodeToString.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/helpers/ZrtpCodeToString.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/logging/Logger.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/logging/ZrtpLogging.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/logging/logger_config.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/logging/osSpecifics.h
         ${sdes_src} ${zrtp_src_include} ${botan_src} )
 
 set(zrtp_crypto_includes
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/aesCFB.h
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/hmac256.h
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/hmac384.h
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha256.h
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/sha384.h
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein256.h
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skein384.h
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skeinMac256.h
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/skeinMac384.h
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/twoCFB.h
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/zrtpDH.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/aesCFB.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/hmac256.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/hmac384.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/sha256.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/sha384.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/skein256.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/skein384.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/skeinMac256.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/skeinMac384.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/twoCFB.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/zrtpDH.h
         )
 
 set(zrtp_botan_crypto_src
         ${botan_src}
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/zrtpDH.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/hmac256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/sha256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/hmac384.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/sha384.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/skeinMac256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/skein256.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/skeinMac384.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/skein384.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/aesCFB.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/crypto/botan/twoCFB.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/botan/zrtpDH.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/botan/hmac256.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/botan/sha256.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/botan/hmac384.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/botan/sha384.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/botan/skeinMac256.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/botan/skein256.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/botan/skeinMac384.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/botan/skein384.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/botan/aesCFB.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/botan/twoCFB.cpp
         ${zrtp_crypto_includes})
 
 set(zrtp_src ${zrtp_src_no_cache}
-        ${CMAKE_SOURCE_DIR}/zrtp/ZIDCacheEmpty.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZIDRecordEmpty.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZIDCacheFile.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZIDRecordFile.cpp)
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZIDCacheEmpty.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZIDRecordEmpty.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZIDCacheFile.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZIDRecordFile.cpp)
 
 if (SQLITE OR SQLCIPHER)
-    add_definitions(-DZID_DATABASE)
+    add_compile_definitions(ZID_DATABASE)
     set(zrtp_src ${zrtp_src}
-        ${CMAKE_SOURCE_DIR}/zrtp/ZIDCacheDb.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/ZIDRecordDb.cpp
-        ${CMAKE_SOURCE_DIR}/zrtp/zrtpCacheSqliteBackend.c)
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZIDCacheDb.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZIDRecordDb.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/zrtpCacheSqliteBackend.c)
 endif()
 
 if (CCRTP)
@@ -420,42 +397,18 @@ if (CORE_LIB)
     add_subdirectory(clients/genericClient)
 endif()
 
-if (WEBRTC)
-    add_subdirectory(clients/webrtc)
-endif()
-
-if (TESTS)
+if (TESTS AND NOT EMBEDDED)
     # Download and unpack googletest at configure time.
-    configure_file(CMakeLists_gtest.txt.in googletest-download/CMakeLists.txt)
-    execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
-            RESULT_VARIABLE result
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download )
-    if(result)
-        message(FATAL_ERROR "CMake step for googletest failed: ${result}")
-    endif()
-    execute_process(COMMAND ${CMAKE_COMMAND} --build .
-            RESULT_VARIABLE result
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download )
-    if(result)
-        message(FATAL_ERROR "Build step for googletest failed: ${result}")
-    endif()
-
-    # Prevent overriding the parent project's compiler/linker
-    # settings on Windows
+    include(FetchContent)
+    FetchContent_Declare(
+            googletest
+            # Specify the commit you depend on and update it regularly.
+##            URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
+            URL https://github.com/google/googletest/archive/refs/tags/release-1.11.0.zip
+    )
+    # For Windows: Prevent overriding the parent project's compiler/linker settings
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-
-    # Add googletest directly to our build. This defines
-    # the gtest and gtest_main targets.
-    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
-            ${CMAKE_CURRENT_BINARY_DIR}/googletest-build
-            EXCLUDE_FROM_ALL)
-
-    # The gtest/gtest_main targets carry header search path
-    # dependencies automatically when using CMake 2.8.11 or
-    # later. Otherwise we have to add them here ourselves.
-    if (CMAKE_VERSION VERSION_LESS 2.8.11)
-        include_directories("${gtest_SOURCE_DIR}/include")
-    endif()
+    FetchContent_MakeAvailable(googletest)
 
     add_subdirectory(unittests)
 endif()
