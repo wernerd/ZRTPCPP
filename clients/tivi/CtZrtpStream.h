@@ -73,23 +73,23 @@ public:
 
 protected:
 
-    CtZrtpSession::streamName  index;      //!< either audio or video. Index in stream array
-    CtZrtpSession::streamType  type;       //!< Master or slave stream. Necessary to handle multi-stream
-    ZRtp              *zrtpEngine;         //!< The ZRTP core class of this stream
-    uint32_t          ownSSRC;             //!< Our own SSRC, in host order
+    CtZrtpSession::streamName  index = CtZrtpSession::AudioStream;  //!< either audio or video. Index in stream array
+    CtZrtpSession::streamType  type = CtZrtpSession::NoStream;      //!< Master or slave stream. Necessary to handle multi-stream
+    ZRtp              *zrtpEngine = nullptr;                        //!< The ZRTP core class of this stream
+    uint32_t          ownSSRC = 0;                                  //!< Our own SSRC, in host order
 
-    uint64_t          zrtpProtect;
-    uint64_t          sdesProtect;
+    uint64_t          zrtpProtect = 0;
+    uint64_t          sdesProtect = 0;
 
-    uint64_t          zrtpUnprotect;
-    uint64_t          sdesUnprotect;
-    uint64_t          unprotectFailed;
+    uint64_t          zrtpUnprotect = 0;
+    uint64_t          sdesUnprotect = 0;
+    uint64_t          unprotectFailed = 0;
 
-    bool              enableZrtp;          //!< Enable the streams ZRTP engine
-    bool              started;             //!< This stream's ZRTP engine is started
-    bool              isStopped;           //!< Stream stopped by Tivi
-    bool              discriminatorMode;   //!< If true use the security discriminator mode
-    CtZrtpSession     *session;
+    bool              enableZrtp = false;          //!< Enable the streams ZRTP engine
+    bool              started = false;             //!< This stream's ZRTP engine is started
+    bool              isStopped = false;           //!< Stream stopped by Tivi
+    bool              discriminatorMode = false;   //!< If true use the security discriminator mode
+    CtZrtpSession     *session = nullptr;
 
     friend class CtZrtpSession;
 
@@ -230,9 +230,9 @@ protected:
      */
     int getCountersZrtp(int32_t* counters);
 
-    bool isStarted() {return started;}
+    [[nodiscard]] bool isStarted() const {return started;}
 
-    bool isEnabled() {return enableZrtp;}
+    [[nodiscard]] bool isEnabled() const {return enableZrtp;}
 
     /**
      * Accept enrollment for the active peer.
@@ -490,34 +490,34 @@ protected:
      * End of ZrtpCallback functions.
      */
 private:
-    CtZrtpSession::tiviStatus  tiviState;  //!< Status reported to Tivi client
-    CtZrtpSession::tiviStatus  prevTiviState;  //!< previous status reported to Tivi client
+    CtZrtpSession::tiviStatus  tiviState = CtZrtpSession::eLookingPeer;  //!< Status reported to Tivi client
+    CtZrtpSession::tiviStatus  prevTiviState = CtZrtpSession::eLookingPeer;  //!< previous status reported to Tivi client
 
-    CryptoContext     *recvSrtp;           //!< The SRTP context for this stream
-    CryptoContextCtrl *recvSrtcp;          //!< The SRTCP context for this stream
-    CryptoContext     *sendSrtp;           //!< The SRTP context for this stream
-    CryptoContextCtrl *sendSrtcp;          //!< The SRTCP context for this stream
-    CtZrtpCb          *zrtpUserCallback;
-    CtZrtpSendCb      *zrtpSendCallback;
+    CryptoContext     *recvSrtp = nullptr;           //!< The SRTP context for this stream
+    CryptoContextCtrl *recvSrtcp = nullptr;          //!< The SRTCP context for this stream
+    CryptoContext     *sendSrtp = nullptr;           //!< The SRTP context for this stream
+    CryptoContextCtrl *sendSrtcp = nullptr;          //!< The SRTCP context for this stream
+    CtZrtpCb          *zrtpUserCallback = nullptr;
+    CtZrtpSendCb      *zrtpSendCallback = nullptr;
 
     uint8_t zrtpBuffer[maxZrtpSize] = {0};
     char sdesTempBuffer[maxSdesString] = {'\0'};
-    uint16_t senderZrtpSeqNo;
-    uint32_t peerSSRC;
+    uint16_t senderZrtpSeqNo = 0;
+    uint32_t peerSSRC = 0;
     std::vector<std::string> peerHelloHashes;
-    bool     zrtpHashMatch;
-    bool     sasVerified;
-    bool     helloReceived;
-    bool     useSdesForMedia;
-    bool     useZrtpTunnel;
-    bool     zrtpEncapSignaled;
-    ZrtpSdesStream *sdes;
+    bool     zrtpHashMatch = false;
+    bool     sasVerified = false;
+    bool     helloReceived = false;
+    bool     useSdesForMedia = false;
+    bool     useZrtpTunnel = false;
+    bool     zrtpEncapSignaled = false;
+    ZrtpSdesStream *sdes = nullptr;
 
-    uint32_t supressCounter;
-    uint32_t srtpAuthErrorBurst;
-    uint32_t srtpReplayErrorBurst;
-    uint32_t srtpDecodeErrorBurst;
-    uint32_t zrtpCrcErrors;
+    uint32_t supressCounter = 0;
+    uint32_t srtpAuthErrorBurst = 0;
+    uint32_t srtpReplayErrorBurst = 0;
+    uint32_t srtpDecodeErrorBurst = 0;
+    uint32_t zrtpCrcErrors = 0;
 
     int32_t timeoutId = -1;
 
@@ -525,11 +525,11 @@ private:
 
     char mixAlgoName[20] = {'\0'};          //!< stores name in during getInfo() call
 
-    int role;                               //!< Initiator or Responder role
+    int role = NoRole;                               //!< Initiator or Responder role
 
     SrtpErrorData srtpErrorInfo[NumSrtpErrorData] = {};
-    int32_t errorInfoIndex;
-    uint32_t numErrorArrayWrap;
+    int32_t errorInfoIndex = 0;
+    uint32_t numErrorArrayWrap = 0;
 
     static void initStrings();
     

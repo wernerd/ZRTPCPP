@@ -48,7 +48,7 @@ using namespace std;
 
 #if !defined (_WITHOUT_TIVI_ENV) && defined AXO_SUPPORT
 const string getOwnAxoIdKey();
-void checkRemoteAxoIdKey(const string user, const string devId, const string pubKey, int32_t verifyState);
+void checkRemoteAxoIdKey(string user, string devId, string pubKey, int32_t verifyState);
 int getCallInfo(int iCallID, const char *key, char *p, int iMax);
 #endif
 
@@ -74,33 +74,24 @@ static const char* noZrtpHashInSip      = "s3_c105: No ZRTP-hash received in SIP
  * The following code is for internal logging only
  *
  */
-static void (*_zrtp_log_cb)(void *ret, const char *tag, const char *buf) = nullptr;
+static void (*zrtp_log_cb)(void *ret, const char *tag, const char *buf) = nullptr;
 static void *pLogRet=nullptr;
 
 // this function must be public. Tivi C++ code set its internal log function
 void set_zrtp_log_cb(void *pRet, void (*cb)(void *, const char *, const char *)) {
-    _zrtp_log_cb=cb;
+    zrtp_log_cb=cb;
     pLogRet=pRet;
 }
 
 // This function is static (could be global) to reduce visibility
 /*static*/ void zrtp_log( const char *tag, const char *buf){
-    if(_zrtp_log_cb){
-        _zrtp_log_cb(pLogRet, tag, buf);
+    if(zrtp_log_cb){
+        zrtp_log_cb(pLogRet, tag, buf);
     }
 }
 
-CtZrtpStream::CtZrtpStream():
-    index(CtZrtpSession::AudioStream), type(CtZrtpSession::NoStream), zrtpEngine(nullptr),
-    ownSSRC(0), zrtpProtect(0), sdesProtect(0), zrtpUnprotect(0), sdesUnprotect(0), unprotectFailed(0),
-    enableZrtp(false), started(false), isStopped(false), discriminatorMode(false), session(nullptr), tiviState(CtZrtpSession::eLookingPeer),
-    prevTiviState(CtZrtpSession::eLookingPeer), recvSrtp(nullptr), recvSrtcp(nullptr), sendSrtp(nullptr), sendSrtcp(nullptr),
-    zrtpUserCallback(nullptr), zrtpSendCallback(nullptr), senderZrtpSeqNo(0), peerSSRC(0), zrtpHashMatch(false),
-    sasVerified(false), helloReceived(false), useSdesForMedia(false), useZrtpTunnel(false), zrtpEncapSignaled(false), 
-    sdes(nullptr), supressCounter(0), srtpAuthErrorBurst(0), srtpReplayErrorBurst(0), srtpDecodeErrorBurst(0),
-    zrtpCrcErrors(0), role(NoRole), errorInfoIndex(0), numErrorArrayWrap(0)
+CtZrtpStream::CtZrtpStream()
 {
-
     if (staticTimeoutProvider == nullptr) {
         staticTimeoutProvider = new zrtp::ZrtpTimeoutProvider;
     }
@@ -242,7 +233,7 @@ bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *ne
 }
 
 int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, size_t *newLength) {
-    int32_t rc = 0;
+    int32_t rc;
     // check if this could be a real RTP/SRTP packet.
     if ((*buffer & 0xc0U) == 0x80) {            // A real RTP, check if we are in secure mode
         if (supressCounter < supressWarn)       // Don't report SRTP problems while in startup mode
@@ -483,7 +474,7 @@ int CtZrtpStream::isSecure() {
 
 #define T_ZRTP_F(_K,_FV)                                               \
         if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0) {       \
-            return ::snprintf(p, maxLen, "%d", (!!(info->secretsCached & _FV)) << (!!(info->secretsMatchedDH & _FV)));}
+            return ::snprintf(p, maxLen, "%d", (!!(info->secretsCached & (_FV))) << (!!(info->secretsMatchedDH & (_FV))));}
 
 #define T_ZRTP_I(_K,_I)                                                \
         if(iLen+1 == sizeof(_K) && strncmp(key,_K, iLen) == 0) {       \
@@ -500,10 +491,10 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
 //         return 0;
 
     memset(p, 0, maxLen);
-    const ZRtp::zrtpInfo *info = nullptr;
+    const ZRtp::zrtpInfo *info;
     ZRtp::zrtpInfo tmpInfo;
 
-    int iLen = strlen(key);
+    auto iLen = strlen(key);
 
     // set the security state as a combination of tivi state and stateflags
     uint32_t secState = static_cast<uint32_t>(tiviState) & 0xffU;
@@ -515,7 +506,7 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
     T_ZRTP_LB("buildInfo",  zrtpBuildInfo)
 
     // Compute Hello-hash info string
-    const char *strng = nullptr;
+    const char *strng;
     if (peerHelloHashes.empty()) {
         strng = "None";
     }
@@ -1224,7 +1215,7 @@ void CtZrtpStream::signSAS(uint8_t* sasHash) {
 //    zrtp_log("CTStream", "++++ sign sasHash");
 
     string keyData = getOwnAxoIdKey();
-    int32_t keyLength = keyData.size();
+    auto keyLength = keyData.size();
 
     if (keyLength == 0)
         return;
@@ -1232,13 +1223,14 @@ void CtZrtpStream::signSAS(uint8_t* sasHash) {
     uint32_t typeLength = 100 << 16 | (keyLength & 0x7fff);
     typeLength = zrtpHtonl(typeLength);
 
-    int32_t sigLen = (sizeof(int32_t) + keyLength + 3) & ~3;  // must be modulo 4 == 0
+    auto sigLen = (sizeof(int32_t) + keyLength + 3) & ~3;  // must be modulo 4 == 0
 
-    uint8_t* sigData = new uint8_t[sigLen];
+    auto* sigData = new uint8_t[sigLen];
 
     // First is the signature type word
     *(uint32_t*)sigData = typeLength;
-    memcpy(sigData+4, (const char*)keyData.data(), keyData.size());
+    // Copy the exact length, no null termination etc
+    memcpy(sigData+4, (const char*)keyData.data(), keyData.size()); // NOLINT(bugprone-not-null-terminated-result)
 
     zrtpEngine->setSignatureData(sigData, sigLen);
     delete[] sigData;
@@ -1254,12 +1246,12 @@ bool CtZrtpStream::checkSASSignature(uint8_t* sasHash) {
      * Use a engine function to get caller's name (AssertedId) and caller's device id
      */
     char buf[128];
-    int len = getCallInfo(callId, "AssertedId", &buf[0], sizeof(buf));
+    getCallInfo(callId, "AssertedId", &buf[0], sizeof(buf));
     string caller(buf);
 
 //    zrtp_log("CTStream", "++++ check sign sasHash:");
 
-    len = getCallInfo(callId, "xscdevid", &buf[0], sizeof(buf));
+    getCallInfo(callId, "xscdevid", &buf[0], sizeof(buf));
     string callerDeviceId(buf);
 
 
@@ -1267,12 +1259,12 @@ bool CtZrtpStream::checkSASSignature(uint8_t* sasHash) {
     int32_t sigLen = zrtpEngine->getSignatureLength();
     const uint8_t* zrtpSigData = zrtpEngine->getSignatureData();
 
-    uint8_t* sigData = new uint8_t[sigLen];
+    auto* sigData = new uint8_t[sigLen];
     memcpy(sigData, zrtpSigData, sigLen);
 
-    int32_t typeLength = *(uint32_t*)(sigData);
+    auto typeLength = *(uint32_t*)(sigData);
     typeLength = zrtpNtohl(typeLength);
-    int32_t length = typeLength & 0x7fff;
+    auto length = typeLength & 0x7fff;
 
     int32_t verified = zrtpEngine->isSASVerified() ? 1 : 0;
 

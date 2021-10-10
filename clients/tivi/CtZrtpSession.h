@@ -21,7 +21,7 @@
 #ifndef _CTZRTPSESSION_H_
 #define _CTZRTPSESSION_H_
 
-#include <stdio.h>
+#include <cstdio>
 #include <cstdint>
 #include <string>
 #include <cstring>
@@ -51,7 +51,7 @@ class CtZrtpSendCb;
 class ZrtpConfigure;
 class ZRtp;
 
-extern "C" __EXPORT const char *getZrtpBuildInfo();
+extern "C" __EXPORT char const * getZrtpBuildInfo();
 
 class __EXPORT CtZrtpSession {
 
@@ -152,7 +152,7 @@ public:
      * algorithms. The method creates the configuration for the publik key
      * algorithms in a way that follows RFC 6189, chapter 4.1.2
      */
-    void setupConfiguration(ZrtpConfigure *conf);
+    static void setupConfiguration(ZrtpConfigure *conf);
 
     /**
      * @brief Set the application's callback class.
@@ -317,14 +317,14 @@ public:
      *
      * @return @c true if ZRTP is enabled, @c false otherwise
      */
-    bool isZrtpEnabled();
+    bool isZrtpEnabled() const;
 
     /**
      * @brief Is SDES enabled for this session.
      *
      * @return @c true if SDES is enabled, @c false otherwise
      */
-    bool isSdesEnabled();
+    bool isSdesEnabled() const;
 
     /**
      * @brief Enable or disable ZRTP processing for this session.
@@ -698,7 +698,7 @@ public:
      * 
      * @return @c true is discriminator mode is enable, false otherwise.
      */
-    bool isDiscriminatorMode();
+    bool isDiscriminatorMode() const;
 
     /**
      * @brief Get SRTP error trace data.

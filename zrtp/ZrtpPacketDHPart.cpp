@@ -94,7 +94,9 @@ ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t const * data) {
     zrtpHeader = &((DHPartPacket_t *)data)->hdr;  // the standard header
     DHPartHeader = &((DHPartPacket_t *)data)->dhPart;
 
+#ifdef SIDH_SUPPORT
     size_t tmpLen;
+#endif
 
     uint16_t len = getLength();
     if (len == DH2K_WORDS) {         // Dh2k

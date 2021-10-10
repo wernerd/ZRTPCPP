@@ -23,15 +23,16 @@
 #include <cstdio>
 #include <mutex>
 
-#include <libzrtpcpp/ZIDCache.h>
-#include <libzrtpcpp/ZRtp.h>
+#include "libzrtpcpp/ZIDCache.h"
+#include "libzrtpcpp/ZRtp.h"
 
-#include <CtZrtpStream.h>
-#include <CtZrtpCallback.h>
-#include <CtZrtpSession.h>
+#include "CtZrtpStream.h"
+#include "CtZrtpCallback.h"
+#include "CtZrtpSession.h"
+#include "buildInfo.h"
 
 #ifdef ZID_DATABASE
-#include <zrtp/libzrtpcpp/ZIDCacheDb.h>
+#include "zrtp/libzrtpcpp/ZIDCacheDb.h"
 #endif
 
 #pragma clang diagnostic push
@@ -39,9 +40,8 @@
 
 static std::mutex sessionLock;
 
-const char *getZrtpBuildInfo()
+char const *getZrtpBuildInfo()
 {
-    extern char zrtpBuildInfo[];
     return zrtpBuildInfo;
 }
 
@@ -56,7 +56,7 @@ CtZrtpSession::CtZrtpSession() : zrtpMaster(nullptr), mitmMode(false), signSas(f
 #ifdef ZID_DATABASE
 // Specific initialization for SilentPhone: use _one_ ZRTP cache file for _all_ sessions, even
 // for conference calls. This simplifies handling of cache data.
-// If another app likes to have different cache files (or even open the same file several times ? )
+// If another app likes to have different cache files or open the same file several times
 // then just change the cache initialization at his point.
 static std::shared_ptr<ZIDCache>
 initCache(const char *zidFilename, std::shared_ptr<ZIDCache> cache) {
@@ -78,28 +78,27 @@ initCache(const char *zidFilename, std::shared_ptr<ZIDCache> cache) {
         }
         cache->close();
         if (cache->open((char *)zidFilename) < 0) {
-            return std::shared_ptr<ZIDCache>();
+            return {};
         }
         return cache;
     }
-
     auto zf = std::make_shared<ZIDCacheDb>();
     if (zf->open((char *)zidFilename) < 0) {
-        return std::shared_ptr<ZIDCache>();
+        return {};
     }
     return zf;
 }
 #else
 
 #include "../cryptcommon/ZrtpRandom.h"
-// Setup an 'empty cache'. Use this only if you really need no cached ZRTP session
+// Set up an 'empty cache'. Use this only if you really need no cached ZRTP session
 // data. In this case the app shall force the user to check and confirm the SAS data
 // on each call to make sure nobody tampered with the ZRTP key negotiation.
 //
 // If an empty cache already exists, return it and thus also reuse the existing
 // random ZID.
 //
-// Otherwise the code generates a new random ZID and sets it as ZID in the empty cache
+// Otherwise, the code generates a new random ZID and sets it as ZID in the empty cache
 // instance.
 static std::shared_ptr<ZIDCache>
 initNoCache(const char *zidFilename, std::shared_ptr<ZIDCache> cache) {
@@ -130,8 +129,8 @@ int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidF
     // both boolean parameters set to true).
     if (audio) {
 
-        // If we got no config -> initialize all necessary stuff here. This is for backward compatibily.
-        // Otherwise we expect to get a fully initialized config, including an initialized cache file instance
+        // If we got no config -> initialize all necessary stuff here. This is for backward compatibility.
+        // Otherwise, we expect to get a fully initialized config, including an initialized cache file instance
         if (!config) {
 #ifdef ZID_DATABASE
             auto zf = initCache(zidFilename, zrtpCache);
@@ -153,8 +152,6 @@ int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidF
             configOwn = config;
         }
 
-        const uint8_t* ownZidFromCache = configOwn->getZidCache()->getZid();
-
         configOwn->setTrustedMitM(false);
 #if defined AXO_SUPPORT
         configOwn->setSasSignature(true);
@@ -165,7 +162,7 @@ int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidF
         if (streams[AudioStream] == nullptr)
             streams[AudioStream] = std::make_shared<CtZrtpStream>();
         stream = streams[AudioStream];
-        streams[AudioStream]->zrtpEngine = new ZRtp((uint8_t*)ownZidFromCache, stream, clientIdString, configOwn, mitmMode, signSas);
+        streams[AudioStream]->zrtpEngine = new ZRtp(clientIdString, stream,  configOwn);
         streams[AudioStream]->type = Master;
         streams[AudioStream]->index = AudioStream;
         streams[AudioStream]->session = this;
@@ -178,10 +175,9 @@ int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidF
         // Get the ZRTP Configure from master and forward it to the slave stream. Slave stream should have the same
         // configuration and cache as the master stream. ZRTP configuration is managed via shared_ptr.
         auto videoConfig = streams[AudioStream]->zrtpEngine->getZrtpConfigure();
-        const uint8_t* ownZidFromCache = videoConfig->getZidCache()->getZid();
 
         stream = streams[VideoStream];
-        streams[VideoStream]->zrtpEngine = new ZRtp(ownZidFromCache, stream, clientIdString, videoConfig);
+        streams[VideoStream]->zrtpEngine = new ZRtp(clientIdString, stream, videoConfig);
         streams[VideoStream]->type = Slave;
         streams[VideoStream]->index = VideoStream;
         streams[VideoStream]->session = this;
@@ -196,7 +192,7 @@ int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidF
 }
 
 void zrtp_log(const char *tag, const char *buf);
-extern "C" void setZrtpLogLevel(int32_t level);
+
 void CtZrtpSession::setupConfiguration(ZrtpConfigure *conf) {
 
 // Set _WITHOUT_TIVI_ENV to a real name that is TRUE if the Tivi client is compiled/built.
@@ -204,7 +200,13 @@ void CtZrtpSession::setupConfiguration(ZrtpConfigure *conf) {
 #define GET_CFG_I(RET,_KEY)
 #else
 void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type);
-#define GET_CFG_I(RET,_KEY) {int *p=(int*)findGlobalCfgKey((char*)_KEY,sizeof(_KEY)-1,iSZ,&opt,&type);if(p && iSZ==4)RET=*p;else RET=-1;}
+#define GET_CFG_I(RET,_KEY) {\
+                                int *p = (int*)findGlobalCfgKey((char*)(_KEY), sizeof(_KEY)-1, iSZ, &opt, &type);\
+                                if (p && iSZ == 4)                                                               \
+                                    (RET) = *p;                                                                  \
+                                else                                                                             \
+                                    (RET) = -1;                                                                  \
+                            }
 #endif
 
 
@@ -213,28 +215,28 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
     char *opt;
     int type;
 
-    int b32sas = 0, iDisableDH2K = 0, iDisableAES256 = 0, iPreferDH2K = 0;
-    int iDisableECDH256 = 0, iDisableECDH384 = 0, iEnableSHA384 = 1;
-    int iDisableSkein = 0, iDisableTwofish = 0, iPreferNIST = 0;
-    int iDisableSkeinHash = 0, iDisableBernsteinCurve25519 = 0, iDisableBernsteinCurve3617 = 0;
-    int iEnableDisclosure = 0;
+    int b32sas, iDisableDH2K, iDisableAES256, iPreferDH2K;
+    int iDisableECDH256, iDisableECDH384, iEnableSHA384;
+    int iDisableSkein, iDisableTwofish, iPreferNIST;
+    int iDisableSkeinHash, iDisableBernsteinCurve25519, iDisableBernsteinCurve3617;
+    int iEnableDisclosure;
 
-    GET_CFG_I(b32sas, "iDisable256SAS");
-    GET_CFG_I(iDisableAES256, "iDisableAES256");
-    GET_CFG_I(iDisableDH2K, "iDisableDH2K");
-    GET_CFG_I(iPreferDH2K, "iPreferDH2K");
+    GET_CFG_I(b32sas, "iDisable256SAS")
+    GET_CFG_I(iDisableAES256, "iDisableAES256")
+    GET_CFG_I(iDisableDH2K, "iDisableDH2K")
+    GET_CFG_I(iPreferDH2K, "iPreferDH2K")
 
-    GET_CFG_I(iDisableECDH256, "iDisableECDH256");
-    GET_CFG_I(iDisableECDH384, "iDisableECDH384");
-    GET_CFG_I(iEnableSHA384, "iEnableSHA384");
-    GET_CFG_I(iDisableSkein, "iDisableSkein");
-    GET_CFG_I(iDisableTwofish, "iDisableTwofish");
-    GET_CFG_I(iPreferNIST, "iPreferNIST");
+    GET_CFG_I(iDisableECDH256, "iDisableECDH256")
+    GET_CFG_I(iDisableECDH384, "iDisableECDH384")
+    GET_CFG_I(iEnableSHA384, "iEnableSHA384")
+    GET_CFG_I(iDisableSkein, "iDisableSkein")
+    GET_CFG_I(iDisableTwofish, "iDisableTwofish")
+    GET_CFG_I(iPreferNIST, "iPreferNIST")
 
-    GET_CFG_I(iDisableSkeinHash, "iDisableSkeinHash");
-    GET_CFG_I(iDisableBernsteinCurve25519, "iDisableBernsteinCurve25519");
-    GET_CFG_I(iDisableBernsteinCurve3617, "iDisableBernsteinCurve3617");
-    GET_CFG_I(iEnableDisclosure, "iEnableDisclosure");
+    GET_CFG_I(iDisableSkeinHash, "iDisableSkeinHash")
+    GET_CFG_I(iDisableBernsteinCurve25519, "iDisableBernsteinCurve25519")
+    GET_CFG_I(iDisableBernsteinCurve3617, "iDisableBernsteinCurve3617")
+    GET_CFG_I(iEnableDisclosure, "iEnableDisclosure")
 
     setZrtpLogLevel(4);
     conf->clear();
@@ -548,11 +550,11 @@ CtZrtpSession::tiviStatus CtZrtpSession::getPreviousState(streamName streamNm) {
     return streams[streamNm]->getPreviousState();
 }
 
-bool CtZrtpSession::isZrtpEnabled() {
+bool CtZrtpSession::isZrtpEnabled() const {
     return zrtpEnabled;
 }
 
-bool CtZrtpSession::isSdesEnabled() {
+bool CtZrtpSession::isSdesEnabled() const {
     return sdesEnabled;
 }
 
@@ -737,7 +739,7 @@ void CtZrtpSession::setDiscriminatorMode ( bool on ) {
     discriminatorMode = on;
 }
 
-bool CtZrtpSession::isDiscriminatorMode() {
+bool CtZrtpSession::isDiscriminatorMode() const {
     return discriminatorMode;
 }
 
