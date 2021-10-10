@@ -114,7 +114,7 @@ TEST_F(BotanEc41417TestFixture, SimpleChecks) {
     ASSERT_TRUE(basePnt.get_y() == RPnt.get_y());
     ASSERT_TRUE(basePnt.get_z() == RPnt.get_z());
 
-    // Also affine point must be on curve
+    // Also, affine point must be on curve
     auto affineXy = RPnt.getAffineXY();
     Botan::Point41417p affinePnt(affineXy.first, affineXy.second, 1);
     onCurve = affinePnt.on_the_curve();

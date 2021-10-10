@@ -192,7 +192,7 @@ int32_t ZrtpDH::secretKeyComputation(uint8_t *pubKeyBytes, secUtilities::SecureA
             }
             case EC25:
             case EC38:
-            case 414: {
+            case E414: {
                 std::vector<uint8_t> pubKey(getPubKeySize() + 1);
                 pubKey.at(0) = 4;               // 4 -> magic number: x, y coordinates are in uncompressed format
                 memcpy(pubKey.data() + 1, pubKeyBytes, getPubKeySize());
