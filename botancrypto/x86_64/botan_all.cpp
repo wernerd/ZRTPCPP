@@ -9883,6 +9883,326 @@ std::vector<std::string> BlockCipher::providers(const std::string& algo)
 
 }
 /*
+* CBC Mode
+* (C) 1999-2007,2013,2017 Jack Lloyd
+* (C) 2016 Daniel Neus, Rohde & Schwarz Cybersecurity
+* (C) 2018 Ribose Inc
+*
+* Botan is released under the Simplified BSD License (see license.txt)
+*/
+
+
+namespace Botan {
+
+CBC_Mode::CBC_Mode(BlockCipher* cipher, BlockCipherModePaddingMethod* padding) :
+   m_cipher(cipher),
+   m_padding(padding),
+   m_block_size(cipher->block_size())
+   {
+   if(m_padding && !m_padding->valid_blocksize(m_block_size))
+      throw Invalid_Argument("Padding " + m_padding->name() +
+                             " cannot be used with " +
+                             cipher->name() + "/CBC");
+   }
+
+void CBC_Mode::clear()
+   {
+   m_cipher->clear();
+   reset();
+   }
+
+void CBC_Mode::reset()
+   {
+   m_state.clear();
+   }
+
+std::string CBC_Mode::name() const
+   {
+   if(m_padding)
+      return cipher().name() + "/CBC/" + padding().name();
+   else
+      return cipher().name() + "/CBC/CTS";
+   }
+
+size_t CBC_Mode::update_granularity() const
+   {
+   return cipher().parallel_bytes();
+   }
+
+Key_Length_Specification CBC_Mode::key_spec() const
+   {
+   return cipher().key_spec();
+   }
+
+size_t CBC_Mode::default_nonce_length() const
+   {
+   return block_size();
+   }
+
+bool CBC_Mode::valid_nonce_length(size_t n) const
+   {
+   return (n == 0 || n == block_size());
+   }
+
+void CBC_Mode::key_schedule(const uint8_t key[], size_t length)
+   {
+   m_cipher->set_key(key, length);
+   m_state.clear();
+   }
+
+void CBC_Mode::start_msg(const uint8_t nonce[], size_t nonce_len)
+   {
+   if(!valid_nonce_length(nonce_len))
+      throw Invalid_IV_Length(name(), nonce_len);
+
+   /*
+   * A nonce of zero length means carry the last ciphertext value over
+   * as the new IV, as unfortunately some protocols require this. If
+   * this is the first message then we use an IV of all zeros.
+   */
+   if(nonce_len)
+      m_state.assign(nonce, nonce + nonce_len);
+   else if(m_state.empty())
+      m_state.resize(m_cipher->block_size());
+   // else leave the state alone
+   }
+
+size_t CBC_Encryption::minimum_final_size() const
+   {
+   return 0;
+   }
+
+size_t CBC_Encryption::output_length(size_t input_length) const
+   {
+   if(input_length == 0)
+      return block_size();
+   else
+      return round_up(input_length, block_size());
+   }
+
+size_t CBC_Encryption::process(uint8_t buf[], size_t sz)
+   {
+   BOTAN_STATE_CHECK(state().empty() == false);
+   const size_t BS = block_size();
+
+   BOTAN_ASSERT(sz % BS == 0, "CBC input is full blocks");
+   const size_t blocks = sz / BS;
+
+   if(blocks > 0)
+      {
+      xor_buf(&buf[0], state_ptr(), BS);
+      cipher().encrypt(&buf[0]);
+
+      for(size_t i = 1; i != blocks; ++i)
+         {
+         xor_buf(&buf[BS*i], &buf[BS*(i-1)], BS);
+         cipher().encrypt(&buf[BS*i]);
+         }
+
+      state().assign(&buf[BS*(blocks-1)], &buf[BS*blocks]);
+      }
+
+   return sz;
+   }
+
+void CBC_Encryption::finish(secure_vector<uint8_t>& buffer, size_t offset)
+   {
+   BOTAN_STATE_CHECK(state().empty() == false);
+   BOTAN_ASSERT(buffer.size() >= offset, "Offset is sane");
+
+   const size_t BS = block_size();
+
+   const size_t bytes_in_final_block = (buffer.size()-offset) % BS;
+
+   padding().add_padding(buffer, bytes_in_final_block, BS);
+
+   BOTAN_ASSERT_EQUAL(buffer.size() % BS, offset % BS, "Padded to block boundary");
+
+   update(buffer, offset);
+   }
+
+bool CTS_Encryption::valid_nonce_length(size_t n) const
+   {
+   return (n == block_size());
+   }
+
+size_t CTS_Encryption::minimum_final_size() const
+   {
+   return block_size() + 1;
+   }
+
+size_t CTS_Encryption::output_length(size_t input_length) const
+   {
+   return input_length; // no ciphertext expansion in CTS
+   }
+
+void CTS_Encryption::finish(secure_vector<uint8_t>& buffer, size_t offset)
+   {
+   BOTAN_STATE_CHECK(state().empty() == false);
+   BOTAN_ASSERT(buffer.size() >= offset, "Offset is sane");
+   uint8_t* buf = buffer.data() + offset;
+   const size_t sz = buffer.size() - offset;
+
+   const size_t BS = block_size();
+
+   if(sz < BS + 1)
+      throw Encoding_Error(name() + ": insufficient data to encrypt");
+
+   if(sz % BS == 0)
+      {
+      update(buffer, offset);
+
+      // swap last two blocks
+      for(size_t i = 0; i != BS; ++i)
+         std::swap(buffer[buffer.size()-BS+i], buffer[buffer.size()-2*BS+i]);
+      }
+   else
+      {
+      const size_t full_blocks = ((sz / BS) - 1) * BS;
+      const size_t final_bytes = sz - full_blocks;
+      BOTAN_ASSERT(final_bytes > BS && final_bytes < 2*BS, "Left over size in expected range");
+
+      secure_vector<uint8_t> last(buf + full_blocks, buf + full_blocks + final_bytes);
+      buffer.resize(full_blocks + offset);
+      update(buffer, offset);
+
+      xor_buf(last.data(), state_ptr(), BS);
+      cipher().encrypt(last.data());
+
+      for(size_t i = 0; i != final_bytes - BS; ++i)
+         {
+         last[i] ^= last[i + BS];
+         last[i + BS] ^= last[i];
+         }
+
+      cipher().encrypt(last.data());
+
+      buffer += last;
+      }
+   }
+
+size_t CBC_Decryption::output_length(size_t input_length) const
+   {
+   return input_length; // precise for CTS, worst case otherwise
+   }
+
+size_t CBC_Decryption::minimum_final_size() const
+   {
+   return block_size();
+   }
+
+size_t CBC_Decryption::process(uint8_t buf[], size_t sz)
+   {
+   BOTAN_STATE_CHECK(state().empty() == false);
+
+   const size_t BS = block_size();
+
+   BOTAN_ASSERT(sz % BS == 0, "Input is full blocks");
+   size_t blocks = sz / BS;
+
+   while(blocks)
+      {
+      const size_t to_proc = std::min(BS * blocks, m_tempbuf.size());
+
+      cipher().decrypt_n(buf, m_tempbuf.data(), to_proc / BS);
+
+      xor_buf(m_tempbuf.data(), state_ptr(), BS);
+      xor_buf(&m_tempbuf[BS], buf, to_proc - BS);
+      copy_mem(state_ptr(), buf + (to_proc - BS), BS);
+
+      copy_mem(buf, m_tempbuf.data(), to_proc);
+
+      buf += to_proc;
+      blocks -= to_proc / BS;
+      }
+
+   return sz;
+   }
+
+void CBC_Decryption::finish(secure_vector<uint8_t>& buffer, size_t offset)
+   {
+   BOTAN_STATE_CHECK(state().empty() == false);
+   BOTAN_ASSERT(buffer.size() >= offset, "Offset is sane");
+   const size_t sz = buffer.size() - offset;
+
+   const size_t BS = block_size();
+
+   if(sz == 0 || sz % BS)
+      throw Decoding_Error(name() + ": Ciphertext not a multiple of block size");
+
+   update(buffer, offset);
+
+   const size_t pad_bytes = BS - padding().unpad(&buffer[buffer.size()-BS], BS);
+   buffer.resize(buffer.size() - pad_bytes); // remove padding
+   if(pad_bytes == 0 && padding().name() != "NoPadding")
+      {
+      throw Decoding_Error("Invalid CBC padding");
+      }
+   }
+
+void CBC_Decryption::reset()
+   {
+   CBC_Mode::reset();
+   zeroise(m_tempbuf);
+   }
+
+bool CTS_Decryption::valid_nonce_length(size_t n) const
+   {
+   return (n == block_size());
+   }
+
+size_t CTS_Decryption::minimum_final_size() const
+   {
+   return block_size() + 1;
+   }
+
+void CTS_Decryption::finish(secure_vector<uint8_t>& buffer, size_t offset)
+   {
+   BOTAN_STATE_CHECK(state().empty() == false);
+   BOTAN_ASSERT(buffer.size() >= offset, "Offset is sane");
+   const size_t sz = buffer.size() - offset;
+   uint8_t* buf = buffer.data() + offset;
+
+   const size_t BS = block_size();
+
+   if(sz < BS + 1)
+      throw Encoding_Error(name() + ": insufficient data to decrypt");
+
+   if(sz % BS == 0)
+      {
+      // swap last two blocks
+
+      for(size_t i = 0; i != BS; ++i)
+         std::swap(buffer[buffer.size()-BS+i], buffer[buffer.size()-2*BS+i]);
+
+      update(buffer, offset);
+      }
+   else
+      {
+      const size_t full_blocks = ((sz / BS) - 1) * BS;
+      const size_t final_bytes = sz - full_blocks;
+      BOTAN_ASSERT(final_bytes > BS && final_bytes < 2*BS, "Left over size in expected range");
+
+      secure_vector<uint8_t> last(buf + full_blocks, buf + full_blocks + final_bytes);
+      buffer.resize(full_blocks + offset);
+      update(buffer, offset);
+
+      cipher().decrypt(last.data());
+
+      xor_buf(last.data(), &last[BS], final_bytes - BS);
+
+      for(size_t i = 0; i != final_bytes - BS; ++i)
+         std::swap(last[i], last[i + BS]);
+
+      cipher().decrypt(last.data());
+      xor_buf(last.data(), state_ptr(), BS);
+
+      buffer += last;
+      }
+   }
+
+}
+/*
 * CFB Mode
 * (C) 1999-2007,2013,2017 Jack Lloyd
 * (C) 2016 Daniel Neus, Rohde & Schwarz Cybersecurity
@@ -17044,6 +17364,336 @@ void MDx_HashFunction::write_count(uint8_t out[])
    else
       store_le(bit_count, out + m_counter_size - 8);
    }
+
+}
+/*
+* CBC Padding Methods
+* (C) 1999-2007,2013,2018,2020 Jack Lloyd
+* (C) 2016 René Korthaus, Rohde & Schwarz Cybersecurity
+*
+* Botan is released under the Simplified BSD License (see license.txt)
+*/
+
+
+namespace Botan {
+
+/**
+* Get a block cipher padding method by name
+*/
+BlockCipherModePaddingMethod* get_bc_pad(const std::string& algo_spec)
+   {
+   if(algo_spec == "NoPadding")
+      return new Null_Padding;
+
+   if(algo_spec == "PKCS7")
+      return new PKCS7_Padding;
+
+   if(algo_spec == "OneAndZeros")
+      return new OneAndZeros_Padding;
+
+   if(algo_spec == "X9.23")
+      return new ANSI_X923_Padding;
+
+   if(algo_spec == "ESP")
+      return new ESP_Padding;
+
+   return nullptr;
+   }
+
+/*
+* Pad with PKCS #7 Method
+*/
+void PKCS7_Padding::add_padding(secure_vector<uint8_t>& buffer,
+                                size_t last_byte_pos,
+                                size_t BS) const
+   {
+   /*
+   Padding format is
+   01
+   0202
+   030303
+   ...
+   */
+   BOTAN_DEBUG_ASSERT(last_byte_pos < BS);
+
+   const uint8_t padding_len = static_cast<uint8_t>(BS - last_byte_pos);
+
+   buffer.resize(buffer.size() + padding_len);
+
+   CT::poison(&last_byte_pos, 1);
+   CT::poison(buffer.data(), buffer.size());
+
+   BOTAN_DEBUG_ASSERT(buffer.size() % BS == 0);
+   BOTAN_DEBUG_ASSERT(buffer.size() >= BS);
+
+   const size_t start_of_last_block = buffer.size() - BS;
+   const size_t end_of_last_block = buffer.size();
+   const size_t start_of_padding = buffer.size() - padding_len;
+
+   for(size_t i = start_of_last_block; i != end_of_last_block; ++i)
+      {
+      auto needs_padding = CT::Mask<uint8_t>(CT::Mask<size_t>::is_gte(i, start_of_padding));
+      buffer[i] = needs_padding.select(padding_len, buffer[i]);
+      }
+
+   CT::unpoison(buffer.data(), buffer.size());
+   CT::unpoison(last_byte_pos);
+   }
+
+/*
+* Unpad with PKCS #7 Method
+*/
+size_t PKCS7_Padding::unpad(const uint8_t input[], size_t input_length) const
+   {
+   if(!valid_blocksize(input_length))
+      return input_length;
+
+   CT::poison(input, input_length);
+
+   const uint8_t last_byte = input[input_length-1];
+
+   /*
+   The input should == the block size so if the last byte exceeds
+   that then the padding is certainly invalid
+   */
+   auto bad_input = CT::Mask<size_t>::is_gt(last_byte, input_length);
+
+   const size_t pad_pos = input_length - last_byte;
+
+   for(size_t i = 0; i != input_length - 1; ++i)
+      {
+      // Does this byte equal the expected pad byte?
+      const auto pad_eq = CT::Mask<size_t>::is_equal(input[i], last_byte);
+
+      // Ignore values that are not part of the padding
+      const auto in_range = CT::Mask<size_t>::is_gte(i, pad_pos);
+      bad_input |= in_range & (~pad_eq);
+      }
+
+   CT::unpoison(input, input_length);
+
+   return bad_input.select_and_unpoison(input_length, pad_pos);
+   }
+
+/*
+* Pad with ANSI X9.23 Method
+*/
+void ANSI_X923_Padding::add_padding(secure_vector<uint8_t>& buffer,
+                                    size_t last_byte_pos,
+                                    size_t BS) const
+   {
+   /*
+   Padding format is
+   01
+   0002
+   000003
+   ...
+   */
+   BOTAN_DEBUG_ASSERT(last_byte_pos < BS);
+
+   const uint8_t padding_len = static_cast<uint8_t>(BS - last_byte_pos);
+
+   buffer.resize(buffer.size() + padding_len);
+
+   CT::poison(&last_byte_pos, 1);
+   CT::poison(buffer.data(), buffer.size());
+
+   BOTAN_DEBUG_ASSERT(buffer.size() % BS == 0);
+   BOTAN_DEBUG_ASSERT(buffer.size() >= BS);
+
+   const size_t start_of_last_block = buffer.size() - BS;
+   const size_t end_of_zero_padding = buffer.size() - 1;
+   const size_t start_of_padding = buffer.size() - padding_len;
+
+   for(size_t i = start_of_last_block; i != end_of_zero_padding; ++i)
+      {
+      auto needs_padding = CT::Mask<uint8_t>(CT::Mask<size_t>::is_gte(i, start_of_padding));
+      buffer[i] = needs_padding.select(0, buffer[i]);
+      }
+
+   buffer[buffer.size()-1] = padding_len;
+   CT::unpoison(buffer.data(), buffer.size());
+   CT::unpoison(last_byte_pos);
+   }
+
+/*
+* Unpad with ANSI X9.23 Method
+*/
+size_t ANSI_X923_Padding::unpad(const uint8_t input[], size_t input_length) const
+   {
+   if(!valid_blocksize(input_length))
+      return input_length;
+
+   CT::poison(input, input_length);
+
+   const size_t last_byte = input[input_length-1];
+
+   auto bad_input = CT::Mask<size_t>::is_gt(last_byte, input_length);
+
+   const size_t pad_pos = input_length - last_byte;
+
+   for(size_t i = 0; i != input_length - 1; ++i)
+      {
+      // Ignore values that are not part of the padding
+      const auto in_range = CT::Mask<size_t>::is_gte(i, pad_pos);
+      const auto pad_is_nonzero = CT::Mask<size_t>::expand(input[i]);
+      bad_input |= pad_is_nonzero & in_range;
+      }
+
+   CT::unpoison(input, input_length);
+
+   return bad_input.select_and_unpoison(input_length, pad_pos);
+   }
+
+/*
+* Pad with One and Zeros Method
+*/
+void OneAndZeros_Padding::add_padding(secure_vector<uint8_t>& buffer,
+                                      size_t last_byte_pos,
+                                      size_t BS) const
+   {
+   /*
+   Padding format is
+   80
+   8000
+   800000
+   ...
+   */
+
+   BOTAN_DEBUG_ASSERT(last_byte_pos < BS);
+
+   const uint8_t padding_len = static_cast<uint8_t>(BS - last_byte_pos);
+
+   buffer.resize(buffer.size() + padding_len);
+
+   CT::poison(&last_byte_pos, 1);
+   CT::poison(buffer.data(), buffer.size());
+
+   BOTAN_DEBUG_ASSERT(buffer.size() % BS == 0);
+   BOTAN_DEBUG_ASSERT(buffer.size() >= BS);
+
+   const size_t start_of_last_block = buffer.size() - BS;
+   const size_t end_of_last_block = buffer.size();
+   const size_t start_of_padding = buffer.size() - padding_len;
+
+   for(size_t i = start_of_last_block; i != end_of_last_block; ++i)
+      {
+      auto needs_80 = CT::Mask<uint8_t>(CT::Mask<size_t>::is_equal(i, start_of_padding));
+      auto needs_00 = CT::Mask<uint8_t>(CT::Mask<size_t>::is_gt(i, start_of_padding));
+      buffer[i] = needs_00.select(0x00, needs_80.select(0x80, buffer[i]));
+      }
+
+   CT::unpoison(buffer.data(), buffer.size());
+   CT::unpoison(last_byte_pos);
+   }
+
+/*
+* Unpad with One and Zeros Method
+*/
+size_t OneAndZeros_Padding::unpad(const uint8_t input[], size_t input_length) const
+   {
+   if(!valid_blocksize(input_length))
+      return input_length;
+
+   CT::poison(input, input_length);
+
+   auto bad_input = CT::Mask<uint8_t>::cleared();
+   auto seen_0x80 = CT::Mask<uint8_t>::cleared();
+
+   size_t pad_pos = input_length - 1;
+   size_t i = input_length;
+
+   while(i)
+      {
+      const auto is_0x80 = CT::Mask<uint8_t>::is_equal(input[i-1], 0x80);
+      const auto is_zero = CT::Mask<uint8_t>::is_zero(input[i-1]);
+
+      seen_0x80 |= is_0x80;
+      pad_pos -= seen_0x80.if_not_set_return(1);
+      bad_input |= ~seen_0x80 & ~is_zero;
+      i--;
+      }
+   bad_input |= ~seen_0x80;
+
+   CT::unpoison(input, input_length);
+
+   return CT::Mask<size_t>::expand(bad_input).select_and_unpoison(input_length, pad_pos);
+   }
+
+/*
+* Pad with ESP Padding Method
+*/
+void ESP_Padding::add_padding(secure_vector<uint8_t>& buffer,
+                              size_t last_byte_pos,
+                              size_t BS) const
+   {
+   /*
+   Padding format is
+   01
+   0102
+   010203
+   ...
+   */
+   BOTAN_DEBUG_ASSERT(last_byte_pos < BS);
+
+   const uint8_t padding_len = static_cast<uint8_t>(BS - last_byte_pos);
+
+   buffer.resize(buffer.size() + padding_len);
+
+   CT::poison(&last_byte_pos, 1);
+   CT::poison(buffer.data(), buffer.size());
+
+   BOTAN_DEBUG_ASSERT(buffer.size() % BS == 0);
+   BOTAN_DEBUG_ASSERT(buffer.size() >= BS);
+
+   const size_t start_of_last_block = buffer.size() - BS;
+   const size_t end_of_last_block = buffer.size();
+   const size_t start_of_padding = buffer.size() - padding_len;
+
+   uint8_t pad_ctr = 0x01;
+
+   for(size_t i = start_of_last_block; i != end_of_last_block; ++i)
+      {
+      auto needs_padding = CT::Mask<uint8_t>(CT::Mask<size_t>::is_gte(i, start_of_padding));
+      buffer[i] = needs_padding.select(pad_ctr, buffer[i]);
+      pad_ctr = needs_padding.select(pad_ctr + 1, pad_ctr);
+      }
+
+   CT::unpoison(buffer.data(), buffer.size());
+   CT::unpoison(last_byte_pos);
+   }
+
+/*
+* Unpad with ESP Padding Method
+*/
+size_t ESP_Padding::unpad(const uint8_t input[], size_t input_length) const
+   {
+   if(!valid_blocksize(input_length))
+      return input_length;
+
+   CT::poison(input, input_length);
+
+   const uint8_t input_length_8 = static_cast<uint8_t>(input_length);
+   const uint8_t last_byte = input[input_length-1];
+
+   auto bad_input = CT::Mask<uint8_t>::is_zero(last_byte) |
+      CT::Mask<uint8_t>::is_gt(last_byte, input_length_8);
+
+   const uint8_t pad_pos = input_length_8 - last_byte;
+   size_t i = input_length_8 - 1;
+   while(i)
+      {
+      const auto in_range = CT::Mask<size_t>::is_gt(i, pad_pos);
+      const auto incrementing = CT::Mask<uint8_t>::is_equal(input[i-1], input[i]-1);
+
+      bad_input |= CT::Mask<uint8_t>(in_range) & ~incrementing;
+      --i;
+      }
+
+   CT::unpoison(input, input_length);
+   return bad_input.select_and_unpoison(input_length_8, pad_pos);
+   }
+
 
 }
 /*
