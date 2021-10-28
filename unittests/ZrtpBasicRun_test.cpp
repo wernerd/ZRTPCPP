@@ -52,7 +52,7 @@ public:
 
     void SetUp() override {
         // code here will execute just before the test ensues
-        LOGGER_INSTANCE setLogLevel(DEBUGGING);
+        LOGGER_INSTANCE setLogLevel(WARNING);
         aliceId = "Alice";
         bobId = "Bob";
     }

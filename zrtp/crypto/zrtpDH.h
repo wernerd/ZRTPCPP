@@ -174,11 +174,11 @@ public:
      * @return
      *     Pointer to DH algorithm name
      */
-    const char* getDHtype() const;
+    [[nodiscard]] const char* getDHtype() const;
 
-    ErrorCode getErrorCode() const { return errorCode; }
+    [[nodiscard]] ErrorCode getErrorCode() const { return errorCode; }
 
-    std::string const version() const;
+    [[nodiscard]] static std::string version() ;
 
 private:
 

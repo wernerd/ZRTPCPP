@@ -485,7 +485,6 @@ int CtZrtpStream::isSecure() {
             return ::snprintf(p, maxLen, "%" PRId64, _I);}
 
 int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
-    extern char zrtpBuildInfo[];
 
 //     if ((sdes == nullptr /*&& !started*/) || isStopped || !isSecure())
 //         return 0;
@@ -503,7 +502,7 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
 
     T_ZRTP_I("sec_state", secState)
     T_ZRTP_I("peerDisclosureFlag", zrtpEngine->isPeerDisclosureFlag()? 1 : 0)
-    T_ZRTP_LB("buildInfo",  zrtpBuildInfo)
+    T_ZRTP_LB("buildInfo",  getZrtpBuildInfo())
 
     // Compute Hello-hash info string
     const char *strng;

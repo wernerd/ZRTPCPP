@@ -24,6 +24,7 @@
 #include <zrtp/crypto/zrtpDH.h>
 #include <zrtp/libzrtpcpp/ZrtpTextData.h>
 #include <botancrypto/ZrtpBotanRng.h>
+#include <common/Utilities.h>
 #include "botan_all.h"
 #include "botancrypto/ZrtpCurve41417.h"
 
@@ -48,8 +49,8 @@ struct ZrtpDH::dhCtx {
 #endif
 };
 
-std::string const
-ZrtpDH::version() const {
+std::string
+ZrtpDH::version() {
     return "Botan";
 }
 
@@ -156,6 +157,8 @@ void ZrtpDH::generateSidhKeyPair() {
 
     auto lengths = SidhWrapper::getFieldLengths(sidhType);
 
+    // Get a secure flex array with the exact required capacity - this is then
+    // also the length of the SIDH public key
     ctx->sidhPubKey = std::make_unique<secUtilities::SecureArrayFlex>(lengths->publicKey);
     if (protocolState == Commit) {
         ctx->sidhPrivKey = std::make_unique<secUtilities::SecureArrayFlex>(lengths->privateKeyA);
@@ -220,9 +223,9 @@ int32_t ZrtpDH::secretKeyComputation(uint8_t *pubKeyBytes, secUtilities::SecureA
             // get E414 shared secret in an own array and append it to the SIDHp503 shared secret
             case PQ54: {
                 computeSidhSharedSecret(pubKeyBytes, secret);
+                auto offset = ctx->sidhPubKey->capacity();  // skip SIDH data, see comment in generateSidhKeyPair() above
 
                 secUtilities::SecureArray<1000> e414secret;
-                auto offset = getSidhSharedSecretLength();
                 secretKeyComputation(pubKeyBytes + offset, e414secret, E414);
                 secret.append(e414secret);
                 return secret.size();

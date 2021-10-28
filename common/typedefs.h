@@ -9,7 +9,7 @@
 #include <string>
 #include <memory>
 
-#include "Constants.h"
+#include "ZrtpConstants.h"
 #include "SecureArray.h"
 
 /**

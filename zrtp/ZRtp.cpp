@@ -34,6 +34,7 @@
 #include <libzrtpcpp/ZrtpStateClass.h>
 #include <libzrtpcpp/Base32.h>
 #include <libzrtpcpp/EmojiBase32.h>
+#include <common/Utilities.h>
 
 using namespace GnuZrtpCodes;
 using namespace std;
@@ -731,9 +732,9 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     msgShaContext = nullptr;
     /*
      * The expected shared secret Ids were already computed when we built the
-     * DHPart1 packet. Generate s0, all depended keys, and the new RS1 value
+     * DHPart1 packet. Generate s0, all dependent keys, and the new RS1 value
      * for the ZID record. The functions also performs sign SAS callback if it's
-     * active. May reset the verify flag in ZID record.
+     * active. May reset the verify-flag in ZID record.
      */
     generateKeysResponder(dhPart2, *zidRec);
 
@@ -1984,8 +1985,8 @@ void ZRtp::generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord)
      * hashed to create S0.  According to the formula the max number of
      * elements to hash is 12, add one for the terminating "nullptr"
      */
-    std::vector<uint8_t const *> data(15);
-    std::vector<uint64_t> length(15);
+    std::vector<uint8_t const *> data;
+    std::vector<uint64_t> length;
 
     // we need a number of length data items, so define them here
     uint32_t counter, sLen[3];
@@ -2142,8 +2143,8 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord)
      * These vectors hold the pointers and lengths of the data that must be
      * hashed to create S0.
      */
-    std::vector<uint8_t const *> data(15);
-    std::vector<uint64_t> length(15);
+    std::vector<uint8_t const *> data;
+    std::vector<uint64_t> length;
 
     // we need a number of length data items, so define them here
     uint32_t counter, sLen[3];
@@ -2185,7 +2186,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord)
      * this length stuff again.
      */
     uint32_t secretHashLen = RS_LENGTH;
-    secretHashLen = zrtpHtonl(secretHashLen);        // prepare 32 bit big-endian number
+    secretHashLen = zrtpHtonl(secretHashLen);        // prepare 32-bit big-endian number
 
     for (int32_t i = 0; i < 3; i++) {
         if (setD[i] != nullptr) {           // a matching secret, set length, then secret
@@ -2195,7 +2196,7 @@ void ZRtp::generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord)
             data.push_back((unsigned char*)setD[i]);
             length.push_back((i != 1) ? RS_LENGTH : auxSecretLength);
         }
-        else {                           // no machting secret, set length 0, skip secret
+        else {                           // no matching secret, set length 0, skip secret
             sLen[i] = 0;
             data.push_back((unsigned char*)&sLen[i]);
             length.push_back(sizeof(uint32_t));
