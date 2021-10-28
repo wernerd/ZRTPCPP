@@ -53,16 +53,19 @@ else()
     set(LIBRARY_BUILD_TYPE SHARED)
 endif()
 
+set(buildInfo "${VERSION}:${GIT_COMMIT}:${CMAKE_SYSTEM_PROCESSOR}")
 if(NOT EMBEDDED)
-    add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/buildinfo.c
-            COMMAND ${CMAKE_COMMAND} -E echo \"char zrtpBuildInfo[] = \\\"${VERSION}:${GIT_COMMIT}:${CMAKE_SYSTEM_PROCESSOR}\\\"\;\" > ${CMAKE_BINARY_DIR}/buildinfo.c)
+
+    add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/buildInfo.h
+            COMMAND ${CMAKE_COMMAND} -E echo \"constexpr char zrtpBuildInfo[] = \\\"${buildInfo}\\\"\;\" > ${CMAKE_CURRENT_BINARY_DIR}/buildInfo.h)
 
     add_compile_definitions(_WITHOUT_TIVI_ENV)
     add_compile_definitions(AXO_SUPPORT)
 
-    add_library(${zrtplibName} ${LIBRARY_BUILD_TYPE} ${zrtpcpp_src} ${sidh751_extra_src} ${CMAKE_BINARY_DIR}/buildinfo.c)
+    add_library(${zrtplibName} ${LIBRARY_BUILD_TYPE} ${zrtpcpp_src} ${CMAKE_CURRENT_BINARY_DIR}/buildInfo.h)
+    target_include_directories(${zrtplibName} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
     set_target_properties(${zrtplibName} PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
-    target_link_libraries(${zrtplibName} ${LIBS})
+    target_link_libraries(${zrtplibName} ${sidhLibNameStatic} ${LIBS})
 
     # **** Test programs ****
     #
@@ -70,7 +73,7 @@ if(NOT EMBEDDED)
     target_link_libraries(testdriver ${zrtplibName})
     add_dependencies(testdriver ${zrtplibName})
 
-    add_custom_command(TARGET ${zrtplibName} POST_BUILD COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/buildinfo.c)
+    add_custom_command(TARGET ${zrtplibName} POST_BUILD COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/buildInfo.h)
 endif()
 
 
@@ -88,8 +91,6 @@ if(${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
     GENERATE_PACKAGING(${PACKAGE} ${VERSION} "${exclude}")
 endif()
 
-#
-# Create the Android make files but do not execute them
 if(ANDROID)
     if (SQLITE AND NOT SQLCIPHER)
         set (sqlite_src ${CMAKE_CURRENT_SOURCE_DIR}/android/jni/sqlite3/sqlite3.c)
@@ -106,9 +107,21 @@ if(ANDROID)
     ## add_compile_definitions(_WITHOUT_TIVI_ENV)
     add_compile_definitions(AXO_SUPPORT)
 
-    add_library(zrtpcpp STATIC ${zrtpcpp_src} ${sqlite_src} ${sidh751_extra_src} ${CMAKE_CURRENT_BINARY_DIR}/buildInfo.h)
-    target_include_directories(zrtpcpp PRIVATE ${sql_include} ${CMAKE_CURRENT_BINARY_DIR})
+    #include_directories (${ZRTP_TOP_SOURCE_DIR} ${ZRTP_TOP_SOURCE_DIR}/zrtp ${ZRTP_TOP_SOURCE_DIR}/srtp)
+    #include_directories (${ZRTP_TOP_SOURCE_DIR}/botancrypto/${botan_all})
+
+    add_library(${zrtplibName} STATIC ${zrtpcpp_src} ${sqlite_src} ${CMAKE_CURRENT_BINARY_DIR}/buildInfo.h)
+    target_include_directories(${zrtplibName} PRIVATE ${sql_include}
+            PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+            PUBLIC ${ZRTP_TOP_SOURCE_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}
+            ${ZRTP_TOP_SOURCE_DIR}/zrtp
+            ${ZRTP_TOP_SOURCE_DIR}/srtp
+            ${ZRTP_TOP_SOURCE_DIR}/botancrypto/${botan_all})
+    target_link_libraries(${zrtplibName} ${sidhLibNameStatic})
 
     add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/buildInfo.h
-            COMMAND ${CMAKE_COMMAND} -E echo \"constexpr char zrtpBuildInfo[] = \\\"${VERSION}:${GIT_COMMIT}:${CMAKE_SYSTEM_PROCESSOR}\\\"\;\" > ${CMAKE_CURRENT_BINARY_DIR}/buildInfo.h)
+            COMMAND ${CMAKE_COMMAND} -E echo \"constexpr char zrtpBuildInfo[] = \\\"${buildInfo}\\\"\;\" > ${CMAKE_CURRENT_BINARY_DIR}/buildInfo.h)
+
+    add_custom_command(TARGET ${zrtplibName} POST_BUILD COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/buildInfo.h)
 endif()

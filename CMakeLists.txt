@@ -24,6 +24,7 @@ SET(CPACK_PACKAGE_VERSION_PATCH 0)
 set (VERSION 5.0.0)
 set (SOVERSION 5)
 
+cmake_policy(SET CMP0077 NEW)
 # Define supported command line parameters.
 #
 # Example to build the tivi client: cmake -DTIVI=true ..
@@ -57,6 +58,10 @@ if(MSVC60)
     MARK_AS_ADVANCED(BUILD_STATIC)
 else()
     option(BUILD_STATIC "Set to OFF to build shared libraries" OFF)
+endif()
+
+if (EMBEDDED)
+    set(BUILD_STATIC true)
 endif()
 
 #
@@ -139,10 +144,15 @@ else()
     message(FATAL_ERROR "Architecture currently not supported: ${CMAKE_SYSTEM_PROCESSOR}.")
 endif()
 
+set(ZRTP_TOP_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(ZRTP_TOP_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 # set to true for debug and trace during CMakeLists development
 # set(CMAKE_VERBOSE_MAKEFILE TRUE)
 
-execute_process(COMMAND git rev-parse --short HEAD OUTPUT_VARIABLE GIT_COMMIT)
+execute_process(
+        COMMAND git rev-parse --short HEAD OUTPUT_VARIABLE GIT_COMMIT
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        )
 STRING(REGEX REPLACE "(\r?\n)+$" "" GIT_COMMIT "${GIT_COMMIT}")
 
 # include most of the fine stuff we need
@@ -215,7 +225,7 @@ endif()
 
 set(sidhLibNameStatic)
 if (SIDH)
-    include_directories (${CMAKE_SOURCE_DIR}/sidh/src)
+    include_directories (${CMAKE_CURRENT_SOURCE_DIR}/sidh/src)
     add_subdirectory(sidh)
     set(sidhLibNameStatic sidhCppStatic)
     add_definitions(-DSIDH_SUPPORT)
@@ -223,14 +233,14 @@ endif()
 
 # to make sure these includes are taken first - it contains config.h
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
-include_directories (${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/zrtp ${CMAKE_SOURCE_DIR}/srtp)
-include_directories (${CMAKE_SOURCE_DIR}/botancrypto/${botan_all})
+include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/zrtp ${CMAKE_CURRENT_SOURCE_DIR}/srtp)
+include_directories (${CMAKE_CURRENT_SOURCE_DIR}/botancrypto/${botan_all})
 add_definitions(-DSUPPORT_NON_NIST)
 
 if (SRTP)
     set (sdes_src
-            ${CMAKE_SOURCE_DIR}/zrtp/ZrtpSdesStream.cpp
-            ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpSdesStream.h)
+            ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpSdesStream.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpSdesStream.h)
 
     if (SDES)
         add_definitions(-DENABLE_SDES_MIX)  ## SDES mixer
@@ -329,7 +339,7 @@ set(zrtp_src_no_cache
         ${CMAKE_CURRENT_SOURCE_DIR}/common/typedefs.h
         ${CMAKE_CURRENT_SOURCE_DIR}/common/ZrtpTimeoutProvider.h
         ${CMAKE_CURRENT_SOURCE_DIR}/common/SecureArray.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/common/Constants.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/common/ZrtpConstants.h
         ${CMAKE_CURRENT_SOURCE_DIR}/helpers/ZrtpConfigureBuilder.h
         ${CMAKE_CURRENT_SOURCE_DIR}/helpers/ZrtpConfigureBuilder.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/helpers/ZrtpUserCallbackEmpty.h

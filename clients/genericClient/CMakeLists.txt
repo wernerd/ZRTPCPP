@@ -13,16 +13,16 @@ set(crypto_src
         ${zrtp_botan_crypto_src})
 
 if (SRTP)
-   include_directories(${CMAKE_SOURCE_DIR}/srtp ${CMAKE_SOURCE_DIR}/srtp/crypto)
+   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../srtp ${CMAKE_CURRENT_SOURCE_DIR}/../../srtp/crypto)
    set (zrtp_srtp_src
-           ${CMAKE_SOURCE_DIR}/srtp/CryptoContext.cpp
-           ${CMAKE_SOURCE_DIR}/srtp/CryptoContextCtrl.cpp
-           ${CMAKE_SOURCE_DIR}/srtp/SrtpHandler.cpp
-           ${CMAKE_SOURCE_DIR}/srtp/crypto/hmac.h
-           ${CMAKE_SOURCE_DIR}/srtp/crypto/SrtpSymCrypto.h
-           ${CMAKE_SOURCE_DIR}/srtp/crypto/botan/hmac.cpp
-           ${CMAKE_SOURCE_DIR}/srtp/crypto/botan/macSkein.cpp
-           ${CMAKE_SOURCE_DIR}/srtp/crypto/botan/SrtpSymCrypto.cpp)
+           ${CMAKE_CURRENT_SOURCE_DIR}/../../srtp/CryptoContext.cpp
+           ${CMAKE_CURRENT_SOURCE_DIR}/../../srtp/CryptoContextCtrl.cpp
+           ${CMAKE_CURRENT_SOURCE_DIR}/../../srtp/SrtpHandler.cpp
+           ${CMAKE_CURRENT_SOURCE_DIR}/../../srtp/crypto/hmac.h
+           ${CMAKE_CURRENT_SOURCE_DIR}/../../srtp/crypto/SrtpSymCrypto.h
+           ${CMAKE_CURRENT_SOURCE_DIR}/../../srtp/crypto/botan/hmac.cpp
+           ${CMAKE_CURRENT_SOURCE_DIR}/../../srtp/crypto/botan/macSkein.cpp
+           ${CMAKE_CURRENT_SOURCE_DIR}/../../srtp/crypto/botan/SrtpSymCrypto.cpp)
 endif()
 
 set(genericFilter_src
@@ -48,7 +48,7 @@ if (NOT ANDROID)
     # **** Setup packing environment ****
     #
     if(${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
-        include(${CMAKE_SOURCE_DIR}/cmake/Modules/GeneratePackage.cmake)
+        include(${ZRTP_TOP_SOURCE_DIR}/cmake/Modules/GeneratePackage.cmake)
 
         GENERATE_PACKAGING(${PACKAGE} ${VERSION} "")
     endif()
@@ -61,28 +61,28 @@ if (NOT ANDROID)
     set(includedir ${prefix}/include)
     set(PACKAGE pkgconfig)
 
-    configure_file(${CMAKE_SOURCE_DIR}/libzrtpcpp.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/lib${zrtplibName}.pc @ONLY)
-    configure_file(${CMAKE_SOURCE_DIR}/libzrtpcpp.spec.cmake ${CMAKE_CURRENT_BINARY_DIR}/lib${zrtplibName}.spec @ONLY)
+    configure_file(${ZRTP_TOP_SOURCE_DIR}/libzrtpcpp.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/lib${zrtplibName}.pc @ONLY)
+    configure_file(${ZRTP_TOP_SOURCE_DIR}/libzrtpcpp.spec.cmake ${CMAKE_CURRENT_BINARY_DIR}/lib${zrtplibName}.spec @ONLY)
 
     # **** install files ****
     #
     install(FILES
-            ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCodes.h
-            ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpConfigure.h
-            ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCallback.h
-            ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCWrapper.h
-            ${CMAKE_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpUserCallback.h DESTINATION include/libzrtpcpp)
+            ${ZRTP_TOP_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCodes.h
+            ${ZRTP_TOP_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpConfigure.h
+            ${ZRTP_TOP_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCallback.h
+            ${ZRTP_TOP_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCWrapper.h
+            ${ZRTP_TOP_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpUserCallback.h DESTINATION include/libzrtpcpp)
 
-    install(FILES ${CMAKE_SOURCE_DIR}/common/osSpecifics.h DESTINATION include/libzrtpcpp/common)
+    install(FILES ${ZRTP_TOP_SOURCE_DIR}/common/osSpecifics.h DESTINATION include/libzrtpcpp/common)
 
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib${zrtplibName}.pc DESTINATION ${LIBDIRNAME}/pkgconfig)
+    install(FILES ${ZRTP_TOP_BINARY_DIR}/lib${zrtplibName}.pc DESTINATION ${LIBDIRNAME}/pkgconfig)
 
     install(TARGETS ${zrtplibName} DESTINATION ${LIBDIRNAME})
 
     if(${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
 
         ########### Add uninstall target ###############
-        configure_file("${CMAKE_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake" IMMEDIATE @ONLY)
+        configure_file("${ZRTP_TOP_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake" IMMEDIATE @ONLY)
         add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
     endif()
 endif()

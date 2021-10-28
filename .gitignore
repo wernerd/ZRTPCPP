@@ -27,3 +27,13 @@ cmake-build-*/
 
 **/.cxx/
 **/.gradle/
+clion.idea/
+androidStudio.idea/
+toAs.sh
+toClion.sh
+docLocal/
+cmake-build-*/
+.idea/
+
+**/.cxx/
+**/.gradle/
