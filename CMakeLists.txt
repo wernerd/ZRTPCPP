@@ -121,16 +121,12 @@ endif()
 
 if (ANDROID)
     if (ANDROID_ABI STREQUAL "armeabi-v7a")
-        set (arm true)
         set (botan_all "android/armeabi-v7a")
     elseif(ANDROID_ABI STREQUAL "arm64-v8a")
-        set(arm64 true)
         set (botan_all "android/arm64-v8a")
     elseif(ANDROID_ABI STREQUAL "x86")
-        set(x86 true)
         set (botan_all "android/x86")
     elseif(ANDROID_ABI STREQUAL "x86_64")
-        set(x64 true)
         set (botan_all "android/x86_64")
     else()
         message(FATAL_ERROR "Unknown Android ABI: ${ANDROID_ABI}.")
@@ -138,7 +134,7 @@ if (ANDROID)
 elseif(IOS)
     message(FATAL_ERROR "iOS currently not supported.")
 elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
-        set(x64 true)
+        set(enable-x86_64 true)         ## SIDH definition
         set (botan_all "x86_64")
 else()
     message(FATAL_ERROR "Architecture currently not supported: ${CMAKE_SYSTEM_PROCESSOR}.")
@@ -225,6 +221,7 @@ endif()
 
 set(sidhLibNameStatic)
 if (SIDH)
+    include(FetchContent)
     FetchContent_Declare(
             sidh
             GIT_REPOSITORY https://github.com/wernerd/PQCrypto-SIDH.git
