@@ -29,7 +29,7 @@
 #include "botancrypto/ZrtpCurve41417.h"
 
 #ifdef SIDH_SUPPORT
-#include "../sidh/cpp/SidhWrapper.h"
+#include "cpp/SidhWrapper.h"
 #endif
 
 void randomZRTP(uint8_t *buf, int32_t length)

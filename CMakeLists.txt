@@ -225,8 +225,13 @@ endif()
 
 set(sidhLibNameStatic)
 if (SIDH)
-    include_directories (${CMAKE_CURRENT_SOURCE_DIR}/sidh/src)
-    add_subdirectory(sidh)
+    FetchContent_Declare(
+            sidh
+            GIT_REPOSITORY https://github.com/wernerd/PQCrypto-SIDH.git
+            GIT_TAG        eb52d2bcd1670e951d3fa8cca83d8a3f0cc94bc8  ## branch wdi top
+    )
+    FetchContent_MakeAvailable(sidh)
+    include_directories (${sidh_SOURCE_DIR} ${sidh_SOURCE_DIR}/src)
     set(sidhLibNameStatic sidhCppStatic)
     add_definitions(-DSIDH_SUPPORT)
 endif()

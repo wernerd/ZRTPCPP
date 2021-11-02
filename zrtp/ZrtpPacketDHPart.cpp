@@ -23,7 +23,7 @@
 #include "logging/ZrtpLogging.h"
 
 #ifdef SIDH_SUPPORT
-#include "../sidh/cpp/SidhWrapper.h"
+#include "cpp/SidhWrapper.h"
 #endif
 static const int FIXED_NUM_WORDS = sizeof(DHPartPacket_t) / ZRTP_WORD_SIZE + 2;         // +2 for MAC
 static const int DH2K_WORDS = FIXED_NUM_WORDS + DH2K_LENGTH_BYTES / ZRTP_WORD_SIZE;     // 2048 / 8 / ZRTP_WORD_SIZE

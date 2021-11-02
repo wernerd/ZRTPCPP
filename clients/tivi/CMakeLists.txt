@@ -97,8 +97,13 @@ if(ANDROID)
         set (sql_include ${CMAKE_CURRENT_SOURCE_DIR}/android/jni/sqlite3)
     endif()
     if (SQLCIPHER)
+        if ("${SQL_CIPHER_INCLUDE}" STREQUAL "")
+            MESSAGE(WARNING "SQL_CIPHER_INCLUDE not set, using internal sqlite3.h header file.")
+            set(sqlcipher_include ${CMAKE_CURRENT_SOURCE_DIR}/android/jni/sqlcipher)
+        else()
+            set(sqlcipher_include ${SQL_CIPHER_INCLUDE})
+        endif ()
         add_compile_definitions(SQL_CIPHER SQLITE_HAS_CODEC)
-        set (sql_include ${CMAKE_CURRENT_SOURCE_DIR}/android/jni/sqlcipher)
     endif()
 
     ## Build ANDROID for tivi client: SilentPhone with tivi support
@@ -107,12 +112,9 @@ if(ANDROID)
     ## add_compile_definitions(_WITHOUT_TIVI_ENV)
     add_compile_definitions(AXO_SUPPORT)
 
-    #include_directories (${ZRTP_TOP_SOURCE_DIR} ${ZRTP_TOP_SOURCE_DIR}/zrtp ${ZRTP_TOP_SOURCE_DIR}/srtp)
-    #include_directories (${ZRTP_TOP_SOURCE_DIR}/botancrypto/${botan_all})
-
     add_library(${zrtplibName} STATIC ${zrtpcpp_src} ${sqlite_src} ${CMAKE_CURRENT_BINARY_DIR}/buildInfo.h)
-    target_include_directories(${zrtplibName} PRIVATE ${sql_include}
-            PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+    target_include_directories(${zrtplibName}
+            PRIVATE ${sqlcipher_include} ${CMAKE_CURRENT_BINARY_DIR}
             PUBLIC ${ZRTP_TOP_SOURCE_DIR}
             ${CMAKE_CURRENT_SOURCE_DIR}
             ${ZRTP_TOP_SOURCE_DIR}/zrtp
