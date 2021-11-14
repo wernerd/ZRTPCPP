@@ -548,10 +548,13 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     // Initiator uses a Key-A type key pair (created during prepareCommit) and
     // the Responder (that's the case here) uses a Key-B type key pair. SIDH
     // keys are precomputed, thus it's a fast operation at this point
-    if (*(int32_t*)(dhContext->getDHtype()) != *(int32_t*)(pubKey->getName()) ||
-            *(int32_t*)(pubKey->getName()) == *(int32_t*)sdh5 ||
+    if (*(int32_t*)(dhContext->getDHtype()) != *(int32_t*)(pubKey->getName())
+#ifdef SIDH_SUPPORT
+            || *(int32_t*)(pubKey->getName()) == *(int32_t*)sdh5 ||
             *(int32_t*)(pubKey->getName()) == *(int32_t*)sdh7 ||
-            *(int32_t*)(pubKey->getName()) == *(int32_t*)pq54) {
+            *(int32_t*)(pubKey->getName()) == *(int32_t*)pq54
+#endif
+            ) {
         dhContext = make_unique<ZrtpDH>(pubKey->getName(), ZrtpDH::DhPart1);
         dhContext->generatePublicKey();
     }
@@ -1392,7 +1395,7 @@ ZrtpPacketGoClear* ZRtp::prepareGoClear(uint32_t errMsg) {
 }
 #endif
 /*
- * The next functions look up and return a prefered algorithm. These
+ * The next functions look up and return a preferred algorithm. These
  * functions work as follows:
  * - If the Hello packet does not contain an algorithm (number of algorithms
  *   is zero) then return the mandatory algorithm.
@@ -1507,7 +1510,11 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
 
     // Build list of own pubkey algorithm names, must follow the order
     // defined in RFC 6189, chapter 4.1.2.
+#ifdef SIDH_SUPPORT
     const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38, sdh5, sdh7, pq54};
+#else
+    const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38};
+#endif
     int numOrderedAlgos = sizeof(orderedAlgos) / sizeof(const char*);
 
     int numAlgosPeer = hello->getNumPubKeys();
@@ -1581,9 +1588,13 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
     int32_t algoName = *(int32_t*)(useAlgo->getName());
 
     // select a corresponding strong hash if necessary.
-    if (algoName == *(int32_t*)ec38 || algoName == *(int32_t*)e414 ||
-        algoName == *(int32_t*)sdh5 || algoName == *(int32_t*)sdh7 ||
-        algoName == *(int32_t*)pq54) {
+    if (algoName == *(int32_t*)ec38 || algoName == *(int32_t*)e414
+#ifdef SIDH_SUPPORT
+        || algoName == *(int32_t*)sdh5 ||
+        algoName == *(int32_t*)sdh7 ||
+        algoName == *(int32_t*)pq54
+#endif
+    ) {
         hash = getStrongHashOffered(hello, algoName);
         cipher = getStrongCipherOffered(hello, algoName);
     }
