@@ -47,8 +47,8 @@ using namespace GnuZrtpCodes;
 using namespace std;
 
 #if !defined (_WITHOUT_TIVI_ENV) && defined AXO_SUPPORT
-const string getOwnAxoIdKey();
-void checkRemoteAxoIdKey(string user, string devId, string pubKey, int32_t verifyState);
+string getOwnAxoIdKey(bool useHash);
+void checkRemoteAxoIdKey(const string& user, const string& devId, const string& pubKey, int32_t verifyState, bool useHash);
 int getCallInfo(int iCallID, const char *key, char *p, int iMax);
 #endif
 
@@ -1213,20 +1213,41 @@ void CtZrtpStream::signSAS(uint8_t* sasHash) {
 #if !defined (_WITHOUT_TIVI_ENV) && defined AXO_SUPPORT
 //    zrtp_log("CTStream", "++++ sign sasHash");
 
-    string keyData = getOwnAxoIdKey();
-    auto keyLength = keyData.size();
+    auto useHashedKey = false;
+#ifdef SIDH_SUPPORT
+    auto pubKeyName = zrtpEngine->getPublicKeyAlgoName();
+    useHashedKey = (pubKeyName == sdh5 || pubKeyName == sdh7 || pubKeyName == pq54);
+#endif
 
+    // Newer releases which support SIDH may also use hashed ZINA keys, not the simple, plain public
+    // key data. ZRTP uses hashed keys because in future ZINA keys may become much bigger and
+    // would exceed the maximum size of a UDP/ZRTP packet. Hashing the key solves this problem.
+    //
+    // If the confirmed public key does not use an SIDH algo then the other party may use an older
+    // ZRTP release which does not support ZIN key hashing. In this case send the plain ZINA public
+    // key, not the hashed key. This supports older clients - it's sort of a hack. However, it helps
+    // migration to hash-based Zina key checks. Possible because SIDH support and hash-based Zina
+    // check implemented/release at the same time :-) .
+    string keyData = getOwnAxoIdKey(useHashedKey);
+    auto keyLength = keyData.size();
     if (keyLength == 0)
         return;
 
-    uint32_t typeLength = 100 << 16 | (keyLength & 0x7fff);
-    typeLength = zrtpHtonl(typeLength);
+    uint32_t typeLength;
 
+    // A hashed key uses a different type
+    if (!useHashedKey) {
+        typeLength = 100 << 16 | (keyLength & 0x7fff);
+    }
+    else {
+        typeLength = 200 << 16 | (keyLength & 0x7fff);
+    }
+    typeLength = zrtpHtonl(typeLength);
     auto sigLen = (sizeof(int32_t) + keyLength + 3) & ~3;  // must be modulo 4 == 0
 
     auto* sigData = new uint8_t[sigLen];
 
-    // First is the signature type word
+    // First is the signature type and length word
     *(uint32_t*)sigData = typeLength;
     // Copy the exact length, no null termination etc
     memcpy(sigData+4, (const char*)keyData.data(), keyData.size()); // NOLINT(bugprone-not-null-terminated-result)
@@ -1264,11 +1285,12 @@ bool CtZrtpStream::checkSASSignature(uint8_t* sasHash) {
     auto typeLength = *(uint32_t*)(sigData);
     typeLength = zrtpNtohl(typeLength);
     auto length = typeLength & 0x7fff;
+    auto hash = (typeLength & (200 << 16)) == 200 << 16;
 
     int32_t verified = zrtpEngine->isSASVerified() ? 1 : 0;
 
     string pubKeyData((const char*)sigData+4, length);
-    checkRemoteAxoIdKey(caller, callerDeviceId, pubKeyData, verified);
+    checkRemoteAxoIdKey(caller, callerDeviceId, pubKeyData, verified, hash);
 
     delete[] sigData;
 #else

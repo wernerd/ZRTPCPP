@@ -418,9 +418,16 @@ class __EXPORT ZRtp {
     [[nodiscard]] uint8_t const * getSasHash() const {return sasHash.data();}
 
     /**
+     * @brief Get the short name of the confirmed public key algorithm.
+     *
+     * @return Short name of the public key algorithm
+     */
+    [[nodiscard]] std::string getPublicKeyAlgoName() { return std::string(pubKey->getName()); }
+
+    /**
      * Set signature data.
      *
-     * This functions stores signature data and transmitts it during ZRTP
+     * This functions stores signature data and transmits it during ZRTP
      * processing to the other party as part of the Confirm packets. Refer to
      * chapters 5.7 and 7.2.
      *
@@ -441,7 +448,7 @@ class __EXPORT ZRtp {
     /**
      * Get signature data.
      *
-     * This functions returns a pointer to the signature data that was receivied
+     * This functions returns a pointer to the signature data that was received
      * during ZRTP processing. Refer to chapters 5.7 and 7.2.
      *
      * The returned pointer points to volatile data that is valid only during the
