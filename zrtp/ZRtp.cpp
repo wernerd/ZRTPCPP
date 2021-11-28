@@ -46,7 +46,7 @@ using namespace std;
 #ifdef __cplusplus
 extern "C" {
 #endif
-    int ZrtpAvailable()
+[[maybe_unused]] int ZrtpAvailable()
     {
         return 1;
     }
@@ -2713,11 +2713,11 @@ void ZRtp::setMultiStrParams(string parameters, ZRtp *zrtpMaster) {
         masterStream = zrtpMaster;
 }
 
-bool ZRtp::isMultiStream() {
+bool ZRtp::isMultiStream() const {
     return multiStream;
 }
 
-bool ZRtp::isMultiStreamAvailable() {
+bool ZRtp::isMultiStreamAvailable() const {
     return multiStreamAvailable;
 }
 
@@ -2771,7 +2771,7 @@ int32_t ZRtp::compareCommit(ZrtpPacketCommit *commit) {
     return (memcmp(hvi, commit->getHvi(), len));
 }
 
-bool ZRtp::isEnrollmentMode() {
+bool ZRtp::isEnrollmentMode() const {
     return enrollmentMode;
 }
 
@@ -2784,7 +2784,7 @@ void ZRtp::setEnrollmentMode(bool enrollment) {
 #endif
 }
 
-bool ZRtp::isPeerEnrolled() {
+bool ZRtp::isPeerEnrolled() const {
     return peerIsEnrolled;
 }
 

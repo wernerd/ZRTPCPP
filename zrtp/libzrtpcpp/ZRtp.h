@@ -324,7 +324,7 @@ class __EXPORT ZRtp {
      * @return
      *     True if multi-stream is used, false otherwise.
      */
-    bool isMultiStream();
+    bool isMultiStream() const;
 
     /**
      * Check if the other ZRTP client supports Multi-stream.
@@ -335,7 +335,7 @@ class __EXPORT ZRtp {
      * @return
      *     True if multi-stream is available, false otherwise.
      */
-    bool isMultiStreamAvailable();
+    bool isMultiStreamAvailable() const;
 
     /**
      * Accept a PBX enrollment request.
@@ -360,7 +360,7 @@ class __EXPORT ZRtp {
      * 
      * @return status of the enrollmentMode flag.
      */
-    bool isEnrollmentMode();
+    bool isEnrollmentMode() const;
 
     /**
      * Set the state of the enrollment mode.
@@ -384,7 +384,7 @@ class __EXPORT ZRtp {
      *
      * @return True if the other peer has a valid Mitm key (is enrolled).
      */
-    bool isPeerEnrolled();
+    bool isPeerEnrolled() const;
 
     /**
      * Send the SAS relay packet.
@@ -908,7 +908,7 @@ private:
      * methods. If the parameter is set to false ZRTP ignores the PBX
      * enrollment flags.
      */
-    bool enableMitmEnrollment;
+    bool enableMitmEnrollment = false;
 
     /**
      * True if a valid trusted MitM key of the other peer is available, i.e. enrolled.
@@ -964,7 +964,7 @@ private:
     HelloPacketVersion helloPackets[MAX_ZRTP_VERSIONS + 1] = {};
 
     /// Pointer to Hello packet sent to partner, initialized in ZRtp, modified by ZrtpStateClass
-    ZrtpPacketHello* currentHelloPacket;
+    ZrtpPacketHello* currentHelloPacket = nullptr;
 
     /**
      * ZID cache record
@@ -1035,7 +1035,7 @@ private:
      * The application shall also use mechanisms to remind the user to compare the SAS code, for
      * example using larger fonts, different colours and other display features.
      */
-    bool paranoidMode;
+    bool paranoidMode = false;
 
     /**
      * Is true if the other peer sent a Disclosure flag in its Confirm packet.
