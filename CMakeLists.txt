@@ -351,7 +351,7 @@ set(zrtp_src_no_cache
         ${CMAKE_CURRENT_SOURCE_DIR}/logging/ZrtpLogging.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/logging/logger_config.h
         ${CMAKE_CURRENT_SOURCE_DIR}/logging/osSpecifics.h
-        ${sdes_src} ${zrtp_src_include} ${botan_src} )
+        ${sdes_src} ${zrtp_src_include} )
 
 set(zrtp_crypto_includes
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/aesCFB.h
@@ -368,7 +368,6 @@ set(zrtp_crypto_includes
         )
 
 set(zrtp_botan_crypto_src
-        ${botan_src}
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/botan/zrtpDH.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/botan/hmac256.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/botan/sha256.cpp
@@ -395,6 +394,10 @@ if (SQLITE OR SQLCIPHER)
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZIDRecordDb.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/zrtpCacheSqliteBackend.c)
 endif()
+
+set(botanlib botanstatic)
+add_library(${botanlib} STATIC ${botan_src})
+
 
 if (CCRTP)
     add_subdirectory(clients/ccrtp)
