@@ -197,7 +197,7 @@ namespace logging {
         void closeStream() override {};
         void write(LoggingLogLevel level, const std::string& tag, const std::string& msg)  override {
             void zrtp_log(const char *t, const char *buf);
-            zrtpLog(tag.c_str(), msg.c_str());
+            zrtp_log(tag.c_str(), msg.c_str());
         };
         LoggingLogType getLoggingLogType() override { return RAW; }
     };

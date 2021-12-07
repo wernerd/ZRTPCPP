@@ -44,16 +44,19 @@ limitations under the License.
 #include "Logger.h"
 
 #ifdef ANDROID_LOGGER
-extern std::unique_ptr<logging::Logger<logging::AndroidLogPolicy> > _globalLogger;
+extern std::unique_ptr<logging::Logger<logging::AndroidLogPolicy> > _globalLoggerZrtp;
 
 #elif defined(LINUX_LOGGER)
-extern std::unique_ptr<logging::Logger<logging::CerrLogPolicy> > _globalLogger;
+extern std::unique_ptr<logging::Logger<logging::CerrLogPolicy> > _globalLoggerZrtp;
+
 #elif defined(APPLE_LOGGER)
 extern void set_zina_log_cb(void *pRet, void (*cb)(void *ret, const char *tag, const char *buf));
-extern std::shared_ptr<logging::Logger<logging::IosLogPolicy> > _globalLogger;
+extern std::unique_ptr<logging::Logger<logging::IosLogPolicy> > _globalLoggerZrtp;
+
 #elif defined(WINDOWS_LOGGER)
-// mhi: add logging for windows
-extern std::shared_ptr<logging::Logger<logging::CerrLogPolicy> > _globalLogger;
+// add logging for windows
+extern std::unique_ptr<logging::Logger<logging::CerrLogPolicy> > _globalLoggerZrtp;
+
 #else
 #error "Define Logger instance according to the system in use."
 #endif
