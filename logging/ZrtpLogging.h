@@ -40,7 +40,7 @@ limitations under the License.
 #define LOG_MAX_LEVEL VERBOSE
 #endif
 
-#define LOGGER_INSTANCE _globalLogger->
+#define LOGGER_INSTANCE _globalLoggerZrtp->
 #include "Logger.h"
 
 #ifdef ANDROID_LOGGER
