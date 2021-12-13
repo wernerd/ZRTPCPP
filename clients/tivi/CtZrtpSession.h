@@ -136,7 +136,7 @@ public:
      * @param zidFilename
      *     The name of the ZID file, can be a relative or absolute
      *     filename. Can be a @c nullptr. In this case the function
-     *     uses a standard name and path
+     *     assumes the cache was already initialized, see initCache(...)
      *
      * @return
      *     1 on success, ZRTP processing enabled, -1 on failure,
@@ -144,6 +144,17 @@ public:
      *
      */
     int init(bool audio, bool video, int32_t callId, const char *zidFilename, std::shared_ptr<ZrtpConfigure>& config);
+
+    /**
+     * @brief Initialize ZRTP cache database
+     *
+     * Tivi client may call this function to initialize and open the ZRTP cache. In this
+     * case should set the `zidFilename` parameter in CtZrtpSession::init(...) call to `nullptr`.
+     *
+     * @param zidFilename
+     * @return a negative value in case of error, 0 otherwise.
+     */
+    static int initCache(const char *zidFilename);
 
     /**
      * @brief Fills a ZrtpConfiguration based on selected algorithms.

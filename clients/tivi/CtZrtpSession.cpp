@@ -54,12 +54,12 @@ CtZrtpSession::CtZrtpSession() : zrtpMaster(nullptr), mitmMode(false), signSas(f
 }
 
 #ifdef ZID_DATABASE
-// Specific initialization for SilentPhone: use _one_ ZRTP cache file for _all_ sessions, even
-// for conference calls. This simplifies handling of cache data.
-// If another app likes to have different cache files or open the same file several times
-// then just change the cache initialization at his point.
-static std::shared_ptr<ZIDCache>
-initCache(const char *zidFilename, std::shared_ptr<ZIDCache> cache) {
+// Specific initialization for SilentPhone: use _one_ ZRTP zrtpCache file for _all_ sessions, even
+// for conference calls. This simplifies handling of zrtpCache data.
+// If another app likes to have different zrtpCache files or open the same file several times
+// then just change the zrtpCache initialization at his point.
+int
+CtZrtpSession::initCache(const char *zidFilename) {
     std::string fname;
     if (!zidFilename) {
         char *home = getenv("HOME");
@@ -69,24 +69,28 @@ initCache(const char *zidFilename, std::shared_ptr<ZIDCache> cache) {
         zidFilename = fname.c_str();
     }
 
-    // Check if a cache is available.
+    // Check if a zrtpCache is available.
     // If yes and it has the same filename -> use it
-    // otherwise close file and open new cache file
-    if (cache) {
-        if (cache->getFileName() == zidFilename) {
-            return cache;
+    // otherwise close file and open new zrtpCache file
+    if (zrtpCache) {
+        if (zrtpCache->getFileName() == zidFilename) {
+            return 0;
         }
-        cache->close();
-        if (cache->open((char *)zidFilename) < 0) {
-            return {};
+        zrtpCache->close();
+        auto result = zrtpCache->open((char *)zidFilename);
+        if (result < 0) {
+            return result;
         }
-        return cache;
+        return 0;
     }
     auto zf = std::make_shared<ZIDCacheDb>();
-    if (zf->open((char *)zidFilename) < 0) {
-        return {};
+    auto result = zf->open((char *)zidFilename);
+
+    if (result < 0) {
+        return result;
     }
-    return zf;
+    zrtpCache = zf;
+    return 0;
 }
 #else
 
@@ -133,19 +137,18 @@ int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidF
         // Otherwise, we expect to get a fully initialized config, including an initialized cache file instance
         if (!config) {
 #ifdef ZID_DATABASE
-            auto zf = initCache(zidFilename, zrtpCache);
+            if (zidFilename != nullptr) {
+                auto zf = initCache(zidFilename);
 #else
-            auto zf = initNoCache(zidFilename, zrtpCache);
+                auto zf = initNoCache(zidFilename, zrtpCache);
 #endif
-            if (!zf) {
-                return -1;
-            }
-            if (!zrtpCache) {
-                zrtpCache = zf;
+                if (zf < 0) {
+                    return -1;
+                }
             }
 
             configOwn = std::make_shared<ZrtpConfigure>();
-            configOwn->setZidCache(zf);
+            configOwn->setZidCache(zrtpCache);
             setupConfiguration(configOwn.get());
         }
         else {
