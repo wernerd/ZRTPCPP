@@ -15,8 +15,8 @@
 // Copyright (c) 2020 Werner Dittmann. All rights reserved.
 //
 
-#include "../sidh/cpp/SidhWrapper.h"
-#include "../sidh/src/P751/P751_api.h"
+#include "cpp/SidhWrapper.h"
+#include "P751/P751_api.h"
 #include "gtest/gtest.h"
 
 using namespace std;

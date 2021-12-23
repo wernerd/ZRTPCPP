@@ -42,13 +42,6 @@ option(TESTS "Generate Unit test." OFF)
 ## The following options are used for SIDH mainly
 option(SIDH "Include SIDH Post-Quantum algorithm." OFF)
 
-## Set based on system, for example ANDROID or CMAKE_SYSTEM_PROCESSOR, etc
-#option(x64 "Set this to true to build SIDH for a x64 (64 bit) architecture." OFF)
-#option(x86 "Set this to true to build SIDH for a x86 (32 bit) architecture." OFF)
-#option(arm "Set this to true to build SIDH for an arm (32 bit) architecture." OFF)
-#option(arm64 "Set this to true to build SIDH for an arm64 (64 bit) architecture." OFF)
-#option(GENERIC "Set this to true to use the portable SIDH implementation." OFF)
-
 if (ANDROID OR IOS)
     set (EMBEDDED true)
 endif()
@@ -119,25 +112,24 @@ else()
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DLOG_MAX_LEVEL=WARNING")
 endif()
 
-if (ANDROID)
-    if (ANDROID_ABI STREQUAL "armeabi-v7a")
-        set (botan_all "android/armeabi-v7a")
-    elseif(ANDROID_ABI STREQUAL "arm64-v8a")
-        set (botan_all "android/arm64-v8a")
-    elseif(ANDROID_ABI STREQUAL "x86")
-        set (botan_all "android/x86")
-    elseif(ANDROID_ABI STREQUAL "x86_64")
-        set (botan_all "android/x86_64")
-    else()
-        message(FATAL_ERROR "Unknown Android ABI: ${ANDROID_ABI}.")
-    endif()
-elseif(IOS)
-    message(FATAL_ERROR "iOS currently not supported.")
-elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
-        set(enable-x86_64 true)         ## SIDH definition
-        set (botan_all "x86_64")
-else()
-    message(FATAL_ERROR "Architecture currently not supported: ${CMAKE_SYSTEM_PROCESSOR}.")
+include(FetchContent)
+
+## first unset all fetch content source dir variables, then check if a local fetch
+## configuration is available. If yes: load it. This local configuration may set
+## fetch content source dir variables to point to local git repos. Cmake does not
+## download the repo in this case but uses the local git repo. cmake sets up
+## the fetch content data correctly. Use this feature to develop locally without
+## disturbing builds of a CI system.
+unset(FETCHCONTENT_SOURCE_DIR_SIDH    CACHE)
+unset(FETCHCONTENT_SOURCE_DIR_BOTAN   CACHE)
+
+## Never check-in the LocalFetchConfig.cmake file. It's *Local* for a reason :-)
+if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/LocalFetchConfig.cmake)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/LocalFetchConfig.cmake)
+endif()
+
+if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
+    set(enable-x86_64 true)         ## SIDH definition
 endif()
 
 set(ZRTP_TOP_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -219,9 +211,17 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -std=c++17 -g -O2 -fno-strict-aliasing -Wno-unknown-pragmas ${LOG_MAX_LEVEL}")
 endif()
 
+# Modules required by ZRTP library
+set(BOTAN_MODULES "sha2_32,sha2_64,sha1,twofish,aes,skein,hmac,pubkey,curve25519,cfb,cbc,ec_group,ecdh,dh,dl_group" )
+FetchContent_Declare(
+        botan
+        SOURCE_SUBDIR amalLibs                              ## create amalgamation, build static lib
+        GIT_REPOSITORY https://github.com/wernerd/botan.git
+        GIT_TAG        0fd549d01c1533ded49abf8b7903dcef75fed732  ## branch skein-enhance-2 top
+)
+
 set(sidhLibNameStatic)
 if (SIDH)
-    include(FetchContent)
     FetchContent_Declare(
             sidh
             GIT_REPOSITORY https://github.com/wernerd/PQCrypto-SIDH.git
@@ -233,10 +233,16 @@ if (SIDH)
     add_definitions(-DSIDH_SUPPORT)
 endif()
 
+if ("${BOTAN_LIB_NAME}" STREQUAL "")
+    set(BOTAN_LIB_NAME botanstatic)
+endif ()
+
+FetchContent_MakeAvailable(botan)
+
 # to make sure these includes are taken first - it contains config.h
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
 include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/zrtp ${CMAKE_CURRENT_SOURCE_DIR}/srtp)
-include_directories (${CMAKE_CURRENT_SOURCE_DIR}/botancrypto/${botan_all})
+## include_directories (${CMAKE_CURRENT_SOURCE_DIR}/botancrypto/${botan_all})
 add_definitions(-DSUPPORT_NON_NIST)
 
 if (SRTP)
@@ -260,8 +266,6 @@ set(botan_src
         ${CMAKE_CURRENT_SOURCE_DIR}/botancrypto/Ec41417Group.h
         ${CMAKE_CURRENT_SOURCE_DIR}/botancrypto/Point41417.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/botancrypto/Point41417.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/botancrypto/${botan_all}/botan_all.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/botancrypto/${botan_all}/botan_all.h
 )
 
 set(zrtp_src_include
@@ -351,7 +355,7 @@ set(zrtp_src_no_cache
         ${CMAKE_CURRENT_SOURCE_DIR}/logging/ZrtpLogging.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/logging/logger_config.h
         ${CMAKE_CURRENT_SOURCE_DIR}/logging/osSpecifics.h
-        ${sdes_src} ${zrtp_src_include} )
+        ${sdes_src} ${zrtp_src_include} ${botan_src})
 
 set(zrtp_crypto_includes
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/aesCFB.h
@@ -394,10 +398,6 @@ if (SQLITE OR SQLCIPHER)
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZIDRecordDb.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/zrtpCacheSqliteBackend.c)
 endif()
-
-set(botanlib botanstatic)
-add_library(${botanlib} STATIC ${botan_src})
-
 
 if (CCRTP)
     add_subdirectory(clients/ccrtp)

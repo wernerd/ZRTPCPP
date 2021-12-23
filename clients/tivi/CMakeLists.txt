@@ -63,10 +63,10 @@ if(NOT EMBEDDED)
     add_compile_definitions(AXO_SUPPORT)
 
     add_library(${zrtplibName} ${LIBRARY_BUILD_TYPE} ${zrtpcpp_src} ${CMAKE_CURRENT_BINARY_DIR}/buildInfo.h)
-    add_dependencies(${zrtplibName} ${botanlib})
+    add_dependencies(${zrtplibName} ${BOTAN_LIB_NAME})
     target_include_directories(${zrtplibName} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
     set_target_properties(${zrtplibName} PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
-    target_link_libraries(${zrtplibName} ${botanlib} ${sidhLibNameStatic} ${LIBS})
+    target_link_libraries(${zrtplibName} ${BOTAN_LIB_NAME} ${sidhLibNameStatic} ${LIBS})
 
     # **** Test programs ****
     #
@@ -114,15 +114,14 @@ if(ANDROID)
     add_compile_definitions(AXO_SUPPORT)
 
     add_library(${zrtplibName} STATIC ${zrtpcpp_src} ${sqlite_src} ${CMAKE_CURRENT_BINARY_DIR}/buildInfo.h)
-    add_dependencies(${zrtplibName} ${botanlib})
+    add_dependencies(${zrtplibName} ${BOTAN_LIB_NAME})
     target_include_directories(${zrtplibName}
             PRIVATE ${sqlcipher_include} ${CMAKE_CURRENT_BINARY_DIR}
             PUBLIC ${ZRTP_TOP_SOURCE_DIR}
             ${CMAKE_CURRENT_SOURCE_DIR}
             ${ZRTP_TOP_SOURCE_DIR}/zrtp
-            ${ZRTP_TOP_SOURCE_DIR}/srtp
-            ${ZRTP_TOP_SOURCE_DIR}/botancrypto/${botan_all})
-    target_link_libraries(${zrtplibName} ${botanlib} ${sidhLibNameStatic})
+            ${ZRTP_TOP_SOURCE_DIR}/srtp)
+    target_link_libraries(${zrtplibName} ${BOTAN_LIB_NAME} ${sidhLibNameStatic})
 
     add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/buildInfo.h
             COMMAND ${CMAKE_COMMAND} -E echo \"constexpr char zrtpBuildInfo[] = \\\"${buildInfo}\\\"\;\" > ${CMAKE_CURRENT_BINARY_DIR}/buildInfo.h)
