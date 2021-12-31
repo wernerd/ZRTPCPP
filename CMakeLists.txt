@@ -42,6 +42,11 @@ option(TESTS "Generate Unit test." OFF)
 ## The following options are used for SIDH mainly
 option(SIDH "Include SIDH Post-Quantum algorithm." OFF)
 
+if (TESTS)
+    set(ANDROID false)
+    set(IOS false)
+endif()
+
 if (ANDROID OR IOS)
     set (EMBEDDED true)
 endif()
@@ -114,14 +119,18 @@ endif()
 
 include(FetchContent)
 
+set(sidh_lc sidh)
+set(botan_lc botan)
+string(TOUPPER ${sidh_lc} Sidh_uc)
+string(TOUPPER ${botan_lc} Botan_uc)
 ## first unset all fetch content source dir variables, then check if a local fetch
 ## configuration is available. If yes: load it. This local configuration may set
 ## fetch content source dir variables to point to local git repos. Cmake does not
 ## download the repo in this case but uses the local git repo. cmake sets up
 ## the fetch content data correctly. Use this feature to develop locally without
 ## disturbing builds of a CI system.
-unset(FETCHCONTENT_SOURCE_DIR_SIDH    CACHE)
-unset(FETCHCONTENT_SOURCE_DIR_BOTAN   CACHE)
+unset(FETCHCONTENT_SOURCE_DIR_${Sidh_uc}    CACHE)
+unset(FETCHCONTENT_SOURCE_DIR_${Botan_uc}   CACHE)
 
 ## Never check-in the LocalFetchConfig.cmake file. It's *Local* for a reason :-)
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/LocalFetchConfig.cmake)
@@ -207,6 +216,17 @@ endif()
 if (TESTS)
     add_definitions(-DUNIT_TESTS)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -O2 -fno-strict-aliasing -Wno-unknown-pragmas ${LOG_MAX_LEVEL}")
+     # Download and unpack googletest at configure time.
+    set(gtest_fetch googletest)
+
+    FetchContent_Declare(
+            ${gtest_fetch}
+            # Specify the commit you depend on and update it regularly.
+            ##            URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
+            URL https://github.com/google/googletest/archive/refs/tags/release-1.11.0.zip
+    )
+    # For Windows: Prevent overriding the parent project's compiler/linker settings
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -std=c++17 -g -O2 -fno-strict-aliasing -Wno-unknown-pragmas ${LOG_MAX_LEVEL}")
 endif()
@@ -214,7 +234,7 @@ endif()
 # Modules required by ZRTP library
 set(BOTAN_MODULES "sha2_32,sha2_64,sha1,twofish,aes,skein,hmac,pubkey,curve25519,cfb,cbc,ec_group,ecdh,dh,dl_group" )
 FetchContent_Declare(
-        botan
+        ${botan_lc}
         SOURCE_SUBDIR amalLibs                              ## create amalgamation, build static lib
         GIT_REPOSITORY https://github.com/wernerd/botan.git
         GIT_TAG        0fd549d01c1533ded49abf8b7903dcef75fed732  ## branch skein-enhance-2 top
@@ -222,12 +242,12 @@ FetchContent_Declare(
 
 set(sidhLibNameStatic)
 if (SIDH)
+    set(sidh_fetch ${sidh_lc})
     FetchContent_Declare(
-            sidh
+            ${sidh_fetch}
             GIT_REPOSITORY https://github.com/wernerd/PQCrypto-SIDH.git
             GIT_TAG        eb52d2bcd1670e951d3fa8cca83d8a3f0cc94bc8  ## branch wdi top
     )
-    FetchContent_MakeAvailable(sidh)
     include_directories (${sidh_SOURCE_DIR} ${sidh_SOURCE_DIR}/src)
     set(sidhLibNameStatic sidhCppStatic)
     add_definitions(-DSIDH_SUPPORT)
@@ -237,7 +257,7 @@ if ("${BOTAN_LIB_NAME}" STREQUAL "")
     set(BOTAN_LIB_NAME botanstatic)
 endif ()
 
-FetchContent_MakeAvailable(botan)
+FetchContent_MakeAvailable(${botan_lc} ${sidh_fetch} ${gtest_fetch})
 
 # to make sure these includes are taken first - it contains config.h
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
@@ -413,18 +433,6 @@ if (CORE_LIB)
 endif()
 
 if (TESTS AND NOT EMBEDDED)
-    # Download and unpack googletest at configure time.
-    include(FetchContent)
-    FetchContent_Declare(
-            googletest
-            # Specify the commit you depend on and update it regularly.
-##            URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
-            URL https://github.com/google/googletest/archive/refs/tags/release-1.11.0.zip
-    )
-    # For Windows: Prevent overriding the parent project's compiler/linker settings
-    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-    FetchContent_MakeAvailable(googletest)
-
     add_subdirectory(unittests)
 endif()
 
