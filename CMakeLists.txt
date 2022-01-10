@@ -248,6 +248,7 @@ if (SIDH)
             GIT_REPOSITORY https://github.com/wernerd/PQCrypto-SIDH.git
             GIT_TAG        eb52d2bcd1670e951d3fa8cca83d8a3f0cc94bc8  ## branch wdi top
     )
+    FetchContent_MakeAvailable(${sidh_fetch})
     include_directories (${sidh_SOURCE_DIR} ${sidh_SOURCE_DIR}/src)
     set(sidhLibNameStatic sidhCppStatic)
     add_definitions(-DSIDH_SUPPORT)
@@ -257,7 +258,7 @@ if ("${BOTAN_LIB_NAME}" STREQUAL "")
     set(BOTAN_LIB_NAME botanstatic)
 endif ()
 
-FetchContent_MakeAvailable(${botan_lc} ${sidh_fetch} ${gtest_fetch})
+FetchContent_MakeAvailable(${botan_lc} ${gtest_fetch})
 
 # to make sure these includes are taken first - it contains config.h
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
