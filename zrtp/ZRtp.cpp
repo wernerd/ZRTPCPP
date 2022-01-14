@@ -1591,9 +1591,7 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
     // select a corresponding strong hash if necessary.
     if (algoName == *(int32_t*)ec38 || algoName == *(int32_t*)e414
 #ifdef SIDH_SUPPORT
-        || algoName == *(int32_t*)sdh5 ||
-        algoName == *(int32_t*)sdh7 ||
-        algoName == *(int32_t*)pq54 ||
+        || algoName == *(int32_t*)sdh7 ||
         algoName == *(int32_t*)pq64
 #endif
     ) {
