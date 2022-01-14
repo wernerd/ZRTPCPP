@@ -552,7 +552,8 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
 #ifdef SIDH_SUPPORT
             || *(int32_t*)(pubKey->getName()) == *(int32_t*)sdh5 ||
             *(int32_t*)(pubKey->getName()) == *(int32_t*)sdh7 ||
-            *(int32_t*)(pubKey->getName()) == *(int32_t*)pq54
+            *(int32_t*)(pubKey->getName()) == *(int32_t*)pq54 ||
+            *(int32_t*)(pubKey->getName()) == *(int32_t*)pq64
 #endif
             ) {
         dhContext = make_unique<ZrtpDH>(pubKey->getName(), ZrtpDH::DhPart1);
@@ -1511,7 +1512,7 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
     // Build list of own pubkey algorithm names, must follow the order
     // defined in RFC 6189, chapter 4.1.2.
 #ifdef SIDH_SUPPORT
-    const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38, sdh5, sdh7, pq54};
+    const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38, sdh5, sdh7, pq54, pq64};
 #else
     const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38};
 #endif
@@ -1592,7 +1593,8 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
 #ifdef SIDH_SUPPORT
         || algoName == *(int32_t*)sdh5 ||
         algoName == *(int32_t*)sdh7 ||
-        algoName == *(int32_t*)pq54
+        algoName == *(int32_t*)pq54 ||
+        algoName == *(int32_t*)pq64
 #endif
     ) {
         hash = getStrongHashOffered(hello, algoName);

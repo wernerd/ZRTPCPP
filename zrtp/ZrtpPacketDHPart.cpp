@@ -80,10 +80,13 @@ static size_t determineSidhLength(uint16_t len) {
 }
 
 static size_t determineHybridLength(uint16_t len) {
-    // Convert the SIDH public kex length into number of ZRTP_WORD_SIZE words
+    // Convert the SIDH public key length into number of ZRTP_WORD_SIZE words
     auto lengths = SidhWrapper::getFieldLengths(SidhWrapper::P503);
-    auto lenInWords = (lengths->publicKey + E414_LENGTH_BYTES + (ZRTP_WORD_SIZE - 1)) / ZRTP_WORD_SIZE;
-    if (len == lenInWords + FIXED_NUM_WORDS) {
+    auto lenInWordsP503 = (lengths->publicKey + E414_LENGTH_BYTES + (ZRTP_WORD_SIZE - 1)) / ZRTP_WORD_SIZE;
+
+    lengths = SidhWrapper::getFieldLengths(SidhWrapper::P610);
+    auto lenInWordsP610 = (lengths->publicKey + E414_LENGTH_BYTES + (ZRTP_WORD_SIZE - 1)) / ZRTP_WORD_SIZE;
+    if (len == lenInWordsP503 + FIXED_NUM_WORDS || len == lenInWordsP610 + FIXED_NUM_WORDS) {
         return lengths->publicKey + E414_LENGTH_BYTES;
     }
     return 0;

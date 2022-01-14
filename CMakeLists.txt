@@ -206,11 +206,11 @@ endif()
 configure_file(config.h.cmake ${CMAKE_BINARY_DIR}/config.h)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-    add_definitions(-DNEW_STDCPP)
+    add_compile_definitions(NEW_STDCPP)
 endif()
 
 if (AXO)
-    add_definitions(-DAXO_SUPPORT)
+    add_compile_definitions(AXO_SUPPORT)
 endif()
 
 if (TESTS)
@@ -246,7 +246,7 @@ if (SIDH)
     FetchContent_Declare(
             ${sidh_fetch}
             GIT_REPOSITORY https://github.com/wernerd/PQCrypto-SIDH.git
-            GIT_TAG        eb52d2bcd1670e951d3fa8cca83d8a3f0cc94bc8  ## branch wdi top
+            GIT_TAG        b4531650517e7c1bbd994368d39530697e26c942  ## branch wdi top
     )
     FetchContent_MakeAvailable(${sidh_fetch})
     include_directories (${sidh_SOURCE_DIR} ${sidh_SOURCE_DIR}/src)
@@ -262,9 +262,9 @@ FetchContent_MakeAvailable(${botan_lc} ${gtest_fetch})
 
 # to make sure these includes are taken first - it contains config.h
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
-include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/zrtp ${CMAKE_CURRENT_SOURCE_DIR}/srtp)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/zrtp ${CMAKE_CURRENT_SOURCE_DIR}/srtp)
 ## include_directories (${CMAKE_CURRENT_SOURCE_DIR}/botancrypto/${botan_all})
-add_definitions(-DSUPPORT_NON_NIST)
+add_compile_definitions(SUPPORT_NON_NIST)
 
 if (SRTP)
     set (sdes_src
