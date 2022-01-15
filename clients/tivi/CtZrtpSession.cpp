@@ -265,7 +265,7 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
      */
     if (iPreferNIST == 0) {
 #ifdef SIDH_SUPPORT
-        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("PQ54"));
+        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("PQ64"));
 #endif
         if (iDisableBernsteinCurve3617 == 0)
             conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));
@@ -292,15 +292,15 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
             conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E255"));
     }
 
-    // DH2K handling: if DH2K not disabled and prefered put it infrom of DH3K,
+    // DH2K handling: if DH2K not disabled and preferred put it in front of DH3K,
     // If not preferred and not disabled put if after DH3K. Don't use DH2K if
     // it's not enabled at all (iDisableDH2K == 1)
-    if (iPreferDH2K && iDisableDH2K == 0) {
-        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));
-    }
+//    if (iPreferDH2K && iDisableDH2K == 0) {
+//        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));
+//    }
     conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));
-    if (iPreferDH2K == 0 && iDisableDH2K == 0)
-        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));
+//    if (iPreferDH2K == 0 && iDisableDH2K == 0)
+//        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));
 
     conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("Mult"));
 

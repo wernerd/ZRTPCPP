@@ -66,7 +66,7 @@ public:
 
     void TearDown() override {
         // code here will be called just after the test completes
-        // ok to through exceptions from here if need be
+        // ok to throw exceptions from here if need be
         aliceId.clear();
         bobId.clear();
 

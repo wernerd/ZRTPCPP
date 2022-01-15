@@ -58,12 +58,12 @@ void randomZRTP(uint8_t *buf, int32_t length);
 #include <libzrtpcpp/ZrtpConfigure.h>
 #include "../common/SecureArray.h"
 
-static const uint DH2K_LENGTH_BYTES = 2048 / 8;
-static const uint DH3K_LENGTH_BYTES = 3072 / 8;
-static const uint EC25_LENGTH_BYTES = 2*(256 / 8);
-static const uint EC38_LENGTH_BYTES = 2*(384 / 8);
-static const uint E255_LENGTH_BYTES = 32 ;
-static const uint E414_LENGTH_BYTES = 2*((414+7) / 8);  // -> computes to 104 byte for x and y coordinate of curve
+static const uint32_t DH2K_LENGTH_BYTES = 2048 / 8;
+static const uint32_t DH3K_LENGTH_BYTES = 3072 / 8;
+static const uint32_t EC25_LENGTH_BYTES = 2*(256 / 8);
+static const uint32_t EC38_LENGTH_BYTES = 2*(384 / 8);
+static const uint32_t E255_LENGTH_BYTES = 32 ;
+static const uint32_t E414_LENGTH_BYTES = 2*((414+7) / 8);  // -> computes to 104 byte for x and y coordinate of curve
 
 /**
  * Implementation of Diffie-Helman for ZRTP
