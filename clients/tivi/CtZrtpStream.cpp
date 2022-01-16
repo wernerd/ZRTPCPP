@@ -513,7 +513,7 @@ int CtZrtpStream::getInfo(const char *key, char *p, int maxLen) {
         strng = "Good";
     }
     else {
-        strng = !sdes || helloReceived ? "Bad" : "No hello";
+        strng = !sdes || helloReceived ? "Bad" : "No ZRTP";
     }
     T_ZRTP_LB("sdp_hash", strng)
 
