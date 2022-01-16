@@ -177,7 +177,7 @@ set(CMAKE_MACOSX_RPATH 1)
 check_include_files(stdlib.h HAVE_STDLIB_H)
 check_include_files(string.h HAVE_STRING_H)
 
-if (NOT ANDROID)
+if (NOT EMBEDDED)
     if (SQLITE)
         pkg_check_modules(SQLITE3 sqlite3>=3.7)
         if (SQLITE3_FOUND)

@@ -92,7 +92,7 @@ if(${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
     GENERATE_PACKAGING(${PACKAGE} ${VERSION} "${exclude}")
 endif()
 
-if(ANDROID)
+if(EMBEDDED)
     if (SQLITE AND NOT SQLCIPHER)
         set (sqlite_src ${CMAKE_CURRENT_SOURCE_DIR}/android/jni/sqlite3/sqlite3.c)
         set (sql_include ${CMAKE_CURRENT_SOURCE_DIR}/android/jni/sqlite3)

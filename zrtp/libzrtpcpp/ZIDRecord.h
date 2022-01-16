@@ -22,7 +22,7 @@
 #else
 #include <stdint.h>
 #endif
-#include <common/osSpecifics.h>
+#include "common/osSpecifics.h"
 
 /**
  * @file ZIDRecord.h
