@@ -255,6 +255,7 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
     if (iEnableDisclosure == 1)
         conf->setDisclosureFlag(true);
 
+    iDisableBernsteinCurve25519 = 1;        // force disable - otherwise number of algorithms are > 7
     /*
      * Handling of iPreferNIST: if this is false (== 0) then we add the non-NIST algorithms
      * to the configuration and place them in front of the NIST algorithms. Refer to RFC6189
@@ -295,12 +296,12 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
     // DH2K handling: if DH2K not disabled and preferred put it in front of DH3K,
     // If not preferred and not disabled put if after DH3K. Don't use DH2K if
     // it's not enabled at all (iDisableDH2K == 1)
-//    if (iPreferDH2K && iDisableDH2K == 0) {
-//        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));
-//    }
+    if (iPreferDH2K && iDisableDH2K == 0) {
+        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));
+    }
     conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));
-//    if (iPreferDH2K == 0 && iDisableDH2K == 0)
-//        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));
+    if (iPreferDH2K == 0 && iDisableDH2K == 0)
+        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH2k"));
 
     conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("Mult"));
 
