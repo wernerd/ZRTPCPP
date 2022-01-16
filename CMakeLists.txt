@@ -231,22 +231,34 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -std=c++17 -g -O2 -fno-strict-aliasing -Wno-unknown-pragmas ${LOG_MAX_LEVEL}")
 endif()
 
-# Modules required by ZRTP library
+if ("${BOTAN_REPO}" STREQUAL "")
+    set(BOTAN_REPO https://github.com/wernerd/botan.git)
+endif()
+if ("${BOTAN_TAG}" STREQUAL "")
+    set(BOTAN_TAG 16fabba96f79c6bbf5d28120e393babb3f11e4ec)  ## branch skein-enhance-2 top
+endif()
+# Botan modules required by ZRTP library
 set(BOTAN_MODULES "sha2_32,sha2_64,sha1,twofish,aes,skein,hmac,pubkey,curve25519,cfb,cbc,ec_group,ecdh,dh,dl_group" )
 FetchContent_Declare(
         ${botan_lc}
         SOURCE_SUBDIR amalLibs                              ## create amalgamation, build static lib
-        GIT_REPOSITORY https://github.com/wernerd/botan.git
-        GIT_TAG        0fd549d01c1533ded49abf8b7903dcef75fed732  ## branch skein-enhance-2 top
+        GIT_REPOSITORY ${BOTAN_REPO}
+        GIT_TAG        ${BOTAN_TAG}
 )
 
+if ("${SIDH_REPO}" STREQUAL "")
+    set(SIDH_REPO https://github.com/wernerd/PQCrypto-SIDH.git)
+endif()
+if ("${SIDH_TAG}" STREQUAL "")
+    set(SIDH_TAG b4531650517e7c1bbd994368d39530697e26c942)  ## branch wdi top
+endif()
 set(sidhLibNameStatic)
 if (SIDH)
     set(sidh_fetch ${sidh_lc})
     FetchContent_Declare(
             ${sidh_fetch}
-            GIT_REPOSITORY https://github.com/wernerd/PQCrypto-SIDH.git
-            GIT_TAG        b4531650517e7c1bbd994368d39530697e26c942  ## branch wdi top
+            GIT_REPOSITORY ${SIDH_REPO}
+            GIT_TAG        ${SIDH_TAG}
     )
     FetchContent_MakeAvailable(${sidh_fetch})
     include_directories (${sidh_SOURCE_DIR} ${sidh_SOURCE_DIR}/src)
