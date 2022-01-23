@@ -523,7 +523,11 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
         *errMsg = UnsuppPKExchange;
         return nullptr;
     }
-    if (*(int32_t*)(cp->getName()) == *(int32_t*)ec38 || *(int32_t*)(cp->getName()) == *(int32_t*)e414) {
+    // If committed pub-key type is strong then check for strong hashes as well.
+    // Security levels must match
+    if (*(int32_t*)(cp->getName()) == *(int32_t*)ec38 ||
+        *(int32_t*)(cp->getName()) == *(int32_t*)e414 ||
+        *(int32_t*)(cp->getName()) == *(int32_t*)pq64) {
         if (!(*(int32_t*)(hash->getName()) == *(int32_t*)s384 || *(int32_t*)(hash->getName()) == *(int32_t*)skn3)) {
             *errMsg = UnsuppHashType;
             return nullptr;
