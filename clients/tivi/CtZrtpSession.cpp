@@ -128,7 +128,7 @@ int CtZrtpSession::init(bool audio, bool video, int32_t callId, const char *zidF
     std::shared_ptr<ZrtpConfigure> configOwn;
 
     // Audio is the master stream, thus initialize ZID cache and ZRTP configure for it. Each Session has _one_
-    // audio (master) which can have it's own configuration and own ZID cache.
+    // audio (master) which can have its own configuration and own ZID cache.
     // The caller must make sure to initialize the audio stream before the video stream (or at the same time with
     // both boolean parameters set to true).
     if (audio) {
@@ -256,6 +256,8 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
         conf->setDisclosureFlag(true);
 
     iDisableBernsteinCurve25519 = 1;        // force disable - otherwise number of algorithms are > 7
+    iDisableDH2K = 1;                       // force disable - this is too weak anyway
+
     /*
      * Handling of iPreferNIST: if this is false (== 0) then we add the non-NIST algorithms
      * to the configuration and place them in front of the NIST algorithms. Refer to RFC6189
@@ -406,7 +408,7 @@ void CtZrtpSession::setSendCallback(CtZrtpSendCb* scb, streamName streamNm) {
 
 void CtZrtpSession::masterStreamSecure(CtZrtpStream *masterStream) {
     // Here we know that the AudioStream is the master and VideoStream the slave.
-    // Otherwise we need to loop and find the Master stream and the Slave streams.
+    // Otherwise, we need to loop and find the Master stream and the Slave streams.
 
     multiStreamParameter = masterStream->zrtpEngine->getMultiStrParams(&zrtpMaster);
     auto strm = streams[VideoStream];
