@@ -121,16 +121,12 @@ include(FetchContent)
 
 set(sidh_lc sidh)
 set(botan_lc botan)
-string(TOUPPER ${sidh_lc} Sidh_uc)
-string(TOUPPER ${botan_lc} Botan_uc)
-## first unset all fetch content source dir variables, then check if a local fetch
-## configuration is available. If yes: load it. This local configuration may set
-## fetch content source dir variables to point to local git repos. Cmake does not
-## download the repo in this case but uses the local git repo. cmake sets up
-## the fetch content data correctly. Use this feature to develop locally without
-## disturbing builds of a CI system.
-unset(FETCHCONTENT_SOURCE_DIR_${Sidh_uc}    CACHE)
-unset(FETCHCONTENT_SOURCE_DIR_${Botan_uc}   CACHE)
+
+## check if a local fetch configuration is available. If yes: load it. This local
+## configuration may set fetch content source dir variables to point to local git
+## repos. Cmake does not download the repo in this case but uses the local git repo.
+## cmake sets up the fetch content data correctly. Use this feature to develop
+## locally without disturbing builds of a CI system.
 
 ## Never check-in the LocalFetchConfig.cmake file. It's *Local* for a reason :-)
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/LocalFetchConfig.cmake)
@@ -250,7 +246,7 @@ if ("${SIDH_REPO}" STREQUAL "")
     set(SIDH_REPO https://github.com/wernerd/PQCrypto-SIDH.git)
 endif()
 if ("${SIDH_TAG}" STREQUAL "")
-    set(SIDH_TAG 03214474428ef81b53d95e37badf7e339d6780bd)  ## branch wdi top
+    set(SIDH_TAG 95dd9526452c61aa4b30eef650edebf6328b1aab)  ## branch wdi top
 endif()
 set(sidhLibNameStatic)
 if (SIDH)
