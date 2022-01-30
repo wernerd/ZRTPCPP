@@ -31,6 +31,7 @@ public:
 
     ~ZrtpBotanRng() override = default;
 
+    // region implement Botan::RandomNumberGenerator functions
     void randomize(uint8_t output[], size_t length) override;
 
     [[nodiscard]] bool accepts_input() const override { return true;}
@@ -48,12 +49,15 @@ public:
 
     [[nodiscard]] bool is_seeded() const override { return true;}
 
+    // Don't use a polling function to do reseed - use `add_entropy` in this implementation
     size_t reseed(Botan::Entropy_Sources& srcs,
-                  size_t poll_bits = BOTAN_RNG_RESEED_POLL_BITS,
-                  std::chrono::milliseconds poll_timeout = BOTAN_RNG_RESEED_DEFAULT_TIMEOUT) override { return 42; }
+                  size_t poll_bit,
+                  std::chrono::milliseconds poll_timeout) override { return 42; }
 
     void reseed_from_rng(RandomNumberGenerator& rng,
-                         size_t poll_bits = BOTAN_RNG_RESEED_POLL_BITS) override {  }
+                         size_t poll_bits) override {  }
+
+    // endregion
 
     /**
      * @brief This method adds entropy to the PRNG.

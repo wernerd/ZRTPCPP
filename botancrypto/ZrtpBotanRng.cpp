@@ -33,6 +33,10 @@
 #include <common/osSpecifics.h>
 #include "ZrtpBotanRng.h"
 
+#if defined(EMSCRIPTEN)
+#include <emscripten.h>
+#endif
+
 static std::mutex lockRandom;
 
 static bool initialized = false;
@@ -196,15 +200,35 @@ size_t ZrtpBotanRng::getSystemSeed(uint8_t *seed, size_t length)
 {
     size_t num = 0;
 
-#if !defined(_WINDOWS)
+#if !(defined(_WIN32) || defined(_WIN64) || defined(EMSCRIPTEN))
     int rnd = open("/dev/urandom", O_RDONLY);
     if (rnd >= 0) {
         num = read(rnd, seed, length);
         close(rnd);
     }
-    else
-        return num;
-#else
+    // Code was copied from ZrtpRandom.cpp, commit 24f240931279501e71bf78b5033f23deecbc828f
+#elif defined(EMSCRIPTEN)
+    for (int i = 0; i < length; ++i) {
+        seed[i] = EM_ASM_INT_V(
+                  var bytes;
+            if (typeof Module.browserifyCrypto !== 'undefined') {
+                 var crypto = Module.browserifyCrypto;
+                 var byte = crypto.randomByte();
+                 return byte;
+            }
+            else if (typeof Module.browserCrypto !== 'undefined') {
+                bytes = new Uint8Array(1);
+                Module.browserCrypto.getRandomValues(bytes);
+            }
+            else if (ENVIRONMENT_IS_NODE) {
+                 var crypto = require('crypto');
+                 bytes = crypto.randomBytes(1);
+            }
+            return bytes[0];
+        );
+    }
+    num = length;
+#elif defined(_WIN32) || defined(_WIN64)
     //--------------------------------------------------------------------
     // Generate a random initialization vector.
 
@@ -214,6 +238,8 @@ size_t ZrtpBotanRng::getSystemSeed(uint8_t *seed, size_t length)
     else {
         return 0;
     }
+#else
+#error Unknown system - getSystemSeed function not defined for this system
 #endif
     return num;
 }
