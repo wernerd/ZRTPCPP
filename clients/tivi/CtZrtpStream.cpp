@@ -32,8 +32,8 @@
 
 #include <CtZrtpStream.h>
 #include <CtZrtpCallback.h>
-#include <cryptcommon/ZrtpRandom.h>
 #include <common/ZrtpTimeoutProvider.h>
+#include "botancrypto/ZrtpBotanRng.h"
 
 // #define DEBUG_CTSTREAM
 #ifdef DEBUG_CTSTREAM
@@ -96,7 +96,7 @@ CtZrtpStream::CtZrtpStream()
         staticTimeoutProvider = new zrtp::ZrtpTimeoutProvider;
     }
     initStrings();
-    ZrtpRandom::getRandomData((uint8_t*)&senderZrtpSeqNo, 2);
+    ZrtpBotanRng::getRandomData((uint8_t*)&senderZrtpSeqNo, 2);
     senderZrtpSeqNo &= 0x7fffU;
     memset((void*)srtpErrorInfo, 0, sizeof(srtpErrorInfo));
 }
@@ -148,7 +148,7 @@ void CtZrtpStream::stopStream() {
     sdesProtect = 0;
     unprotectFailed = 0;
 
-    ZrtpRandom::getRandomData((uint8_t*)&senderZrtpSeqNo, 2);
+    ZrtpBotanRng::getRandomData((uint8_t*)&senderZrtpSeqNo, 2);
     senderZrtpSeqNo &= 0x7fffU;
     zrtpHashMatch= false;
     sasVerified = false;
@@ -199,7 +199,7 @@ bool CtZrtpStream::processOutgoingRtp(uint8_t *buffer, size_t length, size_t *ne
         // Do not send in states: CommitSent, WaitDHPart2, WaitConfirm1, WaitConfirm2, WaitConfAck
 //        if (started && (zrtpEngine->inState(CommitSent) || zrtpEngine->inState(WaitDHPart2) || zrtpEngine->inState(WaitConfirm1) ||
 //            zrtpEngine->inState(WaitConfirm2) || zrtpEngine->inState(WaitConfAck))) {
-//            ZrtpRandom::addEntropy(buffer, length);
+//            ZrtpBotanRng::addEntropy(buffer, length);
 //             return false;
 //         }
         if (useSdesForMedia && sdes != nullptr) {   // SDES stream available, let SDES protect if necessary

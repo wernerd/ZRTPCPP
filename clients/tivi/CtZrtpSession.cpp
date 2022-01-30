@@ -93,8 +93,8 @@ CtZrtpSession::initCache(const char *zidFilename) {
     return 0;
 }
 #else
+#include "botancrypto/ZrtpBotanRng.h"
 
-#include "../cryptcommon/ZrtpRandom.h"
 // Set up an 'empty cache'. Use this only if you really need no cached ZRTP session
 // data. In this case the app shall force the user to check and confirm the SAS data
 // on each call to make sure nobody tampered with the ZRTP key negotiation.
@@ -113,7 +113,7 @@ initNoCache(const char *zidFilename, std::shared_ptr<ZIDCache> cache) {
     }
     auto zf = std::make_shared<ZIDCacheEmpty>();
     uint8_t newZid[IDENTIFIER_LEN] = {0};
-    ZrtpRandom::getRandomData(newZid, IDENTIFIER_LEN);
+    ZrtpBotanRng::getRandomData(newZid, IDENTIFIER_LEN);
     zf->setZid(newZid);
     return zf;
 }
