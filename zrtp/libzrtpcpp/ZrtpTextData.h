@@ -109,6 +109,7 @@ constexpr char sdh5[] = "SDH5";        //!< SIDH 503 algorithm, allegedly Quantu
 constexpr char sdh7[] = "SDH7";        //!< SIDH 751 algorithm, allegedly Quantum safe (see https://github.com/microsoft/PQCrypto-SIDH), optional, experimental
 constexpr char pq54[] = "PQ54";        //!< hybrid scheme: combination of SIDH 503 and Curve 41417 algorithms, optional
 constexpr char pq64[] = "PQ64";        //!< hybrid scheme: combination of SIDH 610 and Curve 41417 algorithms, optional
+constexpr char pq74[] = "PQ74";        //!< hybrid scheme: combination of SIDH 751 and Curve 41417 algorithms, optional
 constexpr char mult[] = "Mult";        //!< Multi-stream, required if applications like to avoid additional key negotiation when using several encrypted media streams
 constexpr const char* mandatoryPubKey = dh3k;
 

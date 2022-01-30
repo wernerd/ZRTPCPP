@@ -268,7 +268,7 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
      */
     if (iPreferNIST == 0) {
 #ifdef SIDH_SUPPORT
-        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("PQ64"));
+        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("PQ74"));
 #endif
         if (iDisableBernsteinCurve3617 == 0)
             conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));

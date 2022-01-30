@@ -192,7 +192,8 @@ private:
         SDH5,
         SDH7,
         PQ54,
-        PQ64
+        PQ64,
+        PQ74
     };
 
     struct dhCtx;

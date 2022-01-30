@@ -27,6 +27,7 @@
 #include <common/Utilities.h>
 #include "botan_all.h"
 #include "botancrypto/ZrtpCurve41417.h"
+#include "logging/ZrtpLogging.h"
 
 #ifdef SIDH_SUPPORT
 #include "cpp/SidhWrapper.h"
@@ -88,6 +89,9 @@ ZrtpDH::ZrtpDH(const char* type, ProtocolState state) : protocolState(state), ct
     else if (*(int32_t*)type == *(int32_t*)pq64) {
         pkType = PQ64;
     }
+    else if (*(int32_t*)type == *(int32_t*)pq74) {
+        pkType = PQ74;
+    }
 #endif
     else {
         errorCode = UNKNOWN_ALGORITHM;
@@ -130,6 +134,7 @@ ZrtpDH::ZrtpDH(const char* type, ProtocolState state) : protocolState(state), ct
 
         case PQ54:
         case PQ64:
+        case PQ74:
             generateSidhKeyPair();
             ctx->privKey = std::make_unique<Botan::Curve41417_PrivateKey>(rng);
             break;
@@ -156,7 +161,7 @@ void ZrtpDH::generateSidhKeyPair() {
         sidhType = SidhWrapper::P503;
     } else if (pkType == PQ64) {
         sidhType = SidhWrapper::P610;
-    } else if (pkType == SDH7) {
+    } else if (pkType == SDH7 || pkType == PQ74) {
         sidhType = SidhWrapper::P751;
     } else {
         return;
@@ -223,19 +228,23 @@ int32_t ZrtpDH::secretKeyComputation(uint8_t *pubKeyBytes, secUtilities::SecureA
 #ifdef SIDH_SUPPORT
             case SDH5:
             case SDH7: {
-                return computeSidhSharedSecret(pubKeyBytes, secret);
+                computeSidhSharedSecret(pubKeyBytes, secret);
+                ctx->sharedSecret.assign(secret.data(), secret.data() + secret.size());
+                return secret.size();
             }
 
             // Get SIDH shared secret data first, copy into return array, then
             // get E414 shared secret in an own array and append it to the SIDHp503 shared secret
             case PQ54:
-            case PQ64: {
+            case PQ64:
+            case PQ74:{
                 computeSidhSharedSecret(pubKeyBytes, secret);
                 auto offset = ctx->sidhPubKey->capacity();  // skip SIDH data, see comment in generateSidhKeyPair() above
 
                 secUtilities::SecureArray<1000> e414secret;
                 secretKeyComputation(pubKeyBytes + offset, e414secret, E414);
                 secret.append(e414secret);
+                ctx->sharedSecret.assign(secret.data(), secret.data() + secret.size());
                 return secret.size();
             }
 
@@ -268,7 +277,7 @@ size_t ZrtpDH::computeSidhSharedSecret(uint8_t *pubKeyBytes, secUtilities::Secur
         sidhType = SidhWrapper::P503;
     } else if (pkType == PQ64) {
         sidhType = SidhWrapper::P610;
-    } else if (pkType == SDH7) {
+    } else if (pkType == SDH7 || pkType == PQ74) {
         sidhType = SidhWrapper::P751;
     } else {
         return -1;
@@ -294,7 +303,7 @@ size_t ZrtpDH::getSidhSharedSecretLength() const {
         sidhType = SidhWrapper::P503;
     } else if (pkType == PQ64) {
         sidhType = SidhWrapper::P610;
-    } else if (pkType == SDH7) {
+    } else if (pkType == SDH7 || pkType == PQ74) {
         sidhType = SidhWrapper::P751;
     } else {
         return 0;
@@ -333,6 +342,7 @@ uint32_t ZrtpDH::getSharedSecretSize() const
 
         case PQ54:
         case PQ64:
+        case PQ74:
             return getSidhSharedSecretLength() + 52;    // combination of SIDHp503 and curve 414
 #endif
         default:
@@ -362,6 +372,7 @@ int32_t ZrtpDH::getPubKeySize() const
 
         case PQ54:
         case PQ64:
+        case PQ74:
             return ctx->sidhPubKey->capacity() + ctx->privKey->key_length() / 8 * 2;
 #endif
     }
@@ -405,7 +416,8 @@ size_t ZrtpDH::getPubKeyBytes(secUtilities::SecureArray<1000>& pubKey, int algor
             // Get SIDH public key data first, copy into return array, then
             // get E414 public key in an own array and append it to the SIDHp503 public key
         case PQ54:
-        case PQ64: {
+        case PQ64:
+        case PQ74: {
             auto len = ctx->sidhPubKey->capacity();
             pubKey.assign(ctx->sidhPubKey->data(), len);
 
@@ -432,10 +444,6 @@ int32_t ZrtpDH::fillInPubKeyBytes(secUtilities::SecureArray<1000>& pubKey) const
 
 int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes)
 {
-    if (pkType == SDH5 || pkType == SDH7 || pkType == PQ54 || pkType == PQ64) {
-        return 1;
-    }
-    // TODO: check E414 part of hybrid public key part
     secUtilities::SecureArray<1000> dummyData;
     auto result = computeSecretKey(pubKeyBytes, dummyData);
     return result > 0 ? 1 : 0;
@@ -464,6 +472,8 @@ const char* ZrtpDH::getDHtype() const
             return pq54;
         case PQ64:
             return pq64;
+        case PQ74:
+            return pq74;
         default:
             return nullptr;
     }

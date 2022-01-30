@@ -525,8 +525,12 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     // If committed pub-key type is strong then check for strong hashes as well.
     // Security levels must match
     if (*(int32_t*)(cp->getName()) == *(int32_t*)ec38 ||
-        *(int32_t*)(cp->getName()) == *(int32_t*)e414 ||
-        *(int32_t*)(cp->getName()) == *(int32_t*)pq64) {
+        *(int32_t*)(cp->getName()) == *(int32_t*)e414
+#ifdef SIDH_SUPPORT
+        || *(int32_t*)(cp->getName()) == *(int32_t*)pq64 ||
+        *(int32_t*)(cp->getName()) == *(int32_t*)pq74
+#endif
+        ) {
         if (!(*(int32_t*)(hash->getName()) == *(int32_t*)s384 || *(int32_t*)(hash->getName()) == *(int32_t*)skn3)) {
             *errMsg = UnsuppHashType;
             return nullptr;
@@ -556,7 +560,8 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
             || *(int32_t*)(pubKey->getName()) == *(int32_t*)sdh5 ||
             *(int32_t*)(pubKey->getName()) == *(int32_t*)sdh7 ||
             *(int32_t*)(pubKey->getName()) == *(int32_t*)pq54 ||
-            *(int32_t*)(pubKey->getName()) == *(int32_t*)pq64
+            *(int32_t*)(pubKey->getName()) == *(int32_t*)pq64 ||
+            *(int32_t*)(pubKey->getName()) == *(int32_t*)pq74
 #endif
             ) {
         dhContext = make_unique<ZrtpDH>(pubKey->getName(), ZrtpDH::DhPart1);
@@ -1513,9 +1518,9 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
     AlgorithmEnum* ownIntersect[ZrtpConfigure::maxNoOfAlgos+1];
 
     // Build list of own pubkey algorithm names, must follow the order
-    // defined in RFC 6189, chapter 4.1.2.
+    // defined in RFC 6189, chapter 4.1.2., weakest to strongest
 #ifdef SIDH_SUPPORT
-    const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38, sdh5, sdh7, pq54, pq64};
+    const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38, sdh5, sdh7, pq54, pq64, pq74};
 #else
     const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38};
 #endif
@@ -1595,7 +1600,8 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
     if (algoName == *(int32_t*)ec38 || algoName == *(int32_t*)e414
 #ifdef SIDH_SUPPORT
         || algoName == *(int32_t*)sdh7 ||
-        algoName == *(int32_t*)pq64
+        algoName == *(int32_t*)pq64 ||
+        algoName == *(int32_t*)pq74
 #endif
     ) {
         hash = getStrongHashOffered(hello, algoName);

@@ -741,15 +741,15 @@ TEST_F(ZrtpBasicRunFixture, full_run_test_sidh751) {
     ASSERT_EQ(aliceSas, bobSas);
 }
 
-TEST_F(ZrtpBasicRunFixture, full_run_test_pq64) {
+TEST_F(ZrtpBasicRunFixture, full_run_test_pq74) {
     // Configure with mandatory algorithms only
     auto aliceConfigure = make_shared<ZrtpConfigure>();
     auto bobConfigure = make_shared<ZrtpConfigure>();
 
     aliceConfigure->clear();
     bobConfigure->clear();
-    aliceConfigure->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("PQ64"));
-    bobConfigure->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("PQ64"));
+    aliceConfigure->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("PQ74"));
+    bobConfigure->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("PQ74"));
 
     aliceConfigure->addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
     aliceConfigure->addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN3"));
