@@ -166,16 +166,11 @@ TEST_F(BotanEc41417TestFixture, DiffieHellman) {
     ZrtpDH aliceDh(e414, ZrtpDH::Commit);
     ASSERT_TRUE(aliceDh.version() == "Botan");
 
-    auto aliceResult = aliceDh.generatePublicKey();
-    ASSERT_EQ(1, aliceResult);
-
     secUtilities::SecureArray<1000> alicePubKey;
     auto aliceKeyLen = aliceDh.fillInPubKeyBytes(alicePubKey);
 
     // Setup with  DH code for Bob
     ZrtpDH bobDh(e414, ZrtpDH::Commit);
-    auto bobResult = aliceDh.generatePublicKey();
-    ASSERT_EQ(1, bobResult);
 
     secUtilities::SecureArray<1000> bobPubKey;
     auto bobKeyLen = bobDh.fillInPubKeyBytes(bobPubKey);
