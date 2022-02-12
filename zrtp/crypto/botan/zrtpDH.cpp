@@ -27,7 +27,6 @@
 #include <common/Utilities.h>
 #include "botan_all.h"
 #include "botancrypto/ZrtpCurve41417.h"
-#include "logging/ZrtpLogging.h"
 
 #ifdef SIDH_SUPPORT
 #include "cpp/SidhWrapper.h"
@@ -139,9 +138,6 @@ ZrtpDH::ZrtpDH(const char* type, ProtocolState state) : protocolState(state), ct
             ctx->privKey = std::make_unique<Botan::Curve41417_PrivateKey>(rng);
             break;
 #endif
-        default:
-            errorCode = UNKNOWN_ALGORITHM;
-            break;
     }
 }
 
@@ -154,18 +150,28 @@ ZrtpDH::~ZrtpDH() {
 }
 
 #ifdef SIDH_SUPPORT
-void ZrtpDH::generateSidhKeyPair() {
-    SidhWrapper::SidhType sidhType;
 
-    if (pkType == SDH5 || pkType == PQ54) {
-        sidhType = SidhWrapper::P503;
-    } else if (pkType == PQ64) {
-        sidhType = SidhWrapper::P610;
-    } else if (pkType == SDH7 || pkType == PQ74) {
-        sidhType = SidhWrapper::P751;
-    } else {
-        return;
+SidhWrapper::SidhType ZrtpDH::getSidhType() const
+{
+    switch (pkType) {
+        case SDH5:
+        case PQ54:
+            return SidhWrapper::P503;
+
+        case PQ64:
+            return SidhWrapper::P610;
+
+        case SDH7:
+        case PQ74:
+            return SidhWrapper::P751;
+
+        default:
+            return static_cast<SidhWrapper::SidhType>(0);
     }
+}
+
+void ZrtpDH::generateSidhKeyPair() {
+    SidhWrapper::SidhType sidhType = getSidhType();
 
     auto lengths = SidhWrapper::getFieldLengths(sidhType);
 
@@ -185,7 +191,7 @@ void ZrtpDH::generateSidhKeyPair() {
 }
 #endif
 
-int32_t ZrtpDH::secretKeyComputation(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret, int algorithm) {
+size_t ZrtpDH::secretKeyComputation(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret, int algorithm) {
 
     // Was computed already, probably because of calling checkPubKey(...)
     if (!ctx->sharedSecret.empty()) {
@@ -193,7 +199,7 @@ int32_t ZrtpDH::secretKeyComputation(uint8_t *pubKeyBytes, secUtilities::SecureA
         return ctx->sharedSecret.size();
     }
 
-    int32_t const length = getSharedSecretSize();
+    auto const length = getSharedSecretSize();
     ZrtpBotanRng rng;
 
     try {
@@ -259,29 +265,14 @@ int32_t ZrtpDH::secretKeyComputation(uint8_t *pubKeyBytes, secUtilities::SecureA
     return -1;
 }
 
-int32_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret) {
+size_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret) {
     return secretKeyComputation(pubKeyBytes, secret, pkType);
-}
-
-int32_t ZrtpDH::generatePublicKey()
-{
-    return 1;
 }
 
 #ifdef SIDH_SUPPORT
 size_t ZrtpDH::computeSidhSharedSecret(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret)
 {
-    SidhWrapper::SidhType sidhType;
-
-    if (pkType == SDH5 || pkType == PQ54) {
-        sidhType = SidhWrapper::P503;
-    } else if (pkType == PQ64) {
-        sidhType = SidhWrapper::P610;
-    } else if (pkType == SDH7 || pkType == PQ74) {
-        sidhType = SidhWrapper::P751;
-    } else {
-        return -1;
-    }
+    SidhWrapper::SidhType sidhType = getSidhType();
 
     auto lengths = SidhWrapper::getFieldLengths(sidhType);
     if (protocolState == Commit) {
@@ -297,24 +288,14 @@ size_t ZrtpDH::computeSidhSharedSecret(uint8_t *pubKeyBytes, secUtilities::Secur
 }
 
 size_t ZrtpDH::getSidhSharedSecretLength() const {
-    SidhWrapper::SidhType sidhType;
-
-    if (pkType == SDH5 || pkType == PQ54) {
-        sidhType = SidhWrapper::P503;
-    } else if (pkType == PQ64) {
-        sidhType = SidhWrapper::P610;
-    } else if (pkType == SDH7 || pkType == PQ74) {
-        sidhType = SidhWrapper::P751;
-    } else {
-        return 0;
-    }
+    SidhWrapper::SidhType sidhType = getSidhType();
 
     auto lengths = SidhWrapper::getFieldLengths(sidhType);
     return lengths->sharedSecret;
 }
 #endif
 
-uint32_t ZrtpDH::getSharedSecretSize() const
+size_t ZrtpDH::getSharedSecretSize() const
 {
     switch (pkType) {
         case DH2K:
@@ -350,7 +331,7 @@ uint32_t ZrtpDH::getSharedSecretSize() const
     }
 }
 
-int32_t ZrtpDH::getPubKeySize() const
+size_t ZrtpDH::getPubKeySize() const
 {
     switch (pkType) {
         case DH2K:
@@ -385,7 +366,7 @@ size_t ZrtpDH::getPubKeyBytes(secUtilities::SecureArray<1000>& pubKey, int algor
         case DH2K:
             case DH3K: {
                 // get len of pub_key, prepend with zeros to DH size
-                int size = getPubKeySize();
+                auto size = getPubKeySize();
                 size_t prepend = getSharedSecretSize() - size;
                 if (prepend > 0) {
                     memset(pubKey.data(), 0, prepend);
@@ -408,7 +389,7 @@ size_t ZrtpDH::getPubKeyBytes(secUtilities::SecureArray<1000>& pubKey, int algor
 #ifdef SIDH_SUPPORT
         case SDH5:
         case SDH7: {
-            int32_t len = getPubKeySize();
+            auto len = getPubKeySize();
             pubKey.assign(ctx->sidhPubKey->data(), len);
             return pubKey.size();
         }
@@ -436,7 +417,7 @@ size_t ZrtpDH::getPubKeyBytes(secUtilities::SecureArray<1000>& pubKey, int algor
     return 0;
 }
 
-int32_t ZrtpDH::fillInPubKeyBytes(secUtilities::SecureArray<1000>& pubKey) const
+size_t ZrtpDH::fillInPubKeyBytes(secUtilities::SecureArray<1000>& pubKey) const
 {
     return getPubKeyBytes(pubKey, pkType);
 }
@@ -444,9 +425,68 @@ int32_t ZrtpDH::fillInPubKeyBytes(secUtilities::SecureArray<1000>& pubKey) const
 
 int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes)
 {
-    secUtilities::SecureArray<1000> dummyData;
-    auto result = computeSecretKey(pubKeyBytes, dummyData);
-    return result > 0 ? 1 : 0;
+    ZrtpBotanRng rng;
+
+    switch (pkType) {
+        case DH2K:
+        case DH3K: {
+            // In these cases ctx private key actually holds a DH private key which
+            // is a sub-class of Botan::PK_Key_Agreement_Key. This downcast is valid.
+            auto dhPrivateKey = dynamic_cast<Botan::DH_PrivateKey*>(ctx->privKey.get());
+            const auto& dhGroup = dhPrivateKey->get_group();
+            auto singleLen = getPubKeySize();
+            auto pubKeyBigInt = Botan::BigInt(pubKeyBytes, singleLen);
+
+            auto otherPublicKey = Botan::DH_PublicKey(dhGroup, pubKeyBigInt);
+            return !otherPublicKey.check_key(rng, false) ? 0 : 1;
+        }
+
+        case E255: {
+            auto singleLen = getPubKeySize();
+            auto pubKeyVector = std::vector<uint8_t>(pubKeyBytes, pubKeyBytes + singleLen);
+            auto otherPublicKey = Botan::Curve25519_PublicKey(pubKeyVector);
+            return !otherPublicKey.check_key(rng, false) ? 0 : 1;
+        }
+
+        case EC25:
+        case EC38: {
+            // In these cases ctx private key actually holds a ECDH private key which
+            // is a sub-class of Botan::PK_Key_Agreement_Key. This downcast is valid.
+            auto ecPrivateKey = dynamic_cast<Botan::ECDH_PrivateKey*>(ctx->privKey.get());
+            const auto& ecGroup = ecPrivateKey->domain();
+            auto singleLen = getPubKeySize() / 2;     // function returns size of X + Y size
+
+            auto xBig = Botan::BigInt(pubKeyBytes, singleLen);
+            auto yBig = Botan::BigInt(pubKeyBytes+singleLen, singleLen);
+            auto pubPoint = ecGroup.point(xBig, yBig);
+
+            auto otherPublicKey = Botan::ECDH_PublicKey(ecGroup, pubPoint);
+            return !otherPublicKey.check_key(rng, false) ? 0 : 1;
+        }
+
+        case E414: {
+            auto otherPublicKey = Botan::Curve41417_PublicKey(pubKeyBytes);
+            return !otherPublicKey.check_key(rng, false) ? 0 : 1;
+        }
+
+            // No check for SIDH algorithm yet, check E414 only.
+        case PQ54:
+        case PQ64:
+        case PQ74: {
+            auto offset = ctx->sidhPubKey->capacity();  // skip SIDH data, see comment in generateSidhKeyPair() above
+            auto otherPublicKey = Botan::Curve41417_PublicKey(pubKeyBytes+offset);
+            return !otherPublicKey.check_key(rng, false) ? 0 : 1;
+        }
+
+            // No check for SIDH algorithm yet - return OK
+        case SDH5:
+        case SDH7:
+            return 1;
+
+        default: {
+           return 0;
+        }
+    }
 }
 
 const char* ZrtpDH::getDHtype() const

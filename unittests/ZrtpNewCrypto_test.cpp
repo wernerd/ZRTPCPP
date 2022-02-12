@@ -36,8 +36,8 @@
 #include "gtest/gtest.h"
 
 //
-// These tests compare results of the crypto wrapper to results of a direct use
-// of Botan crypto functions.
+// These tests use the zrtpDH crypto functions and compare the results
+// to plain Botan crypto functions. Make sure the crypto wrapper works.
 using namespace std;
 
 class ZrtpNewCryptoTestFixture: public ::testing::Test {
@@ -69,13 +69,9 @@ TEST_F(ZrtpNewCryptoTestFixture, simpleAliceBob) {
     ZrtpDH aliceDh(dh3k, ZrtpDH::Commit);
     ZrtpDH bobDh(dh3k, ZrtpDH::Commit);
 
-    auto aliceResult = aliceDh.generatePublicKey();
-    ASSERT_EQ(1, aliceResult);
     secUtilities::SecureArray<1000> alicePubKey;
     auto aliceKeyLen = aliceDh.fillInPubKeyBytes(alicePubKey);
 
-    auto bobResult = bobDh.generatePublicKey();
-    ASSERT_EQ(1, aliceResult);
     secUtilities::SecureArray<1000> bobPubKey;
     auto bobKeyLen = bobDh.fillInPubKeyBytes(bobPubKey);
 
@@ -127,10 +123,8 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedLibs) {
 
     // Setup with existing DH code fpr Alice
     ZrtpDH aliceDh(dh3k, ZrtpDH::Commit);
-    auto aliceResult = aliceDh.generatePublicKey();
-    ASSERT_EQ(1, aliceResult);
     secUtilities::SecureArray<1000> alicePubKey;
-    auto aliceKeyLen = aliceDh.fillInPubKeyBytes(alicePubKey);
+    aliceDh.fillInPubKeyBytes(alicePubKey);
 
     // Using Botan lib for Bob
     ZrtpBotanRng rng;
@@ -144,7 +138,8 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedLibs) {
 
     // Agree on keys. Alice first
     secUtilities::SecureArray<1000> aliceSharedData;
-    aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data(), aliceSharedData);
+    ASSERT_EQ(1, aliceDh.checkPubKey(bobPubKey.data()));  // check must return OK
+    auto aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data(), aliceSharedData);
     ASSERT_GT(aliceKeyLen, 0);
 
     Botan::PK_Key_Agreement dhBob(keyBob,rng, kdf);
@@ -158,8 +153,6 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedLibs) {
 TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh256) {
     // Setup with existing DH code fpr Alice
     ZrtpDH aliceDh(ec25, ZrtpDH::Commit);
-    auto aliceResult = aliceDh.generatePublicKey();
-    ASSERT_EQ(1, aliceResult);
 
     secUtilities::SecureArray<1000> alicePubTmp;
     auto aliceKeyLen = aliceDh.fillInPubKeyBytes(alicePubTmp);
@@ -181,7 +174,7 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh256) {
     // Agree on keys. Alice first
     secUtilities::SecureArray<1000> aliceSharedData;
     ASSERT_EQ(0, aliceDh.checkPubKey(bobPubKey.data()));    // Force error
-    ASSERT_EQ(1, aliceDh.checkPubKey(bobPubKey.data()+1));  // check must return OK, secret pre-computed now
+    ASSERT_EQ(1, aliceDh.checkPubKey(bobPubKey.data()+1));  // check must return OK
 
     aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data()+1, aliceSharedData);
     ASSERT_GT(aliceKeyLen, 0);
@@ -195,8 +188,6 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh256) {
 TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh384) {
 // Setup with existing DH code fpr Alice
     ZrtpDH aliceDh(ec38, ZrtpDH::Commit);
-    auto aliceResult = aliceDh.generatePublicKey();
-    ASSERT_EQ(1, aliceResult);
 
     secUtilities::SecureArray<1000> alicePubTmp;
     auto aliceKeyLen = aliceDh.fillInPubKeyBytes(alicePubTmp);
@@ -217,6 +208,8 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh384) {
 
 // Agree on keys. Alice first
     secUtilities::SecureArray<1000> aliceSharedData;
+    ASSERT_EQ(0, aliceDh.checkPubKey(bobPubKey.data()));    // Force error
+    ASSERT_EQ(1, aliceDh.checkPubKey(bobPubKey.data()+1));  // check must return OK
     aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data()+1, aliceSharedData);
     ASSERT_GT(aliceKeyLen, 0);
 
@@ -229,11 +222,9 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh384) {
 TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh25519) {
 // Setup with existing DH code fpr Alice
     ZrtpDH aliceDh(e255, ZrtpDH::Commit);
-    auto aliceResult = aliceDh.generatePublicKey();
-    ASSERT_EQ(1, aliceResult);
 
     secUtilities::SecureArray<1000> alicePubKey;
-    auto aliceKeyLen = aliceDh.fillInPubKeyBytes(alicePubKey);
+    aliceDh.fillInPubKeyBytes(alicePubKey);
 
 // Using Botan lib for Bob, generate curve25519 keys
     ZrtpBotanRng rng;
@@ -244,7 +235,8 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh25519) {
 
 // Agree on keys. Alice first
     secUtilities::SecureArray<1000> aliceSharedData;
-    aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data(), aliceSharedData);
+    ASSERT_EQ(1, aliceDh.checkPubKey(bobPubKey.data()));  // check must return OK
+    auto aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data(), aliceSharedData);
     ASSERT_GT(aliceKeyLen, 0);
 
     Botan::secure_vector<uint8_t> sB = ecdhBob.derive_key(32, alicePubKey.data(), alicePubKey.size()).bits_of();
@@ -520,8 +512,6 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedTwofishCfb256) {
 TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh41417) {
 // Setup with existing DH code fpr Alice
     ZrtpDH aliceDh(e414, ZrtpDH::Commit);
-    auto aliceResult = aliceDh.generatePublicKey();
-    ASSERT_EQ(1, aliceResult);
 
     secUtilities::SecureArray<1000> alicePubTmp;
     auto aliceKeyLen = aliceDh.fillInPubKeyBytes(alicePubTmp);
@@ -539,6 +529,8 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh41417) {
 
 // Agree on keys. Alice first
     secUtilities::SecureArray<1000> aliceSharedData;
+    ASSERT_EQ(0, aliceDh.checkPubKey(bobPubKey.data()));    // Force error
+    ASSERT_EQ(1, aliceDh.checkPubKey(bobPubKey.data()+1));  // check must return OK, secret pre-computed now
     aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data()+1, aliceSharedData);
     ASSERT_GT(aliceKeyLen, 0);
 

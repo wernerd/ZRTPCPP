@@ -56,6 +56,7 @@ void randomZRTP(uint8_t *buf, int32_t length);
 #if defined(__cplusplus)
 
 #include <libzrtpcpp/ZrtpConfigure.h>
+#include <cpp/SidhWrapper.h>
 #include "../common/SecureArray.h"
 
 static const uint32_t DH2K_LENGTH_BYTES = 2048 / 8;
@@ -104,28 +105,6 @@ public:
     ~ZrtpDH();
 
     /**
-     * Generates a public key based on the DH parameters and a random
-     * private key.
-     *
-     * @return 1 on success, 0 on failure
-     */
-    int32_t generatePublicKey();
-
-    /**
-     * Returns the size in bytes of the DH parameter p which is the size of the shared secret.
-     *
-     * @return Size in bytes.
-     */
-    [[nodiscard]] uint32_t getSharedSecretSize() const;
-
-    /**
-     * Returns the size in bytes of computed public key.
-     *
-     * @return Size in bytes.
-     */
-    [[nodiscard]] int32_t getPubKeySize() const;
-
-    /**
      * Fill in the bytes of computed secret key.
      *
      * Computes length of the public key, copies data to pubKey in network
@@ -136,7 +115,7 @@ public:
      *
      * @return Size in bytes.
      */
-    int32_t fillInPubKeyBytes(secUtilities::SecureArray<1000>& pubKey) const;
+    size_t fillInPubKeyBytes(secUtilities::SecureArray<1000>& pubKey) const;
 
     /**
      * Compute the secret key and returns it to caller.
@@ -152,7 +131,7 @@ public:
      *
      * @return the size of the shared secret on success, -1 on error.
      */
-    int32_t computeSecretKey(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret);
+    size_t computeSecretKey(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret);
 
     /**
      * Check and validate the public key received from peer.
@@ -196,16 +175,33 @@ private:
         PQ74
     };
 
-    struct dhCtx;
+    SidhWrapper::SidhType getSidhType() const;
+
+    /**
+     * Returns the size in bytes of the DH parameter p which is the size of the shared secret.
+     *
+     * @return Size in bytes.
+     */
+    [[nodiscard]] size_t getSharedSecretSize() const;
+
+    /**
+     * Returns the size in bytes of computed public key.
+     *
+     * @return Size in bytes.
+     */
+    [[nodiscard]] size_t getPubKeySize() const;
+
 
     void generateSidhKeyPair();
     size_t computeSidhSharedSecret(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret);
-    size_t getSidhSharedSecretLength() const ;
+    [[nodiscard]] size_t getSidhSharedSecretLength() const ;
 
-    int32_t secretKeyComputation(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret, int algorithm);
+    size_t secretKeyComputation(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret, int algorithm);
     size_t getPubKeyBytes(secUtilities::SecureArray<1000>& pubKey, int algorithm) const;
 
-    int pkType;                     ///< Which type of DH to use
+    struct dhCtx;
+
+    Algorithm pkType;               ///< Which type of DH to use
     ProtocolState protocolState;    ///< Create DH for this protocol state
     ErrorCode errorCode;
     std::unique_ptr<dhCtx> ctx;

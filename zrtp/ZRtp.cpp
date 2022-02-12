@@ -314,7 +314,6 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     // Modify here when introducing new DH key agreement, for example
     // elliptic curves.
     dhContext = make_unique<ZrtpDH>(pubKey->getName(), ZrtpDH::Commit);
-    dhContext->generatePublicKey();
 
     dhContext->fillInPubKeyBytes(pubKeyBytes);
     sendInfo(Info, InfoCommitDHGenerated);
@@ -565,7 +564,6 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
 #endif
             ) {
         dhContext = make_unique<ZrtpDH>(pubKey->getName(), ZrtpDH::DhPart1);
-        dhContext->generatePublicKey();
     }
     sendInfo(Info, InfoDH1DHGenerated);
 
