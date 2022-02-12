@@ -41,6 +41,8 @@ void randomZRTP(uint8_t *buf, int32_t length)
 static char const kdfString[] ="Raw";
 
 struct ZrtpDH::dhCtx {
+    // PK_Key_Agreement_Key is a superclass of all DH private key classes
+    // (multiple inheritance of the DH private keys)
     std::unique_ptr<Botan::PK_Key_Agreement_Key> privKey;
     Botan::secure_vector<uint8_t> sharedSecret;
 #ifdef SIDH_SUPPORT

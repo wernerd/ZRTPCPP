@@ -180,7 +180,7 @@ namespace Botan {
         /* affine y = Y / Z */
         Ry = m_group.multiply_mod_prime(m_coord_y, z1);
 
-        return std::pair<BigInt, BigInt>(Rx, Ry);
+        return {Rx, Ry};
     }
 
     void

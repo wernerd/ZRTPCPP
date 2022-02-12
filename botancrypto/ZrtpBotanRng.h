@@ -74,7 +74,7 @@ public:
      *         bytes added may be bigger then @c length because of added system
      *         entropy.
      */
-    static int addEntropy(const uint8_t *buffer, uint32_t length, bool isLocked = false);
+    static uint32_t addEntropy(const uint8_t *buffer, uint32_t length, bool isLocked = false);
 
     /**
      * @brief Get some random data.
@@ -85,11 +85,11 @@ public:
      *
      * @return the number of generated random data bytes
      */
-    static int32_t getRandomData(uint8_t *buffer, uint32_t length);
+    static uint32_t getRandomData(uint8_t *buffer, uint32_t length);
 
 private:
     static void initialize();
-    static size_t getSystemSeed(uint8_t *seed, size_t length);
+    static size_t getSystemSeed(std::array<uint8_t, 64>& seed);
 
 };
 
@@ -98,9 +98,9 @@ extern "C"
 {
 #endif
 
-int zrtp_AddEntropy(const uint8_t *buffer, uint32_t length, int isLocked);
+uint32_t zrtp_AddEntropy(const uint8_t *buffer, uint32_t length, int isLocked);
 
-int zrtp_getRandomData(uint8_t *buffer, uint32_t length);
+uint32_t zrtp_getRandomData(uint8_t *buffer, uint32_t length);
 
 #ifdef __cplusplus
 }

@@ -19,6 +19,7 @@
 #include <fcntl.h>
 #include <mutex>
 #include <cstring>
+#include <array>
 
 #if !(defined(_WIN32) || defined(_WIN64))
 #include <unistd.h>
@@ -96,14 +97,14 @@ static void * (*volatile memset_volatile)(void *, int, size_t) = memset;
  * per block, until we have produced the desired quantity of data.
  */
 /*----------------------------------------------------------------------------*/
-int ZrtpBotanRng::getRandomData(uint8_t* buffer, uint32_t length) {
+uint32_t ZrtpBotanRng::getRandomData(uint8_t* buffer, uint32_t length) {
 
     auto aes = Botan::BlockCipher::create_or_throw("AES-256");
     std::unique_ptr<Botan::HashFunction> hashInternal;
 
     uint8_t    md[SHA512_DIGEST_LENGTH];
-    uint8_t    ctr[16];
-    uint8_t    rdata[16];
+    uint8_t    ctr[Botan::AES_256::BLOCK_SIZE];
+    uint8_t    rdata[Botan::AES_256::BLOCK_SIZE];
     uint32_t   generated = length;
 
     /*
@@ -124,12 +125,10 @@ int ZrtpBotanRng::getRandomData(uint8_t* buffer, uint32_t length) {
 
     /* Initialize counter, using excess from md if available */
     memset (ctr, 0, sizeof(ctr));
-    if (SHA512_DIGEST_LENGTH > (256/8)) {
-        uint32_t ctrbytes = SHA512_DIGEST_LENGTH - (256/8);
-        if (ctrbytes > Botan::AES_256::BLOCK_SIZE)
-            ctrbytes = Botan::AES_256::BLOCK_SIZE;
-        memcpy(ctr + sizeof(ctr) - ctrbytes, md + (256/8), ctrbytes);
-    }
+    uint32_t ctrbytes = SHA512_DIGEST_LENGTH - (256 / 8);
+    if (ctrbytes > Botan::AES_256::BLOCK_SIZE)
+        ctrbytes = Botan::AES_256::BLOCK_SIZE;
+    memcpy(ctr + sizeof(ctr) - ctrbytes, md + (256 / 8), ctrbytes);
 
     /* Encrypt counter, copy to destination buffer, increment counter */
     while (length) {
@@ -159,11 +158,11 @@ int ZrtpBotanRng::getRandomData(uint8_t* buffer, uint32_t length) {
 }
 
 
-int ZrtpBotanRng::addEntropy(const uint8_t *buffer, uint32_t length, bool isLocked)
+uint32_t ZrtpBotanRng::addEntropy(const uint8_t *buffer, uint32_t length, bool isLocked)
 {
 
-    uint8_t newSeed[64];
-    size_t len = getSystemSeed(newSeed, sizeof(newSeed));
+    std::array<uint8_t, 64> newSeed {};
+    size_t len = getSystemSeed(newSeed);
 
     if (!isLocked) lockRandom.lock();
 
@@ -173,7 +172,7 @@ int ZrtpBotanRng::addEntropy(const uint8_t *buffer, uint32_t length, bool isLock
         hashMain->update(buffer, length);
     }
     if (len > 0) {
-        hashMain->update(newSeed, len);
+        hashMain->update(newSeed.data(), len);
         length += len;
     }
     if (!isLocked) lockRandom.unlock();
@@ -196,14 +195,14 @@ void ZrtpBotanRng::initialize() {
  * random data that we can use as seed for the internal PRNG below.
  */
 
-size_t ZrtpBotanRng::getSystemSeed(uint8_t *seed, size_t length)
+size_t ZrtpBotanRng::getSystemSeed(std::array<uint8_t, 64>& seed)
 {
     size_t num = 0;
 
 #if !(defined(_WIN32) || defined(_WIN64) || defined(EMSCRIPTEN))
     int rnd = open("/dev/urandom", O_RDONLY);
     if (rnd >= 0) {
-        num = read(rnd, seed, length);
+        num = read(rnd, seed.data(), seed.size());
         close(rnd);
     }
     // Code was copied from ZrtpRandom.cpp, commit 24f240931279501e71bf78b5033f23deecbc828f
@@ -244,10 +243,10 @@ size_t ZrtpBotanRng::getSystemSeed(uint8_t *seed, size_t length)
     return num;
 }
 
-int zrtp_AddEntropy(const uint8_t *buffer, uint32_t length, int isLocked) {
+uint32_t zrtp_AddEntropy(const uint8_t *buffer, uint32_t length, int isLocked) {
     return ZrtpBotanRng::addEntropy(buffer, length, isLocked != 0);
 }
 
-int zrtp_getRandomData(uint8_t *buffer, uint32_t length) {
+uint32_t zrtp_getRandomData(uint8_t *buffer, uint32_t length) {
     return ZrtpBotanRng::getRandomData(buffer, length);
 }
