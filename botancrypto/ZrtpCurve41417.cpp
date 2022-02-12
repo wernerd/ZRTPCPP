@@ -47,6 +47,11 @@ namespace Botan {
                 std::vector<BigInt> ws(Point41417p::WORKSPACE_SIZE);
                 auto resultPoint = m_group.point_multiply(pubPoint, m_key.private_value(), ws);
                 auto affineXY = resultPoint.getAffineXY();
+                auto affinePntDouble = Botan::Point41417p(affineXY.first, affineXY.second, 1);
+
+                if(!affinePntDouble.on_the_curve())
+                    throw Internal_Error("ECDH 41417 agreed value was not on the curve");
+
                 auto secret = BigInt::encode_1363(affineXY.first, m_group.get_p_bytes());
                 return secret;
             }
@@ -81,7 +86,7 @@ namespace Botan {
     }
 
     secure_vector<uint8_t>
-    Curve41417_PrivateKey::private_key_bits() const { return secure_vector<uint8_t >(); }
+    Curve41417_PrivateKey::private_key_bits() const { return {}; }
 
     bool
     Curve41417_PrivateKey::check_key(RandomNumberGenerator &rng, bool strong) const { return false; }
@@ -92,6 +97,6 @@ namespace Botan {
     }
 
     std::vector<uint8_t>
-    Curve41417_PublicKey::public_key_bits() const { return std::vector<uint8_t >(); }
+    Curve41417_PublicKey::public_key_bits() const { return {}; }
 
 }
