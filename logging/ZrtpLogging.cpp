@@ -27,7 +27,9 @@ std::unique_ptr<logging::Logger<logging::AndroidLogPolicy> >
 #elif defined(LINUX_LOGGER)
 
 __EXPORT std::unique_ptr<logging::Logger<logging::CerrLogPolicy> >
-        _globalLoggerZrtp = std::make_unique<logging::Logger<logging::CerrLogPolicy> >(std::string(""), std::string("ZRTP"));
+        _globalLoggerZrtp = std::make_unique<logging::Logger<logging::CerrLogPolicy> >(
+                std::string(""),
+                std::string("ZRTP"));
 
 #elif defined(APPLE_LOGGER)
 

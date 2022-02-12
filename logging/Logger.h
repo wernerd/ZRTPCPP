@@ -364,7 +364,7 @@ return 0;
     Logger<log_policy >::Logger(const std::string& name) : logLevel(VERBOSE), currentLogLevel(NONE),
                                                            tag("Logger"), logLineNumber(0)
     {
-        policy = std::make_unique<log_policy>();
+        policy = std::unique_ptr<log_policy>(new log_policy);
         if (!policy) {
             throw std::runtime_error("LOGGER: Unable to create the logger instance");
         }
@@ -374,10 +374,10 @@ return 0;
 
     template<typename log_policy >
     Logger<log_policy >::Logger(const std::string& name, const std::string& tag) : logLevel(VERBOSE),
-                                                                                     currentLogLevel(NONE), tag(tag),
-                                                                                     logLineNumber(0)
+                                                                                   currentLogLevel(NONE), tag(tag),
+                                                                                   logLineNumber(0)
     {
-        policy = std::make_unique<log_policy>();
+        policy = std::unique_ptr<log_policy>(new log_policy);
         if (!policy) {
             throw std::runtime_error("LOGGER: Unable to create the logger instance");
         }
