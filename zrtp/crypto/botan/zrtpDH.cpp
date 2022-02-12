@@ -211,6 +211,11 @@ size_t ZrtpDH::secretKeyComputation(uint8_t *pubKeyBytes, secUtilities::SecureAr
                 secret.assign(ctx->sharedSecret.data(), ctx->sharedSecret.size());
                 return ctx->sharedSecret.size();
             }
+
+            // Note: the `length` argument in derive_key() functions below is ignoreed
+            // because the key agreement uses `raw`.Thus, no KDF is in use. The length
+            // of the shared secret ist the length of the X-coordinate of the point on
+            // the curve.
             case EC25:
             case EC38:
             case E414: {
