@@ -15,24 +15,26 @@
 // Copyright (c) 2020 Werner Dittmann. All rights reserved.
 //
 
-#include <zrtp/crypto/zrtpDH.h>
-#include <zrtp/libzrtpcpp/ZrtpTextData.h>
-#include "botan_all.h"
-#include "botancrypto/ZrtpBotanRng.h"
-#include <zrtp/crypto/sha256.h>
-#include <zrtp/crypto/sha384.h>
-#include <zrtp/crypto/skein256.h>
-#include <zrtp/crypto/skein384.h>
-#include <zrtp/crypto/hmac256.h>
-#include <zrtp/crypto/hmac384.h>
-#include <zrtp/crypto/skeinMac256.h>
-#include <zrtp/crypto/skeinMac384.h>
-#include <zrtp/crypto/aesCFB.h>
-#include <zrtp/crypto/twoCFB.h>
-#include <srtp/crypto/hmac.h>
-#include <botancrypto/ZrtpCurve41417.h>
+#include <array>
 #include "../logging/ZrtpLogging.h"
 #include "../common/Utilities.h"
+
+#include "zrtp/crypto/zrtpDH.h"
+#include "zrtp/libzrtpcpp/ZrtpTextData.h"
+#include "zrtp/crypto/sha256.h"
+#include "zrtp/crypto/sha384.h"
+#include "zrtp/crypto/skein256.h"
+#include "zrtp/crypto/skein384.h"
+#include "zrtp/crypto/hmac256.h"
+#include "zrtp/crypto/hmac384.h"
+#include "zrtp/crypto/skeinMac256.h"
+#include "zrtp/crypto/skeinMac384.h"
+#include "zrtp/crypto/aesCFB.h"
+#include "zrtp/crypto/twoCFB.h"
+#include "srtp/crypto/hmac.h"
+#include "botancrypto/ZrtpCurve41417.h"
+#include "botan_all.h"
+#include "botancrypto/ZrtpBotanRng.h"
 #include "gtest/gtest.h"
 
 //
@@ -452,7 +454,7 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedAesCfb256) {
     enc->start(iv_s.begin(), iv_s.size());
     enc->finish(pt);
 
-    secUtilities::SecureArrayFlex pt_old(reinterpret_cast<uint8_t *>(toEncrypt.data()), toEncrypt.size());
+    secUtilities::SecureArrayFlex pt_old(reinterpret_cast<uint8_t const *>(toEncrypt.data()), toEncrypt.size());
 
     aesCfbEncrypt(key_s.data(), 32, iv_s.begin(), pt_old.data(), (int32_t)pt_old.size());
     ASSERT_TRUE(pt_old.equals(pt.data(), pt.size()));
@@ -485,7 +487,7 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedTwofishCfb256) {
     enc->start(iv_s.begin(), iv_s.size());
     enc->finish(pt);
 
-    secUtilities::SecureArrayFlex pt_old(reinterpret_cast<uint8_t *>(toEncrypt.data()), toEncrypt.size());
+    secUtilities::SecureArrayFlex pt_old(reinterpret_cast<uint8_t const *>(toEncrypt.data()), toEncrypt.size());
 
     twoCfbEncrypt(key_s.data(), 32, iv_s.begin(), pt_old.data(), (int32_t)pt_old.size());
     ASSERT_TRUE(pt_old.equals(pt.data(), pt.size()));
