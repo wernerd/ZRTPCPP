@@ -273,7 +273,7 @@ namespace Botan {
             return false;
 
         //check that public point is on the curve
-        if(point.on_the_curve() == false)
+        if(!point.on_the_curve())
             return false;
 
         return true;

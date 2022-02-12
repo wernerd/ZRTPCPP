@@ -27,6 +27,11 @@ namespace Botan {
 
     class BOTAN_PUBLIC_API(2, 0) Curve41417_PublicKey : public virtual Public_Key {
     public:
+
+        explicit Curve41417_PublicKey(uint8_t *otherKey);
+
+        ~Curve41417_PublicKey() override = default;
+
         std::string algo_name() const override { return "Curve41417"; }
 
         size_t estimated_strength() const override { return 256; }
@@ -48,7 +53,6 @@ namespace Botan {
 
     protected:
         Curve41417_PublicKey() = default;
-        ~Curve41417_PublicKey() override = default;
 
         Point41417p m_public;
         EC41417_Group m_domain_params;
