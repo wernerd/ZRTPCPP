@@ -443,7 +443,7 @@ class __EXPORT ZRtp {
      * @return
      *    True if the method stored the data, false otherwise.
      */
-    bool setSignatureData(uint8_t* data, uint32_t length);
+    bool setSignatureData(uint8_t* data, int32_t length);
 
     /**
      * Get signature data.

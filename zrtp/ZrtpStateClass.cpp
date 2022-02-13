@@ -71,7 +71,7 @@ ZrtpStateClass::~ZrtpStateClass() {
 
         cancelTimer();
         ev.type = ZrtpClose;
-        event = &ev;
+        event = &ev;        // Looks suspicious, however it's safe in this case
         engine->processEvent(*this);
     }
     delete engine;

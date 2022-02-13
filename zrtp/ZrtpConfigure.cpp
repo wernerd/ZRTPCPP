@@ -38,7 +38,7 @@ const char* AlgorithmEnum::getReadable() {
     return readable.c_str();
 }
     
-uint32_t AlgorithmEnum::getKeylen() {
+int32_t AlgorithmEnum::getKeylen() const {
     return keyLen;
 }
 

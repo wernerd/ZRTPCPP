@@ -45,7 +45,7 @@ class __EXPORT ZrtpPacketConfirm : public ZrtpPacketBase {
         ZrtpPacketConfirm();
 
         /// Creates a Confirm packet with default data and a given signature length
-        explicit ZrtpPacketConfirm(uint32_t sl);
+        explicit ZrtpPacketConfirm(int32_t sl);
 
         /// Creates a Confirm packet from received data
         explicit ZrtpPacketConfirm(const uint8_t* d);
@@ -54,13 +54,13 @@ class __EXPORT ZrtpPacketConfirm : public ZrtpPacketBase {
         ~ZrtpPacketConfirm() override = default;
 
         /// Check if SAS verify flag is set
-        const bool isSASFlag()            { return (confirmHeader->flags & 0x4U) == 0x4; }
+        bool isSASFlag()            { return (confirmHeader->flags & 0x4U) == 0x4; }
 
         /// Check if Disclosure flag is set
-        const bool isDisclosureFlag()     { return (confirmHeader->flags & 0x1U) == 0x1; }
+        bool isDisclosureFlag()     { return (confirmHeader->flags & 0x1U) == 0x1; }
 
         /// Check if PBXEnrollment flag is set
-        const bool isPBXEnrollment()      { return (confirmHeader->flags & 0x8U) == 0x8; }
+        bool isPBXEnrollment()      { return (confirmHeader->flags & 0x8U) == 0x8; }
 
         /// Get pointer to filler bytes (contains one bit of signature length)
         const uint8_t* getFiller()        { return confirmHeader->filler; }
@@ -72,7 +72,7 @@ class __EXPORT ZrtpPacketConfirm : public ZrtpPacketBase {
         const uint8_t* getHmac()          { return confirmHeader->hmac; }
 
         /// Get Expiration time data
-        const uint32_t getExpTime()       { return zrtpNtohl(confirmHeader->expTime); }
+        uint32_t getExpTime()       { return zrtpNtohl(confirmHeader->expTime); }
 
         /// Get pointer to initial hash chain (H0) data, fixed byte array
         uint8_t* getHashH0()              { return confirmHeader->hashH0; }
@@ -113,7 +113,7 @@ class __EXPORT ZrtpPacketConfirm : public ZrtpPacketBase {
         bool setSignatureData(const uint8_t* dataIn, int32_t length);
 
         /// Set signature length in words
-        bool setSignatureLength(uint32_t sl);
+        bool setSignatureLength(int32_t sl);
 
     private:
         void initialize();
@@ -130,5 +130,5 @@ class __EXPORT ZrtpPacketConfirm : public ZrtpPacketBase {
 /**
  * @}
  */
-#endif // ZRTPPACKETCONFIRM
+#endif // _ZRTPPACKETCONFIRM_H_
 

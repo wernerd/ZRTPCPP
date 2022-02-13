@@ -358,7 +358,7 @@ uint8_t const * zrtp_getSasHash(ZrtpContext* zrtpContext) {
     return nullptr;
 }
 
-int32_t zrtp_setSignatureData(ZrtpContext* zrtpContext, uint8_t* data, uint32_t length) {
+int32_t zrtp_setSignatureData(ZrtpContext* zrtpContext, uint8_t* data, int32_t length) {
     if (zrtpContext && zrtpContext->zrtpEngine)
         return zrtpContext->zrtpEngine->setSignatureData(data, length) ? 1 : 0;
 

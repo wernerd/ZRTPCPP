@@ -46,8 +46,8 @@ enum AlgoTypes {
     Invalid = 0, HashAlgorithm = 1, CipherAlgorithm, PubKeyAlgorithm, SasType, AuthLength
 };
 
-using encrypt_t = void(*)(uint8_t*, int32_t, uint8_t*, uint8_t*, int32_t);
-using decrypt_t = void(*)(uint8_t*, int32_t, uint8_t*, uint8_t*, int32_t);
+using encrypt_t = void(*)(uint8_t*, size_t, uint8_t*, uint8_t*, size_t);
+using decrypt_t = void(*)(uint8_t*, size_t, uint8_t*, uint8_t*, size_t);
 
 /**
  * The algorithm enumeration class.
@@ -115,7 +115,7 @@ public:
      * @returns
      *    An integer defining the key length in bytes.
      */
-    uint32_t getKeylen();
+    int32_t getKeylen() const;
 
     /**
      * Get the algorihm's integer id.
@@ -161,7 +161,7 @@ public:
 private:
     AlgoTypes algoType;
     std::string algoName;
-    uint32_t   keyLen;
+    int32_t   keyLen;
     std::string readable;
     encrypt_t encrypt;
     decrypt_t decrypt;

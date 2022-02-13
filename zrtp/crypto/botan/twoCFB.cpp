@@ -24,7 +24,7 @@
 #include <botan_all.h>
 #include <zrtp/crypto/twoCFB.h>
 
-void twoCfbEncrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data, int32_t dataLength)
+void twoCfbEncrypt(uint8_t* key, size_t keyLength, uint8_t* IV, uint8_t *data, size_t dataLength)
 {
     auto enc = Botan::Cipher_Mode::create_or_throw("Twofish/CFB", Botan::ENCRYPTION);
 
@@ -39,7 +39,7 @@ void twoCfbEncrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data, 
 }
 
 
-void twoCfbDecrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data, int32_t dataLength)
+void twoCfbDecrypt(uint8_t* key, size_t keyLength, uint8_t* IV, uint8_t *data, size_t dataLength)
 {
     auto dec = Botan::Cipher_Mode::create_or_throw("Twofish/CFB", Botan::DECRYPTION);
 

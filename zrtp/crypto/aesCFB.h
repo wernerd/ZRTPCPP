@@ -22,6 +22,7 @@
 #define _AESCFB_H__
 
 #include <cstdint>
+#include <cstddef>
 
 /**
  * @file aesCFB.h
@@ -55,8 +56,8 @@
  *    Length of the data in bytes
  */
 
-void aesCfbEncrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data,
-                   int32_t dataLength);
+void aesCfbEncrypt(uint8_t* key, size_t keyLength, uint8_t* IV, uint8_t *data,
+                   size_t dataLength);
 
 /**
  * Decrypt data with AES CFB mode, full block feedback size.
@@ -78,8 +79,8 @@ void aesCfbEncrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data,
  *    Length of the data in bytes
  */
 
-void aesCfbDecrypt(uint8_t* key, int32_t keyLength, uint8_t* IV, uint8_t *data,
-                   int32_t dataLength);
+void aesCfbDecrypt(uint8_t* key, size_t keyLength, uint8_t* IV, uint8_t *data,
+                   size_t dataLength);
 /**
  * @}
  */

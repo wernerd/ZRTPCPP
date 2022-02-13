@@ -23,7 +23,7 @@
 #include <botan_all.h>
 #include <zrtp/crypto/aesCFB.h>
 
-void aesCfbEncrypt(uint8_t *key, int32_t keyLength, uint8_t* IV, uint8_t *data, int32_t dataLength)
+void aesCfbEncrypt(uint8_t *key, size_t keyLength, uint8_t* IV, uint8_t *data, size_t dataLength)
 {
     auto enc = Botan::Cipher_Mode::create_or_throw(keyLength == 16 ? "AES-128/CFB" : "AES-256/CFB", Botan::ENCRYPTION);
 
@@ -37,7 +37,7 @@ void aesCfbEncrypt(uint8_t *key, int32_t keyLength, uint8_t* IV, uint8_t *data, 
     memcpy(data, pt.data(), pt.size());
 }
 
-void aesCfbDecrypt(uint8_t *key, int32_t keyLength, uint8_t* IV, uint8_t *data, int32_t dataLength)
+void aesCfbDecrypt(uint8_t *key, size_t keyLength, uint8_t* IV, uint8_t *data, size_t dataLength)
 {
     auto enc = Botan::Cipher_Mode::create_or_throw(keyLength == 16 ? "AES-128/CFB" : "AES-256/CFB", Botan::DECRYPTION);
 

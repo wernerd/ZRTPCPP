@@ -666,7 +666,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
     if(dhContext->computeSecretKey(pvr, DHss) <= 0) {
         *errMsg = DHErrorWrongPV;
         return nullptr;
-    };
+    }
 
     // We are Initiator: the Responder's Hello and the Initiator's (our) Commit
     // are already hashed in the context. Now hash the Responder's DH1 and then
@@ -738,7 +738,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     if (dhContext->computeSecretKey(pvi, DHss) <= 0) {
         *errMsg = DHErrorWrongPV;
         return nullptr;
-    };
+    }
 
     // Hash the Initiator's DH2 into the message Hash (other messages already prepared, see method prepareDHPart1()).
     // Use negotiated hash function
@@ -1286,7 +1286,7 @@ static string sasDigit(const uint8_t* sasHash)
         if (value > MaxSasValue) {
             continue;
         }
-        sasDigits[found] = value % 1000;
+        sasDigits[found] = static_cast<int32_t>(value % 1000);  // mod 1000 -> always fits into 32bit signed
         found++;
     }
 
@@ -1433,27 +1433,23 @@ ZrtpPacketGoClear* ZRtp::prepareGoClear(uint32_t errMsg) {
  */
 AlgorithmEnum* ZRtp::findBestHash(ZrtpPacketHello *hello) {
 
-    int i;
-    int ii;
-    int numAlgosOffered;
     AlgorithmEnum* algosOffered[ZrtpConfigure::maxNoOfAlgos+1];
-
-    int numAlgosConf;
     AlgorithmEnum* algosConf[ZrtpConfigure::maxNoOfAlgos+1];
 
     // If Hello does not contain any hash names return Sha256, its mandatory
-    int num = hello->getNumHashes();
+    auto num = hello->getNumHashes();
     if (num == 0) {
         return &zrtpHashes.getByName(mandatoryHash);
     }
     // Build list of configured hash algorithm names.
-    numAlgosConf = configureAlgos->getNumConfiguredAlgos(HashAlgorithm);
-    for (i = 0; i < numAlgosConf; i++) {
+    auto numAlgosConf = configureAlgos->getNumConfiguredAlgos(HashAlgorithm);
+    for (auto i = 0; i < numAlgosConf; i++) {
         algosConf[i] = &configureAlgos->getAlgoAt(HashAlgorithm, i);
     }
 
     // Build list of offered known algos in Hello, append mandatory algos if necessary
-    for (numAlgosOffered = 0, i = 0; i < num; i++) {
+    int32_t numAlgosOffered = 0;
+    for (auto i = 0; i < num; i++) {
         algosOffered[numAlgosOffered] = &zrtpHashes.getByName((const char*)hello->getHashType(i));
         if (!algosOffered[numAlgosOffered]->isValid())
             continue;
@@ -1461,8 +1457,8 @@ AlgorithmEnum* ZRtp::findBestHash(ZrtpPacketHello *hello) {
     }
 
     // Lookup offered algos in configured algos.
-    for (i = 0; i < numAlgosOffered; i++) {
-        for (ii = 0; ii < numAlgosConf; ii++) {
+    for (auto i = 0; i < numAlgosOffered; i++) {
+        for (auto ii = 0; ii < numAlgosConf; ii++) {
             if (*(int32_t*)(algosOffered[i]->getName()) == *(int32_t*)(algosConf[ii]->getName())) {
                 return algosConf[ii];
             }
@@ -1474,34 +1470,30 @@ AlgorithmEnum* ZRtp::findBestHash(ZrtpPacketHello *hello) {
 
 AlgorithmEnum* ZRtp::findBestCipher(ZrtpPacketHello *hello, AlgorithmEnum* pk) {
 
-    int i;
-    int ii;
-    int numAlgosOffered;
     AlgorithmEnum* algosOffered[ZrtpConfigure::maxNoOfAlgos+1];
-
-    int numAlgosConf;
     AlgorithmEnum* algosConf[ZrtpConfigure::maxNoOfAlgos+1];
 
-    int num = hello->getNumCiphers();
+    auto num = hello->getNumCiphers();
     if (num == 0 || (*(int32_t*)(pk->getName()) == *(int32_t*)dh2k)) {
         return &zrtpSymCiphers.getByName(aes1);
     }
 
     // Build list of configured cipher algorithm names.
-    numAlgosConf = configureAlgos->getNumConfiguredAlgos(CipherAlgorithm);
-    for (i = 0; i < numAlgosConf; i++) {
+    auto numAlgosConf = configureAlgos->getNumConfiguredAlgos(CipherAlgorithm);
+    for (auto i = 0; i < numAlgosConf; i++) {
         algosConf[i] = &configureAlgos->getAlgoAt(CipherAlgorithm, i);
     }
     // Build list of offered known algos names in Hello.
-    for (numAlgosOffered = 0, i = 0; i < num; i++) {
+    int32_t numAlgosOffered = 0;
+    for (auto i = 0; i < num; i++) {
         algosOffered[numAlgosOffered] = &zrtpSymCiphers.getByName((const char*)hello->getCipherType(i));
         if (!algosOffered[numAlgosOffered]->isValid())
             continue;
         numAlgosOffered++;
     }
     // Lookup offered algos in configured algos.  Prefer algorithms that appear first in Hello packet (offered).
-    for (i = 0; i < numAlgosOffered; i++) {
-        for (ii = 0; ii < numAlgosConf; ii++) {
+    for (auto i = 0; i < numAlgosOffered; i++) {
+        for (auto ii = 0; ii < numAlgosConf; ii++) {
             if (*(int32_t*)(algosOffered[i]->getName()) == *(int32_t*)(algosConf[ii]->getName())) {
                 return algosConf[ii];
             }
@@ -1528,9 +1520,9 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
 #else
     const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38};
 #endif
-    int numOrderedAlgos = sizeof(orderedAlgos) / sizeof(const char*);
+    auto numOrderedAlgos = sizeof(orderedAlgos) / sizeof(const char*);
 
-    int numAlgosPeer = hello->getNumPubKeys();
+    auto numAlgosPeer = hello->getNumPubKeys();
     if (numAlgosPeer == 0) {
         hash = findBestHash(hello);                    // find a hash algorithm
         return &zrtpPubKeys.getByName(mandatoryPubKey);
@@ -1538,9 +1530,9 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
     // Build own list of intersecting algos, keep own order of algorithms
     // The list must include real public key algorithms only, so skip multi-stream mode,
     // pre-shared and alike.
-    int numAlgosOwn = configureAlgos->getNumConfiguredAlgos(PubKeyAlgorithm);
+    auto numAlgosOwn = configureAlgos->getNumConfiguredAlgos(PubKeyAlgorithm);
     int numOwnIntersect = 0;
-    for (int i = 0; i < numAlgosOwn; i++) {
+    for (auto i = 0; i < numAlgosOwn; i++) {
         ownIntersect[numOwnIntersect] = &configureAlgos->getAlgoAt(PubKeyAlgorithm, i);
         if (*(int32_t*)(ownIntersect[numOwnIntersect]->getName()) == *(int32_t*)mult) {
             continue;                               // skip multi-stream mode
@@ -1556,9 +1548,9 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
     // list of algorithms that we have in common. The order of the list is according
     // to peer's Hello packet (peer's preferences). 
     int numPeerIntersect = 0;
-    for (int i = 0; i < numAlgosPeer; i++) {
+    for (auto i = 0; i < numAlgosPeer; i++) {
         peerIntersect[numPeerIntersect] = &zrtpPubKeys.getByName((const char*)hello->getPubKeyType(i));
-        for (int ii = 0; ii < numOwnIntersect; ii++) {
+        for (auto ii = 0; ii < numOwnIntersect; ii++) {
             if (*(int32_t*)(ownIntersect[ii]->getName()) == *(int32_t*)(peerIntersect[numPeerIntersect]->getName())) {
                 numPeerIntersect++;
                 break;
@@ -1621,33 +1613,29 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
 
 AlgorithmEnum* ZRtp::findBestSASType(ZrtpPacketHello *hello) {
 
-    int  i;
-    int ii;
-    int numAlgosOffered;
     AlgorithmEnum* algosOffered[ZrtpConfigure::maxNoOfAlgos+1];
-
-    int numAlgosConf;
     AlgorithmEnum* algosConf[ZrtpConfigure::maxNoOfAlgos+1];
 
-    int num = hello->getNumSas();
+    auto num = hello->getNumSas();
     if (num == 0) {
         return &zrtpSasTypes.getByName(mandatorySasType);
     }
     // Build list of configured SAS algorithm names
-    numAlgosConf = configureAlgos->getNumConfiguredAlgos(SasType);
-    for (i = 0; i < numAlgosConf; i++) {
+    auto numAlgosConf = configureAlgos->getNumConfiguredAlgos(SasType);
+    for (auto i = 0; i < numAlgosConf; i++) {
         algosConf[i] = &configureAlgos->getAlgoAt(SasType, i);
     }
     // Build list of offered known algos in Hello,
-    for (numAlgosOffered = 0, i = 0; i < num; i++) {
+    int32_t numAlgosOffered = 0;
+    for (auto i = 0; i < num; i++) {
         algosOffered[numAlgosOffered] = &zrtpSasTypes.getByName((const char*)hello->getSasType(i));
         if (!algosOffered[numAlgosOffered]->isValid())
             continue;
         numAlgosOffered++;
     }
     // Lookup offered algos in configured algos. Prefer algorithms that appear first in Hello packet (offered).
-    for (i = 0; i < numAlgosOffered; i++) {
-        for (ii = 0; ii < numAlgosConf; ii++) {
+    for (auto i = 0; i < numAlgosOffered; i++) {
+        for (auto ii = 0; ii < numAlgosConf; ii++) {
             if (*(int32_t*)(algosOffered[i]->getName()) == *(int32_t*)(algosConf[ii]->getName())) {
                 return algosConf[ii];
             }
@@ -1659,27 +1647,23 @@ AlgorithmEnum* ZRtp::findBestSASType(ZrtpPacketHello *hello) {
 
 AlgorithmEnum* ZRtp::findBestAuthLen(ZrtpPacketHello *hello) {
 
-    int  i;
-    int ii;
-    int numAlgosOffered;
     AlgorithmEnum* algosOffered[ZrtpConfigure::maxNoOfAlgos+2];
-
-    int numAlgosConf;
     AlgorithmEnum* algosConf[ZrtpConfigure::maxNoOfAlgos+2];
 
-    int num = hello->getNumAuth();
+    auto num = hello->getNumAuth();
     if (num == 0) {
         return &zrtpAuthLengths.getByName(mandatoryAuthLen_1);
     }
 
     // Build list of configured Authentication tag length algorithm names.
-    numAlgosConf = configureAlgos->getNumConfiguredAlgos(AuthLength);
-    for (i = 0; i < numAlgosConf; i++) {
+    auto numAlgosConf = configureAlgos->getNumConfiguredAlgos(AuthLength);
+    for (auto i = 0; i < numAlgosConf; i++) {
         algosConf[i] = &configureAlgos->getAlgoAt(AuthLength, i);
     }
 
     // Build list of offered known algos in Hello.
-    for (numAlgosOffered = 0, i = 0; i < num; i++) {
+    int32_t numAlgosOffered = 0;
+    for (auto i = 0; i < num; i++) {
         algosOffered[numAlgosOffered] = &zrtpAuthLengths.getByName((const char*)hello->getAuthLen(i));
         if (!algosOffered[numAlgosOffered]->isValid())
             continue;
@@ -1687,8 +1671,8 @@ AlgorithmEnum* ZRtp::findBestAuthLen(ZrtpPacketHello *hello) {
     }
 
     // Lookup offered algos in configured algos. Prefer algorithms that appear first in Hello packet (offered).
-    for (i = 0; i < numAlgosOffered; i++) {
-        for (ii = 0; ii < numAlgosConf; ii++) {
+    for (auto i = 0; i < numAlgosOffered; i++) {
+        for (auto ii = 0; ii < numAlgosConf; ii++) {
             if (*(int32_t*)(algosOffered[i]->getName()) == *(int32_t*)(algosConf[ii]->getName())) {
                 return algosConf[ii];
             }
@@ -1713,7 +1697,7 @@ AlgorithmEnum* ZRtp::findBestAuthLen(ZrtpPacketHello *hello) {
 //
 AlgorithmEnum* ZRtp::getStrongHashOffered(ZrtpPacketHello *hello, int32_t algoName) {
 
-    int numHash = hello->getNumHashes();
+    auto numHash = hello->getNumHashes();
     bool nonNist = (algoName == *(int32_t*)e414 || algoName == *(int32_t*)e255) && configureAlgos->getSelectionPolicy() == ZrtpConfigure::PreferNonNist;
 
     if (nonNist) {
@@ -1735,7 +1719,7 @@ AlgorithmEnum* ZRtp::getStrongHashOffered(ZrtpPacketHello *hello, int32_t algoNa
 
 AlgorithmEnum* ZRtp::getStrongCipherOffered(ZrtpPacketHello *hello, int32_t algoName) {
 
-    int num = hello->getNumCiphers();
+    auto num = hello->getNumCiphers();
     bool nonNist = (algoName == *(int32_t*)e414 || algoName == *(int32_t*)e255) && configureAlgos->getSelectionPolicy() == ZrtpConfigure::PreferNonNist;
 
     if (nonNist) {
@@ -1757,7 +1741,7 @@ AlgorithmEnum* ZRtp::getStrongCipherOffered(ZrtpPacketHello *hello, int32_t algo
 
 AlgorithmEnum* ZRtp::getHashOffered(ZrtpPacketHello *hello, int32_t algoName) {
 
-    int num = hello->getNumHashes();
+    auto num = hello->getNumHashes();
     bool nonNist = (algoName == *(int32_t*)e414 || algoName == *(int32_t*)e255) && configureAlgos->getSelectionPolicy() == ZrtpConfigure::PreferNonNist;
 
     if (nonNist) {
@@ -1773,7 +1757,7 @@ AlgorithmEnum* ZRtp::getHashOffered(ZrtpPacketHello *hello, int32_t algoName) {
 
 AlgorithmEnum* ZRtp::getCipherOffered(ZrtpPacketHello *hello, int32_t algoName) {
 
-    int num = hello->getNumCiphers();
+    auto num = hello->getNumCiphers();
     bool nonNist = (algoName == *(int32_t*)e414 || algoName == *(int32_t*)e255) && configureAlgos->getSelectionPolicy() == ZrtpConfigure::PreferNonNist;
 
     if (nonNist) {
@@ -1789,7 +1773,7 @@ AlgorithmEnum* ZRtp::getCipherOffered(ZrtpPacketHello *hello, int32_t algoName) 
 
 AlgorithmEnum* ZRtp::getAuthLenOffered(ZrtpPacketHello *hello, int32_t algoName) {
 
-    int num = hello->getNumAuth();
+    auto num = hello->getNumAuth();
     bool nonNist = (algoName == *(int32_t*)e414 || algoName == *(int32_t*)e255) && configureAlgos->getSelectionPolicy() == ZrtpConfigure::PreferNonNist;
 
     if (nonNist) {
@@ -1805,14 +1789,13 @@ AlgorithmEnum* ZRtp::getAuthLenOffered(ZrtpPacketHello *hello, int32_t algoName)
 
 bool ZRtp::checkMultiStream(ZrtpPacketHello *hello) {
 
-    int  i;
-    int num = hello->getNumPubKeys();
+    auto num = hello->getNumPubKeys();
 
     // Multi Stream mode is mandatory, thus if nothing is offered then it is supported :-)
     if (num == 0) {
         return true;
     }
-    for (i = 0; i < num; i++) {
+    for (auto i = 0; i < num; i++) {
         if (*(int32_t*)(hello->getPubKeyType(i)) == *(int32_t*)mult) {
             return true;
         }
@@ -2644,7 +2627,7 @@ string ZRtp::getHelloHash(int32_t index) {
     ostringstream stm;
 
     if (index < 0 || index >= MAX_ZRTP_VERSIONS)
-        return string();
+        return {};
 
     uint8_t* hp = helloPackets[index].helloHash;
 
@@ -2666,7 +2649,7 @@ string ZRtp::getPeerHelloHash() {
     ostringstream stm;
 
     if (peerHelloVersion[0] == 0)
-        return string();
+        return {};
 
     uint8_t* hp = peerHelloHash;
 
@@ -2706,16 +2689,16 @@ void ZRtp::setMultiStrParams(string parameters, ZRtp *zrtpMaster) {
     uint8_t tmp[MAX_DIGEST_LENGTH + 1 + 1 + 1]; // max. hash length + cipher + authLength + hash
 
     // First get negotiated hash from parameters, set algorithms and length
-    uint32_t i = static_cast<uint32_t>(parameters.at(0)) & 0x7fU;
+    auto i = parameters.at(0) & 0x7f;
     hash = &zrtpHashes.getByOrdinal(i);
     setNegotiatedHash(hash);           // sets hash length
 
     // use string.copy(buffer, num, start=0) to retrieve chars (bytes) from the string
     parameters.copy(reinterpret_cast<char*>(tmp), hashLength + 1 + 1 + 1, 0);
 
-    i = tmp[1] & 0xffU;
+    i = tmp[1] & 0xff;
     authLength = &zrtpAuthLengths.getByOrdinal(i);
-    i = tmp[2] & 0xffU;
+    i = tmp[2] & 0xff;
     cipher = &zrtpSymCiphers.getByOrdinal(i);
     zrtpSession.assign(tmp+3, hashLength);
 
@@ -2755,7 +2738,7 @@ void ZRtp::acceptEnrollment(bool accepted) {
 #endif
 }
 
-bool ZRtp::setSignatureData(uint8_t* data, uint32_t length) {
+bool ZRtp::setSignatureData(uint8_t* data, int32_t length) {
     if ((length % 4) != 0)
         return false;
 

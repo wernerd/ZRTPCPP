@@ -38,7 +38,7 @@ namespace Botan {
 
         size_t key_length() const override { return 52 * 8; }
 
-        AlgorithmIdentifier algorithm_identifier() const override { return AlgorithmIdentifier(); }
+        AlgorithmIdentifier algorithm_identifier() const override { return {}; }
 
         bool check_key(RandomNumberGenerator &rng, bool strong) const override;
 
@@ -68,7 +68,7 @@ namespace Botan {
          *
          * @param rng the RNG to use
          */
-        Curve41417_PrivateKey(RandomNumberGenerator &rng, const BigInt& x = 0);
+        explicit Curve41417_PrivateKey(RandomNumberGenerator &rng, const BigInt& x = 0);
 
         ~Curve41417_PrivateKey() override = default;
 
