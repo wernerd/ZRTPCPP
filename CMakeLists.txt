@@ -117,6 +117,8 @@ else()
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DLOG_MAX_LEVEL=WARNING")
 endif()
 
+set(CMAKE_CXX_STANDARD 17)
+
 include(FetchContent)
 
 set(sidh_lc sidh)
