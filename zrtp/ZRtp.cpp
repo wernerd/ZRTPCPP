@@ -663,7 +663,10 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
         *errMsg = DHErrorWrongPV;
         return nullptr;
     }
-    dhContext->computeSecretKey(pvr, DHss);
+    if(dhContext->computeSecretKey(pvr, DHss) <= 0) {
+        *errMsg = DHErrorWrongPV;
+        return nullptr;
+    };
 
     // We are Initiator: the Responder's Hello and the Initiator's (our) Commit
     // are already hashed in the context. Now hash the Responder's DH1 and then
@@ -732,7 +735,10 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
         *errMsg = DHErrorWrongPV;
         return nullptr;
     }
-    dhContext->computeSecretKey(pvi, DHss);
+    if (dhContext->computeSecretKey(pvi, DHss) <= 0) {
+        *errMsg = DHErrorWrongPV;
+        return nullptr;
+    };
 
     // Hash the Initiator's DH2 into the message Hash (other messages already prepared, see method prepareDHPart1()).
     // Use negotiated hash function
