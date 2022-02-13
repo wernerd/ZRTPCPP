@@ -55,8 +55,10 @@ void randomZRTP(uint8_t *buf, int32_t length);
 // Exclude the whole code if not compiled with c++ - needed for C-wrapper code.
 #if defined(__cplusplus)
 
-#include <libzrtpcpp/ZrtpConfigure.h>
-#include <cpp/SidhWrapper.h>
+#include "libzrtpcpp/ZrtpConfigure.h"
+#ifdef SIDH_SUPPORT
+#include "cpp/SidhWrapper.h"
+#endif
 #include "../common/SecureArray.h"
 
 static const uint32_t DH2K_LENGTH_BYTES = 2048 / 8;
@@ -174,9 +176,9 @@ private:
         PQ64,
         PQ74
     };
-
+#ifdef SIDH_SUPPORT
     SidhWrapper::SidhType getSidhType() const;
-
+#endif
     /**
      * Returns the size in bytes of the DH parameter p which is the size of the shared secret.
      *

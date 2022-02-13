@@ -152,7 +152,6 @@ ZrtpDH::~ZrtpDH() {
 }
 
 #ifdef SIDH_SUPPORT
-
 SidhWrapper::SidhType ZrtpDH::getSidhType() const
 {
     switch (pkType) {
@@ -476,6 +475,7 @@ int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes)
             return !otherPublicKey.check_key(rng, false) ? 0 : 1;
         }
 
+#ifdef SIDH_SUPPORT
             // No check for SIDH algorithm yet, check E414 only.
         case PQ54:
         case PQ64:
@@ -489,7 +489,7 @@ int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes)
         case SDH5:
         case SDH7:
             return 1;
-
+#endif
         default: {
            return 0;
         }
