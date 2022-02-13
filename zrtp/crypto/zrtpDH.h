@@ -60,6 +60,7 @@ void randomZRTP(uint8_t *buf, int32_t length);
 #include "cpp/SidhWrapper.h"
 #endif
 #include "../common/SecureArray.h"
+#include "../common/typedefs.h"
 
 static const uint32_t DH2K_LENGTH_BYTES = 2048 / 8;
 static const uint32_t DH3K_LENGTH_BYTES = 3072 / 8;
@@ -117,7 +118,7 @@ public:
      *
      * @return Size in bytes.
      */
-    size_t fillInPubKeyBytes(secUtilities::SecureArray<1000>& pubKey) const;
+    size_t fillInPubKeyBytes(zrtp::SecureArray1k& pubKey) const;
 
     /**
      * Compute the secret key and returns it to caller.
@@ -133,7 +134,7 @@ public:
      *
      * @return the size of the shared secret on success, -1 on error.
      */
-    size_t computeSecretKey(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret);
+    size_t computeSecretKey(uint8_t *pubKeyBytes, zrtp::SecureArray1k& secret);
 
     /**
      * Check and validate the public key received from peer.
@@ -195,11 +196,11 @@ private:
 
 
     void generateSidhKeyPair();
-    size_t computeSidhSharedSecret(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret);
+    size_t computeSidhSharedSecret(uint8_t *pubKeyBytes, zrtp::SecureArray1k& secret);
     [[nodiscard]] size_t getSidhSharedSecretLength() const ;
 
-    size_t secretKeyComputation(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret, int algorithm);
-    size_t getPubKeyBytes(secUtilities::SecureArray<1000>& pubKey, int algorithm) const;
+    size_t secretKeyComputation(uint8_t *pubKeyBytes, zrtp::SecureArray1k& secret, int algorithm);
+    size_t getPubKeyBytes(zrtp::SecureArray1k& pubKey, int algorithm) const;
 
     struct dhCtx;
 

@@ -76,7 +76,7 @@ namespace Botan {
         /**
         * Return the size of p in bits (same as get_p().bytes())
         */
-        size_t get_p_bytes() const;
+        [[nodiscard]] size_t get_p_bytes() const;
 
         /**
         * Return the size of group order in bits (same as get_order().bits())
@@ -91,12 +91,12 @@ namespace Botan {
         /**
         * Return the prime modulus of the field
         */
-        const BigInt &get_p() const;
+        [[nodiscard]] const BigInt &get_p() const;
 
         /**
         * Return the a parameter of the elliptic curve equation
         */
-        const BigInt &get_a() const;
+        [[nodiscard]] const BigInt &get_a() const;
 
         /**
         * Return the b parameter of the elliptic curve equation
@@ -107,54 +107,54 @@ namespace Botan {
         * Return group base point
         * @result base point
         */
-        const Point41417p &get_base_point() const;
+        [[nodiscard]] const Point41417p &get_base_point() const;
 
         /**
         * Return the x coordinate of the base point
         */
-        const BigInt &get_g_x() const;
+        [[nodiscard]] const BigInt &get_g_x() const;
 
         /**
         * Return the y coordinate of the base point
         */
-        const BigInt &get_g_y() const;
+        [[nodiscard]] const BigInt &get_g_y() const;
 
         /**
         * Return the order of the base point
         * @result order of the base point
         */
-        const BigInt &get_order() const;
+        [[nodiscard]] const BigInt &get_order() const;
 
         /*
         * Reduce x modulo the prime
         */
-        BigInt mod_prime(const BigInt &x) const;
+        [[nodiscard]] BigInt mod_prime(const BigInt &x) const;
 
         /*
         * Return inverse of x modulo the prime
         */
-        BigInt inverse_mod_prime(const BigInt &x) const;
+        [[nodiscard]] BigInt inverse_mod_prime(const BigInt &x) const;
 
         /*
         * Reduce (x*x) modulo the prime
         */
-        BigInt square_mod_prime(const BigInt &x) const;
+        [[nodiscard]] BigInt square_mod_prime(const BigInt &x) const;
 
         /*
         * Reduce (x*y) modulo the prime
         */
-        BigInt multiply_mod_prime(const BigInt &x, const BigInt &y) const;
+        [[nodiscard]] BigInt multiply_mod_prime(const BigInt &x, const BigInt &y) const;
 
         /*
         * Reduce (x*y*z) modulo the prime
         */
-        BigInt multiply_mod_prime(const BigInt &x, const BigInt &y, const BigInt &z) const;
+        [[nodiscard]] BigInt multiply_mod_prime(const BigInt &x, const BigInt &y, const BigInt &z) const;
 
         /**
         * Return the cofactor
         * @result the cofactor
         */
-        const BigInt &get_cofactor() const;
+        [[nodiscard]] const BigInt &get_cofactor() const;
 
         /**
         * Check if y is a plausible point on the curve
@@ -162,12 +162,12 @@ namespace Botan {
         * In particular, checks that it is a point on the curve, not infinity,
         * and that it has order matching the group.
         */
-        bool verify_public_element(const Point41417p &y) const;
+        [[nodiscard]] bool verify_public_element(const Point41417p &y) const ;
 
         /**
         * Return a point on this curve with the affine values x, y
         */
-        Point41417p point(const BigInt &x, const BigInt &y) const;
+        [[nodiscard]] Point41417p point(const BigInt &x, const BigInt &y) const;
 
         /**
         * Base point multiplication
@@ -194,24 +194,25 @@ namespace Botan {
         /**
         * Return the zero (or infinite) point on this curve
         */
-        Point41417p zero_point() const;
+        [[nodiscard]] Point41417p zero_point() const;
 
-        bool initialized() const { return (m_data != nullptr); }
+        [[nodiscard]] bool initialized() const { return (m_data != nullptr); }
 
         /**
          * Verify EC41417_Group domain
-         * @returns true if group is valid. false otherwise
+         * @returns Always returns true - group is fixed
          */
-        bool verify_group(RandomNumberGenerator &rng,
-                          bool strong = false) const;
+        static bool verify_group(RandomNumberGenerator &rng,
+                          bool strong = false) { return true; }
 
-        bool operator==(const EC41417_Group &other) const;
+        bool operator==(const EC41417_Group &other) const = delete;
 
         /**
         * Return PEM representation of named EC group
         * Deprecated: Use EC41417_Group(name).PEM_encode() if this is needed
         */
-        static std::string BOTAN_DEPRECATED("See header comment") PEM_for_named_group(const std::string &name);
+        static std::string BOTAN_DEPRECATED("See header comment")
+        PEM_for_named_group(const std::string &name) { return {}; }
 
         /**
         * Return a set of known named EC groups
@@ -228,7 +229,7 @@ namespace Botan {
                                 const char *order);
 
         // Member data
-        const EC41417_Group_Data &data() const;
+        [[nodiscard]] const EC41417_Group_Data &data() const;
 
         std::shared_ptr<EC41417_Group_Data> m_data;
     };

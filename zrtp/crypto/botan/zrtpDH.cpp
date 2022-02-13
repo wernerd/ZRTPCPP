@@ -192,7 +192,7 @@ void ZrtpDH::generateSidhKeyPair() {
 }
 #endif
 
-size_t ZrtpDH::secretKeyComputation(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret, int algorithm) {
+size_t ZrtpDH::secretKeyComputation(uint8_t *pubKeyBytes, zrtp::SecureArray1k& secret, int algorithm) {
 
     // Was computed already, probably because of calling checkPubKey(...)
     if (!ctx->sharedSecret.empty()) {
@@ -253,7 +253,7 @@ size_t ZrtpDH::secretKeyComputation(uint8_t *pubKeyBytes, secUtilities::SecureAr
                 computeSidhSharedSecret(pubKeyBytes, secret);
                 auto offset = ctx->sidhPubKey->capacity();  // skip SIDH data, see comment in generateSidhKeyPair() above
 
-                secUtilities::SecureArray<1000> e414secret;
+                zrtp::SecureArray1k e414secret;
                 secretKeyComputation(pubKeyBytes + offset, e414secret, E414);
                 secret.append(e414secret);
                 ctx->sharedSecret.assign(secret.data(), secret.data() + secret.size());
@@ -271,12 +271,12 @@ size_t ZrtpDH::secretKeyComputation(uint8_t *pubKeyBytes, secUtilities::SecureAr
     return -1;
 }
 
-size_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret) {
+size_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, zrtp::SecureArray1k& secret) {
     return secretKeyComputation(pubKeyBytes, secret, pkType);
 }
 
 #ifdef SIDH_SUPPORT
-size_t ZrtpDH::computeSidhSharedSecret(uint8_t *pubKeyBytes, secUtilities::SecureArray<1000>& secret)
+size_t ZrtpDH::computeSidhSharedSecret(uint8_t *pubKeyBytes, zrtp::SecureArray1k& secret)
 {
     SidhWrapper::SidhType sidhType = getSidhType();
 
@@ -366,7 +366,7 @@ size_t ZrtpDH::getPubKeySize() const
     return 0;
 }
 
-size_t ZrtpDH::getPubKeyBytes(secUtilities::SecureArray<1000>& pubKey, int algorithm) const
+size_t ZrtpDH::getPubKeyBytes(zrtp::SecureArray1k& pubKey, int algorithm) const
 {
     switch (algorithm) {
         case DH2K:
@@ -408,7 +408,7 @@ size_t ZrtpDH::getPubKeyBytes(secUtilities::SecureArray<1000>& pubKey, int algor
             auto len = ctx->sidhPubKey->capacity();
             pubKey.assign(ctx->sidhPubKey->data(), len);
 
-            secUtilities::SecureArray<1000> e414PubKey;
+            zrtp::SecureArray1k e414PubKey;
             getPubKeyBytes(e414PubKey, E414);
             pubKey.append(e414PubKey);
             return pubKey.size();
@@ -423,7 +423,7 @@ size_t ZrtpDH::getPubKeyBytes(secUtilities::SecureArray<1000>& pubKey, int algor
     return 0;
 }
 
-size_t ZrtpDH::fillInPubKeyBytes(secUtilities::SecureArray<1000>& pubKey) const
+size_t ZrtpDH::fillInPubKeyBytes(zrtp::SecureArray1k& pubKey) const
 {
     return getPubKeyBytes(pubKey, pkType);
 }

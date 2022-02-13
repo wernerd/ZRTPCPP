@@ -26,13 +26,10 @@ namespace zrtp {
     /** Unique pointer to a string */
     using StringUnique = std::unique_ptr<std::string> ;
 
-    /** Unique pointer to a list of strings */
-    using StringListUnique = std::unique_ptr<std::list<std::string>>;
-
     using RetainedSecArray = secUtilities::SecureArray<MAX_DIGEST_LENGTH>;
     using ImplicitDigest = secUtilities::SecureArray<IMPL_MAX_DIGEST_LENGTH>;
     using NegotiatedArray = secUtilities::SecureArray<MAX_DIGEST_LENGTH>;
-    using MaxDigestArray = secUtilities::SecureArray<MAX_DIGEST_LENGTH>;
+    using SecureArray1k = secUtilities::SecureArray<1024>;
 }
 
 #ifdef _WIN64

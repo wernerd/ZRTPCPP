@@ -19,30 +19,30 @@ static const UChar32 utf8_minLegal[4]={ 0, 0x80, 0x800, 0x10000 };
  * NUL-terminate a string no matter what its type.
  * Set warning and error codes accordingly.
  */
-#define __TERMINATE_STRING(dest, destCapacity, length, pErrorCode)      \
-    if(pErrorCode!=NULL && U_SUCCESS(*pErrorCode)) {                    \
+#define TERMINATE_STRING_(dest, destCapacity, length, pErrorCode)      \
+    if((pErrorCode)!=NULL && U_SUCCESS(*(pErrorCode))) {                    \
         /* not a public function, so no complete argument checking */   \
                                                                         \
-        if(length<0) {                                                  \
+        if((length)<0) {                                                  \
             /* assume that the caller handles this */                   \
-        } else if(length<destCapacity) {                                \
+        } else if((length)<(destCapacity)) {                                \
             /* NUL-terminate the string, the NUL fits */                \
-            dest[length]=0;                                             \
+            (dest)[length]=0;                                             \
             /* unset the not-terminated warning but leave all others */ \
-            if(*pErrorCode==U_STRING_NOT_TERMINATED_WARNING) {          \
-                *pErrorCode=U_ZERO_ERROR;                               \
+            if(*(pErrorCode)==U_STRING_NOT_TERMINATED_WARNING) {          \
+                *(pErrorCode)=U_ZERO_ERROR;                               \
             }                                                           \
-        } else if(length==destCapacity) {                               \
+        } else if((length)==(destCapacity)) {                               \
             /* unable to NUL-terminate, but the string itself fit - set a warning code */ \
-            *pErrorCode=U_STRING_NOT_TERMINATED_WARNING;                \
+            *(pErrorCode)=U_STRING_NOT_TERMINATED_WARNING;                \
         } else /* length>destCapacity */ {                              \
             /* even the string itself did not fit - set an error code */ \
-            *pErrorCode=U_BUFFER_OVERFLOW_ERROR;                        \
+            *(pErrorCode)=U_BUFFER_OVERFLOW_ERROR;                        \
         }                                                               \
     }
 
 int32_t u_terminateUChars(UChar *dest, int32_t destCapacity, int32_t length, UErrorCode *pErrorCode) {
-    __TERMINATE_STRING(dest, destCapacity, length, pErrorCode);
+    TERMINATE_STRING_(dest, destCapacity, length, pErrorCode)
     return length;
 }
 

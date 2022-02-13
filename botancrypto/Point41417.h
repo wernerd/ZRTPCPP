@@ -51,7 +51,7 @@ namespace Botan {
         /**
         * Move Constructor
         */
-        Point41417p(Point41417p &&other) {
+        Point41417p(Point41417p &&other)  noexcept {
             this->swap(other);
         }
 
@@ -158,7 +158,7 @@ namespace Botan {
         /**
         * Return the zero (aka infinite) point associated with this group
         */
-        Point41417p zero() const { return Point41417p(0, 0); }
+        Point41417p zero() const { return {0, 0}; }
 
 
     private:

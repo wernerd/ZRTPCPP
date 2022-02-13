@@ -180,11 +180,11 @@ namespace Botan {
 
     Point41417p EC41417_Group::point(const BigInt &x, const BigInt &y) const
     {
-        return Point41417p(x, y);
+        return {x, y};
     }
 
     Point41417p EC41417_Group::zero_point() const {
-        return Point41417p(0, 0);
+        return {0, 0};
     }
 
     const EC41417_Group_Data & EC41417_Group::data() const {

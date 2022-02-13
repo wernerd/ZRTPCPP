@@ -709,12 +709,12 @@ private:
     /**
      * The computed DH shared secret
      */
-    secUtilities::SecureArray<1000> DHss;
+    zrtp::SecureArray1k DHss;
 
     /**
      * My computed public key
      */
-    secUtilities::SecureArray<1000> pubKeyBytes;
+    zrtp::SecureArray1k pubKeyBytes;
 
     /**
      * My Role in the game

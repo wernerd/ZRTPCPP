@@ -166,23 +166,23 @@ TEST_F(BotanEc41417TestFixture, DiffieHellman) {
     ZrtpDH aliceDh(e414, ZrtpDH::Commit);
     ASSERT_TRUE(aliceDh.version() == "Botan");
 
-    secUtilities::SecureArray<1000> alicePubKey;
+    zrtp::SecureArray1k alicePubKey;
     auto aliceKeyLen = aliceDh.fillInPubKeyBytes(alicePubKey);
 
     // Setup with  DH code for Bob
     ZrtpDH bobDh(e414, ZrtpDH::Commit);
 
-    secUtilities::SecureArray<1000> bobPubKey;
+    zrtp::SecureArray1k bobPubKey;
     auto bobKeyLen = bobDh.fillInPubKeyBytes(bobPubKey);
 
     // Agree on keys. Alice first
-    secUtilities::SecureArray<1000> aliceSharedData;
+    zrtp::SecureArray1k aliceSharedData;
     aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data(), aliceSharedData);
     ASSERT_GT(aliceKeyLen, 0);
     ASSERT_EQ(aliceKeyLen, aliceSharedData.size());
 
     // Now Bob
-    secUtilities::SecureArray<1000> bobSharedData;
+    zrtp::SecureArray1k bobSharedData;
     bobKeyLen = bobDh.computeSecretKey(alicePubKey.data(), bobSharedData);
     ASSERT_GT(bobKeyLen, 0);
     ASSERT_EQ(bobKeyLen, bobSharedData.size());
