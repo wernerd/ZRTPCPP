@@ -54,17 +54,6 @@ class Base32 {
     /**
      * A Constructor that decodes from base32 into binary.
      *
-     * The constructor decodes the base32 encoded data back into binary
-     * data. Use <code>getDecoded(...)</code> to get the binary data.
-     *
-     * @param encoded
-     *     The string that contains the base32 encoded data.
-     */
-    explicit Base32(const string& encoded);
-
-    /**
-     * A Constructor that decodes from base32 into binary.
-     *
      * This constructor decodes the base32 encoded data back into
      * binary data. Only the specified number of bits are decoded
      * (should be a multiple of 5).  Use
@@ -166,7 +155,7 @@ class Base32 {
      * @param lengthinbits
      *    The number of bits of data in <code>cs</code> to be decoded
      */
-    void a2b_l(const string& cs, size_t size, size_t lengthinbits);
+    void a2b_l(const string& cs, int size, int lengthinbits);
 
     /**
      * Encodes binary to to base32 presentation.
@@ -202,7 +191,7 @@ class Base32 {
      * @param noOfBits
      *    The number of bits of data in encoded into `cs'
      */
-    void b2a_l(const unsigned char* cs, int len, size_t noOfBits);
+    void b2a_l(const unsigned char* cs, int len, int noOfBits);
 
     /**
      * Holds the pointer to decoded binary data

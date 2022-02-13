@@ -180,7 +180,7 @@ unique_ptr<string> EmojiBase32::u32StringToUtf8(const u32string& in)
     string out(6, '\0');
     for (const auto& c32 : in) {
         size_t offset = 0;
-        U8_APPEND_UNSAFE(&out[0], offset, c32);
+        U8_APPEND_UNSAFE(&out[0], offset, c32)
         result->append(out, 0, offset);
     }
     return result;

@@ -23,7 +23,6 @@
  */
 #ifndef UNIT_TEST
 #include <libzrtpcpp/Base32.h>
-#include <common/osSpecifics.h>
 
 #else
 #include "libzrtpcpp/Base32.h"
@@ -87,13 +86,6 @@ static const unsigned char revchars[]= {
     255, 255, 255, 255, 255, 255, 255, 255
 };
 
-
-Base32::Base32(const string& encoded):
-    binaryResult(nullptr), resultLength(0) {
-
-    a2b_l(encoded, encoded.size(), (encoded.size()*5/8)*8);
-}
-
 Base32::Base32(const string& encoded, int noOfBits):
     binaryResult(nullptr), resultLength(0) {
 
@@ -108,7 +100,7 @@ Base32::Base32(const unsigned char* data, int noOfBits):
 
 Base32::~Base32() {
     if (binaryResult != nullptr && binaryResult != smallBuffer) {
-	delete [] binaryResult;
+        delete [] binaryResult;
     }
     binaryResult = nullptr;
 }
@@ -118,8 +110,8 @@ const unsigned char* Base32::getDecoded(int &length) {
     return binaryResult;
 }
 
-void Base32::b2a_l(const unsigned char* os, int len,
-		   const size_t lengthinbits) {
+void Base32::b2a_l(const unsigned char* cs, int len,
+                   int noOfBits) {
 
     /* if lengthinbits is not a multiple of 8 then this is allocating
      * space for 0, 1, or 2 extra quintets that will be truncated at the
@@ -130,17 +122,17 @@ void Base32::b2a_l(const unsigned char* os, int len,
     /* index into the result buffer, initially pointing to the
      * "one-past-the-end" quintet
      */
-    int resp = result.size();
+    auto resp = result.size();
 
     /* pointer into the os buffer, initially pointing to the
      * "one-past-the-end" octet
      */
-    const unsigned char* osp = os + len;
+    const unsigned char* osp = cs + len;
 
     /* Now this is a real live Duff's device.  You gotta love it. */
 
     unsigned long x = 0;	// to hold up to 32 bits worth of the input
-    switch ((osp - os) % 5) {
+    switch ((osp - cs) % 5) {
 
 	case 0:
 	    do {
@@ -175,14 +167,14 @@ void Base32::b2a_l(const unsigned char* os, int len,
 		    result[--resp] = chars[x%32];
 		    x /= 32; /* ... now we have 5 bits worth in x... */
 		    result[--resp] = chars[x];
-	    } while (osp > os);
+	    } while (osp > cs);
     } /* switch ((osp - os.buf) % 5) */
 
     /* truncate any unused trailing zero quintets */
-    encoded = result.substr(0, divceil(lengthinbits, 5));
+    encoded = result.substr(0, divceil(noOfBits, 5));
 }
 
-void Base32::a2b_l(const string& cs, size_t size, const size_t lengthinbits ) {
+void Base32::a2b_l(const string& cs, int size, int lengthinbits ) {
     unsigned long x = 0;	// to hold up to 32 bits worth of the input
 
     int len = divceil(size*5, 8);
