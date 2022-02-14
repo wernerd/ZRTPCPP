@@ -110,11 +110,9 @@ endif()
 
 string(TOLOWER "${CMAKE_BUILD_TYPE}" build_type)
 if ("debug" STREQUAL build_type)
-    set (LOG_MAX_LEVEL "-DLOG_MAX_LEVEL=VERBOSE")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DLOG_MAX_LEVEL=VERBOSE")
+    add_compile_definitions(LOG_MAX_LEVEL=VERBOSE)
 else()
-    set (LOG_MAX_LEVEL "-DLOG_MAX_LEVEL=WARNING")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DLOG_MAX_LEVEL=WARNING")
+    add_compile_definitions(LOG_MAX_LEVEL=WARNING)
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
@@ -192,7 +190,7 @@ if (NOT EMBEDDED)
             check_include_files(sqlite3.h HAVE_SQLCIPHER_H)
             set(LIBS ${LIBS} ${SQLCIPHER_LDFLAGS})
             MESSAGE(STATUS "Using SQlCipher based ZRTP cache: ${SQLCIPHER_LIBRARIES} ${SQLCIPHER_LIBRARY_DIRS} ${SQLCIPHER_LDFLAGS}")
-            add_definitions(-DSQL_CIPHER -DSQLITE_HAS_CODEC)
+            add_compile_definitions(SQL_CIPHER SQLITE_HAS_CODEC)
             include_directories(${SQLCIPHER_INCLUDE_DIRS}) #update includes directory from pkg-config
         else()
             message(FATAL_ERROR "SQLCipher library not found")
@@ -212,8 +210,8 @@ if (AXO)
 endif()
 
 if (TESTS)
-    add_definitions(-DUNIT_TESTS)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -O2 -fno-strict-aliasing -Wno-unknown-pragmas ${LOG_MAX_LEVEL}")
+    add_compile_definitions(UNIT_TESTS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O2 -fno-strict-aliasing -Wno-unknown-pragmas")
      # Download and unpack googletest at configure time.
     set(gtest_fetch googletest)
 
@@ -226,7 +224,7 @@ if (TESTS)
     # For Windows: Prevent overriding the parent project's compiler/linker settings
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -std=c++17 -g -O2 -fno-strict-aliasing -Wno-unknown-pragmas ${LOG_MAX_LEVEL}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -g -O2 -fno-strict-aliasing -Wno-unknown-pragmas")
 endif()
 
 if ("${BOTAN_REPO}" STREQUAL "")
@@ -261,7 +259,7 @@ if (SIDH)
     FetchContent_MakeAvailable(${sidh_fetch})
     include_directories (${sidh_SOURCE_DIR} ${sidh_SOURCE_DIR}/src)
     set(sidhLibNameStatic sidhCppStatic)
-    add_definitions(-DSIDH_SUPPORT)
+    add_compile_definitions(SIDH_SUPPORT)
 endif()
 
 if ("${BOTAN_LIB_NAME}" STREQUAL "")
@@ -282,7 +280,7 @@ if (SRTP)
             ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpSdesStream.h)
 
     if (SDES)
-        add_definitions(-DENABLE_SDES_MIX)  ## SDES mixer
+        add_compile_definitions(ENABLE_SDES_MIX)  ## SDES mixer
     endif()
 endif()
 
