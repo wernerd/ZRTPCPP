@@ -425,7 +425,7 @@ if (SQLITE OR SQLCIPHER)
     set(zrtp_src ${zrtp_src}
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZIDCacheDb.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZIDRecordDb.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/zrtpCacheSqliteBackend.c)
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/zrtpCacheSqliteBackend.cpp)
 endif()
 
 if (CCRTP)

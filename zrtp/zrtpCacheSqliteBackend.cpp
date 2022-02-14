@@ -18,10 +18,10 @@
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-#include <time.h>
+#include <cstdio>
+#include <cstdint>
+#include <cstring>
+#include <ctime>
 
 #include <sqlite3.h>        // Note: set correct include path for compiler
 
@@ -32,22 +32,15 @@
 
 #include <libzrtpcpp/zrtpCacheDbBackend.h>
 
-/* Some ported SQLite3 libs do not support the _v2 variants */
-#define SQLITE_USE_V2
-
-#ifdef SQLITE_USE_V2
 #define SQLITE_PREPARE sqlite3_prepare_v2
-#else
-#define SQLITE_PREPARE sqlite3_prepare
-#endif
 
 #if defined(_WIN32) || defined(_WIN64)
 # define snprintf _snprintf
 #endif
 
 #ifdef TRANSACTIONS
-static const char *beginTransactionSql  = "BEGIN TRANSACTION;";
-static const char *commitTransactionSql = "COMMIT;";
+constexpr char beginTransactionSql[]  = "BEGIN TRANSACTION;";
+constexpr char commitTransactionSql[] = "COMMIT;";
 #endif
 
 /*
@@ -59,7 +52,7 @@ static const int32_t localZidStandard         = 1; /* this local ZID is not tied
 static const int32_t localZidWithAccount      = 2;
 
 /* Default data for account info if none specified */
-static const char *defaultAccountString = "_STANDARD_";
+constexpr char defaultAccountString[] = "_STANDARD_";
 
 
 /* *****************************************************************************
@@ -67,34 +60,34 @@ static const char *defaultAccountString = "_STANDARD_";
  *
  * Used to check if we have valid ZRTP cache tables.
  */
-static char *lookupTables = "SELECT name FROM sqlite_master WHERE type='table' AND name='zrtpIdOwn';";
+constexpr char lookupTables[] = "SELECT name FROM sqlite_master WHERE type='table' AND name='zrtpIdOwn';";
 
 
 /* *****************************************************************************
  * SQL statements to process the zrtpIdOwn table.
  */
-static const char *dropZrtpIdOwn =      "DROP TABLE zrtpIdOwn;";
+constexpr char dropZrtpIdOwn[] =      "DROP TABLE zrtpIdOwn;";
 
 /* SQLite doesn't care about the VARCHAR length. */
-static char *createZrtpIdOwn = "CREATE TABLE zrtpIdOwn(localZid CHAR(18), type INTEGER, accountInfo VARCHAR(1000));";
+constexpr char createZrtpIdOwn[] = "CREATE TABLE zrtpIdOwn(localZid CHAR(18), type INTEGER, accountInfo VARCHAR(1000));";
 
-static char *selectZrtpIdOwn = "SELECT localZid FROM zrtpIdOwn WHERE type = ?1 AND accountInfo = ?2;";
-static char *insertZrtpIdOwn = "INSERT INTO zrtpIdOwn (localZid, type, accountInfo) VALUES (?1, ?2, ?3);";
+constexpr char selectZrtpIdOwn[] = "SELECT localZid FROM zrtpIdOwn WHERE type = ?1 AND accountInfo = ?2;";
+constexpr char insertZrtpIdOwn[] = "INSERT INTO zrtpIdOwn (localZid, type, accountInfo) VALUES (?1, ?2, ?3);";
 
 
 /* *****************************************************************************
  * SQL statements to process the remoteId table.
  */
-static const char *dropZrtpIdRemote =      "DROP TABLE zrtpIdRemote;";
+constexpr char dropZrtpIdRemote[] =      "DROP TABLE zrtpIdRemote;";
 
-static const char *createZrtpIdRemote = 
+constexpr char createZrtpIdRemote[] =
     "CREATE TABLE zrtpIdRemote "
     "(remoteZid CHAR(16),  localZid CHAR(16), flags INTEGER,"
     "rs1 BLOB(32), rs1LastUsed TIMESTAMP, rs1TimeToLive TIMESTAMP," 
     "rs2 BLOB(32), rs2LastUsed TIMESTAMP, rs2TimeToLive TIMESTAMP,"
     "mitmKey BLOB(32), mitmLastUsed TIMESTAMP, secureSince TIMESTAMP, preshCounter INTEGER);";
 
-static const char *selectZrtpIdRemoteAll = 
+constexpr char selectZrtpIdRemoteAll[] =
     "SELECT flags,"
     "rs1, strftime('%s', rs1LastUsed, 'unixepoch'), strftime('%s', rs1TimeToLive, 'unixepoch'),"
     "rs2, strftime('%s', rs2LastUsed, 'unixepoch'), strftime('%s', rs2TimeToLive, 'unixepoch'),"
@@ -102,7 +95,7 @@ static const char *selectZrtpIdRemoteAll =
     "preshCounter "
     "FROM zrtpIdRemote WHERE remoteZid=?1 AND localZid=?2;";
 
-static const char *insertZrtpIdRemote =
+constexpr char insertZrtpIdRemote[] =
     "INSERT INTO zrtpIdRemote "
         "(remoteZid, localZid, flags,"
         "rs1, rs1LastUsed, rs1TimeToLive,"
@@ -114,7 +107,7 @@ static const char *insertZrtpIdRemote =
         "?6, strftime('%s', ?7, 'unixepoch'), strftime('%s', ?8, 'unixepoch'),"
         "?9, strftime('%s', ?10, 'unixepoch'), strftime('%s', ?11, 'unixepoch'), ?13);";
 
-static const char *updateZrtpIdRemote = 
+constexpr char updateZrtpIdRemote[] =
     "UPDATE zrtpIdRemote SET "
     "flags=?2,"
     "rs1=?3, rs1LastUsed=strftime('%s', ?4, 'unixepoch'), rs1TimeToLive=strftime('%s', ?5, 'unixepoch'),"
@@ -123,7 +116,7 @@ static const char *updateZrtpIdRemote =
     "secureSince=strftime('%s', ?11, 'unixepoch'), preshCounter=?13 "
     "WHERE remoteZid=?1 AND localZid=?12;";
 
-static const char *selectZrtpIdRemoteAllNoCondition = 
+constexpr char selectZrtpIdRemoteAllNoCondition[] =
     "SELECT flags,"
     "rs1, strftime('%s', rs1LastUsed, 'unixepoch'), strftime('%s', rs1TimeToLive, 'unixepoch'),"
     "rs2, strftime('%s', rs2LastUsed, 'unixepoch'), strftime('%s', rs2TimeToLive, 'unixepoch'),"
@@ -138,25 +131,25 @@ static const char *selectZrtpIdRemoteAllNoCondition =
  * The name tables holds free format information and binds it to the combination
  * of local, remote ZIDs and an optional account information.
  */
-static const char *dropZrtpNames = "DROP TABLE zrtpNames;";
+constexpr char dropZrtpNames[] = "DROP TABLE zrtpNames;";
 
-static const char *createZrtpNames =
+constexpr char createZrtpNames[] =
     "CREATE TABLE zrtpNames "
     "(remoteZid CHAR(16), localZid CHAR(16), flags INTEGER, "
     "lastUpdate TIMESTAMP, accountInfo VARCHAR(1000), name VARCHAR(1000));";
 
-static const char *selectZrtpNames =
+constexpr char selectZrtpNames[] =
     "SELECT flags, strftime('%s', lastUpdate, 'unixepoch'), name "
     "FROM zrtpNames "
     "WHERE remoteZid=?1 AND localZid=?2 AND accountInfo=?3;";
 
-static const char *insertZrtpNames =
+constexpr char insertZrtpNames[] =
     "INSERT INTO zrtpNames "
         "(remoteZid, localZid, flags, lastUpdate, accountInfo, name)"
       "VALUES"
         "(?1, ?2, ?4, strftime('%s', ?5, 'unixepoch'), ?3, ?6);";
 
-static const char *updateZrtpNames =
+constexpr char updateZrtpNames[] =
     "UPDATE zrtpNames SET "
     "flags=?4,"
     "lastUpdate=strftime('%s', ?5, 'unixepoch'), name=?6 "
@@ -217,7 +210,7 @@ static int beginTransaction(sqlite3 *db, char* errString)
     sqlite3_stmt *stmt;
     int rc;
 
-    SQLITE_CHK(SQLITE_PREPARE(db, beginTransactionSql, strlen(beginTransactionSql)+1, &stmt, NULL));
+    SQLITE_CHK(SQLITE_PREPARE(db, beginTransactionSql, sizeof(beginTransactionSql), &stmt, NULL));
 
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
@@ -237,7 +230,7 @@ static int commitTransaction(sqlite3 *db, char* errString)
     sqlite3_stmt *stmt;
     int rc;
 
-    SQLITE_CHK(SQLITE_PREPARE(db, commitTransactionSql, strlen(commitTransactionSql)+1, &stmt, NULL));
+    SQLITE_CHK(SQLITE_PREPARE(db, commitTransactionSql, sizeof(commitTransactionSql), &stmt, NULL));
 
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
@@ -269,22 +262,22 @@ static int initializeRemoteTables(sqlite3 *db, char* errString)
      * deleted using DB admin command then we need to drop the remote id table
      * and names also to have a clean state.
      */
-    SQLITE_PREPARE(db, dropZrtpIdRemote, strlen(dropZrtpIdRemote)+1, &stmt, NULL);
+    SQLITE_PREPARE(db, dropZrtpIdRemote, sizeof(dropZrtpIdRemote), &stmt, nullptr);
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
 
-    SQLITE_PREPARE(db, dropZrtpNames, strlen(dropZrtpNames)+1, &stmt, NULL);
+    SQLITE_PREPARE(db, dropZrtpNames, sizeof(dropZrtpNames), &stmt, nullptr);
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
 
-    SQLITE_CHK(SQLITE_PREPARE(db, createZrtpIdRemote, strlen(createZrtpIdRemote)+1, &stmt, NULL))
+    SQLITE_CHK(SQLITE_PREPARE(db, createZrtpIdRemote, sizeof(createZrtpIdRemote), &stmt, nullptr))
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
     if (rc != SQLITE_DONE) {
         ERRMSG
         return rc;
     }
-    SQLITE_CHK(SQLITE_PREPARE(db, createZrtpNames, strlen(createZrtpNames)+1, &stmt, NULL))
+    SQLITE_CHK(SQLITE_PREPARE(db, createZrtpNames, sizeof(createZrtpNames), &stmt, nullptr))
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
     if (rc != SQLITE_DONE) {
@@ -310,7 +303,7 @@ static int createTables(sqlite3 *db, char* errString)
     int rc;
 
     /* no ZRTP cache tables were found - create them, first the OwnId table */
-    SQLITE_CHK(SQLITE_PREPARE(db, createZrtpIdOwn, strlen(createZrtpIdOwn)+1, &stmt, NULL))
+    SQLITE_CHK(SQLITE_PREPARE(db, createZrtpIdOwn, sizeof(createZrtpIdOwn), &stmt, nullptr))
 
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
@@ -328,9 +321,9 @@ static int createTables(sqlite3 *db, char* errString)
 static int insertRemoteZidRecord(void *vdb, const uint8_t *remoteZid, const uint8_t *localZid, 
                                  const remoteZidRecord_t *remZid, char* errString)
 {
-    sqlite3 *db = (sqlite3*)vdb;
+    auto *db = (sqlite3*)vdb;
     sqlite3_stmt *stmt;
-    int rc = 0;
+    int rc;
 
     char b64RemoteZid[IDENTIFIER_LEN*2] = {0};
     char b64LocalZid[IDENTIFIER_LEN*2] = {0};
@@ -341,7 +334,7 @@ static int insertRemoteZidRecord(void *vdb, const uint8_t *remoteZid, const uint
     /* Get B64 code for localZid now */
     b64Encode(localZid, IDENTIFIER_LEN, b64LocalZid, IDENTIFIER_LEN*2);
 
-    SQLITE_CHK(SQLITE_PREPARE(db, insertZrtpIdRemote, strlen(insertZrtpIdRemote)+1, &stmt, NULL))
+    SQLITE_CHK(SQLITE_PREPARE(db, insertZrtpIdRemote, sizeof(insertZrtpIdRemote), &stmt, nullptr))
 
     /* For *_bind_* methods: column index starts with 1 (one), not zero */
     SQLITE_CHK(sqlite3_bind_text(stmt,   1, b64RemoteZid, strlen(b64RemoteZid), SQLITE_STATIC))
@@ -375,7 +368,7 @@ static int insertRemoteZidRecord(void *vdb, const uint8_t *remoteZid, const uint
 static int updateRemoteZidRecord(void *vdb, const uint8_t *remoteZid, const uint8_t *localZid, 
                                  const remoteZidRecord_t *remZid, char* errString)
 {
-    sqlite3 *db = (sqlite3*)vdb;
+    auto *db = (sqlite3*)vdb;
     sqlite3_stmt *stmt;
     int rc;
 
@@ -388,7 +381,7 @@ static int updateRemoteZidRecord(void *vdb, const uint8_t *remoteZid, const uint
     /* Get B64 code for localZid now */
     b64Encode(localZid, IDENTIFIER_LEN, b64LocalZid, IDENTIFIER_LEN*2);
 
-    SQLITE_CHK(SQLITE_PREPARE(db, updateZrtpIdRemote, strlen(updateZrtpIdRemote)+1, &stmt, NULL))
+    SQLITE_CHK(SQLITE_PREPARE(db, updateZrtpIdRemote, sizeof(updateZrtpIdRemote), &stmt, nullptr))
 
     /* For *_bind_* methods: column index starts with 1 (one), not zero */
     /* Select for update with the following keys */
@@ -424,7 +417,7 @@ static int updateRemoteZidRecord(void *vdb, const uint8_t *remoteZid, const uint
 static int readRemoteZidRecord(void *vdb, const uint8_t *remoteZid, const uint8_t *localZid, 
                                remoteZidRecord_t *remZid, char* errString)
 {
-    sqlite3 *db = (sqlite3*)vdb;
+    auto *db = (sqlite3*)vdb;
     sqlite3_stmt *stmt;
     int rc;
     int found = 0;
@@ -438,7 +431,7 @@ static int readRemoteZidRecord(void *vdb, const uint8_t *remoteZid, const uint8_
     /* Get B64 code for localZid */
     b64Encode(localZid, IDENTIFIER_LEN, b64LocalZid, IDENTIFIER_LEN*2);
 
-    SQLITE_CHK(SQLITE_PREPARE(db, selectZrtpIdRemoteAll, strlen(selectZrtpIdRemoteAll)+1, &stmt, NULL))
+    SQLITE_CHK(SQLITE_PREPARE(db, selectZrtpIdRemoteAll, sizeof(selectZrtpIdRemoteAll), &stmt, nullptr))
     SQLITE_CHK(sqlite3_bind_text(stmt, 1, b64RemoteZid, strlen(b64RemoteZid), SQLITE_STATIC))
     SQLITE_CHK(sqlite3_bind_text(stmt, 2, b64LocalZid, strlen(b64LocalZid), SQLITE_STATIC))
 
@@ -481,20 +474,20 @@ static int readRemoteZidRecord(void *vdb, const uint8_t *remoteZid, const uint8_
 
 static int readLocalZid(void *vdb, uint8_t *localZid, const char *accountInfo, char *errString)
 {
-    sqlite3 *db = (sqlite3*)vdb;
+    auto *db = (sqlite3*)vdb;
     sqlite3_stmt *stmt;
     char *zidBase64Text;
-    int rc = 0;
+    int rc;
     int found = 0;
     int type = localZidWithAccount;
 
-    if (accountInfo == NULL || !strcmp(accountInfo, defaultAccountString)) {
+    if (accountInfo == nullptr || !strcmp(accountInfo, defaultAccountString)) {
         accountInfo = defaultAccountString;
         type = localZidStandard;
     }
 
     /* Find a localZid record for this combination */
-    SQLITE_CHK(SQLITE_PREPARE(db, selectZrtpIdOwn, strlen(selectZrtpIdOwn)+1, &stmt, NULL))
+    SQLITE_CHK(SQLITE_PREPARE(db, selectZrtpIdOwn, sizeof(selectZrtpIdOwn), &stmt, nullptr))
 
     SQLITE_CHK(sqlite3_bind_int(stmt,  1, type))
     SQLITE_CHK(sqlite3_bind_text(stmt, 2, accountInfo, strlen(accountInfo), SQLITE_STATIC))
@@ -516,13 +509,13 @@ static int readLocalZid(void *vdb, uint8_t *localZid, const char *accountInfo, c
     /* No matching record found, create new local ZID for this combination and store in DB */
     if (found == 0) {
         char b64zid[IDENTIFIER_LEN+IDENTIFIER_LEN] = {0};
-        int b64len = 0;
+        int b64len;
 
         /* create a 12 byte random value, convert to base 64, insert in zrtpIdOwn table */
         randomZRTP(localZid, IDENTIFIER_LEN);
         b64len = b64Encode(localZid, IDENTIFIER_LEN, b64zid, IDENTIFIER_LEN+IDENTIFIER_LEN);
 
-        SQLITE_CHK(SQLITE_PREPARE(db, insertZrtpIdOwn, strlen(insertZrtpIdOwn)+1, &stmt, NULL))
+        SQLITE_CHK(SQLITE_PREPARE(db, insertZrtpIdOwn, sizeof(insertZrtpIdOwn), &stmt, nullptr))
 
         SQLITE_CHK(sqlite3_bind_text(stmt, 1, b64zid, b64len, SQLITE_STATIC))
         SQLITE_CHK(sqlite3_bind_int(stmt,  2, type))
@@ -564,14 +557,10 @@ static int openCache(const char* name, void **vpdb, char *errString)
 {
     sqlite3_stmt *stmt;
     int found = 0;
-    sqlite3 **pdb = (sqlite3**)vpdb;
+    auto **pdb = (sqlite3**)vpdb;
     sqlite3 *db;
 
-#ifdef SQLITE_USE_V2
-    int rc = sqlite3_open_v2(name, pdb, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, NULL);
-#else
-    int rc = sqlite3_open(name, pdb);
-#endif
+    int rc = sqlite3_open_v2(name, pdb, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, nullptr);
     db = *pdb;
     if (rc) {
         ERRMSG
@@ -579,7 +568,7 @@ static int openCache(const char* name, void **vpdb, char *errString)
     }
 
     /* check if ZRTP cache tables are already available, look if zrtpIdOwn is available */
-    SQLITE_CHK(SQLITE_PREPARE(db, lookupTables, strlen(lookupTables)+1, &stmt, NULL))
+    SQLITE_CHK(SQLITE_PREPARE(db, lookupTables, sizeof(lookupTables), &stmt, nullptr))
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
 
@@ -606,7 +595,7 @@ static int openCache(const char* name, void **vpdb, char *errString)
 static int closeCache(void *vdb)
 {
 
-    sqlite3 *db = (sqlite3*)vdb;
+    auto *db = (sqlite3*)vdb;
     sqlite3_close(db);
     return SQLITE_OK;
 }
@@ -614,11 +603,11 @@ static int closeCache(void *vdb)
 static int clearCache(void *vdb, char *errString)
 {
 
-    sqlite3 *db = (sqlite3*)vdb;
+    auto *db = (sqlite3*)vdb;
     sqlite3_stmt * stmt;
     int rc;
 
-    SQLITE_PREPARE(db, dropZrtpIdOwn, strlen(dropZrtpIdOwn)+1, &stmt, NULL);
+    SQLITE_PREPARE(db, dropZrtpIdOwn, sizeof(dropZrtpIdOwn), &stmt, nullptr);
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
 
@@ -631,13 +620,13 @@ static int clearCache(void *vdb, char *errString)
 static int insertZidNameRecord(void *vdb, const uint8_t *remoteZid, const uint8_t *localZid,
                                const char *accountInfo, zidNameRecord_t *zidName, char* errString)
 {
-    sqlite3 *db = (sqlite3*)vdb;
+    auto *db = (sqlite3*)vdb;
     sqlite3_stmt *stmt;
-    int rc = 0;
+    int rc;
     char b64RemoteZid[IDENTIFIER_LEN*2] = {0};
     char b64LocalZid[IDENTIFIER_LEN*2] = {0};
 
-    if (accountInfo == NULL) {
+    if (accountInfo == nullptr) {
         accountInfo = defaultAccountString;
     }
 
@@ -647,15 +636,15 @@ static int insertZidNameRecord(void *vdb, const uint8_t *remoteZid, const uint8_
     /* Get B64 code for localZid */
     b64Encode(localZid, IDENTIFIER_LEN, b64LocalZid, IDENTIFIER_LEN*2);
 
-    SQLITE_CHK(SQLITE_PREPARE(db, insertZrtpNames, strlen(insertZrtpNames)+1, &stmt, NULL))
+    SQLITE_CHK(SQLITE_PREPARE(db, insertZrtpNames, sizeof(insertZrtpNames), &stmt, nullptr))
 
     /* For *_bind_* methods: column index starts with 1 (one), not zero */
     SQLITE_CHK(sqlite3_bind_text(stmt,  1, b64RemoteZid, strlen(b64RemoteZid), SQLITE_STATIC))
     SQLITE_CHK(sqlite3_bind_text(stmt,  2, b64LocalZid, strlen(b64LocalZid), SQLITE_STATIC))
     SQLITE_CHK(sqlite3_bind_text(stmt,  3, accountInfo, strlen(accountInfo), SQLITE_STATIC))
     SQLITE_CHK(sqlite3_bind_int(stmt,   4, zidName->flags))
-    SQLITE_CHK(sqlite3_bind_int64(stmt, 5, (int64_t)time(NULL)))
-    if (zidName->name != NULL) {
+    SQLITE_CHK(sqlite3_bind_int64(stmt, 5, (int64_t)time(nullptr)))
+    if (zidName->name != nullptr) {
         SQLITE_CHK(sqlite3_bind_text(stmt,   6, zidName->name, strlen(zidName->name), SQLITE_STATIC))
     }
     else {
@@ -679,13 +668,13 @@ static int insertZidNameRecord(void *vdb, const uint8_t *remoteZid, const uint8_
 static int updateZidNameRecord(void *vdb, const uint8_t *remoteZid, const uint8_t *localZid,
                                const char *accountInfo, zidNameRecord_t *zidName, char* errString)
 {
-    sqlite3 *db = (sqlite3*)vdb;
+    auto *db = (sqlite3*)vdb;
     sqlite3_stmt *stmt;
-    int rc = 0;
+    int rc;
     char b64RemoteZid[IDENTIFIER_LEN*2] = {0};
     char b64LocalZid[IDENTIFIER_LEN*2] = {0};
 
-    if (accountInfo == NULL) {
+    if (accountInfo == nullptr) {
         accountInfo = defaultAccountString;
     }
 
@@ -695,7 +684,7 @@ static int updateZidNameRecord(void *vdb, const uint8_t *remoteZid, const uint8_
     /* Get B64 code for localZid */
     b64Encode(localZid, IDENTIFIER_LEN, b64LocalZid, IDENTIFIER_LEN*2);
 
-    SQLITE_CHK(SQLITE_PREPARE(db, updateZrtpNames, strlen(updateZrtpNames)+1, &stmt, NULL))
+    SQLITE_CHK(SQLITE_PREPARE(db, updateZrtpNames, sizeof(updateZrtpNames), &stmt, nullptr))
 
     /* For *_bind_* methods: column index starts with 1 (one), not zero */
     /* Select for update with the following values */
@@ -705,8 +694,8 @@ static int updateZidNameRecord(void *vdb, const uint8_t *remoteZid, const uint8_
 
     /* Update the following vaulues */
     SQLITE_CHK(sqlite3_bind_int(stmt,    4, zidName->flags))
-    SQLITE_CHK(sqlite3_bind_int64(stmt,  5, (int64_t)time(NULL)))
-    if (zidName->name != NULL) {
+    SQLITE_CHK(sqlite3_bind_int64(stmt,  5, (int64_t)time(nullptr)))
+    if (zidName->name != nullptr) {
         SQLITE_CHK(sqlite3_bind_text(stmt,   6, zidName->name, strlen(zidName->name), SQLITE_STATIC))
     }
     else {
@@ -729,7 +718,7 @@ static int updateZidNameRecord(void *vdb, const uint8_t *remoteZid, const uint8_
 static int readZidNameRecord(void *vdb, const uint8_t *remoteZid, const uint8_t *localZid,
                              const char *accountInfo, zidNameRecord_t *zidName, char* errString)
 {
-    sqlite3 *db = (sqlite3*)vdb;
+    auto *db = (sqlite3*)vdb;
     sqlite3_stmt *stmt;
     int rc;
     int found = 0;
@@ -737,7 +726,7 @@ static int readZidNameRecord(void *vdb, const uint8_t *remoteZid, const uint8_t 
     char b64RemoteZid[IDENTIFIER_LEN*2] = {0};
     char b64LocalZid[IDENTIFIER_LEN*2] = {0};
 
-    if (accountInfo == NULL) {
+    if (accountInfo == nullptr) {
         accountInfo = defaultAccountString;
     }
     /* Get B64 code for remoteZid */
@@ -746,7 +735,7 @@ static int readZidNameRecord(void *vdb, const uint8_t *remoteZid, const uint8_t 
     /* Get B64 code for localZid */
     b64Encode(localZid, IDENTIFIER_LEN, b64LocalZid, IDENTIFIER_LEN*2);
 
-    SQLITE_CHK(SQLITE_PREPARE(db, selectZrtpNames, strlen(selectZrtpNames)+1, &stmt, NULL))
+    SQLITE_CHK(SQLITE_PREPARE(db, selectZrtpNames, sizeof(selectZrtpNames), &stmt, nullptr))
 
     SQLITE_CHK(sqlite3_bind_text(stmt, 1, b64RemoteZid, strlen(b64RemoteZid), SQLITE_STATIC))
     SQLITE_CHK(sqlite3_bind_text(stmt, 2, b64LocalZid, strlen(b64LocalZid), SQLITE_STATIC))
@@ -781,27 +770,27 @@ static int readZidNameRecord(void *vdb, const uint8_t *remoteZid, const uint8_t 
 
 static void *prepareReadAllZid(void *vdb, char *errString)
 {
-    sqlite3 *db = (sqlite3*)vdb;
+    auto *db = (sqlite3*)vdb;
     sqlite3_stmt *stmt;
     int rc;
 
-    SQLITE_CHK(SQLITE_PREPARE(db, selectZrtpIdRemoteAllNoCondition, strlen(selectZrtpIdRemoteAllNoCondition)+1, &stmt, NULL))
+    SQLITE_CHK(SQLITE_PREPARE(db, selectZrtpIdRemoteAllNoCondition, sizeof(selectZrtpIdRemoteAllNoCondition), &stmt, nullptr))
     return stmt;
 
   cleanup:
     sqlite3_finalize(stmt);
-    return NULL;
+    return nullptr;
 }
 
 static void *readNextZidRecord(void *vdb, void *vstmt, remoteZidRecord_t *remZid, char* errString)
 {
-    sqlite3 *db = (sqlite3*)vdb;
+    auto *db = (sqlite3*)vdb;
     sqlite3_stmt *stmt;
     char *zidBase64Text;
     int rc;
 
-    if (vstmt == NULL)
-        return NULL;
+    if (vstmt == nullptr)
+        return nullptr;
     stmt = (sqlite3_stmt*)vstmt;
 
     /* Getting data from result set: column index starts with 0 (zero), not one */
@@ -825,14 +814,14 @@ static void *readNextZidRecord(void *vdb, void *vstmt, remoteZidRecord_t *remZid
 
     if (rc != SQLITE_DONE)
         ERRMSG
-    return NULL;
+    return nullptr;
 }
 
 static void closeStatement(void *vstmt)
 {
     sqlite3_stmt *stmt;
 
-    if (vstmt == NULL)
+    if (vstmt == nullptr)
         return;
     stmt = (sqlite3_stmt*)vstmt;
     sqlite3_finalize(stmt);
