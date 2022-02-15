@@ -34,6 +34,10 @@ target_link_libraries(botanSkein_test gtest_main ${zrtplibName})
 add_executable(ec41417_test BotanEc41417_test.cpp )
 target_link_libraries(ec41417_test gtest_main ${zrtplibName})
 
+add_executable(zidStorage_test ZidStorage_test.cpp )
+target_link_libraries(zidStorage_test gtest_main ${zrtplibName})
+
+
 if (SIDH)
     add_executable(zrtpSidh503_test ZrtpSidh503_test.cpp)
     target_link_libraries(zrtpSidh503_test gtest_main ${zrtplibName})
