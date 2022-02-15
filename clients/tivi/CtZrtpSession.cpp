@@ -512,10 +512,10 @@ bool CtZrtpSession::processOutoingRtp(uint8_t *buffer, size_t length, size_t *ne
 
 int32_t CtZrtpSession::processIncomingRtp(uint8_t *buffer, size_t length, size_t *newLength, streamName streamNm) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
-        return fail;
+        return -1;
 
     if (streams[streamNm]->isStopped)
-        return fail;
+        return -1;
 
     return streams[streamNm]->processIncomingRtp(buffer, length, newLength);
 }
@@ -611,7 +611,7 @@ void CtZrtpSession::setVerify(int iVerified) {
 
 int CtZrtpSession::getInfo(const char *key, uint8_t *buffer, size_t maxLen, streamName streamNm) {
     if (!isReady || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
-        return fail;
+        return -1;
 
     return streams[streamNm]->getInfo(key, (char*)buffer, (int)maxLen);
 }
@@ -656,7 +656,7 @@ void CtZrtpSession::setClientId(std::string id) {
 bool CtZrtpSession::createSdes(char *cryptoString, size_t *maxLen, streamName streamNm, const sdesSuites suite) {
 
     if (!isReady || !sdesEnabled || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
-        return fail;
+        return false;
 
     return streams[streamNm]->createSdes(cryptoString, maxLen, static_cast<ZrtpSdesStream::sdesSuites>(suite));
 }
@@ -665,21 +665,21 @@ bool CtZrtpSession::parseSdes(char *recvCryptoStr, size_t recvLength, char *send
                               size_t *sendLength, bool sipInvite, streamName streamNm) {
 
     if (!isReady || !sdesEnabled || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
-        return fail;
+        return false;
 
     return streams[streamNm]->parseSdes(recvCryptoStr, recvLength, sendCryptoStr, sendLength, sipInvite);
 }
 
 bool CtZrtpSession::getSavedSdes(char *sendCryptoStr, size_t *sendLength, streamName streamNm) {
     if (!isReady || !sdesEnabled || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
-        return fail;
+        return false;
 
     return streams[streamNm]->getSavedSdes(sendCryptoStr, sendLength);
 }
 
 bool CtZrtpSession::isSdesActive(streamName streamNm) {
     if (!isReady || !sdesEnabled || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
-        return fail;
+        return false;
 
     return streams[streamNm]->isSdesActive();
 }
@@ -693,7 +693,7 @@ int CtZrtpSession::getCryptoMixAttribute(char *algoNames, size_t length, streamN
 
 bool CtZrtpSession::setCryptoMixAttribute(const char *algoNames, streamName streamNm) {
     if (!isReady || !sdesEnabled || !(streamNm >= 0 && streamNm < AllStreams && streams[streamNm] != nullptr))
-        return fail;
+        return false;
 
     return streams[streamNm]->setCryptoMixAttribute(algoNames);
 }
