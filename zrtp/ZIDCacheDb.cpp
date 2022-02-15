@@ -61,6 +61,11 @@ void ZIDCacheDb::close() {
 std::unique_ptr<ZIDRecord> ZIDCacheDb::getRecord(unsigned char *zid) {
     auto zidRecord = std::make_unique<ZIDRecordDb>();
 
+    // Do _not_ created a remote ZID record in DB with my own ZID, return empty pointer
+    if (memcmp(associatedZid, zid, IDENTIFIER_LEN) == 0) {
+        return {};
+    }
+
     cacheOps.readRemoteZidRecord(zidFile, zid, associatedZid, zidRecord->getRecordData(), errorBuffer);
 
     zidRecord->setZid(zid);

@@ -20,7 +20,7 @@
 // #define UNIT_TEST
 
 #include <string>
-#include <stdlib.h>
+#include <cstdlib>
 
 #ifdef _MSC_VER
 #include <io.h>
@@ -113,7 +113,7 @@ void ZIDCacheFile::checkDoMigration(char* name) {
 
     // now copy over all valid records from old ZID file format.
     // Sequentially read old records, sequentially write new records
-    int numRead;
+    size_t numRead;
     do {
         numRead = fread(&recOld, sizeof(zidrecord1_t), 1, fdOld);
         if (numRead == 0) {     // all old records processed
@@ -184,10 +184,15 @@ void ZIDCacheFile::close() {
 
 std::unique_ptr<ZIDRecord>
 ZIDCacheFile::getRecord(unsigned char *zid) {
-    unsigned long pos;
-    int numRead;
+    long pos;
+    size_t numRead;
     //    ZIDRecordFile rec;
     auto zidRecord = std::make_unique<ZIDRecordFile>();
+
+    // Do _not_ created a remote ZID record in DB with my own ZID, return empty pointer
+    if (memcmp(associatedZid, zid, IDENTIFIER_LEN) == 0) {
+        return {};
+    }
 
     // set read pointer behind first record (
     fseek(zidFile, zidRecord->getRecordLength(), SEEK_SET);
