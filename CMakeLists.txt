@@ -308,8 +308,6 @@ set(zrtp_src_include
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDRecordFile.h
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDRecord.h
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZIDRecordEmpty.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/zrtpB64Decode.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/zrtpB64Encode.h
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/zrtpCacheDbBackend.h
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCallback.h
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpCallbackWrapper.h
@@ -363,8 +361,6 @@ set(zrtp_src_no_cache
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpCWrapper.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/Base32.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/EmojiBase32.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/zrtpB64Encode.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/zrtpB64Decode.c
         ${CMAKE_CURRENT_SOURCE_DIR}/common/icuUtf8.c
         ${CMAKE_CURRENT_SOURCE_DIR}/common/icuUtf.h
         ${CMAKE_CURRENT_SOURCE_DIR}/common/osSpecifics.c

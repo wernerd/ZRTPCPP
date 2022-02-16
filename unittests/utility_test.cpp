@@ -18,6 +18,8 @@
 #include <cinttypes>
 #include "../logging/ZrtpLogging.h"
 #include "../common/Utilities.h"
+#include "botan_all.h"
+
 #include "gtest/gtest.h"
 
 using namespace std;
@@ -47,6 +49,76 @@ public:
     }
 };
 
+//BASE64("") = ""
+//BASE64("f") = "Zg=="
+//BASE64("fo") = "Zm8="
+//BASE64("foo") = "Zm9v"
+//BASE64("foob") = "Zm9vYg=="
+//BASE64("fooba") = "Zm9vYmE="
+//BASE64("foobar") = "Zm9vYmFy"
+
+static uint8_t b64In0[] = "";
+static uint8_t b64In1[] = "f";
+static uint8_t b64In2[] = "fo";
+static uint8_t b64In3[] = "foo";
+static uint8_t b64In4[] = "foob";
+static uint8_t b64In5[] = "fooba";
+static uint8_t b64In6[] = "foobar";
+
+TEST_F(UtilityTestFixture, Base64) {
+    uint8_t b64decoded[100] = {};
+
+    auto b64Out = Botan::base64_encode(b64In0, 0);
+    ASSERT_EQ(0, b64Out.size());
+
+    b64Out = Botan::base64_encode(b64In1, 1);
+    ASSERT_EQ(4, b64Out.size());
+    ASSERT_TRUE(b64Out == "Zg==");
+
+    auto decodeLength = Botan::base64_decode(b64decoded, b64Out);
+    ASSERT_EQ(1, decodeLength);
+    ASSERT_TRUE(b64decoded[0] == 'f');
+
+    b64Out = Botan::base64_encode(b64In2, 2);
+    ASSERT_EQ(4, b64Out.size());
+    ASSERT_TRUE(b64Out == "Zm8=");
+
+    decodeLength = Botan::base64_decode(b64decoded, b64Out);
+    ASSERT_EQ(2, decodeLength);
+    ASSERT_EQ(0, memcmp(b64decoded, "fo", 2));
+
+    b64Out = Botan::base64_encode(b64In3, 3);
+    ASSERT_EQ(4, b64Out.size());
+    ASSERT_TRUE(b64Out == "Zm9v");
+
+    decodeLength = Botan::base64_decode(b64decoded, b64Out);
+    ASSERT_EQ(3, decodeLength);
+    ASSERT_EQ(0, memcmp(b64decoded, "foo", 3));
+
+    b64Out = Botan::base64_encode(b64In4, 4);
+    ASSERT_EQ(8, b64Out.size());
+    ASSERT_TRUE(b64Out == "Zm9vYg==");
+
+    decodeLength = Botan::base64_decode(b64decoded, b64Out);
+    ASSERT_EQ(4, decodeLength);
+    ASSERT_EQ(0, memcmp(b64decoded, "foob", 4));
+
+    b64Out = Botan::base64_encode(b64In5, 5);
+    ASSERT_EQ(8, b64Out.size());
+    ASSERT_TRUE(b64Out == "Zm9vYmE=");
+
+    decodeLength = Botan::base64_decode(b64decoded, b64Out);
+    ASSERT_EQ(5, decodeLength);
+    ASSERT_EQ(0, memcmp(b64decoded, "fooba", 5));
+
+    b64Out = Botan::base64_encode(b64In6, 6);
+    ASSERT_EQ(8, b64Out.size());
+    ASSERT_TRUE(b64Out == "Zm9vYmFy");
+
+    decodeLength = Botan::base64_decode(b64decoded, b64Out);
+    ASSERT_EQ(6, decodeLength);
+    ASSERT_EQ(0, memcmp(b64decoded, "foobar", 6));
+}
 //TEST_F(UtilityTestFixture, TimeTest) {
 //
 //    constexpr uint64_t ms = 1555521975329;

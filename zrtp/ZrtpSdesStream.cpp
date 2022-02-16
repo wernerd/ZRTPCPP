@@ -21,9 +21,8 @@
 
 #include <libzrtpcpp/ZrtpSdesStream.h>
 #include <libzrtpcpp/ZrtpTextData.h>
-#include <libzrtpcpp/zrtpB64Decode.h>
-#include <libzrtpcpp/zrtpB64Encode.h>
 #include "crypto/zrtpDH.h"
+#include "botan_all.h"
 #include <srtp/CryptoContext.h>
 #include <common/typedefs.h>
 #include <zrtp/crypto/hmac384.h>
@@ -472,26 +471,17 @@ static int _random(uint8_t *output, int32_t len) {
     return (0);
 }
 
-static ptrdiff_t b64Encode(const uint8_t *binData, int32_t binLength, char *b64Data, int32_t b64Length)
+static int b64Encode(const uint8_t *binData, size_t binLength, char *b64Data, int32_t b64Length)
 {
-    (void)b64Length;
-    base64_encodestate _state = {};
-
-    base64_init_encodestate(&_state, 0);
-    auto codeLength = base64_encode_block(binData, binLength, b64Data, &_state);
-    codeLength += base64_encode_blockend(b64Data+codeLength, &_state);
-
-    return codeLength;
+    (void) b64Length;
+    size_t consumed = 0;
+    return static_cast<int>(Botan::base64_encode(b64Data, binData, binLength, consumed, true));
 }
 
-static ptrdiff_t b64Decode(const char *b64Data, int32_t b64length, uint8_t *binData, int32_t binLength)
+static int b64Decode(const char *b64Data, size_t b64length, uint8_t *binData, size_t binLength)
 {
-    (void)binLength;
-    base64_decodestate _state = {};
-
-    base64_init_decodestate(&_state);
-    auto codeLength = base64_decode_block(b64Data, b64length, binData, &_state);
-    return codeLength;
+    (void) binLength;
+    return static_cast<int>(Botan::base64_decode(binData, b64Data, b64length));
 }
 
 void ZrtpSdesStream::createSrtpContexts(bool sipInvite) {

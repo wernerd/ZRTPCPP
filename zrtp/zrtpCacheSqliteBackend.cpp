@@ -25,12 +25,9 @@
 
 #include <sqlite3.h>        // Note: set correct include path for compiler
 
-#include <crypto/zrtpDH.h>
-
-#include <libzrtpcpp/zrtpB64Encode.h>
-#include <libzrtpcpp/zrtpB64Decode.h>
-
-#include <libzrtpcpp/zrtpCacheDbBackend.h>
+#include "crypto/zrtpDH.h"
+#include "botan_all.h"
+#include "libzrtpcpp/zrtpCacheDbBackend.h"
 
 #define SQLITE_PREPARE sqlite3_prepare_v2
 
@@ -180,28 +177,17 @@ constexpr char updateZrtpNames[] =
         }                                                               \
     }
 
-static int b64Encode(const uint8_t *binData, int32_t binLength, char *b64Data, int32_t b64Length)
+static int b64Encode(const uint8_t *binData, size_t binLength, char *b64Data, size_t b64Length)
 {
     (void) b64Length;
-    base64_encodestate _state;
-    int codelength;
-
-    base64_init_encodestate(&_state, 0);
-    codelength = base64_encode_block(binData, binLength, b64Data, &_state);
-    codelength += base64_encode_blockend(b64Data+codelength, &_state);
-
-    return codelength;
+    size_t consumed = 0;
+    return static_cast<int>(Botan::base64_encode(b64Data, binData, binLength, consumed, true));
 }
 
-static int b64Decode(const char *b64Data, int32_t b64length, uint8_t *binData, int32_t binLength)
+static int b64Decode(const char *b64Data, size_t b64length, uint8_t *binData, size_t binLength)
 {
     (void) binLength;
-    base64_decodestate _state;
-    int codelength;
-
-    base64_init_decodestate(&_state);
-    codelength = base64_decode_block(b64Data, b64length, binData, &_state);
-    return codelength;
+    return static_cast<int>(Botan::base64_decode(binData, b64Data, b64length));
 }
 
 #ifdef TRANSACTIONS
