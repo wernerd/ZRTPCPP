@@ -531,6 +531,10 @@ namespace secUtilities {
             assign(other);
         }
 
+        explicit SecureArray(const SecureArrayBase &other) {
+            assign(other);
+        }
+
         SecureArray(SecureArray&& other) noexcept {
             size(other.size());
             memcpy(data(), other.data(), size() * sizeof(value_type));
