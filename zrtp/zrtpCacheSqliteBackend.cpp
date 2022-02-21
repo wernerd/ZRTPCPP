@@ -580,10 +580,8 @@ static int openCache(const char* name, void **vpdb, char *errString)
 
 static int closeCache(void *vdb)
 {
-
     auto *db = (sqlite3*)vdb;
-    sqlite3_close(db);
-    return SQLITE_OK;
+    return sqlite3_close_v2(db);
 }
 
 static int clearCache(void *vdb, char *errString)
