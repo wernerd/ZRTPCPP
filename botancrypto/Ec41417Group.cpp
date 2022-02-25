@@ -30,12 +30,14 @@
  * - The order n
  * - The base point x coordinate Gx
  * - The base point y coordinate Gy
+ * - The factor d (3617) -> mapped onto the 'a' curve member of
  *
  * This curve does no require or use the usual a and b parameters as found in the NIST curves
  */
 static char const *curve41417[] = {
         "0x3fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffef",  // Prime
         "0x07ffffffffffffffffffffffffffffffffffffffffffffffffffeb3cc92414cf706022b36f1c0338ad63cf181b0e71a5e106af79",  // order
+        // 17319886477121189177719202498822615443556957307604340815256226171904769976866975908866528699294134494857887698432266169206165,
         "0x1a334905141443300218c0631c326e5fcd46369f44c03ec7f57ff35498a4ab4d6d6ba111301a73faa8537c64c4fd3812f3cbc595",  // Gx
         "0x22",                                                                                                        // Gy (radix 16)
         "3617",                                                                                                        // a  (radix 10)

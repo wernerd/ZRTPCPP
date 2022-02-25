@@ -160,6 +160,10 @@ namespace Botan {
         */
         Point41417p zero() const { return {0, 0}; }
 
+        static BigInt decompress_point(bool isOdd,
+                                       const BigInt& xOrY,
+                                       const BigInt& d,
+                                       std::vector<BigInt> &workspace) ;
 
     private:
         BigInt m_coord_x, m_coord_y, m_coord_z;

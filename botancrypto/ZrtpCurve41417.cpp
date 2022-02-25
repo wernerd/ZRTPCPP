@@ -50,7 +50,7 @@ namespace Botan {
                 auto affinePntDouble = Botan::Point41417p(affineXY.first, affineXY.second, 1);
 
                 if(!affinePntDouble.on_the_curve())
-                    throw Internal_Error("ECDH 41417 agreed value was not on the curve");
+                    throw Illegal_Point("ECDH 41417 agreed point is not on the curve");
 
                 auto secret = BigInt::encode_1363(affineXY.first, m_group.get_p_bytes());
                 return secret;

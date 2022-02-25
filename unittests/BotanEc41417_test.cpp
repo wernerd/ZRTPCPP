@@ -190,3 +190,51 @@ TEST_F(BotanEc41417TestFixture, DiffieHellman) {
     ASSERT_EQ(aliceKeyLen, bobKeyLen);
     ASSERT_TRUE(aliceSharedData.equals(bobSharedData, aliceKeyLen));
 }
+
+// Test compressed X-coordinate
+TEST_F(BotanEc41417TestFixture, compressX) {
+    Botan::EC41417_Group ecGroup;
+    std::vector<Botan::BigInt> workspace(Botan::Point41417p::WORKSPACE_SIZE);
+
+    auto const & basePnt = ecGroup.get_base_point();
+
+    // Use the Y-coordinate to re-compute the X-coordinate
+    auto result = Botan::Point41417p::decompress_point(basePnt.get_x().is_odd(), basePnt.get_y(), ecGroup.get_a(), workspace);
+    // Re-computed value must be equal to original value
+    ASSERT_TRUE(result == basePnt.get_x());
+
+    // Compute the well known point (see above)
+    const Botan::BigInt piMult("31415");
+    auto piResult = piMult * basePnt;
+
+    auto affineXy = piResult.getAffineXY();
+    auto affinePnt = Botan::Point41417p(affineXy.first, affineXy.second, 1);
+
+    // Perform the same steps as above for the computed point 31415, check the result
+    result = Botan::Point41417p::decompress_point(affineXy.first.is_odd(), affinePnt.get_y(), ecGroup.get_a(), workspace);
+    ASSERT_TRUE(result == affinePnt.get_x());
+}
+
+// Test compressed Y-coordinate
+TEST_F(BotanEc41417TestFixture, compressY) {
+    Botan::EC41417_Group ecGroup;
+    std::vector<Botan::BigInt> workspace(Botan::Point41417p::WORKSPACE_SIZE);
+
+    auto const & basePnt = ecGroup.get_base_point();
+
+    // Use the X-coordinate to re-compute the Y-coordinate
+    auto result = Botan::Point41417p::decompress_point(basePnt.get_y().is_odd(), basePnt.get_x(), ecGroup.get_a(), workspace);
+    // Re-computed value must be equal to original value
+    ASSERT_TRUE(result == basePnt.get_y());
+
+    // Compute the well known point (see above)
+    const Botan::BigInt piMult("31415");
+    auto piResult = piMult * basePnt;
+
+    auto affineXy = piResult.getAffineXY();
+    auto affinePnt = Botan::Point41417p(affineXy.first, affineXy.second, 1);
+
+    // Perform the same steps as above for the computed point 31415, check the result
+    result = Botan::Point41417p::decompress_point(affineXy.second.is_odd(), affinePnt.get_x(), ecGroup.get_a(), workspace);
+    ASSERT_TRUE(result == affinePnt.get_y());
+}

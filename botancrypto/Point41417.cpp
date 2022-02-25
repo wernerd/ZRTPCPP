@@ -26,13 +26,18 @@ namespace Botan {
 
         const size_t p_bytes = m_group.get_p().bytes(); // Check: this should be 52
 
+        std::pair<BigInt, BigInt> xy = getAffineXY();
         if (format == Point41417p::UNCOMPRESSED) {
-            std::pair<BigInt, BigInt> xy = getAffineXY();
-
             result.resize(1 + 2 * p_bytes);
             result[0] = 0x04;
             BigInt::encode_1363(&result[1], p_bytes, xy.first);
             BigInt::encode_1363(&result[1 + p_bytes], p_bytes, xy.second);
+        }
+        else if(format == Point41417p::COMPRESSED)
+        {
+            result.resize(1 + p_bytes);
+            result[0] = 0x02 | static_cast<uint8_t>(xy.second.get_bit(0));
+            BigInt::encode_1363(&result[1], p_bytes, xy.first);
         }
         else {
             throw Invalid_Argument("EC41417 illegal point encoding");
@@ -47,6 +52,74 @@ namespace Botan {
         m_coord_z.swap(other.m_coord_z);
     }
 
+    // Decode an Edwards curve point into the given x,y coordinates.
+    // Returns an error if the input does not denote a valid curve point.
+    // Note that this does NOT check if the point is in the prime-order subgroup:
+    // an adversary could create an encoding denoting a point
+    // on the twist of the curve, or in a larger subgroup.
+    // However, the "safecurves" criteria (http://safecurves.cr.yp.to)
+    // ensure that none of these other subgroups are small
+    // other than the tiny ones represented by the cofactor;
+    // hence Diffie-Hellman exchange can be done without subgroup checking
+    // without exposing more than the least-significant bits of the scalar.
+
+    // Edwards curves are symmetric. Thus, this functions can decompress the x or y
+    // coordinate if the other one is given (and the odd-indicator).
+
+    // Curve41417 equation: ax²+y² = 1+3617x²y²
+    //
+    // rewritten equation to solve for y:
+    // a = 1
+    // d = 3617
+    // y² = 1 - x² / 1 - 3617 * x²
+    // y = sqrt(y²)
+    //
+    // all computations must use modulo algorithms
+
+    BigInt Point41417p::decompress_point(bool isOdd,
+                                         const BigInt& xOrY,
+                                         const BigInt& d,
+                                         std::vector<BigInt> &workspace)
+    {
+        auto& xOrY2 = workspace[0];
+        auto& dxOrY2 = workspace[1];
+        auto& result2 = workspace[2];
+        auto &invers = workspace[3];
+        auto result = workspace[4];
+
+        EC41417_Group m_group;
+
+        // compute a*xOrY² and d*xOrY² where a = 1, d = 3617
+        xOrY2 = m_group.square_mod_prime(xOrY);
+        dxOrY2 = m_group.multiply_mod_prime(d, xOrY2);
+
+        BigInt bigInternal;
+        secure_vector<word>& ws = bigInternal.get_word_vector();
+
+        // compute 1-xOrY² and 1-(d*xOrY²)
+        xOrY2 = BigInt(1).mod_sub(xOrY2, m_group.get_p(), ws);
+        dxOrY2 = BigInt(1).mod_sub(dxOrY2, m_group.get_p(), ws);
+
+        // Invert 1-(d*xOrY²) and use it to divide 1-xOrY²
+        invers = Botan::inverse_mod(dxOrY2, m_group.get_p());
+
+        // result2 is result of the division: either x² or y² depending on
+        // input parameter (decompress the X or the Y coordinate)
+        result2 = m_group.multiply_mod_prime(xOrY2, invers);
+
+        // get the square root of result2 into result. This function uses
+        // the Tonelli-Shanks algorithm to compute sqrt modulo
+        result = Botan::ressol(result2, m_group.get_p());
+        if (result == -1) {
+            throw Illegal_Point("ECDH 41417 cannot decompress point");
+        }
+
+        // Need to use the other sqrt result: negate the result modulo (p - result)
+        if (isOdd != result.is_odd()) {
+            result = BigInt(m_group.get_p()).mod_sub(result, m_group.get_p(), ws);
+        }
+        return result;
+    }
     /*
      * Refer to the document: Faster addition and doubling on elliptic curves; Daniel J. Bernstein and Tanja Lange
      * section 4.
