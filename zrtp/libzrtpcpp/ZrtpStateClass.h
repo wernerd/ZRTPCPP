@@ -262,6 +262,8 @@ public:
      */
     int32_t cancelTimer() {return parent->cancelTimer(); };
 
+    void adjustT2Sidh(int32_t adjustedStart) { T2.start = adjustedStart; }
+
     /**
      * Prepare and send an Error packet.
      *

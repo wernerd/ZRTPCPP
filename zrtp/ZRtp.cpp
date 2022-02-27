@@ -292,6 +292,15 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
             *errMsg = UnsuppHashType;
             return nullptr;
         }
+        // If other party offered PQ algorithms then these are top of the list
+        // and selected. To give some more time to compute the SIDH keys increase
+        // T2 timer
+        if (*(int32_t*)(pubKey->getName()) == *(int32_t*)pq54 ||
+            *(int32_t*)(pubKey->getName()) == *(int32_t*)pq64 ||
+            *(int32_t*)(pubKey->getName()) == *(int32_t*)pq74) {
+            stateEngine->adjustT2Sidh(300);                // first timeout after 300ms
+        }
+
         if (cipher == nullptr)                             // public key selection may have set the cipher already
             cipher = findBestCipher(hello, pubKey);
         if (authLength == nullptr)                         // public key selection may have set the SRTP authLen already
