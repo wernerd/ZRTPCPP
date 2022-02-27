@@ -157,14 +157,26 @@ SidhWrapper::SidhType ZrtpDH::getSidhType() const
     switch (pkType) {
         case SDH5:
         case PQ54:
+#ifndef SIDH_COMPRESSED_WDI
             return SidhWrapper::P503;
+#else
+            return SidhWrapper::P503Comp;
+#endif
 
         case PQ64:
+#ifndef SIDH_COMPRESSED_WDI
             return SidhWrapper::P610;
+#else
+            return SidhWrapper::P610Comp;
+#endif
 
         case SDH7:
         case PQ74:
+#ifndef SIDH_COMPRESSED_WDI
             return SidhWrapper::P751;
+#else
+            return SidhWrapper::P751Comp;
+#endif
 
         default:
             return static_cast<SidhWrapper::SidhType>(0);

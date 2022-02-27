@@ -41,6 +41,7 @@ option(TESTS "Generate Unit test." OFF)
 
 ## The following options are used for SIDH mainly
 option(SIDH "Include SIDH Post-Quantum algorithm." OFF)
+option(USE_SIDH_COMPRESSED "Include SIDH compressed keys." ON)
 
 if (TESTS)
     set(ANDROID false)
@@ -258,7 +259,11 @@ if (SIDH)
     )
     FetchContent_MakeAvailable(${sidh_fetch})
     include_directories (${sidh_SOURCE_DIR} ${sidh_SOURCE_DIR}/src)
-    set(sidhLibNameStatic sidhCppStatic)
+    set(sidhLibNameStatic sidhCppStaticComp)
+    if (USE_SIDH_COMPRESSED)
+        set(COMPRESSED true)        ## tell SIDH CMakeLists.txt to build compressed
+        add_compile_definitions("SIDH_COMPRESSED_WDI=1")
+    endif()
     add_compile_definitions(SIDH_SUPPORT)
 endif()
 
