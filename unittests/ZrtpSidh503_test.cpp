@@ -50,6 +50,8 @@ public:
     }
 };
 
+#ifndef SIDH_COMPRESSED_WDI
+
 TEST_F(ZrtpSidh503, FieldLengths) {
     auto lengths = SidhWrapper::getFieldLengths(SidhWrapper::P503);
     ASSERT_EQ(SIDH_SECRETKEYBYTES_A, lengths->privateKeyA);
@@ -82,3 +84,38 @@ TEST_F(ZrtpSidh503, EphemeralSecret) {
 
     ASSERT_TRUE(memcmp(sharedA.get(), sharedB.get(), lengths->sharedSecret) == 0);
 }
+#else
+TEST_F(ZrtpSidh503, FieldLengths) {
+    auto lengths = SidhWrapper::getFieldLengths(SidhWrapper::P503Comp);
+    ASSERT_EQ(SIDH_SECRETKEYBYTES_A, lengths->privateKeyA);
+    ASSERT_EQ(SIDH_SECRETKEYBYTES_B, lengths->privateKeyB);
+    ASSERT_EQ(SIDH_PUBLICKEYBYTES, lengths->publicKey);
+    ASSERT_EQ(SIDH_BYTES, lengths->sharedSecret);
+}
+
+TEST_F(ZrtpSidh503, EphemeralSecret) {
+    auto lengths = SidhWrapper::getFieldLengths(SidhWrapper::P503Comp);
+    auto privateKeyA = std::make_unique<uint8_t []>(lengths->privateKeyA);
+    auto privateKeyB = std::make_unique<uint8_t []>(lengths->privateKeyB);
+    auto publicKeyA = std::make_unique<uint8_t []>(lengths->publicKey);
+    auto publicKeyB = std::make_unique<uint8_t []>(lengths->publicKey);
+
+    auto sharedA = std::make_unique<uint8_t []>(lengths->sharedSecret);
+    auto sharedB = std::make_unique<uint8_t []>(lengths->sharedSecret);
+
+    SidhWrapper::random_mod_order_A(SidhWrapper::P503Comp, privateKeyA.get());
+    SidhWrapper::random_mod_order_B(SidhWrapper::P503Comp, privateKeyB.get());
+
+    SidhWrapper::EphemeralKeyGeneration_A(SidhWrapper::P503Comp, privateKeyA.get(), publicKeyA.get());
+    SidhWrapper::EphemeralKeyGeneration_B(SidhWrapper::P503Comp, privateKeyB.get(), publicKeyB.get());
+
+    // Alice computes her shared secret using Bob's public key
+    SidhWrapper::EphemeralSecretAgreement_A(SidhWrapper::P503Comp, privateKeyA.get(), publicKeyB.get(), sharedA.get());
+
+    // Bob computes his shared secret using Alice's public key
+    SidhWrapper::EphemeralSecretAgreement_B(SidhWrapper::P503Comp, privateKeyB.get(), publicKeyA.get(), sharedB.get());
+
+    ASSERT_TRUE(memcmp(sharedA.get(), sharedB.get(), lengths->sharedSecret) == 0);
+}
+
+#endif

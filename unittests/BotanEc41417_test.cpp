@@ -238,3 +238,35 @@ TEST_F(BotanEc41417TestFixture, compressY) {
     result = Botan::Point41417p::decompress_point(affineXy.second.is_odd(), affinePnt.get_x(), ecGroup.get_a(), workspace);
     ASSERT_TRUE(result == affinePnt.get_y());
 }
+
+#if 0
+TEST_F(BotanEc41417TestFixture, benchmark) {
+    Botan::EC41417_Group ecGroup;
+    std::vector<Botan::BigInt> workspace(Botan::Point41417p::WORKSPACE_SIZE);
+
+    auto const & basePnt = ecGroup.get_base_point();
+    // Compute the well known point (see above)
+    const Botan::BigInt piMult("31415");
+    auto piResult = piMult * basePnt;
+    auto affineXy = piResult.getAffineXY();
+    auto affinePnt = Botan::Point41417p(affineXy.first, affineXy.second, 1);
+
+    auto start = zrtpGetTickCount();
+    for (int i = 0; i < 10000; i++) {
+        Botan::Point41417p::decompress_point(affineXy.second.is_odd(), affinePnt.get_x(), ecGroup.get_a(),
+                                                           workspace);
+    }
+    auto end = zrtpGetTickCount();
+    auto diff = end - start;
+    LOGGER(WARNING, "decompress time: ", diff)
+
+    start = zrtpGetTickCount();
+    for (int i = 0; i < 10000; i++) {
+        piResult.on_the_curve();
+    }
+    end = zrtpGetTickCount();
+    diff = end - start;
+    LOGGER(WARNING, "on curve time: ", diff)
+
+}
+#endif
