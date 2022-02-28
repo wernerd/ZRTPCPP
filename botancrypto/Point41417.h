@@ -158,12 +158,9 @@ namespace Botan {
         /**
         * Return the zero (aka infinite) point associated with this group
         */
-        Point41417p zero() const { return {0, 0}; }
+        static Point41417p zero() { return {0, 0}; }
 
-        static BigInt decompress_point(bool isOdd,
-                                       const BigInt& xOrY,
-                                       const BigInt& d,
-                                       std::vector<BigInt> &workspace) ;
+        static BigInt decompress_point(bool isOdd, const BigInt& xOrY);
 
     private:
         BigInt m_coord_x, m_coord_y, m_coord_z;

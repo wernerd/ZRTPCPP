@@ -33,8 +33,9 @@ namespace Botan {
             BigInt::encode_1363(&result[1], p_bytes, xy.first);
             BigInt::encode_1363(&result[1 + p_bytes], p_bytes, xy.second);
         }
-        else if(format == Point41417p::COMPRESSED)
-        {
+        // Encode compressed, format byte indicates if Y-coordinate is odd or even,
+        // append the X-coordinate
+        else if (format == Point41417p::COMPRESSED) {
             result.resize(1 + p_bytes);
             result[0] = 0x02 | static_cast<uint8_t>(xy.second.get_bit(0));
             BigInt::encode_1363(&result[1], p_bytes, xy.first);
@@ -76,22 +77,14 @@ namespace Botan {
     //
     // all computations must use modulo algorithms
 
-    BigInt Point41417p::decompress_point(bool isOdd,
-                                         const BigInt& xOrY,
-                                         const BigInt& d,
-                                         std::vector<BigInt> &workspace)
+    BigInt Point41417p::decompress_point(bool isOdd, const BigInt& xOrY)
     {
-        auto& xOrY2 = workspace[0];
-        auto& dxOrY2 = workspace[1];
-        auto& result2 = workspace[2];
-        auto &invers = workspace[3];
-        auto result = workspace[4];
-
         EC41417_Group m_group;
 
+        const BigInt& d = m_group.get_a();  // a: mis-named d :)
         // compute a*xOrY² and d*xOrY² where a = 1, d = 3617
-        xOrY2 = m_group.square_mod_prime(xOrY);
-        dxOrY2 = m_group.multiply_mod_prime(d, xOrY2);
+        auto xOrY2 = m_group.square_mod_prime(xOrY);
+        auto dxOrY2 = m_group.multiply_mod_prime(d, xOrY2);
 
         BigInt bigInternal;
         secure_vector<word>& ws = bigInternal.get_word_vector();
@@ -101,17 +94,17 @@ namespace Botan {
         dxOrY2 = BigInt(1).mod_sub(dxOrY2, m_group.get_p(), ws);
 
         // Invert 1-(d*xOrY²) and use it to divide 1-xOrY²
-        invers = Botan::inverse_mod(dxOrY2, m_group.get_p());
+        auto invers = Botan::inverse_mod(dxOrY2, m_group.get_p());
 
         // result2 is result of the division: either x² or y² depending on
         // input parameter (decompress the X or the Y coordinate)
-        result2 = m_group.multiply_mod_prime(xOrY2, invers);
+        auto result2 = m_group.multiply_mod_prime(xOrY2, invers);
 
         // get the square root of result2 into result. This function uses
         // the Tonelli-Shanks algorithm to compute sqrt modulo
-        result = Botan::ressol(result2, m_group.get_p());
+        auto result = Botan::ressol(result2, m_group.get_p());
         if (result == -1) {
-            throw Illegal_Point("ECDH 41417 cannot decompress point");
+            return -1;
         }
 
         // Need to use the other sqrt result: negate the result modulo (p - result)
@@ -303,7 +296,7 @@ namespace Botan {
     {
         const size_t bits = scalar.bits();
         Point41417p n(point);
-        Point41417p R = point.zero();
+        Point41417p R = Botan::Point41417p::zero();
 
         std::vector<BigInt> workspace(Point41417p::WORKSPACE_SIZE);
 
