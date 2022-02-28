@@ -173,7 +173,7 @@ TEST_F(BotanEc41417TestFixture, DiffieHellman) {
     ZrtpDH bobDh(e414, ZrtpDH::Commit);
 
     zrtp::SecureArray1k bobPubKey;
-    auto bobKeyLen = bobDh.fillInPubKeyBytes(bobPubKey);
+    bobDh.fillInPubKeyBytes(bobPubKey);
 
     // Agree on keys. Alice first
     zrtp::SecureArray1k aliceSharedData;
@@ -183,7 +183,7 @@ TEST_F(BotanEc41417TestFixture, DiffieHellman) {
 
     // Now Bob
     zrtp::SecureArray1k bobSharedData;
-    bobKeyLen = bobDh.computeSecretKey(alicePubKey.data(), bobSharedData);
+    auto bobKeyLen = bobDh.computeSecretKey(alicePubKey.data(), bobSharedData);
     ASSERT_GT(bobKeyLen, 0);
     ASSERT_EQ(bobKeyLen, bobSharedData.size());
 
@@ -194,12 +194,11 @@ TEST_F(BotanEc41417TestFixture, DiffieHellman) {
 // Test compressed X-coordinate
 TEST_F(BotanEc41417TestFixture, compressX) {
     Botan::EC41417_Group ecGroup;
-    std::vector<Botan::BigInt> workspace(Botan::Point41417p::WORKSPACE_SIZE);
 
     auto const & basePnt = ecGroup.get_base_point();
 
     // Use the Y-coordinate to re-compute the X-coordinate
-    auto result = Botan::Point41417p::decompress_point(basePnt.get_x().is_odd(), basePnt.get_y(), ecGroup.get_a(), workspace);
+    auto result = Botan::Point41417p::decompress_point(basePnt.get_x().is_odd(), basePnt.get_y());
     // Re-computed value must be equal to original value
     ASSERT_TRUE(result == basePnt.get_x());
 
@@ -211,19 +210,18 @@ TEST_F(BotanEc41417TestFixture, compressX) {
     auto affinePnt = Botan::Point41417p(affineXy.first, affineXy.second, 1);
 
     // Perform the same steps as above for the computed point 31415, check the result
-    result = Botan::Point41417p::decompress_point(affineXy.first.is_odd(), affinePnt.get_y(), ecGroup.get_a(), workspace);
+    result = Botan::Point41417p::decompress_point(affineXy.first.is_odd(), affinePnt.get_y());
     ASSERT_TRUE(result == affinePnt.get_x());
 }
 
 // Test compressed Y-coordinate
 TEST_F(BotanEc41417TestFixture, compressY) {
     Botan::EC41417_Group ecGroup;
-    std::vector<Botan::BigInt> workspace(Botan::Point41417p::WORKSPACE_SIZE);
 
     auto const & basePnt = ecGroup.get_base_point();
 
     // Use the X-coordinate to re-compute the Y-coordinate
-    auto result = Botan::Point41417p::decompress_point(basePnt.get_y().is_odd(), basePnt.get_x(), ecGroup.get_a(), workspace);
+    auto result = Botan::Point41417p::decompress_point(basePnt.get_y().is_odd(), basePnt.get_x());
     // Re-computed value must be equal to original value
     ASSERT_TRUE(result == basePnt.get_y());
 
@@ -235,14 +233,13 @@ TEST_F(BotanEc41417TestFixture, compressY) {
     auto affinePnt = Botan::Point41417p(affineXy.first, affineXy.second, 1);
 
     // Perform the same steps as above for the computed point 31415, check the result
-    result = Botan::Point41417p::decompress_point(affineXy.second.is_odd(), affinePnt.get_x(), ecGroup.get_a(), workspace);
+    result = Botan::Point41417p::decompress_point(affineXy.second.is_odd(), affinePnt.get_x());
     ASSERT_TRUE(result == affinePnt.get_y());
 }
 
 #if 0
 TEST_F(BotanEc41417TestFixture, benchmark) {
     Botan::EC41417_Group ecGroup;
-    std::vector<Botan::BigInt> workspace(Botan::Point41417p::WORKSPACE_SIZE);
 
     auto const & basePnt = ecGroup.get_base_point();
     // Compute the well known point (see above)
@@ -253,8 +250,7 @@ TEST_F(BotanEc41417TestFixture, benchmark) {
 
     auto start = zrtpGetTickCount();
     for (int i = 0; i < 10000; i++) {
-        Botan::Point41417p::decompress_point(affineXy.second.is_odd(), affinePnt.get_x(), ecGroup.get_a(),
-                                                           workspace);
+        Botan::Point41417p::decompress_point(affineXy.second.is_odd(), affinePnt.get_x());
     }
     auto end = zrtpGetTickCount();
     auto diff = end - start;
