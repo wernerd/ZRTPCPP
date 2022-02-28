@@ -80,12 +80,11 @@ public:
         shared_ptr<ZrtpCallback> cb = aliceCb;      // perform implicit up-cast to base class
         aliceZrtp = make_unique<ZRtp>(aliceZid, cb, aliceId, configure, false, false);
         aliceZrtp->setTransportOverhead(0);     // Testing, no transport protocol (e.g RTP)
-        aliceThread = thread(aliceZrtpRun, this);
     }
 
     void aliceStartThread() {
         aliceThreadRun = true;
-        aliceStartCv.notify_all();
+        aliceThread = thread(aliceZrtpRun, this);
     }
 
     void aliceStopThread() {
@@ -96,7 +95,7 @@ public:
     void aliceQueueData(uint8_t const * packetData, int32_t length) {
         auto* header = (zrtpPacketHeader_t *)packetData;
         string packetType((char *)header->messageType, sizeof(header->messageType));
-        LOGGER(INFO, "Bob   --> ", packetType)
+        LOGGER(INFO, "Bob   --> Alice ", packetType)
 
         auto data = std::make_unique<uint8_t[]>(length);
         memcpy(data.get(), packetData, length);
@@ -109,13 +108,7 @@ public:
     }
 
     static void aliceZrtpRun(ZrtpBasicRunFixture *thiz) {
-        {
-            unique_lock<mutex> startLock(thiz->aliceStartMutex);
-            while (!thiz->aliceThreadRun) {
-                thiz->aliceStartCv.wait(startLock);
-            }
-            thiz->aliceZrtp->startZrtpEngine();
-        }
+        thiz->aliceZrtp->startZrtpEngine();
         unique_lock<mutex> queueLock(thiz->aliceQueueMutex);
         while (thiz->aliceThreadRun) {
             while (thiz->aliceQueue.empty() && thiz->aliceThreadRun) {
@@ -145,12 +138,11 @@ public:
         shared_ptr<ZrtpCallback> cb = bobCb;      // perform implicit up-cast to base class
         bobZrtp = make_unique<ZRtp>(bobZid, cb, bobId, configure, false, false);
         bobZrtp->setTransportOverhead(0);        // Testing, no transport protocol (e.g RTP)
-        bobThread = thread(bobZrtpRun, this);
     }
 
     void bobStartThread() {
         bobThreadRun = true;
-        bobStartCv.notify_all();
+        bobThread = thread(bobZrtpRun, this);
     }
 
     void bobStopThread() {
@@ -161,7 +153,7 @@ public:
     void bobQueueData(uint8_t const * packetData, int32_t length) {
         auto* header = (zrtpPacketHeader_t *)packetData;
         string packetType((char *)header->messageType, sizeof(header->messageType));
-        LOGGER(INFO, "Alice --> ", packetType)
+        LOGGER(INFO, "Alice --> Bob ", packetType)
 
         auto data = std::make_unique<uint8_t[]>(length);
         memcpy(data.get(), packetData, length);
@@ -175,13 +167,8 @@ public:
 
     static void bobZrtpRun(ZrtpBasicRunFixture *thiz) {
         LOGGER(DEBUGGING, "Bob thread id: ",  std::this_thread::get_id())
-        {
-            unique_lock<mutex> startLock(thiz->bobStartMutex);
-            while (!thiz->bobThreadRun) {
-                thiz->bobStartCv.wait(startLock);
-            }
-            thiz->bobZrtp->startZrtpEngine();
-        }
+        thiz->bobZrtp->startZrtpEngine();
+
         unique_lock<mutex> queueLock(thiz->bobQueueMutex);
         while (thiz->bobThreadRun) {
             while (thiz->bobQueue.empty() && thiz->bobThreadRun) {
@@ -192,7 +179,7 @@ public:
 
             for (; !thiz->bobQueue.empty(); thiz->bobQueue.pop_front()) {
                 auto& zrtpData = thiz->bobQueue.front();
-                queueLock.unlock();          // unlock bob's queue while processing 'received' data, Bob may add data
+                queueLock.unlock();          // unlock Bob's queue while processing 'received' data, Alice may add data
 
                 thiz->bobZrtp->processZrtpMessage(zrtpData.first.get(), 321, zrtpData.second);
 
@@ -877,7 +864,7 @@ TEST_F(ZrtpBasicRunFixture, full_run_test_pq74) {
     bobSetupThread(bobConfigure);
 
     aliceStartThread();
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
 
     bobStartThread();
 
