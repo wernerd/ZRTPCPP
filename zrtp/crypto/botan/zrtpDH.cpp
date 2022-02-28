@@ -44,7 +44,6 @@ struct ZrtpDH::dhCtx {
     // PK_Key_Agreement_Key is a superclass of all DH private key classes
     // (multiple inheritance of the DH private keys)
     std::unique_ptr<Botan::PK_Key_Agreement_Key> privKey;
-    Botan::secure_vector<uint8_t> sharedSecret;
 #ifdef SIDH_SUPPORT
     std::unique_ptr<secUtilities::SecureArrayFlex> sidhPrivKey;
     std::unique_ptr<secUtilities::SecureArrayFlex> sidhPubKey;
@@ -148,7 +147,6 @@ ZrtpDH::~ZrtpDH() {
         return;
 
     ctx->privKey.reset();
-    Botan::zap(ctx->sharedSecret);
 }
 
 #ifdef SIDH_SUPPORT
@@ -206,23 +204,19 @@ void ZrtpDH::generateSidhKeyPair() {
 
 size_t ZrtpDH::secretKeyComputation(uint8_t *pubKeyBytes, zrtp::SecureArray1k& secret, int algorithm) {
 
-    // Was computed already, probably because of calling checkPubKey(...)
-    if (!ctx->sharedSecret.empty()) {
-        secret.assign(ctx->sharedSecret.data(), ctx->sharedSecret.size());
-        return ctx->sharedSecret.size();
-    }
-
     auto const length = getSharedSecretSize();
     ZrtpBotanRng rng;
+    Botan::secure_vector<uint8_t> sharedSecret;
 
     try {
         switch(algorithm) {
             case DH2K:
             case DH3K: {
                 Botan::PK_Key_Agreement dhBob(*ctx->privKey, rng, kdfString);
-                ctx->sharedSecret = dhBob.derive_key(length, pubKeyBytes, length).bits_of();
-                secret.assign(ctx->sharedSecret.data(), ctx->sharedSecret.size());
-                return ctx->sharedSecret.size();
+                sharedSecret = dhBob.derive_key(length, pubKeyBytes, length).bits_of();
+                secret.assign(sharedSecret.data(), sharedSecret.size());
+                zap(sharedSecret);
+                return secret.size();
             }
 
             // Note: the `length` argument in derive_key() functions below is ignoreed
@@ -237,23 +231,24 @@ size_t ZrtpDH::secretKeyComputation(uint8_t *pubKeyBytes, zrtp::SecureArray1k& s
                 memcpy(pubKey.data() + 1, pubKeyBytes, getPubKeySize());
 
                 Botan::PK_Key_Agreement ecdhBob(*ctx->privKey, rng, kdfString);
-                ctx->sharedSecret = ecdhBob.derive_key(length, pubKey).bits_of();
+                sharedSecret = ecdhBob.derive_key(length, pubKey).bits_of();
 
-                secret.assign(ctx->sharedSecret.data(), ctx->sharedSecret.size());
-                return ctx->sharedSecret.size();
+                secret.assign(sharedSecret.data(), sharedSecret.size());
+                Botan::zap(sharedSecret);
+                return secret.size();
             }
             case E255: {
                 Botan::PK_Key_Agreement ecdhBob(*ctx->privKey, rng, kdfString);
-                ctx->sharedSecret = ecdhBob.derive_key(length, pubKeyBytes, getPubKeySize()).bits_of();
+                sharedSecret = ecdhBob.derive_key(length, pubKeyBytes, getPubKeySize()).bits_of();
 
-                secret.assign(ctx->sharedSecret.data(), ctx->sharedSecret.size());
-                return ctx->sharedSecret.size();
+                secret.assign(sharedSecret.data(), sharedSecret.size());
+                Botan::zap(sharedSecret);
+                return secret.size();
             }
 #ifdef SIDH_SUPPORT
             case SDH5:
             case SDH7: {
                 computeSidhSharedSecret(pubKeyBytes, secret);
-                ctx->sharedSecret.assign(secret.data(), secret.data() + secret.size());
                 return secret.size();
             }
 
@@ -264,12 +259,27 @@ size_t ZrtpDH::secretKeyComputation(uint8_t *pubKeyBytes, zrtp::SecureArray1k& s
             case PQ74:{
                 computeSidhSharedSecret(pubKeyBytes, secret);
                 auto offset = ctx->sidhPubKey->capacity();  // skip SIDH data, see comment in generateSidhKeyPair() above
-
                 zrtp::SecureArray1k e414secret;
+#ifndef SIDH_COMPRESSED_WDI
                 secretKeyComputation(pubKeyBytes + offset, e414secret, E414);
                 secret.append(e414secret);
-                ctx->sharedSecret.assign(secret.data(), secret.data() + secret.size());
                 return secret.size();
+#else
+                std::vector<uint8_t > coordinates;
+                auto isDecompressed = Botan::Curve41417_PrivateKey::decompress_y_coordinate(
+                        pubKeyBytes + offset, coordinates);
+
+                if (!isDecompressed) {
+                    return -1;
+                }
+                // Copied from case E414 to avoid too much data copying
+                // decompress already returns a correct format.
+                Botan::PK_Key_Agreement ecdhBob(*ctx->privKey, rng, kdfString);
+                sharedSecret = ecdhBob.derive_key(length, coordinates).bits_of();
+                secret.append(sharedSecret.data(), sharedSecret.size());
+                Botan::zap(sharedSecret);
+                return secret.size();
+#endif
             }
 
 #endif
@@ -278,7 +288,7 @@ size_t ZrtpDH::secretKeyComputation(uint8_t *pubKeyBytes, zrtp::SecureArray1k& s
 
         }
     } catch(Botan::Exception& e) {
-        zap(ctx->sharedSecret);
+        zap(sharedSecret);
     }
     return -1;
 }
@@ -413,16 +423,22 @@ size_t ZrtpDH::getPubKeyBytes(zrtp::SecureArray1k& pubKey, int algorithm) const
         }
 
             // Get SIDH public key data first, copy into return array, then
-            // get E414 public key in an own array and append it to the SIDHp503 public key
+            // get E414 compressed public key in an own array and append it to the SIDHp503 public key
         case PQ54:
         case PQ64:
         case PQ74: {
             auto len = ctx->sidhPubKey->capacity();
             pubKey.assign(ctx->sidhPubKey->data(), len);
 
+#ifndef SIDH_COMPRESSED_WDI
             zrtp::SecureArray1k e414PubKey;
             getPubKeyBytes(e414PubKey, E414);
             pubKey.append(e414PubKey);
+#else
+            auto dhPrivateKey = dynamic_cast<Botan::Curve41417_PrivateKey*>(ctx->privKey.get());
+            auto const & compressed = dhPrivateKey->Botan::Curve41417_PublicKey::public_value(Botan::Point41417p::COMPRESSED);
+            pubKey.append(compressed.data(), compressed.size());
+#endif
             return pubKey.size();
         }
 #endif
@@ -492,9 +508,14 @@ int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes)
         case PQ54:
         case PQ64:
         case PQ74: {
+#ifndef SIDH_COMPRESSED_WDI
             auto offset = ctx->sidhPubKey->capacity();  // skip SIDH data, see comment in generateSidhKeyPair() above
             auto otherPublicKey = Botan::Curve41417_PublicKey(pubKeyBytes+offset);
             return !otherPublicKey.check_key(rng, false) ? 0 : 1;
+#else
+            // Not needed in case of compressed keys, implicit when de-compressing
+            return 1;
+#endif
         }
 
             // No check for SIDH algorithm yet - return OK

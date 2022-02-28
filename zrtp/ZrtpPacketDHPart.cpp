@@ -88,6 +88,8 @@ static size_t determineSidhLength(uint16_t len) {
 static size_t determineHybridLength(uint16_t len) {
     // Convert the SIDH public key length into number of ZRTP_WORD_SIZE words
 #ifndef SIDH_COMPRESSED_WDI
+    auto e414length = E414_LENGTH_BYTES;
+
     auto lengths = SidhWrapper::getFieldLengths(SidhWrapper::P503);
     auto lenInWordsP503 = (lengths->publicKey + E414_LENGTH_BYTES + (ZRTP_WORD_SIZE - 1)) / ZRTP_WORD_SIZE;
 
@@ -97,21 +99,23 @@ static size_t determineHybridLength(uint16_t len) {
     lengths = SidhWrapper::getFieldLengths(SidhWrapper::P751);
     auto lenInWordsP751 = (lengths->publicKey + E414_LENGTH_BYTES + (ZRTP_WORD_SIZE - 1)) / ZRTP_WORD_SIZE;
 #else
+    auto e414length = E414_LENGTH_BYTES_COMP;
+
     auto lengths = SidhWrapper::getFieldLengths(SidhWrapper::P503Comp);
-    auto lenInWordsP503 = (lengths->publicKey + E414_LENGTH_BYTES + (ZRTP_WORD_SIZE - 1)) / ZRTP_WORD_SIZE;
+    auto lenInWordsP503 = (lengths->publicKey + E414_LENGTH_BYTES_COMP + (ZRTP_WORD_SIZE - 1)) / ZRTP_WORD_SIZE;
 
     lengths = SidhWrapper::getFieldLengths(SidhWrapper::P610Comp);
-    auto lenInWordsP610 = (lengths->publicKey + E414_LENGTH_BYTES + (ZRTP_WORD_SIZE - 1)) / ZRTP_WORD_SIZE;
+    auto lenInWordsP610 = (lengths->publicKey + E414_LENGTH_BYTES_COMP + (ZRTP_WORD_SIZE - 1)) / ZRTP_WORD_SIZE;
 
     lengths = SidhWrapper::getFieldLengths(SidhWrapper::P751Comp);
-    auto lenInWordsP751 = (lengths->publicKey + E414_LENGTH_BYTES + (ZRTP_WORD_SIZE - 1)) / ZRTP_WORD_SIZE;
+    auto lenInWordsP751 = (lengths->publicKey + E414_LENGTH_BYTES_COMP + (ZRTP_WORD_SIZE - 1)) / ZRTP_WORD_SIZE;
 
 #endif
 
     if (len == lenInWordsP751 + FIXED_NUM_WORDS ||
         len == lenInWordsP610 + FIXED_NUM_WORDS ||
         len == lenInWordsP503 + FIXED_NUM_WORDS) {
-        return lengths->publicKey + E414_LENGTH_BYTES;
+        return lengths->publicKey + e414length;
     }
     return 0;
 }

@@ -257,13 +257,14 @@ if (SIDH)
             GIT_REPOSITORY ${SIDH_REPO}
             GIT_TAG        ${SIDH_TAG}
     )
-    FetchContent_MakeAvailable(${sidh_fetch})
-    include_directories (${sidh_SOURCE_DIR} ${sidh_SOURCE_DIR}/src)
     set(sidhLibNameStatic sidhCppStaticComp)
     if (USE_SIDH_COMPRESSED)
         set(COMPRESSED true)        ## tell SIDH CMakeLists.txt to build compressed
         add_compile_definitions("SIDH_COMPRESSED_WDI=1")
     endif()
+
+    FetchContent_MakeAvailable(${sidh_fetch})
+    include_directories (${sidh_SOURCE_DIR} ${sidh_SOURCE_DIR}/src)
     add_compile_definitions(SIDH_SUPPORT)
 endif()
 

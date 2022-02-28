@@ -68,6 +68,7 @@ static const uint32_t EC25_LENGTH_BYTES = 2*(256 / 8);
 static const uint32_t EC38_LENGTH_BYTES = 2*(384 / 8);
 static const uint32_t E255_LENGTH_BYTES = 32 ;
 static const uint32_t E414_LENGTH_BYTES = 2*((414+7) / 8);  // -> computes to 104 byte for x and y coordinate of curve
+static const uint32_t E414_LENGTH_BYTES_COMP = (((414+7) / 8) + 1); // -> computes to 53 byte for compressed coordinates
 
 /**
  * Implementation of Diffie-Helman for ZRTP
