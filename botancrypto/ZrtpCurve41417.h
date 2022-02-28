@@ -28,6 +28,8 @@ namespace Botan {
     class BOTAN_PUBLIC_API(2, 0) Curve41417_PublicKey : public virtual Public_Key {
     public:
 
+        static constexpr size_t COORDINATE_BYTES = 52;
+
         explicit Curve41417_PublicKey(uint8_t *otherKey);
 
         ~Curve41417_PublicKey() override = default;
@@ -36,7 +38,7 @@ namespace Botan {
 
         size_t estimated_strength() const override { return 256; }
 
-        size_t key_length() const override { return 52 * 8; }
+        size_t key_length() const override { return COORDINATE_BYTES * 8; }
 
         AlgorithmIdentifier algorithm_identifier() const override { return {}; }
 
@@ -44,7 +46,26 @@ namespace Botan {
 
         std::vector<uint8_t> public_key_bits() const override;
 
+        /**
+         * @return public point value, uncompressed format
+         */
         std::vector<uint8_t> public_value() const { return m_public.encode(Point41417p::UNCOMPRESSED); }
+
+        /**
+         * @return public point value encoded to `format`
+         */
+        std::vector<uint8_t> public_value(Point41417p::Compression_Type format) const {
+            return m_public.encode(format);
+        }
+
+        /**
+         * @brief Compute decompressed X/Y-coordinates.
+         *
+         * @param compressedData compressed Y-coordinate with leading format byte (2 or 3)
+         * @param coordinates decompressed X/Y coordinates with leading format byte (4)
+         * @return false if decompression failed
+         */
+        static bool decompress_y_coordinate(uint8_t const * compressedData, std::vector<uint8_t> & coordinates);
 
         /**
          * Get the domain parameters of this key.
