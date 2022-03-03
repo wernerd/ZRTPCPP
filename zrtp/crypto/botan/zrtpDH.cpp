@@ -378,12 +378,15 @@ size_t ZrtpDH::getPubKeySize() const
         case SDH5:
         case SDH7:
             return ctx->sidhPubKey->capacity();
-
         case PQ54:
         case PQ64:
         case PQ74:
+#ifndef SIDH_COMPRESSED_WDI
             return ctx->sidhPubKey->capacity() + ctx->privKey->key_length() / 8 * 2;
-#endif
+#else
+            return ctx->sidhPubKey->capacity() + ctx->privKey->key_length() / 8 + 1; // +1 -> format byte in this case
+#endif  // SIDH_COMPRESSED_WDI
+#endif  // SIDH_SUPPORT
     }
     return 0;
 }
@@ -436,7 +439,8 @@ size_t ZrtpDH::getPubKeyBytes(zrtp::SecureArray1k& pubKey, int algorithm) const
             pubKey.append(e414PubKey);
 #else
             auto dhPrivateKey = dynamic_cast<Botan::Curve41417_PrivateKey*>(ctx->privKey.get());
-            auto const & compressed = dhPrivateKey->Botan::Curve41417_PublicKey::public_value(Botan::Point41417p::COMPRESSED);
+            auto const & compressed =
+                    dhPrivateKey->Botan::Curve41417_PublicKey::public_value(Botan::Point41417p::COMPRESSED);
             pubKey.append(compressed.data(), compressed.size());
 #endif
             return pubKey.size();
