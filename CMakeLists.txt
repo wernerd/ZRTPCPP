@@ -247,7 +247,7 @@ if ("${SIDH_REPO}" STREQUAL "")
     set(SIDH_REPO https://github.com/wernerd/PQCrypto-SIDH.git)
 endif()
 if ("${SIDH_TAG}" STREQUAL "")
-    set(SIDH_TAG 95dd9526452c61aa4b30eef650edebf6328b1aab)  ## branch wdi top
+    set(SIDH_TAG 699ed673fbcabec820fa5f889b9408a35f857427)  ## branch wdi top
 endif()
 set(sidhLibNameStatic)
 if (SIDH)
