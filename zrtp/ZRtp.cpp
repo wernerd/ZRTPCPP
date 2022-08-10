@@ -295,11 +295,12 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
         // If other party offered PQ algorithms then these are top of the list
         // and selected. To give some more time to compute the SIDH keys increase
         // T2 timer
-        if (*(int32_t*)(pubKey->getName()) == *(int32_t*)pq54 ||
-            *(int32_t*)(pubKey->getName()) == *(int32_t*)pq64 ||
-            *(int32_t*)(pubKey->getName()) == *(int32_t*)pq74) {
-            stateEngine->adjustT2Sidh(300);                // first timeout after 300ms
-        }
+        // TODO Check if this is necessary with KEM
+//        if (*(int32_t*)(pubKey->getName()) == *(int32_t*)pq54 ||
+//            *(int32_t*)(pubKey->getName()) == *(int32_t*)pq64 ||
+//            *(int32_t*)(pubKey->getName()) == *(int32_t*)pq74) {
+//            stateEngine->adjustT2Sidh(300);                // first timeout after 300ms
+//        }
 
         if (cipher == nullptr)                             // public key selection may have set the cipher already
             cipher = findBestCipher(hello, pubKey);
@@ -534,7 +535,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     // Security levels must match
     if (*(int32_t*)(cp->getName()) == *(int32_t*)ec38 ||
         *(int32_t*)(cp->getName()) == *(int32_t*)e414
-#ifdef SIDH_SUPPORT
+#ifdef TWOTWO_SUPPORT
         || *(int32_t*)(cp->getName()) == *(int32_t*)pq64 ||
         *(int32_t*)(cp->getName()) == *(int32_t*)pq74
 #endif
@@ -559,12 +560,8 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     // if not delete old DH context and generate new one
     // The algorithm names are 4 chars only, thus we can cast to int32_t
 
-    // For Post-quantum SIDH we always need to generate a new key pair. The
-    // Initiator uses a Key-A type key pair (created during prepareCommit) and
-    // the Responder (that's the case here) uses a Key-B type key pair. SIDH
-    // keys are precomputed, thus it's a fast operation at this point
     if (*(int32_t*)(dhContext->getDHtype()) != *(int32_t*)(pubKey->getName())
-#ifdef SIDH_SUPPORT
+#ifdef TWOTWO_SUPPORT
             || *(int32_t*)(pubKey->getName()) == *(int32_t*)sdh5 ||
             *(int32_t*)(pubKey->getName()) == *(int32_t*)sdh7 ||
             *(int32_t*)(pubKey->getName()) == *(int32_t*)pq54 ||
@@ -1524,7 +1521,7 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
 
     // Build list of own pubkey algorithm names, must follow the order
     // defined in RFC 6189, chapter 4.1.2., weakest to strongest
-#ifdef SIDH_SUPPORT
+#ifdef TWOTWO_SUPPORT
     const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38, sdh5, sdh7, pq54, pq64, pq74};
 #else
     const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38};
@@ -1603,7 +1600,7 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
 
     // select a corresponding strong hash if necessary.
     if (algoName == *(int32_t*)ec38 || algoName == *(int32_t*)e414
-#ifdef SIDH_SUPPORT
+#ifdef TWOTWO_SUPPORT
         || algoName == *(int32_t*)sdh7 ||
         algoName == *(int32_t*)pq64 ||
         algoName == *(int32_t*)pq74

@@ -28,10 +28,6 @@
 #include "botan_all.h"
 #include "botancrypto/ZrtpCurve41417.h"
 
-#ifdef SIDH_SUPPORT
-#include "cpp/SidhWrapper.h"
-#endif
-
 void randomZRTP(uint8_t *buf, int32_t length)
 {
     ZrtpBotanRng::getRandomData(buf, length);
@@ -44,7 +40,7 @@ struct ZrtpDH::dhCtx {
     // PK_Key_Agreement_Key is a superclass of all DH private key classes
     // (multiple inheritance of the DH private keys)
     std::unique_ptr<Botan::PK_Key_Agreement_Key> privKey;
-#ifdef SIDH_SUPPORT
+#ifdef TWOTWO_SUPPORT
     std::unique_ptr<secUtilities::SecureArrayFlex> sidhPrivKey;
     std::unique_ptr<secUtilities::SecureArrayFlex> sidhPubKey;
 #endif
@@ -76,7 +72,7 @@ ZrtpDH::ZrtpDH(const char* type, ProtocolState state) : protocolState(state), ct
     else if (*(int32_t*)type == *(int32_t*)e414) {
         pkType = E414;
     }
-#ifdef SIDH_SUPPORT
+#ifdef TWOTWO_SUPPORT
     else if (*(int32_t*)type == *(int32_t*)sdh5) {
         pkType = SDH5;
     }
@@ -126,7 +122,7 @@ ZrtpDH::ZrtpDH(const char* type, ProtocolState state) : protocolState(state), ct
             ctx->privKey = std::make_unique<Botan::Curve41417_PrivateKey>(rng);
             break;
 
-#ifdef SIDH_SUPPORT
+#ifdef TWOTWO_SUPPORT
         case SDH5:
         case SDH7:
             generateSidhKeyPair();
@@ -149,7 +145,7 @@ ZrtpDH::~ZrtpDH() {
     ctx->privKey.reset();
 }
 
-#ifdef SIDH_SUPPORT
+#ifdef TWOTWO_SUPPORT
 SidhWrapper::SidhType ZrtpDH::getSidhType() const
 {
     switch (pkType) {
@@ -245,7 +241,7 @@ size_t ZrtpDH::secretKeyComputation(uint8_t *pubKeyBytes, zrtp::SecureArray1k& s
                 Botan::zap(sharedSecret);
                 return secret.size();
             }
-#ifdef SIDH_SUPPORT
+#ifdef TWOTWO_SUPPORT
             case SDH5:
             case SDH7: {
                 computeSidhSharedSecret(pubKeyBytes, secret);
@@ -297,7 +293,7 @@ size_t ZrtpDH::computeSecretKey(uint8_t *pubKeyBytes, zrtp::SecureArray1k& secre
     return secretKeyComputation(pubKeyBytes, secret, pkType);
 }
 
-#ifdef SIDH_SUPPORT
+#ifdef TWOTWO_SUPPORT
 size_t ZrtpDH::computeSidhSharedSecret(uint8_t *pubKeyBytes, zrtp::SecureArray1k& secret)
 {
     SidhWrapper::SidhType sidhType = getSidhType();
@@ -344,7 +340,7 @@ size_t ZrtpDH::getSharedSecretSize() const
         case E414:
             return 52;
 
-#ifdef SIDH_SUPPORT
+#ifdef TWOTWO_SUPPORT
         case SDH5:
         case SDH7:
             return getSidhSharedSecretLength();
@@ -374,7 +370,7 @@ size_t ZrtpDH::getPubKeySize() const
         case E255:
             return ((ctx->privKey->key_length() + 7) / 8);
 
-#ifdef SIDH_SUPPORT
+#ifdef TWOTWO_SUPPORT
         case SDH5:
         case SDH7:
             return ctx->sidhPubKey->capacity();
@@ -386,7 +382,7 @@ size_t ZrtpDH::getPubKeySize() const
 #else
             return ctx->sidhPubKey->capacity() + ctx->privKey->key_length() / 8 + 1; // +1 -> format byte in this case
 #endif  // SIDH_COMPRESSED_WDI
-#endif  // SIDH_SUPPORT
+#endif  // TWOTWO_SUPPORT
     }
     return 0;
 }
@@ -417,7 +413,7 @@ size_t ZrtpDH::getPubKeyBytes(zrtp::SecureArray1k& pubKey, int algorithm) const
             pubKey.assign(ctx->privKey->public_value().data(), ctx->privKey->public_value().size());
             return pubKey.size();
 
-#ifdef SIDH_SUPPORT
+#ifdef TWOTWO_SUPPORT
         case SDH5:
         case SDH7: {
             auto len = getPubKeySize();
@@ -507,7 +503,7 @@ int32_t ZrtpDH::checkPubKey(uint8_t *pubKeyBytes)
             return !otherPublicKey.check_key(rng, false) ? 0 : 1;
         }
 
-#ifdef SIDH_SUPPORT
+#ifdef TWOTWO_SUPPORT
             // No check for SIDH algorithm yet, check E414 only.
         case PQ54:
         case PQ64:
@@ -548,16 +544,16 @@ const char* ZrtpDH::getDHtype() const
             return e255;
         case E414:
             return e414;
-        case SDH5:
-            return sdh5;
-        case SDH7:
-            return sdh7;
-        case PQ54:
-            return pq54;
-        case PQ64:
-            return pq64;
-        case PQ74:
-            return pq74;
+//        case SDH5:
+//            return sdh5;
+//        case SDH7:
+//            return sdh7;
+//        case PQ54:
+//            return pq54;
+//        case PQ64:
+//            return pq64;
+//        case PQ74:
+//            return pq74;
         default:
             return nullptr;
     }

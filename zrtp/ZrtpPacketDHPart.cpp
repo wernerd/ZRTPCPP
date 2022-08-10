@@ -22,7 +22,7 @@
 #include <zrtp/crypto/zrtpDH.h>
 #include "logging/ZrtpLogging.h"
 
-#ifdef SIDH_SUPPORT
+#ifdef TWOTWO_SUPPORT
 #include "cpp/SidhWrapper.h"
 #endif
 static const int FIXED_NUM_WORDS = sizeof(DHPartPacket_t) / ZRTP_WORD_SIZE + 2;         // +2 for MAC
@@ -62,7 +62,7 @@ void ZrtpPacketDHPart::setPacketLength(size_t pubKeyLen) {
     setLength(static_cast<uint16_t>(length / ZRTP_WORD_SIZE));
 }
 
-#ifdef SIDH_SUPPORT
+#ifdef TWOTWO_SUPPORT
 static size_t determineSidhLength(uint16_t len) {
     // Convert the SIDH public key length into number of ZRTP_WORD_SIZE words
 #ifndef SIDH_COMPRESSED_WDI
@@ -125,7 +125,7 @@ ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t const * data) {
     zrtpHeader = &((DHPartPacket_t *)data)->hdr;  // the standard header
     DHPartHeader = &((DHPartPacket_t *)data)->dhPart;
 
-#ifdef SIDH_SUPPORT
+#ifdef TWOTWO_SUPPORT
     size_t tmpLen;
 #endif
 
@@ -148,7 +148,7 @@ ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t const * data) {
     else if (len == E414_WORDS) {    // E414
         dhLength = E414_LENGTH_BYTES;
     }
-#ifdef SIDH_SUPPORT
+#ifdef TWOTWO_SUPPORT
     else if ((tmpLen = determineSidhLength(len)) > 0) {    // SDH5 or SDH7
         dhLength = tmpLen;
     }

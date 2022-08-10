@@ -56,9 +56,6 @@ void randomZRTP(uint8_t *buf, int32_t length);
 #if defined(__cplusplus)
 
 #include "libzrtpcpp/ZrtpConfigure.h"
-#ifdef SIDH_SUPPORT
-#include "cpp/SidhWrapper.h"
-#endif
 #include "../common/SecureArray.h"
 #include "../common/typedefs.h"
 
@@ -171,14 +168,14 @@ private:
         EC25,
         EC38,
         E255,
-        E414,
-        SDH5,
-        SDH7,
-        PQ54,
-        PQ64,
-        PQ74
+        E414
+//        SDH5,
+//        SDH7,
+//        PQ54,
+//        PQ64,
+//        PQ74
     };
-#ifdef SIDH_SUPPORT
+#ifdef TWOTWO_SUPPORT
     SidhWrapper::SidhType getSidhType() const;
 #endif
     /**
@@ -196,9 +193,9 @@ private:
     [[nodiscard]] size_t getPubKeySize() const;
 
 
-    void generateSidhKeyPair();
-    size_t computeSidhSharedSecret(uint8_t *pubKeyBytes, zrtp::SecureArray1k& secret);
-    [[nodiscard]] size_t getSidhSharedSecretLength() const ;
+//    void generateSidhKeyPair();
+//    size_t computeSidhSharedSecret(uint8_t *pubKeyBytes, zrtp::SecureArray1k& secret);
+//    [[nodiscard]] size_t getSidhSharedSecretLength() const ;
 
     size_t secretKeyComputation(uint8_t *pubKeyBytes, zrtp::SecureArray1k& secret, int algorithm);
     size_t getPubKeyBytes(zrtp::SecureArray1k& pubKey, int algorithm) const;

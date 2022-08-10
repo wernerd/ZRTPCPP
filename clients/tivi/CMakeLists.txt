@@ -66,7 +66,7 @@ if(NOT EMBEDDED)
     add_dependencies(${zrtplibName} ${BOTAN_LIB_NAME})
     target_include_directories(${zrtplibName} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
     set_target_properties(${zrtplibName} PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
-    target_link_libraries(${zrtplibName} ${BOTAN_LIB_NAME} ${sidhLibNameStatic} ${LIBS})
+    target_link_libraries(${zrtplibName} ${BOTAN_LIB_NAME} ${LIBS})
 
     # **** Test programs ****
     #
@@ -121,7 +121,7 @@ if(EMBEDDED)
             ${CMAKE_CURRENT_SOURCE_DIR}
             ${ZRTP_TOP_SOURCE_DIR}/zrtp
             ${ZRTP_TOP_SOURCE_DIR}/srtp)
-    target_link_libraries(${zrtplibName} ${BOTAN_LIB_NAME} ${sidhLibNameStatic})
+    target_link_libraries(${zrtplibName} ${BOTAN_LIB_NAME})
 
     add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/buildInfo.h
             COMMAND ${CMAKE_COMMAND} -E echo \"constexpr char zrtpBuildInfo[] = \\\"${buildInfo}\\\"\;\" > ${CMAKE_CURRENT_BINARY_DIR}/buildInfo.h)

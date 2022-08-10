@@ -171,7 +171,7 @@ PubKeyEnum::PubKeyEnum() : EnumBase(PubKeyAlgorithm) {
 #ifdef SUPPORT_NON_NIST
     insert(e255, 0, "Curve 255", nullptr, nullptr, None);
     insert(e414, 0, "Curve 414", nullptr, nullptr, None);
-#ifdef SIDH_SUPPORT
+#ifdef TWOTWO_SUPPORT
     insert(sdh5, 0, "SIDHp503", nullptr, nullptr, None);
     insert(sdh7, 0, "SIDHp751", nullptr, nullptr, None);
 #ifndef SIDH_COMPRESSED_WDI

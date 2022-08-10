@@ -129,8 +129,6 @@ void CtZrtpStream::stopStream() {
         zrtpEngine->setRs2Valid();
     }
 
-    // sidh751KM::SidhKeyManagement::stopKeyGeneration();
-
     index = CtZrtpSession::AudioStream;
     type = CtZrtpSession::NoStream;
     tiviState = CtZrtpSession::eLookingPeer;
@@ -400,7 +398,6 @@ int CtZrtpStream::getSignalingHelloHash(char *hHash, int32_t idx) {
 }
 
 void CtZrtpStream::setSignalingHelloHash(const char *hHash) {
-    // sidh751KM::SidhKeyManagement::initialize();
     synchEnter();
 
     // set new timer values for ZRTP retransmission
@@ -1214,19 +1211,15 @@ void CtZrtpStream::signSAS(uint8_t* sasHash) {
 //    zrtp_log("CTStream", "++++ sign sasHash");
 
     auto useHashedKey = false;
-#ifdef SIDH_SUPPORT
-    auto pubKeyName = zrtpEngine->getPublicKeyAlgoName();
-    useHashedKey = (pubKeyName == sdh5 || pubKeyName == sdh7 || pubKeyName == pq54);
-#endif
-
-    // Newer releases which support SIDH may also use hashed ZINA keys, not the simple, plain public
+    // TODO Check if this ZRTP version support hash keys (KEM)
+    // Newer releases which support KEM may also use hashed ZINA keys, not the simple, plain public
     // key data. ZRTP uses hashed keys because in future ZINA keys may become much bigger and
     // would exceed the maximum size of a UDP/ZRTP packet. Hashing the key solves this problem.
     //
-    // If the confirmed public key does not use an SIDH algo then the other party may use an older
-    // ZRTP release which does not support ZIN key hashing. In this case send the plain ZINA public
+    // If the confirmed public key does not use an KEM algo then the other party may use an older
+    // ZRTP release which does not support ZINA key hashing. In this case send the plain ZINA public
     // key, not the hashed key. This supports older clients - it's sort of a hack. However, it helps
-    // migration to hash-based Zina key checks. Possible because SIDH support and hash-based Zina
+    // migration to hash-based Zina key checks. Possible because KEM support and hash-based Zina
     // check implemented/release at the same time :-) .
     string keyData = getOwnAxoIdKey(useHashedKey);
     auto keyLength = keyData.size();

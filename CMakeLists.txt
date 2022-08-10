@@ -39,10 +39,6 @@ option(SRTP "Include SRTP when not building for CCRTP." OFF)
 option(AXO "Include Axolotl support when not building for CCRTP." OFF)
 option(TESTS "Generate Unit test." OFF)
 
-## The following options are used for SIDH mainly
-option(SIDH "Include SIDH Post-Quantum algorithm." OFF)
-option(USE_SIDH_COMPRESSED "Include SIDH compressed keys." ON)
-
 if (TESTS)
     set(ANDROID false)
     set(IOS false)
@@ -120,7 +116,6 @@ set(CMAKE_CXX_STANDARD 17)
 
 include(FetchContent)
 
-set(sidh_lc sidh)
 set(botan_lc botan)
 
 ## check if a local fetch configuration is available. If yes: load it. This local
@@ -132,10 +127,6 @@ set(botan_lc botan)
 ## Never check-in the LocalFetchConfig.cmake file. It's *Local* for a reason :-)
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/LocalFetchConfig.cmake)
     include(${CMAKE_CURRENT_SOURCE_DIR}/LocalFetchConfig.cmake)
-endif()
-
-if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
-    set(enable-x86_64 true)         ## SIDH definition
 endif()
 
 set(ZRTP_TOP_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -242,31 +233,6 @@ FetchContent_Declare(
         GIT_REPOSITORY ${BOTAN_REPO}
         GIT_TAG        ${BOTAN_TAG}
 )
-
-if ("${SIDH_REPO}" STREQUAL "")
-    set(SIDH_REPO https://github.com/wernerd/PQCrypto-SIDH.git)
-endif()
-if ("${SIDH_TAG}" STREQUAL "")
-    set(SIDH_TAG 699ed673fbcabec820fa5f889b9408a35f857427)  ## branch wdi top
-endif()
-set(sidhLibNameStatic)
-if (SIDH)
-    set(sidh_fetch ${sidh_lc})
-    FetchContent_Declare(
-            ${sidh_fetch}
-            GIT_REPOSITORY ${SIDH_REPO}
-            GIT_TAG        ${SIDH_TAG}
-    )
-    set(sidhLibNameStatic sidhCppStaticComp)
-    if (USE_SIDH_COMPRESSED)
-        set(COMPRESSED true)        ## tell SIDH CMakeLists.txt to build compressed
-        add_compile_definitions("SIDH_COMPRESSED_WDI=1")
-    endif()
-
-    FetchContent_MakeAvailable(${sidh_fetch})
-    include_directories (${sidh_SOURCE_DIR} ${sidh_SOURCE_DIR}/src)
-    add_compile_definitions(SIDH_SUPPORT)
-endif()
 
 if ("${BOTAN_LIB_NAME}" STREQUAL "")
     set(BOTAN_LIB_NAME botanstatic)
