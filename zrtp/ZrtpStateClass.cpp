@@ -121,14 +121,14 @@ void ZrtpStateClass::processEvent(Event * ev) {
             cancelTimer();
             ZrtpPacketError epkt(pkt);
             ZrtpPacketErrorAck* eapkt = parent->prepareErrorAck(&epkt);
-            parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(eapkt));
+            parent->sendPacketZRTP(eapkt);
             event->type = ErrorPkt;
         }
         else if (first == 'p' && middle == ' ' && last == ' ') {
             ZrtpPacketPing ppkt(pkt);
             ZrtpPacketPingAck* ppktAck = parent->preparePingAck(&ppkt);
             if (ppktAck != nullptr) {          // ACK only to valid PING packet, otherwise ignore it
-                parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(ppktAck));
+                parent->sendPacketZRTP(ppktAck);
             }
             return;
         }
@@ -136,7 +136,7 @@ void ZrtpStateClass::processEvent(Event * ev) {
             uint32_t errorCode = 0;
             auto* srly = new ZrtpPacketSASrelay(pkt);
             auto* rapkt = parent->prepareRelayAck(srly, &errorCode);
-            parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(rapkt));
+            parent->sendPacketZRTP(rapkt);
             return;
         }
     }
@@ -158,7 +158,7 @@ void ZrtpStateClass::evInitial() {
         sentVersion = hello->getVersionInt();
 
         // remember packet for easy resend in case timer triggers
-        sentPacket = static_cast<ZrtpPacketBase *>(hello);
+        sentPacket = hello;
 
         if (!parent->sendPacketZRTP(sentPacket)) {
             sendFailed();                 // returns to state Initial
@@ -278,7 +278,7 @@ void ZrtpStateClass::evDetect() {
              * Only if the received version matches our own sent version we start to send a HelloAck.
              */
             if (recvVersion != sentVersion) {
-                ZRtp::HelloPacketVersion* hpv = parent->helloPackets;
+                ZRtp::HelloPacketVersion_t* hpv = parent->helloPackets;
 
                 int32_t index;
                 for (index = 0; hpv->packet && hpv->packet != parent->currentHelloPacket; hpv++, index++)   // Find current sent Hello
@@ -295,7 +295,7 @@ void ZrtpStateClass::evDetect() {
                 sentVersion = parent->currentHelloPacket->getVersionInt();
 
                 // remember packet for easy resend in case timer triggers
-                sentPacket = static_cast<ZrtpPacketBase *>(parent->currentHelloPacket);
+                sentPacket = parent->currentHelloPacket;
 
                 if (!parent->sendPacketZRTP(sentPacket)) {
                     sendFailed();                 // returns to state Initial
@@ -309,7 +309,7 @@ void ZrtpStateClass::evDetect() {
             }
             ZrtpPacketHelloAck* helloAck = parent->prepareHelloAck();
 
-            if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(helloAck))) {
+            if (!parent->sendPacketZRTP(helloAck)) {
                 parent->zrtpNegotiationFailed(Severe, SevereCannotSend);
                 return;
             }
@@ -428,7 +428,7 @@ void ZrtpStateClass::evAckSent() {
 
             // remember packet for easy resend in case timer triggers
             // Timer trigger received in new state CommitSend
-            sentPacket = static_cast<ZrtpPacketBase *>(commitPkt);
+            sentPacket = commitPkt;
             commitPkt = nullptr;                    // now stored in sentPacket
             nextState(CommitSent);
             if (!parent->sendPacketZRTP(sentPacket)) {
@@ -455,7 +455,7 @@ void ZrtpStateClass::evAckSent() {
         if (first == 'h' && last ==' ') {
             ZrtpPacketHelloAck* helloAck = parent->prepareHelloAck();
 
-            if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(helloAck))) {
+            if (!parent->sendPacketZRTP(helloAck)) {
                 nextState(Detect);
                 parent->zrtpNegotiationFailed(Severe, SevereCannotSend);
             }
@@ -485,7 +485,7 @@ void ZrtpStateClass::evAckSent() {
                     return;
                 }
                 commitPkt = nullptr;
-                sentPacket = static_cast<ZrtpPacketBase *>(dhPart1);
+                sentPacket = dhPart1;
                 nextState(WaitDHPart2);
             }
             else {
@@ -498,7 +498,7 @@ void ZrtpStateClass::evAckSent() {
                     }
                     return;
                 }
-                sentPacket = static_cast<ZrtpPacketBase *>(confirm);
+                sentPacket = confirm;
                 nextState(WaitConfirm2);
             }
             if (!parent->sendPacketZRTP(sentPacket)) {
@@ -595,8 +595,8 @@ void ZrtpStateClass::evAckDetected() {
             nextState(WaitCommit);
 
             // remember packet for easy resend
-            sentPacket = static_cast<ZrtpPacketBase *>(helloAck);
-            if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(helloAck))) {
+            sentPacket = helloAck;
+            if (!parent->sendPacketZRTP(helloAck)) {
                 sendFailed();
             }
         }
@@ -623,7 +623,7 @@ void ZrtpStateClass::evAckDetected() {
 
             // remember packet for easy resend in case timer triggers
             // Timer trigger received in new state CommitSend
-            sentPacket = static_cast<ZrtpPacketBase *>(commit);
+            sentPacket = commit;
             if (!parent->sendPacketZRTP(sentPacket)) {
                 sendFailed();
                 return;
@@ -699,7 +699,7 @@ void ZrtpStateClass::evWaitCommit() {
                     }
                     return;
                 }
-                sentPacket = static_cast<ZrtpPacketBase *>(dhPart1);
+                sentPacket = dhPart1;
                 nextState(WaitDHPart2);
             }
             else {
@@ -712,7 +712,7 @@ void ZrtpStateClass::evWaitCommit() {
                     }
                     return;
                 }
-                sentPacket = static_cast<ZrtpPacketBase *>(confirm);
+                sentPacket = confirm;
                 nextState(WaitConfirm2);
             }
             if (!parent->sendPacketZRTP(sentPacket)) {
@@ -817,7 +817,7 @@ void ZrtpStateClass::evCommitSent() {
                         return;
                     }
                     nextState(WaitDHPart2);
-                    sentPacket = static_cast<ZrtpPacketBase *>(dhPart1);
+                    sentPacket = dhPart1;
                 }
                 else {
                     ZrtpPacketConfirm* confirm = parent->prepareConfirm1MultiStream(&zpCo, &errorCode);
@@ -830,7 +830,7 @@ void ZrtpStateClass::evCommitSent() {
                         return;
                     }
                     nextState(WaitConfirm2);
-                    sentPacket = static_cast<ZrtpPacketBase *>(confirm);
+                    sentPacket = confirm;
                 }
                 if (!parent->sendPacketZRTP(sentPacket)) {
                     sendFailed();       // returns to state Initial
@@ -872,7 +872,7 @@ void ZrtpStateClass::evCommitSent() {
 
                 return;
             }
-            sentPacket = static_cast<ZrtpPacketBase *>(dhPart2);
+            sentPacket = dhPart2;
             nextState(WaitConfirm1);
 
             if (!parent->sendPacketZRTP(sentPacket)) {
@@ -902,7 +902,7 @@ void ZrtpStateClass::evCommitSent() {
                 return;
             }
             nextState(WaitConfAck);
-            sentPacket = static_cast<ZrtpPacketBase *>(confirm);
+            sentPacket = confirm;
 
             if (!parent->sendPacketZRTP(sentPacket)) {
                 sendFailed();         // returns to state Initial
@@ -999,7 +999,7 @@ void ZrtpStateClass::evWaitDHPart2() {
                 return;
             }
             nextState(WaitConfirm2);
-            sentPacket = static_cast<ZrtpPacketBase *>(confirm);
+            sentPacket = confirm;
             if (!parent->sendPacketZRTP(sentPacket)) {
                 sendFailed();       // returns to state Initial
             }
@@ -1074,7 +1074,7 @@ void ZrtpStateClass::evWaitConfirm1() {
                 return;
             }
             nextState(WaitConfAck);
-            sentPacket = static_cast<ZrtpPacketBase *>(confirm);
+            sentPacket = confirm;
 
             if (!parent->sendPacketZRTP(sentPacket)) {
                 sendFailed();         // returns to state Initial
@@ -1165,7 +1165,7 @@ void ZrtpStateClass::evWaitConfirm2() {
                 sendErrorPacket(errorCode);
                 return;
             }
-            sentPacket = static_cast<ZrtpPacketBase *>(confack);
+            sentPacket = confack;
 
             if (!parent->sendPacketZRTP(sentPacket)) {
                 sendFailed();             // returns to state Initial
@@ -1373,7 +1373,7 @@ void ZrtpStateClass::evSecureState() {
             ZrtpPacketGoClear gpkt(pkt);
             ZrtpPacketClearAck* clearAck = parent->prepareClearAck(&gpkt);
 
-            if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(clearAck))) {
+            if (!parent->sendPacketZRTP(clearAck)) {
                 return;
             }
         }
@@ -1464,18 +1464,18 @@ void ZrtpStateClass::sendErrorPacket(uint32_t errorCode) {
     ZrtpPacketError* err = parent->prepareError(errorCode);
     parent->zrtpNegotiationFailed(ZrtpError, errorCode);
 
-    sentPacket =  static_cast<ZrtpPacketBase *>(err);
+    sentPacket =  err;
     nextState(WaitErrorAck);
-    if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(err)) || (startTimer(&T2) <= 0)) {
+    if (!parent->sendPacketZRTP(err) || (startTimer(&T2) <= 0)) {
         sendFailed();
     }
 }
 
 void ZrtpStateClass::sendSASRelay(ZrtpPacketSASrelay* relay) {
     cancelTimer();
-    sentPacket = static_cast<ZrtpPacketBase *>(relay);
+    sentPacket = relay;
     secSubstate = WaitSasRelayAck;
-    if (!parent->sendPacketZRTP(static_cast<ZrtpPacketBase *>(relay)) || (startTimer(&T2) <= 0)) {
+    if (!parent->sendPacketZRTP(relay) || (startTimer(&T2) <= 0)) {
         sendFailed();
     }
 }

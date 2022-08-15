@@ -102,11 +102,11 @@ class __EXPORT ZRtp {
     /**
      * Faster access to Hello packets with different versions.
      */
-    typedef struct _HelloPacketVersion {
+    typedef struct HelloPacketVersion {
         int32_t version;
         ZrtpPacketHello* packet;
         uint8_t helloHash[IMPL_MAX_DIGEST_LENGTH];
-    } HelloPacketVersion;
+    } HelloPacketVersion_t;
 
     /**
      * Constructor initializes all relevant data but does not start the
@@ -324,7 +324,7 @@ class __EXPORT ZRtp {
      * @return
      *     True if multi-stream is used, false otherwise.
      */
-    bool isMultiStream() const;
+    [[nodiscard]] bool isMultiStream() const;
 
     /**
      * Check if the other ZRTP client supports Multi-stream.
@@ -335,7 +335,7 @@ class __EXPORT ZRtp {
      * @return
      *     True if multi-stream is available, false otherwise.
      */
-    bool isMultiStreamAvailable() const;
+    [[nodiscard]] bool isMultiStreamAvailable() const;
 
     /**
      * Accept a PBX enrollment request.
@@ -360,7 +360,7 @@ class __EXPORT ZRtp {
      * 
      * @return status of the enrollmentMode flag.
      */
-    bool isEnrollmentMode() const;
+    [[nodiscard]] bool isEnrollmentMode() const;
 
     /**
      * Set the state of the enrollment mode.
@@ -384,7 +384,7 @@ class __EXPORT ZRtp {
      *
      * @return True if the other peer has a valid Mitm key (is enrolled).
      */
-    bool isPeerEnrolled() const;
+    [[nodiscard]] bool isPeerEnrolled() const;
 
     /**
      * Send the SAS relay packet.
@@ -422,7 +422,7 @@ class __EXPORT ZRtp {
      *
      * @return Short name of the public key algorithm
      */
-    [[nodiscard]] std::string getPublicKeyAlgoName() { return std::string(pubKey->getName()); }
+    [[nodiscard]] std::string getPublicKeyAlgoName() { return pubKey->getName(); }
 
     /**
      * Set signature data.
@@ -640,7 +640,7 @@ class __EXPORT ZRtp {
       * @param length pointer to an int, gets the length of the exported key.
       * @return pointer to the exported key data.
       */
-     const uint8_t& getExportedKey(int32_t *length) const {
+     const uint8_t& getExportedKey(uint32_t *length) const {
          if (length != nullptr)
              *length = hashLength;
          return *zrtpExport.data();
@@ -676,6 +676,29 @@ class __EXPORT ZRtp {
      */
     void setTransportOverhead(int32_t overhead);
 
+#ifndef UNIT_TESTS
+private:
+#endif
+    /**
+     * @brief Sent the ZRTP message as ZRTP frame(s)
+     *
+     * @param packet
+     *     points to the ZRTP message/packet to wrap and send in ZRTP frame(s)
+     * @return
+     *     zero if sending failed, one if packet was send
+     */
+    int32_t sendAsZrtpFrames(ZrtpPacketBase *packet);
+
+    /**
+     * @brief Sent the ZRTP message as ZRTP multi-frames
+     *
+     * @param packets
+     *    list of ZRTP message/packet pointers to wrap and send in ZRTP frame(s)
+     * @return
+     *     zero if sending failed, one if packet was send
+     */
+    int32_t sendAsZrtpMultiFrames(std::list<ZrtpPacketBase *>packets);
+
 private:
 
      friend class ZrtpStateClass;
@@ -702,7 +725,7 @@ private:
     std::weak_ptr<ZrtpCallback> callback;
 
     /**
-     * My active Diffie-Helman context
+     * My active Diffie-Hellman context
      */
     std::unique_ptr<ZrtpDH> dhContext;
 
@@ -961,7 +984,7 @@ private:
     ZrtpPacketSASrelay zrtpSasRelay;
     ZrtpPacketRelayAck zrtpRelayAck;
 
-    HelloPacketVersion helloPackets[MAX_ZRTP_VERSIONS + 1] = {};
+    HelloPacketVersion_t helloPackets[MAX_ZRTP_VERSIONS + 1] = {};
 
     /// Pointer to Hello packet sent to partner, initialized in ZRtp, modified by ZrtpStateClass
     ZrtpPacketHello* currentHelloPacket = nullptr;
@@ -997,7 +1020,7 @@ private:
      */
     bool signSasSeen = false;
 
-    uint32_t peerSSRC = 0;           // peer's SSRC, required to setup PingAck packet
+    uint32_t peerSSRC = 0;           // peer's SSRC, required to set up PingAck packet
 
     zrtpInfo detailInfo = {};         // filled with some more detailed information if application would like to know
 
@@ -1041,6 +1064,21 @@ private:
      * Is true if the other peer sent a Disclosure flag in its Confirm packet.
      */
     bool peerDisclosureFlagSeen = false;
+
+    /**
+     * If true then use ZRTP frames according to ZRTP 2022 spec.
+     */
+    bool isZrtpFrames = false;
+
+    /**
+     * Last packet sent using ZRTP frame(s)
+     */
+    ZrtpPacketBase *sentFramePacket = nullptr;
+
+    /**
+     * Frame batch
+     */
+     uint8_t frameBatch = 0;
 
     /**
      * @brief Initialize ZRTP data, packets etc
@@ -1208,11 +1246,6 @@ private:
      * @return @c authLen algorithm found in Hello packet
      */
     AlgorithmEnum* getAuthLenOffered(ZrtpPacketHello *hello, int32_t algoName);
-
-    /**
-     * Save the computed MitM secret to the ZID record of the peer
-     */
-    void writeEnrollmentPBX();
 
     /**
      * Compute my hvi value according to ZRTP specification.
@@ -1599,7 +1632,7 @@ private:
       * @param hpv
       *     Pointer to hello packet version structure.
       */
-     void setClientId(const std::string& id, HelloPacketVersion* hpv);
+     void setClientId(const std::string& id, HelloPacketVersion_t* hpv);
      
      /**
       * Check and set a nonce.
@@ -1611,7 +1644,7 @@ private:
       *     The nonce to check and to store if not already seen.
       * 
       * @return
-      *     True if the the nonce was stroed, thus not yet seen.
+      *     True if the the nonce was stored, thus not yet seen.
       */
      bool checkAndSetNonce(uint8_t* nonce);
 };

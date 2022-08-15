@@ -47,4 +47,9 @@
 // Integer representation of highest supported ZRTP protocol version
 #define HIGHEST_ZRTP_VERION    12
 
+// This is the max length of a ZRTP message before it gets split
+// up into multiple frames. Otherwise, it stays in one frame.
+// Computes to 1200 bytes.
+constexpr uint16_t MAX_MSG_LEN_WORDS = 300;
+
 #endif //LIBZRTPCPP_CONSTANTS_H

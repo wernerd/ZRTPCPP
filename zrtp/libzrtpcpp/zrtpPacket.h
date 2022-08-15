@@ -39,23 +39,25 @@
 /**
  * The following defines match the ZRTP specification, chapter 5
  */
-#define ZRTP_MAGIC       0x5a525450
-#define ZRTP_PREAMBLE    0x505a
+constexpr int32_t ZRTP_MAGIC = 0x5a525450;
+constexpr int32_t ZRTP_RTP_HEADER_SIZE = 12;
+
 
 //#define ZRTP_WORD_SIZE   4
-static const uint16_t ZRTP_WORD_SIZE = 4;
-static const uint32_t CRC_SIZE =       4;
+constexpr uint16_t ZRTP_WORD_SIZE = 4;
+constexpr uint16_t CRC_SIZE =       4;
 
-static const uint32_t TYPE_SIZE =       (2*ZRTP_WORD_SIZE);
-static const uint32_t CLIENT_ID_SIZE =  (4*ZRTP_WORD_SIZE);
-static const uint32_t HASH_IMAGE_SIZE = (8*ZRTP_WORD_SIZE);
-static const uint32_t ZID_SIZE =        (3*ZRTP_WORD_SIZE);
-static const uint32_t HVI_SIZE =        (8*ZRTP_WORD_SIZE);
-static const uint32_t HMAC_SIZE =       (2*ZRTP_WORD_SIZE);
-static const uint32_t ID_SIZE =         (2*ZRTP_WORD_SIZE);
-static const uint32_t IV_SIZE =         (4*ZRTP_WORD_SIZE);
-static const uint32_t PING_HASH_SIZE =  (2*ZRTP_WORD_SIZE);
+constexpr uint16_t TYPE_SIZE =       (2*ZRTP_WORD_SIZE);
+constexpr uint16_t CLIENT_ID_SIZE =  (4*ZRTP_WORD_SIZE);
+constexpr uint16_t HASH_IMAGE_SIZE = (8*ZRTP_WORD_SIZE);
+constexpr uint16_t ZID_SIZE =        (3*ZRTP_WORD_SIZE);
+constexpr uint16_t HVI_SIZE =        (8*ZRTP_WORD_SIZE);
+constexpr uint16_t HMAC_SIZE =       (2*ZRTP_WORD_SIZE);
+constexpr uint16_t ID_SIZE =         (2*ZRTP_WORD_SIZE);
+constexpr uint16_t IV_SIZE =         (4*ZRTP_WORD_SIZE);
+constexpr uint16_t PING_HASH_SIZE =  (2*ZRTP_WORD_SIZE);
 
+// Definitions to handle the fields
 
 /**
  * The ZRTP message header
@@ -69,6 +71,26 @@ typedef struct zrtpPacketHeader {
     uint16_t    length;         ///< Length of the ZRTP message in words
     uint8_t     messageType[TYPE_SIZE]; ///< 2 word (8 octets) message type in ASCII
 } zrtpPacketHeader_t;
+
+typedef union FrameInfo {
+    struct fields {
+        // Order: low bit number to high bit numbers
+        uint16_t
+                continuationFlag: 1,
+                lastFrame: 6,
+                frameNumber: 6,
+                batchNumber: 3;
+    } f;
+    uint16_t value;
+} FrameInfo_t;
+
+/**
+ * ZRTP frame header
+ */
+typedef struct FrameHeader {
+    FrameInfo_t frameInfo;  ///< batch, frame num, last frame num, continuation bit
+    uint16_t    length;     ///< Length of the ZRTP frame in words
+} FrameHeader_t;
 
 /**
  * Hello message, fixed part.
@@ -110,7 +132,7 @@ typedef struct HelloAckPacket {
  * There are three subtypes of Commit messages, each of which
  * has a fixed size. The data structure defines the maximum
  * Commit message. During the ZRTP protocol the implementation
- * uses fileds according to the use case (DH handshake,
+ * uses fields according to the use case (DH handshake,
  * Multi-stream handshake) and adjusts the length.
  */
 typedef struct Commit {

@@ -315,7 +315,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
     // the packet.
     if (started) {
         // Fixed header length + smallest ZRTP packet (includes CRC)
-        if (length < (12 + sizeof(HelloAckPacket_t))) // data too small, dismiss
+        if (length < (ZRTP_RTP_HEADER_SIZE + sizeof(HelloAckPacket_t))) // data too small, dismiss
             return 0;
 
         size_t useLength = length;
@@ -374,7 +374,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
             }
         }
         // this now points to the plain ZRTP message.
-        unsigned char* zrtpMsg = (buffer + 12);
+        unsigned char* zrtpMsg = (buffer + ZRTP_RTP_HEADER_SIZE);
 
         // store peer's SSRC in host order, used when creating the CryptoContext
         if (peerSSRC == 0) {
@@ -738,14 +738,7 @@ void CtZrtpStream::setAuxSecret(const unsigned char *secret, uint32_t length) {
     zrtpEngine->setAuxSecret((unsigned char*)secret, length);
 }
 
-/* *********************
- * Here the callback methods required by the ZRTP implementation
- *
- * The ZRTP functions calls most of the callback functions with syncLock set. Exception
- * is inform enrollement callback. When in doubt: check!
- */
-int32_t CtZrtpStream::sendDataZRTP(const unsigned char *data, int32_t length) {
-
+int32_t CtZrtpStream::sendDataZRTPIntern(const unsigned char *data, int32_t length) {
     uint16_t totalLen = length + 12;     /* Fixed number of bytes of ZRTP header */
     uint32_t crc;
 
@@ -762,7 +755,6 @@ int32_t CtZrtpStream::sendDataZRTP(const unsigned char *data, int32_t length) {
     pui = (uint32_t*)zrtpBuffer;
 
     /* set up fixed ZRTP header */
-    *(zrtpBuffer + 1) = 0;
     pus[1] = zrtpHtons(senderZrtpSeqNo++);
     pui[1] = zrtpHtonl(ZRTP_MAGIC);
     pui[2] = zrtpHtonl(ownSSRC);            // ownSSRC is stored in host order
@@ -770,7 +762,7 @@ int32_t CtZrtpStream::sendDataZRTP(const unsigned char *data, int32_t length) {
     memcpy(zrtpBuffer+12, data, length);    // Copy ZRTP message data behind the header data
 
     if (useZrtpTunnel) {
-        *zrtpBuffer = 0x80;                                            // temporarily make it to a real RTP packet 
+        *zrtpBuffer = 0x80;                                            // temporarily make it to a real RTP packet
         sdes->outgoingZrtpTunnel(zrtpBuffer, totalLen-CRC_SIZE, &newLength);
         *zrtpBuffer = 0x10;                                            // invalid RTP version - refer to ZRTP spec chap 5
         totalLen = newLength;
@@ -797,6 +789,24 @@ int32_t CtZrtpStream::sendDataZRTP(const unsigned char *data, int32_t length) {
         return 1;
     }
     return 0;
+}
+/* *********************
+ * Here the callback methods required by the ZRTP implementation
+ *
+ * The ZRTP functions calls most of the callback functions with syncLock set. Exception
+ * is inform enrollment callback. When in doubt: check!
+ */
+int32_t CtZrtpStream::sendDataZRTP(const unsigned char *data, int32_t length) {
+    zrtpBuffer[1] = 0;
+    return sendDataZRTPIntern(data, length);
+}
+
+int32_t CtZrtpStream::sendFrameDataZRTP(const uint8_t* data, int32_t length, uint8_t numberOfFrames) {
+    // set frame flag and number of frames in packet in 2nd byte of real RTP buffer, then just proceed.
+    // 2nd byte in RTP is a marker flag and payload type: no harm for ZRTP and SRTP processing
+    uint8_t frameFlagCnt = ((numberOfFrames & 0x3) << 1) | 1;
+    zrtpBuffer[1] = frameFlagCnt;
+    return sendDataZRTPIntern(data, length);
 }
 
 bool CtZrtpStream::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)

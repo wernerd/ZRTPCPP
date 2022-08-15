@@ -37,14 +37,8 @@ target_link_libraries(ec41417_test gtest_main ${zrtplibName})
 add_executable(zidStorage_test ZidStorage_test.cpp )
 target_link_libraries(zidStorage_test gtest_main ${zrtplibName})
 
-
-if (SIDH)
-    add_executable(zrtpSidh503_test ZrtpSidh503_test.cpp)
-    target_link_libraries(zrtpSidh503_test gtest_main ${zrtplibName})
-
-    add_executable(zrtpSidh751_test ZrtpSidh751_test.cpp)
-    target_link_libraries(zrtpSidh751_test gtest_main ${zrtplibName})
-endif()
+add_executable(zrtpFrame_test ZrtpFrame_test.cpp )
+target_link_libraries(zrtpFrame_test gmock_main ${zrtplibName})
 
 if(SDES)
     add_executable(sdesRun_test sdesRun_test.cpp)

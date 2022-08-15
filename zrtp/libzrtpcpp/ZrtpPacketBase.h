@@ -48,7 +48,7 @@
 /*
  * This is the unique ZRTP ID in network order (PZ)
  */
-const uint16_t zrtpId = 0x505a;
+constexpr uint16_t zrtpId = 0x505a;
 
 /**
  * This is the base class for all ZRTP packets

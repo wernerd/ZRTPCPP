@@ -54,6 +54,8 @@ public:
 
     int32_t sendDataZRTP ( const unsigned char* data, int32_t length ) override;
 
+    int32_t sendFrameDataZRTP(const uint8_t* data, int32_t length, uint8_t numberOfFrames) override;
+
     int32_t activateTimer ( int32_t time ) override;
 
     int32_t cancelTimer() override;

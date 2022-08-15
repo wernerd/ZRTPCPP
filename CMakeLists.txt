@@ -313,6 +313,7 @@ set(zrtp_src_include
 set(zrtp_src_no_cache
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpCallbackWrapper.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZRtp.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpFrames.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpCrc32.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpPacketCommit.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpPacketConf2Ack.cpp

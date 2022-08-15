@@ -30,7 +30,7 @@
 #include <libzrtpcpp/ZrtpSdesStream.h>
 #include <srtp/SrtpHandler.h>
 
-#include <CtZrtpSession.h>
+#include "CtZrtpSession.h"
 
 // Define sizer of internal buffers.
 // NOTE: ZRTP buffer is large. An application shall never use ZRTP protocol
@@ -71,11 +71,24 @@ public:
      */
     static void releaseTimeoutProvider();
 
+#ifndef UNIT_TESTS
+protected:
+#endif
+    ZRtp              *zrtpEngine = nullptr;                        //!< The ZRTP core class of this stream
+
+    /**
+     * Set the application's send data callback class.
+     *
+     *
+     * @param ucb
+     *     Implementation of the application's send data callback class
+     */
+    void setSendCallback(CtZrtpSendCb* scb);
+
 protected:
 
     CtZrtpSession::streamName  index = CtZrtpSession::AudioStream;  //!< either audio or video. Index in stream array
     CtZrtpSession::streamType  type = CtZrtpSession::NoStream;      //!< Master or slave stream. Necessary to handle multi-stream
-    ZRtp              *zrtpEngine = nullptr;                        //!< The ZRTP core class of this stream
     uint32_t          ownSSRC = 0;                                  //!< Our own SSRC, in host order
 
     uint64_t          zrtpProtect = 0;
@@ -100,15 +113,6 @@ protected:
      *     Implementation of the application's callback class
      */
     void setUserCallback(CtZrtpCb* ucb);
-
-    /**
-     * Set the application's send data callback class.
-     *
-     *
-     * @param ucb
-     *     Implementation of the application's send data callback class
-     */
-    void setSendCallback(CtZrtpSendCb* scb);
 
     /**
      * Stop this stream and reset internal variables to initial state.
@@ -450,11 +454,15 @@ protected:
      */
     int32_t getSrtpTraceData(SrtpErrorData* data);
 
+    int32_t sendDataZRTPIntern(const unsigned char* data, int32_t length);
+
     /*
      * The following methods implement the GNU ZRTP callback interface.
      * For detailed documentation refer to file ZrtpCallback.h
      */
     int32_t sendDataZRTP(const unsigned char* data, int32_t length) override;
+
+    int32_t sendFrameDataZRTP(const uint8_t* data, int32_t length, uint8_t numberOfFrames) override;
 
     int32_t activateTimer(int32_t time) override;
 

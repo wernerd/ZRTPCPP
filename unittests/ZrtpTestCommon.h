@@ -26,6 +26,7 @@ using testing::Return;
 class MockZrtpCallback : public ZrtpCallback {
 public:
     MOCK_METHOD(int32_t, sendDataZRTP, (const uint8_t* data, int32_t length), (override));
+    MOCK_METHOD(int32_t, sendFrameDataZRTP, (const uint8_t* data, int32_t length, uint8_t numberOfFrames), (override));
     MOCK_METHOD(int32_t, activateTimer, (int32_t time), (override));
     MOCK_METHOD(int32_t, cancelTimer, (), (override));
     MOCK_METHOD(void, sendInfo, (GnuZrtpCodes::MessageSeverity severity, int32_t subCode), (override));
@@ -45,6 +46,7 @@ public:
     // Setup defaults with appropriate return values, overwrite in tests as required
     MockZrtpCallback() {
         ON_CALL(*this, sendDataZRTP).WillByDefault(Return(1));
+        ON_CALL(*this, sendFrameDataZRTP).WillByDefault(Return(1));
 
         ON_CALL(*this, activateTimer).WillByDefault(Return(1));
         ON_CALL(*this, cancelTimer).WillByDefault(Return(1));

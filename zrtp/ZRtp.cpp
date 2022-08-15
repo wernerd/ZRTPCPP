@@ -2562,8 +2562,11 @@ int32_t ZRtp::sendPacketZRTP(ZrtpPacketBase *packet) {
     if (packet == nullptr) {
         return 0;
     }
+    if (isZrtpFrames) {
+        return sendAsZrtpFrames(packet);
+    }
     if (auto ucb = callback.lock()) {
-        return ucb->sendDataZRTP(packet->getHeaderBase(), (packet->getLength() * 4) + 4);
+        return ucb->sendDataZRTP(packet->getHeaderBase(), (packet->getLength() * ZRTP_WORD_SIZE) + CRC_SIZE);
     }
     return 0;
 }
@@ -2590,7 +2593,7 @@ void ZRtp::setAuxSecret(uint8_t* data, uint32_t length) {
     }
 }
 
-void ZRtp::setClientId(const string& id, HelloPacketVersion* hpv) {
+void ZRtp::setClientId(const string& id, HelloPacketVersion_t* hpv) {
 
     unsigned char tmp[CLIENT_ID_SIZE + 1] = {' '};
     memcpy(tmp, id.c_str(), id.size() > CLIENT_ID_SIZE ? CLIENT_ID_SIZE : id.size());
