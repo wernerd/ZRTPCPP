@@ -63,7 +63,7 @@
 /*
  * IMPORTANT: keep the following enums in synch with ZrtpCodes. We copy them here
  * to avoid any C++ header includes and defines. The protocol states are located
- * ZrtpStateClass.h .
+ * ZrtpStateEngineImpl.h .
  */
 /**
  * This enum defines the information message severity.
@@ -708,7 +708,7 @@ extern "C"
     /**
      * Kick off the ZRTP protocol engine.
      *
-     * This method calls the ZrtpStateClass#evInitial() state of the state
+     * This method calls the ZrtpStateEngineImpl#evInitial() state of the state
      * engine. After this call we are able to process ZRTP packets
      * from our peer and to process them.
      *

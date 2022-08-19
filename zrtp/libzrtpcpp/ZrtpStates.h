@@ -34,14 +34,14 @@
 #include <assert.h>
 #include <cstdint>
 
-class __EXPORT ZrtpStateClass;
+class __EXPORT ZrtpStateEngineImpl;
 /**
  * This structure hold the state name as enum (int) number and the pointer to
  * the functions that handles the various triggers that can occur in a state.
  */
 typedef struct  {
     int32_t stateName;                      ///< The state number
-    void (ZrtpStateClass::* handler)();     ///< The state handler
+    void (ZrtpStateEngineImpl::* handler)();     ///< The state handler
 } state_t;
 
 /**
@@ -61,7 +61,7 @@ class __EXPORT ZrtpStates {
     ZrtpStates(state_t* const zrtpStates, const int32_t initialState): states(zrtpStates), state(initialState) {}
 
     /// Call a state handler
-    int32_t processEvent(ZrtpStateClass& zsc) {
+    int32_t processEvent(ZrtpStateEngineImpl& zsc) {
         (zsc.*states[state].handler)();
         return 0;
     }

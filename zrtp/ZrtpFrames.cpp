@@ -14,8 +14,9 @@
 // Created by werner on 15.08.22.
 // Copyright (c) 2022 Werner Dittmann. All rights reserved.
 //
-
 #include "libzrtpcpp/ZRtp.h"
+
+constexpr uint16_t FRAME_HEADER_LEN = static_cast<uint16_t>(sizeof(FrameHeader_t) / ZRTP_WORD_SIZE) & 0xffff;
 
 int32_t
 ZRtp::sendAsZrtpFrames(ZrtpPacketBase *packet) {
@@ -30,7 +31,6 @@ ZRtp::sendAsZrtpFrames(ZrtpPacketBase *packet) {
     } else {
         currentBatch = frameBatch;
     }
-    constexpr uint16_t FRAME_HEADER_LEN = static_cast<uint16_t>(sizeof(FrameHeader_t) / ZRTP_WORD_SIZE) & 0xffff;
 
     // space to store the ZRTP frame data: 1 -> CRC, 10 -> some security margin :)
     uint8_t frameBuffer[(MAX_MSG_LEN_WORDS + FRAME_HEADER_LEN + 1 + 10) * ZRTP_WORD_SIZE];
@@ -52,6 +52,7 @@ ZRtp::sendAsZrtpFrames(ZrtpPacketBase *packet) {
         frameHeader.length = zrtpHtons (frameLength);
         frameHeader.frameInfo.f.continuationFlag = processedPacketLength < MAX_MSG_LEN_WORDS ? 0 : 1;
         frameHeader.frameInfo.f.frameNumber = currentFrame++;
+        frameHeader.frameInfo.value = zrtpHtons (frameHeader.frameInfo.value);
 
         memcpy(frameBuffer, &frameHeader, FRAME_HEADER_LEN * ZRTP_WORD_SIZE);
         memcpy(frameBuffer + (FRAME_HEADER_LEN * ZRTP_WORD_SIZE), packet->getHeaderBase(), processedPacketLength * ZRTP_WORD_SIZE );
@@ -66,6 +67,45 @@ ZRtp::sendAsZrtpFrames(ZrtpPacketBase *packet) {
 }
 
 int32_t
-ZRtp::sendAsZrtpMultiFrames(std::list<ZrtpPacketBase *>packets) {
+ZRtp::sendAsZrtpMultiFrames(std::unique_ptr<std::list<std::reference_wrapper<ZrtpPacketBase>>> packets) {
+
+    size_t lengthAllPackets = 0;
+
+    for (ZrtpPacketBase packet : *packets) {
+        lengthAllPackets += packet.getLength();
+    }
+    uint16_t totalLength = lengthAllPackets + packets->size() * FRAME_HEADER_LEN;
+    if (totalLength >= MAX_MSG_LEN_WORDS) {
+        return 0;
+    }
+    uint8_t currentBatch = ++frameBatch;
+    uint16_t numberOfFrames = packets->size();
+
+    // space to store the ZRTP frame data: 1 -> CRC, 10 -> some security margin :)
+    uint8_t frameBuffer[MAX_MSG_LEN_WORDS] {0};
+    uint8_t* frameBufferPointer = frameBuffer;
+
+    // Frame info is static: contains same batch number and each packt is one frame only, thus: 0, 0
+    FrameHeader_t frameHeader {0};
+    frameHeader.frameInfo.f.batchNumber = currentBatch;
+    frameHeader.frameInfo.value = zrtpHtons (frameHeader.frameInfo.value);
+
+    for (ZrtpPacketBase packet : *packets) {
+        uint16_t frameLength = packet.getLength() + FRAME_HEADER_LEN;
+        frameHeader.length = zrtpHtons (frameLength);
+        memcpy(frameBufferPointer, &frameHeader, FRAME_HEADER_LEN * ZRTP_WORD_SIZE);
+
+        frameBufferPointer += FRAME_HEADER_LEN * ZRTP_WORD_SIZE;
+        memcpy(frameBufferPointer, packet.getHeaderBase(), packet.getLength() * ZRTP_WORD_SIZE);
+        frameBufferPointer += packet.getLength() * ZRTP_WORD_SIZE;
+    }
+    if (auto ucb = callback.lock()) {
+        return ucb->sendFrameDataZRTP(frameBuffer, (totalLength * ZRTP_WORD_SIZE) + CRC_SIZE, numberOfFrames);
+    }
     return 0;
+}
+
+void
+ZRtp::processZrtpFramePacket(uint8_t const * zrtpMessage, uint32_t peerSSRC, size_t length, uint8_t frameByte) {
+
 }

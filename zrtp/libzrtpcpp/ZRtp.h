@@ -48,8 +48,9 @@
 #include "common/typedefs.h"
 
 #include "../logging/ZrtpLogging.h"
+#include "libzrtpcpp/ZrtpStateEngine.h"
 
-class __EXPORT ZrtpStateClass;
+class __EXPORT ZrtpStateEngineImpl;
 class ZrtpDH;
 class ZRtp;
 
@@ -138,7 +139,7 @@ class __EXPORT ZRtp {
     /**
      * Kick off the ZRTP protocol engine.
      *
-     * This method calls the ZrtpStateClass#evInitial() state of the state
+     * This method calls the ZrtpStateEngine#evInitial() state of the state
      * engine. After this call we are able to process ZRTP packets
      * from our peer and to process them.
      */
@@ -697,16 +698,39 @@ private:
      * @return
      *     zero if sending failed, one if packet was send
      */
-    int32_t sendAsZrtpMultiFrames(std::list<ZrtpPacketBase *>packets);
+    int32_t sendAsZrtpMultiFrames(std::unique_ptr<std::list<std::reference_wrapper<ZrtpPacketBase>>> packets);
+
+    /**
+     * @brief Process ZRTP frame packet.
+     *
+     * The method takes the data and unpacks the ZRTP messages in case of a multi-frame packet
+     * or assembles a ZRTP message in case of a fragmented ZRTP message.
+     * After processing the data it forwards the resulting ZRTP message(s) for further
+     * processing. It's the caller's duty to check the ZRTP CRC and the ZRTP magic
+     * cookie before calling this function.
+     *
+     * @param zrtpMessage
+     *    A pointer to the first byte of the ZRTP message. Refer to RFC6189.
+     * @param peerSSRC
+     *    The peer's SSRC.
+     * @param length
+     *     of the received data packet, this includes the length of the ZRTP CRC field and
+     *     may include length of transport header, for example length of RTP header. Use
+     *     setTransportOverhead(int32_t overhead) to set the length of the transport overhead.
+     * @param frameByte
+     *     The second byte of the ZRTP/RTP header. If bit 1 is set then it's a ZRTP frame packet.
+     *
+     * @sa  setTransportOverhead(int32_t)
+     */
+    void processZrtpFramePacket(uint8_t const * zrtpMessage, uint32_t peerSSRC, size_t length, uint8_t frameByte);
 
 private:
-
-     friend class ZrtpStateClass;
+    friend ZrtpStateEngineImpl;
 
     /**
      * The state engine takes care of protocol processing.
      */
-    std::unique_ptr<ZrtpStateClass> stateEngine;
+    std::unique_ptr<ZrtpStateEngine> stateEngine;
 
     /**
      * This is my ZID that I send to the peer.
@@ -986,7 +1010,7 @@ private:
 
     HelloPacketVersion_t helloPackets[MAX_ZRTP_VERSIONS + 1] = {};
 
-    /// Pointer to Hello packet sent to partner, initialized in ZRtp, modified by ZrtpStateClass
+    /// Pointer to Hello packet sent to partner, initialized in ZRtp, modified by ZrtpStateEngineImpl
     ZrtpPacketHello* currentHelloPacket = nullptr;
 
     /**
@@ -1272,8 +1296,8 @@ private:
     void setNegotiatedHash(AlgorithmEnum* hash);
 
     /*
-     * The following methods are helper functions for ZrtpStateClass.
-     * ZrtpStateClass calls them to prepare packets, send data, report
+     * The following methods are helper functions for ZrtpStateEngineImpl.
+     * ZrtpStateEngineImpl calls them to prepare packets, send data, report
      * problems, etc.
      */
     /**

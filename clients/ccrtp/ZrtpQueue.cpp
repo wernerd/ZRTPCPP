@@ -23,13 +23,12 @@
 #include <cstdio>
 #include <memory>
 
-#include <ZrtpQueue.h>
+#include "ZrtpQueue.h"
 #include <libzrtpcpp/ZRtp.h>
-#include <libzrtpcpp/ZrtpStateClass.h>
+#include <libzrtpcpp/ZrtpStateEngineImpl.h>
 #include <libzrtpcpp/ZrtpUserCallback.h>
 #include <zrtp/libzrtpcpp/ZIDCacheFile.h>
 #include <common/ZrtpTimeoutProvider.h>
-#include "../logging/ZrtpLogging.h"
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"

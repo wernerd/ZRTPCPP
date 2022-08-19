@@ -31,7 +31,7 @@
 #include <crypto/skein384.h>
 
 #include <libzrtpcpp/ZRtp.h>
-#include <libzrtpcpp/ZrtpStateClass.h>
+#include <libzrtpcpp/ZrtpStateEngineImpl.h>
 #include <libzrtpcpp/Base32.h>
 #include <libzrtpcpp/EmojiBase32.h>
 #include <common/Utilities.h>
@@ -129,7 +129,7 @@ void ZRtp::initialize(const std::string& id) {
     helloPackets[SUPPORTED_ZRTP_VERSIONS].packet = nullptr;
     peerHelloVersion[0] = 0;
 
-    stateEngine = make_unique<ZrtpStateClass>(this);
+    stateEngine = make_unique<ZrtpStateEngineImpl>(this);
 }
 
 ZRtp::~ZRtp() {

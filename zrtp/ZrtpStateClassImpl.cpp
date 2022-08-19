@@ -22,31 +22,31 @@
 #include <cctype>
 
 #include <libzrtpcpp/ZRtp.h>
-#include <libzrtpcpp/ZrtpStateClass.h>
+#include <libzrtpcpp/ZrtpStateEngineImpl.h>
 #include <mutex>
 
 using namespace std;
 using namespace GnuZrtpCodes;
 
-state_t states[numberOfStates] = {
-    {Initial,      &ZrtpStateClass::evInitial },
-    {Detect,       &ZrtpStateClass::evDetect },
-    {AckDetected,  &ZrtpStateClass::evAckDetected },
-    {AckSent,      &ZrtpStateClass::evAckSent },
-    {WaitCommit,   &ZrtpStateClass::evWaitCommit },
-    {CommitSent,   &ZrtpStateClass::evCommitSent },
-    {WaitDHPart2,  &ZrtpStateClass::evWaitDHPart2 },
-    {WaitConfirm1, &ZrtpStateClass::evWaitConfirm1 },
-    {WaitConfirm2, &ZrtpStateClass::evWaitConfirm2 },
-    {WaitConfAck,  &ZrtpStateClass::evWaitConfAck },
-    {WaitClearAck, &ZrtpStateClass::evWaitClearAck },
-    {SecureState,  &ZrtpStateClass::evSecureState },
-    {WaitErrorAck, &ZrtpStateClass::evWaitErrorAck }
+state_t ZrtpStateEngineImpl::states[numberOfStates] = {
+    {Initial,      &ZrtpStateEngineImpl::evInitial },
+    {Detect,       &ZrtpStateEngineImpl::evDetect },
+    {AckDetected,  &ZrtpStateEngineImpl::evAckDetected },
+    {AckSent,      &ZrtpStateEngineImpl::evAckSent },
+    {WaitCommit,   &ZrtpStateEngineImpl::evWaitCommit },
+    {CommitSent,   &ZrtpStateEngineImpl::evCommitSent },
+    {WaitDHPart2,  &ZrtpStateEngineImpl::evWaitDHPart2 },
+    {WaitConfirm1, &ZrtpStateEngineImpl::evWaitConfirm1 },
+    {WaitConfirm2, &ZrtpStateEngineImpl::evWaitConfirm2 },
+    {WaitConfAck,  &ZrtpStateEngineImpl::evWaitConfAck },
+    {WaitClearAck, &ZrtpStateEngineImpl::evWaitClearAck },
+    {SecureState,  &ZrtpStateEngineImpl::evSecureState },
+    {WaitErrorAck, &ZrtpStateEngineImpl::evWaitErrorAck }
 };
 
 
-ZrtpStateClass::ZrtpStateClass(ZRtp *p) : parent(p), commitPkt(nullptr), t1Resend(20), t1ResendExtend(60), t2Resend(10),
-                                          multiStream(false), secSubstate(Normal), sentVersion(0) {
+ZrtpStateEngineImpl::ZrtpStateEngineImpl(ZRtp *p) : parent(p), commitPkt(nullptr), t1Resend(20), t1ResendExtend(60), t2Resend(10),
+                                                    multiStream(false), secSubstate(Normal), sentVersion(0) {
 
     engine = new ZrtpStates(states, Initial);
     memset(retryCounters, 0, sizeof(retryCounters));
@@ -61,7 +61,7 @@ ZrtpStateClass::ZrtpStateClass(ZRtp *p) : parent(p), commitPkt(nullptr), t1Resen
     T2.capping = 1200;
 }
 
-ZrtpStateClass::~ZrtpStateClass() {
+ZrtpStateEngineImpl::~ZrtpStateEngineImpl() {
 
     // If not in Initial state: close the protocol engine
     // before destroying it. This will free pending packets
@@ -77,7 +77,7 @@ ZrtpStateClass::~ZrtpStateClass() {
     delete engine;
 }
 
-void ZrtpStateClass::processEvent(Event * ev) {
+void ZrtpStateEngineImpl::processEvent(Event * ev) {
 
     char *msg, first, middle, last;
     uint8_t const * pkt;
@@ -151,7 +151,7 @@ void ZrtpStateClass::processEvent(Event * ev) {
 }
 
 
-void ZrtpStateClass::evInitial() {
+void ZrtpStateEngineImpl::evInitial() {
 
     if (event->type == ZrtpInitial) {
         auto* hello = parent->prepareHello();
@@ -213,7 +213,7 @@ void ZrtpStateClass::evInitial() {
  *   packet, switch to state AckSent.
  *
  */
-void ZrtpStateClass::evDetect() {
+void ZrtpStateEngineImpl::evDetect() {
 
     char *msg, first, last;
     uint8_t const * pkt;
@@ -397,7 +397,7 @@ void ZrtpStateClass::evDetect() {
  *   HelloAck/Hello response until Timer T1 exceeds its maximum. This may 
  *   happen if the other peer sends Hello only (maybe due to network problems)
  */
-void ZrtpStateClass::evAckSent() {
+void ZrtpStateEngineImpl::evAckSent() {
 
     char *msg, first, last;
     uint8_t const * pkt;
@@ -556,7 +556,7 @@ void ZrtpStateClass::evAckSent() {
  *  time #if (see code below). Currently we use choice 1) here because
  *  it's more aligned to the ZRTP specification
  */
-void ZrtpStateClass::evAckDetected() {
+void ZrtpStateEngineImpl::evAckDetected() {
 
     char *msg, first, last;
     uint8_t const * pkt;
@@ -656,7 +656,7 @@ void ZrtpStateClass::evAckDetected() {
  *   half of DH key agreement. Switch to state WaitDHPart2, don't
  *   start any timer, we a Responder.
  */
-void ZrtpStateClass::evWaitCommit() {
+void ZrtpStateEngineImpl::evWaitCommit() {
 
     char *msg, first, last;
     uint8_t const * pkt;
@@ -750,7 +750,7 @@ void ZrtpStateClass::evWaitCommit() {
  *   and switch to state WaitConfirm1.
  */
 
-void ZrtpStateClass::evCommitSent() {
+void ZrtpStateEngineImpl::evCommitSent() {
 
     char *msg, first, middle, last, secondLast;
     uint8_t const * pkt;
@@ -958,7 +958,7 @@ void ZrtpStateClass::evCommitSent() {
  * - DHPart2: start second half of DH key agreement. Perpare and send own Confirm1
  *   and switch to state WaitConfirm2.
  */
-void ZrtpStateClass::evWaitDHPart2() {
+void ZrtpStateEngineImpl::evWaitDHPart2() {
 
     char *msg, first, secondLast, last;
     uint8_t const * pkt;
@@ -1034,7 +1034,7 @@ void ZrtpStateClass::evWaitDHPart2() {
  * - Confirm1: Check Confirm1 message. If it is ok then prepare and send own
  *   Confirm2 packet and switch to state WaitConfAck.
  */
-void ZrtpStateClass::evWaitConfirm1() {
+void ZrtpStateEngineImpl::evWaitConfirm1() {
 
     char *msg, first, last;
     uint8_t const * pkt;
@@ -1125,7 +1125,7 @@ void ZrtpStateClass::evWaitConfirm1() {
  * - Confirm2: close DH key agreement. Perpare and send own Conf2Ack
  *   and switch to state SecureState.
  */
-void ZrtpStateClass::evWaitConfirm2() {
+void ZrtpStateEngineImpl::evWaitConfirm2() {
 
     char *msg, first, secondLast, last;
     uint8_t const * pkt;
@@ -1206,7 +1206,7 @@ void ZrtpStateClass::evWaitConfirm2() {
  *   of Confirm2 packet
  * - Conf2Ack: Key agreement was successfull, switch to secure mode.
  */
-void ZrtpStateClass::evWaitConfAck() {
+void ZrtpStateEngineImpl::evWaitConfAck() {
 
     char *msg, first, last;
     uint8_t const *pkt;
@@ -1265,7 +1265,7 @@ void ZrtpStateClass::evWaitConfAck() {
  * - sentPacket contains GoClear packet, GoClear timer active
  */
 
-void ZrtpStateClass::evWaitClearAck() {
+void ZrtpStateEngineImpl::evWaitClearAck() {
 }
 
 
@@ -1287,7 +1287,7 @@ void ZrtpStateClass::evWaitClearAck() {
  * - ErrorAck: Stop timer and switch to state Initial.
  */
 
-void ZrtpStateClass::evWaitErrorAck() {
+void ZrtpStateEngineImpl::evWaitErrorAck() {
 
     char *msg, first, last;
     uint8_t const *pkt;
@@ -1331,7 +1331,7 @@ void ZrtpStateClass::evWaitErrorAck() {
     }
 }
 
-void ZrtpStateClass::evSecureState() {
+void ZrtpStateEngineImpl::evSecureState() {
 
     char *msg, first, last;
     uint8_t const *pkt;
@@ -1399,7 +1399,7 @@ void ZrtpStateClass::evSecureState() {
     }
 }
 
-bool ZrtpStateClass::subEvWaitRelayAck() {
+bool ZrtpStateEngineImpl::subEvWaitRelayAck() {
     char *msg, first, last;
     uint8_t const * pkt;
 
@@ -1438,14 +1438,14 @@ bool ZrtpStateClass::subEvWaitRelayAck() {
     return false;
 }
 
-int32_t ZrtpStateClass::startTimer(zrtpTimer_t *t) {
+int32_t ZrtpStateEngineImpl::startTimer(zrtpTimer_t *t) {
 
     t->time = t->start;
     t->counter = 0;
     return parent->activateTimer(t->time);
 }
 
-int32_t ZrtpStateClass::nextTimer(zrtpTimer_t *t) {
+int32_t ZrtpStateEngineImpl::nextTimer(zrtpTimer_t *t) {
 
     t->time += t->time;
     t->time = (t->time > t->capping)? t->capping : t->time;
@@ -1458,7 +1458,7 @@ int32_t ZrtpStateClass::nextTimer(zrtpTimer_t *t) {
     return parent->activateTimer(t->time);
 }
 
-void ZrtpStateClass::sendErrorPacket(uint32_t errorCode) {
+void ZrtpStateEngineImpl::sendErrorPacket(uint32_t errorCode) {
     cancelTimer();
 
     ZrtpPacketError* err = parent->prepareError(errorCode);
@@ -1471,7 +1471,7 @@ void ZrtpStateClass::sendErrorPacket(uint32_t errorCode) {
     }
 }
 
-void ZrtpStateClass::sendSASRelay(ZrtpPacketSASrelay* relay) {
+void ZrtpStateEngineImpl::sendSASRelay(ZrtpPacketSASrelay* relay) {
     cancelTimer();
     sentPacket = relay;
     secSubstate = WaitSasRelayAck;
@@ -1480,32 +1480,32 @@ void ZrtpStateClass::sendSASRelay(ZrtpPacketSASrelay* relay) {
     }
 }
 
-void ZrtpStateClass::sendFailed() {
+void ZrtpStateEngineImpl::sendFailed() {
     sentPacket = nullptr;
     nextState(Initial);
     parent->zrtpNegotiationFailed(Severe, SevereCannotSend);
 }
 
-void ZrtpStateClass::timerFailed(int32_t subCode) {
+void ZrtpStateEngineImpl::timerFailed(int32_t subCode) {
     sentPacket = nullptr;
     nextState(Initial);
     parent->zrtpNegotiationFailed(Severe, subCode);
 }
 
-void ZrtpStateClass::setMultiStream(bool multi) {
+void ZrtpStateEngineImpl::setMultiStream(bool multi) {
     multiStream = multi;
 }
 
-[[maybe_unused]] bool ZrtpStateClass::isMultiStream() {
+[[maybe_unused]] bool ZrtpStateEngineImpl::isMultiStream() {
     return multiStream;
 }
 
 
-int ZrtpStateClass::getNumberOfRetryCounters() {
+int ZrtpStateEngineImpl::getNumberOfRetryCounters() {
     return sizeof(retryCounters)/sizeof(int32_t);
 }
 
-int ZrtpStateClass::getRetryCounters(int32_t* counters) {
+int ZrtpStateEngineImpl::getRetryCounters(int32_t* counters) {
     memcpy(counters, retryCounters, sizeof(retryCounters));
     return sizeof(retryCounters)/sizeof(int32_t);
 }

@@ -18,16 +18,17 @@
 #define _ZRTPSTATECLASS_H_
 
 /**
- * @file ZrtpStateClass.h
+ * @file ZrtpStateEngineImpl.h
  * @brief The ZRTP state handling class
  *
  * @ingroup ZRTP
  * @{
  */
 
-#include <libzrtpcpp/ZRtp.h>
-#include <libzrtpcpp/ZrtpStates.h>
-#include <libzrtpcpp/ZrtpPacketBase.h>
+#include "libzrtpcpp/ZrtpStateEngine.h"
+#include "libzrtpcpp/ZRtp.h"
+#include "libzrtpcpp/ZrtpStates.h"
+#include "libzrtpcpp/ZrtpPacketBase.h"
 
 /**
  * The ZRTP states
@@ -111,13 +112,14 @@ class ZRtp;
  */
 
 
-class __EXPORT ZrtpStateClass {
+class __EXPORT ZrtpStateEngineImpl : public ZrtpStateEngine {
 
 private:
     ZRtp * parent;                           ///< The ZRTP implementation
     ZrtpStates * engine = nullptr;           ///< The state switching engine
     Event * event = nullptr;                 ///< Current event to process
 
+    static state_t states[numberOfStates];
     /**
      * The last packet that was sent.
      *
@@ -173,18 +175,37 @@ private:
     int32_t transportOverhead = RTP_HEADER_LENGTH;
 
 public:
-    /// Create a ZrtpStateClass
-    explicit ZrtpStateClass(ZRtp *p);
-    ~ZrtpStateClass();
+    // region ZrtpStateEngine functions
 
-    /// Check if in a specified state
-    bool inState(const int32_t state) const { return engine->inState(state); };
+    explicit ZrtpStateEngineImpl(ZRtp *p);
 
+    ~ZrtpStateEngineImpl() override;
+
+    [[nodiscard]] bool inState(const int32_t state) const override { return engine->inState(state); };
+
+    void processEvent(Event * ev) override;
+
+    void setT1Resend(int32_t counter) override {T1.maxResend = counter;}
+
+    void setT1Capping(int32_t capping) override {T1.capping = capping;}
+
+    void setT1ResendExtend(int32_t counter) override {t1ResendExtend = counter;}
+
+    void setT2Resend(int32_t counter) override {T2.maxResend = counter;}
+
+    void setT2Capping(int32_t capping) override {T2.capping = capping;}
+
+    int getNumberOfRetryCounters() override;
+
+    int getRetryCounters(int32_t* counters) override;
+
+    void setTransportOverhead(int32_t overhead) override { transportOverhead = overhead; }
+
+    void setMultiStream(bool multi) override;
+    // endregion
+private:
     /// Switch to the specified state
     void nextState(int32_t state)        { engine->nextState(state); };
-
-    /// Process an event, the main entry point into the state engine
-    void processEvent(Event * ev);
 
     /**
      * The state event handling methods.
@@ -296,18 +317,6 @@ public:
     void timerFailed(int32_t subCode);
 
     /**
-     * Set multi-stream mode flag.
-     *
-     * This functions set the multi-stream mode. The protocol
-     * engine will run the multi-stream mode variant of the ZRTP
-     * protocol if this flag is set to true.
-     *
-     * @param multi
-     *    Set the multi-stream mode flag to true or false.
-     */
-    void setMultiStream(bool multi);
-
-    /**
      * Status of multi-stream mode flag.
      *
      * This functions returns the value of the multi-stream mode flag.
@@ -329,62 +338,6 @@ public:
      *    Pointer to the SAS relay packet.
      */
     void sendSASRelay(ZrtpPacketSASrelay* relay);
-
-    /**
-     * Set the resend counter of timer T1 - T1 controls the Hello packets.
-     */
-    void setT1Resend(int32_t counter) {T1.maxResend = counter;}
-
-    /**
-     * Set the time capping of timer T1 - T1 controls the Hello packets.
-     */
-    void setT1Capping(int32_t capping) {T1.capping = capping;}
-
-    /**
-     * Set the extended resend counter of timer T1 - T1 controls the Hello packets.
-     *
-     * More retries to extend time, see chap. 6
-     */
-    void setT1ResendExtend(int32_t counter) {t1ResendExtend = counter;}
-
-    /**
-     * Set the resend counter of timer T2 - T2 controls other (post-Hello) packets.
-     */
-    void setT2Resend(int32_t counter) {T2.maxResend = counter;}
-
-    /**
-     * Set the time capping of timer T2 - T2 controls other (post-Hello) packets.
-     */
-    void setT2Capping(int32_t capping) {T2.capping = capping;}
-
-    /**
-     * @brief Get required buffer size to get all 32-bit retry counters
-     *
-     * @return number of 32 bit integer elements required or < 0 on error
-     */
-    int getNumberOfRetryCounters();
-
-    /**
-     * @brief Read retry counters
-     * 
-     * @param counters Pointer to buffer of 32-bit integers. The buffer must be able to
-     *         hold at least getNumberOfRetryCounters() 32-bit integers
-     *
-     * @return number of 32-bit counters returned in buffer or < 0 on error
-     */
-    int getRetryCounters(int32_t* counters);
-
-    /**
-     * Set length in bytes of transport over head, default is @c RTP_HEADER_LENGTH
-     *
-     * State engine uses this overhead length to validate the packet length of a ZRTP
-     * packet including the transport header/footer. For example overhead of RTP is
-     * 12 bytes (RTP header) and this is also the default value that the ZRTP state
-     * engine uses.
-     *
-     * @param overhead
-     */
-    void setTransportOverhead(int32_t overhead) { transportOverhead = overhead; }
 
 };
 

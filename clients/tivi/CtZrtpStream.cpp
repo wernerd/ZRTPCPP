@@ -25,7 +25,7 @@
 #include <common/osSpecifics.h>
 
 #include <libzrtpcpp/ZRtp.h>
-#include <libzrtpcpp/ZrtpStateClass.h>
+#include <libzrtpcpp/ZrtpStateEngineImpl.h>
 #include <libzrtpcpp/ZrtpCrc32.h>
 #include <srtp/CryptoContext.h>
 #include <srtp/CryptoContextCtrl.h>
@@ -310,7 +310,7 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
         return rc;
     }
 
-    // At this point we assume the packet is not a RTP packet. Check if it is a ZRTP packet.
+    // At this point we assume the packet is not an RTP packet. Check if it is a ZRTP packet.
     // Process it if ZRTP processing is started. In any case, let the application drop
     // the packet.
     if (started) {
@@ -381,7 +381,11 @@ int32_t CtZrtpStream::processIncomingRtp(uint8_t *buffer, const size_t length, s
             peerSSRC = *(uint32_t*)(buffer + 8);
             peerSSRC = zrtpNtohl(peerSSRC);
         }
-        zrtpEngine->processZrtpMessage(zrtpMsg, peerSSRC, useLength);
+        if ((buffer[1] & 0x1) == 0x1) {
+            zrtpEngine->processZrtpFramePacket(zrtpMsg, peerSSRC, useLength, buffer[1]);
+        } else {
+            zrtpEngine->processZrtpMessage(zrtpMsg, peerSSRC, useLength);
+        }
     }
     return 0;
 }

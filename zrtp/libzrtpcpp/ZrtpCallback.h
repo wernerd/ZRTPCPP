@@ -121,7 +121,7 @@ enum EnableSecurity {
 class __EXPORT ZrtpCallback {
 
 public:
-    virtual ~ZrtpCallback() {};
+    virtual ~ZrtpCallback() = default;
 
     friend class ZRtp;
 

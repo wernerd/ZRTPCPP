@@ -304,7 +304,7 @@ set(zrtp_src_include
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketPing.h
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketRelayAck.h
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpPacketSASrelay.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpStateClass.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpStateEngineImpl.h
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpStates.h
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpTextData.h
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/libzrtpcpp/ZrtpUserCallback.h
@@ -329,7 +329,7 @@ set(zrtp_src_no_cache
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpPacketPing.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpPacketSASrelay.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpPacketRelayAck.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpStateClass.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpStateClassImpl.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpConfigure.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpCWrapper.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/Base32.cpp

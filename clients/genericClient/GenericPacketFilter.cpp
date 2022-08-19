@@ -15,7 +15,7 @@
 // Copyright (c) 2020 Werner Dittmann. All rights reserved.
 //
 
-#include <libzrtpcpp/ZrtpStateClass.h>
+#include <libzrtpcpp/ZrtpStateEngineImpl.h>
 #include <zrtp/libzrtpcpp/zrtpPacket.h>
 #include <common/osSpecifics.h>
 #include <common/ZrtpTimeoutProvider.h>
@@ -174,7 +174,7 @@ GenericPacketFilter::checkRtpData(uint8_t const * packetData, size_t packetLengt
     }
     uint16_t preamble = *reinterpret_cast<uint16_t const *>(packetData + RTPHeaderLength);
     preamble = zrtpNtohs(preamble);
-    if (preamble != ZRTP_PREAMBLE) {
+    if (preamble != zrtpId) {
         return Discard;
     }
     // return peer's SSRC in host order
