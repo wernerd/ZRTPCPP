@@ -96,13 +96,16 @@ void ZrtpStateEngineImpl::processEvent(Event * ev) {
         // Sanity check of packet size for all states except WaitErrorAck.
         // Actual packet type not known yet, thus use internal knowledge of ZRTP
         // packet layout as specified in RFC6189.
-        if (!inState(WaitErrorAck)) {
+
+        // Multi-frame packet handling performs sanity checks, sets the length to 0,
+        // skip this check here in this case.
+        if (!inState(WaitErrorAck) && ev->length > 0) {
             uint16_t totalLength = *(uint16_t*)(pkt+2);                 // ZRTP packet length stored in bytes 3 and 4, big endian
             totalLength = zrtpNtohs(totalLength) * ZRTP_WORD_SIZE;      // ZRTP packet length is in number of ZRTP words
             totalLength += transportOverhead + sizeof(uint32_t);        // add transport overhead and CRC (uint32_t)
 
             if (totalLength != ev->length) {
-                LOGGER(ERROR_LOG, "Total length does not match received length: %d - %ld\n", totalLength, (long int)(ev->length & 0xffffU))
+                LOGGER(ERROR_LOG, "Total length does not match received length: ", totalLength, " - ", ev->length)
                 sendErrorPacket(MalformedPacket);
                 return;
             }

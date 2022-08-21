@@ -49,38 +49,13 @@ public:
     }
 };
 
-// SO link: https://stackoverflow.com/questions/2111667/compile-time-string-hashing
-namespace stringhash {
-    template<class>struct hasher;
-
-    template<>
-    struct hasher<std::string> {
-        std::size_t constexpr operator()(char const *input)const {
-            return *input ?
-                   static_cast<unsigned int>(*input) + 33 * (*this)(input + 1) :
-                   5381;
-        }
-        std::size_t operator()( const std::string& str ) const {
-            return (*this)(str.c_str());
-        }
-    };
-    template<typename T>
-    std::size_t constexpr hash(T&& t) {
-        return hasher< typename std::decay<T>::type >()(std::forward<T>(t));
-    }
-    inline namespace literals {
-        std::size_t constexpr operator "" _hash(const char* s,size_t) {
-            return hasher<std::string>()(s);
-        }
-    }
-}
-using namespace stringhash::literals;
+using namespace string_hash::literals;
 static int32_t one() { return 1; }
 static int32_t two() { return 2; }
 static void other() {}
 
 static int32_t foo( const std::string& value ) {
-    switch( stringhash::hash(value) ) {
+    switch( string_hash::hash(value) ) {
         case "one"_hash:
             return one();
         case "two"_hash:

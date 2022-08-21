@@ -47,9 +47,17 @@
 // Integer representation of highest supported ZRTP protocol version
 #define HIGHEST_ZRTP_VERION    12
 
-// This is the max length of a ZRTP message before it gets split
-// up into multiple frames. Otherwise, it stays in one frame.
-// Computes to 1200 bytes.
-constexpr uint16_t MAX_MSG_LEN_WORDS = 300;
+// This is the max length of a ZRTP message in ZRTP words before we split
+// into multiple frames. Otherwise, it stays in one frame.
+// Computes to 980 bytes. After adding RTP overhead, frame header, CRC it's
+// stiff below 1024 bytes which is the recommended max packet size for IP4
+// networks (IP& got up to 1280)
+constexpr uint16_t LENGTH_BEFORE_SPLIT = 240;
+
+// This is the maximum ZRTP message length in word, thus multiply by ZRTP
+// word size to get required buffer size
+constexpr uint16_t MAX_MSG_LENGTH = 600;
+
+constexpr int MAX_FRAMES = (MAX_MSG_LENGTH + LENGTH_BEFORE_SPLIT) / LENGTH_BEFORE_SPLIT;
 
 #endif //LIBZRTPCPP_CONSTANTS_H

@@ -18,7 +18,8 @@
 #ifndef LIBZRTPCPP_ZRTPTESTCOMMON_H
 #define LIBZRTPCPP_ZRTPTESTCOMMON_H
 
-#include <zrtp/libzrtpcpp/ZrtpCallback.h>
+#include "zrtp/libzrtpcpp/ZrtpCallback.h"
+#include "zrtp/libzrtpcpp/ZrtpStateEngine.h"
 #include "gmock/gmock.h"
 
 using testing::Return;
@@ -56,4 +57,26 @@ public:
     }
 };
 
+class MockZrtpState: public ZrtpStateEngine {
+public:
+    MOCK_METHOD(bool, inState, (int32_t state), (const override));
+    MOCK_METHOD(void, processEvent, (Event * ev), (override));
+    MOCK_METHOD(void, sendErrorPacket, (uint32_t errorCode), (override));
+    MOCK_METHOD(void, setT1Resend, (int32_t counter), (override));
+    MOCK_METHOD(void, setT1Capping, (int32_t capping), (override));
+    MOCK_METHOD(void, setT1ResendExtend, (int32_t counter), (override));
+    MOCK_METHOD(void, setT2Resend, (int32_t counter), (override));
+    MOCK_METHOD(void, setT2Capping, (int32_t capping), (override));
+    MOCK_METHOD(int, getNumberOfRetryCounters, (), (override));
+    MOCK_METHOD(int, getRetryCounters, (int32_t* counters), (override));
+    MOCK_METHOD(void, setTransportOverhead, (int32_t overhead), (override));
+    MOCK_METHOD(void, setMultiStream, (bool multi), (override));
+
+    // Setup call which return a value. Let them return some sensible data.
+    MockZrtpState() {
+        ON_CALL(*this, inState).WillByDefault(Return(false));
+        ON_CALL(*this, getNumberOfRetryCounters).WillByDefault(Return(0));
+        ON_CALL(*this, getRetryCounters).WillByDefault(Return(0));
+    }
+};
 #endif //LIBZRTPCPP_ZRTPTESTCOMMON_H

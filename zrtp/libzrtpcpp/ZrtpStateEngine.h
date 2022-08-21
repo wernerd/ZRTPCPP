@@ -33,8 +33,17 @@ public:
     virtual void processEvent(Event * ev) = 0;
 
     /**
- * Set the resend counter of timer T1 - T1 controls the Hello packets.
- */
+     * Prepare and send an Error packet.
+     *
+     * Preparse an Error packet and sends it. It stores the Error
+     * packet in the sentPacket variable to enable resending. The
+     * method switches to protocol state Initial.
+     */
+    virtual void sendErrorPacket(uint32_t errorCode) = 0;
+
+    /**
+     * Set the resend counter of timer T1 - T1 controls the Hello packets.
+     */
     virtual void setT1Resend(int32_t counter) = 0;
 
     /**

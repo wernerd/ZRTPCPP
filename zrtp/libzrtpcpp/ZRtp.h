@@ -24,6 +24,7 @@
  */
 
 #include <cstdlib>
+#include <climits>
 
 #include <common/SecureArray.h>
 #include <libzrtpcpp/ZrtpPacketHello.h>
@@ -711,7 +712,7 @@ private:
      *
      * @param zrtpMessage
      *    A pointer to the first byte of the ZRTP message. Refer to RFC6189.
-     * @param peerSSRC
+     * @param pSSRC
      *    The peer's SSRC.
      * @param length
      *     of the received data packet, this includes the length of the ZRTP CRC field and
@@ -722,15 +723,15 @@ private:
      *
      * @sa  setTransportOverhead(int32_t)
      */
-    void processZrtpFramePacket(uint8_t const * zrtpMessage, uint32_t peerSSRC, size_t length, uint8_t frameByte);
-
-private:
-    friend ZrtpStateEngineImpl;
+    void processZrtpFramePacket(uint8_t const * zrtpMessage, uint32_t pSSRC, size_t length, uint8_t frameByte);
 
     /**
      * The state engine takes care of protocol processing.
      */
     std::unique_ptr<ZrtpStateEngine> stateEngine;
+
+private:
+    friend ZrtpStateEngineImpl;
 
     /**
      * This is my ZID that I send to the peer.
@@ -1090,7 +1091,7 @@ private:
     bool peerDisclosureFlagSeen = false;
 
     /**
-     * If true then use ZRTP frames according to ZRTP 2022 spec.
+     * If true then send ZRTP frames according to ZRTP 2022 spec.
      */
     bool isZrtpFrames = false;
 
@@ -1100,9 +1101,15 @@ private:
     ZrtpPacketBase *sentFramePacket = nullptr;
 
     /**
-     * Frame batch
+     * variables to handle/assemble ZRTP frame
      */
-     uint8_t frameBatch = 0;
+    uint16_t sendFrameBatch = 0;
+    uint16_t receiveFrameBatch = USHRT_MAX;
+    uint16_t lastFrameNumber = USHRT_MAX;
+    FrameHeader frameHeaders[(MAX_MSG_LENGTH + LENGTH_BEFORE_SPLIT) / LENGTH_BEFORE_SPLIT]{0};
+    uint8_t assembleBuffer[MAX_FRAMES * LENGTH_BEFORE_SPLIT * ZRTP_WORD_SIZE] {0};
+    uint8_t frameBuffers[MAX_FRAMES][LENGTH_BEFORE_SPLIT * ZRTP_WORD_SIZE]{0};
+    bool framesHandled[MAX_FRAMES] {false};
 
     /**
      * @brief Initialize ZRTP data, packets etc
@@ -1671,6 +1678,14 @@ private:
       *     True if the the nonce was stored, thus not yet seen.
       */
      bool checkAndSetNonce(uint8_t* nonce);
+
+     /**
+      * @brief Assemble a ZRTP message from several frames.
+      * @param zrtpFrame pointer to the received data, usually a ZRTP frame
+      * @param length Length of received frame data incl RTP and CRC
+      * @return 0 if not all data available, ZRTP message length in ZRTP words if data is available
+      */
+     int32_t assembleMessage(uint8_t const *zrtpFrame, size_t length);
 };
 
 /**

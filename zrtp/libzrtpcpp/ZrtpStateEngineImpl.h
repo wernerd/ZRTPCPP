@@ -185,6 +185,8 @@ public:
 
     void processEvent(Event * ev) override;
 
+    void sendErrorPacket(uint32_t errorCode) override;
+
     void setT1Resend(int32_t counter) override {T1.maxResend = counter;}
 
     void setT1Capping(int32_t capping) override {T1.capping = capping;}
@@ -284,15 +286,6 @@ private:
     int32_t cancelTimer() {return parent->cancelTimer(); };
 
     void adjustT2Sidh(int32_t adjustedStart) { T2.start = adjustedStart; }
-
-    /**
-     * Prepare and send an Error packet.
-     *
-     * Preparse an Error packet and sends it. It stores the Error
-     * packet in the sentPacket variable to enable resending. The
-     * method switches to protocol state Initial.
-     */
-    void sendErrorPacket(uint32_t errorCode);
 
     /**
      * Set status if an error occured while sending a ZRTP packet.
