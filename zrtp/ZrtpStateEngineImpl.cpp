@@ -19,7 +19,6 @@
  */
 
 #include <cstdlib>
-#include <cctype>
 
 #include <libzrtpcpp/ZRtp.h>
 #include <libzrtpcpp/ZrtpStateEngineImpl.h>
@@ -29,24 +28,25 @@ using namespace std;
 using namespace GnuZrtpCodes;
 
 state_t ZrtpStateEngineImpl::states[numberOfStates] = {
-    {Initial,      &ZrtpStateEngineImpl::evInitial },
-    {Detect,       &ZrtpStateEngineImpl::evDetect },
-    {AckDetected,  &ZrtpStateEngineImpl::evAckDetected },
-    {AckSent,      &ZrtpStateEngineImpl::evAckSent },
-    {WaitCommit,   &ZrtpStateEngineImpl::evWaitCommit },
-    {WaitDHPart1,  &ZrtpStateEngineImpl::evWaitDHPart1 },
-    {WaitDHPart2,  &ZrtpStateEngineImpl::evWaitDHPart2 },
-    {WaitConfirm1, &ZrtpStateEngineImpl::evWaitConfirm1 },
-    {WaitConfirm2, &ZrtpStateEngineImpl::evWaitConfirm2 },
-    {WaitConfAck,  &ZrtpStateEngineImpl::evWaitConfAck },
-    {WaitClearAck,&ZrtpStateEngineImpl::evWaitClearAck },
-    {SecureState, &ZrtpStateEngineImpl::evSecureState },
-    {WaitErrorAck,&ZrtpStateEngineImpl::evWaitErrorAck }
+        {Initial,      &ZrtpStateEngineImpl::evInitial},
+        {Detect,       &ZrtpStateEngineImpl::evDetect},
+        {AckDetected,  &ZrtpStateEngineImpl::evAckDetected},
+        {AckSent,      &ZrtpStateEngineImpl::evAckSent},
+        {WaitCommit,   &ZrtpStateEngineImpl::evWaitCommit},
+        {WaitDHPart1,  &ZrtpStateEngineImpl::evWaitDHPart1},
+        {WaitDHPart2,  &ZrtpStateEngineImpl::evWaitDHPart2},
+        {WaitConfirm1, &ZrtpStateEngineImpl::evWaitConfirm1},
+        {WaitConfirm2, &ZrtpStateEngineImpl::evWaitConfirm2},
+        {WaitConfAck,  &ZrtpStateEngineImpl::evWaitConfAck},
+        {WaitClearAck, &ZrtpStateEngineImpl::evWaitClearAck},
+        {SecureState,  &ZrtpStateEngineImpl::evSecureState},
+        {WaitErrorAck, &ZrtpStateEngineImpl::evWaitErrorAck}
 };
 
 
-ZrtpStateEngineImpl::ZrtpStateEngineImpl(ZRtp *p) : parent(p), commitPkt(nullptr), t1Resend(20), t1ResendExtend(60), t2Resend(10),
-                                                    multiStream(false), secSubState(Normal), sentVersion(0) {
+ZrtpStateEngineImpl::ZrtpStateEngineImpl(ZRtp *p) : parent(p), commitPkt(nullptr), t1Resend(20), t1ResendExtend(60),
+                                                    t2Resend(10), multiStream(false), secSubState(Normal),
+                                                    sentVersion(0) {
 
     engine = new ZrtpStates(states, Initial);
     memset(retryCounters, 0, sizeof(retryCounters));
@@ -63,10 +63,13 @@ ZrtpStateEngineImpl::ZrtpStateEngineImpl(ZRtp *p) : parent(p), commitPkt(nullptr
 
 ZrtpStateEngineImpl::~ZrtpStateEngineImpl() {
 
+    if (engine == nullptr) {
+        return;
+    }
     // If not in Initial state: close the protocol engine
     // before destroying it. This will free pending packets
     // if necessary.
-    if (!inState(Initial)) {
+    if (!engine->inState(Initial)) {
         Event ev;
 
         cancelTimer();
@@ -77,21 +80,15 @@ ZrtpStateEngineImpl::~ZrtpStateEngineImpl() {
     delete engine;
 }
 
-void ZrtpStateEngineImpl::processEvent(Event * ev) {
-
-    char *msg, first, middle, last;
-    uint8_t const * pkt;
+void ZrtpStateEngineImpl::processEvent(Event *ev) {
 
     std::mutex stateMutex;
     lock_guard<std::mutex> stateGuard(stateMutex);  // process only one packet at a time
 
     event = ev;                                     // make available to other member functions
     if (event->type == ZrtpPacket) {
-        pkt = event->packet;
-        msg = (char *)pkt + 4;
-        first = static_cast<char>(tolower(*msg));
-        middle = static_cast<char>(tolower(*(msg+4)));
-        last = static_cast<char>(tolower(*(msg+7)));
+        auto const *pkt = event->packet;
+        msgType = string(reinterpret_cast<char const *>(pkt + 4), 8);
 
         // Sanity check of packet size for all states except WaitErrorAck.
         // Actual packet type not known yet, thus use internal knowledge of ZRTP
@@ -100,8 +97,8 @@ void ZrtpStateEngineImpl::processEvent(Event * ev) {
         // Multi-frame packet handling performs sanity checks, sets the length to 0,
         // skip this check here in this case.
         if (!inState(WaitErrorAck) && ev->length > 0) {
-            uint16_t totalLength = *(uint16_t*)(pkt+2);                 // ZRTP packet length stored in bytes 3 and 4, big endian
-            totalLength = zrtpNtohs(totalLength) * ZRTP_WORD_SIZE;      // ZRTP packet length is in number of ZRTP words
+            uint16_t totalLength = *(uint16_t *) (pkt + 2);  // ZRTP packet length in bytes 3 and 4, big endian
+            totalLength = zrtpNtohs(totalLength) * ZRTP_WORD_SIZE; // ZRTP packet length is in number of ZRTP words
             totalLength += transportOverhead + sizeof(uint32_t);        // add transport overhead and CRC (uint32_t)
 
             if (totalLength != ev->length) {
@@ -112,7 +109,7 @@ void ZrtpStateEngineImpl::processEvent(Event * ev) {
         }
 
         // Check if this is an Error packet.
-        if (first == 'e' && middle =='r' && last == ' ') {
+        if (msgType == ErrorMsg) {
             /*
              * Process a received Error packet.
              *
@@ -123,30 +120,28 @@ void ZrtpStateEngineImpl::processEvent(Event * ev) {
              */
             cancelTimer();
             ZrtpPacketError epkt(pkt);
-            ZrtpPacketErrorAck* eapkt = parent->prepareErrorAck(&epkt);
+            ZrtpPacketErrorAck *eapkt = parent->prepareErrorAck(&epkt);
             parent->sendPacketZRTP(eapkt);
             event->type = ErrorPkt;
-        }
-        else if (first == 'p' && middle == ' ' && last == ' ') {
+        } else if (msgType == PingMsg) {
             ZrtpPacketPing ppkt(pkt);
-            ZrtpPacketPingAck* ppktAck = parent->preparePingAck(&ppkt);
+            ZrtpPacketPingAck *ppktAck = parent->preparePingAck(&ppkt);
             if (ppktAck != nullptr) {          // ACK only to valid PING packet, otherwise ignore it
                 parent->sendPacketZRTP(ppktAck);
             }
             return;
-        }
-        else if (first == 's' && last == 'y') {
+        } else if (msgType == SasRelayMsg) {
             uint32_t errorCode = 0;
-            auto* srly = new ZrtpPacketSASrelay(pkt);
-            auto* rapkt = parent->prepareRelayAck(srly, &errorCode);
+            auto *srly = new ZrtpPacketSASrelay(pkt);
+            auto *rapkt = parent->prepareRelayAck(srly, &errorCode);
             parent->sendPacketZRTP(rapkt);
             return;
         }
     }
-    /*
-     * Shut down protocol state engine: cancel outstanding timer, further
-     * processing in current state.
-     */
+        /*
+         * Shut down protocol state engine: cancel outstanding timer, further
+         * processing in current state.
+         */
     else if (event->type == ZrtpClose) {
         cancelTimer();
     }
@@ -157,7 +152,7 @@ void ZrtpStateEngineImpl::processEvent(Event * ev) {
 void ZrtpStateEngineImpl::evInitial() {
 
     if (event->type == ZrtpInitial) {
-        auto* hello = parent->prepareHello();
+        auto *hello = parent->prepareHello();
         sentVersion = hello->getVersionInt();
 
         // remember packet for easy resend in case timer triggers
@@ -218,20 +213,14 @@ void ZrtpStateEngineImpl::evInitial() {
  */
 void ZrtpStateEngineImpl::evDetect() {
 
-    char *msg, first, last;
-    uint8_t const * pkt;
-    uint32_t errorCode = 0;
-
     /*
      * First check the general event type, then discriminate
      * the real event.
      */
     if (event->type == ZrtpPacket) {
-        pkt = event->packet;
-        msg = (char *)pkt + 4;
+        uint32_t errorCode = 0;
+        auto const *pkt = event->packet;
 
-        first = static_cast<char>(tolower(*msg));
-        last = static_cast<char>(tolower(*(msg+7)));
         /*
          * HelloAck:
          * - our peer acknowledged our Hello packet, we have not seen the peer's Hello yet
@@ -240,7 +229,7 @@ void ZrtpStateEngineImpl::evDetect() {
          * 
          * When we receive an HelloAck this also means that our partner accepted our protocol version.
          */
-        if (first == 'h' && last =='k') {
+        if (msgType == HelloAckMsg) {
             cancelTimer();
             sentPacket = nullptr;
             nextState(AckDetected);
@@ -257,7 +246,7 @@ void ZrtpStateEngineImpl::evDetect() {
          *   peer acknowledges this
          * - Don't clear sentPacket, points to Hello
          */
-        if (first == 'h' && last ==' ') {
+        if (msgType == HelloMsg) {
             ZrtpPacketHello hpkt(pkt);
 
             cancelTimer();
@@ -268,7 +257,7 @@ void ZrtpStateEngineImpl::evDetect() {
              * This selection mechanism relies on the fact that we sent the highest supported protocol version in
              * the initial Hello packet as stated in RFC6189, section 4.1.1
              */
-            int32_t recvVersion = hpkt.getVersionInt();
+            auto recvVersion = hpkt.getVersionInt();
             if (recvVersion > sentVersion) {   // We don't support this version, stay in state with timer active
                 if (startTimer(&T1) <= 0) {
                     timerFailed(SevereNoTimer);      // returns to state Initial
@@ -281,13 +270,15 @@ void ZrtpStateEngineImpl::evDetect() {
              * Only if the received version matches our own sent version we start to send a HelloAck.
              */
             if (recvVersion != sentVersion) {
-                ZRtp::HelloPacketVersion_t* hpv = parent->helloPackets;
+                ZRtp::HelloPacketVersion_t *hpv = parent->helloPackets;
 
                 int32_t index;
-                for (index = 0; hpv->packet && hpv->packet != parent->currentHelloPacket; hpv++, index++)   // Find current sent Hello
+                for (index = 0; hpv->packet &&
+                                hpv->packet != parent->currentHelloPacket; hpv++, index++)   // Find current sent Hello
                     ;
 
-                for(; index >= 0 && hpv->version > recvVersion; hpv--, index--)   // find a supported version less-equal to received version
+                for (; index >= 0 && hpv->version >
+                                     recvVersion; hpv--, index--)   // find a supported version less-equal to received version
                     ;
 
                 if (index < 0) {
@@ -310,7 +301,7 @@ void ZrtpStateEngineImpl::evDetect() {
                 }
                 return;
             }
-            ZrtpPacketHelloAck* helloAck = parent->prepareHelloAck();
+            ZrtpPacketHelloAck *helloAck = parent->prepareHelloAck();
 
             if (!parent->sendPacketZRTP(helloAck)) {
                 parent->zrtpNegotiationFailed(Severe, SevereCannotSend);
@@ -332,7 +323,7 @@ void ZrtpStateEngineImpl::evDetect() {
         }
         return;      // unknown packet for this state - Just ignore it
     }
-    // Timer event triggered - this is Timer T1 to resend Hello
+        // Timer event triggered - this is Timer T1 to resend Hello
     else if (event->type == Timer) {
         if (!parent->sendPacketZRTP(sentPacket)) {
             sendFailed();       // returns to state Initial
@@ -346,7 +337,7 @@ void ZrtpStateEngineImpl::evDetect() {
             nextState(Detect);
         }
     }
-    // If application calls zrtpStart() to restart discovery
+        // If application calls zrtpStart() to restart discovery
     else if (event->type == ZrtpInitial) {
         cancelTimer();
         if (!parent->sendPacketZRTP(sentPacket)) {
@@ -356,8 +347,7 @@ void ZrtpStateEngineImpl::evDetect() {
         if (startTimer(&T1) <= 0) {
             timerFailed(SevereNoTimer);   // returns to state Initial
         }
-    }
-    else { // unknown Event type for this state (covers Error and ZrtpClose)
+    } else { // unknown Event type for this state (covers Error and ZrtpClose)
         if (event->type != ZrtpClose) {
             parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
         }
@@ -401,21 +391,14 @@ void ZrtpStateEngineImpl::evDetect() {
  *   happen if the other peer sends Hello only (maybe due to network problems)
  */
 void ZrtpStateEngineImpl::evAckSent() {
-
-    char *msg, first, last;
-    uint8_t const * pkt;
-    uint32_t errorCode = 0;
-
     /*
      * First check the general event type, then discriminate
      * the real event.
      */
     if (event->type == ZrtpPacket) {
-        pkt = event->packet;
-        msg = (char *)pkt + 4;
+        uint32_t errorCode = 0;
+        auto const *pkt = event->packet;
 
-        first = static_cast<char>(tolower(*msg));
-        last = static_cast<char>(tolower(*(msg+7)));
 
         /*
          * HelloAck:
@@ -426,7 +409,7 @@ void ZrtpStateEngineImpl::evAckSent() {
          * - send own Commit message
          * - switch state to WaitDHPart1, start Commit timer, assume Initiator
          */
-        if (first == 'h' && last =='k') {
+        if (msgType == HelloAckMsg) {
             cancelTimer();
 
             // remember packet for easy resend in case timer triggers
@@ -455,8 +438,8 @@ void ZrtpStateEngineImpl::evAckSent() {
          * timeout sends the following Hello.
          */
 
-        if (first == 'h' && last ==' ') {
-            ZrtpPacketHelloAck* helloAck = parent->prepareHelloAck();
+        if (msgType == HelloMsg) {
+            ZrtpPacketHelloAck *helloAck = parent->prepareHelloAck();
 
             if (!parent->sendPacketZRTP(helloAck)) {
                 nextState(Detect);
@@ -473,12 +456,12 @@ void ZrtpStateEngineImpl::evAckSent() {
          * - switch to state WaitDHPart2 and wait for peer's DHPart2
          * - don't start timer, we are responder
          */
-        if (first == 'c' && last == ' ') {
+        if (msgType == CommitMsg) {
             cancelTimer();
             ZrtpPacketCommit cpkt(pkt);
 
             if (!multiStream) {
-                ZrtpPacketDHPart* dhPart1 = parent->prepareDHPart1(&cpkt, &errorCode);
+                ZrtpPacketDHPart *dhPart1 = parent->prepareDHPart1(&cpkt, &errorCode);
 
                 // Something went wrong during processing of the Commit packet
                 if (dhPart1 == nullptr) {
@@ -490,9 +473,8 @@ void ZrtpStateEngineImpl::evAckSent() {
                 commitPkt = nullptr;
                 sentPacket = dhPart1;
                 nextState(WaitDHPart2);
-            }
-            else {
-                ZrtpPacketConfirm* confirm = parent->prepareConfirm1MultiStream(&cpkt, &errorCode);
+            } else {
+                ZrtpPacketConfirm *confirm = parent->prepareConfirm1MultiStream(&cpkt, &errorCode);
 
                 // Something went wrong during processing of the Commit packet
                 if (confirm == nullptr) {
@@ -509,13 +491,13 @@ void ZrtpStateEngineImpl::evAckSent() {
             }
         }
     }
-    /*
-     * Timer:
-     * - resend Hello packet, stay in state, restart timer until repeat
-     *   counter triggers
-     * - if repeat counter triggers switch to state Detect, con't clear
-     *   sentPacket, Detect requires it to point to own Hello message
-     */
+        /*
+         * Timer:
+         * - resend Hello packet, stay in state, restart timer until repeat
+         *   counter triggers
+         * - if repeat counter triggers switch to state Detect, con't clear
+         *   sentPacket, Detect requires it to point to own Hello message
+         */
     else if (event->type == Timer) {
         if (!parent->sendPacketZRTP(sentPacket)) {
             return sendFailed();      // returns to state Initial
@@ -529,8 +511,7 @@ void ZrtpStateEngineImpl::evAckSent() {
             // other peer any time later
             nextState(Detect);
         }
-    }
-    else {   // unknown Event type for this state (covers Error and ZrtpClose)
+    } else {   // unknown Event type for this state (covers Error and ZrtpClose)
         if (event->type != ZrtpClose) {
             parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
         }
@@ -539,6 +520,7 @@ void ZrtpStateEngineImpl::evAckSent() {
         nextState(Initial);
     }
 }
+
 /*
  * AckDetected state.
  *
@@ -561,17 +543,10 @@ void ZrtpStateEngineImpl::evAckSent() {
  *  aligned to the ZRTP specification
  */
 void ZrtpStateEngineImpl::evAckDetected() {
-
-    char *msg, first, last;
-    uint8_t const * pkt;
-    uint32_t errorCode = 0;
-
     if (event->type == ZrtpPacket) {
-        pkt = event->packet;
-        msg = (char *)pkt + 4;
+        uint32_t errorCode = 0;
+        auto const *pkt = event->packet;
 
-        first = static_cast<char>(tolower(*msg));
-        last = static_cast<char>(tolower(*(msg+7)));
 
 #if 1
         /*
@@ -582,12 +557,12 @@ void ZrtpStateEngineImpl::evAckDetected() {
          * - we are going to be in the Responder role
          */
 
-        if (first == 'h' && last ==' ') {
+        if (msgType == HelloMsg) {
             // Parse Hello packet and build an own Commit packet even if the
             // Commit is not send to the peer. We need to do this to check the
             // Hello packet and prepare the shared secret stuff.
             ZrtpPacketHello hpkt(pkt);
-            ZrtpPacketCommit* commit = parent->prepareCommit(&hpkt, &errorCode);
+            ZrtpPacketCommit *commit = parent->prepareCommit(&hpkt, &errorCode);
 
             // Something went wrong during processing of the Hello packet, for
             // example wrong version, duplicate ZID.
@@ -614,7 +589,7 @@ void ZrtpStateEngineImpl::evAckDetected() {
          * - Initiator role, thus start timer T2 to monitor timeout for Commit
          */
 
-        if (first == 'h' && last == ' ') {
+        if (msgType == HelloMsg) {
             // Parse peer's packet data into a Hello packet
             ZrtpPacketHello hpkt(pkt);
             ZrtpPacketCommit* commit = parent->prepareCommit(&hpkt, &errorCode);
@@ -637,8 +612,7 @@ void ZrtpStateEngineImpl::evAckDetected() {
             }
         }
 #endif
-    }
-    else {  // unknown Event type for this state (covers Error and ZrtpClose)
+    } else {  // unknown Event type for this state (covers Error and ZrtpClose)
         if (event->type != ZrtpClose) {
             parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
         }
@@ -662,22 +636,16 @@ void ZrtpStateEngineImpl::evAckDetected() {
  */
 void ZrtpStateEngineImpl::evWaitCommit() {
 
-    char *msg, first, last;
-    uint8_t const * pkt;
-    uint32_t errorCode = 0;
-
     if (event->type == ZrtpPacket) {
-        pkt = event->packet;
-        msg = (char *)pkt + 4;
+        uint32_t errorCode = 0;
+        auto const *pkt = event->packet;
 
-        first = static_cast<char>(tolower(*msg));
-        last = static_cast<char>(tolower(*(msg+7)));
         /*
          * Hello:
          * - resend HelloAck
          * - stay in WaitCommit
          */
-        if (first == 'h' && last == ' ') {
+        if (msgType == HelloMsg) {
             if (!parent->sendPacketZRTP(sentPacket)) {
                 sendFailed();       // returns to state Initial
             }
@@ -690,11 +658,11 @@ void ZrtpStateEngineImpl::evWaitCommit() {
          * - switch state to WaitDHPart2 or WaitConfirm2 if multi stream mode
          * - don't start timer, we are responder
          */
-        if (first == 'c' && last == ' ') {
+        if (msgType == CommitMsg) {
             ZrtpPacketCommit cpkt(pkt);
 
             if (!multiStream) {
-                ZrtpPacketDHPart* dhPart1 = parent->prepareDHPart1(&cpkt, &errorCode);
+                ZrtpPacketDHPart *dhPart1 = parent->prepareDHPart1(&cpkt, &errorCode);
 
                 // Something went wrong during processing of the Commit packet
                 if (dhPart1 == nullptr) {
@@ -705,9 +673,8 @@ void ZrtpStateEngineImpl::evWaitCommit() {
                 }
                 sentPacket = dhPart1;
                 nextState(WaitDHPart2);
-            }
-            else {
-                ZrtpPacketConfirm* confirm = parent->prepareConfirm1MultiStream(&cpkt, &errorCode);
+            } else {
+                ZrtpPacketConfirm *confirm = parent->prepareConfirm1MultiStream(&cpkt, &errorCode);
 
                 // Something went wrong during processing of the Commit packet
                 if (confirm == nullptr) {
@@ -723,8 +690,7 @@ void ZrtpStateEngineImpl::evWaitCommit() {
                 sendFailed();       // returns to state Initial
             }
         }
-    }
-    else {  // unknown Event type for this state (covers Error and ZrtpClose)
+    } else {  // unknown Event type for this state (covers Error and ZrtpClose)
         if (event->type != ZrtpClose) {
             parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
         }
@@ -756,18 +722,9 @@ void ZrtpStateEngineImpl::evWaitCommit() {
 
 void ZrtpStateEngineImpl::evWaitDHPart1() {
 
-    char *msg, first, middle, last, secondLast;
-    uint8_t const * pkt;
-    uint32_t errorCode = 0;
-
     if (event->type == ZrtpPacket) {
-        pkt = event->packet;
-        msg = (char *)pkt + 4;
-
-        first = static_cast<char>(tolower(*msg));
-        middle = static_cast<char>(tolower(*(msg+4)));
-        last = static_cast<char>(tolower(*(msg+7)));
-        secondLast = static_cast<char>(tolower(*(msg+6)));
+        uint32_t errorCode = 0;
+        auto const *pkt = event->packet;
 
         /*
          * HelloAck or Hello:
@@ -775,7 +732,7 @@ void ZrtpStateEngineImpl::evWaitDHPart1() {
          *   ignore it
          * - no switch in state, leave timer as it is
          */
-        if (first == 'h' && middle == 'o' && (last =='k' || last == ' ')) {
+        if (msgType == HelloMsg || msgType == HelloAckMsg) {
             return;
         }
 
@@ -792,7 +749,7 @@ void ZrtpStateEngineImpl::evWaitDHPart1() {
          *   - prepare and send DH1Packt,
          *   - switch to state WaitDHPart2, implies Responder path
          */
-        if (first == 'c' && last == ' ') {
+        if (msgType == CommitMsg) {
             ZrtpPacketCommit zpCo(pkt);
 
             if (!parent->verifyH2(&zpCo)) {
@@ -822,9 +779,8 @@ void ZrtpStateEngineImpl::evWaitDHPart1() {
                     }
                     nextState(WaitDHPart2);
                     sentPacket = dhPart1;
-                }
-                else {
-                    ZrtpPacketConfirm* confirm = parent->prepareConfirm1MultiStream(&zpCo, &errorCode);
+                } else {
+                    ZrtpPacketConfirm *confirm = parent->prepareConfirm1MultiStream(&zpCo, &errorCode);
 
                     // Something went wrong during processing of the Commit packet
                     if (confirm == nullptr) {
@@ -840,8 +796,8 @@ void ZrtpStateEngineImpl::evWaitDHPart1() {
                     sendFailed();       // returns to state Initial
                 }
             }
-            // Stay in state, we are Initiator, wait for DHPart1 of Confirm1 packet from peer.
-            // Resend Commit after timeout until we get a DHPart1 or Confirm1
+                // Stay in state, we are Initiator, wait for DHPart1 of Confirm1 packet from peer.
+                // Resend Commit after timeout until we get a DHPart1 or Confirm1
             else {
                 if (startTimer(&T2) <= 0) { // restart the Commit timer, gives peer more time to react
                     timerFailed(SevereNoTimer);    // returns to state Initial
@@ -857,7 +813,7 @@ void ZrtpStateEngineImpl::evWaitDHPart1() {
          * - switch to WaitConfirm1
          * - start timer to resend DHPart2 if necessary, we are Initiator
          */
-        if (first == 'd' && secondLast == '1') {
+        if (msgType == DHPart1Msg) {
             cancelTimer();
             sentPacket = nullptr;
             ZrtpPacketDHPart dpkt(pkt);
@@ -901,11 +857,11 @@ void ZrtpStateEngineImpl::evWaitDHPart1() {
          * - switch off resending commit
          * - prepare Confirm2
          */
-        if (multiStream && (first == 'c' && last == '1')) {
+        if (multiStream && msgType == Confirm1Msg) {
             cancelTimer();
             ZrtpPacketConfirm cpkt(pkt);
 
-            ZrtpPacketConfirm* confirm = parent->prepareConfirm2MultiStream(&cpkt, &errorCode);
+            ZrtpPacketConfirm *confirm = parent->prepareConfirm2MultiStream(&cpkt, &errorCode);
 
             // Something went wrong during processing of the Confirm1 packet
             if (confirm == nullptr) {
@@ -933,19 +889,18 @@ void ZrtpStateEngineImpl::evWaitDHPart1() {
             }
         }
     }
-    // Timer event triggered, resend the Commit packet
+        // Timer event triggered, resend the Commit packet
     else if (event->type == Timer) {
         if (!parent->sendPacketZRTP(sentPacket)) {
-                sendFailed();       // returns to state Initial
-                return;
+            sendFailed();       // returns to state Initial
+            return;
         }
         retryCounters[CommitRetry]++;
 
         if (nextTimer(&T2) <= 0) {
             timerFailed(SevereTooMuchRetries);       // returns to state Initial
         }
-    }
-    else {  // unknown Event type for this state (covers Error and ZrtpClose)
+    } else {  // unknown Event type for this state (covers Error and ZrtpClose)
         if (event->type != ZrtpClose) {
             parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
         }
@@ -971,23 +926,15 @@ void ZrtpStateEngineImpl::evWaitDHPart1() {
  */
 void ZrtpStateEngineImpl::evWaitDHPart2() {
 
-    char *msg, first, secondLast, last;
-    uint8_t const * pkt;
-    uint32_t errorCode = 0;
-
     if (event->type == ZrtpPacket) {
-        pkt = event->packet;
-        msg = (char *)pkt + 4;
-
-        first = static_cast<char>(tolower(*msg));
-        last = static_cast<char>(tolower(*(msg+7)));
-        secondLast = static_cast<char>(tolower(*(msg+6)));
+        uint32_t errorCode = 0;
+        auto const *pkt = event->packet;
         /*
          * Commit:
          * - resend DHPart1
          * - stay in state
          */
-        if (first == 'c' && last == ' ') {
+        if (msgType == CommitMsg) {
             if (!parent->sendPacketZRTP(sentPacket)) {
                 return sendFailed();       // returns to state Initial
             }
@@ -999,7 +946,7 @@ void ZrtpStateEngineImpl::evWaitDHPart2() {
          * - switch to WaitConfirm2
          * - No timer, we are responder
          */
-        if (first == 'd' && secondLast == '2') {
+        if (msgType == DHPart2Msg) {
             ZrtpPacketDHPart dpkt(pkt);
             if (!isZrtp2022Supported) {
                 ZrtpPacketConfirm *confirm = parent->prepareConfirm1(&dpkt, &errorCode);
@@ -1024,8 +971,7 @@ void ZrtpStateEngineImpl::evWaitDHPart2() {
                 nextState(WaitConfirm1);
             }
         }
-    }
-    else {  // unknown Event type for this state (covers Error and ZrtpClose)
+    } else {  // unknown Event type for this state (covers Error and ZrtpClose)
         if (event->type != ZrtpClose) {
             parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
         }
@@ -1057,17 +1003,9 @@ void ZrtpStateEngineImpl::evWaitDHPart2() {
  */
 void ZrtpStateEngineImpl::evWaitConfirm1() {
 
-    char *msg, first, last, secondLast;
-    uint8_t const * pkt;
-    uint32_t errorCode = 0;
-
     if (event->type == ZrtpPacket) {
-        pkt = event->packet;
-        msg = (char *)pkt + 4;
-
-        first = static_cast<char>(tolower(*msg));
-        last = static_cast<char>(tolower(*(msg+7)));
-        secondLast = static_cast<char>(tolower(*(msg+6)));
+        uint32_t errorCode = 0;
+        auto const *pkt = event->packet;
 
         /*
          * Confirm1:
@@ -1076,11 +1014,11 @@ void ZrtpStateEngineImpl::evWaitConfirm1() {
          * - switch to state WaitConfAck
          * - set timer to monitor Confirm2 packet, we are initiator
          */
-        if (first == 'c' && last == '1') {
+        if (msgType == Confirm1Msg) {
             cancelTimer();
             ZrtpPacketConfirm cpkt(pkt);
 
-            ZrtpPacketConfirm* confirm = parent->prepareConfirm2(&cpkt, &errorCode);
+            ZrtpPacketConfirm *confirm = parent->prepareConfirm2(&cpkt, &errorCode);
 
             // Something went wrong during processing of the Confirm1 packet
             if (confirm == nullptr) {
@@ -1106,8 +1044,7 @@ void ZrtpStateEngineImpl::evWaitConfirm1() {
                 timerFailed(SevereNoTimer);  // returns to state Initial
             }
         }
-    }
-    else if (event->type == Timer) {
+    } else if (event->type == Timer) {
         // If ZRTP 2022 then we are in Responder mode: no timeout expected
         if (isZrtp2022Supported) {
             LOGGER(ERROR_LOG, "Timeout in WaitConfirm1 but ZRTP 2022 is active")
@@ -1122,8 +1059,7 @@ void ZrtpStateEngineImpl::evWaitConfirm1() {
         if (nextTimer(&T2) <= 0) {
             timerFailed(SevereTooMuchRetries);     // returns to state Initial
         }
-    }
-    else {  // unknown Event type for this state (covers Error and ZrtpClose)
+    } else {  // unknown Event type for this state (covers Error and ZrtpClose)
         if (event->type != ZrtpClose) {
             parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
         }
@@ -1156,24 +1092,16 @@ void ZrtpStateEngineImpl::evWaitConfirm1() {
  */
 void ZrtpStateEngineImpl::evWaitConfirm2() {
 
-    char *msg, first, secondLast, last;
-    uint8_t const * pkt;
-    uint32_t errorCode = 0;
-
     if (event->type == ZrtpPacket) {
-        pkt = event->packet;
-        msg = (char *)pkt + 4;
-
-        first = static_cast<char>(tolower(*msg));
-        secondLast = static_cast<char>(tolower(*(msg+6)));
-        last = static_cast<char>(tolower(*(msg+7)));
+        uint32_t errorCode = 0;
+        auto const *pkt = event->packet;
 
         /*
          * DHPart2 or Commit in multi stream mode:
          * - resend Confirm1 packet
          * - stay in state
          */
-        if ((first == 'd' && secondLast == '2') || (multiStream && (first == 'c' && last == ' '))) {
+        if (msgType == DHPart2Msg || (multiStream && msgType == CommitMsg)) {
             if (isZrtp2022Supported) {
                 LOGGER(ERROR_LOG, "WaitConfirm2 received illegal message in ZRTP 2022 mode.")
             }
@@ -1188,9 +1116,9 @@ void ZrtpStateEngineImpl::evWaitConfirm2() {
          * - switch on security (SRTP)
          * - switch to SecureState
          */
-        if (first == 'c' && last == '2') {
+        if (msgType == Confirm2Msg) {
             ZrtpPacketConfirm cpkt(pkt);
-            ZrtpPacketConf2Ack* confAck = parent->prepareConf2Ack(&cpkt, &errorCode);
+            ZrtpPacketConf2Ack *confAck = parent->prepareConf2Ack(&cpkt, &errorCode);
 
             // Something went wrong during processing of the confirm2 packet
             if (confAck == nullptr) {
@@ -1203,7 +1131,7 @@ void ZrtpStateEngineImpl::evWaitConfirm2() {
                 sendFailed();             // returns to state Initial
                 return;
             }
-            if (!parent->srtpSecretsReady(ForReceiver) || !parent->srtpSecretsReady(ForSender))  {
+            if (!parent->srtpSecretsReady(ForReceiver) || !parent->srtpSecretsReady(ForSender)) {
                 parent->sendInfo(Severe, CriticalSWError);
                 sendErrorPacket(CriticalSWError);
                 return;
@@ -1211,8 +1139,7 @@ void ZrtpStateEngineImpl::evWaitConfirm2() {
             nextState(SecureState);
             parent->sendInfo(Info, InfoSecureStateOn);
         }
-    }
-    else if (event->type == Timer) {
+    } else if (event->type == Timer) {
         // If ZRTP 2022 then we are in Initiator mode, need to handle timeout
         if (!isZrtp2022Supported) {
             LOGGER(ERROR_LOG, "Timeout in WaitConfirm2 but ZRTP 2022 is not active")
@@ -1225,8 +1152,7 @@ void ZrtpStateEngineImpl::evWaitConfirm2() {
         if (nextTimer(&T2) <= 0) {
             timerFailed(SevereTooMuchRetries);     // returns to state Initial
         }
-    }
-    else {  // unknown Event type for this state (covers Error and ZrtpClose)
+    } else {  // unknown Event type for this state (covers Error and ZrtpClose)
         if (event->type != ZrtpClose) {
             parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
         }
@@ -1256,34 +1182,26 @@ void ZrtpStateEngineImpl::evWaitConfirm2() {
  */
 void ZrtpStateEngineImpl::evWaitConfAck() {
 
-    char *msg, first, last, secondLast;
-    uint8_t const *pkt;
 
     if (event->type == ZrtpPacket) {
-        pkt = event->packet;
-        msg = (char *)pkt + 4;
-
-        first = static_cast<char>(tolower(*msg));
-        last = static_cast<char>(tolower(*(msg+7)));
-        secondLast = static_cast<char>(tolower(*(msg+6)));
 
         if (isZrtp2022Supported) {
-            if (first == 'd' && secondLast == '2') {
+            if (msgType == DHPart2Msg) {
                 if (!parent->sendPacketZRTP(sentPacket)) {
                     sendFailed();             // returns to state Initial
                 }
             }
             // Ignore Confirm1 message of the multi-frame packet
-            if (first == 'c' && last == '1') {
+            if (msgType == Confirm1Msg) {
                 return;
             }
         }
-         /*
-         * ConfAck:
-         * - Switch off resending Confirm2
-         * - switch to SecureState
-         */
-        if (first == 'c' && last == 'k') {
+        /*
+        * ConfAck:
+        * - Switch off resending Confirm2
+        * - switch to SecureState
+        */
+        if (msgType == Conf2AckMsg) {
             cancelTimer();
             sentPacket = nullptr;
             // Receiver was already enabled after sending Confirm2 packet
@@ -1297,8 +1215,7 @@ void ZrtpStateEngineImpl::evWaitConfAck() {
             // TODO: call parent to clear signature data at initiator
             parent->sendInfo(Info, InfoSecureStateOn);
         }
-    }
-    else if (event->type == Timer) {
+    } else if (event->type == Timer) {
         if (!parent->sendPacketZRTP(sentPacket)) {
             sendFailed();             // returns to state Initial
             parent->srtpSecretsOff(ForReceiver);
@@ -1310,8 +1227,7 @@ void ZrtpStateEngineImpl::evWaitConfAck() {
             timerFailed(SevereTooMuchRetries); // returns to state Initial
             parent->srtpSecretsOff(ForReceiver);
         }
-    }
-    else {  // unknown Event type for this state (covers Error and ZrtpClose)
+    } else {  // unknown Event type for this state (covers Error and ZrtpClose)
         if (event->type != ZrtpClose) {
             parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
         }
@@ -1350,28 +1266,20 @@ void ZrtpStateEngineImpl::evWaitClearAck() {
 
 void ZrtpStateEngineImpl::evWaitErrorAck() {
 
-    char *msg, first, last;
-    uint8_t const *pkt;
 
     if (event->type == ZrtpPacket) {
-        pkt = event->packet;
-        msg = (char *)pkt + 4;
-
-        first = static_cast<char>(tolower(*msg));
-        last = static_cast<char>(tolower(*(msg+7)));
-
         /*
          * Errorck:
          * - stop resending Error,
          * - switch to state Initial
          */
-        if (first == 'e' && last =='k') {
+        if (msgType == ErrorAckMsg) {
             cancelTimer();
             sentPacket = nullptr;
             nextState(Initial);
         }
     }
-    // Timer event triggered - this is Timer T2 to resend Error.
+        // Timer event triggered - this is Timer T2 to resend Error.
     else if (event->type == Timer) {
         if (!parent->sendPacketZRTP(sentPacket)) {
             sendFailed();                 // returns to state Initial
@@ -1382,8 +1290,7 @@ void ZrtpStateEngineImpl::evWaitErrorAck() {
         if (nextTimer(&T2) <= 0) {
             timerFailed(SevereTooMuchRetries);     // returns to state Initial
         }
-    }
-    else {  // unknown Event type for this state (covers Error and ZrtpClose)
+    } else {  // unknown Event type for this state (covers Error and ZrtpClose)
         if (event->type != ZrtpClose) {
             parent->zrtpNegotiationFailed(Severe, SevereProtocolError);
         }
@@ -1394,30 +1301,22 @@ void ZrtpStateEngineImpl::evWaitErrorAck() {
 
 void ZrtpStateEngineImpl::evSecureState() {
 
-    char *msg, first, last;
-    uint8_t const *pkt;
-
     /*
      * Handle a possible sub-state. If sub-state handling was ok just return.
      */
     if (secSubState == WaitSasRelayAck) {
         if (subEvWaitRelayAck())
-            return; 
+            return;
     }
 
     if (event->type == ZrtpPacket) {
-        pkt = event->packet;
-        msg = (char *)pkt + 4;
-
-        first = static_cast<char>(tolower(*msg));
-        last = static_cast<char>(tolower(*(msg+7)));
 
         /*
          * Confirm2:
          * - resend Conf2Ack packet
          * - stay in state
          */
-        if (first == 'c' && last == '2') {
+        if (msgType == Confirm2Msg) {
             if (sentPacket != nullptr && !parent->sendPacketZRTP(sentPacket)) {
                 sentPacket = nullptr;
                 nextState(Initial);
@@ -1439,12 +1338,11 @@ void ZrtpStateEngineImpl::evSecureState() {
             }
         }
         */
-    }
-    else if (event->type == Timer) {
+    } else if (event->type == Timer) {
         // Ignore stray timeout in this state
     }
-    // unknown Event type for this state (covers Error and ZrtpClose)
-    else  {
+        // unknown Event type for this state (covers Error and ZrtpClose)
+    else {
         // If in secure state ignore error events to avoid Error packet injection
         // attack - found by Dmitry Monakhov (dmonakhov@openvz.org)
         if (event->type == ErrorPkt)
@@ -1461,32 +1359,23 @@ void ZrtpStateEngineImpl::evSecureState() {
 }
 
 bool ZrtpStateEngineImpl::subEvWaitRelayAck() {
-    char *msg, first, last;
-    uint8_t const * pkt;
-
     /*
      * First check the general event type, then discriminate the real event.
      */
-    if  (event->type == ZrtpPacket) {
-        pkt = event->packet;
-        msg = (char *)pkt + 4;
-
-        first = static_cast<char>(tolower(*msg));
-        last = static_cast<char>(tolower(*(msg+7)));
-
+    if (event->type == ZrtpPacket) {
         /*
          * SAS relayAck:
          * - stop resending SASRelay,
          * - switch to secure substate Normal
          */
-        if (first == 'r' && last =='k') {
+        if (msgType == RelayAckMsg) {
             cancelTimer();
             secSubState = Normal;
             sentPacket = nullptr;
         }
         return true;
     }
-    // Timer event triggered - this is Timer T2 to resend Error.
+        // Timer event triggered - this is Timer T2 to resend Error.
     else if (event->type == Timer) {
         if (!parent->sendPacketZRTP(sentPacket)) {
             sendFailed(); // returns to state Initial
@@ -1509,7 +1398,7 @@ int32_t ZrtpStateEngineImpl::startTimer(zrtpTimer_t *t) {
 int32_t ZrtpStateEngineImpl::nextTimer(zrtpTimer_t *t) {
 
     t->time += t->time;
-    t->time = (t->time > t->capping)? t->capping : t->time;
+    t->time = (t->time > t->capping) ? t->capping : t->time;
     if (t->maxResend > 0) {
         t->counter++;
         if (t->counter > t->maxResend) {
@@ -1522,17 +1411,17 @@ int32_t ZrtpStateEngineImpl::nextTimer(zrtpTimer_t *t) {
 void ZrtpStateEngineImpl::sendErrorPacket(uint32_t errorCode) {
     cancelTimer();
 
-    ZrtpPacketError* err = parent->prepareError(errorCode);
+    ZrtpPacketError *err = parent->prepareError(errorCode);
     parent->zrtpNegotiationFailed(ZrtpError, errorCode);
 
-    sentPacket =  err;
+    sentPacket = err;
     nextState(WaitErrorAck);
     if (!parent->sendPacketZRTP(err) || (startTimer(&T2) <= 0)) {
         sendFailed();
     }
 }
 
-void ZrtpStateEngineImpl::sendSASRelay(ZrtpPacketSASrelay* relay) {
+void ZrtpStateEngineImpl::sendSASRelay(ZrtpPacketSASrelay *relay) {
     cancelTimer();
     sentPacket = relay;
     secSubState = WaitSasRelayAck;
@@ -1554,12 +1443,12 @@ void ZrtpStateEngineImpl::timerFailed(int32_t subCode) {
 }
 
 int ZrtpStateEngineImpl::getNumberOfRetryCounters() {
-    return sizeof(retryCounters)/sizeof(int32_t);
+    return sizeof(retryCounters) / sizeof(int32_t);
 }
 
-int ZrtpStateEngineImpl::getRetryCounters(int32_t* counters) {
+int ZrtpStateEngineImpl::getRetryCounters(int32_t *counters) {
     memcpy(counters, retryCounters, sizeof(retryCounters));
-    return sizeof(retryCounters)/sizeof(int32_t);
+    return sizeof(retryCounters) / sizeof(int32_t);
 }
 
 /** EMACS **

@@ -140,6 +140,8 @@ private:
     int32_t t1ResendExtend; ///< configurable extended resend counter for T1 (Hello packets)
     int32_t t2Resend;       ///< configurable resend counter for T2 (other packets)
 
+    std::string msgType;
+
     /*
      * If this is set to true the protocol engine handle the multi-stream
      * variant of ZRTP. Refer to chapter 5.4.2 in the ZRTP specification.
@@ -205,7 +207,7 @@ public:
 
     void setTransportOverhead(int32_t overhead) override { transportOverhead = overhead; }
 
-    void setMultiStream(bool multi) override { multiStream = multi };
+    void setMultiStream(bool multi) override { multiStream = multi; }
 
     void setZrtp2022(bool supported) override { isZrtp2022Supported = supported; };
     // endregion
