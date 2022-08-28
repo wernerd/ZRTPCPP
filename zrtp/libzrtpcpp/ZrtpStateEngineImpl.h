@@ -42,7 +42,7 @@ enum zrtpStates {
     AckDetected,        ///< HelloAck received
     AckSent,            ///< HelloAck sent after Hello received
     WaitCommit,         ///< Wait for a Commit message
-    CommitSent,         ///< Commit message sent
+    WaitDHPart1,        ///< Commit message sent
     WaitDHPart2,        ///< Wait for a DHPart2 message
     WaitConfirm1,       ///< Wait for a Confirm1 message
     WaitConfirm2,       ///< Wait for a confirm2 message
@@ -146,8 +146,8 @@ private:
      */
     bool multiStream;
 
-    // Secure substate to handle SAS relay packets
-    SecureSubStates secSubstate;
+    // Secure sub-state to handle SAS relay packets
+    SecureSubStates secSubState;
 
     /**
      * Secure Sub state WaitSasRelayAck.
@@ -173,6 +173,8 @@ private:
     int32_t retryCounters[ErrorRetry+1] = {0};  // TODO adjust
 
     int32_t transportOverhead = RTP_HEADER_LENGTH;
+
+    bool isZrtp2022Supported = false;
 
 public:
     // region ZrtpStateEngine functions
@@ -203,7 +205,9 @@ public:
 
     void setTransportOverhead(int32_t overhead) override { transportOverhead = overhead; }
 
-    void setMultiStream(bool multi) override;
+    void setMultiStream(bool multi) override { multiStream = multi };
+
+    void setZrtp2022(bool supported) override { isZrtp2022Supported = supported; };
     // endregion
 private:
     /// Switch to the specified state
@@ -230,7 +234,7 @@ private:
     void evWaitCommit();
 
     /// Commit sent state
-    void evCommitSent();
+    void evWaitDHPart1();
 
     /// Wait for DHPart2 message
     void evWaitDHPart2();
@@ -281,14 +285,14 @@ private:
      *
      * @return
      *    1 timer was canceled
-     *    0 cancelation failed
+     *    0 timer cancel failed
      */
     int32_t cancelTimer() {return parent->cancelTimer(); };
 
     void adjustT2Sidh(int32_t adjustedStart) { T2.start = adjustedStart; }
 
     /**
-     * Set status if an error occured while sending a ZRTP packet.
+     * Set status if an error occurred while sending a ZRTP packet.
      *
      * This functions clears data and set the state to Initial after the engine
      * detected a problem while sending a ZRTP packet.
@@ -299,10 +303,10 @@ private:
     void sendFailed();
 
     /**
-     * Set status if a timer problems occure.
+     * Set status if a timer problems occurs.
      *
      * This functions clears data and set state to Initial after a timer
-     * error occured. Either no timer available or resend counter exceedeed.
+     * error occurred. Either no timer available or resend counter excesded.
      *
      * @return
      *    Fail code
@@ -317,7 +321,7 @@ private:
      * @return
      *    Value of the multi-stream mode flag.
      */
-    bool isMultiStream();
+    [[maybe_unused]] bool isMultiStream() { return multiStream; };
 
     /**
      * Send a SAS relay packet.

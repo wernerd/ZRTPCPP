@@ -329,7 +329,7 @@ set(zrtp_src_no_cache
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpPacketPing.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpPacketSASrelay.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpPacketRelayAck.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpStateClassImpl.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpStateEngineImpl.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpConfigure.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/ZrtpCWrapper.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/Base32.cpp

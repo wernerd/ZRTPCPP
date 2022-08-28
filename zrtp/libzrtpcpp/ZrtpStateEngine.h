@@ -109,6 +109,17 @@ public:
      */
     virtual void setMultiStream(bool multi) = 0;
 
+    /**
+     * Set ZRTP 2022 support flag.
+     *
+     * This functions set ZRTP 2022. The protocol engine will run the ZRTP 2022 variant
+     * of the ZRTP protocol if this flag is set to true.
+     *
+     * @param supported
+     *    Set the ZRTP 2022 flag to true or false.
+     */
+    virtual void setZrtp2022(bool supported) = 0;
+
 };
 
 #endif //LIBZRTPCPP_ZRTPSTATECLASSX_H
