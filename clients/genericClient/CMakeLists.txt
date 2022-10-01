@@ -10,7 +10,7 @@ set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
 set(crypto_src
-        ${zrtp_botan_crypto_src})
+        ${zrtp_crypto_src})
 
 if (SRTP)
    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../srtp ${CMAKE_CURRENT_SOURCE_DIR}/../../srtp/crypto)

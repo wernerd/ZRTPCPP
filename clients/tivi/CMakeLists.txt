@@ -41,7 +41,7 @@ set(srtp_src
         ${CMAKE_CURRENT_SOURCE_DIR}/../../srtp/crypto/botan/macSkein.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../../srtp/crypto/botan/SrtpSymCrypto.cpp)
 
-set(zrtpcpp_src ${zrtp_src} ${zrtp_tivi_src} ${zrtp_botan_crypto_src} ${srtp_src})
+set(zrtpcpp_src ${zrtp_src} ${zrtp_tivi_src} ${zrtp_crypto_src} ${srtp_src})
 
 # for the Thread classes etc. -  Need to cross-check with Java build in case of static build.
 # Beware of undefined symbols - set correct library build parameters in case of shared lib

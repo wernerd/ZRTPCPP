@@ -31,7 +31,7 @@ set(zrtp_ccrtp_src
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtpccrtp.h)
 
 
-set(zrtpcpp_src ${zrtp_src} ${zrtp_ccrtp_src} ${zrtp_botan_crypto_src})
+set(zrtpcpp_src ${zrtp_src} ${zrtp_ccrtp_src} ${zrtp_crypto_src})
 
 if(BUILD_STATIC AND NOT BUILD_SHARED)
     set(LIBRARY_BUILD_TYPE STATIC)

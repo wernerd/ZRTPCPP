@@ -40,6 +40,9 @@ target_link_libraries(zidStorage_test gtest_main ${zrtplibName})
 add_executable(zrtpFrame_test ZrtpFrame_test.cpp )
 target_link_libraries(zrtpFrame_test gmock_main ${zrtplibName})
 
+add_executable(zrtpKem_test ZrtpKemCrypto_test.cpp )
+target_link_libraries(zrtpKem_test gtest_main ${zrtplibName})
+
 if(SDES)
     add_executable(sdesRun_test sdesRun_test.cpp)
     target_link_libraries(sdesRun_test gtest_main ${zrtplibName})

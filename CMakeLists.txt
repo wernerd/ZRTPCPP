@@ -367,9 +367,10 @@ set(zrtp_crypto_includes
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/skeinMac384.h
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/twoCFB.h
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/zrtpDH.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/zrtpKem.h
         )
 
-set(zrtp_botan_crypto_src
+set(zrtp_crypto_src
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/botan/zrtpDH.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/botan/hmac256.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/botan/sha256.cpp
@@ -381,6 +382,11 @@ set(zrtp_botan_crypto_src
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/botan/skein384.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/botan/aesCFB.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/botan/twoCFB.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/botan/twoCFB.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/sntrukem/sntrupCommon.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/sntrukem/sntrup653.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/sntrukem/sntrup953.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/zrtp/crypto/sntrukem/sntrup1277.cpp
         ${zrtp_crypto_includes})
 
 set(zrtp_src ${zrtp_src_no_cache}
