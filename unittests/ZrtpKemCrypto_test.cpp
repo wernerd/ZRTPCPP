@@ -54,5 +54,58 @@ public:
 
 TEST_F(ZrtpKemCryptoTestFixture, simpleExchange_653) {
 
+    secUtilities::SecureArray<SNTRUP_CRYPTO_SECRETKEYBYTES_653> secretKey;
+    secUtilities::SecureArray<SNTRUP_CRYPTO_PUBLICKEYBYTES_653> publicKey;
+    secUtilities::SecureArray<SNTRUP_CRYPTO_CIPHERTEXTBYTES_653> cipherText;
+    secUtilities::SecureArray<SNTRUP_CRYPTO_BYTES> sharedKeyEnc;
+    secUtilities::SecureArray<SNTRUP_CRYPTO_BYTES> sharedKeyDec;
+
+    crypto_kem_sntrup653_keypair(publicKey.data(), secretKey.data());
+
+    crypto_kem_sntrup653_enc(cipherText.data(), sharedKeyEnc.data(), publicKey.data());
+    LOGGER(DEBUGGING, *zrtp::Utilities::hexdump("Shared key enc", sharedKeyEnc.data(), SNTRUP_CRYPTO_BYTES))
+
+    crypto_kem_sntrup653_dec(sharedKeyDec.data(), cipherText.data(), secretKey.data());
+    LOGGER(DEBUGGING, *zrtp::Utilities::hexdump("Shared key dec", sharedKeyDec.data(), SNTRUP_CRYPTO_BYTES))
+
+    ASSERT_TRUE(sharedKeyDec.equals(sharedKeyEnc, SNTRUP_CRYPTO_BYTES));
+}
+
+TEST_F(ZrtpKemCryptoTestFixture, simpleExchange_953) {
+
+    secUtilities::SecureArray<SNTRUP_CRYPTO_SECRETKEYBYTES_953> secretKey;
+    secUtilities::SecureArray<SNTRUP_CRYPTO_PUBLICKEYBYTES_953> publicKey;
+    secUtilities::SecureArray<SNTRUP_CRYPTO_CIPHERTEXTBYTES_953> cipherText;
+    secUtilities::SecureArray<SNTRUP_CRYPTO_BYTES> sharedKeyEnc;
+    secUtilities::SecureArray<SNTRUP_CRYPTO_BYTES> sharedKeyDec;
+
+    crypto_kem_sntrup953_keypair(publicKey.data(), secretKey.data());
+
+    crypto_kem_sntrup953_enc(cipherText.data(), sharedKeyEnc.data(), publicKey.data());
+    LOGGER(DEBUGGING, *zrtp::Utilities::hexdump("Shared key enc", sharedKeyEnc.data(), SNTRUP_CRYPTO_BYTES))
+
+    crypto_kem_sntrup953_dec(sharedKeyDec.data(), cipherText.data(), secretKey.data());
+    LOGGER(DEBUGGING, *zrtp::Utilities::hexdump("Shared key dec", sharedKeyDec.data(), SNTRUP_CRYPTO_BYTES))
+
+    ASSERT_TRUE(sharedKeyDec.equals(sharedKeyEnc, SNTRUP_CRYPTO_BYTES));
+}
+
+TEST_F(ZrtpKemCryptoTestFixture, simpleExchange_1277) {
+
+    secUtilities::SecureArray<SNTRUP_CRYPTO_SECRETKEYBYTES_1277> secretKey;
+    secUtilities::SecureArray<SNTRUP_CRYPTO_PUBLICKEYBYTES_1277> publicKey;
+    secUtilities::SecureArray<SNTRUP_CRYPTO_CIPHERTEXTBYTES_1277> cipherText;
+    secUtilities::SecureArray<SNTRUP_CRYPTO_BYTES> sharedKeyEnc;
+    secUtilities::SecureArray<SNTRUP_CRYPTO_BYTES> sharedKeyDec;
+
+    crypto_kem_sntrup1277_keypair(publicKey.data(), secretKey.data());
+
+    crypto_kem_sntrup1277_enc(cipherText.data(), sharedKeyEnc.data(), publicKey.data());
+    LOGGER(DEBUGGING, *zrtp::Utilities::hexdump("Shared key enc", sharedKeyEnc.data(), SNTRUP_CRYPTO_BYTES))
+
+    crypto_kem_sntrup1277_dec(sharedKeyDec.data(), cipherText.data(), secretKey.data());
+    LOGGER(DEBUGGING, *zrtp::Utilities::hexdump("Shared key dec", sharedKeyDec.data(), SNTRUP_CRYPTO_BYTES))
+
+    ASSERT_TRUE(sharedKeyDec.equals(sharedKeyEnc, SNTRUP_CRYPTO_BYTES));
 }
 

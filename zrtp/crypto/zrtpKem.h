@@ -46,11 +46,11 @@ constexpr size_t SNTRUP_CRYPTO_SECRETKEYBYTES_953 = 2254;
 constexpr size_t SNTRUP_CRYPTO_PUBLICKEYBYTES_953 = 1505;
 constexpr size_t SNTRUP_CRYPTO_CIPHERTEXTBYTES_953 = 1349;
 
-constexpr size_t SNTRUP_CRYPTO_SECRETKEYBYTES = 3059;
-constexpr size_t SNTRUP_CRYPTO_PUBLICKEYBYTES = 2067;
-constexpr size_t SNTRUP_CRYPTO_CIPHERTEXTBYTES = 1847;
+constexpr size_t SNTRUP_CRYPTO_SECRETKEYBYTES_1277 = 3059;
+constexpr size_t SNTRUP_CRYPTO_PUBLICKEYBYTES_1277 = 2067;
+constexpr size_t SNTRUP_CRYPTO_CIPHERTEXTBYTES_1277 = 1847;
 
-constexpr size_t CRYPTO_BYTES = 32;
+constexpr size_t SNTRUP_CRYPTO_BYTES = 32;
 
 
 /* from supercop/crypto_sort/int32/portable4/int32_minmax.inc */
