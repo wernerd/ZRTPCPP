@@ -167,13 +167,13 @@ TEST_F(BotanEc41417TestFixture, DiffieHellman) {
     ASSERT_TRUE(aliceDh.version() == "Botan");
 
     zrtp::SecureArray1k alicePubKey;
-    auto aliceKeyLen = aliceDh.fillInPubKeyBytes(alicePubKey);
+    auto aliceKeyLen = aliceDh.getPubKeyBytes(alicePubKey);
 
     // Setup with  DH code for Bob
     ZrtpDH bobDh(e414, ZrtpDH::Commit);
 
     zrtp::SecureArray1k bobPubKey;
-    bobDh.fillInPubKeyBytes(bobPubKey);
+    bobDh.getPubKeyBytes(bobPubKey);
 
     // Agree on keys. Alice first
     zrtp::SecureArray1k aliceSharedData;

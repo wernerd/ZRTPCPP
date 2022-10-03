@@ -171,20 +171,11 @@ PubKeyEnum::PubKeyEnum() : EnumBase(PubKeyAlgorithm) {
 #ifdef SUPPORT_NON_NIST
     insert(e255, 0, "Curve 255", nullptr, nullptr, None);
     insert(e414, 0, "Curve 414", nullptr, nullptr, None);
-#ifdef TWOTWO_SUPPORT
-    insert(sdh5, 0, "SIDHp503", nullptr, nullptr, None);
-    insert(sdh7, 0, "SIDHp751", nullptr, nullptr, None);
-#ifndef SIDH_COMPRESSED_WDI
-    insert(pq54, 0, "SIDHp503/Curve 414", nullptr, nullptr, None);
-    insert(pq64, 0, "SIDHp610/Curve 414", nullptr, nullptr, None);
-    insert(pq74, 0, "SIDHp751/Curve 414", nullptr, nullptr, None);
-#else
-    insert(pq54, 0, "SIDHp503-C/Curve 414", nullptr, nullptr, None);
-    insert(pq64, 0, "SIDHp610-C/Curve 414", nullptr, nullptr, None);
-    insert(pq74, 0, "SIDHp751-C/Curve 414", nullptr, nullptr, None);
+    insert(np06, 0, "SNTRUP 653/Curve 414", nullptr, nullptr, None);
+    insert(np09, 0, "SNTRUP 953/Curve 414", nullptr, nullptr, None);
+    insert(np12, 0, "SNTRUP 1277/Curve 414", nullptr, nullptr, None);
 #endif
-#endif
-#endif
+
 }
 
 /**

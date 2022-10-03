@@ -176,8 +176,6 @@ private:
 
     int32_t transportOverhead = RTP_HEADER_LENGTH;
 
-    bool isZrtp2022Supported = false;
-
 public:
     // region ZrtpStateEngine functions
 
@@ -208,8 +206,6 @@ public:
     void setTransportOverhead(int32_t overhead) override { transportOverhead = overhead; }
 
     void setMultiStream(bool multi) override { multiStream = multi; }
-
-    void setZrtp2022(bool supported) override { isZrtp2022Supported = supported; };
     // endregion
 private:
     /// Switch to the specified state

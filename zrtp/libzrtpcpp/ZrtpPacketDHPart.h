@@ -32,7 +32,7 @@
  * Implement the DHPart packet.
  *
  * The ZRTP message DHPart. The implementation sends this
- * to exchange the Diffie-Helman public keys and the shared
+ * to exchange the Diffie-Hellman public keys and the shared
  * secrets between the two parties.
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
@@ -40,7 +40,7 @@
 
 class __EXPORT ZrtpPacketDHPart : public ZrtpPacketBase {
 
- public:
+public:
     /// Creates a DHPart packet no data, must use setPubKeyType(...)
     ZrtpPacketDHPart();
 
@@ -98,19 +98,19 @@ class __EXPORT ZrtpPacketDHPart : public ZrtpPacketBase {
     /// Set first MAC, fixed length byte array
     void setHMAC(zrtp::ImplicitDigest const & hmac) { memcpy(pv+roundUp, hmac.data(), 2*ZRTP_WORD_SIZE); };
 
- private:
+private:
     void initialize();
     uint8_t  * pv = nullptr;                  ///< points to public key value inside DH message
     DHPart_t* DHPartHeader = nullptr;         ///< points to DH message structure
     size_t dhLength = 0;                      ///< length of public key
     size_t roundUp = 0;                       ///< Public key length, rounded up to ZRTP_WORD_SIZE
 
-     // SupportedPubKeys pktype;
-     // DHPart packet is of variable length. Its maximum size is 188 words:
-     // - 21 words fixed size
-     // - up to 167 words variable part, depending on DH algorithm (SIDHp7 + E414 = 668 bytes -> 167 Words)
-     //   leads to a maximum of 4*188=752 bytes.
-     uint8_t data[1000] = {};       // large enough to hold a full-blown DHPart packet
+    // DHPart packet is of variable length:
+    // - 21 words fixed size
+    // - up to 993 words variable part, depending on algorithm (max: NP12 + EC414)
+    //   leads to a maximum of 4*1019=4076 bytes.
+    // - CRC (1 word)
+    uint8_t data[4100] = {};       // large enough to hold a full-blown DHPart packet (DHPart1 only)
 };
 
 /**

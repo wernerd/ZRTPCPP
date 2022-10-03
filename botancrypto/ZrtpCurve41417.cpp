@@ -129,7 +129,7 @@ namespace Botan {
         // copy over the X-coordinate data
         memcpy(&coordinates[1], compressedData + 1, Curve41417_PrivateKey::COORDINATE_BYTES);
 
-        // append the computed Y-coordinate
+        // append the computed Y-coordinate (encode BigInt value into bytes)
         BigInt::encode_1363(
                 &coordinates[1 + Curve41417_PrivateKey::COORDINATE_BYTES],
                 Curve41417_PrivateKey::COORDINATE_BYTES,

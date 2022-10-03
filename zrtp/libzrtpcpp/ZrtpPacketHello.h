@@ -186,11 +186,11 @@ class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
 
      uint32_t computedLength = 0;
 
-     // Hello packet is of variable length. It maximum size is 46 words:
+     // Hello packet is of variable length. Its maximum size is 46 words:
      // - 20 words fixed size
      // - up to 35 words variable part, depending on number of algorithms
      // leads to a maximum of 4*55=220 bytes.
-     uint8_t data[256] = {0};       // large enough to hold a full blown Hello packet
+     uint8_t data[256] = {0};       // large enough to hold a full-blown Hello packet
 };
 
 /**

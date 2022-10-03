@@ -68,23 +68,23 @@ public:
 };
 
 TEST_F(ZrtpNewCryptoTestFixture, simpleAliceBob) {
-    ZrtpDH aliceDh(dh3k, ZrtpDH::Commit);
-    ZrtpDH bobDh(dh3k, ZrtpDH::Commit);
+    ZrtpDH aliceDh(dh3k);
+    ZrtpDH bobDh(dh3k);
 
-    zrtp::SecureArray1k alicePubKey;
-    auto aliceKeyLen = aliceDh.fillInPubKeyBytes(alicePubKey);
+    zrtp::SecureArray4k alicePubKey;
+    auto aliceKeyLen = aliceDh.getPubKeyBytes(alicePubKey, ZrtpDH::Ignore);
 
-    zrtp::SecureArray1k bobPubKey;
-    auto bobKeyLen = bobDh.fillInPubKeyBytes(bobPubKey);
+    zrtp::SecureArray4k bobPubKey;
+    auto bobKeyLen = bobDh.getPubKeyBytes(bobPubKey, ZrtpDH::Ignore);
 
     ASSERT_EQ(aliceKeyLen, bobKeyLen);
 
     zrtp::SecureArray1k aliceSharedData;
-    aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data(), aliceSharedData);
+    aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data(), aliceSharedData, ZrtpDH::Ignore);
     ASSERT_GT(aliceKeyLen, 0);
 
     zrtp::SecureArray1k bobSharedData;
-    bobKeyLen = bobDh.computeSecretKey(alicePubKey.data(), bobSharedData);
+    bobKeyLen = bobDh.computeSecretKey(alicePubKey.data(), bobSharedData, ZrtpDH::Ignore);
     ASSERT_GT(bobKeyLen, 0);
 
     ASSERT_EQ(aliceKeyLen, bobKeyLen);
@@ -124,9 +124,9 @@ TEST_F(ZrtpNewCryptoTestFixture, botanSimple) {
 TEST_F(ZrtpNewCryptoTestFixture, mixedLibs) {
 
     // Setup with existing DH code fpr Alice
-    ZrtpDH aliceDh(dh3k, ZrtpDH::Commit);
-    zrtp::SecureArray1k alicePubKey;
-    aliceDh.fillInPubKeyBytes(alicePubKey);
+    ZrtpDH aliceDh(dh3k);
+    zrtp::SecureArray4k alicePubKey;
+    aliceDh.getPubKeyBytes(alicePubKey, ZrtpDH::Ignore);
 
     // Using Botan lib for Bob
     ZrtpBotanRng rng;
@@ -141,7 +141,7 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedLibs) {
     // Agree on keys. Alice first
     zrtp::SecureArray1k aliceSharedData;
     ASSERT_EQ(1, aliceDh.checkPubKey(bobPubKey.data()));  // check must return OK
-    auto aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data(), aliceSharedData);
+    auto aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data(), aliceSharedData, ZrtpDH::Ignore);
     ASSERT_GT(aliceKeyLen, 0);
 
     Botan::PK_Key_Agreement dhBob(keyBob,rng, kdf);
@@ -154,10 +154,10 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedLibs) {
 
 TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh256) {
     // Setup with existing DH code fpr Alice
-    ZrtpDH aliceDh(ec25, ZrtpDH::Commit);
+    ZrtpDH aliceDh(ec25);
 
-    zrtp::SecureArray1k alicePubTmp;
-    auto aliceKeyLen = aliceDh.fillInPubKeyBytes(alicePubTmp);
+    zrtp::SecureArray4k alicePubTmp;
+    auto aliceKeyLen = aliceDh.getPubKeyBytes(alicePubTmp, ZrtpDH::Ignore);
 
     vector<uint8_t > alicePubKey(aliceKeyLen+1);
     alicePubKey.at(0) = 4;      // 4 -> magic number, shows x,y coordinates are in uncompressed format
@@ -178,7 +178,7 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh256) {
     ASSERT_EQ(0, aliceDh.checkPubKey(bobPubKey.data()));    // Force error
     ASSERT_EQ(1, aliceDh.checkPubKey(bobPubKey.data()+1));  // check must return OK
 
-    aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data()+1, aliceSharedData);
+    aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data()+1, aliceSharedData, ZrtpDH::Ignore);
     ASSERT_GT(aliceKeyLen, 0);
 
     Botan::secure_vector<uint8_t> sB = ecdhBob.derive_key(32, alicePubKey).bits_of();
@@ -189,10 +189,10 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh256) {
 
 TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh384) {
 // Setup with existing DH code fpr Alice
-    ZrtpDH aliceDh(ec38, ZrtpDH::Commit);
+    ZrtpDH aliceDh(ec38);
 
-    zrtp::SecureArray1k alicePubTmp;
-    auto aliceKeyLen = aliceDh.fillInPubKeyBytes(alicePubTmp);
+    zrtp::SecureArray4k alicePubTmp;
+    auto aliceKeyLen = aliceDh.getPubKeyBytes(alicePubTmp, ZrtpDH::Ignore);
 
     vector<uint8_t > alicePubKey(aliceKeyLen+1);
     alicePubKey.at(0) = 4;      // 4 -> magic number, shows x,y coordinates are in uncompressed format
@@ -212,7 +212,7 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh384) {
     zrtp::SecureArray1k aliceSharedData;
     ASSERT_EQ(0, aliceDh.checkPubKey(bobPubKey.data()));    // Force error
     ASSERT_EQ(1, aliceDh.checkPubKey(bobPubKey.data()+1));  // check must return OK
-    aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data()+1, aliceSharedData);
+    aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data()+1, aliceSharedData, ZrtpDH::Ignore);
     ASSERT_GT(aliceKeyLen, 0);
 
     Botan::secure_vector<uint8_t> sB = ecdhBob.derive_key(48, alicePubKey).bits_of();
@@ -223,10 +223,10 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh384) {
 
 TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh25519) {
 // Setup with existing DH code fpr Alice
-    ZrtpDH aliceDh(e255, ZrtpDH::Commit);
+    ZrtpDH aliceDh(e255);
 
-    zrtp::SecureArray1k alicePubKey;
-    aliceDh.fillInPubKeyBytes(alicePubKey);
+    zrtp::SecureArray4k alicePubKey;
+    aliceDh.getPubKeyBytes(alicePubKey, ZrtpDH::Ignore);
 
 // Using Botan lib for Bob, generate curve25519 keys
     ZrtpBotanRng rng;
@@ -238,7 +238,7 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh25519) {
 // Agree on keys. Alice first
     zrtp::SecureArray1k aliceSharedData;
     ASSERT_EQ(1, aliceDh.checkPubKey(bobPubKey.data()));  // check must return OK
-    auto aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data(), aliceSharedData);
+    auto aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data(), aliceSharedData, ZrtpDH::Ignore);
     ASSERT_GT(aliceKeyLen, 0);
 
     Botan::secure_vector<uint8_t> sB = ecdhBob.derive_key(32, alicePubKey.data(), alicePubKey.size()).bits_of();
@@ -513,10 +513,10 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedTwofishCfb256) {
 
 TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh41417) {
 // Setup with existing DH code fpr Alice
-    ZrtpDH aliceDh(e414, ZrtpDH::Commit);
+    ZrtpDH aliceDh(e414);
 
-    zrtp::SecureArray1k alicePubTmp;
-    auto aliceKeyLen = aliceDh.fillInPubKeyBytes(alicePubTmp);
+    zrtp::SecureArray4k alicePubTmp;
+    auto aliceKeyLen = aliceDh.getPubKeyBytes(alicePubTmp, ZrtpDH::Ignore);
 
     vector<uint8_t > alicePubKey(aliceKeyLen+1);
     alicePubKey.at(0) = 4;      // 4 -> magic number, shows x,y coordinates are in uncompressed format
@@ -533,7 +533,7 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh41417) {
     zrtp::SecureArray1k aliceSharedData;
     ASSERT_EQ(0, aliceDh.checkPubKey(bobPubKey.data()));    // Force error
     ASSERT_EQ(1, aliceDh.checkPubKey(bobPubKey.data()+1));  // check must return OK, secret pre-computed now
-    aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data()+1, aliceSharedData);
+    aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data()+1, aliceSharedData, ZrtpDH::Ignore);
     ASSERT_GT(aliceKeyLen, 0);
 
     Botan::secure_vector<uint8_t> sB = ecdhBob.derive_key(52, alicePubKey.data(), alicePubKey.size()).bits_of();

@@ -144,7 +144,7 @@ typedef struct Commit {
     uint8_t	pubkey[ZRTP_WORD_SIZE];         ///< Committed key agreement algorithm
     uint8_t	sas[ZRTP_WORD_SIZE];            ///< Committed SAS algorithm
     uint8_t	hvi[HVI_SIZE];                  ///< Hash value Initiator - chap 4.4.1.1
-    uint8_t	hmac[HMAC_SIZE];                ///< MAC of the Commit message
+//    uint8_t	hmac[HMAC_SIZE];                ///< MAC of the Commit message
 } Commit_t;
 
 /**
@@ -153,7 +153,7 @@ typedef struct Commit {
 typedef struct CommitPacket {
     zrtpPacketHeader_t hdr;         ///< ZRTP Header
     Commit_t commit;                ///< Commit message
-    uint8_t crc[ZRTP_WORD_SIZE];    ///< CRC of ZRTP message
+//    uint8_t crc[ZRTP_WORD_SIZE];    ///< CRC of ZRTP message
 } CommitPacket_t;
 
 /**

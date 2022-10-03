@@ -37,6 +37,7 @@ option(SQLITE "Use SQLite DB as backend for ZRTP cache." OFF)
 option(SQLCIPHER "Use SQLCipher DB as backend for ZRTP cache." OFF)
 option(SRTP "Include SRTP when not building for CCRTP." OFF)
 option(AXO "Include Axolotl support when not building for CCRTP." OFF)
+option(SNTRUP "Enable SNTRUP algorithm support (PQ)." OFF)
 option(TESTS "Generate Unit test." OFF)
 
 if (TESTS)
@@ -190,9 +191,6 @@ if (NOT EMBEDDED)
     endif()
 endif()
 
-# necessary and required modules checked, ready to generate config.h in top-level build directory
-configure_file(config.h.cmake ${CMAKE_BINARY_DIR}/config.h)
-
 if(CMAKE_COMPILER_IS_GNUCXX)
     add_compile_definitions(NEW_STDCPP)
 endif()
@@ -200,6 +198,14 @@ endif()
 if (AXO)
     add_compile_definitions(AXO_SUPPORT)
 endif()
+
+if (SNTRUP)
+    add_compile_definitions(TWOTWO_SUPPORT)
+endif()
+
+# necessary and required modules checked, ready to generate config.h in top-level build directory
+configure_file(config.h.cmake ${CMAKE_BINARY_DIR}/config.h)
+
 
 if (TESTS)
     add_compile_definitions(UNIT_TESTS)
@@ -243,7 +249,7 @@ FetchContent_MakeAvailable(${botan_lc} ${gtest_fetch})
 # to make sure these includes are taken first - it contains config.h
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/zrtp ${CMAKE_CURRENT_SOURCE_DIR}/srtp)
-## include_directories (${CMAKE_CURRENT_SOURCE_DIR}/botancrypto/${botan_all})
+
 add_compile_definitions(SUPPORT_NON_NIST)
 
 if (SRTP)

@@ -20,9 +20,10 @@
 
 #include <cstdlib>
 
-#include <libzrtpcpp/ZRtp.h>
-#include <libzrtpcpp/ZrtpStateEngineImpl.h>
 #include <mutex>
+#include <thread>
+#include "libzrtpcpp/ZRtp.h"
+#include "libzrtpcpp/ZrtpStateEngineImpl.h"
 
 using namespace std;
 using namespace GnuZrtpCodes;
@@ -150,7 +151,7 @@ void ZrtpStateEngineImpl::processEvent(Event *ev) {
 
 
 void ZrtpStateEngineImpl::evInitial() {
-
+    LOGGER(DEBUGGING, "Enter ", __func__)
     if (event->type == ZrtpInitial) {
         auto *hello = parent->prepareHello();
         sentVersion = hello->getVersionInt();
@@ -212,6 +213,7 @@ void ZrtpStateEngineImpl::evInitial() {
  *
  */
 void ZrtpStateEngineImpl::evDetect() {
+    LOGGER(DEBUGGING, "Enter ", __func__)
 
     /*
      * First check the general event type, then discriminate
@@ -248,6 +250,10 @@ void ZrtpStateEngineImpl::evDetect() {
          */
         if (msgType == HelloMsg) {
             ZrtpPacketHello hpkt(pkt);
+
+            if (parent->isNpAlgorithmActive) {
+                parent->saveOtherHelloData(hpkt.getHeaderBase(), hpkt.getLength() * ZRTP_WORD_SIZE);
+            }
 
             cancelTimer();
 
@@ -307,8 +313,8 @@ void ZrtpStateEngineImpl::evDetect() {
                 parent->zrtpNegotiationFailed(Severe, SevereCannotSend);
                 return;
             }
-            // Use peer's Hello packet to create my commit packet, store it 
-            // for possible later usage in state AckSent
+            // Use peer's Hello packet to create my commit packet, store commit packet
+            // for possible later use in state AckSent
             commitPkt = parent->prepareCommit(&hpkt, &errorCode);
 
             nextState(AckSent);
@@ -368,7 +374,7 @@ void ZrtpStateEngineImpl::evDetect() {
  * Our peer must acknowledge the Hello with HelloAck. In earlier versions 
  * also a Commit was a valid packet thus the code covers this.
  * Figure 1 in the RFC shows the HelloAck, chapter 7 states that a Commit 
- * may be send to acknowledge Hello. There is one constraint when using a Commit to
+ * may be sent to acknowledge Hello. There is one constraint when using a Commit to
  * acknowledge Hello: refer to chapter 4.1 that requires that both parties
  * have completed the Hello/HelloAck discovery handshake. This implies that 
  * only message F4 may be replaced by a Commit. This constraint guarantees
@@ -391,6 +397,7 @@ void ZrtpStateEngineImpl::evDetect() {
  *   happen if the other peer sends Hello only (maybe due to network problems)
  */
 void ZrtpStateEngineImpl::evAckSent() {
+    LOGGER(DEBUGGING, "Enter ", __func__)
     /*
      * First check the general event type, then discriminate
      * the real event.
@@ -429,7 +436,7 @@ void ZrtpStateEngineImpl::evAckSent() {
         /*
          * Hello:
          * - peer didn't receive our HelloAck
-         * - repeat HelloAck/Hello response:
+         * - repeat HelloAck response:
          *  -- get HelloAck packet, send it
          *  -- The timeout trigger of T1 sends our Hello packet
          *  -- stay in state AckSent
@@ -543,6 +550,7 @@ void ZrtpStateEngineImpl::evAckSent() {
  *  aligned to the ZRTP specification
  */
 void ZrtpStateEngineImpl::evAckDetected() {
+    LOGGER(DEBUGGING, "Enter ", __func__)
     if (event->type == ZrtpPacket) {
         uint32_t errorCode = 0;
         auto const *pkt = event->packet;
@@ -562,6 +570,10 @@ void ZrtpStateEngineImpl::evAckDetected() {
             // Commit is not send to the peer. We need to do this to check the
             // Hello packet and prepare the shared secret stuff.
             ZrtpPacketHello hpkt(pkt);
+
+            if (parent->isNpAlgorithmActive) {
+                parent->saveOtherHelloData(hpkt.getHeaderBase(), hpkt.getLength() * ZRTP_WORD_SIZE);
+            }
             ZrtpPacketCommit *commit = parent->prepareCommit(&hpkt, &errorCode);
 
             // Something went wrong during processing of the Hello packet, for
@@ -635,6 +647,7 @@ void ZrtpStateEngineImpl::evAckDetected() {
  *   start any timer, we are Responder.
  */
 void ZrtpStateEngineImpl::evWaitCommit() {
+    LOGGER(DEBUGGING, "Enter ", __func__)
 
     if (event->type == ZrtpPacket) {
         uint32_t errorCode = 0;
@@ -721,6 +734,7 @@ void ZrtpStateEngineImpl::evWaitCommit() {
  */
 
 void ZrtpStateEngineImpl::evWaitDHPart1() {
+    LOGGER(DEBUGGING, "Enter ", __func__)
 
     if (event->type == ZrtpPacket) {
         uint32_t errorCode = 0;
@@ -818,7 +832,7 @@ void ZrtpStateEngineImpl::evWaitDHPart1() {
             sentPacket = nullptr;
             ZrtpPacketDHPart dpkt(pkt);
 
-            if (!isZrtp2022Supported) {
+            if (!parent->isNpAlgorithmActive) {
                 ZrtpPacketDHPart *dhPart2 = parent->prepareDHPart2(&dpkt, &errorCode);
 
                 // Something went wrong during processing of the DHPart1 packet
@@ -925,6 +939,7 @@ void ZrtpStateEngineImpl::evWaitDHPart1() {
  *   and switch to state WaitConfirm2.
  */
 void ZrtpStateEngineImpl::evWaitDHPart2() {
+    LOGGER(DEBUGGING, "Enter ", __func__)
 
     if (event->type == ZrtpPacket) {
         uint32_t errorCode = 0;
@@ -948,7 +963,7 @@ void ZrtpStateEngineImpl::evWaitDHPart2() {
          */
         if (msgType == DHPart2Msg) {
             ZrtpPacketDHPart dpkt(pkt);
-            if (!isZrtp2022Supported) {
+            if (!parent->isNpAlgorithmActive) {
                 ZrtpPacketConfirm *confirm = parent->prepareConfirm1(&dpkt, &errorCode);
 
                 if (confirm == nullptr) {
@@ -963,7 +978,7 @@ void ZrtpStateEngineImpl::evWaitDHPart2() {
                     sendFailed();       // returns to state Initial
                 }
             } else {
-                // Pack DHPart2 and Confirm1 into on multi-fragment packet, wait for Confirm1 message
+                // DHPart2 and Confirm1 were packed into on multi-fragment packet, wait for Confirm1 message
                 // This message is in same packet, thus will follow immediately. Send the Confirm2 message.
                 LOGGER(ERROR_LOG, "ZRTP 2022 no yet implemented")
                 // TODO: implement ZRTP 2022: Check DHPart2. Nothing to prepare - advance state only
@@ -1002,6 +1017,7 @@ void ZrtpStateEngineImpl::evWaitDHPart2() {
  *   Confirm2 packet and switch to state WaitConfAck.
  */
 void ZrtpStateEngineImpl::evWaitConfirm1() {
+    LOGGER(DEBUGGING, "Enter ", __func__)
 
     if (event->type == ZrtpPacket) {
         uint32_t errorCode = 0;
@@ -1046,7 +1062,7 @@ void ZrtpStateEngineImpl::evWaitConfirm1() {
         }
     } else if (event->type == Timer) {
         // If ZRTP 2022 then we are in Responder mode: no timeout expected
-        if (isZrtp2022Supported) {
+        if (parent->isNpAlgorithmActive) {
             LOGGER(ERROR_LOG, "Timeout in WaitConfirm1 but ZRTP 2022 is active")
             return;
         }
@@ -1091,6 +1107,7 @@ void ZrtpStateEngineImpl::evWaitConfirm1() {
  *   and repeat sending multi-frame packet.
  */
 void ZrtpStateEngineImpl::evWaitConfirm2() {
+    LOGGER(DEBUGGING, "Enter ", __func__)
 
     if (event->type == ZrtpPacket) {
         uint32_t errorCode = 0;
@@ -1102,7 +1119,7 @@ void ZrtpStateEngineImpl::evWaitConfirm2() {
          * - stay in state
          */
         if (msgType == DHPart2Msg || (multiStream && msgType == CommitMsg)) {
-            if (isZrtp2022Supported) {
+            if (parent->isNpAlgorithmActive) {
                 LOGGER(ERROR_LOG, "WaitConfirm2 received illegal message in ZRTP 2022 mode.")
             }
             if (!parent->sendPacketZRTP(sentPacket)) {
@@ -1141,7 +1158,7 @@ void ZrtpStateEngineImpl::evWaitConfirm2() {
         }
     } else if (event->type == Timer) {
         // If ZRTP 2022 then we are in Initiator mode, need to handle timeout
-        if (!isZrtp2022Supported) {
+        if (!parent->isNpAlgorithmActive) {
             LOGGER(ERROR_LOG, "Timeout in WaitConfirm2 but ZRTP 2022 is not active")
             return;
         }
@@ -1181,11 +1198,11 @@ void ZrtpStateEngineImpl::evWaitConfirm2() {
  *   May happen due to multi-frame packet DHPart2 and Confirm1
  */
 void ZrtpStateEngineImpl::evWaitConfAck() {
-
+    LOGGER(DEBUGGING, "Enter ", __func__)
 
     if (event->type == ZrtpPacket) {
 
-        if (isZrtp2022Supported) {
+        if (parent->isNpAlgorithmActive) {
             if (msgType == DHPart2Msg) {
                 if (!parent->sendPacketZRTP(sentPacket)) {
                     sendFailed();             // returns to state Initial
@@ -1265,7 +1282,7 @@ void ZrtpStateEngineImpl::evWaitClearAck() {
  */
 
 void ZrtpStateEngineImpl::evWaitErrorAck() {
-
+    LOGGER(DEBUGGING, "Enter ", __func__)
 
     if (event->type == ZrtpPacket) {
         /*
@@ -1300,7 +1317,7 @@ void ZrtpStateEngineImpl::evWaitErrorAck() {
 }
 
 void ZrtpStateEngineImpl::evSecureState() {
-
+    LOGGER(DEBUGGING, "Enter ", __func__)
     /*
      * Handle a possible sub-state. If sub-state handling was ok just return.
      */
@@ -1359,6 +1376,7 @@ void ZrtpStateEngineImpl::evSecureState() {
 }
 
 bool ZrtpStateEngineImpl::subEvWaitRelayAck() {
+    LOGGER(DEBUGGING, "Enter ", __func__)
     /*
      * First check the general event type, then discriminate the real event.
      */
@@ -1409,6 +1427,7 @@ int32_t ZrtpStateEngineImpl::nextTimer(zrtpTimer_t *t) {
 }
 
 void ZrtpStateEngineImpl::sendErrorPacket(uint32_t errorCode) {
+    LOGGER(DEBUGGING, "Enter ", __func__)
     cancelTimer();
 
     ZrtpPacketError *err = parent->prepareError(errorCode);

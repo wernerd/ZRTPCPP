@@ -28,8 +28,9 @@
  * @{
  */
 
-#include <libzrtpcpp/ZrtpPacketBase.h>
-#include <common/typedefs.h>
+#include "libzrtpcpp/ZrtpPacketBase.h"
+#include "common/typedefs.h"
+#include "crypto/zrtpKem.h"
 
 // PRSH here only for completeness. We don't support PRSH in the other ZRTP parts.
 #define COMMIT_DH_EX      29
@@ -47,7 +48,7 @@
  */
 class __EXPORT ZrtpPacketCommit : public ZrtpPacketBase {
 
- public:
+public:
     typedef enum _commitType {
         DhExchange =  1,
         MultiStream = 2
@@ -90,14 +91,16 @@ class __EXPORT ZrtpPacketCommit : public ZrtpPacketBase {
     [[nodiscard]] uint8_t* getH2() const         { return commitHeader->hashH2; };
 
     /// Get pointer to MAC field, a fixed length byte array
-    [[nodiscard]] uint8_t* getHMAC() const       { return commitHeader->hmac; };
+    [[nodiscard]] uint8_t* getHMAC() const       { return pv+roundUp; };
 
     /// Get pointer to MAC field during multi-stream mode, a fixed length byte array
-    [[maybe_unused]] [[nodiscard]] uint8_t* getHMACMulti() const  { return commitHeader->hmac-4*ZRTP_WORD_SIZE; };
+    [[maybe_unused]] [[nodiscard]] uint8_t* getHMACMulti() const  { return commitHeader->hvi; };
 
     /// Check if packet length makes sense.
-    [[nodiscard]] bool isLengthOk(commitType type) const  {int32_t len = getLength();
-                                        return ((type == DhExchange) ? len == COMMIT_DH_EX : len == COMMIT_MULTI);}
+    [[nodiscard]] bool isLengthOk(commitType type) const;
+
+    /// Get pointer to public key value, variable length byte array
+    [[nodiscard]] uint8_t* getPv() const            { return pv; }
 
     /// Set hash algorithm type field, fixed length character field
     void setHashType(uint8_t const * text)    { memcpy(commitHeader->hash, text, ZRTP_WORD_SIZE); };
@@ -126,15 +129,32 @@ class __EXPORT ZrtpPacketCommit : public ZrtpPacketBase {
     /// Set hashH2 field, a fixed length byte array
     void setH2(uint8_t const * hash)          { memcpy(commitHeader->hashH2, hash, sizeof(commitHeader->hashH2)); };
 
-    /// Set MAC field, a fixed length byte array
-    void setHMAC(zrtp::ImplicitDigest const & hmac) { memcpy(commitHeader->hmac, hmac.data(), sizeof(commitHeader->hmac)); };
+    /// Set first MAC, fixed length byte array, copied after the PKI (pv) data
+    void setHMAC(zrtp::ImplicitDigest const & hmac) { memcpy(pv+roundUp, hmac.data(), HMAC_SIZE); };
 
     /// Set MAC field during multi-stream mode, a fixed length byte array - triggers compiler warning, but it's OK
-    void setHMACMulti(zrtp::ImplicitDigest const & hmac) { uint8_t *p = commitHeader->hmac-4*ZRTP_WORD_SIZE; memcpy(p, hmac.data(), sizeof(commitHeader->hmac)); };
+    void setHMACMulti(zrtp::ImplicitDigest const & hmac) { uint8_t *p = commitHeader->hvi; memcpy(p, hmac.data(), HMAC_SIZE); };
 
- private:
-     Commit_t* commitHeader;     ///< Points to Commit message part
-     CommitPacket_t data = {};
+    /// Set key length and compute overall packet length
+    void setPacketLength(size_t pubKeyLen);
+
+    /// Set public key value(s), variable length byte array
+    void setPv(uint8_t const * text)         { memcpy(pv, text, pvLength); };
+
+
+private:
+    uint8_t * pv = nullptr;                   ///< points to public key values inside Commit message (after HVI)
+    size_t pvLength = 0;                      ///< length of public key data
+    size_t roundUp = 0;                       ///< Public key length, rounded up to ZRTP_WORD_SIZE
+
+    Commit_t* commitHeader = nullptr;         ///< Points to Commit message part
+
+    // Commit packet is of variable length.
+    // - 26 words fixed size
+    // - up to 993 words variable part, depending on algorithm (max: NP12 + EC414)
+    //   leads to a maximum of 4*1019=4076 bytes.
+    // - CRC (1 word)
+    uint8_t data[4100] = {};       // large enough to hold a full-blown commit packet
 };
 
 /**

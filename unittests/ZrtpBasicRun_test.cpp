@@ -30,8 +30,8 @@ using testing::SaveArg;
 using testing::DoAll;
 using testing::Eq;
 
-string aliceId;
-string bobId;
+string aliceId("alice");
+string bobId("bob");
 uint8_t aliceZid[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
 uint8_t bobZid[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
 
@@ -53,26 +53,25 @@ public:
     void SetUp() override {
         // code here will execute just before the test ensues
         LOGGER_INSTANCE setLogLevel(WARNING);
-        aliceId = "Alice";
-        bobId = "Bob";
     }
 
     void TearDown() override {
         // code here will be called just after the test completes
         // ok to through exceptions from here if need be
-        aliceId.clear();
-        bobId.clear();
-
-        if (aliceThread.joinable()) aliceThread.join();
+        if (aliceThread.joinable()) {
+            aliceThread.join();
+        }
+         //aliceThread.
         aliceQueue.clear();
 
-        if (bobThread.joinable()) bobThread.join();
+        if (bobThread.joinable()) {
+            bobThread.join();
+        }
         bobQueue.clear();
     }
 
     ~ZrtpBasicRunFixture( ) override {
         // cleanup any pending stuff, but no exceptions allowed
-        LOGGER_INSTANCE setLogLevel(VERBOSE);
     }
 
     // region Alice functions
@@ -101,6 +100,8 @@ public:
         memcpy(data.get(), packetData, length);
         pair<unique_ptr<uint8_t[]>, size_t> dataPair(move(data), length);
 
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
         unique_lock<mutex> queueLock(aliceQueueMutex);
         aliceQueue.push_back(move(dataPair));
         queueLock.unlock();
@@ -108,6 +109,7 @@ public:
     }
 
     static void aliceZrtpRun(ZrtpBasicRunFixture *thiz) {
+        LOGGER(DEBUGGING, "Alice thread id: ",  std::this_thread::get_id())
         thiz->aliceZrtp->startZrtpEngine();
         unique_lock<mutex> queueLock(thiz->aliceQueueMutex);
         while (thiz->aliceThreadRun) {
@@ -239,7 +241,7 @@ TEST_F(ZrtpBasicRunFixture, alice_check_thread_start_stop) {
     aliceSetupThread(configure);
     aliceStartThread();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));  // time to settle thread before stopping it
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));  // time to settle thread before stopping it
     aliceStopThread();
 
     ASSERT_EQ(0, syncs);
@@ -570,7 +572,7 @@ TEST_F(ZrtpBasicRunFixture, full_run_test_ec384) {
     ASSERT_EQ(aliceSas, bobSas);
 }
 
-#ifdef TWOTWO_SUPPORT
+#if 0
 TEST_F(ZrtpBasicRunFixture, full_run_test_pq74) {
     // Configure with mandatory algorithms only
     auto aliceConfigure = make_shared<ZrtpConfigure>();

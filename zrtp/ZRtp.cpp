@@ -18,23 +18,24 @@
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 #include <sstream>
+#include <thread>
 
-#include <crypto/zrtpDH.h>
-#include <crypto/hmac256.h>
-#include <crypto/sha256.h>
-#include <crypto/hmac384.h>
-#include <crypto/sha384.h>
+#include "crypto/zrtpDH.h"
+#include "crypto/hmac256.h"
+#include "crypto/sha256.h"
+#include "crypto/hmac384.h"
+#include "crypto/sha384.h"
 
-#include <crypto/skeinMac256.h>
-#include <crypto/skein256.h>
-#include <crypto/skeinMac384.h>
-#include <crypto/skein384.h>
+#include "crypto/skeinMac256.h"
+#include "crypto/skein256.h"
+#include "crypto/skeinMac384.h"
+#include "crypto/skein384.h"
 
-#include <libzrtpcpp/ZRtp.h>
-#include <libzrtpcpp/ZrtpStateEngineImpl.h>
-#include <libzrtpcpp/Base32.h>
-#include <libzrtpcpp/EmojiBase32.h>
-#include <common/Utilities.h>
+#include "libzrtpcpp/ZRtp.h"
+#include "libzrtpcpp/ZrtpStateEngineImpl.h"
+#include "libzrtpcpp/Base32.h"
+#include "libzrtpcpp/EmojiBase32.h"
+#include "common/Utilities.h"
 
 using namespace GnuZrtpCodes;
 using namespace std;
@@ -292,15 +293,16 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
             *errMsg = UnsuppHashType;
             return nullptr;
         }
-        // If other party offered PQ algorithms then these are top of the list
+        // If other party offered NP algorithms then these are top of the list
         // and selected. To give some more time to compute the SIDH keys increase
         // T2 timer
         // TODO Check if this is necessary with KEM
-//        if (*(int32_t*)(pubKey->getName()) == *(int32_t*)pq54 ||
-//            *(int32_t*)(pubKey->getName()) == *(int32_t*)pq64 ||
-//            *(int32_t*)(pubKey->getName()) == *(int32_t*)pq74) {
-//            stateEngine->adjustT2Sidh(300);                // first timeout after 300ms
-//        }
+        if (*(int32_t*)(pubKey->getName()) == *(int32_t*)np06 ||
+            *(int32_t*)(pubKey->getName()) == *(int32_t*)np09 ||
+            *(int32_t*)(pubKey->getName()) == *(int32_t*)np12) {
+            // stateEngine->adjustT2Sidh(300);                // first timeout after 300ms
+            isNpAlgorithmActive = true;
+        }
 
         if (cipher == nullptr)                             // public key selection may have set the cipher already
             cipher = findBestCipher(hello, pubKey);
@@ -323,9 +325,9 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
 
     // Modify here when introducing new DH key agreement, for example
     // elliptic curves.
-    dhContext = make_unique<ZrtpDH>(pubKey->getName(), ZrtpDH::Commit);
+    dhContext = make_unique<ZrtpDH>(pubKey->getName());
 
-    dhContext->fillInPubKeyBytes(pubKeyBytes);
+    dhContext->getPubKeyBytes(pubKeyBytes, ZrtpDH::Commit);
     sendInfo(Info, InfoCommitDHGenerated);
 
     // Prepare IV data that we will use during confirm packet encryption.
@@ -353,14 +355,20 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     // is required to compute the HVI (Hash Value Initiator), refer to
     // chapter 5.4.1.1.
 
-    // Fill the values in the DHPart2 packet
-    zrtpDH2.setPacketLength(pubKeyBytes.size());
+    // Fill the values in the DHPart2 packet. When using NP algorithms use the optimized
+    // protocol flow and the new packet set up for DHPart2 which does _not_ contain any
+    // public key data
+    if (!isNpAlgorithmActive) {
+        zrtpDH2.setPacketLength(pubKeyBytes.size());
+        zrtpDH2.setPv(pubKeyBytes.data());
+    } else {
+        zrtpDH2.setPacketLength(0);
+    }
     zrtpDH2.setMessageType((uint8_t*)DHPart2Msg);
     zrtpDH2.setRs1Id(rs1IDi);
     zrtpDH2.setRs2Id(rs2IDi);
     zrtpDH2.setAuxSecretId(auxSecretIDi);
     zrtpDH2.setPbxSecretId(pbxSecretIDi);
-    zrtpDH2.setPv(pubKeyBytes.data());
     zrtpDH2.setH1(H1);
 
     uint32_t len = zrtpDH2.getLength() * ZRTP_WORD_SIZE;
@@ -375,6 +383,7 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     // Compute the HVI, refer to chapter 5.4.1.1 of the specification
     computeHvi(&zrtpDH2, hello);
 
+    zrtpCommit.setH2(H2);
     zrtpCommit.setZid(ownZid.data());
     zrtpCommit.setHashType((uint8_t*)hash->getName());
     zrtpCommit.setCipherType((uint8_t*)cipher->getName());
@@ -382,7 +391,10 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     zrtpCommit.setPubKeyType((uint8_t*)pubKey->getName());
     zrtpCommit.setSasType((uint8_t*)sasType->getName());
     zrtpCommit.setHvi(hvi);
-    zrtpCommit.setH2(H2);
+    if (isNpAlgorithmActive) {
+        zrtpCommit.setPacketLength(pubKeyBytes.size());
+        zrtpCommit.setPv(pubKeyBytes.data());
+    }
 
     len = zrtpCommit.getLength() * ZRTP_WORD_SIZE;
 
@@ -395,14 +407,22 @@ ZrtpPacketCommit* ZRtp::prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg) 
     // hash first messages to produce overall message hash
     // First the Responder's Hello message, second the Commit (always Initiator's).
     // Must use negotiated hash.
+    // In case of a new client (Zrtp2022), thus isNpAlgorithmActive == true, use:
+    // total_hash = hash(Hello of initiator ||
+    //                   Hello of responder ||
+    //                   Commit || DHPart1 ||
+    //                   DHPart2)
     msgShaContext = createHashCtx();
+    if (isNpAlgorithmActive) {
+        hashCtxFunction(msgShaContext, (unsigned char*)currentHelloPacket->getHeaderBase(),
+                        currentHelloPacket->getLength() * ZRTP_WORD_SIZE);
+    }
     hashCtxFunction(msgShaContext, (unsigned char*)hello->getHeaderBase(), helloLen);
     hashCtxFunction(msgShaContext, (unsigned char*)zrtpCommit.getHeaderBase(), len);
 
     // store Hello data temporarily until we can check HMAC after receiving Commit as
     // Responder or DHPart1 as Initiator
     storeMsgTemp(hello);
-
     return &zrtpCommit;
 }
 
@@ -536,8 +556,9 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     if (*(int32_t*)(cp->getName()) == *(int32_t*)ec38 ||
         *(int32_t*)(cp->getName()) == *(int32_t*)e414
 #ifdef TWOTWO_SUPPORT
-        || *(int32_t*)(cp->getName()) == *(int32_t*)pq64 ||
-        *(int32_t*)(cp->getName()) == *(int32_t*)pq74
+        || *(int32_t*)(cp->getName()) == *(int32_t*)np06 ||
+        *(int32_t*)(cp->getName()) == *(int32_t*)np09 ||
+        *(int32_t*)(cp->getName()) == *(int32_t*)np12
 #endif
         ) {
         if (!(*(int32_t*)(hash->getName()) == *(int32_t*)s384 || *(int32_t*)(hash->getName()) == *(int32_t*)skn3)) {
@@ -547,7 +568,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     }
     pubKey = cp;
 
-    // check if we support the commited SAS type
+    // check if we support the committed SAS type
     cp = &zrtpSasTypes.getByName((const char*)commit->getSasType());
     if (!cp->isValid()) { // no match - something went wrong
         *errMsg = UnsuppSASScheme;
@@ -561,19 +582,25 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     // The algorithm names are 4 chars only, thus we can cast to int32_t
 
     if (*(int32_t*)(dhContext->getDHtype()) != *(int32_t*)(pubKey->getName())
-#ifdef TWOTWO_SUPPORT
-            || *(int32_t*)(pubKey->getName()) == *(int32_t*)sdh5 ||
-            *(int32_t*)(pubKey->getName()) == *(int32_t*)sdh7 ||
-            *(int32_t*)(pubKey->getName()) == *(int32_t*)pq54 ||
-            *(int32_t*)(pubKey->getName()) == *(int32_t*)pq64 ||
-            *(int32_t*)(pubKey->getName()) == *(int32_t*)pq74
-#endif
+//#ifdef TWOTWO_SUPPORT
+//            || *(int32_t*)(pubKey->getName()) == *(int32_t*)np06 ||
+//            *(int32_t*)(pubKey->getName()) == *(int32_t*)np09 ||
+//            *(int32_t*)(pubKey->getName()) == *(int32_t*)np12
+//#endif
             ) {
-        dhContext = make_unique<ZrtpDH>(pubKey->getName(), ZrtpDH::DhPart1);
+        dhContext = make_unique<ZrtpDH>(pubKey->getName());
+    }
+
+    // When using NPxx algorithm the Commit packet contains the peer's public keys of NPxx
+    // and E414. Compute the secure shared secrets now.
+    if (isNpAlgorithmActive) {
+        dhContext->computeSecretKey(commit->getPv(), DHss, ZrtpDH::Commit);
     }
     sendInfo(Info, InfoDH1DHGenerated);
 
-    dhContext->fillInPubKeyBytes(pubKeyBytes);
+    // In case of NPxx algorithms: the public key data contains the sntrup cipher text
+    // and my E414 public key. computeSecreteKey above computed the SNTRUP cipher text
+    dhContext->getPubKeyBytes(pubKeyBytes, ZrtpDH::DhPart1);
 
     // Re-compute auxSecretIDr because we changed roles *IDr with my H3, *IDi with peer's H3
     // Set up a DHPart1 packet.
@@ -659,7 +686,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
         return nullptr;
     }
 
-    // get and check Responder's public value, see chap. 5.4.3 in the spec
+    // get and check Responder's public value(s), see chap. 5.4.3 in the spec
     pvr = dhPart1->getPv();
     if (pvr == nullptr) {
         *errMsg = IgnorePacket;
@@ -669,10 +696,11 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
         *errMsg = DHErrorWrongPV;
         return nullptr;
     }
-    if(dhContext->computeSecretKey(pvr, DHss) <= 0) {
+    if (dhContext->computeSecretKey(pvr, DHss, ZrtpDH::DhPart1) <= 0) {
         *errMsg = DHErrorWrongPV;
         return nullptr;
     }
+
 
     // We are Initiator: the Responder's Hello and the Initiator's (our) Commit
     // are already hashed in the context. Now hash the Responder's DH1 and then
@@ -735,15 +763,17 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
         *errMsg = DHErrorWrongHVI;
         return nullptr;
     }
-    // Get and check the Initiator's public value, see chap. 5.4.2 of the spec
-    pvi = dhPart2->getPv();
-    if (!dhContext->checkPubKey(pvi)) {
-        *errMsg = DHErrorWrongPV;
-        return nullptr;
-    }
-    if (dhContext->computeSecretKey(pvi, DHss) <= 0) {
-        *errMsg = DHErrorWrongPV;
-        return nullptr;
+    if (!isNpAlgorithmActive) {
+        // Get and check the Initiator's public value, see chap. 5.4.2 of the spec
+        pvi = dhPart2->getPv();
+        if (!dhContext->checkPubKey(pvi)) {
+            *errMsg = DHErrorWrongPV;
+            return nullptr;
+        }
+        if (dhContext->computeSecretKey(pvi, DHss, ZrtpDH::Ignore) <= 0) {
+            *errMsg = DHErrorWrongPV;
+            return nullptr;
+        }
     }
 
     // Hash the Initiator's DH2 into the message Hash (other messages already prepared, see method prepareDHPart1()).
@@ -1522,7 +1552,7 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
     // Build list of own pubkey algorithm names, must follow the order
     // defined in RFC 6189, chapter 4.1.2., weakest to strongest
 #ifdef TWOTWO_SUPPORT
-    const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38, sdh5, sdh7, pq54, pq64, pq74};
+    const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38, np06, np09, np12};
 #else
     const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38};
 #endif
@@ -1591,7 +1621,6 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
         else {
             useAlgo = peerIntersect[0];
         }
-        // find fastest of conf vs intersecting
     }
     else {
         useAlgo = peerIntersect[0];
@@ -1601,9 +1630,9 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
     // select a corresponding strong hash if necessary.
     if (algoName == *(int32_t*)ec38 || algoName == *(int32_t*)e414
 #ifdef TWOTWO_SUPPORT
-        || algoName == *(int32_t*)sdh7 ||
-        algoName == *(int32_t*)pq64 ||
-        algoName == *(int32_t*)pq74
+        || algoName == *(int32_t*)np06 ||
+        algoName == *(int32_t*)np09 ||
+        algoName == *(int32_t*)np12
 #endif
     ) {
         hash = getStrongHashOffered(hello, algoName);
@@ -2562,7 +2591,7 @@ int32_t ZRtp::sendPacketZRTP(ZrtpPacketBase *packet) {
     if (packet == nullptr) {
         return 0;
     }
-    if (isZrtpFrames) {
+    if (isNpAlgorithmActive) {
         return sendAsZrtpFrames(packet);
     }
     if (auto ucb = callback.lock()) {
@@ -2884,6 +2913,10 @@ bool ZRtp::checkAndSetNonce(uint8_t* nonce) {
     str.assign((char *)nonce, ZRTP_WORD_SIZE * 4);
     masterStream->peerNonces.push_back(str);
     return true;
+}
+
+void ZRtp::saveOtherHelloData(uint8_t const * data, size_t length) {
+    otherHelloPacket.assign(data, length);
 }
 
 //srtpSecrets::srtpSecrets() {}

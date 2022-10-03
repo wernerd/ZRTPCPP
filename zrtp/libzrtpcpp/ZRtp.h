@@ -762,7 +762,7 @@ private:
     /**
      * My computed public key
      */
-    zrtp::SecureArray1k pubKeyBytes;
+    zrtp::SecureArray4k pubKeyBytes;
 
     /**
      * My Role in the game
@@ -1014,6 +1014,8 @@ private:
     /// Pointer to Hello packet sent to partner, initialized in ZRtp, modified by ZrtpStateEngineImpl
     ZrtpPacketHello* currentHelloPacket = nullptr;
 
+    zrtp::SecureArray256 otherHelloPacket;
+
     /**
      * ZID cache record
      */
@@ -1091,9 +1093,10 @@ private:
     bool peerDisclosureFlagSeen = false;
 
     /**
-     * If true then send ZRTP frames according to ZRTP 2022 spec.
+     * If true then send ZRTP frames according to ZRTP 2022 spec, change protocol flow,
+     * packet set up etc
      */
-    bool isZrtpFrames = false;
+    bool isNpAlgorithmActive = false;
 
     /**
      * Last packet sent using ZRTP frame(s)
@@ -1686,6 +1689,17 @@ private:
       * @return 0 if not all data available, ZRTP message length in ZRTP words if data is available
       */
      int32_t assembleMessage(uint8_t const *zrtpFrame, size_t length);
+
+     /**
+      * @brief save data of peer's hello data.
+      *
+      * Due to changes in total_hash computation ZRTP may need this data some time
+      * after it was received.
+      *
+      * @param data pointer to the hello data.
+      * @param length length in bytes.
+      */
+     void saveOtherHelloData(uint8_t const * data, size_t length);
 };
 
 /**

@@ -58,14 +58,25 @@ void randomZRTP(uint8_t *buf, int32_t length);
 #include "libzrtpcpp/ZrtpConfigure.h"
 #include "../common/SecureArray.h"
 #include "../common/typedefs.h"
+#include "crypto/zrtpKem.h"
 
-static const uint32_t DH2K_LENGTH_BYTES = 2048 / 8;
-static const uint32_t DH3K_LENGTH_BYTES = 3072 / 8;
-static const uint32_t EC25_LENGTH_BYTES = 2*(256 / 8);
-static const uint32_t EC38_LENGTH_BYTES = 2*(384 / 8);
-static const uint32_t E255_LENGTH_BYTES = 32 ;
-static const uint32_t E414_LENGTH_BYTES = 2*((414+7) / 8);  // -> computes to 104 byte for x and y coordinate of curve
-static const uint32_t E414_LENGTH_BYTES_COMP = (((414+7) / 8) + 1); // -> computes to 53 byte for compressed coordinates
+constexpr int DH2K_LENGTH_BYTES = 2048 / 8;
+constexpr int DH3K_LENGTH_BYTES = 3072 / 8;
+constexpr int EC25_LENGTH_BYTES = 2*(256 / 8);
+constexpr int EC38_LENGTH_BYTES = 2*(384 / 8);
+constexpr int E255_LENGTH_BYTES = 32 ;
+constexpr int E414_LENGTH_BYTES = 2*((414+7) / 8);  // -> computes to 104 byte for x and y coordinate of curve
+constexpr int E414_LENGTH_BYTES_COMP = (((414+7) / 8) + 1); // -> computes to 53 byte for compressed coordinates
+
+// DH1part packet sends SNTRUP, E414 public key data, and SNTRUP ciphertext
+constexpr int NP06_LENGTH_BYTES = SNTRUP_CRYPTO_PUBLICKEYBYTES_653 + SNTRUP_CRYPTO_CIPHERTEXTBYTES_653 + E414_LENGTH_BYTES_COMP;
+constexpr int NP09_LENGTH_BYTES = SNTRUP_CRYPTO_PUBLICKEYBYTES_953 + SNTRUP_CRYPTO_CIPHERTEXTBYTES_953 + E414_LENGTH_BYTES_COMP;
+constexpr int NP12_LENGTH_BYTES = SNTRUP_CRYPTO_PUBLICKEYBYTES_1277 + SNTRUP_CRYPTO_CIPHERTEXTBYTES_1277 + E414_LENGTH_BYTES_COMP;
+
+// Commit packet sends SNTRUP and E414 public key data only.
+constexpr int NP06_LENGTH_BYTES_COMMIT = SNTRUP_CRYPTO_PUBLICKEYBYTES_653 + E414_LENGTH_BYTES_COMP;
+constexpr int NP09_LENGTH_BYTES_COMMIT = SNTRUP_CRYPTO_PUBLICKEYBYTES_953 + E414_LENGTH_BYTES_COMP;
+constexpr int NP12_LENGTH_BYTES_COMMIT = SNTRUP_CRYPTO_PUBLICKEYBYTES_1277 + E414_LENGTH_BYTES_COMP;
 
 /**
  * Implementation of Diffie-Helman for ZRTP
@@ -82,9 +93,10 @@ class ZrtpDH {
 
 public:
 
-    enum ProtocolState {
+    enum MessageType {
         Commit,
-        DhPart1
+        DhPart1,
+        Ignore
     };
 
     enum ErrorCode {
@@ -101,7 +113,7 @@ public:
      * @param state
      *     At which protocol state ZRTP needs a new DH
      */
-    explicit ZrtpDH(const char* type, ProtocolState state);
+    explicit ZrtpDH(char const * type);
     
     ~ZrtpDH();
 
@@ -116,7 +128,7 @@ public:
      *
      * @return Size in bytes.
      */
-    size_t fillInPubKeyBytes(zrtp::SecureArray1k& pubKey) const;
+    size_t getPubKeyBytes(zrtp::SecureArray4k& pubKey, MessageType msgType) const;
 
     /**
      * Compute the secret key and returns it to caller.
@@ -125,14 +137,14 @@ public:
      * private key and the peer's public key.
      *
      * @param pubKeyBytes
-     *    Pointer to the peer's public key bytes. Must be in big endian order.
+     *    Pointer to the peer's public key bytes.
      *
      * @param secret
      *    Pointer to a buffer that receives the secret key.
      *
      * @return the size of the shared secret on success, -1 on error.
      */
-    size_t computeSecretKey(uint8_t *pubKeyBytes, zrtp::SecureArray1k& secret);
+    size_t computeSecretKey(uint8_t *pubKeyBytes, zrtp::SecureArray1k& secret,  MessageType msgType);
 
     /**
      * Check and validate the public key received from peer.
@@ -168,16 +180,12 @@ private:
         EC25,
         EC38,
         E255,
-        E414
-//        SDH5,
-//        SDH7,
-//        PQ54,
-//        PQ64,
-//        PQ74
+        E414,
+        NP06,
+        NP09,
+        NP12
     };
-#ifdef TWOTWO_SUPPORT
-    SidhWrapper::SidhType getSidhType() const;
-#endif
+
     /**
      * Returns the size in bytes of the DH parameter p which is the size of the shared secret.
      *
@@ -193,18 +201,12 @@ private:
     [[nodiscard]] size_t getPubKeySize() const;
 
 
-//    void generateSidhKeyPair();
-//    size_t computeSidhSharedSecret(uint8_t *pubKeyBytes, zrtp::SecureArray1k& secret);
-//    [[nodiscard]] size_t getSidhSharedSecretLength() const ;
-
-    size_t secretKeyComputation(uint8_t *pubKeyBytes, zrtp::SecureArray1k& secret, int algorithm);
-    size_t getPubKeyBytes(zrtp::SecureArray1k& pubKey, int algorithm) const;
-
-    struct dhCtx;
+    void generateSntrupKeyPair() const;
+    size_t computeSntrupSharedSecret(uint8_t * pubKeyBytes, zrtp::SecureArray1k& secret, MessageType msgType);
 
     Algorithm pkType;               ///< Which type of DH to use
-    ProtocolState protocolState;    ///< Create DH for this protocol state
     ErrorCode errorCode;
+    struct dhCtx;
     std::unique_ptr<dhCtx> ctx;
 
 };
