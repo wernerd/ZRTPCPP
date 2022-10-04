@@ -244,6 +244,7 @@ size_t ZrtpDH::computeSntrupSharedSecret(uint8_t *pubKeyBytes, zrtp::SecureArray
             if (msgType == Commit) {
                 // commit packet contains SNTRUP public key, generate/encrypt shared key
                 offsetNextKeyData = SNTRUP_CRYPTO_PUBLICKEYBYTES_653;
+                ctx->sntrupCipherText = std::make_unique<secUtilities::SecureArrayFlex>(SNTRUP_CRYPTO_CIPHERTEXTBYTES_653);
                 crypto_kem_sntrup653_enc(ctx->sntrupCipherText->data(), secret.data(), pubKeyBytes);
                 ctx->sntrupCipherText->size(SNTRUP_CRYPTO_CIPHERTEXTBYTES_653);
             } else {
@@ -257,6 +258,7 @@ size_t ZrtpDH::computeSntrupSharedSecret(uint8_t *pubKeyBytes, zrtp::SecureArray
             if (msgType == Commit) {
                 // commit packet contains SNTRUP public key, generate/encrypt shared key
                 offsetNextKeyData = SNTRUP_CRYPTO_PUBLICKEYBYTES_953;
+                ctx->sntrupCipherText = std::make_unique<secUtilities::SecureArrayFlex>(SNTRUP_CRYPTO_CIPHERTEXTBYTES_953);
                 crypto_kem_sntrup953_enc(ctx->sntrupCipherText->data(), secret.data(), pubKeyBytes);
                 ctx->sntrupCipherText->size(SNTRUP_CRYPTO_CIPHERTEXTBYTES_953);
             } else {
@@ -270,6 +272,7 @@ size_t ZrtpDH::computeSntrupSharedSecret(uint8_t *pubKeyBytes, zrtp::SecureArray
             if (msgType == Commit) {
                 // commit packet contains SNTRUP public key, generate/encrypt shared key
                 offsetNextKeyData = SNTRUP_CRYPTO_PUBLICKEYBYTES_1277;
+                ctx->sntrupCipherText = std::make_unique<secUtilities::SecureArrayFlex>(SNTRUP_CRYPTO_CIPHERTEXTBYTES_1277);
                 crypto_kem_sntrup1277_enc(ctx->sntrupCipherText->data(), secret.data(), pubKeyBytes);
                 ctx->sntrupCipherText->size(SNTRUP_CRYPTO_CIPHERTEXTBYTES_1277);
             } else {
@@ -333,13 +336,9 @@ size_t ZrtpDH::getPubKeySize() const
             return ((ctx->eccPrivateKey->key_length() + 7) / 8);
 
         case NP06:
-            return NP06_LENGTH_BYTES;
-
         case NP09:
-            return NP09_LENGTH_BYTES;
-
         case NP12:
-            return NP12_LENGTH_BYTES;
+            return -1;
 
         default:
             return 0;
