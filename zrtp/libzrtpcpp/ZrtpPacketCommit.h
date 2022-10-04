@@ -149,12 +149,13 @@ private:
 
     Commit_t* commitHeader = nullptr;         ///< Points to Commit message part
 
-    // Commit packet is of variable length.
-    // - 26 words fixed size
-    // - up to 993 words variable part, depending on algorithm (max: NP12 + EC414)
-    //   leads to a maximum of 4*1019=4076 bytes.
+    // Commit packet is of variable length:
+    // - 24 words fixed size
+    // - up to 475 words variable part, depending on algorithm (max: NP12 public key + EC414 compressed)
+    //   leads to a maximum of 4*475=1900 bytes.
+    // - HMAC (2 words)
     // - CRC (1 word)
-    uint8_t data[4100] = {};       // large enough to hold a full-blown commit packet
+    uint8_t data[2100] = {};       // large enough to hold a full-blown commit packet
 };
 
 /**

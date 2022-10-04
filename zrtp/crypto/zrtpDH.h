@@ -60,20 +60,20 @@ void randomZRTP(uint8_t *buf, int32_t length);
 #include "../common/typedefs.h"
 #include "crypto/zrtpKem.h"
 
-constexpr int DH2K_LENGTH_BYTES = 2048 / 8;
-constexpr int DH3K_LENGTH_BYTES = 3072 / 8;
-constexpr int EC25_LENGTH_BYTES = 2*(256 / 8);
-constexpr int EC38_LENGTH_BYTES = 2*(384 / 8);
-constexpr int E255_LENGTH_BYTES = 32 ;
+constexpr int DH2K_LENGTH_BYTES = 2048/8;
+constexpr int DH3K_LENGTH_BYTES = 3072/8;
+constexpr int EC25_LENGTH_BYTES = 2*(256/8);
+constexpr int EC38_LENGTH_BYTES = 2*(384/8);
+constexpr int E255_LENGTH_BYTES = 32;
 constexpr int E414_LENGTH_BYTES = 2*((414+7) / 8);  // -> computes to 104 byte for x and y coordinate of curve
 constexpr int E414_LENGTH_BYTES_COMP = (((414+7) / 8) + 1); // -> computes to 53 byte for compressed coordinates
 
-// DH1part packet sends SNTRUP, E414 public key data, and SNTRUP ciphertext
-constexpr int NP06_LENGTH_BYTES = SNTRUP_CRYPTO_PUBLICKEYBYTES_653 + SNTRUP_CRYPTO_CIPHERTEXTBYTES_653 + E414_LENGTH_BYTES_COMP;
-constexpr int NP09_LENGTH_BYTES = SNTRUP_CRYPTO_PUBLICKEYBYTES_953 + SNTRUP_CRYPTO_CIPHERTEXTBYTES_953 + E414_LENGTH_BYTES_COMP;
-constexpr int NP12_LENGTH_BYTES = SNTRUP_CRYPTO_PUBLICKEYBYTES_1277 + SNTRUP_CRYPTO_CIPHERTEXTBYTES_1277 + E414_LENGTH_BYTES_COMP;
+// DH1part packet sends SNTRUP ciphertext and E414 public key data
+constexpr int NP06_LENGTH_BYTES_DHPart = SNTRUP_CRYPTO_CIPHERTEXTBYTES_653 + E414_LENGTH_BYTES_COMP;
+constexpr int NP09_LENGTH_BYTES_DHPart = SNTRUP_CRYPTO_CIPHERTEXTBYTES_953 + E414_LENGTH_BYTES_COMP;
+constexpr int NP12_LENGTH_BYTES_DHPart = SNTRUP_CRYPTO_CIPHERTEXTBYTES_1277 + E414_LENGTH_BYTES_COMP;
 
-// Commit packet sends SNTRUP and E414 public key data only.
+// Commit packet sends SNTRUP public key and E414 public key data
 constexpr int NP06_LENGTH_BYTES_COMMIT = SNTRUP_CRYPTO_PUBLICKEYBYTES_653 + E414_LENGTH_BYTES_COMP;
 constexpr int NP09_LENGTH_BYTES_COMMIT = SNTRUP_CRYPTO_PUBLICKEYBYTES_953 + E414_LENGTH_BYTES_COMP;
 constexpr int NP12_LENGTH_BYTES_COMMIT = SNTRUP_CRYPTO_PUBLICKEYBYTES_1277 + E414_LENGTH_BYTES_COMP;

@@ -107,10 +107,11 @@ private:
 
     // DHPart packet is of variable length:
     // - 21 words fixed size
-    // - up to 993 words variable part, depending on algorithm (max: NP12 + EC414)
-    //   leads to a maximum of 4*1019=4076 bytes.
+    // - up to 539 words variable part, depending on algorithm (max: NP12 ciphertext + EC414 compressed)
+    //   leads to a maximum of 4*560=2240 bytes.
+    // - HMAC (2 words)
     // - CRC (1 word)
-    uint8_t data[4100] = {};       // large enough to hold a full-blown DHPart packet (DHPart1 only)
+    uint8_t data[2300] = {};       // large enough to hold a full-blown DHPart packet (DHPart1 only)
 };
 
 /**

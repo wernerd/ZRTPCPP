@@ -32,9 +32,9 @@ constexpr int EC25_WORDS = FIXED_NUM_WORDS + EC25_LENGTH_BYTES / ZRTP_WORD_SIZE;
 constexpr int EC38_WORDS = FIXED_NUM_WORDS + EC38_LENGTH_BYTES / ZRTP_WORD_SIZE;     // 2*(384 / 8 / ZRTP_WORD_SIZE)
 constexpr int E255_WORDS = FIXED_NUM_WORDS + E255_LENGTH_BYTES / ZRTP_WORD_SIZE;     // 32 / ZRTP_WORD_SIZE
 constexpr int E414_WORDS = FIXED_NUM_WORDS + E414_LENGTH_BYTES / ZRTP_WORD_SIZE;     // 2*((414+7) / 8 / ZRTP_WORD_SIZE)
-constexpr int NP06_WORDS = FIXED_NUM_WORDS + NP06_LENGTH_BYTES / ZRTP_WORD_SIZE;
-constexpr int NP09_WORDS = FIXED_NUM_WORDS + NP09_LENGTH_BYTES / ZRTP_WORD_SIZE;
-constexpr int NP12_WORDS = FIXED_NUM_WORDS + NP12_LENGTH_BYTES / ZRTP_WORD_SIZE;
+constexpr int NP06_WORDS = FIXED_NUM_WORDS + NP06_LENGTH_BYTES_DHPart / ZRTP_WORD_SIZE;
+constexpr int NP09_WORDS = FIXED_NUM_WORDS + NP09_LENGTH_BYTES_DHPart / ZRTP_WORD_SIZE;
+constexpr int NP12_WORDS = FIXED_NUM_WORDS + NP12_LENGTH_BYTES_DHPart / ZRTP_WORD_SIZE;
 
         ZrtpPacketDHPart::ZrtpPacketDHPart() {
     initialize();
@@ -90,17 +90,17 @@ ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t const * data) {
             dhLength = E414_LENGTH_BYTES;
             break;
         case NP06_WORDS:
-            dhLength = NP06_LENGTH_BYTES;
+            dhLength = NP06_LENGTH_BYTES_DHPart;
             break;
         case NP09_WORDS:
-            dhLength = NP09_LENGTH_BYTES;
+            dhLength = NP09_LENGTH_BYTES_DHPart;
             break;
         case NP12_WORDS:
-            dhLength = NP12_LENGTH_BYTES;
+            dhLength = NP12_LENGTH_BYTES_DHPart;
             break;
         default:
             pv = nullptr;
             LOGGER(ERROR_LOG, __func__, " Unknown DH algorithm in DH packet with length: ", getLength())
     }
-    }
+}
 

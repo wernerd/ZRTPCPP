@@ -129,9 +129,8 @@ typedef struct HelloAckPacket {
 /**
  * Commit message
  * 
- * There are three subtypes of Commit messages, each of which
- * has a fixed size. The data structure defines the maximum
- * Commit message. During the ZRTP protocol the implementation
+ * There are three subtypes of Commit messages.
+ * During the ZRTP protocol the implementation
  * uses fields according to the use case (DH handshake,
  * Multi-stream handshake) and adjusts the length.
  */
