@@ -21,6 +21,8 @@
 #include "crypto/zrtpKem.h"
 
 #include "gtest/gtest.h"
+#include "crypto/zrtpDH.h"
+#include "libzrtpcpp/ZrtpTextData.h"
 
 //
 // These tests use the zrtpDH crypto functions and compare the results
@@ -107,5 +109,74 @@ TEST_F(ZrtpKemCryptoTestFixture, simpleExchange_1277) {
     LOGGER(DEBUGGING, *zrtp::Utilities::hexdump("Shared key dec", sharedKeyDec.data(), SNTRUP_CRYPTO_BYTES))
 
     ASSERT_TRUE(sharedKeyDec.equals(sharedKeyEnc, SNTRUP_CRYPTO_BYTES));
+}
+
+TEST_F(ZrtpKemCryptoTestFixture, zrtpDhExchange_653) {
+    ZrtpDH aliceDh(np06);
+    ZrtpDH bobDh(np06);
+
+    zrtp::SecureArray4k alicePubKey;
+    aliceDh.getPubKeyBytes(alicePubKey, ZrtpDH::Commit);
+    ASSERT_EQ(SNTRUP_CRYPTO_PUBLICKEYBYTES_653 + E414_LENGTH_BYTES_COMP, alicePubKey.size());
+
+    zrtp::SecureArray1k bobSharedKey;
+    bobDh.computeSecretKey(alicePubKey.data(), bobSharedKey, ZrtpDH::Commit);
+    ASSERT_EQ(SNTRUP_CRYPTO_BYTES + 52, bobSharedKey.size());   // 52 -> E414 Diffie-Hellman shared secret length
+
+    zrtp::SecureArray4k bobPubKey;
+    bobDh.getPubKeyBytes(bobPubKey, ZrtpDH::DhPart1);
+    ASSERT_EQ(SNTRUP_CRYPTO_CIPHERTEXTBYTES_653 + E414_LENGTH_BYTES_COMP, bobPubKey.size());
+
+    zrtp::SecureArray1k aliceSharedKey;
+    aliceDh.computeSecretKey(bobPubKey.data(), aliceSharedKey, ZrtpDH::DhPart1);
+    ASSERT_EQ(SNTRUP_CRYPTO_BYTES + 52, aliceSharedKey.size());   // 52 -> E414 Diffie-Hellman shared secret length
+
+    ASSERT_TRUE(aliceSharedKey.equals(bobSharedKey, SNTRUP_CRYPTO_BYTES + 52));
+}
+
+TEST_F(ZrtpKemCryptoTestFixture, zrtpDhExchange_953) {
+    ZrtpDH aliceDh(np09);
+    ZrtpDH bobDh(np09);
+
+    zrtp::SecureArray4k alicePubKey;
+    aliceDh.getPubKeyBytes(alicePubKey, ZrtpDH::Commit);
+    ASSERT_EQ(SNTRUP_CRYPTO_PUBLICKEYBYTES_953 + E414_LENGTH_BYTES_COMP, alicePubKey.size());
+
+    zrtp::SecureArray1k bobSharedKey;
+    bobDh.computeSecretKey(alicePubKey.data(), bobSharedKey, ZrtpDH::Commit);
+    ASSERT_EQ(SNTRUP_CRYPTO_BYTES + 52, bobSharedKey.size());   // 52 -> E414 Diffie-Hellman shared secret length
+
+    zrtp::SecureArray4k bobPubKey;
+    bobDh.getPubKeyBytes(bobPubKey, ZrtpDH::DhPart1);
+    ASSERT_EQ(SNTRUP_CRYPTO_CIPHERTEXTBYTES_953 + E414_LENGTH_BYTES_COMP, bobPubKey.size());
+
+    zrtp::SecureArray1k aliceSharedKey;
+    aliceDh.computeSecretKey(bobPubKey.data(), aliceSharedKey, ZrtpDH::DhPart1);
+    ASSERT_EQ(SNTRUP_CRYPTO_BYTES + 52, aliceSharedKey.size());   // 52 -> E414 Diffie-Hellman shared secret length
+
+    ASSERT_TRUE(aliceSharedKey.equals(bobSharedKey, SNTRUP_CRYPTO_BYTES + 52));
+}
+
+TEST_F(ZrtpKemCryptoTestFixture, zrtpDhExchange_1277) {
+    ZrtpDH aliceDh(np12);
+    ZrtpDH bobDh(np12);
+
+    zrtp::SecureArray4k alicePubKey;
+    aliceDh.getPubKeyBytes(alicePubKey, ZrtpDH::Commit);
+    ASSERT_EQ(SNTRUP_CRYPTO_PUBLICKEYBYTES_1277 + E414_LENGTH_BYTES_COMP, alicePubKey.size());
+
+    zrtp::SecureArray1k bobSharedKey;
+    bobDh.computeSecretKey(alicePubKey.data(), bobSharedKey, ZrtpDH::Commit);
+    ASSERT_EQ(SNTRUP_CRYPTO_BYTES + 52, bobSharedKey.size());   // 52 -> E414 Diffie-Hellman shared secret length
+
+    zrtp::SecureArray4k bobPubKey;
+    bobDh.getPubKeyBytes(bobPubKey, ZrtpDH::DhPart1);
+    ASSERT_EQ(SNTRUP_CRYPTO_CIPHERTEXTBYTES_1277 + E414_LENGTH_BYTES_COMP, bobPubKey.size());
+
+    zrtp::SecureArray1k aliceSharedKey;
+    aliceDh.computeSecretKey(bobPubKey.data(), aliceSharedKey, ZrtpDH::DhPart1);
+    ASSERT_EQ(SNTRUP_CRYPTO_BYTES + 52, aliceSharedKey.size());   // 52 -> E414 Diffie-Hellman shared secret length
+
+    ASSERT_TRUE(aliceSharedKey.equals(bobSharedKey, SNTRUP_CRYPTO_BYTES + 52));
 }
 
