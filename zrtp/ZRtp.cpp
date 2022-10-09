@@ -473,7 +473,7 @@ ZrtpPacketCommit* ZRtp::prepareCommitMultiStream(ZrtpPacketHello *hello) {
  * peer's HVI then we switched to Responder and handle our peer's commit packet
  * here. This method takes care to delete and refresh data left over from a
  * possible Initiator preparation. This belongs to prepared DH data, message
- * hash SHA context
+ * hash SHA context.
  */
 ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMsg) {
 
@@ -592,14 +592,17 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     }
 
     // When using NPxx algorithm the Commit packet contains the peer's public keys of NPxx
-    // and E414. Compute the secure shared secrets now.
+    // and E414. Compute the Responder's shared secrets now. This _must_ be done _before_
+    // getting the Responder's public key data. `computeSecretKey` computes the Responder's
+    // public key of the NPxx algorithms.
     if (isNpAlgorithmActive) {
         dhContext->computeSecretKey(commit->getPv(), DHss, ZrtpDH::Commit);
     }
     sendInfo(Info, InfoDH1DHGenerated);
 
     // In case of NPxx algorithms: the public key data contains the sntrup cipher text
-    // and my E414 public key. computeSecreteKey above computed the SNTRUP cipher text
+    // and my E414 public key. `computeSecreteKey` above computed the SNTRUP cipher text
+    // which is the encrypted shared key of SNTRUP.
     dhContext->getPubKeyBytes(pubKeyBytes, ZrtpDH::DhPart1);
 
     // Re-compute auxSecretIDr because we changed roles *IDr with my H3, *IDi with peer's H3
@@ -637,9 +640,13 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     msgShaContext = createHashCtx();
 
     // Hash messages to produce overall message hash:
-    // First the Responder's (my) Hello message, second the Commit (always Initator's), 
+    // First the Responder's (my) Hello message, second the Commit (always Initiator's),
     // then the DH1 message (which is always a Responder's message).
     // Must use negotiated hash.
+    if (isNpAlgorithmActive) {
+        ZrtpPacketHello helloPkt(otherHelloPacket.data());
+        hashCtxFunction(msgShaContext, (unsigned char*)helloPkt.getHeaderBase(), helloPkt.getLength() * ZRTP_WORD_SIZE);
+    }
     hashCtxFunction(msgShaContext, (unsigned char*)currentHelloPacket->getHeaderBase(), currentHelloPacket->getLength() * ZRTP_WORD_SIZE);
     hashCtxFunction(msgShaContext, (unsigned char*)commit->getHeaderBase(), commit->getLength() * ZRTP_WORD_SIZE);
     hashCtxFunction(msgShaContext, (unsigned char*)zrtpDH1.getHeaderBase(), zrtpDH1.getLength() * ZRTP_WORD_SIZE);
@@ -696,11 +703,12 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
         *errMsg = DHErrorWrongPV;
         return nullptr;
     }
+    // This computes the Initiator's shared secret. Same handling for NPxx or Diffie-Hellman
+    // algorithms at this point. ZrtpDH takes care of it.
     if (dhContext->computeSecretKey(pvr, DHss, ZrtpDH::DhPart1) <= 0) {
         *errMsg = DHErrorWrongPV;
         return nullptr;
     }
-
 
     // We are Initiator: the Responder's Hello and the Initiator's (our) Commit
     // are already hashed in the context. Now hash the Responder's DH1 and then
@@ -723,6 +731,14 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
     return &zrtpDH2;
 }
 
+// TODO: implement function to setup stripped down Confirm1 - encrypt data in Confirm1 with Initiator's
+//       keys
+//       Handling of combined DHPart2 and Confirm1 packets -> roles changed when processing Confirm1 (is Responder)
+//
+// - Responder's DHss was computed in prepareDHPart1,
+// - DHPart2 handling needs to generated the responder keys, then decrypt the confirm1 data, create and encrypt Confirm2
+// - Confirm1 contains data encrypted with Initiator keys
+// - check how to deal with the HMAC checks
 /*
  * At this point we are Responder.
  */
@@ -757,7 +773,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     // Now we have the peer's pvi. Because we are responder re-compute my hvi
     // using my Hello packet and the Initiator's DHPart2 and compare with
     // hvi sent in commit packet. If it doesn't macht then a MitM attack
-    // may have occured.
+    // may have occurred.
     computeHvi(dhPart2, currentHelloPacket);
     if (memcmp(hvi, peerHvi, HVI_SIZE) != 0) {
         *errMsg = DHErrorWrongHVI;
@@ -795,7 +811,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
     // Fill in Confirm1 packet.
     zrtpConfirm1.setMessageType((uint8_t*)Confirm1Msg);
 
-    // Check if user verified the SAS in a previous call and thus verfied
+    // Check if user verified the SAS in a previous call and thus verified
     // the retained secret. Don't set the verified flag if paranoidMode is true.
     if (zidRec->isSasVerified() && !paranoidMode) {
         zrtpConfirm1.setSASFlag();

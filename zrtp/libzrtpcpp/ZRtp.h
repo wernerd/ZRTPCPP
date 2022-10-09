@@ -1033,7 +1033,7 @@ private:
      */
     uint8_t randomIV[16] = {0};
 
-    uint8_t tempMsgBuffer[1024] = {0};
+    uint8_t tempMsgBuffer[2500] = {0};
     uint32_t lengthOfMsgData = 0;
 
     /**
