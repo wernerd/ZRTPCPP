@@ -20,6 +20,7 @@
 #include <thread>
 #include <condition_variable>
 #include "../logging/ZrtpLogging.h"
+#include "../common/Utilities.h"
 #include "ZrtpTestCommon.h"
 
 using namespace std;
@@ -35,6 +36,11 @@ string bobId("bob");
 uint8_t aliceZid[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
 uint8_t bobZid[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
 
+struct PacketInfo {
+    unique_ptr<uint8_t[]> packet;
+    size_t length;
+    uint8_t numberOfFrames;
+};
 
 // This fixture contains necessary functions and data to run two independent
 // ZRtp instances in two threads. This setup allows to run these two instances
@@ -52,7 +58,7 @@ public:
 
     void SetUp() override {
         // code here will execute just before the test ensues
-        LOGGER_INSTANCE setLogLevel(WARNING);
+        LOGGER_INSTANCE setLogLevel(DEBUGGING);
     }
 
     void TearDown() override {
@@ -91,19 +97,27 @@ public:
         aliceQueueCv.notify_all();
     }
 
-    void aliceQueueData(uint8_t const * packetData, int32_t length) {
-        auto* header = (zrtpPacketHeader_t *)packetData;
+    void aliceQueueData(uint8_t const * packetData, int32_t length, bool isFrame = false, uint8_t numberOfFrames = 0) {
+        bool frameContinuation = false;
+        if (isFrame) {
+            auto frameHeader = reinterpret_cast<FrameHeader_t const *>(packetData);
+            frameContinuation = frameHeader->frameInfo.f.continuationFlag;
+        }
+        // Check if this is a ZRTP frame: advance header by ZRTP_WORK_SIZE (skip frame header)
+        auto* header = (zrtpPacketHeader_t *)(packetData + (isFrame ? ZRTP_WORD_SIZE : 0));
         string packetType((char *)header->messageType, sizeof(header->messageType));
-        LOGGER(INFO, "Bob   --> Alice ", packetType)
+        LOGGER(INFO, "Bob   --> Alice ") // , packetType, *zrtp::Utilities::hexdump("Packet", packetData, 16))
 
         auto data = std::make_unique<uint8_t[]>(length);
         memcpy(data.get(), packetData, length);
-        pair<unique_ptr<uint8_t[]>, size_t> dataPair(move(data), length);
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        PacketInfo dataInfo;
+        dataInfo.packet = std::move(data);
+        dataInfo.length = length;
+        dataInfo.numberOfFrames = numberOfFrames;
 
         unique_lock<mutex> queueLock(aliceQueueMutex);
-        aliceQueue.push_back(move(dataPair));
+        aliceQueue.push_back(std::move(dataInfo));
         queueLock.unlock();
         aliceQueueCv.notify_all();
     }
@@ -123,7 +137,11 @@ public:
                auto& zrtpData = thiz->aliceQueue.front();
                queueLock.unlock();          // unlock Alice's queue while processing 'received' data, Bob may add data
 
-               thiz->aliceZrtp->processZrtpMessage(zrtpData.first.get(), 123, zrtpData.second);
+                if ((zrtpData.numberOfFrames & 0x1) == 0x1) {
+                    thiz->aliceZrtp->processZrtpFramePacket(zrtpData.packet.get(), 123, zrtpData.length, zrtpData.numberOfFrames);
+                } else {
+                    thiz->aliceZrtp->processZrtpMessage(zrtpData.packet.get(), 123, zrtpData.length);
+                }
 
                if (!thiz->aliceThreadRun) break;
                queueLock.lock();
@@ -152,23 +170,32 @@ public:
         bobQueueCv.notify_all();
     }
 
-    void bobQueueData(uint8_t const * packetData, int32_t length) {
-        auto* header = (zrtpPacketHeader_t *)packetData;
-        string packetType((char *)header->messageType, sizeof(header->messageType));
-        LOGGER(INFO, "Alice --> Bob ", packetType)
+    void bobQueueData(uint8_t const * packetData, int32_t length, bool isFrame = false, uint8_t numberOfFrames = 0) {
+        bool frameContinuation = false;
+        if (isFrame) {
+            auto frameHeader = reinterpret_cast<FrameHeader_t const *>(packetData);
+            frameContinuation = frameHeader->frameInfo.f.continuationFlag;
+        }
+        auto *header = (zrtpPacketHeader_t *) (packetData + (isFrame ? ZRTP_WORD_SIZE : 0));
+        string packetType((char *) header->messageType, sizeof(header->messageType));
+        LOGGER(INFO, "Alice --> Bob ") // , packetType, *zrtp::Utilities::hexdump("Packet", packetData, 16))
 
         auto data = std::make_unique<uint8_t[]>(length);
         memcpy(data.get(), packetData, length);
-        pair<unique_ptr<uint8_t[]>, size_t> dataPair(move(data), length);
+
+        PacketInfo dataInfo;
+        dataInfo.packet = std::move(data);
+        dataInfo.length = length;
+        dataInfo.numberOfFrames = numberOfFrames;
 
         unique_lock<mutex> queueLock(bobQueueMutex);
-        bobQueue.push_back(move(dataPair));
+        bobQueue.push_back(std::move(dataInfo));
         queueLock.unlock();
         bobQueueCv.notify_all();
     }
 
     static void bobZrtpRun(ZrtpBasicRunFixture *thiz) {
-        LOGGER(DEBUGGING, "Bob thread id: ",  std::this_thread::get_id())
+        LOGGER(DEBUGGING, "Bob thread id: ", std::this_thread::get_id())
         thiz->bobZrtp->startZrtpEngine();
 
         unique_lock<mutex> queueLock(thiz->bobQueueMutex);
@@ -183,7 +210,11 @@ public:
                 auto& zrtpData = thiz->bobQueue.front();
                 queueLock.unlock();          // unlock Bob's queue while processing 'received' data, Alice may add data
 
-                thiz->bobZrtp->processZrtpMessage(zrtpData.first.get(), 321, zrtpData.second);
+                if ((zrtpData.numberOfFrames & 0x1) == 0x1) {
+                    thiz->bobZrtp->processZrtpFramePacket(zrtpData.packet.get(), 123, zrtpData.length, zrtpData.numberOfFrames);
+                } else {
+                    thiz->bobZrtp->processZrtpMessage(zrtpData.packet.get(), 123, zrtpData.length);
+                }
 
                 if (!thiz->bobThreadRun) break;
                 queueLock.lock();
@@ -204,7 +235,7 @@ public:
     condition_variable aliceStartCv;
     mutex aliceQueueMutex;
     condition_variable aliceQueueCv;
-    list<pair<unique_ptr<uint8_t[]>, size_t>> aliceQueue;
+    list<PacketInfo> aliceQueue;
 
     shared_ptr<testing::NiceMock<MockZrtpCallback>> bobCb;
     unique_ptr<ZRtp> bobZrtp;
@@ -213,7 +244,7 @@ public:
     condition_variable bobStartCv;
     mutex bobQueueMutex;
     condition_variable bobQueueCv;
-    list<pair<unique_ptr<uint8_t[]>, size_t>> bobQueue;
+    list<PacketInfo> bobQueue;
 
     bool aliceThreadRun = false;
     bool bobThreadRun = false;
@@ -572,16 +603,16 @@ TEST_F(ZrtpBasicRunFixture, full_run_test_ec384) {
     ASSERT_EQ(aliceSas, bobSas);
 }
 
-#if 0
-TEST_F(ZrtpBasicRunFixture, full_run_test_pq74) {
+
+TEST_F(ZrtpBasicRunFixture, full_run_test_np06) {
     // Configure with mandatory algorithms only
     auto aliceConfigure = make_shared<ZrtpConfigure>();
     auto bobConfigure = make_shared<ZrtpConfigure>();
 
     aliceConfigure->clear();
     bobConfigure->clear();
-    aliceConfigure->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("PQ74"));
-    bobConfigure->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("PQ74"));
+    aliceConfigure->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("NP06"));
+    bobConfigure->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("NP06"));
 
     aliceConfigure->addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
     aliceConfigure->addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN3"));
@@ -617,12 +648,23 @@ TEST_F(ZrtpBasicRunFixture, full_run_test_pq74) {
 
     // send data just forwards the data, no further checks yet.
     // When Alice sends data put the data into Bob's receive queue and signal 'data available'
+
+    // Hello packets send via normal send function: not yet known if peer supports NPxx
     ON_CALL(*aliceCb, sendDataZRTP(_, _))
-    .WillByDefault(DoAll(([this](const uint8_t* data, int32_t length) { bobQueueData(data, length); }), Return(1)));
+            .WillByDefault(DoAll(([this](const uint8_t* data, int32_t length) { bobQueueData(data, length); }), Return(1)));
 
     // When Bob sends data put the data into Alice's receive queue and signal 'data available'
     ON_CALL(*bobCb, sendDataZRTP(_, _))
-    .WillByDefault(DoAll(([this](const uint8_t* data, int32_t length) { aliceQueueData(data, length); }), Return(1)));
+            .WillByDefault(DoAll(([this](const uint8_t* data, int32_t length) { aliceQueueData(data, length); }), Return(1)));
+
+    ON_CALL(*aliceCb, sendFrameDataZRTP(_, _, _))
+            .WillByDefault(DoAll(([this](uint8_t const * data, int32_t length, uint8_t numberOfFrames) {
+                bobQueueData(data, length, true, ((numberOfFrames & 0x3) << 1) | 1); }), Return(1)));
+
+    // When Bob sends data put the data into Alice's receive queue and signal 'data available'
+    ON_CALL(*bobCb, sendFrameDataZRTP(_, _, _))
+            .WillByDefault(DoAll(([this](const uint8_t* data, int32_t length, uint8_t numberOfFrames) {
+                aliceQueueData(data, length, true, ((numberOfFrames & 0x3) << 1) | 1); }), Return(1)));
 
     ON_CALL(*aliceCb, sendInfo)
     .WillByDefault([](GnuZrtpCodes::MessageSeverity severity, int32_t subCode) { LOGGER(DEBUGGING, "SendInfo Alice: ", severity, ", code: ", subCode) });
@@ -729,4 +771,3 @@ TEST_F(ZrtpBasicRunFixture, full_run_test_pq74) {
     ASSERT_EQ(aliceCipher, bobCipher);
     ASSERT_EQ(aliceSas, bobSas);
 }
-#endif
