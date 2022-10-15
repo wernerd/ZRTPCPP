@@ -35,27 +35,27 @@
 #endif
 
 // Prepare to support digest algorithms up to 512 bit (64 bytes)
-#define MAX_DIGEST_LENGTH       64
-#define IMPL_MAX_DIGEST_LENGTH  64
+constexpr int MAX_DIGEST_LENGTH = 64;
+constexpr int  IMPL_MAX_DIGEST_LENGTH = 64;
 
 // max. number of parallel supported ZRTP protocol versions.
-#define MAX_ZRTP_VERSIONS       2
+constexpr int MAX_ZRTP_VERSIONS = 2;
 
 // currently only 1.10 supported
-#define SUPPORTED_ZRTP_VERSIONS       1
+constexpr int SUPPORTED_ZRTP_VERSIONS = 1;
 
-// Integer representation of highest supported ZRTP protocol version
-#define HIGHEST_ZRTP_VERION    12
+// Integer representation of highest, supported ZRTP protocol version
+constexpr int HIGHEST_ZRTP_VERSION = 12;
 
 // This is the max length of a ZRTP message in ZRTP words before we split
 // into multiple frames. Otherwise, it stays in one frame.
 // Computes to 980 bytes. After adding RTP overhead, frame header, CRC it's
-// stiff below 1024 bytes which is the recommended max packet size for IP4
-// networks (IP& got up to 1280)
-constexpr uint16_t LENGTH_BEFORE_SPLIT = 240;
+// still below 1024 bytes which is the recommended max packet size for IP4
+// networks (IP6 got up to 1280)
+constexpr uint16_t LENGTH_BEFORE_SPLIT = 245;
 
-// This is the maximum ZRTP message length in word, thus multiply by ZRTP
-// word size to get required buffer size
+// This is the maximum ZRTP message length in words, thus multiply by ZRTP
+// word size to get required buffer size.
 constexpr uint16_t MAX_MSG_LENGTH = 600;
 
 constexpr int MAX_FRAMES = (MAX_MSG_LENGTH + LENGTH_BEFORE_SPLIT) / LENGTH_BEFORE_SPLIT;
