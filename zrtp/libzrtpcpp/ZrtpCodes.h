@@ -122,7 +122,7 @@ enum SevereCodes {
   * The enumeration member comments are copied from the ZRTP specification.
   */
 enum ZrtpErrorCodes {
-    MalformedPacket =   0x10,    //!< Malformed packet (CRC OK, but wrong structure)
+    MalformedPacket =   0x10,    //!< Malformed packet (CRC OK, but 0wrong structure)
     CriticalSWError =   0x20,    //!< Critical software error
     UnsuppZRTPVersion = 0x30,    //!< Unsupported ZRTP version
     HelloCompMismatch = 0x40,    //!< Hello components mismatch
