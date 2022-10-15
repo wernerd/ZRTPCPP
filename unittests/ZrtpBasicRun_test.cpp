@@ -15,11 +15,11 @@
 // Copyright (c) 2020 Werner Dittmann. All rights reserved.
 //
 
-#include <zrtp/libzrtpcpp/ZrtpConfigure.h>
-#include <zrtp/libzrtpcpp/ZRtp.h>
 #include <thread>
 #include <condition_variable>
-#include "../logging/ZrtpLogging.h"
+
+#include "zrtp/libzrtpcpp/ZrtpConfigure.h"
+#include "zrtp/libzrtpcpp/ZRtp.h"
 #include "../common/Utilities.h"
 #include "ZrtpTestCommon.h"
 
@@ -37,9 +37,9 @@ uint8_t aliceZid[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
 uint8_t bobZid[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
 
 struct PacketInfo {
-    unique_ptr<uint8_t[]> packet;
-    size_t length;
-    uint8_t numberOfFrames;
+    unique_ptr<uint8_t[]> packet = {};
+    size_t length = 0;
+    uint8_t numberOfFrames = 0;
 };
 
 // This fixture contains necessary functions and data to run two independent
@@ -76,9 +76,7 @@ public:
         bobQueue.clear();
     }
 
-    ~ZrtpBasicRunFixture( ) override {
-        // cleanup any pending stuff, but no exceptions allowed
-    }
+    ~ZrtpBasicRunFixture( ) override = default;
 
     // region Alice functions
     void aliceSetupThread(shared_ptr<ZrtpConfigure>& configure) {
@@ -98,11 +96,6 @@ public:
     }
 
     void aliceQueueData(uint8_t const * packetData, int32_t length, bool isFrame = false, uint8_t numberOfFrames = 0) {
-        bool frameContinuation = false;
-        if (isFrame) {
-            auto frameHeader = reinterpret_cast<FrameHeader_t const *>(packetData);
-            frameContinuation = frameHeader->frameInfo.f.continuationFlag;
-        }
         // Check if this is a ZRTP frame: advance header by ZRTP_WORK_SIZE (skip frame header)
         auto* header = (zrtpPacketHeader_t *)(packetData + (isFrame ? ZRTP_WORD_SIZE : 0));
         string packetType((char *)header->messageType, sizeof(header->messageType));
@@ -171,11 +164,6 @@ public:
     }
 
     void bobQueueData(uint8_t const * packetData, int32_t length, bool isFrame = false, uint8_t numberOfFrames = 0) {
-        bool frameContinuation = false;
-        if (isFrame) {
-            auto frameHeader = reinterpret_cast<FrameHeader_t const *>(packetData);
-            frameContinuation = frameHeader->frameInfo.f.continuationFlag;
-        }
         auto *header = (zrtpPacketHeader_t *) (packetData + (isFrame ? ZRTP_WORD_SIZE : 0));
         string packetType((char *) header->messageType, sizeof(header->messageType));
         LOGGER(INFO, "Alice --> Bob ") // , packetType, *zrtp::Utilities::hexdump("Packet", packetData, 16))
@@ -392,8 +380,8 @@ TEST_F(ZrtpBasicRunFixture, full_run_test) {
         // SAS. One call only.
         EXPECT_CALL(*aliceCb, srtpSecretsOn(_, _, Eq(false)))
                 .WillOnce([this, &aliceCipher, &aliceSas, &aliceSecureOn](string c, string s, bool v) {
-                    aliceCipher = move(c);
-                    aliceSas = move(s);
+                    aliceCipher = std::move(c);
+                    aliceSas = std::move(s);
                     aliceSecureOn = true;
                     this->securityOnCv.notify_all();
                     LOGGER(INFO, "Alice cipher: ", aliceCipher, ", SAS: ", aliceSas)
@@ -410,8 +398,8 @@ TEST_F(ZrtpBasicRunFixture, full_run_test) {
 
         EXPECT_CALL(*bobCb, srtpSecretsOn(_, _, Eq(false)))
                 .WillOnce([this, &bobCipher, &bobSas, &bobSecureOn](string c, string s, bool v) {
-                    bobCipher = move(c);
-                    bobSas = move(s);
+                    bobCipher = std::move(c);
+                    bobSas = std::move(s);
                     bobSecureOn = true;
                     this->securityOnCv.notify_all();
                     LOGGER(INFO, "  Bob cipher: ", bobCipher, ", SAS: ", bobSas)
@@ -550,8 +538,8 @@ TEST_F(ZrtpBasicRunFixture, full_run_test_ec384) {
         // SAS. One call only.
         EXPECT_CALL(*aliceCb, srtpSecretsOn(_, _, Eq(false)))
                 .WillOnce([this, &aliceCipher, &aliceSas, &aliceSecureOn](string c, string s, bool v) {
-                    aliceCipher = move(c);
-                    aliceSas = move(s);
+                    aliceCipher = std::move(c);
+                    aliceSas = std::move(s);
                     aliceSecureOn = true;
                     this->securityOnCv.notify_all();
                     LOGGER(INFO, "Alice cipher: ", aliceCipher, ", SAS: ", aliceSas)
@@ -568,8 +556,8 @@ TEST_F(ZrtpBasicRunFixture, full_run_test_ec384) {
 
         EXPECT_CALL(*bobCb, srtpSecretsOn(_, _, Eq(false)))
                 .WillOnce([this, &bobCipher, &bobSas, &bobSecureOn](string c, string s, bool v) {
-                    bobCipher = move(c);
-                    bobSas = move(s);
+                    bobCipher = std::move(c);
+                    bobSas = std::move(s);
                     bobSecureOn = true;
                     this->securityOnCv.notify_all();
                     LOGGER(INFO, "  Bob cipher: ", bobCipher, ", SAS: ", bobSas)
@@ -607,18 +595,18 @@ TEST_F(ZrtpBasicRunFixture, full_run_test_ec384) {
 TEST_F(ZrtpBasicRunFixture, full_run_test_np06) {
     // Configure with mandatory algorithms only
     auto aliceConfigure = make_shared<ZrtpConfigure>();
-    auto bobConfigure = make_shared<ZrtpConfigure>();
-
     aliceConfigure->clear();
-    bobConfigure->clear();
     aliceConfigure->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("NP06"));
-    bobConfigure->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("NP06"));
-
+    aliceConfigure->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));
     aliceConfigure->addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
     aliceConfigure->addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN3"));
     aliceConfigure->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES3"));
     aliceConfigure->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS3"));
 
+    auto bobConfigure = make_shared<ZrtpConfigure>();
+    bobConfigure->clear();
+    bobConfigure->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("NP06"));
+    bobConfigure->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));
     bobConfigure->addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
     bobConfigure->addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN3"));
     bobConfigure->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES3"));
@@ -719,8 +707,8 @@ TEST_F(ZrtpBasicRunFixture, full_run_test_np06) {
         // SAS. One call only.
         EXPECT_CALL(*aliceCb, srtpSecretsOn(_, _, Eq(false)))
         .WillOnce([this, &aliceCipher, &aliceSas, &aliceSecureOn](string c, string s, bool v) {
-            aliceCipher = move(c);
-            aliceSas = move(s);
+            aliceCipher = std::move(c);
+            aliceSas = std::move(s);
             aliceSecureOn = true;
             this->securityOnCv.notify_all();
             LOGGER(INFO, "Alice cipher: ", aliceCipher, ", SAS: ", aliceSas)
@@ -737,8 +725,8 @@ TEST_F(ZrtpBasicRunFixture, full_run_test_np06) {
 
         EXPECT_CALL(*bobCb, srtpSecretsOn(_, _, Eq(false)))
         .WillOnce([this, &bobCipher, &bobSas, &bobSecureOn](string c, string s, bool v) {
-            bobCipher = move(c);
-            bobSas = move(s);
+            bobCipher = std::move(c);
+            bobSas = std::move(s);
             bobSecureOn = true;
             this->securityOnCv.notify_all();
             LOGGER(INFO, "  Bob cipher: ", bobCipher, ", SAS: ", bobSas)
