@@ -144,12 +144,12 @@ class __EXPORT ZRtp {
      * engine. After this call we are able to process ZRTP packets
      * from our peer and to process them.
      */
-    void startZrtpEngine();
+    void startZrtpEngine() const;
 
     /**
      * Stop ZRTP security.
      */
-    void stopZrtp();
+    void stopZrtp() const;
 
     /**
      * @brief Process ZRTP message.
@@ -178,7 +178,7 @@ class __EXPORT ZRtp {
      * protocol state engine.
      *
      */
-    void processTimeout();
+    void processTimeout() const;
 #if 0
     /**
      * Check for and handle GoClear ZRTP packet header.
@@ -215,7 +215,7 @@ class __EXPORT ZRtp {
      * @return
      *    Returns true id ZRTP engine is in the given state, false otherwise.
      */
-    bool inState(int32_t state);
+    bool inState(int32_t state) const;
 
     /**
      * Set SAS as verified.
@@ -577,25 +577,31 @@ class __EXPORT ZRtp {
       * for the current call. Setting the counter after the hello phase has no
       * effect.
       */
-     void setT1Resend(int32_t counter);
+     void setT1Resend(int32_t counter) const {
+         if (counter < 0 || counter > 10) stateEngine->setT1Resend(counter);
+     }
 
      /**
       * Set the extended resend counter of timer T1 - T1 controls the Hello packets.
       *
       * More retries to extend time, see RFC6189 chap. 6. This overwrites the standard 
-      * value of 60 extended retiries.
+      * value of 60 extended retries.
       * 
       * Applications may set the resend counter based on network  or some other 
       * conditions. 
       */
-     void setT1ResendExtend(int32_t counter);
+     void setT1ResendExtend(int32_t counter) const {
+         stateEngine->setT1ResendExtend(counter);
+     }
 
      /**
       * Set the time capping of timer T1 - T1 controls the Hello packets.
       * 
       * Values <50ms are not set.
       */
-     void setT1Capping(int32_t capping);
+     [[maybe_unused]] void setT1Capping(int32_t capping) const {
+         if (capping >= 50) stateEngine->setT1Capping(capping);
+     }
 
      /**
       * Set the resend counter of timer T2 - T2 controls other (post-Hello) packets.
@@ -608,21 +614,28 @@ class __EXPORT ZRtp {
       * for the current call. Setting the counter after tZRTP enetered secure state
       * has no effect.
       */
-     void setT2Resend(int32_t counter);
+     void setT2Resend(int32_t counter) const {
+         if (counter < 0 || counter > 10) stateEngine->setT2Resend(counter);
+     }
 
      /**
       * Set the time capping of timer T2 - T2 controls other (post-Hello) packets.
       * 
       * Values <150ms are not set.
       */
-     void setT2Capping(int32_t capping);
+     [[maybe_unused]] void setT2Capping(int32_t capping) const {
+         if (capping >= 150) stateEngine->setT2Capping(capping);
+     }
 
      /**
       * @brief Get required buffer size to get all 32-bit statistic counters of ZRTP
       *
       * @return number of 32 bit integer elements required or < 0 on error
       */
-     int getNumberOfCountersZrtp();
+     [[nodiscard]] int getNumberOfCountersZrtp() const {
+         // If we add some other counters add them here before returning
+         return stateEngine->getNumberOfRetryCounters();
+     }
 
      /**
       * @brief Read statistic counters of ZRTP
@@ -631,7 +644,9 @@ class __EXPORT ZRtp {
       *         hold at least getNumberOfCountersZrtp() 32-bit integers
       * @return number of 32-bit counters returned in buffer or < 0 on error
       */
-     int getCountersZrtp(int32_t* counters);
+     int getCountersZrtp(int32_t* counters) const {
+         return stateEngine->getRetryCounters(counters);
+     }
      
      /**
       * @brief Get the computed ZRTP exported key.
@@ -676,7 +691,9 @@ class __EXPORT ZRtp {
      *
      * @param overhead Length of the transport overhead.
      */
-    void setTransportOverhead(int32_t overhead);
+    void setTransportOverhead(int32_t overhead) const  {
+        stateEngine->setTransportOverhead(overhead);
+    }
 
 #ifndef UNIT_TESTS
 private:
@@ -1691,15 +1708,14 @@ private:
      int32_t assembleMessage(uint8_t const *zrtpFrame, size_t length);
 
      /**
-      * @brief save data of peer's hello data.
+      * @brief Save data of peer's hello data.
       *
       * Due to changes in total_hash computation ZRTP may need this data some time
       * after it was received.
       *
-      * @param data pointer to the hello data.
-      * @param length length in bytes.
+      * @param helloPacket hello packet to save.
       */
-     void saveOtherHelloData(uint8_t const * data, size_t length);
+     void saveOtherHelloData(ZrtpPacketHello & helloPacket);
 };
 
 /**

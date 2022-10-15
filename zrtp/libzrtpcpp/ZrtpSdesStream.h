@@ -88,16 +88,15 @@
 #include <srtp/SrtpHandler.h>
 
 /*
- * These functions support 256 bit encryption algorithms.
+ * These functions support 256-bit encryption algorithms.
  */
-#define MAX_KEY_LEN           32
-#define MAX_SALT_LEN          14
-#define MAX_DIGEST_LENGTH     64
+constexpr int MAX_KEY_LEN  = 32;
+constexpr int MAX_SALT_LEN = 14;
 
 /**
  * Maximum length of a raw crypto string.
  */
-#define MAX_CRYPT_STRING_LEN 200
+constexpr int MAX_CRYPT_STRING_LEN = 200;
 
 class __EXPORT ZrtpSdesStream {
 

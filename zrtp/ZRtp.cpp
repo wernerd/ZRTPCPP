@@ -169,7 +169,7 @@ void ZRtp::processZrtpMessage(uint8_t const * zrtpMessage, uint32_t pSSRC, size_
     }
 }
 
-void ZRtp::processTimeout() {
+void ZRtp::processTimeout() const {
     Event ev;
 
     ev.type = Timer;
@@ -203,7 +203,7 @@ bool ZRtp::handleGoClear(uint8_t *message)
 }
 #endif
 
-void ZRtp::startZrtpEngine() {
+void ZRtp::startZrtpEngine() const {
     Event ev;
 
     if (stateEngine && stateEngine->inState(Initial)) {
@@ -212,7 +212,7 @@ void ZRtp::startZrtpEngine() {
     }
 }
 
-void ZRtp::stopZrtp() {
+void ZRtp::stopZrtp() const {
     Event ev;
 
     if (stateEngine) {
@@ -221,7 +221,7 @@ void ZRtp::stopZrtp() {
     }
 }
 
-bool ZRtp::inState(int32_t state)
+bool ZRtp::inState(int32_t state) const
 {
     if (stateEngine) {
         return stateEngine->inState(state);
@@ -640,14 +640,15 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     msgShaContext = createHashCtx();
 
     // Hash messages to produce overall message hash:
-    // First the Responder's (my) Hello message, second the Commit (always Initiator's),
+    // First the Initiator's hello message, then Responder's (my) Hello message, second the Commit (always Initiator's),
     // then the DH1 message (which is always a Responder's message).
     // Must use negotiated hash.
     if (isNpAlgorithmActive) {
         ZrtpPacketHello helloPkt(otherHelloPacket.data());
         hashCtxFunction(msgShaContext, (unsigned char*)helloPkt.getHeaderBase(), helloPkt.getLength() * ZRTP_WORD_SIZE);
     }
-    hashCtxFunction(msgShaContext, (unsigned char*)currentHelloPacket->getHeaderBase(), currentHelloPacket->getLength() * ZRTP_WORD_SIZE);
+    hashCtxFunction(msgShaContext, (unsigned char *) currentHelloPacket->getHeaderBase(), currentHelloPacket->getLength() * ZRTP_WORD_SIZE);
+
     hashCtxFunction(msgShaContext, (unsigned char*)commit->getHeaderBase(), commit->getLength() * ZRTP_WORD_SIZE);
     hashCtxFunction(msgShaContext, (unsigned char*)zrtpDH1.getHeaderBase(), zrtpDH1.getLength() * ZRTP_WORD_SIZE);
 
@@ -666,7 +667,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
 
     sendInfo(Info, InfoInitDH1Received);
 
-    if (!dhPart1->isLengthOk()) {
+    if (!dhPart1->isLengthOk(isNpAlgorithmActive)) {
         *errMsg = CriticalSWError;
         return nullptr;
     }
@@ -748,7 +749,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
 
     sendInfo(Info, InfoRespDH2Received);
 
-    if (!dhPart2->isLengthOk()) {
+    if (!dhPart2->isLengthOk(isNpAlgorithmActive)) {
         *errMsg = CriticalSWError;
         return nullptr;
     }
@@ -779,6 +780,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
         *errMsg = DHErrorWrongHVI;
         return nullptr;
     }
+    // When using NPxx algorithms secret key was computed when preparing DHPart1 above
     if (!isNpAlgorithmActive) {
         // Get and check the Initiator's public value, see chap. 5.4.2 of the spec
         pvi = dhPart2->getPv();
@@ -2365,7 +2367,6 @@ void ZRtp::computeSRTPKeys() {
     KDF(s0.data(), hashLength, respMasterKey, strlen(respMasterKey)+1, kdfContext.data(), kdfSize, keyLen, srtpKeyR);
     KDF(s0.data(), hashLength, respMasterSalt, strlen(respMasterSalt)+1, kdfContext.data(), kdfSize, 112, srtpSaltR);
 
-    // The HMAC keys for GoClear
     KDF(s0.data(), hashLength, iniHmacKey, strlen(iniHmacKey)+1, kdfContext.data(), kdfSize, hashLength * 8, hmacKeyI);
     KDF(s0.data(), hashLength, respHmacKey, strlen(respHmacKey)+1, kdfContext.data(), kdfSize, hashLength * 8, hmacKeyR);
 
@@ -2876,43 +2877,6 @@ bool ZRtp::sendSASRelayPacket(uint8_t* sh, const string& render) {
 #endif // ZRTP_SAS_RELAY_SUPPORT
 }
 
-void ZRtp::setT1Resend(int32_t counter) {
-    if (counter < 0 || counter > 10)
-        stateEngine->setT1Resend(counter);
-}
-
-void ZRtp::setT1ResendExtend(int32_t counter) {
-    stateEngine->setT1ResendExtend(counter);
-}
-
-void ZRtp::setT1Capping(int32_t capping) {
-    if (capping >= 50)
-        stateEngine->setT1Capping(capping);
-}
-
-void ZRtp::setT2Resend(int32_t counter) {
-    if (counter < 0 || counter > 10)
-        stateEngine->setT2Resend(counter);
-}
-
-void ZRtp::setT2Capping(int32_t capping) {
-    if (capping >= 150)
-        stateEngine->setT2Capping(capping);
-}
-
-int ZRtp::getNumberOfCountersZrtp() {
-    // If we add some other counters add them here before returning
-    return stateEngine->getNumberOfRetryCounters();
-}
-
-int ZRtp::getCountersZrtp(int32_t* counters) {
-    return stateEngine->getRetryCounters(counters);
-}
-
-void ZRtp::setTransportOverhead(int32_t overhead) {
-    stateEngine->setTransportOverhead(overhead);
-}
-
 bool ZRtp::checkAndSetNonce(uint8_t* nonce) {
     // This is for backward compatibility if an applications uses the old
     // get- and setMultiStrParams functions
@@ -2931,13 +2895,11 @@ bool ZRtp::checkAndSetNonce(uint8_t* nonce) {
     return true;
 }
 
-void ZRtp::saveOtherHelloData(uint8_t const * data, size_t length) {
-    otherHelloPacket.assign(data, length);
+void ZRtp::saveOtherHelloData(ZrtpPacketHello & helloPacket) {
+    if (otherHelloPacket.empty()) {
+        otherHelloPacket.assign(helloPacket.getHeaderBase(), helloPacket.getLength() * ZRTP_WORD_SIZE);
+    }
 }
-
-//srtpSecrets::srtpSecrets() {}
-//srtpSecrets::~srtpSecrets() {}
-
 
 /** EMACS **
  * Local variables:

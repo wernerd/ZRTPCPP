@@ -205,6 +205,8 @@ public:
 
     void setTransportOverhead(int32_t overhead) override { transportOverhead = overhead; }
 
+    int32_t getTransportOverhead() override { return transportOverhead; }
+
     void setMultiStream(bool multi) override { multiStream = multi; }
     // endregion
 private:

@@ -72,7 +72,7 @@ public:
     [[nodiscard]] uint8_t* getHMAC() const          { return pv+roundUp; };
 
     /// Check if packet length makes sense. DHPart packets are 29 words at minumum, using E255
-    [[nodiscard]] bool isLengthOk() const           {return (getLength() >= 29);}
+    [[nodiscard]] bool isLengthOk(bool isNpAlgorithmActive) const {return !isNpAlgorithmActive ? getLength() >= 29 : getLength() >= 21;}
 
     /// Set public key value, variable length byte array
     void setPv(uint8_t const * text)         { memcpy(pv, text, dhLength); };

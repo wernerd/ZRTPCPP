@@ -86,7 +86,7 @@ public:
     virtual int getRetryCounters(int32_t* counters) = 0;
 
     /**
-     * Set length in bytes of transport over head, default is @c RTP_HEADER_LENGTH
+     * @brief Set length in bytes of transport over head, default is @c RTP_HEADER_LENGTH
      *
      * State engine uses this overhead length to validate the packet length of a ZRTP
      * packet including the transport header/footer. For example overhead of RTP is
@@ -96,6 +96,11 @@ public:
      * @param overhead
      */
     virtual void setTransportOverhead(int32_t overhead) = 0;
+
+    /**
+     * @brief Get length in bytes of transport over head.
+     */
+    virtual int32_t getTransportOverhead() = 0;
 
     /**
      * Set multi-stream mode flag.
