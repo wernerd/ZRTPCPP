@@ -70,6 +70,7 @@ public:
     MOCK_METHOD(int, getNumberOfRetryCounters, (), (override));
     MOCK_METHOD(int, getRetryCounters, (int32_t* counters), (override));
     MOCK_METHOD(void, setTransportOverhead, (int32_t overhead), (override));
+    MOCK_METHOD(int, getTransportOverhead, (), (override));
     MOCK_METHOD(void, setMultiStream, (bool multi), (override));
 
     // Setup call which return a value. Let them return some sensible data.

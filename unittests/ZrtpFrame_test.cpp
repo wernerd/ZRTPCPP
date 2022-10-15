@@ -138,6 +138,9 @@ public:
 
     ZrtpFrameTestFixture &operator=(const ZrtpFrameTestFixture &&other) = delete;
 
+    // Set up a CtZrtpStream to test sending via ZRtp.sendAsZrtpFrames() ->
+    //                                              CtZrtpStream.sendFrameDataZRTP() ->
+    //                                                  sendRtp callback to TiVi (mocked in this test)
     void SetUp() override {
         // code here will execute just before the test ensues
         LOGGER_INSTANCE setLogLevel(WARNING);
