@@ -15,12 +15,12 @@
 // Copyright (c) 2020 Werner Dittmann. All rights reserved.
 //
 
-#include <zrtp/libzrtpcpp/ZrtpConfigure.h>
-#include <zrtp/libzrtpcpp/ZRtp.h>
 #include <thread>
 #include <condition_variable>
-#include <common/ZrtpTimeoutProvider.h>
-#include "../logging/ZrtpLogging.h"
+
+#include "zrtp/libzrtpcpp/ZrtpConfigure.h"
+#include "zrtp/libzrtpcpp/ZRtp.h"
+#include "common/ZrtpTimeoutProvider.h"
 #include "ZrtpTestCommon.h"
 #include "NetworkSimulation.h"
 
@@ -79,7 +79,7 @@ public:
 
     ~ZrtpTimedRunFixture( ) override {
         // cleanup any pending stuff, but no exceptions allowed
-        LOGGER_INSTANCE setLogLevel(VERBOSE);
+        LOGGER_INSTANCE setLogLevel(DEBUGGING);
     }
 
     // region Alice functions
@@ -106,7 +106,7 @@ public:
         LOGGER(INFO, "From Bob:   ", packetType, " at: ", tts)
 
         unique_lock<mutex> queueLock(aliceQueueMutex);
-        aliceQueue.push_back(move(dataPairPtr));
+        aliceQueue.push_back(std::move(dataPairPtr));
         queueLock.unlock();
         aliceQueueCv.notify_all();
     }
@@ -167,7 +167,7 @@ public:
         LOGGER(INFO, "From Alice: ", packetType, " at: ", tts)
 
         unique_lock<mutex> queueLock(bobQueueMutex);
-        bobQueue.push_back(move(dataPairPtr));
+        bobQueue.push_back(std::move(dataPairPtr));
         queueLock.unlock();
         bobQueueCv.notify_all();
     }
@@ -257,7 +257,6 @@ TEST_F(ZrtpTimedRunFixture, full_run_test) {
     aliceNetwork->setNetworkDelay(100);
     bobNetwork->setNetworkDelay(100);
 
-    // No timeout happens in this test: Start and cancel timer calls must match
     ON_CALL(*aliceCb, activateTimer).WillByDefault(DoAll(
             ([&aliceTimers, this](int32_t time) {
                 aliceTimers++;
@@ -332,8 +331,8 @@ TEST_F(ZrtpTimedRunFixture, full_run_test) {
         // SAS. One call only.
         EXPECT_CALL(*aliceCb, srtpSecretsOn(_, _, Eq(false)))
                 .WillOnce([this, &aliceCipher, &aliceSas, &aliceSecureOn](string c, string s, bool v) {
-                    aliceCipher = move(c);
-                    aliceSas = move(s);
+                    aliceCipher = std::move(c);
+                    aliceSas = std::move(s);
                     aliceSecureOn = true;
                     this->securityOnCv.notify_all();
                     LOGGER(INFO, "Alice cipher: ", aliceCipher, ", SAS: ", aliceSas)
@@ -350,8 +349,8 @@ TEST_F(ZrtpTimedRunFixture, full_run_test) {
 
         EXPECT_CALL(*bobCb, srtpSecretsOn(_, _, Eq(false)))
                 .WillOnce([this, &bobCipher, &bobSas, &bobSecureOn](string c, string s, bool v) {
-                    bobCipher = move(c);
-                    bobSas = move(s);
+                    bobCipher = std::move(c);
+                    bobSas = std::move(s);
                     bobSecureOn = true;
                     this->securityOnCv.notify_all();
                     LOGGER(INFO, "  Bob cipher: ", bobCipher, ", SAS: ", bobSas)
