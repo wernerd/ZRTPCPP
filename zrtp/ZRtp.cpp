@@ -554,12 +554,11 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     // If committed pub-key type is strong then check for strong hashes as well.
     // Security levels must match
     if (*(int32_t*)(cp->getName()) == *(int32_t*)ec38 ||
-        *(int32_t*)(cp->getName()) == *(int32_t*)e414
-#ifdef TWOTWO_SUPPORT
-        || *(int32_t*)(cp->getName()) == *(int32_t*)np06 ||
+        *(int32_t*)(cp->getName()) == *(int32_t*)e414 ||
+        *(int32_t*)(cp->getName()) == *(int32_t*)np06 ||
         *(int32_t*)(cp->getName()) == *(int32_t*)np09 ||
         *(int32_t*)(cp->getName()) == *(int32_t*)np12
-#endif
+
         ) {
         if (!(*(int32_t*)(hash->getName()) == *(int32_t*)s384 || *(int32_t*)(hash->getName()) == *(int32_t*)skn3)) {
             *errMsg = UnsuppHashType;
@@ -580,21 +579,14 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     // check if we can use the dhContext prepared by prepareCommit(),
     // if not delete old DH context and generate new one
     // The algorithm names are 4 chars only, thus we can cast to int32_t
-
-    if (*(int32_t*)(dhContext->getDHtype()) != *(int32_t*)(pubKey->getName())
-//#ifdef TWOTWO_SUPPORT
-//            || *(int32_t*)(pubKey->getName()) == *(int32_t*)np06 ||
-//            *(int32_t*)(pubKey->getName()) == *(int32_t*)np09 ||
-//            *(int32_t*)(pubKey->getName()) == *(int32_t*)np12
-//#endif
-            ) {
+    if (*(int32_t*)(dhContext->getDHtype()) != *(int32_t*)(pubKey->getName())) {
         dhContext = make_unique<ZrtpDH>(pubKey->getName());
     }
 
     // When using NPxx algorithm the Commit packet contains the peer's public keys of NPxx
-    // and E414. Compute the Responder's shared secrets now. This _must_ be done _before_
+    // and E414. Compute the Responder's shared secrets now. This *must be done before*
     // getting the Responder's public key data. `computeSecretKey` computes the Responder's
-    // public key of the NPxx algorithms.
+    // cipher data and public key of the NPxx/EC 414 algorithm respectively.
     if (isNpAlgorithmActive) {
         dhContext->computeSecretKey(commit->getPv(), DHss, ZrtpDH::Commit);
     }
@@ -1569,11 +1561,7 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
 
     // Build list of own pubkey algorithm names, must follow the order
     // defined in RFC 6189, chapter 4.1.2., weakest to strongest
-#ifdef TWOTWO_SUPPORT
     const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38, np06, np09, np12};
-#else
-    const char *orderedAlgos[] = {dh2k, e255, ec25, dh3k, e414, ec38};
-#endif
     auto numOrderedAlgos = sizeof(orderedAlgos) / sizeof(const char*);
 
     auto numAlgosPeer = hello->getNumPubKeys();
@@ -1646,12 +1634,11 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
     int32_t algoName = *(int32_t*)(useAlgo->getName());
 
     // select a corresponding strong hash if necessary.
-    if (algoName == *(int32_t*)ec38 || algoName == *(int32_t*)e414
-#ifdef TWOTWO_SUPPORT
-        || algoName == *(int32_t*)np06 ||
+    if (algoName == *(int32_t*)ec38 ||
+        algoName == *(int32_t*)e414 ||
+        algoName == *(int32_t*)np06 ||
         algoName == *(int32_t*)np09 ||
         algoName == *(int32_t*)np12
-#endif
     ) {
         hash = getStrongHashOffered(hello, algoName);
         cipher = getStrongCipherOffered(hello, algoName);

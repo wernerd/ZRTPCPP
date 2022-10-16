@@ -18,13 +18,10 @@
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <libzrtpcpp/ZrtpPacketDHPart.h>
-#include <zrtp/crypto/zrtpDH.h>
+#include "libzrtpcpp/ZrtpPacketDHPart.h"
+#include "zrtp/crypto/zrtpDH.h"
 #include "logging/ZrtpLogging.h"
 
-#ifdef TWOTWO_SUPPORT
-#include "crypto/zrtpKem.h"
-#endif
 constexpr int FIXED_NUM_WORDS = sizeof(DHPartPacket_t) / ZRTP_WORD_SIZE + 2;         // +2 for MAC
 constexpr int DH2K_WORDS = FIXED_NUM_WORDS + DH2K_LENGTH_BYTES / ZRTP_WORD_SIZE;     // 2048 / 8 / ZRTP_WORD_SIZE
 constexpr int DH3K_WORDS = FIXED_NUM_WORDS + DH3K_LENGTH_BYTES / ZRTP_WORD_SIZE;     // 3072 / 8 / ZRTP_WORD_SIZE
