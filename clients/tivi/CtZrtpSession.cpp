@@ -267,8 +267,8 @@ void *findGlobalCfgKey(char *key, int iKeyLen, int &iSize, char **opt, int *type
      * 
      */
     if (iPreferNIST == 0) {
-#ifdef TWOTWO_SUPPORT
-        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("PQ74"));
+#ifdef NPXX_SUPPORT
+        conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("NP09"));
 #endif
         if (iDisableBernsteinCurve3617 == 0)
             conf->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));
