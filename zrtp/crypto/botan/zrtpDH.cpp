@@ -110,8 +110,6 @@ ZrtpDH::ZrtpDH(const char* type) : ctx(std::make_unique<ZrtpDH::dhCtx>()) {
             break;
 
         case E414:
-            ctx->eccPrivateKey = std::make_unique<Botan::Curve41417_PrivateKey>(rng);
-
         case NP06:
         case NP09:
         case NP12:
