@@ -200,7 +200,7 @@ if (AXO)
 endif()
 
 if (SNTRUP)
-    add_compile_definitions(TWOTWO_SUPPORT)
+    add_compile_definitions(SNTRUP_SUPPORT)
 endif()
 
 # necessary and required modules checked, ready to generate config.h in top-level build directory
