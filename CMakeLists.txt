@@ -232,7 +232,7 @@ if ("${BOTAN_TAG}" STREQUAL "")
     set(BOTAN_TAG 16fabba96f79c6bbf5d28120e393babb3f11e4ec)  ## branch skein-enhance-2 top
 endif()
 # Botan modules required by ZRTP library
-set(BOTAN_MODULES "sha2_32,sha2_64,sha1,twofish,aes,skein,hmac,pubkey,curve25519,cfb,cbc,ec_group,ecdh,dh,dl_group" )
+set(BOTAN_MODULES "sha2_32,sha2_64,sha1,twofish,aes,skein,hmac,pubkey,curve25519,cfb,cbc,ec_group,ecdh,dh,dl_group,hkdf" )
 FetchContent_Declare(
         ${botan_lc}
         SOURCE_SUBDIR amalLibs                              ## create amalgamation, build static lib
