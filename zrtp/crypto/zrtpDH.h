@@ -41,7 +41,9 @@
  *    Number of random bytes to produce.
  */
 #if defined(__cplusplus)
+
 #include <cstdint>
+
 extern "C"
 {
 #else
@@ -60,13 +62,13 @@ void randomZRTP(uint8_t *buf, int32_t length);
 #include "../common/typedefs.h"
 #include "crypto/zrtpKem.h"
 
-constexpr int DH2K_LENGTH_BYTES = 2048/8;
-constexpr int DH3K_LENGTH_BYTES = 3072/8;
-constexpr int EC25_LENGTH_BYTES = 2*(256/8);
-constexpr int EC38_LENGTH_BYTES = 2*(384/8);
+constexpr int DH2K_LENGTH_BYTES = 2048 / 8;
+constexpr int DH3K_LENGTH_BYTES = 3072 / 8;
+constexpr int EC25_LENGTH_BYTES = 2 * (256 / 8);
+constexpr int EC38_LENGTH_BYTES = 2 * (384 / 8);
 constexpr int E255_LENGTH_BYTES = 32;
-constexpr int E414_LENGTH_BYTES = 2*((414+7) / 8);  // -> computes to 104 byte for x and y coordinate of curve
-constexpr int E414_LENGTH_BYTES_COMP = (((414+7) / 8) + 1); // -> computes to 53 byte for compressed coordinates
+constexpr int E414_LENGTH_BYTES = 2 * ((414 + 7) / 8);  // -> computes to 104 byte for x and y coordinate of curve
+constexpr int E414_LENGTH_BYTES_COMP = (((414 + 7) / 8) + 1); // -> computes to 53 byte for compressed coordinates
 
 // DH1part packet sends SNTRUP ciphertext and E414 public key data
 constexpr int NP06_LENGTH_BYTES_DHPart = SNTRUP_CRYPTO_CIPHERTEXTBYTES_653 + E414_LENGTH_BYTES_COMP;
@@ -113,8 +115,8 @@ public:
      * @param state
      *     At which protocol state ZRTP needs a new DH
      */
-    explicit ZrtpDH(char const * type);
-    
+    explicit ZrtpDH(char const *type);
+
     ~ZrtpDH();
 
     /**
@@ -128,7 +130,7 @@ public:
      *
      * @return Size in bytes.
      */
-    size_t getPubKeyBytes(zrtp::SecureArray4k& pubKey, MessageType msgType) const;
+    size_t getPubKeyBytes(zrtp::SecureArray4k &pubKey, MessageType msgType) const;
 
     /**
      * Compute the secret key and returns it to caller.
@@ -144,7 +146,7 @@ public:
      *
      * @return the size of the shared secret on success, -1 on error.
      */
-    size_t computeSecretKey(uint8_t *pubKeyBytes, zrtp::SecureArray1k& secret,  MessageType msgType);
+    size_t computeSecretKey(uint8_t *pubKeyBytes, zrtp::SecureArray1k &secret, MessageType msgType);
 
     /**
      * Check and validate the public key received from peer.
@@ -158,7 +160,7 @@ public:
      *
      * @return 0 if check failed, 1 if public key value is ok.
      */
-    int32_t checkPubKey([[maybe_unused]] uint8_t* pubKeyBytes);
+    int32_t checkPubKey([[maybe_unused]] uint8_t *pubKeyBytes);
 
     /**
      * Get type of DH algorithm.
@@ -166,11 +168,11 @@ public:
      * @return
      *     Pointer to DH algorithm name
      */
-    [[nodiscard]] const char* getDHtype() const;
+    [[nodiscard]] const char *getDHtype() const;
 
     [[nodiscard]] ErrorCode getErrorCode() const { return errorCode; }
 
-    [[nodiscard]] static std::string version() ;
+    [[nodiscard]] static std::string version();
 
 private:
 
@@ -201,8 +203,15 @@ private:
     [[nodiscard]] size_t getPubKeySize() const;
 
 
+    bool eccEncapDecap(uint8_t *pubKeyBytes, ZrtpBotanRng &rng, zrtp::SecureArray256 const &secretSntrup,
+                       MessageType msgType, zrtp::SecureArray256 &secretEcc) const;
+
+    void eccKdf(Botan::secure_vector<uint8_t> const &dhSharedSecret, std::vector<uint8_t> const &pubKeyBytes,
+                zrtp::SecureArray256 const &secretSntrup, zrtp::SecureArray256 &secretEcc) const;
+
     void generateSntrupKeyPair() const;
-    size_t computeSntrupSharedSecret(uint8_t * pubKeyBytes, zrtp::SecureArray1k& secret, MessageType msgType);
+
+    size_t computeSntrupSharedSecret(uint8_t *pubKeyBytes, zrtp::SecureArray256 &secret, MessageType msgType);
 
     Algorithm pkType;               ///< Which type of DH to use
     ErrorCode errorCode;
@@ -210,6 +219,7 @@ private:
     std::unique_ptr<dhCtx> ctx;
 
 };
+
 #endif /*__cpluscplus */
 #endif
 
