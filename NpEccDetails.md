@@ -18,11 +18,11 @@ initialize the key exchanged:
 The implementation concatenates the data in the order shown above, no
 padding between the two public keys.
 
-Both ZRTP peers generate _pki_ and prepare their ZRTP Commit message 
-with this data. Add padding to _pki_ to full ZRTP word (multiple of 
-4 bytes). According to ZRTP2020 the Commit message is now a 
-variable length message which contains this set of public keys. The 
-ECC public key data uses compressed format.
+Both ZRTP peers assume Initiator role first, generate _pki_ and 
+prepare their ZRTP Commit message with this data. Add padding to 
+_pki_ to full ZRTP word (multiple of 4 bytes). According to ZRTP2022 
+the Commit message is now a variable length message which contains 
+this set of public keys. The ECC public key data uses compressed format.
 
 After the _Hello_, _HelloAck_, and _Commit_ exchange ZRTP determines 
 which peer is Initiator or Responder. 
@@ -30,15 +30,15 @@ which peer is Initiator or Responder.
 ### Responder flow ###
 
 The Responder takes the public key data of the Initiator's _commit_ 
-message, extracts PQ_pk and ECC_pki and performs the next steps:
+message and performs the next steps:
 
-- discard its NTRU prime and `ECC_ski`, `ECC_pki` keys from 
-  initialization step above
-- extract PQ_pk, call NTRU prime encapsulation which returns the shared 
-  secret _PQ_ss_ and the encrypted shared secret _PQ_ct_
+- discard its NTRU prime
+- extract _PQ_pk_ from Commit message, call NTRU prime encapsulation 
+  which returns the shared secret _PQ_ss_ and the encrypted shared 
+  secret _PQ_ct_ 
 - extract _ECC_pki_ and compute the ECC secret _ECC_z_ using the 
   _ECC_pki_ and its _ECC_skr_ 
-- compute the ECC KEM: `ECC_ss = KDF_ecc(ECC_pki || ECC_z)`
+- compute the ECC KEM: `ECC_ss = KDF_ecc(ECC_z, ECC_pki || ECC_z)`
 - create _pkr_ data: `pkr = PQ_ct || ECC_pkr`
 - send ZRTP DHPart1 message which contains _pkr_ 
 
@@ -47,16 +47,12 @@ padding between the two public keys.
 
 ### Initiator flow ###
 
-The Initiator extracts _PQ_ct_ and _ECC_pkr_ data from DHPart1 
-message and performs the next steps:
+The Initiator performs the steps after it received DHPart1 message:
 
-- discard its `ECC_skr` and `ECC_pkr` keys from initialization step 
-  above
 - extract _PQ_ct_ and call NTRU prime decapsulation to get _PQ_ss_
-- compute the ECC secret _ECC_z_ using the extracted 
 - extract_ECC_pkr_ and compute the ECC secret _ECC_z_ using the 
   _ECC_pkr_ and its _ECC_ski_
-- compute the ECC KEM: `ECC_ss = KDF_ecc(ECC_pki || ECC_z)` 
+- compute the ECC KEM: `ECC_ss = KDF_ecc(ECC_z, ECC_pki || ECC_z)` 
 
 ### Common flow ###
 
