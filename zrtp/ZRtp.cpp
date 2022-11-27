@@ -469,7 +469,7 @@ ZrtpPacketCommit* ZRtp::prepareCommitMultiStream(ZrtpPacketHello *hello) {
 /*
  * At this point we will take the role of the Responder. We have been in
  * the role of the Initiator before and already sent a commit packet that
- * clashed with a commit packet from our peer. If our HVI was lower than our
+ * may have clashed with a commit packet from our peer. If our HVI was lower than our
  * peer's HVI then we switched to Responder and handle our peer's commit packet
  * here. This method takes care to delete and refresh data left over from a
  * possible Initiator preparation. This belongs to prepared DH data, message
@@ -557,9 +557,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
         *(int32_t*)(cp->getName()) == *(int32_t*)e414 ||
         *(int32_t*)(cp->getName()) == *(int32_t*)np06 ||
         *(int32_t*)(cp->getName()) == *(int32_t*)np09 ||
-        *(int32_t*)(cp->getName()) == *(int32_t*)np12
-
-        ) {
+        *(int32_t*)(cp->getName()) == *(int32_t*)np12) {
         if (!(*(int32_t*)(hash->getName()) == *(int32_t*)s384 || *(int32_t*)(hash->getName()) == *(int32_t*)skn3)) {
             *errMsg = UnsuppHashType;
             return nullptr;
@@ -583,8 +581,8 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
         dhContext = make_unique<ZrtpDH>(pubKey->getName());
     }
 
-    // When using NPxx algorithm the Commit packet contains the peer's public keys of NPxx
-    // and E414. Compute the Responder's shared secrets now. This *must be done before*
+    // When using NPxx algorithm the Commit packet contains the Initiator's public keys of NPxx
+    // and E414. Compute the Responder's shared secrets now. This *must* be done *before*
     // getting the Responder's public key data. `computeSecretKey` computes the Responder's
     // cipher data and public key of the NPxx/EC 414 algorithm respectively.
     if (isNpAlgorithmActive) {
@@ -592,7 +590,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMs
     }
     sendInfo(Info, InfoDH1DHGenerated);
 
-    // In case of NPxx algorithms: the public key data contains the sntrup cipher text
+    // In case of NPxx algorithms: the public key data contains the SNTRUP cipher text
     // and my E414 public key. `computeSecreteKey` above computed the SNTRUP cipher text
     // which is the encrypted shared key of SNTRUP.
     dhContext->getPubKeyBytes(pubKeyBytes, ZrtpDH::DhPart1);
@@ -717,7 +715,7 @@ ZrtpPacketDHPart* ZRtp::prepareDHPart2(ZrtpPacketDHPart *dhPart1, uint32_t* errM
     // also performs sign SAS callback if it's active.
     generateKeysInitiator(dhPart1, *zidRec);
 
-    dhContext.reset(nullptr);
+    dhContext.reset();
 
     // store DHPart1 data temporarily until we can check HMAC after receiving Confirm1
     storeMsgTemp(dhPart1);
@@ -800,7 +798,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* er
      */
     generateKeysResponder(dhPart2, *zidRec);
 
-    dhContext.reset(nullptr);
+    dhContext.reset();
 
     // Fill in Confirm1 packet.
     zrtpConfirm1.setMessageType((uint8_t*)Confirm1Msg);

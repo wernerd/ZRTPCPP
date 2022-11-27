@@ -94,7 +94,7 @@ namespace Botan {
     bool
     Curve41417_PrivateKey::check_key(RandomNumberGenerator &rng, bool strong) const { return false; }
 
-    // Optimized for use in ZRTP: the protocol exchanges affine raw X/Y coordinates
+    // Optimized for use in ZRTP: the protocol uses affine raw X/Y coordinates
     Curve41417_PublicKey::Curve41417_PublicKey(uint8_t *otherKey) {
         auto x = BigInt::decode(&otherKey[0], Curve41417_PrivateKey::COORDINATE_BYTES);
         auto y = BigInt::decode(

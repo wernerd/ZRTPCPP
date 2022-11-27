@@ -499,7 +499,7 @@ void ZrtpStateEngineImpl::evAckSent() {
          * Timer:
          * - resend Hello packet, stay in state, restart timer until repeat
          *   counter triggers
-         * - if repeat counter triggers switch to state Detect, con't clear
+         * - if repeat counter triggers switch to state Detect, can't clear
          *   sentPacket, Detect requires it to point to own Hello message
          */
     else if (event->type == Timer) {
@@ -511,7 +511,7 @@ void ZrtpStateEngineImpl::evAckSent() {
         if (nextTimer(&T1) <= 0) {
             parent->zrtpNotSuppOther();
             commitPkt = nullptr;
-            // Stay in state Detect to be prepared get an hello from
+            // Stay in state Detect to be prepared get a hello from
             // other peer any time later
             nextState(Detect);
         }
@@ -804,9 +804,9 @@ void ZrtpStateEngineImpl::evWaitDHPart1() {
                     sendFailed();       // returns to state Initial
                 }
             }
+            else {
                 // Stay in state, we are Initiator, wait for DHPart1 of Confirm1 packet from peer.
                 // Resend Commit after timeout until we get a DHPart1 or Confirm1
-            else {
                 if (startTimer(&T2) <= 0) { // restart the Commit timer, gives peer more time to react
                     timerFailed(SevereNoTimer);    // returns to state Initial
                 }

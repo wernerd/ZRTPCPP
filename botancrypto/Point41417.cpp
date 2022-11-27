@@ -116,7 +116,6 @@ namespace Botan {
     /*
      * Refer to the document: Faster addition and doubling on elliptic curves; Daniel J. Bernstein and Tanja Lange
      * section 4.
-     *
      */
 
     void Point41417p::add(const Point41417p &Q, std::vector<BigInt> &workspace)
