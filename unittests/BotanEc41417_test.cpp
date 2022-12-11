@@ -163,27 +163,27 @@ TEST_F(BotanEc41417TestFixture, DiffieHellman) {
     // Test simulates a Diffie-Hellman as used by ZRTP - test must run using the Botan based zrtpDH class
 
     // Setup with  DH code for Alice
-    ZrtpDH aliceDh(e414, ZrtpDH::Commit);
+    ZrtpDH aliceDh(e414);
     ASSERT_TRUE(aliceDh.version() == "Botan");
 
-    zrtp::SecureArray1k alicePubKey;
-    auto aliceKeyLen = aliceDh.getPubKeyBytes(alicePubKey);
+    zrtp::SecureArray4k alicePubKey;
+    aliceDh.getPubKeyBytes(alicePubKey, ZrtpDH::Ignore);
 
     // Setup with  DH code for Bob
-    ZrtpDH bobDh(e414, ZrtpDH::Commit);
+    ZrtpDH bobDh(e414);
 
-    zrtp::SecureArray1k bobPubKey;
-    bobDh.getPubKeyBytes(bobPubKey);
+    zrtp::SecureArray4k bobPubKey;
+    bobDh.getPubKeyBytes(bobPubKey, ZrtpDH::Ignore);
 
     // Agree on keys. Alice first
     zrtp::SecureArray1k aliceSharedData;
-    aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data(), aliceSharedData);
+    auto aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data(), aliceSharedData, ZrtpDH::Ignore);
     ASSERT_GT(aliceKeyLen, 0);
     ASSERT_EQ(aliceKeyLen, aliceSharedData.size());
 
     // Now Bob
     zrtp::SecureArray1k bobSharedData;
-    auto bobKeyLen = bobDh.computeSecretKey(alicePubKey.data(), bobSharedData);
+    auto bobKeyLen = bobDh.computeSecretKey(alicePubKey.data(), bobSharedData, ZrtpDH::Ignore);
     ASSERT_GT(bobKeyLen, 0);
     ASSERT_EQ(bobKeyLen, bobSharedData.size());
 
