@@ -252,7 +252,15 @@ public:
         // Check if this is a ZRTP frame: advance header by ZRTP_WORK_SIZE (skip frame header)
         auto *header = (zrtpPacketHeader_t *) (packetData + (isFrame ? ZRTP_WORD_SIZE : 0));
         string packetType((char *) header->messageType, sizeof(header->messageType));
-        LOGGER(INFO, "Bob   --> Alice "); //, packetType, *zrtp::Utilities::hexdump("Packet", packetData, length))
+        if (isFrame) {
+            FrameHeader_t frameHeader;
+            frameHeader.frameInfo.value = zrtpNtohs(*reinterpret_cast<uint16_t const *>(packetData));
+            auto frameNumber = frameHeader.frameInfo.f.frameNumber;
+            auto frames = frameHeader.frameInfo.f.lastFrame;
+            LOGGER(INFO, "Bob   --> Alice ", (frameNumber == 0) ? packetType : "Frame   ", ", ", frameNumber, " last ", frames)
+        } else {
+            LOGGER(INFO, "Bob   --> Alice ", packetType) // *zrtp::Utilities::hexdump("Packet", packetData, length))
+        }
 
         auto data = std::make_unique<uint8_t[]>(length);
         memcpy(data.get(), packetData, length);
@@ -320,7 +328,15 @@ public:
     void bobQueueData(uint8_t const *packetData, int32_t length, bool isFrame = false, uint8_t numberOfFrames = 0) {
         auto *header = (zrtpPacketHeader_t *) (packetData + (isFrame ? ZRTP_WORD_SIZE : 0));
         string packetType((char *) header->messageType, sizeof(header->messageType));
-        LOGGER(INFO, "Alice --> Bob "); //, packetType, *zrtp::Utilities::hexdump("Packet", packetData, length))
+        if (isFrame) {
+            FrameHeader_t frameHeader;
+            frameHeader.frameInfo.value = zrtpNtohs(*reinterpret_cast<uint16_t const *>(packetData));
+            auto frameNumber = frameHeader.frameInfo.f.frameNumber;
+            auto frames = frameHeader.frameInfo.f.lastFrame;
+            LOGGER(INFO, "Alice --> Bob   ", (frameNumber == 0) ? packetType : "Frame   ", ", ", frameNumber, " last ", frames)
+        }  else {
+            LOGGER(INFO, "Alice --> Bob   ", packetType)  //, *zrtp::Utilities::hexdump("Packet", packetData, length))
+        }
 
         auto data = std::make_unique<uint8_t[]>(length);
         memcpy(data.get(), packetData, length);
@@ -472,7 +488,8 @@ TEST_F(ZrtpBasicRunFixture, full_run_test) {
     ASSERT_EQ(0, aliceTimers);
     ASSERT_EQ(0, bobTimers);
 
-    ASSERT_EQ(aliceCipher, bobCipher);
+    ASSERT_EQ(aliceCipher, bobCipher);  // AES-128/DH3k
+    ASSERT_EQ("AES-128/DH3k", aliceCipher);
     ASSERT_EQ(aliceSas, bobSas);
 }
 
@@ -515,7 +532,8 @@ TEST_F(ZrtpBasicRunFixture, full_run_test_ec384) {
     ASSERT_EQ(0, aliceTimers);
     ASSERT_EQ(0, bobTimers);
 
-    ASSERT_EQ(aliceCipher, bobCipher);
+    ASSERT_EQ(aliceCipher, bobCipher); // AES-256/EC38
+    ASSERT_EQ("AES-256/EC38", aliceCipher);
     ASSERT_EQ(aliceSas, bobSas);
 }
 
@@ -561,6 +579,7 @@ TEST_F(ZrtpBasicRunFixture, full_run_test_np06) {
     ASSERT_EQ(0, aliceTimers);
     ASSERT_EQ(0, bobTimers);
 
-    ASSERT_EQ(aliceCipher, bobCipher);
+    ASSERT_EQ(aliceCipher, bobCipher);  // AES-256/NP09
+    ASSERT_EQ("AES-256/NP09", aliceCipher);
     ASSERT_EQ(aliceSas, bobSas);
 }
