@@ -33,18 +33,18 @@ constexpr int NP06_WORDS = FIXED_NUM_WORDS + (NP06_LENGTH_BYTES_DHPart + ZRTP_WO
 constexpr int NP09_WORDS = FIXED_NUM_WORDS + (NP09_LENGTH_BYTES_DHPart + ZRTP_WORD_SIZE - 1) / ZRTP_WORD_SIZE;
 constexpr int NP12_WORDS = FIXED_NUM_WORDS + (NP12_LENGTH_BYTES_DHPart + ZRTP_WORD_SIZE - 1) / ZRTP_WORD_SIZE;
 
-        ZrtpPacketDHPart::ZrtpPacketDHPart() {
+ZrtpPacketDHPart::ZrtpPacketDHPart() {
     initialize();
 }
 
 void ZrtpPacketDHPart::initialize() {
 
-    void* allocated = &data;
+    void *allocated = &data;
     memset(allocated, 0, sizeof(data));
 
-    zrtpHeader = &((DHPartPacket_t *)allocated)->hdr; // the standard header
-    DHPartHeader = &((DHPartPacket_t *)allocated)->dhPart;
-    pv = ((uint8_t*)allocated) + sizeof(DHPartPacket_t);    // point to the public key value
+    zrtpHeader = &((DHPartPacket_t *) allocated)->hdr; // the standard header
+    DHPartHeader = &((DHPartPacket_t *) allocated)->dhPart;
+    pv = ((uint8_t *) allocated) + sizeof(DHPartPacket_t);    // point to the public key value
 
     setZrtpId();
 }
@@ -57,15 +57,18 @@ void ZrtpPacketDHPart::setPacketLength(size_t pubKeyLen) {
     roundUp = ((pubKeyLen + (ZRTP_WORD_SIZE - 1)) / ZRTP_WORD_SIZE) * ZRTP_WORD_SIZE;
 
     // Compute total length in bytes, is always a multiple of ZRTP_WORD_SIZE, the computer number of ZRTP_WORDS
-    auto length = static_cast<uint16_t>(sizeof(DHPartPacket_t) + roundUp + (2 * ZRTP_WORD_SIZE)); // HMAC field is 2*ZRTP_WORD_SIZE
+    auto length = static_cast<uint16_t>(sizeof(DHPartPacket_t) + roundUp +
+                                        (2 * ZRTP_WORD_SIZE)); // HMAC field is 2*ZRTP_WORD_SIZE
     setLength(static_cast<uint16_t>(length / ZRTP_WORD_SIZE));
 }
 
-ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t const * data) {
-    zrtpHeader = &((DHPartPacket_t *)data)->hdr;  // the standard header
-    DHPartHeader = &((DHPartPacket_t *)data)->dhPart;
+ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t const *data, bool isNpAlgorithm) {
+    zrtpHeader = &((DHPartPacket_t *) data)->hdr;  // the standard header
+    DHPartHeader = &((DHPartPacket_t *) data)->dhPart;
 
-    pv = const_cast<uint8_t*>(data + sizeof(DHPartPacket_t));    // point to the public key value(s)
+    pv = const_cast<uint8_t *>(data + sizeof(DHPartPacket_t));    // point to the public key value(s)
+
+    auto isDhPart2 = getMessageTypeString() == DHPart2Msg;
 
     switch (getLength()) {
         case DH2K_WORDS:    // Dh2k
@@ -97,7 +100,10 @@ ZrtpPacketDHPart::ZrtpPacketDHPart(uint8_t const * data) {
             break;
         default:
             pv = nullptr;
-            LOGGER(ERROR_LOG, __func__, " Unknown DH algorithm in DH packet with length: ", getLength())
+            if (!(isDhPart2 && isNpAlgorithm && getLength() == 21)) {
+                LOGGER(ERROR_LOG, __func__, " Unknown DH algorithm in DH packet with length: ", getLength(), ", msg: ",
+                       getMessageTypeString())
+            }
     }
 }
 

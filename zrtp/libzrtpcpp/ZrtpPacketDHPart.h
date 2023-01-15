@@ -45,7 +45,7 @@ public:
     ZrtpPacketDHPart();
 
     /// Creates a DHPart packet from received data
-    explicit ZrtpPacketDHPart(uint8_t const * data);
+    explicit ZrtpPacketDHPart(uint8_t const * data, bool isNpAlgorithm = false);
 
     /// Standard destructor
     ~ZrtpPacketDHPart() override = default;
@@ -71,7 +71,8 @@ public:
     /// Get pointer to HMAC, fixed length byte array
     [[nodiscard]] uint8_t* getHMAC() const          { return pv+roundUp; };
 
-    /// Check if packet length makes sense. DHPart packets are 29 words at minumum, using E255
+    /// Check if packet length makes sense. DHPart packets are 29 words at minimum, using E255
+    /// In case of new NP algoritms then it has to be 21 or greater.
     [[nodiscard]] bool isLengthOk(bool isNpAlgorithmActive) const {return !isNpAlgorithmActive ? getLength() >= 29 : getLength() >= 21;}
 
     /// Set public key value, variable length byte array

@@ -61,7 +61,7 @@ public:
 
     void SetUp() override {
         // code here will execute just before the test ensues
-        LOGGER_INSTANCE setLogLevel(VERBOSE);
+        LOGGER_INSTANCE setLogLevel(WARNING);
 
         aliceConfigure = make_shared<ZrtpConfigure>();
         bobConfigure = make_shared<ZrtpConfigure>();

@@ -67,16 +67,16 @@ constexpr uint16_t zrtpId = 0x505a;
 
 class __EXPORT ZrtpPacketBase {
 
-  private:
+private:
 
-  protected:
-      zrtpPacketHeader_t* zrtpHeader = nullptr;     ///< points to the fixed ZRTP header structure
+protected:
+    zrtpPacketHeader_t *zrtpHeader = nullptr;     ///< points to the fixed ZRTP header structure
 
-  public:
+public:
     /**
      * Destructor is empty
      */
-    virtual ~ZrtpPacketBase() = default ;
+    virtual ~ZrtpPacketBase() = default;
 
     /**
      * Get pointer to ZRTP header
@@ -84,7 +84,7 @@ class __EXPORT ZrtpPacketBase {
      * @return
      *     Pointer to ZRTP header structure.
      */
-    [[nodiscard]] uint8_t const * getHeaderBase() const { return (const uint8_t*)zrtpHeader; };
+    [[nodiscard]] uint8_t const *getHeaderBase() const { return (const uint8_t *) zrtpHeader; };
 
     /**
      * Check is this is a ZRTP message
@@ -92,7 +92,7 @@ class __EXPORT ZrtpPacketBase {
      * @return
      *     @c true if check was ok
      */
-    [[nodiscard]] bool isZrtpPacket() const          { return (zrtpNtohs(zrtpHeader->zrtpId) == zrtpId); };
+    [[nodiscard]] bool isZrtpPacket() const { return (zrtpNtohs(zrtpHeader->zrtpId) == zrtpId); };
 
     /**
      * Get the length in words of the ZRTP message
@@ -100,7 +100,7 @@ class __EXPORT ZrtpPacketBase {
      * @return
      *     The length in words
      */
-    [[nodiscard]] uint16_t getLength()  const         { return zrtpNtohs(zrtpHeader->length); };
+    [[nodiscard]] uint16_t getLength() const { return zrtpNtohs(zrtpHeader->length); };
 
     /**
      * Return pointer to fixed length message type ASCII data
@@ -108,7 +108,11 @@ class __EXPORT ZrtpPacketBase {
      * @return
      *     Pointer to ASCII character array
      */
-    [[nodiscard]] uint8_t* getMessageType() const     { return zrtpHeader->messageType; };
+    [[nodiscard]] uint8_t *getMessageType() const { return zrtpHeader->messageType; };
+
+    [[nodiscard]] std::string getMessageTypeString() const {
+        return {reinterpret_cast<char *>(zrtpHeader->messageType), 8};
+    };
 
     /**
      * Set the length field in the ZRTP header
@@ -116,7 +120,7 @@ class __EXPORT ZrtpPacketBase {
      * @param len
      *     The length of the ZRTP message in words, host order
      */
-    void setLength(uint16_t len)  { zrtpHeader->length = zrtpHtons(len); };
+    void setLength(uint16_t len) { zrtpHeader->length = zrtpHtons(len); };
 
     /**
      * Copy the message type ASCII data to ZRTP message type field
@@ -124,13 +128,12 @@ class __EXPORT ZrtpPacketBase {
      * @param msg
      *     Pointer to message type ASCII character array
      */
-    void setMessageType(uint8_t const * msg)
-        { memcpy(zrtpHeader->messageType, msg, sizeof(zrtpHeader->messageType)); };
+    void setMessageType(uint8_t const *msg) { memcpy(zrtpHeader->messageType, msg, sizeof(zrtpHeader->messageType)); };
 
     /**
      * Initializes the ZRTP Id field
      */
-    void setZrtpId()              { zrtpHeader->zrtpId = zrtpHtons(zrtpId); }
+    void setZrtpId() { zrtpHeader->zrtpId = zrtpHtons(zrtpId); }
 };
 
 /**

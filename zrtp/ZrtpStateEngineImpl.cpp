@@ -824,7 +824,7 @@ void ZrtpStateEngineImpl::evWaitDHPart1() {
         if (msgType == DHPart1Msg) {
             cancelTimer();
             sentPacket = nullptr;
-            ZrtpPacketDHPart dpkt(pkt);
+            ZrtpPacketDHPart dpkt(pkt, parent->isNpAlgorithmActive);
 
 // OPT            if (!parent->isNpAlgorithmActive) {
                 ZrtpPacketDHPart *dhPart2 = parent->prepareDHPart2(&dpkt, &errorCode);
@@ -956,7 +956,7 @@ void ZrtpStateEngineImpl::evWaitDHPart2() {
          * - No timer, we are responder
          */
         if (msgType == DHPart2Msg) {
-            ZrtpPacketDHPart dpkt(pkt);
+            ZrtpPacketDHPart dpkt(pkt, parent->isNpAlgorithmActive);
 // OPT            if (!parent->isNpAlgorithmActive) {
                 ZrtpPacketConfirm *confirm = parent->prepareConfirm1(&dpkt, &errorCode);
 
