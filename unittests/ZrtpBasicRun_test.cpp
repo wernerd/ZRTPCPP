@@ -61,7 +61,7 @@ public:
 
     void SetUp() override {
         // code here will execute just before the test ensues
-        LOGGER_INSTANCE setLogLevel(WARNING);
+        LOGGER_INSTANCE setLogLevel(VERBOSE);
 
         aliceConfigure = make_shared<ZrtpConfigure>();
         bobConfigure = make_shared<ZrtpConfigure>();
@@ -252,7 +252,7 @@ public:
         // Check if this is a ZRTP frame: advance header by ZRTP_WORK_SIZE (skip frame header)
         auto *header = (zrtpPacketHeader_t *) (packetData + (isFrame ? ZRTP_WORD_SIZE : 0));
         string packetType((char *) header->messageType, sizeof(header->messageType));
-        LOGGER(INFO, "Bob   --> Alice ") // , packetType, *zrtp::Utilities::hexdump("Packet", packetData, 16))
+        LOGGER(INFO, "Bob   --> Alice "); //, packetType, *zrtp::Utilities::hexdump("Packet", packetData, length))
 
         auto data = std::make_unique<uint8_t[]>(length);
         memcpy(data.get(), packetData, length);
@@ -320,7 +320,7 @@ public:
     void bobQueueData(uint8_t const *packetData, int32_t length, bool isFrame = false, uint8_t numberOfFrames = 0) {
         auto *header = (zrtpPacketHeader_t *) (packetData + (isFrame ? ZRTP_WORD_SIZE : 0));
         string packetType((char *) header->messageType, sizeof(header->messageType));
-        LOGGER(INFO, "Alice --> Bob ") // , packetType, *zrtp::Utilities::hexdump("Packet", packetData, 16))
+        LOGGER(INFO, "Alice --> Bob "); //, packetType, *zrtp::Utilities::hexdump("Packet", packetData, length))
 
         auto data = std::make_unique<uint8_t[]>(length);
         memcpy(data.get(), packetData, length);
@@ -477,6 +477,9 @@ TEST_F(ZrtpBasicRunFixture, full_run_test) {
 }
 
 TEST_F(ZrtpBasicRunFixture, full_run_test_ec384) {
+    aliceConfigure->clear();
+    bobConfigure->clear();
+
     aliceConfigure->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
     bobConfigure->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
 
@@ -518,14 +521,17 @@ TEST_F(ZrtpBasicRunFixture, full_run_test_ec384) {
 
 
 TEST_F(ZrtpBasicRunFixture, full_run_test_np06) {
-    aliceConfigure->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("NP06"));
+    aliceConfigure->clear();
+    bobConfigure->clear();
+
+    aliceConfigure->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("NP09"));
     aliceConfigure->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));
     aliceConfigure->addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
     aliceConfigure->addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN3"));
     aliceConfigure->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("AES3"));
     aliceConfigure->addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName("2FS3"));
 
-    bobConfigure->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("NP06"));
+    bobConfigure->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("NP09"));
     bobConfigure->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));
     bobConfigure->addAlgo(HashAlgorithm, zrtpHashes.getByName("S384"));
     bobConfigure->addAlgo(HashAlgorithm, zrtpHashes.getByName("SKN3"));
