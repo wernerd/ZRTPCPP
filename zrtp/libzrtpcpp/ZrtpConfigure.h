@@ -314,8 +314,6 @@ public:
     ZrtpConfigure();         /* Creates Configuration data */
     ~ZrtpConfigure();
 
-    ZrtpConfigure(const ZrtpConfigure& other);
-
     /**
      * Define the algorithm selection policies.
      */
@@ -557,7 +555,7 @@ public:
     bool isDisclosureFlag();
 
     /// Helper function to print some internal data
-    void printConfiguredAlgos(AlgoTypes algoTyp);
+    [[maybe_unused]] void printConfiguredAlgos(AlgoTypes algoTyp);
 
     Policy getSelectionPolicy()         { return selectionPolicy; }
     void setSelectionPolicy(Policy pol) { selectionPolicy = pol; }
@@ -570,7 +568,8 @@ public:
 
     // Note: these vectors contain pointers to the global (static) algorithm structures,
     // thus never call delete to free the data. The setup of the global data is in
-    // ZrtpConfigure.cpp
+    // ZrtpConfigure.cpp.
+    // To remove algorithms from configuration just set the relevant pointer to nullptr
     std::vector<AlgorithmEnum* > hashes;
     std::vector<AlgorithmEnum* > symCiphers;
     std::vector<AlgorithmEnum* > publicKeyAlgos;
