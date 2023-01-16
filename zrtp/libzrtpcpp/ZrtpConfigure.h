@@ -115,7 +115,7 @@ public:
      * @returns
      *    An integer defining the key length in bytes.
      */
-    int32_t getKeylen() const;
+    [[nodiscard]] int32_t getKeylen() const;
 
     /**
      * Get the algorihm's integer id.
@@ -355,7 +355,7 @@ public:
     /**
      * Convenience function that sets the mandatory algorithms only.
      *
-     * The function first clears all configured alrogithms and then adds a new
+     * The function first clears all configured algorithms and then adds a new
      * set of pre-defined algorithms.
      *
      * @sa addMandatoryOnly()

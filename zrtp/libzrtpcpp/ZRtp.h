@@ -695,29 +695,6 @@ class __EXPORT ZRtp {
         stateEngine->setTransportOverhead(overhead);
     }
 
-#ifndef UNIT_TESTS
-private:
-#endif
-    /**
-     * @brief Sent the ZRTP message as ZRTP frame(s)
-     *
-     * @param packet
-     *     points to the ZRTP message/packet to wrap and send in ZRTP frame(s)
-     * @return
-     *     zero if sending failed, one if packet was send
-     */
-    int32_t sendAsZrtpFrames(ZrtpPacketBase *packet);
-
-    /**
-     * @brief Sent the ZRTP message as ZRTP multi-frames
-     *
-     * @param packets
-     *    list of ZRTP message/packet pointers to wrap and send in ZRTP frame(s)
-     * @return
-     *     zero if sending failed, one if packet was send
-     */
-    int32_t sendAsZrtpMultiFrames(std::unique_ptr<std::list<std::reference_wrapper<ZrtpPacketBase>>> packets);
-
     /**
      * @brief Process ZRTP frame packet.
      *
@@ -741,6 +718,29 @@ private:
      * @sa  setTransportOverhead(int32_t)
      */
     void processZrtpFramePacket(uint8_t const * zrtpMessage, uint32_t pSSRC, size_t length, uint8_t frameByte);
+
+#ifndef UNIT_TESTS
+private:
+#endif
+    /**
+     * @brief Sent the ZRTP message as ZRTP frame(s)
+     *
+     * @param packet
+     *     points to the ZRTP message/packet to wrap and send in ZRTP frame(s)
+     * @return
+     *     zero if sending failed, one if packet was send
+     */
+    int32_t sendAsZrtpFrames(ZrtpPacketBase *packet);
+
+    /**
+     * @brief Sent the ZRTP message as ZRTP multi-frames
+     *
+     * @param packets
+     *    list of ZRTP message/packet pointers to wrap and send in ZRTP frame(s)
+     * @return
+     *     zero if sending failed, one if packet was send
+     */
+    int32_t sendAsZrtpMultiFrames(std::unique_ptr<std::list<std::reference_wrapper<ZrtpPacketBase>>> packets);
 
     /**
      * The state engine takes care of protocol processing.
