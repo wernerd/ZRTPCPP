@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 3.18)
 
 # setup the Thread include and lib
 find_package(Threads)
@@ -40,8 +40,9 @@ else()
 endif()
 
 add_library(${zrtplibName} ${LIBRARY_BUILD_TYPE} ${zrtpcpp_src})
+add_dependencies(${zrtplibName} ${BOTAN_LIB_NAME})
 set_target_properties(${zrtplibName} PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
-target_link_libraries(${zrtplibName} ${LIBS})
+target_link_libraries(${zrtplibName} ${BOTAN_LIB_NAME} ${LIBS})
 
 # add_dependencies(${zrtplibName} ccrtp)
 

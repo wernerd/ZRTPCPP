@@ -802,6 +802,7 @@ protected:
      * For detailed documentation refer to file ZrtpCallback.h
      */
     int32_t sendDataZRTP(const unsigned char* data, int32_t length) override;
+    int32_t sendFrameDataZRTP(const uint8_t* data, int32_t length, uint8_t numberOfFrames) override;
 
     int32_t activateTimer(int32_t time) override;
 
@@ -884,6 +885,8 @@ private:
                          InetHostAddress network_address,
                          tpport_t transport_port);
 
+    int32_t sendDataZRTPIntern(const unsigned char* data, int32_t length, uint8_t frameFlag);
+
     ZRtp *zrtpEngine = nullptr;
     ZrtpUserCallback* zrtpUserCallback = nullptr;
 
@@ -936,8 +939,9 @@ public:
      *
      * @param hdrext whole header extension.
      * @param hdrextlen size of whole header extension, in octets.
+     * @param frameFlags indicate handling ZRTP frames: number of messages in one frame and a flas
      **/
-    OutgoingZRTPPkt(unsigned char const * hdrext, uint32_t hdrextlen);
+    OutgoingZRTPPkt(unsigned char const * hdrext, uint32_t hdrextlen, uint8_t frameFlag);
     ~OutgoingZRTPPkt() override = default;
 };
 

@@ -241,7 +241,11 @@ ZrtpQueue::takeInDataPacket()
 
         // store peer's SSRC, used when creating the CryptoContext
         peerSSRC = packet->getSSRC();
-        zrtpEngine->processZrtpMessage(extHeader, peerSSRC, rtn);
+        if ((buffer[1] & 0x1) == 0x1) {
+            zrtpEngine->processZrtpFramePacket(extHeader, peerSSRC, rtn, buffer[1]);
+        } else {
+            zrtpEngine->processZrtpMessage(extHeader, peerSSRC, rtn);
+        }
     }
     delete packet;
     return 0;
@@ -392,9 +396,9 @@ ZrtpQueue::sendImmediate(uint32 stamp, const unsigned char* data, size_t len)
 /*
  * Here the callback methods required by the ZRTP implementation
  */
-int32_t ZrtpQueue::sendDataZRTP(const unsigned char *data, int32_t length) {
+int32_t ZrtpQueue::sendDataZRTPIntern(const unsigned char *data, int32_t length, uint8_t frameFlag) {
 
-    auto* packet = new OutgoingZRTPPkt(data, length);
+    auto* packet = new OutgoingZRTPPkt(data, length, frameFlag);
 
     packet->setSSRC(getLocalSSRC());
 
@@ -418,6 +422,17 @@ int32_t ZrtpQueue::sendDataZRTP(const unsigned char *data, int32_t length) {
     delete packet;
 
     return 1;
+}
+
+int32_t ZrtpQueue::sendDataZRTP(const unsigned char *data, int32_t length) {
+    return sendDataZRTPIntern(data, length, 0);
+}
+
+int32_t ZrtpQueue::sendFrameDataZRTP(const uint8_t* data, int32_t length, uint8_t numberOfFrames) {
+    // set frame flag and number of frames in packet in 2nd byte of real RTP buffer, then just proceed.
+    // 2nd byte in RTP is a marker flag and payload type: no harm for ZRTP and SRTP processing
+    uint8_t frameFlagCnt = ((numberOfFrames & 0x3) << 1) | 1;
+    return sendDataZRTPIntern(data, length, frameFlagCnt);
 }
 
 bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
@@ -880,10 +895,11 @@ uint32 IncomingZRTPPkt::getSSRC() const {
      return ntohl(getHeader()->sources[0]);
 }
 
-OutgoingZRTPPkt::OutgoingZRTPPkt(unsigned char const * hdrext, uint32 hdrextlen) :
+OutgoingZRTPPkt::OutgoingZRTPPkt(unsigned char const * hdrext, uint32 hdrextlen, uint8_t frameFlag) :
         OutgoingRTPPkt(nullptr, 0, hdrext, hdrextlen, nullptr ,0, 0, nullptr)
 {
     getHeader()->version = 0;
+    getHeader()->payload = frameFlag;
     getHeader()->timestamp = htonl(ZRTP_MAGIC);
 }
 

@@ -417,7 +417,7 @@ public:
         // config.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("DH3k"));
 
         // This ordering prefers NIST
-//        config->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("SDH1"));
+        config->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("NP09"));
         config->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("EC38"));
         config->addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName("E414"));
 
