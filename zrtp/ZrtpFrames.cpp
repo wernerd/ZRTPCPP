@@ -195,7 +195,7 @@ ZRtp::processZrtpFramePacket(uint8_t const *zrtpMessage, uint32_t pSSRC, size_t 
             stateEngineLocal->sendErrorPacket(GnuZrtpCodes::MalformedPacket);
             return;
         }
-        auto totalLength = msgLength * ZRTP_WORD_SIZE + RTP_HEADER_LENGTH + CRC_SIZE;
+        auto totalLength = msgLength * ZRTP_WORD_SIZE + CRC_SIZE + stateEngineLocal->getTransportOverhead();
         if (totalLength != length) {
             LOGGER(ERROR_LOG, __func__ , ": Total length does not match received length: ", totalLength, " - ", length)
             stateEngineLocal->sendErrorPacket(GnuZrtpCodes::MalformedPacket);
