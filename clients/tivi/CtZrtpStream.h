@@ -454,8 +454,6 @@ protected:
      */
     int32_t getSrtpTraceData(SrtpErrorData* data);
 
-    int32_t sendDataZRTPIntern(const unsigned char* data, int32_t length);
-
     /*
      * The following methods implement the GNU ZRTP callback interface.
      * For detailed documentation refer to file ZrtpCallback.h
@@ -498,6 +496,8 @@ protected:
      * End of ZrtpCallback functions.
      */
 private:
+    int32_t sendDataZRTPIntern(const unsigned char* data, int32_t length);
+
     CtZrtpSession::tiviStatus  tiviState = CtZrtpSession::eLookingPeer;  //!< Status reported to Tivi client
     CtZrtpSession::tiviStatus  prevTiviState = CtZrtpSession::eLookingPeer;  //!< previous status reported to Tivi client
 

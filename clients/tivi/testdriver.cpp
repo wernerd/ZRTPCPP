@@ -32,6 +32,8 @@
 #include <libzrtpcpp/Base32.h>
 #include <libzrtpcpp/EmojiBase32.h>
 
+#include "common/Utilities.h"
+
 struct sockaddr_in adr_inet;
 struct sockaddr_in adr_clnt;
 socklen_t lenClnt;          // length
@@ -118,8 +120,7 @@ class TestCallbackAudio: public CtZrtpCb {
 
 class TestSendCallbackAudio: public CtZrtpSendCb {
     void sendRtp(CtZrtpSession const *session, uint8_t* packet, size_t length, CtZrtpSession::streamName streamNm) override {
-//        hexdump("ZRTP packet", packet, length);
-        fprintf(stderr, "ZRTP send packet, length: %lu, %.8s\n", length, packet+16);
+        fprintf(stderr, "ZRTP send packet, length: %lu, %s\n", length /*, zrtp::Utilities::hexdump("ZRTP packet", packet, length)->c_str()*/);
         sendData(packet, length);
     }
 };
