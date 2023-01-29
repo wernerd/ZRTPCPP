@@ -120,7 +120,7 @@ class TestCallbackAudio: public CtZrtpCb {
 
 class TestSendCallbackAudio: public CtZrtpSendCb {
     void sendRtp(CtZrtpSession const *session, uint8_t* packet, size_t length, CtZrtpSession::streamName streamNm) override {
-        fprintf(stderr, "ZRTP send packet, length: %lu, %s\n", length /*, zrtp::Utilities::hexdump("ZRTP packet", packet, length)->c_str()*/);
+        fprintf(stderr, "ZRTP send packet, length: %lu, %s\n", length, "Packet dump disabled" /*, zrtp::Utilities::hexdump("ZRTP packet", packet, length)->c_str()*/);
         sendData(packet, length);
     }
 };

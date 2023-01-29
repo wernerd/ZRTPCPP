@@ -276,7 +276,7 @@ ZRtp::assembleMessage(uint8_t const *zrtpFrame, size_t length) {
 
     if (frameHeader.length * ZRTP_WORD_SIZE + CRC_SIZE + stateEngineLocal->getTransportOverhead() != length) {
         LOGGER(ERROR_LOG, "Received length does not match computed length: ", length, " - ",
-               frameHeader.length * ZRTP_WORD_SIZE + RTP_HEADER_LENGTH + CRC_SIZE)
+               frameHeader.length * ZRTP_WORD_SIZE + CRC_SIZE + stateEngineLocal->getTransportOverhead())
         stateEngineLocal->sendErrorPacket(GnuZrtpCodes::MalformedPacket);
         return 0;
     }
