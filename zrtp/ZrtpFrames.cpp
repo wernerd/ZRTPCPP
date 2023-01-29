@@ -26,7 +26,7 @@ constexpr int MAX_EMBEDDED_FRAMES = 10;
 
 int32_t
 ZRtp::sendAsZrtpFrames(ZrtpPacketBase *packet) {
-    LOGGER(DEBUGGING, "Enter ", __func__, ", id: ", std::this_thread::get_id())
+    LOGGER(VERBOSE, "Enter ", __func__, " length: ", packet->getLength())
     if (packet == nullptr) {
         return 0;
     }
@@ -122,6 +122,7 @@ ZRtp::sendAsZrtpMultiFrames(std::unique_ptr<std::list<std::reference_wrapper<Zrt
 // Returns the of total length in ZRTP words: sum of message lengths and frame headers
 static int32_t
 unpackAndCheck(uint8_t const *zrtpFrame, int numberOfFrames, uint8_t const *packetAddresses[]) {
+    LOGGER(VERBOSE, "Enter ", __func__, "frames in packrt: ", numberOfFrames)
 
     uint8_t currentBatch;
     int32_t totalLength = 0;
@@ -154,7 +155,7 @@ unpackAndCheck(uint8_t const *zrtpFrame, int numberOfFrames, uint8_t const *pack
 
 void
 ZRtp::processZrtpFramePacket(uint8_t const *zrtpMessage, uint32_t pSSRC, size_t length, uint8_t frameByte) {
-    LOGGER(VERBOSE, "Enter ", __func__, ", id: ", std::this_thread::get_id())
+    LOGGER(VERBOSE, "Enter ", __func__)
 
     Event ev;
 
@@ -236,6 +237,7 @@ ZRtp::processZrtpFramePacket(uint8_t const *zrtpMessage, uint32_t pSSRC, size_t 
 
 int32_t
 ZRtp::assembleMessage(uint8_t const *zrtpFrame, size_t length) {
+    LOGGER(VERBOSE, "Enter ", __func__)
 
     FrameHeader_t frameHeader;
 
@@ -259,7 +261,7 @@ ZRtp::assembleMessage(uint8_t const *zrtpFrame, size_t length) {
     if (lastFrameNumber == USHRT_MAX) {
         lastFrameNumber = frameHeader.frameInfo.f.lastFrame;
     } else if (lastFrameNumber != frameHeader.frameInfo.f.lastFrame) {
-        LOGGER(ERROR_LOG, "++++ Last frame number changed during same batch, expected: ", lastFrameNumber, ", got: ", frameHeader.frameInfo.f.lastFrame)
+        LOGGER(ERROR_LOG, "Last frame number changed during same batch, expected: ", lastFrameNumber, ", got: ", frameHeader.frameInfo.f.lastFrame)
         stateEngineLocal->sendErrorPacket(GnuZrtpCodes::MalformedPacket);
         return 0;
     }
@@ -272,7 +274,7 @@ ZRtp::assembleMessage(uint8_t const *zrtpFrame, size_t length) {
     // get the frame length, right behind the frame info
     frameHeader.length = zrtpNtohs(*reinterpret_cast<uint16_t const *>(zrtpFrame + 2));
 
-    if (frameHeader.length * ZRTP_WORD_SIZE + RTP_HEADER_LENGTH + CRC_SIZE != length + RTP_HEADER_LENGTH) {
+    if (frameHeader.length * ZRTP_WORD_SIZE + CRC_SIZE + stateEngineLocal->getTransportOverhead() != length) {
         LOGGER(ERROR_LOG, "Received length does not match computed length: ", length, " - ",
                frameHeader.length * ZRTP_WORD_SIZE + RTP_HEADER_LENGTH + CRC_SIZE)
         stateEngineLocal->sendErrorPacket(GnuZrtpCodes::MalformedPacket);
