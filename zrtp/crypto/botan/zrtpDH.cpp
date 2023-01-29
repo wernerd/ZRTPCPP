@@ -233,20 +233,20 @@ ZrtpDH::eccEncapDecap(uint8_t *pubKeyBytes, ZrtpBotanRng &rng, zrtp::SecureArray
     }
 
     Botan::secure_vector<uint8_t> sharedSecret;
-    auto const length = getSharedSecretSize();
+    auto const length = ctx->eccPrivateKey->key_length() / 8;
 
     // Copied from case E414 to avoid too much data copying
     // decompress already returns a correct format.
     Botan::PK_Key_Agreement ecdhBob(*ctx->eccPrivateKey, rng, kdfString);
     sharedSecret = ecdhBob.derive_key(length, coordinates).bits_of();
-    eccKdf(sharedSecret, msgType == Commit ? coordinates : ctx->eccPrivateKey->public_value(), secretSntrup, secretEcc);
+    eccKdf(sharedSecret, msgType == Commit ? coordinates : ctx->eccPrivateKey->public_value(), length, secretSntrup, secretEcc);
     Botan::zap(sharedSecret);
     return true;
 }
 
 void
 ZrtpDH::eccKdf(Botan::secure_vector<uint8_t> const &dhSharedSecret, std::vector<uint8_t> const &pubKeyBytes,
-               zrtp::SecureArray256 const &secretSntrup, zrtp::SecureArray256 &secretEcc) const {
+               size_t length, zrtp::SecureArray256 const &secretSntrup, zrtp::SecureArray256 &secretEcc) const {
     // ecc_z = ECC_DH(ecc_ska, ecc_pkb)
     // ecc_ss = KDF(ecc_ct || ecc_z)
     // Public key bytes is the public key of the ZRTP Initiator
@@ -255,9 +255,10 @@ ZrtpDH::eccKdf(Botan::secure_vector<uint8_t> const &dhSharedSecret, std::vector<
     kdfIn.append(dhSharedSecret.data(), dhSharedSecret.size());
 
     auto hkdf = Botan::KDF::create("HKDF(HMAC(SHA-256))");
-    hkdf->kdf(secretEcc.data(), getSharedSecretSize(), kdfIn.data(), kdfIn.size(), secretSntrup.data(),
+    hkdf->kdf(secretEcc.data(), length, kdfIn.data(), kdfIn.size(), secretSntrup.data(),
               secretSntrup.size(),
               reinterpret_cast<const uint8_t *>(getDHtype()), 4);
+    secretEcc.size(length);
 }
 
 size_t

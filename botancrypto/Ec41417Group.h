@@ -74,7 +74,7 @@ namespace Botan {
         size_t get_p_bits() const;
 
         /**
-        * Return the size of p in bits (same as get_p().bytes())
+        * Return the size of p in bytes (same as get_p().bytes())
         */
         [[nodiscard]] size_t get_p_bytes() const;
 

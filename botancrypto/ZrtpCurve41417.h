@@ -28,6 +28,7 @@ namespace Botan {
     class BOTAN_PUBLIC_API(2, 0) Curve41417_PublicKey : public virtual Public_Key {
     public:
 
+        // Must match domain().get_p_bytes(), this is 52 for this curve
         static constexpr size_t COORDINATE_BYTES = 52;
 
         explicit Curve41417_PublicKey(uint8_t *otherKey);

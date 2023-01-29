@@ -207,7 +207,7 @@ private:
                        MessageType msgType, zrtp::SecureArray256 &secretEcc) const;
 
     void eccKdf(Botan::secure_vector<uint8_t> const &dhSharedSecret, std::vector<uint8_t> const &pubKeyBytes,
-                zrtp::SecureArray256 const &secretSntrup, zrtp::SecureArray256 &secretEcc) const;
+                size_t length, zrtp::SecureArray256 const &secretSntrup, zrtp::SecureArray256 &secretEcc) const;
 
     void generateSntrupKeyPair() const;
 
