@@ -413,7 +413,7 @@ void CryptoContext::update(uint16_t newSeq)
     // update the locally stored remote sequence number (s_l) below.
     int64_t delta = guessIndex(newSeq) - (static_cast<uint64_t>(roc) << 16U | s_l);
     int64_t rocDelta = delta;
-    uint64_t carry = 0;
+    uint64_t carry;
 
     // update the replay shift register
     // The shift register array stores bits of newer packets (higher sequence numbers) at 

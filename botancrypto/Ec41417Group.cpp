@@ -32,7 +32,7 @@
  * - The base point y coordinate Gy
  * - The factor d (3617) -> mapped onto the 'a' curve member of
  *
- * This curve does no require or use the usual a and b parameters as found in the NIST curves
+ * This curve does not require or use the usual a and b parameters as found in the NIST curves
  */
 static char const *curve41417[] = {
         "0x3fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffef",  // Prime

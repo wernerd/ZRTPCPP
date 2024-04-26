@@ -139,4 +139,4 @@ public:
 /**
  * @}
  */
-#endif // ZRTPPACKETBASE
+#endif // _ZRTPPACKETBASE_H_

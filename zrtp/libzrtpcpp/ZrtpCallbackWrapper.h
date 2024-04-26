@@ -17,7 +17,7 @@
 #ifndef ZRTPCALLBACKWRAPPER_H
 #define ZRTPCALLBACKWRAPPER_H
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include <libzrtpcpp/ZrtpCallback.h>
 #include <libzrtpcpp/ZrtpConfigure.h>
@@ -87,7 +87,7 @@ public:
     bool checkSASSignature (uint8_t* sasHash ) override;
 
 private:
-    void init();
+    static void init();
     zrtp_Callbacks *c_callbacks;
     ZrtpContext* zrtpCtx;
 

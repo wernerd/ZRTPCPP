@@ -18,7 +18,6 @@
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 #include <sstream>
-#include <thread>
 
 #include "crypto/zrtpDH.h"
 #include "crypto/hmac256.h"
@@ -1025,7 +1024,7 @@ ZrtpPacketConfirm* ZRtp::prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* 
     }
     // now we are ready to save the new RS1 which inherits the verified
     // flag from old RS1
-    zidRec->setNewRs1(newRs1.data());
+    zidRec->setNewRs1(newRs1.data(), RS1_NO_EXPIRATION);
 
     // now generate my Confirm2 message
     zrtpConfirm2.setMessageType((uint8_t*)Confirm2Msg);
@@ -1225,7 +1224,7 @@ ZrtpPacketConf2Ack* ZRtp::prepareConf2Ack(ZrtpPacketConfirm *confirm2, uint32_t*
             }
         }
         // save new RS1, this inherits the verified flag from old RS1
-        zidRec->setNewRs1(newRs1.data());
+        zidRec->setNewRs1(newRs1.data(), RS1_NO_EXPIRATION);
         if (saveZidRecord) {
             getZidCache()->saveRecord(*zidRec);
         }
@@ -1477,8 +1476,8 @@ ZrtpPacketGoClear* ZRtp::prepareGoClear(uint32_t errMsg) {
  */
 AlgorithmEnum* ZRtp::findBestHash(ZrtpPacketHello *hello) {
 
-    AlgorithmEnum* algosOffered[ZrtpConfigure::maxNoOfAlgos+1];
-    AlgorithmEnum* algosConf[ZrtpConfigure::maxNoOfAlgos+1];
+    AlgorithmEnum* algosOffered[maxNoOfAlgos+1];
+    AlgorithmEnum* algosConf[maxNoOfAlgos+1];
 
     // If Hello does not contain any hash names return Sha256, its mandatory
     auto num = hello->getNumHashes();
@@ -1514,8 +1513,8 @@ AlgorithmEnum* ZRtp::findBestHash(ZrtpPacketHello *hello) {
 
 AlgorithmEnum* ZRtp::findBestCipher(ZrtpPacketHello *hello, AlgorithmEnum* pk) {
 
-    AlgorithmEnum* algosOffered[ZrtpConfigure::maxNoOfAlgos+1];
-    AlgorithmEnum* algosConf[ZrtpConfigure::maxNoOfAlgos+1];
+    AlgorithmEnum* algosOffered[maxNoOfAlgos+1];
+    AlgorithmEnum* algosConf[maxNoOfAlgos+1];
 
     auto num = hello->getNumCiphers();
     if (num == 0 || (*(int32_t*)(pk->getName()) == *(int32_t*)dh2k)) {
@@ -1554,8 +1553,8 @@ AlgorithmEnum* ZRtp::findBestCipher(ZrtpPacketHello *hello, AlgorithmEnum* pk) {
 //
 AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
 
-    AlgorithmEnum* peerIntersect[ZrtpConfigure::maxNoOfAlgos+1];
-    AlgorithmEnum* ownIntersect[ZrtpConfigure::maxNoOfAlgos+1];
+    AlgorithmEnum* peerIntersect[maxNoOfAlgos+1];
+    AlgorithmEnum* ownIntersect[maxNoOfAlgos+1];
 
     // Build list of own pubkey algorithm names, must follow the order
     // defined in RFC 6189, chapter 4.1.2., weakest to strongest
@@ -1651,8 +1650,8 @@ AlgorithmEnum* ZRtp::findBestPubkey(ZrtpPacketHello *hello) {
 
 AlgorithmEnum* ZRtp::findBestSASType(ZrtpPacketHello *hello) {
 
-    AlgorithmEnum* algosOffered[ZrtpConfigure::maxNoOfAlgos+1];
-    AlgorithmEnum* algosConf[ZrtpConfigure::maxNoOfAlgos+1];
+    AlgorithmEnum* algosOffered[maxNoOfAlgos+1];
+    AlgorithmEnum* algosConf[maxNoOfAlgos+1];
 
     auto num = hello->getNumSas();
     if (num == 0) {
@@ -1685,8 +1684,8 @@ AlgorithmEnum* ZRtp::findBestSASType(ZrtpPacketHello *hello) {
 
 AlgorithmEnum* ZRtp::findBestAuthLen(ZrtpPacketHello *hello) {
 
-    AlgorithmEnum* algosOffered[ZrtpConfigure::maxNoOfAlgos+2];
-    AlgorithmEnum* algosConf[ZrtpConfigure::maxNoOfAlgos+2];
+    AlgorithmEnum* algosOffered[maxNoOfAlgos+2];
+    AlgorithmEnum* algosConf[maxNoOfAlgos+2];
 
     auto num = hello->getNumAuth();
     if (num == 0) {

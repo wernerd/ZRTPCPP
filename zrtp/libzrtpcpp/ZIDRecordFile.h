@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _ZIDRECORDFILE_H_
-#define _ZIDRECORDFILE_H_
+#ifndef ZIDRECORDFILE_H_
+#define ZIDRECORDFILE_H_
 
 
 /**
@@ -34,7 +34,7 @@
 #include <cstdint>
 #include <libzrtpcpp/ZIDRecord.h>
 
-#define TIME_LENGTH      8      // 64 bit, can hold time on 64 bit systems
+constexpr int32_t TIME_LENGTH =     8;      // 64 bit, can hold time on 64 bit systems
 
 /**
  * This is the recod structure of version 1 ZID records.
@@ -82,22 +82,22 @@ class __EXPORT ZIDRecordFile: public ZIDRecord {
     friend class ZIDCacheFile;
 
 private:
-    zidrecord2_t record;
-    unsigned long position;
+    zidrecord2_t record = { };
+    long position = 0;
 
     /**
      * Functions for I/O availabe for ZID file handling
      *
      * These functions are private, thus only friends may use it.
      */
-    void setPosition(long pos) {position = pos;}
-    long getPosition()         {return position; }
+    void setPosition(long pos)             { position = pos; }
+    [[nodiscard]] long getPosition() const { return position; }
 
-    zidrecord2_t* getRecordData() {return &record; }
-    int getRecordLength()         {return sizeof(zidrecord2_t); }
+    zidrecord2_t* getRecordData()          { return &record; }
+    static int getRecordLength()           { return sizeof(zidrecord2_t); }
 
-    bool isValid()    { return ((record.flags & Valid) == Valid); }
-    void setValid()   { record.flags |= Valid; }
+    [[nodiscard]] bool isValid() const     { return ((record.flags & Valid) == Valid); }
+    void setValid()                        { record.flags |= Valid; }
 
 public:
     /*
@@ -243,7 +243,7 @@ public:
      *    The expiration interval in seconds. Default is -1.
      *
      */
-    void setNewRs1(const unsigned char* data, int32_t expire =-1) override ;
+    void setNewRs1(const unsigned char* data, int32_t expire) override ;
 
     /**
      * @brief Set MiTM key data.
@@ -268,5 +268,5 @@ public:
     int64_t getSecureSince() override;
 };
 
-#endif // ZIDRECORDSMALL
+#endif // ZIDRECORDFILE_H_
 

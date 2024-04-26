@@ -18,8 +18,8 @@
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#ifndef _ZRTPCONFIGURE_H_
-#define _ZRTPCONFIGURE_H_
+#ifndef ZRTP_CONFIGURE_H
+#define ZRTP_CONFIGURE_H
 
 /**
  * @file ZrtpConfigure.h
@@ -43,7 +43,12 @@
  */
 
 enum AlgoTypes {
-    Invalid = 0, HashAlgorithm = 1, CipherAlgorithm, PubKeyAlgorithm, SasType, AuthLength
+    Invalid = 0,
+    HashAlgorithm = 1,
+    CipherAlgorithm,
+    PubKeyAlgorithm,
+    SasType,
+    AuthLength
 };
 
 using encrypt_t = void(*)(uint8_t*, size_t, uint8_t*, uint8_t*, size_t);
@@ -55,7 +60,7 @@ using decrypt_t = void(*)(uint8_t*, size_t, uint8_t*, uint8_t*, size_t);
  * This simple class is just a container of an algorithm's name and
  * its associated algorithm type. We use this class together with the
  * EnumBase class to implement a Java-like enum class functionality
- * (not fully, but OK for our use case).
+ * (not fully, but OK for our use case)
  *
  * An application shall use the get / check methods to retrieve information.
  */
@@ -72,9 +77,9 @@ public:
      * @param klen
      *    The key length for this algorihm in byte, for example 16 or 32
      * @param ra
-     *    A human readable short string that describes the algorihm.
+     *    A human readable short string that describes the algorithm.
      * @param en
-     *    Pointer to the encryption function of this algorithn
+     *    Pointer to the encryption function of this algorithm
      * @param de
      *    Pointer to the decryption funtions of this algorithm.
      * @param alId
@@ -83,7 +88,7 @@ public:
      *
      * @see AlgoTypes
      */
-    AlgorithmEnum(AlgoTypes type, const char* name, uint32_t klen,
+    AlgorithmEnum(AlgoTypes type, const char* name, int32_t klen,
                   const char* ra, encrypt_t en, decrypt_t de, NegotiatedAlgorithms alId);
 
     /**
@@ -92,25 +97,25 @@ public:
     ~AlgorithmEnum() = default;
 
     /**
-     * Get the algorihm's name
+     * Get the algorithm's name
      *
      * @returns
      *    Algorithm's name as null terminated C-string. The
      *    application must not free this memory.
      */
-    const char* getName();
+    [[nodiscard]] const char* getName() const;
 
     /**
-     * Get the algorihm's readable name
+     * Get the algorithm's readable name
      *
      * @returns
      *    Algorithm's readable name as null terminated C-string. The
      *    application must not free this memory.
      */
-    const char* getReadable();
+    [[nodiscard]] const char* getReadable() const;
 
     /**
-     * Get the algorihm's key length.
+     * Get the algorithm's key length.
      *
      * @returns
      *    An integer defining the key length in bytes.
@@ -118,27 +123,28 @@ public:
     [[nodiscard]] int32_t getKeylen() const;
 
     /**
-     * Get the algorihm's integer id.
+     * Get the algorithm's integer id.
      *
      * @returns
      *    An integer that defines the algorithm.
      */
-    NegotiatedAlgorithms getAlgoId();
+    [[nodiscard]] NegotiatedAlgorithms getAlgoId() const;
+
     /**
-     * Get the algorihm's key length.
+     * Get the algorithm's key length.
      *
      * @returns
-     *    An integer definig the key length in bytes.
+     *    An integer defining the key length in bytes.
      */
-    encrypt_t getEncrypt();
+    [[nodiscard]] encrypt_t getEncrypt() const;
 
     /**
      * Get the algorihm's key length.
      *
      * @returns
-     *    An integer definig the key length in bytes.
+     *    An integer defining the key length in bytes.
      */
-    decrypt_t getDecrypt();
+    [[nodiscard]] decrypt_t getDecrypt() const;
 
     /**
      * Get the algorithm type of this AlgorithmEnum object.
@@ -148,7 +154,7 @@ public:
      *
      * @see AlgoTypes
      */
-    AlgoTypes getAlgoType();
+    [[nodiscard]] AlgoTypes getAlgoType() const;
 
     /**
      * Check if this AlgorithmEnum object is valid
@@ -156,16 +162,16 @@ public:
      * @returns
      *    @c true if the object is valid, @c false otherwise
      */
-    bool isValid();
+    [[nodiscard]] bool isValid() const;
 
 private:
     AlgoTypes algoType;
     std::string algoName;
-    int32_t   keyLen;
+    int32_t keyLen;
     std::string readable;
     encrypt_t encrypt;
     decrypt_t decrypt;
-    NegotiatedAlgorithms   algoId;
+    NegotiatedAlgorithms algoId;
 };
 
 /**
@@ -209,7 +215,7 @@ public:
      * @return
      *    The number of currently stored AlgorithmEnums
      */
-    size_t getSize();
+    [[nodiscard]] size_t getSize() const;
 
     /**
      * Get the AlgoTypes to which this EnumBase belongs.
@@ -218,7 +224,7 @@ public:
      *     The AlgoTypes of this EnumBase.
      * @see AlgoTypes.
      */
-    AlgoTypes getAlgoType();
+    [[nodiscard]] AlgoTypes getAlgoType() const;
 
     /**
      * Return the AlgorithmEnum by its ordinal number
@@ -240,18 +246,21 @@ public:
      *    Return the ordinal number of this AlgorithmEnum if found,
      *    -1 otherwise.
      */
-    int getOrdinal(AlgorithmEnum& algo);
+    int getOrdinal(AlgorithmEnum&algo);
 
 protected:
     explicit EnumBase(AlgoTypes algo);
+
     ~EnumBase();
+
     void insert(const char* name);
-    void insert(const char* name, uint32_t klen,
+
+    void insert(const char* name, int32_t klen,
                 const char* ra, encrypt_t en, decrypt_t de, NegotiatedAlgorithms alId);
 
 private:
     AlgoTypes algoType;
-    std::vector <AlgorithmEnum* > algos;
+    std::vector<AlgorithmEnum *> algos;
 };
 
 /**
@@ -260,30 +269,35 @@ private:
 class __EXPORT HashEnum : public EnumBase {
 public:
     HashEnum();
+
     ~HashEnum() = default;
 };
 
 class __EXPORT SymCipherEnum : public EnumBase {
 public:
     SymCipherEnum();
+
     ~SymCipherEnum() = default;
 };
 
 class __EXPORT PubKeyEnum : public EnumBase {
 public:
     PubKeyEnum();
+
     ~PubKeyEnum() = default;
 };
 
 class __EXPORT SasTypeEnum : public EnumBase {
 public:
     SasTypeEnum();
+
     ~SasTypeEnum() = default;
 };
 
 class __EXPORT AuthLengthEnum : public EnumBase {
 public:
     AuthLengthEnum();
+
     ~AuthLengthEnum() = default;
 };
 
@@ -292,6 +306,12 @@ extern __EXPORT SymCipherEnum zrtpSymCiphers;
 extern __EXPORT PubKeyEnum zrtpPubKeys;
 extern __EXPORT SasTypeEnum zrtpSasTypes;
 extern __EXPORT AuthLengthEnum zrtpAuthLengths;
+
+/**
+ * Set the maximum number of algorithms per algorithm type that an application can
+ * configure.
+ */
+constexpr int maxNoOfAlgos = 7;
 
 /**
  * ZRTP configuration data.
@@ -311,22 +331,18 @@ extern __EXPORT AuthLengthEnum zrtpAuthLengths;
  */
 class __EXPORT ZrtpConfigure {
 public:
-    ZrtpConfigure();         /* Creates Configuration data */
+    ZrtpConfigure(); /* Creates Configuration data */
     ~ZrtpConfigure();
 
     /**
      * Define the algorithm selection policies.
      */
     typedef enum _policies {
-        Standard = 1,           //!< Standard algorithms
-        PreferNonNist = 2       //!< Prefer non-NIST defined algorithms, e.g. Twofish instead of AES, Curve 414 instead of ECDH-384
+        Standard = 1,
+        //!< Standard algorithms
+        PreferNonNist = 2
+        //!< Prefer non-NIST defined algorithms, e.g. Twofish instead of AES, Curve 414 instead of ECDH-384
     } Policy;
-
-    /**
-     * Set the maximum number of algorithms per algorithm type that an application can
-     * configure.
-     */
-    static const int maxNoOfAlgos = 7;
 
     /**
      * Convenience function that sets a pre-defined standard configuration.
@@ -398,7 +414,7 @@ public:
      * @return
      *    Number of free configuration data slots or -1 on error
      */
-    int32_t addAlgo(AlgoTypes algoType, AlgorithmEnum& algo);
+    int32_t addAlgo(AlgoTypes algoType, AlgorithmEnum&algo);
 
     /**
      * Add an algorithm to configuration data at given index.
@@ -416,7 +432,7 @@ public:
      * @return
      *    Number of free configuration data slots or -1 on error
      */
-    int32_t addAlgoAt(AlgoTypes algoType, AlgorithmEnum& algo, int32_t index);
+    int32_t addAlgoAt(AlgoTypes algoType, AlgorithmEnum&algo, int32_t index);
 
     /**
      * Remove an algorithm from configuration data.
@@ -437,7 +453,7 @@ public:
      * @return
      *    Number of free configuration slots.
      */
-    int32_t removeAlgo(AlgoTypes algoType, AlgorithmEnum& algo);
+    int32_t removeAlgo(AlgoTypes algoType, AlgorithmEnum&algo);
 
     /**
      * Returns the number of configured algorithms.
@@ -477,7 +493,7 @@ public:
      *    True if the algorithm was found, false otherwise.
      *
      */
-    bool containsAlgo(AlgoTypes algoType, AlgorithmEnum& algo);
+    bool containsAlgo(AlgoTypes algoType, AlgorithmEnum&algo);
 
     /**
      * Enables or disables trusted MitM processing.
@@ -496,7 +512,7 @@ public:
      * @return
      *    Returns true if trusted MitM processing is enabled.
      */
-    bool isTrustedMitM();
+    [[nodiscard]] bool isTrustedMitM() const;
 
     /**
      * Enables or disables SAS signature processing.
@@ -515,7 +531,7 @@ public:
      * @return
      *    Returns true if certificate processing is enabled.
      */
-    bool isSasSignature();
+    [[nodiscard]] bool isSasSignature() const;
 
     /**
      * Enables or disables paranoid mode.
@@ -534,7 +550,7 @@ public:
      * @return
      *    Returns true if paranoid mode is enabled.
      */
-    bool isParanoidMode();
+    [[nodiscard]] bool isParanoidMode() const;
 
     /**
      * Enables or disables setting of Disclosure flag.
@@ -552,29 +568,28 @@ public:
      * @return
      *    Returns true if disclosure flag should be set.
      */
-    bool isDisclosureFlag();
+    [[nodiscard]] bool isDisclosureFlag() const;
 
     /// Helper function to print some internal data
     [[maybe_unused]] void printConfiguredAlgos(AlgoTypes algoTyp);
 
-    Policy getSelectionPolicy()         { return selectionPolicy; }
+    [[nodiscard]] Policy getSelectionPolicy() const { return selectionPolicy; }
     void setSelectionPolicy(Policy pol) { selectionPolicy = pol; }
 
-    void setZidCache(std::shared_ptr<ZIDCache>& zf) { zidCache = zf; }
+    void setZidCache(std::shared_ptr<ZIDCache> const &zf) { zidCache = zf; }
 
     std::shared_ptr<ZIDCache>& getZidCache() { return zidCache; }
 
-  private:
-
+private:
     // Note: these vectors contain pointers to the global (static) algorithm structures,
     // thus never call delete to free the data. The setup of the global data is in
     // ZrtpConfigure.cpp.
     // To remove algorithms from configuration just set the relevant pointer to nullptr
-    std::vector<AlgorithmEnum* > hashes;
-    std::vector<AlgorithmEnum* > symCiphers;
-    std::vector<AlgorithmEnum* > publicKeyAlgos;
-    std::vector<AlgorithmEnum* > sasTypes;
-    std::vector<AlgorithmEnum* > authLengths;
+    std::vector<AlgorithmEnum *> hashes;
+    std::vector<AlgorithmEnum *> symCiphers;
+    std::vector<AlgorithmEnum *> publicKeyAlgos;
+    std::vector<AlgorithmEnum *> sasTypes;
+    std::vector<AlgorithmEnum *> authLengths;
 
     bool enableTrustedMitM;
     bool enableSasSignature;
@@ -584,15 +599,21 @@ public:
 
     std::shared_ptr<ZIDCache> zidCache = nullptr;
 
-    static AlgorithmEnum& getAlgoAt(std::vector<AlgorithmEnum* >& a, int32_t index);
-    static int32_t addAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo);
-    static int32_t addAlgoAt(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo, int32_t index);
-    static int32_t removeAlgo(std::vector<AlgorithmEnum* >& a,  AlgorithmEnum& algo);
-    static uint32_t getNumConfiguredAlgos(std::vector<AlgorithmEnum* >& a);
-    static bool containsAlgo(std::vector<AlgorithmEnum* >& a, AlgorithmEnum& algo);
-    std::vector<AlgorithmEnum* >& getEnum(AlgoTypes algoType);
+    static AlgorithmEnum& getAlgoAt(std::vector<AlgorithmEnum *>&a, int32_t index);
 
-    static void printConfiguredAlgos(std::vector<AlgorithmEnum* >& a);
+    static int32_t addAlgo(std::vector<AlgorithmEnum *>&a, AlgorithmEnum&algo);
+
+    static int32_t addAlgoAt(std::vector<AlgorithmEnum *>&a, AlgorithmEnum&algo, int32_t index);
+
+    static int32_t removeAlgo(std::vector<AlgorithmEnum *>&a, AlgorithmEnum&algo);
+
+    static uint32_t getNumConfiguredAlgos(std::vector<AlgorithmEnum *>&a);
+
+    static bool containsAlgo(std::vector<AlgorithmEnum *>&a, AlgorithmEnum&algo);
+
+    std::vector<AlgorithmEnum *>& getEnum(AlgoTypes algoType);
+
+    static void printConfiguredAlgos(std::vector<AlgorithmEnum *>&a);
 };
 
 /**

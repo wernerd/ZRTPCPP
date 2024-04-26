@@ -211,7 +211,7 @@ private:
 
     void generateSntrupKeyPair() const;
 
-    size_t computeSntrupSharedSecret(uint8_t *pubKeyBytes, zrtp::SecureArray256 &secret, MessageType msgType);
+    size_t computeSntrupSharedSecret(uint8_t const *pubKeyBytes, zrtp::SecureArray256 &secret, MessageType msgType) const;
 
     Algorithm pkType;               ///< Which type of DH to use
     ErrorCode errorCode;

@@ -18,7 +18,7 @@
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <time.h>
+#include <ctime>
 
 #include <libzrtpcpp/ZIDRecordFile.h>
 
@@ -75,7 +75,7 @@ bool ZIDRecordFile::isRs1NotExpired() {
 }
 
 bool ZIDRecordFile::isRs2NotExpired() {
-    time_t current = time(NULL);
+    time_t current = time(nullptr);
     time_t validThru;
 
     if (sizeof(time_t) == 4) {

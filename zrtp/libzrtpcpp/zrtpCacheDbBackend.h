@@ -255,7 +255,7 @@ typedef struct {
      *                  notes above.
      */
     int (*updateZidNameRecord)(void *vdb, const uint8_t *remoteZid, const uint8_t *localZid,
-                               const char *accountInfo, zidNameRecord_t *zidName, char* errString);
+                               const char *accountInfo, zidNameRecord_t const *zidName, char* errString);
 
     /**
      * @brief Insert a new ZID name record.
@@ -286,7 +286,7 @@ typedef struct {
      *                  notes above.
      */
     int (*insertZidNameRecord)(void *vdb, const uint8_t *remoteZid, const uint8_t *localZid,
-                               const char *accountInfo, zidNameRecord_t *zidName, char* errString);
+                               const char *accountInfo, zidNameRecord_t const *zidName, char* errString);
 
 
     /**

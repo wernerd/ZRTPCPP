@@ -23,18 +23,18 @@
 #include <libzrtpcpp/ZrtpConfigure.h>
 #include <libzrtpcpp/ZrtpTextData.h>
 
-AlgorithmEnum::AlgorithmEnum(const AlgoTypes type, const char *name,
-                             uint32_t klen, const char *ra, encrypt_t en,
-                             decrypt_t de, NegotiatedAlgorithms alId) :
-        algoType(type), algoName(name), keyLen(klen), readable(ra), encrypt(en),
-        decrypt(de), algoId(alId) {
+AlgorithmEnum::AlgorithmEnum(const AlgoTypes type, const char* name,
+                             int32_t klen, const char* ra, encrypt_t en,
+                             decrypt_t de, NegotiatedAlgorithms alId) : algoType(type), algoName(name), keyLen(klen),
+                                                                        readable(ra), encrypt(en),
+                                                                        decrypt(de), algoId(alId) {
 }
 
-const char *AlgorithmEnum::getName() {
+const char* AlgorithmEnum::getName() const {
     return algoName.c_str();
 }
 
-const char *AlgorithmEnum::getReadable() {
+const char* AlgorithmEnum::getReadable() const {
     return readable.c_str();
 }
 
@@ -42,30 +42,31 @@ int32_t AlgorithmEnum::getKeylen() const {
     return keyLen;
 }
 
-NegotiatedAlgorithms AlgorithmEnum::getAlgoId() {
+NegotiatedAlgorithms AlgorithmEnum::getAlgoId() const {
     return algoId;
 }
 
-encrypt_t AlgorithmEnum::getEncrypt() {
+encrypt_t AlgorithmEnum::getEncrypt() const {
     return encrypt;
 }
 
-decrypt_t AlgorithmEnum::getDecrypt() {
+decrypt_t AlgorithmEnum::getDecrypt() const {
     return decrypt;
 }
 
-AlgoTypes AlgorithmEnum::getAlgoType() {
+AlgoTypes AlgorithmEnum::getAlgoType() const {
     return algoType;
 }
 
-bool AlgorithmEnum::isValid() {
+bool AlgorithmEnum::isValid() const {
     return (algoType != Invalid);
 }
 
 static AlgorithmEnum invalidAlgo(Invalid, "", 0, "", nullptr, nullptr, None);
 
 
-EnumBase::EnumBase(AlgoTypes a) : algoType(a) {}
+EnumBase::EnumBase(AlgoTypes a) : algoType(a) {
+}
 
 EnumBase::~EnumBase() {
     for (auto b: algos) {
@@ -73,30 +74,30 @@ EnumBase::~EnumBase() {
     }
 }
 
-void EnumBase::insert(const char *name) {
+void EnumBase::insert(const char* name) {
     if (!name)
         return;
-    auto *e = new AlgorithmEnum(algoType, name, 0, "", nullptr, nullptr, None);
+    auto* e = new AlgorithmEnum(algoType, name, 0, "", nullptr, nullptr, None);
     algos.push_back(e);
 }
 
-void EnumBase::insert(const char *name, uint32_t klen, const char *ra,
+void EnumBase::insert(const char* name, int32_t klen, const char* ra,
                       encrypt_t enc, decrypt_t dec, NegotiatedAlgorithms alId) {
     if (!name)
         return;
-    auto *e = new AlgorithmEnum(algoType, name, klen, ra, enc, dec, alId);
+    auto* e = new AlgorithmEnum(algoType, name, klen, ra, enc, dec, alId);
     algos.push_back(e);
 }
 
-size_t EnumBase::getSize() {
+size_t EnumBase::getSize() const {
     return algos.size();
 }
 
-AlgoTypes EnumBase::getAlgoType() {
+AlgoTypes EnumBase::getAlgoType() const {
     return algoType;
 }
 
-AlgorithmEnum &EnumBase::getByName(const char *name) {
+AlgorithmEnum& EnumBase::getByName(const char* name) {
     for (auto b: algos) {
         if (strncmp(b->getName(), name, 4) == 0) {
             return *b;
@@ -105,7 +106,7 @@ AlgorithmEnum &EnumBase::getByName(const char *name) {
     return invalidAlgo;
 }
 
-AlgorithmEnum &EnumBase::getByOrdinal(int ord) {
+AlgorithmEnum& EnumBase::getByOrdinal(int ord) {
     int i = 0;
     for (auto b: algos) {
         if (i == ord) {
@@ -116,7 +117,7 @@ AlgorithmEnum &EnumBase::getByOrdinal(int ord) {
     return invalidAlgo;
 }
 
-int EnumBase::getOrdinal(AlgorithmEnum &algo) {
+int EnumBase::getOrdinal(AlgorithmEnum&algo) {
     int i = 0;
     for (auto b: algos) {
         if (strncmp(b->getName(), algo.getName(), 4) == 0) {
@@ -175,7 +176,6 @@ PubKeyEnum::PubKeyEnum() : EnumBase(PubKeyAlgorithm) {
     insert(np09, 0, "SNTRUP 953/Curve 414", nullptr, nullptr, None);
     insert(np12, 0, "SNTRUP 1277/Curve 414", nullptr, nullptr, None);
 #endif
-
 }
 
 /**
@@ -275,38 +275,31 @@ void ZrtpConfigure::clear() {
     authLengths.clear();
 }
 
-int32_t ZrtpConfigure::addAlgo(AlgoTypes algoType, AlgorithmEnum &algo) {
-
+int32_t ZrtpConfigure::addAlgo(AlgoTypes algoType, AlgorithmEnum&algo) {
     return addAlgo(getEnum(algoType), algo);
 }
 
-int32_t ZrtpConfigure::addAlgoAt(AlgoTypes algoType, AlgorithmEnum &algo, int32_t index) {
-
+int32_t ZrtpConfigure::addAlgoAt(AlgoTypes algoType, AlgorithmEnum&algo, int32_t index) {
     return addAlgoAt(getEnum(algoType), algo, index);
 }
 
-AlgorithmEnum &ZrtpConfigure::getAlgoAt(AlgoTypes algoType, int32_t index) {
-
+AlgorithmEnum& ZrtpConfigure::getAlgoAt(AlgoTypes algoType, int32_t index) {
     return getAlgoAt(getEnum(algoType), index);
 }
 
-int32_t ZrtpConfigure::removeAlgo(AlgoTypes algoType, AlgorithmEnum &algo) {
-
+int32_t ZrtpConfigure::removeAlgo(AlgoTypes algoType, AlgorithmEnum&algo) {
     return removeAlgo(getEnum(algoType), algo);
 }
 
 uint32_t ZrtpConfigure::getNumConfiguredAlgos(AlgoTypes algoType) {
-
     return getNumConfiguredAlgos(getEnum(algoType));
 }
 
-bool ZrtpConfigure::containsAlgo(AlgoTypes algoType, AlgorithmEnum &algo) {
-
+bool ZrtpConfigure::containsAlgo(AlgoTypes algoType, AlgorithmEnum&algo) {
     return containsAlgo(getEnum(algoType), algo);
 }
 
 [[maybe_unused]] void ZrtpConfigure::printConfiguredAlgos(AlgoTypes algoType) {
-
     printConfiguredAlgos(getEnum(algoType));
 }
 
@@ -314,9 +307,8 @@ bool ZrtpConfigure::containsAlgo(AlgoTypes algoType, AlgorithmEnum &algo) {
  * The next methods are the private methods that implement the real
  * details.
  */
-AlgorithmEnum &ZrtpConfigure::getAlgoAt(std::vector<AlgorithmEnum *> &a, int32_t index) {
-
-    if (index >= (int) a.size())
+AlgorithmEnum& ZrtpConfigure::getAlgoAt(std::vector<AlgorithmEnum *>&a, int32_t index) {
+    if (index >= (int)a.size())
         return invalidAlgo;
 
     int i = 0;
@@ -329,8 +321,8 @@ AlgorithmEnum &ZrtpConfigure::getAlgoAt(std::vector<AlgorithmEnum *> &a, int32_t
     return invalidAlgo;
 }
 
-int32_t ZrtpConfigure::addAlgo(std::vector<AlgorithmEnum *> &a, AlgorithmEnum &algo) {
-    int size = (int) a.size();
+int32_t ZrtpConfigure::addAlgo(std::vector<AlgorithmEnum *>&a, AlgorithmEnum&algo) {
+    int size = static_cast<int>(a.size());
     if (size >= maxNoOfAlgos)
         return -1;
 
@@ -341,21 +333,21 @@ int32_t ZrtpConfigure::addAlgo(std::vector<AlgorithmEnum *> &a, AlgorithmEnum &a
         return (maxNoOfAlgos - size);
 
     a.push_back(&algo);
-    return (maxNoOfAlgos - (int) a.size());
+    return (maxNoOfAlgos - static_cast<int>(a.size()));
 }
 
-int32_t ZrtpConfigure::addAlgoAt(std::vector<AlgorithmEnum *> &a, AlgorithmEnum &algo, int32_t index) {
+int32_t ZrtpConfigure::addAlgoAt(std::vector<AlgorithmEnum *>&a, AlgorithmEnum&algo, int32_t index) {
     if (index >= maxNoOfAlgos)
         return -1;
 
-    int size = (int) a.size();
+    int size = static_cast<int>(a.size());
 
     if (!algo.isValid())
         return -1;
 
     if (index >= size) {
         a.push_back(&algo);
-        return maxNoOfAlgos - (int) a.size();
+        return maxNoOfAlgos - static_cast<int>(a.size());
     }
     auto b = a.begin();
     auto e = a.end();
@@ -367,12 +359,11 @@ int32_t ZrtpConfigure::addAlgoAt(std::vector<AlgorithmEnum *> &a, AlgorithmEnum 
         }
         i++;
     }
-    return (maxNoOfAlgos - (int) a.size());
+    return (maxNoOfAlgos - static_cast<int>(a.size()));
 }
 
-int32_t ZrtpConfigure::removeAlgo(std::vector<AlgorithmEnum *> &a, AlgorithmEnum &algo) {
-
-    if ((int) a.size() == 0 || !algo.isValid())
+int32_t ZrtpConfigure::removeAlgo(std::vector<AlgorithmEnum *>&a, AlgorithmEnum&algo) {
+    if ((int)a.size() == 0 || !algo.isValid())
         return maxNoOfAlgos;
 
     auto b = a.begin();
@@ -384,34 +375,36 @@ int32_t ZrtpConfigure::removeAlgo(std::vector<AlgorithmEnum *> &a, AlgorithmEnum
             break;
         }
     }
-    return (maxNoOfAlgos - (int) a.size());
+    return (maxNoOfAlgos - static_cast<int>(a.size()));
 }
 
-uint32_t ZrtpConfigure::getNumConfiguredAlgos(std::vector<AlgorithmEnum *> &a) {
+uint32_t ZrtpConfigure::getNumConfiguredAlgos(std::vector<AlgorithmEnum *>&a) {
     return a.size() & 0x7U;
 }
 
-bool ZrtpConfigure::containsAlgo(std::vector<AlgorithmEnum *> &a, AlgorithmEnum &algo) {
-
-    if ((int) a.size() == 0 || !algo.isValid())
+bool ZrtpConfigure::containsAlgo(std::vector<AlgorithmEnum *>&a, AlgorithmEnum&algo) {
+    if (a.empty() || !algo.isValid())
         return false;
 
-    for (auto b: a) {
-        if (strcmp(b->getName(), algo.getName()) == 0) {
-            return true;
-        }
-    }
-    return false;
+    return std::any_of(a.cbegin(), a.cend(), [&algo](AlgorithmEnum const* b) {
+        return strcmp(b->getName(), algo.getName()) == 0;
+    });
+
+    // for (auto b: a) {
+    //     if (strcmp(b->getName(), algo.getName()) == 0) {
+    //         return true;
+    //     }
+    // }
+    // return false;
 }
 
-void ZrtpConfigure::printConfiguredAlgos(std::vector<AlgorithmEnum *> &a) {
+void ZrtpConfigure::printConfiguredAlgos(std::vector<AlgorithmEnum *>&a) {
     for (auto b: a) {
         printf("print configured: name: %s\n", b->getName());
     }
 }
 
-std::vector<AlgorithmEnum *> &ZrtpConfigure::getEnum(AlgoTypes algoType) {
-
+std::vector<AlgorithmEnum *>& ZrtpConfigure::getEnum(AlgoTypes algoType) {
     switch (algoType) {
         case HashAlgorithm:
             return hashes;
@@ -438,7 +431,7 @@ void ZrtpConfigure::setTrustedMitM(bool yesNo) {
     enableTrustedMitM = yesNo;
 }
 
-bool ZrtpConfigure::isTrustedMitM() {
+bool ZrtpConfigure::isTrustedMitM() const {
     return enableTrustedMitM;
 }
 
@@ -446,7 +439,7 @@ void ZrtpConfigure::setSasSignature(bool yesNo) {
     enableSasSignature = yesNo;
 }
 
-bool ZrtpConfigure::isSasSignature() {
+bool ZrtpConfigure::isSasSignature() const {
     return enableSasSignature;
 }
 
@@ -454,7 +447,7 @@ void ZrtpConfigure::setParanoidMode(bool yesNo) {
     enableParanoidMode = yesNo;
 }
 
-bool ZrtpConfigure::isParanoidMode() {
+bool ZrtpConfigure::isParanoidMode() const {
     return enableParanoidMode;
 }
 
@@ -462,7 +455,7 @@ void ZrtpConfigure::setDisclosureFlag(bool yesNo) {
     enableDisclosureFlag = yesNo;
 }
 
-bool ZrtpConfigure::isDisclosureFlag() {
+bool ZrtpConfigure::isDisclosureFlag() const {
     return enableDisclosureFlag;
 }
 

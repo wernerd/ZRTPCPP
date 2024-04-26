@@ -15,10 +15,8 @@
 // Copyright (c) 2020 Werner Dittmann. All rights reserved.
 //
 
-#include <cinttypes>
 #include "libzrtpcpp/ZIDCacheDb.h"
 #include "../logging/ZrtpLogging.h"
-#include "../common/Utilities.h"
 #include "gtest/gtest.h"
 
 using namespace std;

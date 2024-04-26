@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _ZRTP_H_
-#define _ZRTP_H_
+#ifndef ZRTP_H_
+#define ZRTP_H_
 /**
  * @file ZRtp.h
  * @brief The ZRTP main engine
@@ -215,7 +215,7 @@ class __EXPORT ZRtp {
      * @return
      *    Returns true id ZRTP engine is in the given state, false otherwise.
      */
-    bool inState(int32_t state) const;
+    [[nodiscard]] bool inState(int32_t state) const;
 
     /**
      * Set SAS as verified.
@@ -351,7 +351,7 @@ class __EXPORT ZRtp {
      * @param accepted
      *     True if the enrollment request is accepted, false otherwise.
      */
-    void acceptEnrollment(bool accepted);
+    static void acceptEnrollment(bool accepted);
 
     /**
      * Check the state of the enrollment mode.
@@ -398,7 +398,7 @@ class __EXPORT ZRtp {
      * @param sh the full SAS hash value, 32 bytes
      * @param render the SAS rendering algorithm
      */
-    bool sendSASRelayPacket(uint8_t* sh, const std::string& render);
+    static bool sendSASRelayPacket(uint8_t* sh, const std::string& render);
 
     /**
      * Get the committed SAS rendering algorithm for this ZRTP session.

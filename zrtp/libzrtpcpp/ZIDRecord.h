@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _ZIDRECORD_H_
-#define _ZIDRECORD_H_
+#ifndef ZIDRECORD_H_
+#define ZIDRECORD_H_
 
 #if defined(__cplusplus)
 #include <cstdint>
@@ -39,23 +39,24 @@
 /**
  * These length are fixed for ZRTP. See RFC 6189.
  */
-#define IDENTIFIER_LEN  12
-#define RS_LENGTH       32
+constexpr int32_t IDENTIFIER_LEN = 12;
+constexpr int32_t RS_LENGTH =      32;
 
-#define FILE_TYPE_RECORD    1
-#define SQLITE_TYPE_RECORD  2
-#define EMPTY_TYPE_RECORD  3
+constexpr int32_t FILE_TYPE_RECORD =   1;
+constexpr int32_t SQLITE_TYPE_RECORD = 2;
+constexpr int32_t EMPTY_TYPE_RECORD =  3;
 
 
+constexpr int32_t RS1_NO_EXPIRATION  = -1;
 /*
  * The flag field stores the following bitflags
  */
-static const uint32_t Valid            = 0x1;
-static const uint32_t SASVerified      = 0x2;
-static const uint32_t RS1Valid         = 0x4;
-static const uint32_t RS2Valid         = 0x8;
-static const uint32_t MITMKeyAvailable = 0x10;
-static const uint32_t OwnZIDRecord     = 0x20;
+constexpr uint32_t Valid            = 0x1;
+constexpr uint32_t SASVerified      = 0x2;
+constexpr uint32_t RS1Valid         = 0x4;
+constexpr uint32_t RS2Valid         = 0x8;
+constexpr uint32_t MITMKeyAvailable = 0x10;
+constexpr uint32_t OwnZIDRecord     = 0x20;
 
 
 #if defined(__cplusplus)
@@ -215,7 +216,7 @@ public:
      *    The expiration interval in seconds. Default is -1.
      *
      */
-    virtual void setNewRs1(const unsigned char* data, int32_t expire =-1) =0;
+    virtual void setNewRs1(const unsigned char* data, int32_t expire) =0;
 
     /**
      * @brief Set MiTM key data.

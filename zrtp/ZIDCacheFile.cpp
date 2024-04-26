@@ -129,8 +129,8 @@ void ZIDCacheFile::checkDoMigration(char* name) {
         if (recOld.rs1Valid & SASVerified) {
             rec2.setSasVerified();
         }
-        rec2.setNewRs1(recOld.rs2Data); // TODO: check squenec
-        rec2.setNewRs1(recOld.rs1Data);
+        rec2.setNewRs1(recOld.rs2Data, RS1_NO_EXPIRATION);
+        rec2.setNewRs1(recOld.rs1Data, RS1_NO_EXPIRATION);
         if (fwrite(rec2.getRecordData(), rec2.getRecordLength(), 1, zidFile) < 1)
             ++errors;
 
