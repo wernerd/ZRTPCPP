@@ -25,6 +25,10 @@ set (VERSION 5.0.0)
 set (SOVERSION 5)
 
 cmake_policy(SET CMP0077 NEW)
+
+# Avoid warning about DOWNLOAD_EXTRACT_TIMESTAMP :
+cmake_policy(SET CMP0135 NEW)
+
 # Define supported command line parameters.
 #
 # Example to build the tivi client: cmake -DTIVI=true ..
@@ -217,7 +221,7 @@ if (TESTS)
             ${gtest_fetch}
             # Specify the commit you depend on and update it regularly.
             ##            URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
-            URL https://github.com/google/googletest/archive/refs/tags/release-1.11.0.zip
+            URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
     )
     # For Windows: Prevent overriding the parent project's compiler/linker settings
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
