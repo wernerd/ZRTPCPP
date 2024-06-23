@@ -15,13 +15,13 @@
 // Copyright (c) 2020 Werner Dittmann. All rights reserved.
 //
 
+#include "GenericPacketFilter.h"
 #include <libzrtpcpp/ZrtpStateEngineImpl.h>
 #include <zrtp/libzrtpcpp/zrtpPacket.h>
 #include <common/osSpecifics.h>
 #include <common/ZrtpTimeoutProvider.h>
-#include <botancrypto/ZrtpBotanRng.h>
 
-#include "GenericPacketFilter.h"
+#include <botancrypto/ZrtpBotanRng.h>
 
 static constexpr size_t RTPHeaderLength = 12;
 static constexpr int maxZrtpSize = 3072;

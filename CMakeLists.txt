@@ -27,7 +27,7 @@ set (SOVERSION 5)
 cmake_policy(SET CMP0077 NEW)
 
 # Avoid warning about DOWNLOAD_EXTRACT_TIMESTAMP :
-cmake_policy(SET CMP0135 NEW)
+# cmake_policy(SET CMP0135 NEW)
 
 # Define supported command line parameters.
 #

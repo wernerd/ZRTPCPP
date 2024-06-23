@@ -22,6 +22,7 @@
 #include <crypto/twoCFB.h>
 #include <libzrtpcpp/ZrtpConfigure.h>
 #include <libzrtpcpp/ZrtpTextData.h>
+#include <algorithm>
 
 AlgorithmEnum::AlgorithmEnum(const AlgoTypes type, const char* name,
                              int32_t klen, const char* ra, encrypt_t en,
