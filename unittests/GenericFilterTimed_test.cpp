@@ -57,11 +57,11 @@ public:
 
         aliceNetwork = std::make_unique<zrtp::NetworkSimulation>(
                 aliceTimoutProvider,
-                [this](zrtp::ZrtpDataPairPtr dataPtr, int64_t tts) { bobQueueData(move(dataPtr), tts); }
+                [this](zrtp::ZrtpDataPairPtr dataPtr, int64_t tts) { bobQueueData(std::move(dataPtr), tts); }
         );
         bobNetwork = std::make_unique<zrtp::NetworkSimulation>(
                 bobTimoutProvider,
-                [this](zrtp::ZrtpDataPairPtr dataPtr, int64_t tts) { aliceQueueData(move(dataPtr), tts); }
+                [this](zrtp::ZrtpDataPairPtr dataPtr, int64_t tts) { aliceQueueData(std::move(dataPtr), tts); }
         );
     }
 
@@ -160,7 +160,7 @@ public:
         LOGGER(DEBUGGING, "From Bob   at: ", tts)
 
         unique_lock<mutex> queueLock(aliceQueueMutex);
-        aliceQueue.push_back(move(dataPairPtr));
+        aliceQueue.push_back(std::move(dataPairPtr));
         queueLock.unlock();
         aliceQueueCv.notify_all();
     }

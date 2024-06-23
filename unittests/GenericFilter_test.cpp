@@ -82,16 +82,16 @@ TEST_F(GenericFilterTestFixture, zrtpDetection) {
 TEST_F(GenericFilterTestFixture, prepareRtp) {
     auto filter = GenericPacketFilter::createGenericFilter();
 
-    auto protocolData = GenericPacketFilter::prepareToSendRtp(*filter, zrtpRawData, sizeof(zrtpRawData));
-    ASSERT_EQ(sizeof(zrtpRawData) + 12, protocolData.length);
-    ASSERT_TRUE(protocolData.ptr);
+    auto protocolData = GenericPacketFilter::prepareToSendRtp(*filter, zrtpRawData, sizeof(zrtpRawData), 0);
+    ASSERT_EQ(sizeof(zrtpRawData) + 12, protocolData->length);
+    ASSERT_TRUE(protocolData->ptr);
 
     // the ProtocolData structure contains a shared_ptr<void>, thus we need to cast to the
     // real data first.
-    auto ptr = static_pointer_cast<secUtilities::SecureArrayFlex>(protocolData.ptr);
+    auto ptr = static_pointer_cast<secUtilities::SecureArrayFlex>(protocolData->ptr);
     size_t offset = 0;
     uint32_t ssrc = 0;
-    ASSERT_EQ(GenericPacketFilter::IsZrtp, GenericPacketFilter::checkRtpData(ptr->data(), protocolData.length, offset, ssrc));
+    ASSERT_EQ(GenericPacketFilter::IsZrtp, GenericPacketFilter::checkRtpData(ptr->data(), protocolData->length, offset, ssrc));
     ASSERT_EQ(12, offset);          // 12 -> RTP header length, first byte of ZRTP data
 }
 

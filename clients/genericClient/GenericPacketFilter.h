@@ -133,6 +133,9 @@ public:
       * @brief Returned by the `PrepareToSendFunction` implementation.
       */
     struct ProtocolData {
+        ~ProtocolData() {
+            ptr.reset();
+        }
         std::shared_ptr<void> ptr = nullptr;    //!< Pointer to prepared data
         int32_t length = 0;                     //!< Length of prepare data in bytes
     };
@@ -226,7 +229,7 @@ public:
      * @param[in] length Length of the ZRTP date in bytes.
      * @sa prepareToSendRtp(const uint8_t *zrtpData, int32_t length);
      */
-    using PrepareToSendFunction = std::function<ProtocolData(GenericPacketFilter& thisFilter, const uint8_t *zrtpData, int32_t length)>;
+    using PrepareToSendFunction = std::function<std::unique_ptr<GenericPacketFilter::ProtocolData>(GenericPacketFilter& thisFilter, const uint8_t *zrtpData, int32_t length, uint8_t frameFlag)>;
 
     /**
      * @brief Callback function to actually send the packet.
@@ -281,10 +284,11 @@ public:
      * @param[in] thisFilter Reference to the packet filter instance
      * @param[in] zrtpData pointer to the ZRTP raw data
      * @param[in] length length of the ZRTP raw data including space for CRC (the last `CRC_SIZE` bytes)
+     * @param[in] frameFlag flag value if ZRTP packet contains more than one fragment
      * @return ProtocolData structure, `ptr` holds a `secUtilities::SecureArrayFlex` instance
      */
-    static ProtocolData
-    prepareToSendRtp(GenericPacketFilter& thisFilter, uint8_t const *zrtpData, int32_t length);
+    static std::unique_ptr<GenericPacketFilter::ProtocolData>
+    prepareToSendRtp(GenericPacketFilter& thisFilter, uint8_t const *zrtpData, int32_t length, uint8_t frameFlag);
 
     /**
      * @brief Check if an RTP packet contains valid ZRTP data.
@@ -378,7 +382,7 @@ public:
      *
      * If the application must set this function and handle the sending of packets.
      *
-     * @param[in] dsf Functions pointer to DoSend function.
+     * @param[in] dsf Function pointer to DoSend function.
      * @return reference of the current instance.
      */
     virtual GenericPacketFilter&
@@ -543,6 +547,9 @@ public:
      */
     int32_t
     sendDataZRTP(const unsigned char* data, int32_t length) override;
+
+    int32_t
+    sendFrameDataZRTP(const uint8_t* data, int32_t length, uint8_t numberOfFrames) override;
 
     int32_t
     activateTimer(int32_t time) override;

@@ -20,7 +20,6 @@
 #include <common/osSpecifics.h>
 #include <common/ZrtpTimeoutProvider.h>
 #include <botancrypto/ZrtpBotanRng.h>
-#include "../logging/ZrtpLogging.h"
 
 #include "GenericPacketFilter.h"
 
@@ -185,16 +184,15 @@ GenericPacketFilter::checkRtpData(uint8_t const * packetData, size_t packetLengt
     return IsZrtp;
 }
 
-// FIXME: deallocate protocol data contents, add destructor, etc
-GenericPacketFilter::ProtocolData
-GenericPacketFilter::prepareToSendRtp(GenericPacketFilter& thisFilter, const uint8_t *zrtpData, int32_t length) {
+std::unique_ptr<GenericPacketFilter::ProtocolData>
+GenericPacketFilter::prepareToSendRtp(GenericPacketFilter& thisFilter, const uint8_t *zrtpData, int32_t length, uint8_t frameFlag) {
 
     uint16_t totalLen = length + RTPHeaderLength;     /* Fixed number of bytes of ZRTP header */
 
     uint16_t* pus;
     uint32_t* pui;
 
-    ProtocolData protocolData {};
+    auto protocolData = std::make_unique<GenericPacketFilter::ProtocolData>();
 
     if ((totalLen) > maxZrtpSize)
         return protocolData;
@@ -213,7 +211,7 @@ GenericPacketFilter::prepareToSendRtp(GenericPacketFilter& thisFilter, const uin
 
     // set up fixed ZRTP header - simulates RTP
     ptr->at(0) = 0x10;                             // invalid RTP version - refer to RFC6189
-    ptr->at(1) = 0;
+    ptr->at(1) = frameFlag;
     auto seqNumber = thisFilter.zrtpSequenceNo();
     pus[1] = zrtpHtons(seqNumber++);
     thisFilter.zrtpSequenceNo(seqNumber);
@@ -228,26 +226,46 @@ GenericPacketFilter::prepareToSendRtp(GenericPacketFilter& thisFilter, const uin
     crc = zrtpEndCksum(crc);                                       // convert and store CRC in ZRTP packet.
     *(uint32_t*)(ptr->data()+totalLen-CRC_SIZE) = zrtpHtonl(crc);
 
-    protocolData.length = totalLen;
-    protocolData.ptr = ptr;
+    protocolData->length = totalLen;
+    protocolData->ptr = ptr;
     return protocolData;
 }
 
 // region ZRTP callback methods
-// TODO: add sendFrameDataZrtp
 int32_t
 GenericPacketFilter::sendDataZRTP(const unsigned char *data, int32_t length) {
 
     auto protocolData = (prepareToSend == nullptr) ?
-            GenericPacketFilter::prepareToSendRtp(*this, data, length) :
-            prepareToSend(*this, data, length);
+                        GenericPacketFilter::prepareToSendRtp(*this, data, length, 0) :
+                        prepareToSend(*this, data, length, 0);
 
     // No data?
-    if (protocolData.length == 0 || !protocolData.ptr) {
+    if (protocolData->length == 0 || !protocolData->ptr) {
         return 0;
     }
     // Check the callback here - the prepareToSend may set it.
-    if (doSend == nullptr || !doSend(protocolData)) {
+    if (doSend == nullptr || !doSend(protocolData.operator*())) {
+        return 0;
+    }
+    return 1;
+}
+
+int32_t
+GenericPacketFilter::sendFrameDataZRTP(const uint8_t* data, int32_t length, uint8_t numberOfFrames) {
+    // prepare frame flag and number of frames. For RTP this goes into packet's 2nd byte.
+    // 2nd byte in RTP is a marker flag and payload type: no harm for ZRTP and SRTP processing
+    uint8_t frameFlagCnt = ((numberOfFrames & 0x3) << 1) | 1;
+
+    auto protocolData = (prepareToSend == nullptr) ?
+                        GenericPacketFilter::prepareToSendRtp(*this, data, length, frameFlagCnt) :
+                        prepareToSend(*this, data, length, 0);
+
+    // No data?
+    if (protocolData->length == 0 || !protocolData->ptr) {
+        return 0;
+    }
+    // Check the callback here - the prepareToSend may set it.
+    if (doSend == nullptr || !doSend(protocolData.operator*())) {
         return 0;
     }
     return 1;
@@ -457,10 +475,10 @@ GenericPacketFilter::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part
                                           secrets->srtpAuthTagLen / 8);              // authentication tag len
         }
         recvCryptoContext->deriveSrtpKeys(0L);
-        recvSrtp = move(recvCryptoContext);
+        recvSrtp = std::move(recvCryptoContext);
 
         recvCryptoContextCtrl->deriveSrtcpKeys();
-        recvSrtcp = move(recvCryptoContextCtrl);
+        recvSrtcp = std::move(recvCryptoContextCtrl);
 
         suppressCounter = 0;         // suppress SRTP warnings for some packets after we switch to SRTP
     }
