@@ -2,8 +2,8 @@
 // Created by werner on 07.06.16.
 //
 
-#ifndef LIBZINALOTL_UTILITIES_H
-#define LIBZINALOTL_UTILITIES_H
+#ifndef ZRTP_UTILITIES_H
+#define ZRTP_UTILITIES_H
 
 /**
  * @file
@@ -30,7 +30,7 @@ namespace zrtp {
 
     public:
 
-        constexpr static uint64_t MINUTE_AS_USEC = 60 * 1000000ULL;
+        [[maybe_unused]] constexpr static uint64_t MINUTE_AS_USEC = 60 * 1000000ULL;
 
         /**
          * @brief Splits a string around matches of the given delimiter character.
@@ -59,7 +59,7 @@ namespace zrtp {
          *
          * @param toWipe The string to wipe.
          */
-        static void wipeString(std::string &toWipe);
+        [[maybe_unused]] static void wipeString(std::string &toWipe);
 
         /**
          * @brief Wipe memory.
@@ -80,11 +80,11 @@ namespace zrtp {
          * @param ptr Array that contains the data in network order
          * @return Value
          */
-        static uint64_t load64(const uint8_t* ptr);
+        [[maybe_unused]] static uint64_t load64(const uint8_t* ptr);
 
-        static uint32_t load32(const uint8_t* ptr);
+        [[maybe_unused]] static uint32_t load32(const uint8_t* ptr);
 
-        static uint16_t load16(const uint8_t* ptr);
+        [[maybe_unused]] static uint16_t load16(const uint8_t* ptr);
 
 
         /**
@@ -93,11 +93,11 @@ namespace zrtp {
          * @param ptr Array to store the data in network order
          * @param val data to store in array
          */
-        static void store64(uint64_t val, uint8_t *ptr);
+        [[maybe_unused]] static void store64(uint64_t val, uint8_t *ptr);
 
-        static void store32(uint32_t val, uint8_t *ptr);
+        [[maybe_unused]] static void store32(uint32_t val, uint8_t *ptr);
 
-        static void store16(uint16_t val, uint8_t *ptr);
+        [[maybe_unused]] static void store16(uint16_t val, uint8_t *ptr);
 
         /**
          * @brief Returns a string with current date and Time, formatted according to ISO8601.
@@ -107,7 +107,7 @@ namespace zrtp {
          *
          * @return A formatted string with current Zulu time.
          */
-        static std::string getIsoTimeUtc() { return getIsoTimeUtc(time(nullptr)); }
+        [[maybe_unused]] static std::string getIsoTimeUtc() { return getIsoTimeUtc(time(nullptr)); }
 
         /**
          * @brief Returns a string with date and Time, formatted according to ISO8601.
@@ -128,7 +128,7 @@ namespace zrtp {
          *
          * @return A formatted string with current Zulu time.
          */
-        static std::string getIsoTimeUtcMs() { return getIsoTimeUtcMs(currentTimeMillis()); }
+        [[maybe_unused]] static std::string getIsoTimeUtcMs() { return getIsoTimeUtcMs(currentTimeMillis()); }
 
         /**
          * @brief Returns a string with date and Time with milliseconds, formatted according to ISO8601.
@@ -144,18 +144,18 @@ namespace zrtp {
         /**
          * @brief Computes the difference of two unsigned integers and returns a signed integer.
          *
-         * If the differnce exceeds the `limit` value, then the function returns the limit. The limit
+         * If the difference exceeds the `limit` value, then the function returns the limit. The limit
          * value is an absolute value (unsigned), the returned value is signed. The limit value must
          * be less or equal to system defined INT64_MAX
          *
          * @param first first unsigned value
-         * @param second second unsinged value
+         * @param second second unsigned value
          * @param limit limit of difference
          * @return difference as signed integer
          */
-        static int64_t getDifference(uint64_t first, uint64_t second, uint64_t limit);
+        [[maybe_unused]] static int64_t getDifference(uint64_t first, uint64_t second, uint64_t limit);
 
-        // Small functions to dump binary data as readable hex values, debugging for hases, encrypted data, etc
+        // Small functions to dump binary data as readable hex values, debugging for hashes, encrypted data, etc
         static StringUnique hexdump(const char *title, const unsigned char *s, size_t l);
 
         static StringUnique hexdump(const std::string &title, const std::string &in) {
@@ -166,9 +166,9 @@ namespace zrtp {
             return Utilities::splitString(mayBeUuid, "-")->size() == 5;
         }
 
-        static std::string uriDecode(std::string const & sSrc);
+        [[maybe_unused]] static std::string uriDecode(std::string const & sSrc);
 
-        static std::string uriEncode(std::string const & sSrc);
+        [[maybe_unused]] static std::string uriEncode(std::string const & sSrc);
     };
 }
 
@@ -179,7 +179,7 @@ namespace string_hash {
 
     template<>
     struct hasher<std::string> {
-        std::size_t constexpr operator()(char const *input)const {
+        std::size_t constexpr operator()(char const *input) const {
             return *input ?
                    static_cast<unsigned int>(*input) + 33 * (*this)(input + 1) :
                    5381;
@@ -202,4 +202,4 @@ namespace string_hash {
 /**
  * @}
  */
-#endif //LIBZINALOTL_UTILITIES_H
+#endif //ZRTP_UTILITIES_H

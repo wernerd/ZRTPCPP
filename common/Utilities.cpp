@@ -18,7 +18,6 @@ limitations under the License.
 // Created by werner on 07.06.16.
 //
 
-#include <cstring>
 #include <ctime>
 #include <cassert>
 #include <chrono>
@@ -37,7 +36,7 @@ Utilities::splitString(const string &data, const string &delimiter) {
     }
     string copy(data);
 
-    size_t pos = 0;
+    size_t pos;
     while ((pos = copy.find(delimiter)) != string::npos) {
         string token = copy.substr(0, pos);
         copy.erase(0, pos + 1);
@@ -64,18 +63,18 @@ Utilities::currentTimeMillis() {
             std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
-void
+[[maybe_unused]] void
 Utilities::wipeString(string &toWipe) {
-    // This append is necessary: the GCC C++ string implementation uses shared strings, reference counted. Thus
+    // This append is necessary: the GCC C++ string implementation uses shared strings, reference counted. Thus,
     // if we set the data buffer to 0 then all other references are also cleared. Appending a blank forces the string
-    // implementation to really copy the string and we can set the contents to 0. string.clear() does not clear the
+    // implementation to really copy the string, and we can set the contents to 0. string.clear() does not clear the
     // contents, just sets the length to 0 which is not good enough.
     toWipe.append(" ");
     wipeMemory((void *) toWipe.data(), toWipe.size());
     toWipe.clear();
 }
 
-uint64_t Utilities::load64(const uint8_t *const ptr) {
+[[maybe_unused]] uint64_t Utilities::load64(const uint8_t *const ptr) {
     uint64_t retval = ((uint64_t) ptr[0] << 56U)
                       | ((uint64_t) ptr[1] << 48U)
                       | ((uint64_t) ptr[2] << 40U)
@@ -87,17 +86,17 @@ uint64_t Utilities::load64(const uint8_t *const ptr) {
     return retval;
 }
 
-uint32_t Utilities::load32(const uint8_t *const ptr) {
+[[maybe_unused]] uint32_t Utilities::load32(const uint8_t *const ptr) {
     uint32_t retval = ((uint32_t) ptr[0] << 24U) | ((uint32_t) ptr[1] << 16U) | ((uint32_t) ptr[2] << 8U) | ptr[3];
     return retval;
 }
 
-uint16_t Utilities::load16(const uint8_t *const ptr) {
+[[maybe_unused]] uint16_t Utilities::load16(const uint8_t *const ptr) {
     uint16_t retval = ((uint32_t) ptr[0] << 8U) | ptr[1];
     return retval;
 }
 
-void Utilities::store64(uint64_t val, uint8_t *ptr) {
+[[maybe_unused]] void Utilities::store64(uint64_t val, uint8_t *ptr) {
     *ptr++ = (uint8_t) (val >> 56U);
     *ptr++ = (uint8_t) (val >> 48U);
     *ptr++ = (uint8_t) (val >> 40U);
@@ -108,19 +107,18 @@ void Utilities::store64(uint64_t val, uint8_t *ptr) {
     *ptr = (uint8_t) val;
 }
 
-void Utilities::store32(uint32_t val, uint8_t *ptr) {
+[[maybe_unused]] void Utilities::store32(uint32_t val, uint8_t *ptr) {
     *ptr++ = (uint8_t) (val >> 24U);
     *ptr++ = (uint8_t) (val >> 16U);
     *ptr++ = (uint8_t) (val >> 8U);
     *ptr = (uint8_t) val;
 }
 
-void Utilities::store16(uint16_t val, uint8_t *ptr) {
+[[maybe_unused]] void Utilities::store16(uint16_t val, uint8_t *ptr) {
     *ptr++ = (uint8_t) (val >> 8U);
     *ptr = (uint8_t) val;
 }
 
-#if 0
 string
 Utilities::getIsoTimeUtc(time_t theTime)
 {
@@ -140,7 +138,7 @@ Utilities::getIsoTimeUtcMs(int64_t theTime)
     char dateBuffer[200];
     char outBuffer[200];
 
-    int32_t ms = theTime % 1000;
+    int32_t ms = static_cast<int32_t>(theTime % 1000);
     time_t seconds = theTime / 1000;
 
     strftime(dateBuffer, sizeof(dateBuffer), dateFormat, gmtime_r(&seconds, &timeInfo));
@@ -148,7 +146,6 @@ Utilities::getIsoTimeUtcMs(int64_t theTime)
 
     return string(outBuffer);
 }
-#endif
 
 StringUnique
 Utilities::hexdump(const char *title, const unsigned char *s, size_t l) {
@@ -176,7 +173,7 @@ Utilities::hexdump(const char *title, const unsigned char *s, size_t l) {
     return make_unique<string>(hexBuffer, len);
 }
 
-int64_t
+[[maybe_unused]] int64_t
 Utilities::getDifference(uint64_t first, uint64_t second, uint64_t limit) {
     assert(limit <= INT64_MAX);
     uint64_t absDiff = (first > second) ? (first - second) : (second - first);
@@ -210,18 +207,18 @@ static constexpr char HEX2DEC[256] = {
         /* F */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127
 };
 
-std::string
+[[maybe_unused]] std::string
 Utilities::uriDecode(std::string const &sSrc) {
     // Note from RFC1630:  "Sequences which start with a percent sign
     // but are not followed by two hexadecimal characters (0-9, A-F) are reserved
     // for future extension"
 
     auto *pSrc = (const unsigned char *) sSrc.c_str();
-    const int SRC_LEN = sSrc.length();
+    const size_t SRC_LEN = sSrc.length();
     const unsigned char *const SRC_END = pSrc + SRC_LEN;
     const unsigned char *const SRC_LAST_DEC = SRC_END - 2;   // last decodable '%'
 
-    vector<char> decoded;
+    vector<unsigned char> decoded;
     decoded.reserve(SRC_LEN);
 
     while (pSrc < SRC_LAST_DEC) {
@@ -233,7 +230,6 @@ Utilities::uriDecode(std::string const &sSrc) {
                 continue;
             }
         }
-
         decoded.push_back(*pSrc++);
     }
     // the last 2- chars
@@ -269,14 +265,14 @@ static constexpr char SAFE[256] = {
         /* F */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-std::string
+[[maybe_unused]] std::string
 Utilities::uriEncode(std::string const &sSrc) {
     const char DEC2HEX[16 + 1] = "0123456789ABCDEF";
     auto *pSrc = (const unsigned char *) sSrc.c_str();
-    const int SRC_LEN = sSrc.length();
+    const size_t SRC_LEN = sSrc.length();
     const unsigned char *const SRC_END = pSrc + SRC_LEN;
 
-    vector<char> encoded;
+    vector<unsigned char> encoded;
     encoded.reserve(SRC_LEN * 3);
 
     for (; pSrc < SRC_END; ++pSrc) {

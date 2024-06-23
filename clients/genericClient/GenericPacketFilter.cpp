@@ -185,6 +185,7 @@ GenericPacketFilter::checkRtpData(uint8_t const * packetData, size_t packetLengt
     return IsZrtp;
 }
 
+// FIXME: deallocate protocol data contents, add destructor, etc
 GenericPacketFilter::ProtocolData
 GenericPacketFilter::prepareToSendRtp(GenericPacketFilter& thisFilter, const uint8_t *zrtpData, int32_t length) {
 
@@ -233,7 +234,7 @@ GenericPacketFilter::prepareToSendRtp(GenericPacketFilter& thisFilter, const uin
 }
 
 // region ZRTP callback methods
-
+// TODO: add sendFrameDataZrtp
 int32_t
 GenericPacketFilter::sendDataZRTP(const unsigned char *data, int32_t length) {
 
