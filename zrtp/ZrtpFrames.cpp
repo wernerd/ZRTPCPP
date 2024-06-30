@@ -120,12 +120,12 @@ ZRtp::sendAsZrtpMultiFrames(std::unique_ptr<std::list<std::reference_wrapper<Zrt
 }
 
 // Returns the of total length in ZRTP words: sum of message lengths and frame headers
-static int32_t
+static uint32_t
 unpackAndCheck(uint8_t const *zrtpFrame, int numberOfFrames, uint8_t const *packetAddresses[]) {
     LOGGER(VERBOSE, "Enter ", __func__, "frames in packrt: ", numberOfFrames)
 
     uint8_t currentBatch;
-    int32_t totalLength = 0;
+    uint32_t totalLength = 0;
 
     for (auto frameNum = 0; frameNum < numberOfFrames; frameNum++) {
         FrameHeader_t frameHeader;
@@ -186,11 +186,6 @@ ZRtp::processZrtpFramePacket(uint8_t const *zrtpMessage, uint32_t pSSRC, size_t 
         uint8_t const *packetAddresses[7]{nullptr};
         auto msgLength = unpackAndCheck(zrtpMessage, numberOfFrames, packetAddresses);
         if (msgLength == 0) {
-            return;         // got not all frames yet
-        }
-
-        // perform some sanity checks before processing the ZRTP messages
-        if (msgLength < 0) {  // don't process message any further
             LOGGER(ERROR_LOG, "Unpacking embedded ZRTP messages failed")
             stateEngineLocal->sendErrorPacket(GnuZrtpCodes::MalformedPacket);
             return;
