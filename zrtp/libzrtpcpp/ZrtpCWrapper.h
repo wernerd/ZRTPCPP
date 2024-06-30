@@ -318,6 +318,25 @@ extern "C"
         int32_t (*zrtp_sendDataZRTP) (ZrtpContext* ctx, const uint8_t* data, int32_t length ) ;
 
         /**
+        * Send a ZRTP frame or ZRTP multi-frame via RTP.
+        *
+        * ZRTP calls this method to send a ZRTP frame or multi-frame via the RTP session.
+        *
+        * @param ctx
+        *    Pointer to the opaque ZrtpContext structure.
+        * @param data
+        *    Points to ZRTP packet to send. The packet already contains a 4 bytes
+        *    storage at the end to store CRC.
+        * @param length
+        *    The length in bytes of the data, including the CRC storage.
+        * @param numberOfFrames
+        *    Number of frame in a multi-frame packet
+        * @return
+        *    zero if sending failed, one if packet was send
+        */
+        int32_t (*zrtp_sendFrameDataZRTP)(ZrtpContext* ctx, const uint8_t* data, int32_t length, uint8_t numberOfFrames);
+
+        /**
         * Activate timer.
         *
         * @param ctx

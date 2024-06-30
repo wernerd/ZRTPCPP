@@ -35,9 +35,8 @@ int32_t ZrtpCallbackWrapper::sendDataZRTP(const unsigned char* data, int32_t len
     return c_callbacks->zrtp_sendDataZRTP(zrtpCtx, data, length);
 }
 
-// TODO: not implemented yet for C wrapper
 int32_t ZrtpCallbackWrapper::sendFrameDataZRTP(const uint8_t* data, int32_t length, uint8_t numberOfFrames) {
-    return 0;
+    return c_callbacks->zrtp_sendFrameDataZRTP(zrtpCtx, data, length, numberOfFrames);
 }
 
 int32_t ZrtpCallbackWrapper::activateTimer (int32_t time)
