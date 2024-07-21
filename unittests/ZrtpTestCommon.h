@@ -73,11 +73,12 @@ public:
     MOCK_METHOD(int, getTransportOverhead, (), (override));
     MOCK_METHOD(void, setMultiStream, (bool multi), (override));
 
-    // Setup call which return a value. Let them return some sensible data.
+    // Setup calls which return a value. Let them return some sensible data.
     MockZrtpState() {
         ON_CALL(*this, inState).WillByDefault(Return(false));
         ON_CALL(*this, getNumberOfRetryCounters).WillByDefault(Return(0));
         ON_CALL(*this, getRetryCounters).WillByDefault(Return(0));
+        ON_CALL(*this, getTransportOverhead).WillByDefault(Return(RTP_HEADER_LENGTH));
     }
 };
 #endif //LIBZRTPCPP_ZRTPTESTCOMMON_H

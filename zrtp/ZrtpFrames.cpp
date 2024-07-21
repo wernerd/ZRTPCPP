@@ -30,11 +30,13 @@ ZRtp::sendAsZrtpFrames(ZrtpPacketBase *packet) {
     if (packet == nullptr) {
         return 0;
     }
-
+    // When sending the same packet, make sure it uses the same batch number,
+    // can happen on packet retries, for example after a timeout
     uint8_t currentBatch;
     if (packet != sentFramePacket) {
         sentFramePacket = packet;
         currentBatch = sendFrameBatch++;
+        sendFrameBatch &= 0x7;  // batch number has 3 bits only, so 0 - 7
     } else {
         currentBatch = sendFrameBatch;
     }
@@ -122,7 +124,7 @@ ZRtp::sendAsZrtpMultiFrames(std::unique_ptr<std::list<std::reference_wrapper<Zrt
 // Returns the of total length in ZRTP words: sum of message lengths and frame headers
 static uint32_t
 unpackAndCheck(uint8_t const *zrtpFrame, int numberOfFrames, uint8_t const *packetAddresses[]) {
-    LOGGER(VERBOSE, "Enter ", __func__, "frames in packrt: ", numberOfFrames)
+    LOGGER(VERBOSE, "Enter ", __func__, "frames in packet: ", numberOfFrames)
 
     uint8_t currentBatch;
     uint32_t totalLength = 0;
@@ -136,6 +138,7 @@ unpackAndCheck(uint8_t const *zrtpFrame, int numberOfFrames, uint8_t const *pack
         if (frameNum == 0) {
             currentBatch = frameHeader.frameInfo.f.batchNumber;
         } else if (currentBatch != frameHeader.frameInfo.f.batchNumber) {
+            LOGGER(ERROR_LOG, __func__, " Mutli-frame packet, batch number do not match: ", currentBatch, ", received: ", frameHeader.frameInfo.f.batchNumber)
             return 0;           // batch number of frames must match within multi-frame packets
         }
         packetAddresses[frameNum] = zrtpFrame;
@@ -173,6 +176,7 @@ ZRtp::processZrtpFramePacket(uint8_t const *zrtpMessage, uint32_t pSSRC, size_t 
     auto numberOfFrames = (frameByte & 0xe) >> 1;
     constexpr auto MIN_MESSAGE_LENGTH = sizeof(HelloAckPacket);
 
+    // If numberOfFrames > 0 then this is a multi-fram packet
     if (numberOfFrames > 0) {
         auto minimumLength =
                 (numberOfFrames * FRAME_HEADER_LEN) * ZRTP_WORD_SIZE + MIN_MESSAGE_LENGTH + stateEngineLocal->getTransportOverhead();
@@ -186,13 +190,13 @@ ZRtp::processZrtpFramePacket(uint8_t const *zrtpMessage, uint32_t pSSRC, size_t 
         uint8_t const *packetAddresses[7]{nullptr};
         auto msgLength = unpackAndCheck(zrtpMessage, numberOfFrames, packetAddresses);
         if (msgLength == 0) {
-            LOGGER(ERROR_LOG, "Unpacking embedded ZRTP messages failed")
+            LOGGER(ERROR_LOG, __func__, " Unpacking embedded ZRTP messages failed")
             stateEngineLocal->sendErrorPacket(GnuZrtpCodes::MalformedPacket);
             return;
         }
         auto totalLength = msgLength * ZRTP_WORD_SIZE + CRC_SIZE + stateEngineLocal->getTransportOverhead();
         if (totalLength != length) {
-            LOGGER(ERROR_LOG, __func__ , ": Total length does not match received length: ", totalLength, " - ", length)
+            LOGGER(ERROR_LOG, __func__, " Total length does not match received length: ", totalLength, " - ", length)
             stateEngineLocal->sendErrorPacket(GnuZrtpCodes::MalformedPacket);
             return;
         }
@@ -201,6 +205,7 @@ ZRtp::processZrtpFramePacket(uint8_t const *zrtpMessage, uint32_t pSSRC, size_t 
                 break;
             }
             ev.packet = address;
+            LOGGER(DEBUGGING, __func__, " Call process event")
             stateEngineLocal->processEvent(&ev);
         }
     } else {
