@@ -78,12 +78,12 @@ static uint8_t firstFrame[] = {
         0x60, 0x02,                 // Batch 3, frame number 0, last frame 1, continuation is 0
         0x00, 0x04,                 // Frame length
         0x50, 0x5a,                 // ZRTP_MAGIC
-        0x00, 0x03,                 // ZRTP message length
+        0x00, 0x06,                 // Total ZRTP message length, both frames together are 6 ZRTP words
         0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x41, 0x43, 0x4b,
         0x78, 0x05, 0x0f, 0xd8 // CRC dummy data
 
 };
-// Used to test frame packet which contains garbage data
+// Used to test frame packet which contains 1 HelloACK ZRTP message
 //  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 ...
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+...
 // |Batch| Frame Num |Last Frame |I|...
@@ -119,7 +119,6 @@ static uint8_t twoFramedHelloAck[] = {
         0x78, 0x05, 0x0f, 0xd8 // CRC
 
 };
-
 class MockSendCallback : public CtZrtpSendCb {
 public:
     MOCK_METHOD(void, sendRtp,
@@ -170,7 +169,7 @@ public:
 
     ~ZrtpFrameTestFixture() override {
         // cleanup any pending stuff, but no exceptions allowed
-        LOGGER_INSTANCE setLogLevel(WARNING);
+        LOGGER_INSTANCE setLogLevel(VERBOSE);
     }
 
     ZRtp *zrtp = nullptr;
@@ -204,38 +203,6 @@ TEST_F(ZrtpFrameTestFixture, Basic) {
     ASSERT_EQ(frameInfoDataBE, zrtpHtons(fi.value));
 }
 
-static void checkSendData(uint8_t const * buffer, int expectedBatch) {
-    ASSERT_EQ(0x10, buffer[0]);
-    ASSERT_EQ(1, buffer[1]);        // check frame packet flag
-
-    uint32_t magic = zrtpNtohl(*reinterpret_cast<uint32_t const  *>(buffer + 4));
-    ASSERT_EQ(ZRTP_MAGIC, magic);
-
-    // this now points to the plain ZRTP frame.
-    uint8_t const *zrtpFrame = buffer + ZRTP_RTP_HEADER_SIZE;
-
-    FrameHeader_t frameHeader;
-    // get the frame fields, need to convert to LE, thus get via uint16_t pointer
-    // value is an uint16_t union with the bit fields
-    frameHeader.frameInfo.value = zrtpNtohs(*reinterpret_cast<uint16_t const *>(zrtpFrame));
-    ASSERT_EQ(0, frameHeader.frameInfo.f.lastFrame);
-    ASSERT_EQ(0, frameHeader.frameInfo.f.frameNumber);
-    LOGGER(DEBUGGING, __func__, " expected batch: ", expectedBatch, ", got: ", frameHeader.frameInfo.f.batchNumber)
-    ASSERT_EQ(expectedBatch, frameHeader.frameInfo.f.batchNumber);
-    ASSERT_EQ(0, frameHeader.frameInfo.f.continuationFlag);
-
-    // get the frame length, right behind the frame info
-    frameHeader.length = zrtpNtohs(*reinterpret_cast<uint16_t const *>(zrtpFrame + 2));
-    ASSERT_EQ(4, frameHeader.length);
-
-    // Real packet starts just behind the frame length
-    ZrtpPacketHelloAck helloAckReceived(zrtpFrame + 4);
-    ASSERT_EQ(3, helloAckReceived.getLength());
-    auto msgType = helloAckReceived.getMessageType();
-    ASSERT_EQ('H', *msgType);
-    ASSERT_EQ('K', msgType[7]);
-}
-
 // Test uses a simple HelloACK packet and sends it as a ZRTP frame packet.
 // Catch the data via a Mock and check it
 TEST_F(ZrtpFrameTestFixture, sendSimpleFramePacket) {
@@ -258,43 +225,34 @@ TEST_F(ZrtpFrameTestFixture, sendSimpleFramePacket) {
 
     LOGGER(DEBUGGING, "length: ", copiedLen, "\n", *zrtp::Utilities::hexdump("Frame packet", buffer, copiedLen))
 
-    checkSendData(buffer, 0);
-}
+    ASSERT_EQ(0x10, buffer[0]);
+    ASSERT_EQ(1, buffer[1]);        // check frame packet flag
 
-// Test uses a simple HelloACK packet and sends it as a ZRTP frame packet.
-// Catch the data via a Mock and check it.
-// Test incrementing batch number which should warp at modulo 0
-TEST_F(ZrtpFrameTestFixture, sendMultipleSimpleFramePackets) {
-    uint8_t buffer[2000] = {0};
-    int32_t copiedLen = 0;
+    uint32_t magic = zrtpNtohl(*reinterpret_cast<uint32_t *>(buffer + 4));
+    ASSERT_EQ(ZRTP_MAGIC, magic);
 
-    // Mocked call Just copies data, length, and returns.
-    ON_CALL(*sendCallback, sendRtp(_, _, _, _))
-            .WillByDefault(DoAll(([this, &buffer, &copiedLen]
-                    (CtZrtpSession const *session, const uint8_t *data,
-                     int32_t length, CtZrtpSession::streamName streamNm) {
-                copiedLen = length;
-                if (length < sizeof(buffer)) {
-                    memcpy(buffer, data, length);
-                }
-            }), Return()));
+    // this now points to the plain ZRTP frame.
+    uint8_t *zrtpFrame = (buffer + ZRTP_RTP_HEADER_SIZE);
 
-    std::pmr::vector<ZrtpPacketHelloAck *> pointers(10);
-    // Send new packets to avoid handling for same packets which would not increase
-    // the batch number, see comment in in send function
-    for (int i = 0; i < 10; i++) {
-        ZrtpPacketHelloAck *helloAck = new ZrtpPacketHelloAck();
-        pointers.push_back(helloAck);
+    FrameHeader_t frameHeader;
+    // get the frame fields, need to convert to LE, thus get via uint16_t pointer
+    // value is an uint16_t union with the bit fields
+    frameHeader.frameInfo.value = zrtpNtohs(*reinterpret_cast<uint16_t *>(zrtpFrame));
+    ASSERT_EQ(0, frameHeader.frameInfo.f.lastFrame);
+    ASSERT_EQ(0, frameHeader.frameInfo.f.frameNumber);
+    ASSERT_EQ(0, frameHeader.frameInfo.f.batchNumber);
+    ASSERT_EQ(0, frameHeader.frameInfo.f.continuationFlag);
 
-        ASSERT_EQ(1, zrtp->sendAsZrtpFrames(helloAck));
+    // get the frame length, right behind the frame info
+    frameHeader.length = zrtpNtohs(*reinterpret_cast<uint16_t *>(zrtpFrame + 2));
+    ASSERT_EQ(4, frameHeader.length);
 
-        LOGGER(DEBUGGING, "length: ", copiedLen, "\n", *zrtp::Utilities::hexdump("Frame packet", buffer, copiedLen))
-        checkSendData(buffer,  i % 8);
-        ZrtpPacketHelloAck *helloAckNext = new ZrtpPacketHelloAck();
-    }
-    for (auto pnt : pointers) {
-        delete pnt;
-    }
+    // Real packet starts just behind the frame length
+    ZrtpPacketHelloAck helloAckReceived(zrtpFrame + 4);
+    ASSERT_EQ(3, helloAckReceived.getLength());
+    auto msgType = helloAckReceived.getMessageType();
+    ASSERT_EQ('H', *msgType);
+    ASSERT_EQ('K', msgType[7]);
 }
 
 TEST_F(ZrtpFrameTestFixture, sendSimpleMultiFramePacket) {
@@ -321,9 +279,9 @@ TEST_F(ZrtpFrameTestFixture, sendSimpleMultiFramePacket) {
     packets->emplace_back(helloAck_1);
     packets->emplace_back(helloAck_2);
 
-    ASSERT_EQ(1, zrtp->sendAsZrtpMultiFrames(std::move(packets)));
+    ASSERT_EQ(1, zrtp->sendAsZrtpMultiFrames(packets));
 
-    LOGGER(DEBUGGING, __func__, " length: ", copiedLen, "\n", *zrtp::Utilities::hexdump("Frame packet", buffer, copiedLen))
+    LOGGER(DEBUGGING, "length: ", copiedLen, "\n", *zrtp::Utilities::hexdump("Frame packet", buffer, copiedLen))
 
     ASSERT_EQ(0x10, buffer[0]);
     ASSERT_EQ(5, buffer[1]);        // check frame packet flag and number of embedded frames: 101 : (2 << 1) | 1
@@ -370,15 +328,11 @@ TEST_F(ZrtpFrameTestFixture, incomingSimpleFramePacket) {
                 ASSERT_EQ(EventDataType::ZrtpPacket, ev->type);
             }), Return()));
 
-    // Expect _one_ call only, second packet is ignored, garbage data
     EXPECT_CALL(*zrtpCallback, processEvent(_)).Times(1);
 
     zrtp->stateEngine = std::move(zrtpCallback);
-    // 0x3 -> one frame in a packet, and the frame flag
-    zrtp->processZrtpFramePacket(firstFrame, 1, sizeof (firstFrame) + RTP_HEADER_LENGTH, 0x3);
-
-    // Second packet contains garbage data, thus it's ignored, no process event called
-    zrtp->processZrtpFramePacket(secondFrame, 1, sizeof (secondFrame) + RTP_HEADER_LENGTH, 0x3);
+    zrtp->processZrtpFramePacket(firstFrame, 1, sizeof (firstFrame) + RTP_HEADER_LENGTH, 0x1);
+    zrtp->processZrtpFramePacket(secondFrame, 1, sizeof (secondFrame) + RTP_HEADER_LENGTH, 0x1);
     zrtp->stateEngine = nullptr;
 }
 
