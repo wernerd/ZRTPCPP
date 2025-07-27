@@ -25,7 +25,6 @@
  * @{
  */
 
-#include <cstdint>
 #include <srtp/CryptoContext.h>
 #include <botan_all.h>
 
@@ -33,7 +32,7 @@
 #define SRTP_BLOCK_SIZE 16
 #endif
 
-typedef struct _f8_ctx {
+typedef struct f8_ctx {
     unsigned char *S;           ///< Intermediate buffer
     unsigned char *ivAccent;    ///< second IV
     uint32_t J;                 ///< Counter
@@ -74,7 +73,7 @@ public:
      * 
      * @param key
      *     Pointer to key bytes.
-     * @param key_length
+     * @param keyLength
      *     Number of key bytes.
      * @param algo
      *    The Encryption algorithm to use.Possible values are <code>
@@ -82,7 +81,7 @@ public:
      *    SrtpEncryptionTWOCM, SrtpEncryptionTWOF8</code>. See chapter 4.1.1
      *    for CM (Counter mode) and 4.1.2 for F8 mode.
      */
-    SrtpSymCrypto(uint8_t* key, int32_t key_length, int algo = SrtpEncryptionAESCM);
+    SrtpSymCrypto(uint8_t const * key, int32_t keyLength, int algo = SrtpEncryptionAESCM);
 
     ~SrtpSymCrypto();
 
@@ -93,12 +92,12 @@ public:
      * is 16 bytes according to the encryption algorithms used.
      *
      * @param input
-     *    Pointer to input block, must be 16 bytes
+     *    Pointer to input block must be 16 bytes
      *
      * @param output
      *    Pointer to output block, must be 16 bytes
      */
-    void encrypt( const uint8_t* input, uint8_t* output );
+    void encrypt( const uint8_t* input, uint8_t* output ) const;
 
     /**
      * @brief Set new key
@@ -129,7 +128,7 @@ public:
      *    The initialization vector as input to create the cipher stream.
      *    Refer to chapter 4.1.1 in RFC 3711.
      */
-    void get_ctr_cipher_stream(uint8_t* output, uint32_t length, uint8_t* iv);
+    void get_ctr_cipher_stream(uint8_t* output, uint32_t length, uint8_t* iv) const;
 
     /**
      * @brief Counter-mode encryption.
@@ -149,7 +148,7 @@ public:
      *    The initialization vector as input to create the cipher stream.
      *    Refer to chapter 4.1.1 in RFC 3711.
      */
-    void ctr_encrypt(const uint8_t* input, uint32_t inputLen, uint8_t* output, uint8_t* iv );
+    void ctr_encrypt(const uint8_t* input, uint32_t inputLen, uint8_t* output, uint8_t* iv ) const;
 
     /**
      * @brief Counter-mode encryption, in place.
@@ -167,7 +166,7 @@ public:
      *    The initialization vector as input to create the cipher stream.
      *    Refer to chapter 4.1.1 in RFC 3711.
      */
-    void ctr_encrypt(uint8_t* data, uint32_t data_length, uint8_t* iv );
+    void ctr_encrypt(uint8_t* data, uint32_t data_length, uint8_t* iv ) const;
 
     /**
      * @brief Derive a cipher context to compute the IV'.
@@ -189,7 +188,7 @@ public:
      * @param saltLen
      *   length of master salt.
      */
-    static void f8_deriveForIV(SrtpSymCrypto* f8Cipher, uint8_t* keyIn, int32_t keyLen, uint8_t* salt, int32_t saltLen);
+    static void f8_deriveForIV(SrtpSymCrypto *f8Cipher, uint8_t const *keyIn, int32_t keyLen, uint8_t const *salt, int32_t saltLen);
 
     /**
      * @brief F8 mode encryption, in place.
@@ -210,7 +209,7 @@ public:
      * @param f8Cipher
      *   An AES cipher context used to encrypt IV to IV'.
      */
-    void f8_encrypt(const uint8_t* data, uint32_t dataLen, uint8_t* iv, SrtpSymCrypto* f8Cipher);
+    void f8_encrypt(const uint8_t* data, uint32_t dataLen, uint8_t const * iv, SrtpSymCrypto const * f8Cipher) const;
 
     /**
      * @brief F8 mode encryption.
@@ -234,10 +233,10 @@ public:
      * @param f8Cipher
      *   An AES cipher context used to encrypt IV to IV'.
      */
-    void f8_encrypt(const uint8_t* data, uint32_t dataLen, uint8_t* out, uint8_t* iv, SrtpSymCrypto* f8Cipher);
+    void f8_encrypt(const uint8_t* data, uint32_t dataLen, uint8_t* out, uint8_t const * iv, SrtpSymCrypto const * f8Cipher) const;
 
 private:
-    int processBlock(F8_CIPHER_CTX* f8ctx, const uint8_t* in, int32_t length, uint8_t* out);
+    uint32_t processBlock(F8_CIPHER_CTX *f8ctx, const uint8_t *in, uint32_t length, uint8_t *out) const;
     std::unique_ptr<Botan::BlockCipher> crypto = nullptr;
     int32_t algorithm;
 };

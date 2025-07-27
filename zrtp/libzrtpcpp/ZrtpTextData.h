@@ -18,8 +18,8 @@
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#ifndef _ZRTPTEXTDATA_H_
-#define _ZRTPTEXTDATA_H_
+#ifndef ZRTPTEXTDATA_H_
+#define ZRTPTEXTDATA_H_
 
 /**
  * @file
@@ -28,8 +28,6 @@
  * @ingroup ZRTP
  * @{
  */
-
-#include <common/osSpecifics.h>
 
 /**
  * Fixed strings.
@@ -41,7 +39,7 @@ constexpr char clientId[] =    "GNU ZRTP 5.0.0  "; // 16 chars max.
 constexpr char zrtpVersion_11[] = "1.10";          // must be 4 chars
 constexpr char zrtpVersion_12[] = "1.20";          // must be 4 chars
 /**
- *
+ * ZRTP protocol package identifiers
  */
 constexpr char HelloMsg[]    = "Hello   ";
 constexpr char HelloAckMsg[] = "HelloACK";
@@ -60,6 +58,9 @@ constexpr char PingAckMsg[]  = "PingACK ";
 constexpr char SasRelayMsg[] = "SASrelay";
 constexpr char RelayAckMsg[] = "RelayACK";
 
+/**
+ *  KDF uses these strings as defined by ZRTP
+ */
 constexpr char responder[]      = "Responder";
 constexpr char initiator[]      = "Initiator";
 constexpr char iniMasterKey[]   = "Initiator SRTP master key";
@@ -84,7 +85,9 @@ constexpr char zrtpExportedKey[] = "Exported key";
 constexpr char zrtpMsk[] = "ZRTP MSK";
 constexpr char zrtpTrustedMitm[] = "Trusted MiTM key";
 
-// Make these constants accessible to external functions
+/**
+ * Algorithm identifiers
+ */
 constexpr char s256[] = "S256";        //!< SHA-256 hash
 constexpr char s384[] = "S384";        //!< SHA-384 hash
 constexpr char skn2[] = "SKN2";        //!< Skein-256 hash (https://en.wikipedia.org/wiki/Skein_(hash_function))
@@ -645,5 +648,5 @@ constexpr char const * sas256WordsEven[] = {
 /**
  * @}
  */
-#endif     // _ZRTPTEXTDATA_H_
+#endif     // ZRTPTEXTDATA_H_
 

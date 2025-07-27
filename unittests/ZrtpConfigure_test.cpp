@@ -21,7 +21,7 @@
 
 using namespace std;
 
-class ZrtpConfigureTestFixture: public ::testing::Test {
+class ZrtpConfigureTestFixture: public testing::Test {
 public:
     ZrtpConfigureTestFixture() = default;
 
@@ -53,12 +53,12 @@ TEST_F(ZrtpConfigureTestFixture, Configure) {
     ASSERT_EQ(string("S256"), string(e.getName()));
     ASSERT_EQ(HashAlgorithm, e.getAlgoType());
 
-    ASSERT_EQ((ZrtpConfigure::maxNoOfAlgos-1), config.addAlgo(HashAlgorithm, e));
+    ASSERT_EQ(maxNoOfAlgos-1, config.addAlgo(HashAlgorithm, e));
 
     auto e1 = zrtpHashes.getByName("S384");
 
     // Add new algorithm at position 0, thus before existing algorithm
-    ASSERT_EQ((ZrtpConfigure::maxNoOfAlgos-2), config.addAlgoAt(HashAlgorithm, e1, 0));
+    ASSERT_EQ(maxNoOfAlgos-2, config.addAlgoAt(HashAlgorithm, e1, 0));
 
     auto e2 = config.getAlgoAt(HashAlgorithm, 0);
     ASSERT_EQ(string("S384"), string(e2.getName()));
@@ -72,7 +72,7 @@ TEST_F(ZrtpConfigureTestFixture, Configure) {
     config.clear();
 
     // cleared the configuration data only, global data should still be OK, check it
-    auto e3 = zrtpHashes.getByName("S256");
+    const auto& e3 = zrtpHashes.getByName("S256");
     ASSERT_EQ(string("S256"), string(e3.getName()));
     ASSERT_EQ(HashAlgorithm, e3.getAlgoType());
 }

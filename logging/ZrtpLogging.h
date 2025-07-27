@@ -30,32 +30,33 @@ limitations under the License.
  * @{
  *
  * Set the project's maximum compiler log level if not otherwise specified during
- * compilation. See main CMakeLists.txt file, setting CMAKE_CXX_FLAGS_DEBUG for
+ * compilation. See the main CMakeLists.txt file, setting CMAKE_CXX_FLAGS_DEBUG for
  * DEBUG builds.
  *
- * The standard compile setting is logging level 'WARNING'
+ * The standard compiler setting is logging level 'WARNING'
  */
 
 #ifndef LOG_MAX_LEVEL
 #define LOG_MAX_LEVEL VERBOSE
 #endif
 
-#define LOGGER_INSTANCE _globalLoggerZrtp->
+#define LOGGER_INSTANCE globalLoggerZrtp->
 #include "Logger.h"
+#include "logger_config.h"
 
 #ifdef ANDROID_LOGGER
-extern std::unique_ptr<logging::Logger<logging::AndroidLogPolicy> > _globalLoggerZrtp;
+extern std::unique_ptr<logging::Logger<logging::AndroidLogPolicy> > globalLoggerZrtp;
 
 #elif defined(LINUX_LOGGER)
-extern std::unique_ptr<logging::Logger<logging::CerrLogPolicy> > _globalLoggerZrtp;
+extern std::unique_ptr<logging::Logger<logging::CerrLogPolicy> > globalLoggerZrtp;
 
 #elif defined(APPLE_LOGGER)
 extern void set_zina_log_cb(void *pRet, void (*cb)(void *ret, const char *tag, const char *buf));
-extern std::unique_ptr<logging::Logger<logging::IosLogPolicy> > _globalLoggerZrtp;
+extern std::unique_ptr<logging::Logger<logging::IosLogPolicy> > globalLoggerZrtp;
 
 #elif defined(WINDOWS_LOGGER)
 // add logging for windows
-extern std::unique_ptr<logging::Logger<logging::CerrLogPolicy> > _globalLoggerZrtp;
+extern std::unique_ptr<logging::Logger<logging::CerrLogPolicy> > globalLoggerZrtp;
 
 #else
 #error "Define Logger instance according to the system in use."

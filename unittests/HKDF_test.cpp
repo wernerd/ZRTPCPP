@@ -79,7 +79,7 @@ uint8_t okm_t2[] = {
         0x3e, 0x87, 0xc1, 0x4c, 0x01, 0xd5, 0xc1, 0xf3, 0x43, 0x4f,
         0x1d, 0x87};
 
-class HkdfTestFixture : public ::testing::Test {
+class HkdfTestFixture : public testing::Test {
 public:
     HkdfTestFixture() = default;
 
@@ -101,9 +101,9 @@ public:
 
 
 TEST_F(HkdfTestFixture, HKDFTest1) {
-    uint8_t output[42] = {0};
+    uint8_t output[42] = {};
 
-    auto hkdf = Botan::KDF::create("HKDF(HMAC(SHA-256))");
+    auto const hkdf = Botan::KDF::create("HKDF(HMAC(SHA-256))");
 
     hkdf->kdf(output, 42, ikm_t1, sizeof(ikm_t1), salt_t1, sizeof(salt_t1), info_t1, sizeof(info_t1));
     for (int i = 0; i < 42; ++i) {
@@ -112,9 +112,9 @@ TEST_F(HkdfTestFixture, HKDFTest1) {
 }
 
 TEST_F(HkdfTestFixture, HKDFTest2) {
-    uint8_t output[82] = {0};
+    uint8_t output[82] = {};
 
-    auto hkdf = Botan::KDF::create("HKDF(HMAC(SHA-256))");
+    auto const hkdf = Botan::KDF::create("HKDF(HMAC(SHA-256))");
     hkdf->kdf(output, 82, ikm_t2, sizeof(ikm_t2), salt_t2, sizeof(salt_t2), info_t2, sizeof(info_t2));
     for (int i = 0; i < 82; ++i) {
         EXPECT_EQ(okm_t2[i], output[i]) << "key material okm_t2 and computed output differ at index " << i;

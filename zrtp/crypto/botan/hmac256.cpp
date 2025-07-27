@@ -18,8 +18,6 @@
  * Authors: Werner Dittmann
  */
 
-#include <cstdint>
-#include <cstring>
 #include <botan_all.h>
 #include "zrtp/crypto/hmac256.h"
 
@@ -27,9 +25,9 @@ struct shaCtx {
     std::unique_ptr<Botan::MessageAuthenticationCode> mac = nullptr;
 };
 
-void hmac_sha256(const uint8_t *key, uint64_t keyLength, const uint8_t* data, uint64_t dataLength, zrtp::RetainedSecArray & macOut)
-{
-    auto hmac = Botan::MessageAuthenticationCode::create("HMAC(SHA-256)");
+void hmac_sha256(const uint8_t* key, uint64_t const keyLength, const uint8_t* data, uint64_t const dataLength,
+                 zrtp::RetainedSecArray &macOut) {
+    auto const hmac = Botan::MessageAuthenticationCode::create("HMAC(SHA-256)");
 
     hmac->set_key(key, keyLength);
     hmac->update(data, dataLength);
@@ -37,12 +35,11 @@ void hmac_sha256(const uint8_t *key, uint64_t keyLength, const uint8_t* data, ui
     macOut.size(hmac->output_length());
 }
 
-void hmacSha256(const uint8_t* key, uint64_t keyLength,
-                const std::vector<const uint8_t*>& dataChunks,
-                const std::vector<uint64_t>& dataChunkLength,
-                zrtp::RetainedSecArray & macOut)
-{
-    auto hmac = Botan::MessageAuthenticationCode::create("HMAC(SHA-256)");
+void hmacSha256(const uint8_t* key, uint64_t const keyLength,
+                const std::vector<const uint8_t *> &dataChunks,
+                const std::vector<uint64_t> &dataChunkLength,
+                zrtp::RetainedSecArray &macOut) {
+    auto const hmac = Botan::MessageAuthenticationCode::create("HMAC(SHA-256)");
 
     hmac->set_key(key, keyLength);
 
@@ -53,8 +50,8 @@ void hmacSha256(const uint8_t* key, uint64_t keyLength,
     macOut.size(hmac->output_length());
 }
 
-void *
-createSha256HmacContext(uint8_t* key, size_t keyLength) {
+void*
+createSha256HmacContext(uint8_t const* key, size_t const keyLength) {
     auto* ctx = new shaCtx;
     ctx->mac = Botan::MessageAuthenticationCode::create("HMAC(SHA-256)");
     ctx->mac->set_key(key, keyLength);
@@ -62,20 +59,19 @@ createSha256HmacContext(uint8_t* key, size_t keyLength) {
 }
 
 void hmacSha256Ctx(void* ctx,
-                   const std::vector<const uint8_t*>& dataChunks,
-                   const std::vector<uint64_t>& dataChunkLength,
-                   zrtp::RetainedSecArray & macOut) {
-
-    auto * ctxIntern = static_cast<shaCtx*>(ctx);
-
-    for (size_t i = 0, size = dataChunks.size(); i < size; i++) {
-        ctxIntern->mac->update(dataChunks[i], dataChunkLength[i]);
+                   const std::vector<const uint8_t *> &dataChunks,
+                   const std::vector<uint64_t> &dataChunkLength,
+                   zrtp::RetainedSecArray &macOut) {
+    if (auto const* ctxIntern = static_cast<shaCtx *>(ctx); ctxIntern != nullptr) {
+        for (size_t i = 0, size = dataChunks.size(); i < size; i++) {
+            ctxIntern->mac->update(dataChunks[i], dataChunkLength[i]);
+        }
+        ctxIntern->mac->final(macOut.data());
+        macOut.size(ctxIntern->mac->output_length());
     }
-    ctxIntern->mac->final(macOut.data());
-    macOut.size(ctxIntern->mac->output_length());
 }
 
 void freeSha256HmacContext(void* ctx) {
-    auto* ctxIntern = static_cast<shaCtx*>(ctx);
+    auto const * ctxIntern = static_cast<shaCtx *>(ctx);
     delete ctxIntern;
 }

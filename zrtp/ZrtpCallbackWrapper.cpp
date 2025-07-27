@@ -14,50 +14,43 @@
  * limitations under the License.
  */
 
+#include <cstring>
 #include <libzrtpcpp/ZrtpCallbackWrapper.h>
 
-ZrtpCallbackWrapper::ZrtpCallbackWrapper(zrtp_Callbacks* cb, ZrtpContext* ctx) :
-        c_callbacks(cb), zrtpCtx(ctx)
-{
+ZrtpCallbackWrapper::ZrtpCallbackWrapper(zrtp_Callbacks* cb, ZrtpContext* ctx) : c_callbacks(cb), zrtpCtx(ctx) {
     init();
 }
 
-void ZrtpCallbackWrapper::init()
-{
+void ZrtpCallbackWrapper::init() {
 }
 
 /*
 * The following methods implement the GNU ZRTP callback interface.
 * For detailed documentation refer to file ZrtpCallback.h
 */
-int32_t ZrtpCallbackWrapper::sendDataZRTP(const unsigned char* data, int32_t length)
-{
+int32_t ZrtpCallbackWrapper::sendDataZRTP(const unsigned char* data, const int32_t length) {
     return c_callbacks->zrtp_sendDataZRTP(zrtpCtx, data, length);
 }
 
-int32_t ZrtpCallbackWrapper::sendFrameDataZRTP(const uint8_t* data, int32_t length, uint8_t numberOfFrames) {
+int32_t ZrtpCallbackWrapper::sendFrameDataZRTP(const uint8_t* data, const int32_t length, const uint8_t numberOfFrames) {
     return c_callbacks->zrtp_sendFrameDataZRTP(zrtpCtx, data, length, numberOfFrames);
 }
 
-int32_t ZrtpCallbackWrapper::activateTimer (int32_t time)
-{
+int32_t ZrtpCallbackWrapper::activateTimer(const int32_t time) {
     c_callbacks->zrtp_activateTimer(zrtpCtx, time);
     return 1;
 }
 
-int32_t ZrtpCallbackWrapper::cancelTimer()
-{
+int32_t ZrtpCallbackWrapper::cancelTimer() {
     c_callbacks->zrtp_cancelTimer(zrtpCtx);
     return 0;
 }
 
-void ZrtpCallbackWrapper::sendInfo (GnuZrtpCodes::MessageSeverity severity, int32_t subCode)
-{
+void ZrtpCallbackWrapper::sendInfo(const GnuZrtpCodes::MessageSeverity severity, const int32_t subCode) {
     c_callbacks->zrtp_sendInfo(zrtpCtx, static_cast<int32_t>(severity), subCode);
 }
 
-bool ZrtpCallbackWrapper::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
-{
+bool ZrtpCallbackWrapper::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity const part) {
     auto const cs = new C_SrtpSecret_t;
     cs->symEncAlgorithm = static_cast<zrtp_SrtpAlgorithms>(secrets->symEncAlgorithm);
     cs->initKeyLen = secrets->initKeyLen;
@@ -69,7 +62,7 @@ bool ZrtpCallbackWrapper::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity
     cs->role = static_cast<int32_t>(secrets->role);
     cs->saltInitiator = secrets->saltInitiator;
     cs->saltResponder = secrets->saltResponder;
-    cs->sas = new char [secrets->sas.size()+1];
+    cs->sas = new char [secrets->sas.size() + 1];
     strcpy(cs->sas, secrets->sas.c_str());
     cs->authAlgorithm = static_cast<zrtp_SrtpAlgorithms>(secrets->authAlgorithm);
     cs->srtpAuthTagLen = secrets->srtpAuthTagLen;
@@ -82,69 +75,58 @@ bool ZrtpCallbackWrapper::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity
     return retval;
 }
 
-void ZrtpCallbackWrapper::srtpSecretsOff (EnableSecurity part )
-{
+void ZrtpCallbackWrapper::srtpSecretsOff(EnableSecurity const part) {
     c_callbacks->zrtp_srtpSecretsOff(zrtpCtx, static_cast<int32_t>(part));
 }
 
-void ZrtpCallbackWrapper::srtpSecretsOn ( std::string c, std::string s, bool verified )
-{
-    char* cc = new char [c.size()+1];
-    char* cs = new char [s.size()+1];
+void ZrtpCallbackWrapper::srtpSecretsOn(std::string const c, std::string const s, bool const verified) {
+    auto const cc = new char [c.size() + 1];
+    auto const cs = new char [s.size() + 1];
 
     strcpy(cc, c.c_str());
-    if(!s.empty()) 
+    if (!s.empty())
         strcpy(cs, s.c_str());
     else
         *cs = '\0';
 
-    c_callbacks->zrtp_rtpSecretsOn(zrtpCtx, cc, cs, verified?1:0);
+    c_callbacks->zrtp_rtpSecretsOn(zrtpCtx, cc, cs, verified ? 1 : 0);
 
     delete[] cc;
     delete[] cs;
 }
 
-void ZrtpCallbackWrapper::handleGoClear()
-{
+void ZrtpCallbackWrapper::handleGoClear() {
 }
 
-void ZrtpCallbackWrapper::zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode)
-{
+void ZrtpCallbackWrapper::zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity const severity, int32_t const subCode) {
     c_callbacks->zrtp_zrtpNegotiationFailed(zrtpCtx, static_cast<int32_t>(severity), subCode);
 }
 
-void ZrtpCallbackWrapper::zrtpNotSuppOther()
-{
+void ZrtpCallbackWrapper::zrtpNotSuppOther() {
     c_callbacks->zrtp_zrtpNotSuppOther(zrtpCtx);
 }
 
-void ZrtpCallbackWrapper::synchEnter()
-{
+void ZrtpCallbackWrapper::synchEnter() {
     c_callbacks->zrtp_synchEnter(zrtpCtx);
 }
 
 
-void ZrtpCallbackWrapper::synchLeave()
-{
+void ZrtpCallbackWrapper::synchLeave() {
     c_callbacks->zrtp_synchLeave(zrtpCtx);
 }
 
-void ZrtpCallbackWrapper::zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info)
-{
+void ZrtpCallbackWrapper::zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info) {
     c_callbacks->zrtp_zrtpAskEnrollment(zrtpCtx, static_cast<zrtp_InfoEnrollment>(info));
 }
 
-void ZrtpCallbackWrapper::zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment info)
-{
+void ZrtpCallbackWrapper::zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment info) {
     c_callbacks->zrtp_zrtpInformEnrollment(zrtpCtx, static_cast<zrtp_InfoEnrollment>(info));
 }
 
-void ZrtpCallbackWrapper::signSAS(uint8_t* sasHash)
-{
+void ZrtpCallbackWrapper::signSAS(uint8_t* sasHash) {
     c_callbacks->zrtp_signSAS(zrtpCtx, sasHash);
 }
 
-bool ZrtpCallbackWrapper::checkSASSignature(uint8_t* sasHash)
-{
+bool ZrtpCallbackWrapper::checkSASSignature(uint8_t* sasHash) {
     return c_callbacks->zrtp_checkSASSignature(zrtpCtx, sasHash) != 0;
 }

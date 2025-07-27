@@ -45,31 +45,31 @@ constexpr int32_t ZRTP_RTP_HEADER_SIZE = 12;
 
 //#define ZRTP_WORD_SIZE   4
 constexpr uint16_t ZRTP_WORD_SIZE = 4;
-constexpr uint16_t CRC_SIZE =       4;
+constexpr uint16_t CRC_SIZE = 4;
 
-constexpr uint16_t TYPE_SIZE =       (2*ZRTP_WORD_SIZE);
-constexpr uint16_t CLIENT_ID_SIZE =  (4*ZRTP_WORD_SIZE);
-constexpr uint16_t HASH_IMAGE_SIZE = (8*ZRTP_WORD_SIZE);
-constexpr uint16_t ZID_SIZE =        (3*ZRTP_WORD_SIZE);
-constexpr uint16_t HVI_SIZE =        (8*ZRTP_WORD_SIZE);
-constexpr uint16_t HMAC_SIZE =       (2*ZRTP_WORD_SIZE);
-constexpr uint16_t ID_SIZE =         (2*ZRTP_WORD_SIZE);
-constexpr uint16_t IV_SIZE =         (4*ZRTP_WORD_SIZE);
-constexpr uint16_t PING_HASH_SIZE =  (2*ZRTP_WORD_SIZE);
+constexpr uint16_t TYPE_SIZE = 2 * ZRTP_WORD_SIZE;
+constexpr uint16_t CLIENT_ID_SIZE = 4 * ZRTP_WORD_SIZE;
+constexpr uint16_t HASH_IMAGE_SIZE = 8 * ZRTP_WORD_SIZE;
+constexpr uint16_t ZID_SIZE = 3 * ZRTP_WORD_SIZE;
+constexpr uint16_t HVI_SIZE = 8 * ZRTP_WORD_SIZE;
+constexpr uint16_t HMAC_SIZE = 2 * ZRTP_WORD_SIZE;
+constexpr uint16_t ID_SIZE = 2 * ZRTP_WORD_SIZE;
+constexpr uint16_t IV_SIZE = 4 * ZRTP_WORD_SIZE;
+constexpr uint16_t PING_HASH_SIZE = 2 * ZRTP_WORD_SIZE;
 
 // Definitions to handle the fields
 
 /**
  * The ZRTP message header
- * 
+ *
  * A complete ZRTP message always consists of the ZRTP header
  * and a message specific part. This specific part may have a variable
  * length. The length field includes the header.
  */
 typedef struct zrtpPacketHeader {
-    uint16_t    zrtpId;         ///< Id to identify the message, always 0x505a
-    uint16_t    length;         ///< Length of the ZRTP message in words
-    uint8_t     messageType[TYPE_SIZE]; ///< 2 word (8 octets) message type in ASCII
+    uint16_t zrtpId; ///< Id to identify the message, always 0x505a
+    uint16_t length; ///< Length of the ZRTP message in words
+    uint8_t messageType[TYPE_SIZE]; ///< 2 word (8 octets) message type in ASCII
 } zrtpPacketHeader_t;
 
 typedef union FrameInfo {
@@ -81,6 +81,7 @@ typedef union FrameInfo {
                 frameNumber: 6,
                 batchNumber: 3;
     } f;
+
     uint16_t value;
 } FrameInfo_t;
 
@@ -88,133 +89,133 @@ typedef union FrameInfo {
  * ZRTP frame header
  */
 typedef struct FrameHeader {
-    FrameInfo_t frameInfo;  ///< batch, frame num, last frame num, continuation bit
-    uint16_t    length;     ///< Length of the ZRTP frame in words
+    FrameInfo_t frameInfo; ///< batch, frame num, last frame num, continuation bit
+    uint16_t length; ///< Length of the ZRTP frame in words
 } FrameHeader_t;
 
 /**
  * Hello message, fixed part.
- * 
- * The complete Hello message consists of ZRTP message header, Hello fixed 
+ *
+ * The complete Hello message consists of ZRTP message header, Hello fixed
  * part and a variable part. The Hello class initializes the variable part.
  */
 typedef struct Hello {
-    uint8_t  version[ZRTP_WORD_SIZE];   ///< Announces the ZRTP protocol version 
-    uint8_t  clientId[CLIENT_ID_SIZE];  ///< A 4 word ASCII identifier of the ZRTP client
-    uint8_t  hashH3[HASH_IMAGE_SIZE];   ///< The last hash of the hash chain (chap. 9)
-    uint8_t  zid[ZID_SIZE];             ///< ZID - 3 word identifier for the ZRTP endpoint
-    uint8_t  flags;                     ///< flag bits (chap 7.2)
-    uint8_t  lengths[3];                ///< number of algorithms present
+    uint8_t version[ZRTP_WORD_SIZE]; ///< Announces the ZRTP protocol version
+    uint8_t clientId[CLIENT_ID_SIZE]; ///< A 4 word ASCII identifier of the ZRTP client
+    uint8_t hashH3[HASH_IMAGE_SIZE]; ///< The last hash of the hash chain (chap. 9)
+    uint8_t zid[ZID_SIZE]; ///< ZID - 3 word identifier for the ZRTP endpoint
+    uint8_t flags; ///< flag bits (chap 7.2)
+    uint8_t lengths[3]; ///< number of algorithms present
 } Hello_t;
 
 /**
  * The complete ZRTP Hello message.
  */
 typedef struct HelloPacket {
-    zrtpPacketHeader_t hdr;         ///< ZRTP Header
-    Hello_t hello;                  ///< Fixed part of Hello message
+    zrtpPacketHeader_t hdr; ///< ZRTP Header
+    Hello_t hello; ///< Fixed part of Hello message
 } HelloPacket_t;
 
 /**
  * HelloAck message.
- * 
+ *
  * The complete HelloAck message consists of ZRTP message header and
  * the CRC which is the only HelloAck specific data.
  */
 typedef struct HelloAckPacket {
-    zrtpPacketHeader_t hdr;         ///< ZRTP Header
-    uint8_t crc[ZRTP_WORD_SIZE];    ///< CRC of ZRTP message
+    zrtpPacketHeader_t hdr; ///< ZRTP Header
+    uint8_t crc[ZRTP_WORD_SIZE]; ///< CRC of ZRTP message
 } HelloAckPacket_t;
 
 /**
  * Commit message
- * 
+ *
  * There are three subtypes of Commit messages.
  * During the ZRTP protocol the implementation
  * uses fields according to the use case (DH handshake,
  * Multi-stream handshake) and adjusts the length.
  */
 typedef struct Commit {
-    uint8_t hashH2[HASH_IMAGE_SIZE];        ///< The second hash of the hash chain (chap. 9)
-    uint8_t	zid[ZID_SIZE];                  ///< ZID - 3 word identifier for the ZRTP endpoint
-    uint8_t hash[ZRTP_WORD_SIZE];           ///< Committed hash algorithm
-    uint8_t cipher[ZRTP_WORD_SIZE];         ///< Committed symmetrical cipher algorithm
-    uint8_t authlengths[ZRTP_WORD_SIZE];    ///< Committed SRTP authentication algorithm
-    uint8_t	pubkey[ZRTP_WORD_SIZE];         ///< Committed key agreement algorithm
-    uint8_t	sas[ZRTP_WORD_SIZE];            ///< Committed SAS algorithm
-    uint8_t	hvi[HVI_SIZE];                  ///< Hash value Initiator - chap 4.4.1.1
-//    uint8_t	hmac[HMAC_SIZE];                ///< MAC of the Commit message
+    uint8_t hashH2[HASH_IMAGE_SIZE]; ///< The second hash of the hash chain (chap. 9)
+    uint8_t zid[ZID_SIZE]; ///< ZID - 3 word identifier for the ZRTP endpoint
+    uint8_t hash[ZRTP_WORD_SIZE]; ///< Committed hash algorithm
+    uint8_t cipher[ZRTP_WORD_SIZE]; ///< Committed symmetrical cipher algorithm
+    uint8_t authlengths[ZRTP_WORD_SIZE]; ///< Committed SRTP authentication algorithm
+    uint8_t pubkey[ZRTP_WORD_SIZE]; ///< Committed key agreement algorithm
+    uint8_t sas[ZRTP_WORD_SIZE]; ///< Committed SAS algorithm
+    uint8_t hvi[HVI_SIZE]; ///< Hash value Initiator - chap 4.4.1.1
+    //    uint8_t	hmac[HMAC_SIZE];                ///< MAC of the Commit message
 } Commit_t;
 
 /**
  * The complete ZRTP Commit message.
  */
 typedef struct CommitPacket {
-    zrtpPacketHeader_t hdr;         ///< ZRTP Header
-    Commit_t commit;                ///< Commit message
-//    uint8_t crc[ZRTP_WORD_SIZE];    ///< CRC of ZRTP message
+    zrtpPacketHeader_t hdr; ///< ZRTP Header
+    Commit_t commit; ///< Commit message
+    //    uint8_t crc[ZRTP_WORD_SIZE];    ///< CRC of ZRTP message
 } CommitPacket_t;
 
 /**
  * DHPart1 and DHPart2 messages
- * 
+ *
  * The DHPart messages have a variable length. The following struct
  * defines the fixed part only. The DHPart class initializes the
  * variable part.
  */
 typedef struct DHPart {
-    uint8_t hashH1[HASH_IMAGE_SIZE];        ///< The first hash of the hash chain (chap. 9)
-    uint8_t rs1Id[ID_SIZE];                 ///< Id of first retained secret
-    uint8_t rs2Id[ID_SIZE];                 ///< Id of second retained secret
-    uint8_t auxSecretId[ID_SIZE];           ///< Id of additional (auxiliary) secret
-    uint8_t pbxSecretId[ID_SIZE];           ///< Id of PBX secret (chap 7.3.1)
-}  DHPart_t;
+    uint8_t hashH1[HASH_IMAGE_SIZE]; ///< The first hash of the hash chain (chap. 9)
+    uint8_t rs1Id[ID_SIZE]; ///< Id of first retained secret
+    uint8_t rs2Id[ID_SIZE]; ///< Id of second retained secret
+    uint8_t auxSecretId[ID_SIZE]; ///< Id of additional (auxiliary) secret
+    uint8_t pbxSecretId[ID_SIZE]; ///< Id of PBX secret (chap 7.3.1)
+} DHPart_t;
 
 /**
  * The complete ZRTP DHPart message.
  */
 typedef struct DHPartPacket {
-    zrtpPacketHeader_t hdr;         ///< ZRTP Header
-    DHPart_t dhPart;                ///< DHPart message fixed part
+    zrtpPacketHeader_t hdr; ///< ZRTP Header
+    DHPart_t dhPart; ///< DHPart message fixed part
 } DHPartPacket_t;
 
 /**
  * Confirm1 and Confirm2 messages
- * 
+ *
  * The Confirm message have a variable length. The following struct
  * defines the fixed part only. The Confirm class initializes the
  * variable part.
- * 
- * ZRTP encrypts a part of the Confirm messages, starting at @c hashH0 
+ *
+ * ZRTP encrypts a part of the Confirm messages, starting at @c hashH0
  * and includes the variable part.
  */
 typedef struct Confirm {
-    uint8_t	 hmac[HMAC_SIZE];           ///< MAC over the encrypted part of Commit message 
-    uint8_t  iv[IV_SIZE];               ///< IV for CFB mode to encrypt part of Commit
-    uint8_t  hashH0[HASH_IMAGE_SIZE];   ///< starting hash of hash chain (chap. 9)
-    uint8_t  filler[2];                 ///< Filler bytes
-    uint8_t  sigLength;                 ///< Length of an optional signature length (chap 7.2)
-    uint8_t  flags;                     ///< various flags to control behaviour
-    uint32_t expTime;                   ///< Expiration time of retained secrets (chap 4.9)
+    uint8_t hmac[HMAC_SIZE]; ///< MAC over the encrypted part of Commit message
+    uint8_t iv[IV_SIZE]; ///< IV for CFB mode to encrypt part of Commit
+    uint8_t hashH0[HASH_IMAGE_SIZE]; ///< starting hash of hash chain (chap. 9)
+    uint8_t filler[2]; ///< Filler bytes
+    uint8_t sigLength; ///< Length of an optional signature length (chap 7.2)
+    uint8_t flags; ///< various flags to control behaviour
+    uint32_t expTime; ///< Expiration time of retained secrets (chap 4.9)
 } Confirm_t;
 
 /**
  * The complete ZRTP Confirm message.
  */
 typedef struct ConfirmPacket {
-    zrtpPacketHeader_t hdr;         ///< ZRTP Header
-    Confirm_t confirm;              ///< Confirm message fixed part
+    zrtpPacketHeader_t hdr; ///< ZRTP Header
+    Confirm_t confirm; ///< Confirm message fixed part
 } ConfirmPacket_t;
 
 /**
  * Conf2Ack message.
- * 
+ *
  * The complete Conf2Ack message consists of ZRTP message header and
  * the CRC which is the only Conf2Ack specific data.
  */
 typedef struct Conf2AckPacket {
-    zrtpPacketHeader_t hdr;         ///< ZRTP Header
-    uint8_t crc[ZRTP_WORD_SIZE];    ///< CRC of ZRTP message
+    zrtpPacketHeader_t hdr; ///< ZRTP Header
+    uint8_t crc[ZRTP_WORD_SIZE]; ///< CRC of ZRTP message
 } Conf2AckPacket_t;
 
 /**
@@ -222,16 +223,16 @@ typedef struct Conf2AckPacket {
  * GNU ZRTP C++ - not support for GoClear.
  */
 typedef struct GoClear {
-    uint8_t clearHmac[HMAC_SIZE];   ///< no used
+    uint8_t clearHmac[HMAC_SIZE]; ///< no used
 } GoClear_t;
 
 /**
  * The complete ZRTP GoClear message - no used.
  */
 typedef struct GoClearPacket {
-    zrtpPacketHeader_t hdr;         ///< ZRTP Header
-    GoClear_t goClear;              ///< not used
-    uint8_t crc[ZRTP_WORD_SIZE];    ///< CRC of ZRTP message
+    zrtpPacketHeader_t hdr; ///< ZRTP Header
+    GoClear_t goClear; ///< not used
+    uint8_t crc[ZRTP_WORD_SIZE]; ///< CRC of ZRTP message
 } GoClearPacket_t;
 
 /**
@@ -239,114 +240,114 @@ typedef struct GoClearPacket {
  * GNU ZRTP C++ - not support for GoClear.
  */
 typedef struct ClearAckPacket {
-    zrtpPacketHeader_t hdr;         ///< ZRTP Header
-    uint8_t crc[ZRTP_WORD_SIZE];    ///< CRC of ZRTP message
+    zrtpPacketHeader_t hdr; ///< ZRTP Header
+    uint8_t crc[ZRTP_WORD_SIZE]; ///< CRC of ZRTP message
 } ClearAckPacket_t;
 
 /**
  * The Error message
  */
 typedef struct Error {
-    uint32_t errorCode;             ///< Error code, see chap 5.9
+    uint32_t errorCode; ///< Error code, see chap 5.9
 } Error_t;
 
 /**
  * The complete ZRTP Error message.
  */
 typedef struct ErrorPacket {
-    zrtpPacketHeader_t hdr;         ///< ZRTP Header
-    Error_t error;                  ///< Error message part
-    uint8_t crc[ZRTP_WORD_SIZE];    ///< CRC of ZRTP message
+    zrtpPacketHeader_t hdr; ///< ZRTP Header
+    Error_t error; ///< Error message part
+    uint8_t crc[ZRTP_WORD_SIZE]; ///< CRC of ZRTP message
 } ErrorPacket_t;
 
 /**
  * ErrorAck message.
- * 
+ *
  * The complete ErrorAck message consists of ZRTP message header and
  * the CRC which is the only ErrorAck specific data.
  */
 typedef struct ErrorAckPacket {
-    zrtpPacketHeader_t hdr;         ///< ZRTP Header
-    uint8_t crc[ZRTP_WORD_SIZE];    ///< CRC of ZRTP message
+    zrtpPacketHeader_t hdr; ///< ZRTP Header
+    uint8_t crc[ZRTP_WORD_SIZE]; ///< CRC of ZRTP message
 } ErrorAckPacket_t;
 
 /**
  * Ping message.
- * 
+ *
  * The Ping message has a fixed size.
  */
 typedef struct Ping {
-    uint8_t version[ZRTP_WORD_SIZE];    ///< The ZRTP protocol version
-    uint8_t epHash[PING_HASH_SIZE];     ///< End point hash, see chap 5.16
+    uint8_t version[ZRTP_WORD_SIZE]; ///< The ZRTP protocol version
+    uint8_t epHash[PING_HASH_SIZE]; ///< End point hash, see chap 5.16
 } Ping_t;
 
 /**
  * The complete ZRTP Ping message.
  */
 typedef struct PingPacket {
-    zrtpPacketHeader_t hdr;         ///< ZRTP Header
-    Ping_t ping;                    ///< Ping message part
-    uint8_t crc[ZRTP_WORD_SIZE];    ///< CRC of ZRTP message
+    zrtpPacketHeader_t hdr; ///< ZRTP Header
+    Ping_t ping; ///< Ping message part
+    uint8_t crc[ZRTP_WORD_SIZE]; ///< CRC of ZRTP message
 } PingPacket_t;
 
 /**
  * PingAck message.
- * 
+ *
  * The PingAck message has a fixed size.
  */
 typedef struct PingAck {
-    uint8_t version[ZRTP_WORD_SIZE];        ///< The ZRTP protocol version
-    uint8_t localEpHash[PING_HASH_SIZE];    ///< Local end point hash, see chap 5.16
-    uint8_t remoteEpHash[PING_HASH_SIZE];   ///< Remote end point hash, see chap 5.16
-    uint32_t ssrc;                          ///< SSRC copied from the Ping message (RTP packet part)
+    uint8_t version[ZRTP_WORD_SIZE]; ///< The ZRTP protocol version
+    uint8_t localEpHash[PING_HASH_SIZE]; ///< Local end point hash, see chap 5.16
+    uint8_t remoteEpHash[PING_HASH_SIZE]; ///< Remote end point hash, see chap 5.16
+    uint32_t ssrc; ///< SSRC copied from the Ping message (RTP packet part)
 } PingAck_t;
 
 /**
  * The complete ZRTP PingAck message.
  */
 typedef struct PingAckPacket {
-    zrtpPacketHeader_t hdr;         ///< ZRTP Header
-    PingAck_t pingAck;              ///< PingAck message part
-    uint8_t crc[ZRTP_WORD_SIZE];    ///< CRC of ZRTP message
+    zrtpPacketHeader_t hdr; ///< ZRTP Header
+    PingAck_t pingAck; ///< PingAck message part
+    uint8_t crc[ZRTP_WORD_SIZE]; ///< CRC of ZRTP message
 } PingAckPacket_t;
 
 /**
  * SASrelay message
- * 
+ *
  * The SASrelay message has a variable length. The following struct
  * defines the fixed part only. The SASrelay class initializes the
  * variable part.
- * 
- * ZRTP encrypts a part of the SASrelay message, starting at @c hashH0 
+ *
+ * ZRTP encrypts a part of the SASrelay message, starting at @c hashH0
  * and includes the variable part.
  */
 typedef struct SASrelay {
-    uint8_t  hmac[HMAC_SIZE];           ///< MAC over the encrypted part of Commit message 
-    uint8_t  iv[IV_SIZE];               ///< IV for CFB mode to encrypt part of Commit
-    uint8_t  filler[2];                 ///< Filler bytes
-    uint8_t  sigLength;                 ///< Length of an optional signature length (chap 7.2)
-    uint8_t  flags;                     ///< various flags to control behaviour
-    uint8_t  sas[ZRTP_WORD_SIZE];       ///< SAS algorithm to use
-    uint8_t  trustedSasHash[HASH_IMAGE_SIZE];  ///< New trusted SAS hash for enrolled client
+    uint8_t hmac[HMAC_SIZE]; ///< MAC over the encrypted part of Commit message
+    uint8_t iv[IV_SIZE]; ///< IV for CFB mode to encrypt part of Commit
+    uint8_t filler[2]; ///< Filler bytes
+    uint8_t sigLength; ///< Length of an optional signature length (chap 7.2)
+    uint8_t flags; ///< various flags to control behaviour
+    uint8_t sas[ZRTP_WORD_SIZE]; ///< SAS algorithm to use
+    uint8_t trustedSasHash[HASH_IMAGE_SIZE]; ///< New trusted SAS hash for enrolled client
 } SASrelay_t;
 
 /**
  * The complete ZRTP SASrelay message.
  */
 typedef struct SASrelayPacket {
-    zrtpPacketHeader_t hdr;         ///< ZRTP Header
-    SASrelay_t sasrelay;            ///< SASrelay message fixed part
+    zrtpPacketHeader_t hdr; ///< ZRTP Header
+    SASrelay_t sasrelay; ///< SASrelay message fixed part
 } SASrelayPacket_t;
 
 /**
  * RelayAck message.
- * 
+ *
  * The complete RelayAck message consists of ZRTP message header and
  * the CRC which is the only RelayAck specific data.
  */
 typedef struct RelayAckPacket {
-    zrtpPacketHeader_t hdr;         ///< ZRTP Header
-    uint8_t crc[ZRTP_WORD_SIZE];    ///< CRC of ZRTP message
+    zrtpPacketHeader_t hdr; ///< ZRTP Header
+    uint8_t crc[ZRTP_WORD_SIZE]; ///< CRC of ZRTP message
 } RelayAckPacket_t;
 
 /**

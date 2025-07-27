@@ -16,7 +16,6 @@
 #include <sys/types.h>
 #include <string>
 #include <vector>
-#include <memory>
 #include <cstring>
 
 #include "typedefs.h"
@@ -69,7 +68,7 @@ namespace zrtp {
          * @param data pointer to the data buffer.
          * @param length length of the data buffer in bytes
          */
-        static inline void wipeMemory(void* data, size_t length) {
+        static void wipeMemory(void* data, size_t const length) {
             static void * (*volatile memset_volatile)(void *, int, size_t) = std::memset;
             memset_volatile(data, 0, length);
         }
@@ -159,11 +158,11 @@ namespace zrtp {
         static StringUnique hexdump(const char *title, const unsigned char *s, size_t l);
 
         static StringUnique hexdump(const std::string &title, const std::string &in) {
-                return hexdump(title.c_str(), (uint8_t*)in.data(), in.size());
+                return hexdump(title.c_str(), reinterpret_cast<uint8_t const *>(in.data()), in.size());
         }
 
         static bool isUuid(const std::string& mayBeUuid) {
-            return Utilities::splitString(mayBeUuid, "-")->size() == 5;
+            return splitString(mayBeUuid, "-")->size() == 5;
         }
 
         [[maybe_unused]] static std::string uriDecode(std::string const & sSrc);
@@ -174,30 +173,30 @@ namespace zrtp {
 
 // Used to implement a string base switch() in C++
 // SO link: https://stackoverflow.com/questions/2111667/compile-time-string-hashing
-namespace string_hash {
-    template<class>struct hasher;
-
-    template<>
-    struct hasher<std::string> {
-        std::size_t constexpr operator()(char const *input) const {
-            return *input ?
-                   static_cast<unsigned int>(*input) + 33 * (*this)(input + 1) :
-                   5381;
-        }
-        std::size_t operator()( const std::string& str ) const {
-            return (*this)(str.c_str());
-        }
-    };
-    template<typename T>
-    std::size_t constexpr hash(T&& t) {
-        return hasher< typename std::decay<T>::type >()(std::forward<T>(t));
-    }
-    inline namespace literals {
-        std::size_t constexpr operator "" _hash(const char* s,size_t) {
-            return hasher<std::string>()(s);
-        }
-    }
-}
+// namespace string_hash {
+//     template<class>struct hasher;
+//
+//     template<>
+//     struct hasher<std::string> {
+//         std::size_t constexpr operator()(char const *input) const {
+//             return *input ?
+//                    static_cast<unsigned int>(*input) + 33 * (*this)(input + 1) :
+//                    5381;
+//         }
+//         std::size_t operator()( const std::string& str ) const {
+//             return (*this)(str.c_str());
+//         }
+//     };
+//     template<typename T>
+//     std::size_t constexpr hash(T&& t) {
+//         return hasher<std::decay_t<T>>()(std::forward<T>(t));
+//     }
+//     inline namespace literals {
+//         std::size_t constexpr operator "" _hash(const char* s,size_t) {
+//             return hasher<std::string>()(s);
+//         }
+//     }
+// }
 
 /**
  * @}

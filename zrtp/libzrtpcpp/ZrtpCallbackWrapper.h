@@ -37,8 +37,7 @@
  * @see ZrtpCallback
  * @see ZrtpCWrapper
  */
-class __EXPORT ZrtpCallbackWrapper : public ZrtpCallback
-{
+class __EXPORT ZrtpCallbackWrapper final : public ZrtpCallback {
 public:
     /**
      * Construct a class that implements ZrtpCallback and uses a C structure
@@ -52,25 +51,25 @@ public:
      */
     ZrtpCallbackWrapper(zrtp_Callbacks* cb, ZrtpContext* ctx);
 
-    int32_t sendDataZRTP ( const unsigned char* data, int32_t length ) override;
+    int32_t sendDataZRTP(const unsigned char* data, int32_t length) override;
 
     int32_t sendFrameDataZRTP(const uint8_t* data, int32_t length, uint8_t numberOfFrames) override;
 
-    int32_t activateTimer ( int32_t time ) override;
+    int32_t activateTimer(int32_t time) override;
 
     int32_t cancelTimer() override;
 
-    void sendInfo ( GnuZrtpCodes::MessageSeverity severity, int32_t subCode ) override;
+    void sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) override;
 
-    bool srtpSecretsReady ( SrtpSecret_t* secrets, EnableSecurity part ) override;
+    bool srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part) override;
 
-    void srtpSecretsOff ( EnableSecurity part ) override;
+    void srtpSecretsOff(EnableSecurity part) override;
 
-    void srtpSecretsOn ( std::string c, std::string s, bool verified ) override;
+    void srtpSecretsOn(std::string c, std::string s, bool verified) override;
 
     void handleGoClear() override;
 
-    void zrtpNegotiationFailed ( GnuZrtpCodes::MessageSeverity severity, int32_t subCode ) override;
+    void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) override;
 
     void zrtpNotSuppOther() override;
 
@@ -78,19 +77,19 @@ public:
 
     void synchLeave() override;
 
-    void zrtpAskEnrollment (GnuZrtpCodes::InfoEnrollment info ) override;
+    void zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info) override;
 
-    void zrtpInformEnrollment (GnuZrtpCodes::InfoEnrollment info ) override;
+    void zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment info) override;
 
-    void signSAS (uint8_t* sasHash ) override;
+    void signSAS(uint8_t* sasHash) override;
 
-    bool checkSASSignature (uint8_t* sasHash ) override;
+    bool checkSASSignature(uint8_t* sasHash) override;
 
 private:
     static void init();
-    zrtp_Callbacks *c_callbacks;
-    ZrtpContext* zrtpCtx;
 
+    zrtp_Callbacks* c_callbacks;
+    ZrtpContext* zrtpCtx;
 };
 
 /**

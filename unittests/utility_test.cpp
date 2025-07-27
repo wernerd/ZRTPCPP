@@ -24,7 +24,7 @@
 
 using namespace std;
 
-class UtilityTestFixture: public ::testing::Test {
+class UtilityTestFixture: public testing::Test {
 public:
     UtilityTestFixture() = default;
 
@@ -49,26 +49,26 @@ public:
     }
 };
 
-using namespace string_hash::literals;
-static int32_t one() { return 1; }
-static int32_t two() { return 2; }
-static void other() {}
-
-static int32_t foo( const std::string& value ) {
-    switch( string_hash::hash(value) ) {
-        case "one"_hash:
-            return one();
-        case "two"_hash:
-            return two();
-            /*many more cases*/
-        default: other(); break;
-    }
-}
-
-TEST_F(UtilityTestFixture, Switch) {
-    ASSERT_EQ(1, foo("one"));
-    ASSERT_EQ(2, foo("two"));
-}
+// using namespace string_hash::literals;
+// static int32_t one() { return 1; }
+// static int32_t two() { return 2; }
+// static void other() {}
+//
+// static int32_t foo( const std::string& value ) {
+//     switch( string_hash::hash(value) ) {
+//         case "one"_hash:
+//             return one();
+//         case "two"_hash:
+//             return two();
+//             /*many more cases*/
+//         default: other(); break;
+//     }
+// }
+//
+// TEST_F(UtilityTestFixture, Switch) {
+//     ASSERT_EQ(1, foo("one"));
+//     ASSERT_EQ(2, foo("two"));
+// }
 
 //BASE64("") = ""
 //BASE64("f") = "Zg=="

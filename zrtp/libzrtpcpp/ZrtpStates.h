@@ -18,8 +18,8 @@
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#ifndef _ZRTPSTATES_H_
-#define _ZRTPSTATES_H_
+#ifndef ZRTPSTATES_H_
+#define ZRTPSTATES_H_
 
 /**
  * @file ZrtpStates.h
@@ -29,9 +29,6 @@
  * @{
  */
 
-#include <stdlib.h>
-#include <string>
-#include <assert.h>
 #include <cstdint>
 
 class __EXPORT ZrtpStateEngineImpl;
@@ -58,19 +55,19 @@ class __EXPORT ZrtpStates {
     ZrtpStates() = delete;
 
     /// Create an initialize state switching
-    ZrtpStates(state_t* const zrtpStates, const int32_t initialState): states(zrtpStates), state(initialState) {}
+    ZrtpStates(state_t const * const zrtpStates, const int32_t initialState): states(zrtpStates), state(initialState) {}
 
     /// Call a state handler
-    int32_t processEvent(ZrtpStateEngineImpl& zsc) {
+    int32_t processEvent(ZrtpStateEngineImpl& zsc) const {
         (zsc.*states[state].handler)();
         return 0;
     }
 
     /// Check if in specified state
-    bool inState(const int32_t s) const { return ((s == state)); }
+    [[nodiscard]] bool inState(const int32_t s) const { return s == state; }
 
     /// Set the next state
-    void nextState(int32_t s)     { state = s; }
+    void nextState(int32_t const s)     { state = s; }
 
  private:
     const state_t* states;
@@ -80,5 +77,5 @@ class __EXPORT ZrtpStates {
 /**
  * @}
  */
-#endif  //ZRTPSTATES
+#endif  // ZRTPSTATES_H_
 

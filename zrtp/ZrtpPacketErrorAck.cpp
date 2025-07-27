@@ -20,14 +20,17 @@
 
 #include <libzrtpcpp/ZrtpPacketErrorAck.h>
 
+#include "libzrtpcpp/ZrtpTextData.h"
+
 ZrtpPacketErrorAck::ZrtpPacketErrorAck() {
-    zrtpHeader = &data.hdr;	// the standard header
+    zrtpHeader = &data.hdr; // the standard header
 
     setZrtpId();
-    setLength((sizeof (ErrorAckPacket_t) / ZRTP_WORD_SIZE) - 1);
-    setMessageType((uint8_t*)ErrorAckMsg);
+    setLength(sizeof(ErrorAckPacket_t) / ZRTP_WORD_SIZE - 1);
+    setMessageType(ErrorAckMsg);
 }
 
-ZrtpPacketErrorAck::ZrtpPacketErrorAck(const uint8_t *data) {
-    zrtpHeader = (zrtpPacketHeader_t *)&((ErrorAckPacket_t*)data)->hdr;	// the standard header
+ZrtpPacketErrorAck::ZrtpPacketErrorAck(const uint8_t* data) {
+    // the standard header
+    zrtpHeader = const_cast<zrtpPacketHeader_t *>(&reinterpret_cast<ErrorAckPacket_t const *>(data)->hdr);
 }

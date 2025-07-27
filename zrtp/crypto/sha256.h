@@ -21,8 +21,8 @@
  * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#ifndef _SHA256_H
-#define _SHA256_H
+#ifndef SHA256_H
+#define SHA256_H
 
 /**
  * @file sha256.h
@@ -45,15 +45,15 @@
  *
  * @param data
  *    Points to the data chunk.
- * @param data_length
+ * @param dataLength
  *    Length of the data in bytes
  * @param digest
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 32 bytes (SHA256_DIGEST_LENGTH).
  */
-void sha256(const uint8_t *data,
-            uint64_t data_length,
-            uint8_t *digest);
+void sha256(const uint8_t* data,
+            uint64_t dataLength,
+            uint8_t* digest);
 
 /**
  * Compute SHA256 digest over several data chunks.
@@ -70,7 +70,7 @@ void sha256(const uint8_t *data,
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 32 bytes (SHA256_DIGEST_LENGTH).
  */
-void sha256(const std::vector<const uint8_t*>& data, const std::vector<uint64_t >& dataLength, uint8_t *digest);
+void sha256(const std::vector<const uint8_t *> &data, const std::vector<uint64_t> &dataLength, uint8_t* digest);
 
 /**
  * Create and initialize a SHA256 context.
@@ -93,7 +93,7 @@ void* createSha256Context();
  * @param digestOut
  *    Reference to a secure array that receives the computed digest.
  */
-void closeSha256Context(void* ctx, zrtp::RetainedSecArray & digestOut);
+void closeSha256Context(void* ctx, zrtp::RetainedSecArray &digestOut);
 
 /**
  * Initialize a SHA256 context.
@@ -117,7 +117,7 @@ void* initializeSha256Context(void* ctx);
  * @param digestOut
  *    Reference to a secure array that receives the computed digest.
  */
-void finalizeSha256Context(void* ctx, zrtp::RetainedSecArray & digestOut);
+void finalizeSha256Context(void* ctx, zrtp::RetainedSecArray &digestOut);
 
 /**
  * Update the SHA256 context with data.
@@ -149,10 +149,9 @@ void sha256Ctx(void* ctx, const uint8_t* data, uint64_t dataLength);
  *    Vector of integers that hold the length of each data chunk.
  *
  */
-void sha256Ctx(void* ctx, const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength);
+void sha256Ctx(void* ctx, const std::vector<const uint8_t *> &data, const std::vector<uint64_t> &dataLength);
 
 /**
  * @}
  */
-#endif
-
+#endif // SHA256_H

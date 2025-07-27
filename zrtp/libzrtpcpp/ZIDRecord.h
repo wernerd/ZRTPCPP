@@ -40,23 +40,23 @@
  * These length are fixed for ZRTP. See RFC 6189.
  */
 constexpr int32_t IDENTIFIER_LEN = 12;
-constexpr int32_t RS_LENGTH =      32;
+constexpr int32_t RS_LENGTH = 32;
 
-constexpr int32_t FILE_TYPE_RECORD =   1;
+constexpr int32_t FILE_TYPE_RECORD = 1;
 constexpr int32_t SQLITE_TYPE_RECORD = 2;
-constexpr int32_t EMPTY_TYPE_RECORD =  3;
+constexpr int32_t EMPTY_TYPE_RECORD = 3;
 
 
-constexpr int32_t RS1_NO_EXPIRATION  = -1;
+constexpr int32_t RS1_NO_EXPIRATION = -1;
 /*
  * The flag field stores the following bitflags
  */
-constexpr uint32_t Valid            = 0x1;
-constexpr uint32_t SASVerified      = 0x2;
-constexpr uint32_t RS1Valid         = 0x4;
-constexpr uint32_t RS2Valid         = 0x8;
-constexpr uint32_t MITMKeyAvailable = 0x10;
-constexpr uint32_t OwnZIDRecord     = 0x20;
+constexpr uint8_t Valid = 0x1;
+constexpr uint8_t SASVerified = 0x2;
+constexpr uint8_t RS1Valid = 0x4;
+constexpr uint8_t RS2Valid = 0x8;
+constexpr uint8_t MITMKeyAvailable = 0x10;
+constexpr uint8_t OwnZIDRecord = 0x20;
 
 
 #if defined(__cplusplus)
@@ -70,7 +70,6 @@ constexpr uint32_t OwnZIDRecord     = 0x20;
  * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 class __EXPORT ZIDRecord {
-
 public:
     /**
      * @brief Destructor.
@@ -83,7 +82,7 @@ public:
      *
      * Set the ZID in this record before calling read or save.
      */
-    virtual void setZid(const unsigned char *zid) =0;
+    virtual void setZid(const unsigned char* zid) =0;
 
     /**
      * @brief Set @c valid flag in RS1
@@ -93,7 +92,7 @@ public:
     /**
      * @brief Reset @c valid flag in RS1
      */
-    virtual void resetRs1Valid()  =0;
+    virtual void resetRs1Valid() =0;
 
     /**
      * @brief Check @c valid flag in RS1
@@ -231,7 +230,7 @@ public:
     virtual const unsigned char* getMiTMData() =0;
 
     virtual int getRecordType() =0;
- 
+
     /**
      * @brief Get the secure since field
      * 
@@ -241,4 +240,4 @@ public:
     virtual int64_t getSecureSince() =0;
 };
 #endif /* (__cplusplus) */
-#endif
+#endif // ZIDRECORD_H_

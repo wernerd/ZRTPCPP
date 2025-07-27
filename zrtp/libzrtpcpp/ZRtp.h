@@ -33,8 +33,6 @@
 #include <libzrtpcpp/ZrtpPacketDHPart.h>
 #include <libzrtpcpp/ZrtpPacketConfirm.h>
 #include <libzrtpcpp/ZrtpPacketConf2Ack.h>
-#include <libzrtpcpp/ZrtpPacketGoClear.h>
-#include <libzrtpcpp/ZrtpPacketClearAck.h>
 #include <libzrtpcpp/ZrtpPacketError.h>
 #include <libzrtpcpp/ZrtpPacketErrorAck.h>
 #include <libzrtpcpp/ZrtpPacketPing.h>
@@ -43,8 +41,6 @@
 #include <libzrtpcpp/ZrtpPacketRelayAck.h>
 #include <libzrtpcpp/ZrtpCallback.h>
 #include <libzrtpcpp/ZIDCache.h>
-
-#include <botan_all.h>
 
 #include "common/typedefs.h"
 
@@ -80,9 +76,7 @@ class ZRtp;
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 class __EXPORT ZRtp {
-
-    public:
-
+public:
     typedef enum _secrets {
         Rs1 = 1,
         Rs2 = 2,
@@ -106,7 +100,7 @@ class __EXPORT ZRtp {
      */
     typedef struct HelloPacketVersion {
         int32_t version;
-        ZrtpPacketHello* packet;
+        ZrtpPacketHello *packet;
         uint8_t helloHash[IMPL_MAX_DIGEST_LENGTH];
     } HelloPacketVersion_t;
 
@@ -118,10 +112,10 @@ class __EXPORT ZRtp {
      * @param callback pointer to helper functions in filter/glue code
      * @param config pointer to algorithm configuration flags
      *
-     * @deprecated Use new, streamlined constructor ZRtp(const std::string& , std::shared_ptr<ZrtpCallback>& , std::shared_ptr<ZrtpConfigure>& );
+     * @deprecated Use new, streamlined constructor ZRtp(const std::string&, std::shared_ptr<ZrtpCallback>&, std::shared_ptr<ZrtpConfigure>&);
      */
-    DEPRECATED_ZRTP ZRtp(uint8_t const * myZid, std::shared_ptr<ZrtpCallback>& callback, const std::string& id,
-         std::shared_ptr<ZrtpConfigure>& config, bool mitm = false, bool sasSignSupport = false);
+    DEPRECATED_ZRTP ZRtp(uint8_t const *myZid, std::shared_ptr<ZrtpCallback> const &callback, std::string const &id,
+                        std::shared_ptr<ZrtpConfigure> const &config, bool mitm = false, bool sasSignSupport = false);
 
     /**
      * @brief Constructor initializes all relevant data but does not start the engine.
@@ -130,7 +124,8 @@ class __EXPORT ZRtp {
      * @param callback pointer to helper functions in filter/glue code
      * @param config pointer to algorithm configuration flags
      */
-    ZRtp(const std::string& id, std::shared_ptr<ZrtpCallback>& callback, std::shared_ptr<ZrtpConfigure>& config);
+    ZRtp(const std::string &id, std::shared_ptr<ZrtpCallback> const &callback,
+         std::shared_ptr<ZrtpConfigure> const &config);
 
     /**
      * Destructor cleans up.
@@ -141,7 +136,7 @@ class __EXPORT ZRtp {
      * Kick off the ZRTP protocol engine.
      *
      * This method calls the ZrtpStateEngine#evInitial() state of the state
-     * engine. After this call we are able to process ZRTP packets
+     * engine. After this call, we are able to process ZRTP packets
      * from our peer and to process them.
      */
     void startZrtpEngine() const;
@@ -160,16 +155,16 @@ class __EXPORT ZRtp {
      *
      * @param zrtpMessage
      *    A pointer to the first byte of the ZRTP message. Refer to RFC6189.
-     * @param peerSSRC
+     * @param pSSRC
      *    The peer's SSRC.
      * @param length
-     *     of the received data packet, this includes the length of the ZRTP CRC field and
-     *     may include length of transport header, for example length of RTP header. Use
+     *     Of the received data packet, this includes the length of the ZRTP CRC field and
+     *     may include the length of transport header, for example, length of RTP header. Use
      *     setTransportOverhead(int32_t overhead) to set the length of the transport overhead.
      *
      * @sa  setTransportOverhead(int32_t)
      */
-    void processZrtpMessage(uint8_t const * zrtpMessage, uint32_t peerSSRC, size_t length);
+    void processZrtpMessage(uint8_t const *zrtpMessage, uint32_t pSSRC, size_t length);
 
     /**
      * Process a timeout event.
@@ -183,8 +178,8 @@ class __EXPORT ZRtp {
     /**
      * Check for and handle GoClear ZRTP packet header.
      *
-     * This method checks if this is a GoClear packet. If not, just return
-     * false. Otherwise handle it according to the specification.
+     * This method checks if this is a GoClear packet. If not, return
+     * false. Otherwise, handle it according to the specification.
      *
      * @param extHeader
      *    A pointer to the first byte of the extension header. Refer to
@@ -205,10 +200,10 @@ class __EXPORT ZRtp {
      * @param length
      *     Length of the auxiliary secret in bytes
      */
-    void setAuxSecret(uint8_t* data, uint32_t length);
+    void setAuxSecret(uint8_t const *data, uint32_t length);
 
     /**
-     * Check current state of the ZRTP state engine
+     * Check the current state of the ZRTP state engine
      *
      * @param state
      *    The state to check.
@@ -220,8 +215,8 @@ class __EXPORT ZRtp {
     /**
      * Set SAS as verified.
      *
-     * Call this method if the user confirmed (verfied) the SAS. ZRTP
-     * remembers this together with the retained secrets data.
+     * Call this method if the user confirmed (verified) the SAS. ZRTP
+     * remembers this together with the retained secrets' data.
      */
     void SASVerified();
 
@@ -229,36 +224,36 @@ class __EXPORT ZRtp {
      * Reset the SAS verfied flag for the current active user's retained secrets.
      *
      */
-    void resetSASVerified();
+    void resetSASVerified() const;
 
-     /**
-      * Check if SAS verfied by both parties, valid after received Confirm1 or Confirm2.
-      *
-      */
-     bool isSASVerified() { return zidRec->isSasVerified(); }
-
-     /**
-     * Get the ZRTP Hello Hash data.
+    /**
+     * Check if SAS verfied by both parties, valid after received Confirm1 or Confirm2.
      *
-     * Use this method to get the ZRTP Hello hash data. The method
-     * returns the data as a string containing the ZRTP protocol version and
-     * hex-digits.
-     * 
-     * The index defines which Hello packet to use. Each supported ZRTP procol version
-     * uses a different Hello packet and thus computes different hashes.
-     *
-     * Refer to ZRTP specification, chapter 8.
-     * 
-     * @param index
-     *     Hello hash of the Hello packet identfied by index. Index must be 0 <= index < MAX_ZRTP_VERSIONS.
-     *
-     * @return
-     *    a std::string formatted according to RFC6189 section 8 without the leading 'a=zrtp-hash:'
-     *    SDP attribute identifier. The hello hash is available immediately after class instantiation.
-     * 
-     * @see getNumberSupportedVersions()
      */
-    std::string getHelloHash(int index);
+    [[nodiscard]] bool isSASVerified() const { return zidRec->isSasVerified(); }
+
+    /**
+    * Get the ZRTP Hello Hash data.
+    *
+    * Use this method to get the ZRTP Hello hash data. The method
+    * returns the data as a string containing the ZRTP protocol version and
+    * hex-digits.
+    *
+    * The index defines which Hello packet to use. Each supported ZRTP procol version
+    * uses a different Hello packet and thus computes different hashes.
+    *
+    * Refer to ZRTP specification, chapter 8.
+    *
+    * @param index
+    *     Hello hash of the Hello packet identified by index. Index must be 0 <= index < MAX_ZRTP_VERSIONS.
+    *
+    * @return
+    *    A std::string formatted according to RFC6189 section 8 without the leading 'a=zrtp-hash:'
+    *    SDP attribute identifier. The hello hash is available immediately after class instantiation.
+    *
+    * @see getNumberSupportedVersions()
+    */
+    [[nodiscard]] std::string getHelloHash(int index) const;
 
     /**
      * Get the peer's ZRTP Hello Hash data.
@@ -268,19 +263,19 @@ class __EXPORT ZRtp {
      * hex-digits.
      *
      * The peer's hello hash is available only after ZRTP received a hello. If
-     * no data is available the function returns an empty string.
+     * no data is available, the function returns an empty string.
      *
      * Refer to ZRTP specification, chapter 8.
      *
      * @return
      *    a std:string containing the Hello version and the hello hash as hex digits.
      */
-    std::string getPeerHelloHash();
+    [[nodiscard]] std::string getPeerHelloHash() const;
 
     /**
      * Get Multi-stream parameters.
      *
-     * Use this method to get the Multi-stream that were computed during
+     * Use this method to get the Multi-stream that was computed during
      * the ZRTP handshake. An application may use these parameters to
      * enable multi-stream processing for an associated SRTP session.
      *
@@ -290,11 +285,11 @@ class __EXPORT ZRtp {
      * @param zrtpMaster
      *     Where the function returns the pointer of the ZRTP master stream.
      * @return
-     *    a string that contains the multi-stream parameters. The application
+     *    A string that contains the multi-stream parameters. The application
      *    must not modify the contents of this string, it is opaque data. The
      *    application may hand over this string to a new ZrtpQueue instance
      *    to enable multi-stream processing for this ZrtpQueue.
-     *    If ZRTP was not started or ZRTP is not yet in secure state the method
+     *    If ZRTP was not started or ZRTP is not yet in secure state, the method
      *    returns an empty string.
      */
     std::string getMultiStrParams(ZRtp **zrtpMaster);
@@ -315,7 +310,7 @@ class __EXPORT ZRtp {
      * @param zrtpMaster
      *     The pointer of the ZRTP master stream.
      */
-    void setMultiStrParams(std::string parameters, ZRtp* zrtpMaster);
+    void setMultiStrParams(std::string const &parameters, ZRtp *zrtpMaster);
 
     /**
      * Check if this ZRTP session is a Multi-stream session.
@@ -343,44 +338,47 @@ class __EXPORT ZRtp {
      * Accept a PBX enrollment request.
      *
      * If a PBX service asks to enroll the PBX trusted MitM key and the user
-     * accepts this request, for example by pressing an OK button, the client
+     * accepts this request, for example, by pressing an OK button, the client
      * application shall call this method and set the parameter
-     * <code>accepted</code> to true. If the user does not accept the request
+     * <code>accepted</code> to true. If the user does not accept the request,
      * set the parameter to false.
      *
      * @param accepted
      *     True if the enrollment request is accepted, false otherwise.
      */
+#ifndef ZRTP_SAS_RELAY_SUPPORT
     static void acceptEnrollment(bool accepted);
-
+#else
+    void acceptEnrollment(bool accepted);
+#endif
     /**
      * Check the state of the enrollment mode.
-     * 
-     * If true then we will set the enrollment flag (E) in the confirm
+     *
+     * If true, then we will set the enrollment flag (E) in the ZRTP 'confirm'
      * packets and perform the enrollment actions. A MitM (PBX) enrollment service
-     * started this ZRTP session. Can be set to true only if mitmMode is also true.
-     * 
+     * started this ZRTP session. It can be set to true only if mitmMode is also true.
+     *
      * @return status of the enrollmentMode flag.
      */
     [[nodiscard]] bool isEnrollmentMode() const;
 
     /**
      * Set the state of the enrollment mode.
-     * 
-     * If true then we will set the enrollment flag (E) in the confirm
-     * packets and perform the enrollment actions. A MitM (PBX) enrollment 
-     * service must sets this mode to true. 
-     * 
-     * Can be set to true only if mitmMode is also true. 
-     * 
-     * @param enrollmentMode defines the new state of the enrollmentMode flag
+     *
+     * If true, then we will set the enrollment flag (E) in the ZRTP 'confirm'
+     * packets and perform the enrollment actions. A MitM (PBX) enrollment
+     * service must set this mode to true.
+     *
+     * It can be set to true only if mitmMode is also true.
+     *
+     * @param enrollment defines the new state of the enrollmentMode flag
      */
-    void setEnrollmentMode(bool enrollmentMode);
+    void setEnrollmentMode(bool enrollment);
 
     /**
      * Check if a peer's cache entry has a vaild MitM key.
      *
-     * If true then the other peer ha a valid MtiM key, i.e. the peer has performed
+     * If true, then the other peer has a valid MtiM key, i.e., the peer has performed
      * the enrollment procedure. A PBX ZRTP Back-2-Back application can use this function
      * to check which of the peers is enrolled.
      *
@@ -390,23 +388,28 @@ class __EXPORT ZRtp {
 
     /**
      * Send the SAS relay packet.
-     * 
+     *
      * The method creates and sends a SAS relay packet according to the ZRTP
      * specifications. Usually only a MitM capable user agent (PBX) uses this
      * function.
-     * 
+     *
      * @param sh the full SAS hash value, 32 bytes
      * @param render the SAS rendering algorithm
      */
-    static bool sendSASRelayPacket(uint8_t* sh, const std::string& render);
+#ifndef ZRTP_SAS_RELAY_SUPPORT
+    static bool sendSASRelayPacket(const uint8_t *sh, const std::string &render);
+#else
+    bool sendSASRelayPacket(uint8_t* sh, const std::string& render);
+#endif
+
 
     /**
      * Get the committed SAS rendering algorithm for this ZRTP session.
-     * 
+     *
      * @return the committed SAS rendering algorithm
      */
     [[nodiscard]] std::string getSasType() const { return sasType->getName(); }
- 
+
     /**
      * Get the computed SAS hash for this ZRTP session.
      *
@@ -417,14 +420,14 @@ class __EXPORT ZRtp {
      * @return a reference to the byte array that contains the full
      *         SAS hash.
      */
-    [[nodiscard]] uint8_t const * getSasHash() const {return sasHash.data();}
+    [[nodiscard]] uint8_t const *getSasHash() const { return sasHash.data(); }
 
     /**
      * @brief Get the short name of the confirmed public key algorithm.
      *
      * @return Short name of the public key algorithm
      */
-    [[nodiscard]] std::string getPublicKeyAlgoName() { return pubKey->getName(); }
+    [[nodiscard]] std::string getPublicKeyAlgoName() const { return pubKey->getName(); }
 
     /**
      * Set signature data.
@@ -445,7 +448,7 @@ class __EXPORT ZRtp {
      * @return
      *    True if the method stored the data, false otherwise.
      */
-    bool setSignatureData(uint8_t* data, int32_t length);
+    bool setSignatureData(uint8_t const *data, int32_t length);
 
     /**
      * Get signature data.
@@ -454,21 +457,21 @@ class __EXPORT ZRtp {
      * during ZRTP processing. Refer to chapters 5.7 and 7.2.
      *
      * The returned pointer points to volatile data that is valid only during the
-     * <code>checkSASSignature()</code> callback funtion. The application must copy
-     * the signature data if it will be used after the callback function returns.
+     * <code>checkSASSignature()</code> callback function. The application must copy
+     * the signature data if it is used after the callback function returns.
      *
      * The signature data can be retrieved after ZRTP enters secure state.
-     * <code>start()</code>.
+     * <code>Start()</code>.
      *
      * @return
      *    Signature data.
      */
-    [[nodiscard]] uint8_t const * getSignatureData() const { return signatureData; }
+    [[nodiscard]] uint8_t const *getSignatureData() const { return signatureData; }
 
     /**
-     * Get length of signature data in number of bytes.
+     * Get the length of signature data in number of bytes.
      *
-     * This functions returns the length of signature data that was receivied
+     * This functions returns the length of signature data that was received
      * during ZRTP processing. Refer to chapters 5.7 and 7.2.
      *
      * @return
@@ -480,218 +483,220 @@ class __EXPORT ZRtp {
     /**
      * Emulate a Conf2Ack packet.
      *
-     * This method emulates a Conf2Ack packet. According to ZRTP specification
+     * This method emulates a Conf2Ack packet. According to ZRTP specification,
      * the first valid SRTP packet that the Initiator receives must switch
-     * on secure mode. Refer to chapter 4 in the specificaton
+     * on secure mode. Refer to chapter 4 in the specification.
      *
      */
-    void conf2AckSecure();
+    void conf2AckSecure() const;
 
-     /**
-      * Get other party's ZID (ZRTP Identifier) data
-      *
-      * This functions returns the other party's ZID that was receivied
-      * during ZRTP processing.
-      *
-      * The ZID data can be retrieved after ZRTP receive the first Hello
-      * packet from the other party. The application may call this method
-      * for example during SAS processing in showSAS(...) user callback
-      * method.
-      *
-      * @param data
-      *    Pointer to a data buffer. This buffer must have a size of
-      *    at least 12 bytes (96 bit) (ZRTP Identifier, see chap. 4.9)
-      * @return
-      *    Number of bytes copied into the data buffer - must be equivalent
-      *    to 96 bit, usually 12 bytes.
-      */
-     int32_t getPeerZid(uint8_t* data) const {
-         memcpy(data, peerZid.data(), IDENTIFIER_LEN);
-         return IDENTIFIER_LEN;
-     }
+    /**
+     * Get other party's ZID (ZRTP Identifier) data
+     *
+     * This functions returns the other party's ZID that was receivied
+     * during ZRTP processing.
+     *
+     * The ZID data can be retrieved after ZRTP receives the first Hello
+     * packet from the other party. The application may call this method,
+     * for example, during SAS processing in showSAS(...) user callback
+     * method.
+     *
+     * @param data
+     *    Pointer to a data buffer. This buffer must have a size of
+     *    at least 12 bytes (96 bits) (ZRTP Identifier, see chap. 4.9)
+     * @return
+     *    The number of bytes copied into the data buffer - must be equivalent
+     *    to 96 bit, usually 12 bytes.
+     */
+    int32_t getPeerZid(uint8_t *data) const {
+        memcpy(data, peerZid.data(), IDENTIFIER_LEN);
+        return IDENTIFIER_LEN;
+    }
 
-     /**
-      * Return gathered detailed information structure.
-      *
-      * This structure contains some detailed information about the negotiated
-      * algorithms, the cached and matched shared secrets.
-      */
-     [[nodiscard]] zrtpInfo const & getDetailInfo() const { return detailInfo; }
+    /**
+     * Return gathered detailed information structure.
+     *
+     * This structure contains some detailed information about the negotiated
+     * algorithms, the cached and matched shared secrets.
+     */
+    [[nodiscard]] zrtpInfo const &getDetailInfo() const { return detailInfo; }
 
-     /**
-      * Get peer's client id.
-      *
-      * @return the peer's client id or an empty @c string if not set.
-      */
-     [[nodiscard]] std::string const & getPeerClientId() const {return peerClientId;};
+    /**
+     * Get peer's client id.
+     *
+     * @return the peer's client id or an empty @c string if not set.
+     */
+    [[nodiscard]] std::string const &getPeerClientId() const { return peerClientId; }
 
-     /**
-      * Get peer's protocol version string.
-      *
-      * @return the peer's protocol version or an empty @c string if not set.
-      */
-     [[nodiscard]] std::string getPeerProtocolVersion() const {
-         return (peerHelloVersion[0] == 0) ? std::string() : std::string((char*)peerHelloVersion);
-     };
+    /**
+     * Get peer's protocol version string.
+     *
+     * @return the peer's protocol version or an empty @c string if not set.
+     */
+    [[nodiscard]] std::string getPeerProtocolVersion() const {
+        return peerHelloVersion[0] == 0
+                   ? std::string()
+                   : std::string(reinterpret_cast<char const *>(peerHelloVersion));
+    }
 
-     /**
-      * Get number of supported ZRTP protocol versions.
-      *
-      * @return the number of supported ZRTP protocol versions.
-      */
-     static int32_t getNumberSupportedVersions() {return SUPPORTED_ZRTP_VERSIONS;}
+    /**
+     * Get number of supported ZRTP protocol versions.
+     *
+     * @return the number of supported ZRTP protocol versions.
+     */
+    static int32_t getNumberSupportedVersions() { return SUPPORTED_ZRTP_VERSIONS; }
 
-     /**
-      * Get negotiated ZRTP protocol version.
-      *
-      * @return the integer representation of the negotiated ZRTP protocol version.
-      */
-     int32_t getCurrentProtocolVersion() {return currentHelloPacket->getVersionInt();}
+    /**
+     * Get negotiated ZRTP protocol version.
+     *
+     * @return the integer representation of the negotiated ZRTP protocol version.
+     */
+    [[nodiscard]] int32_t getCurrentProtocolVersion() const { return currentHelloPacket->getVersionInt(); }
 
-     /**
-      * Validate the RS2 data if necessary.
-      *
-      * The cache functions stores the RS2 data but does not set its valid flag. The
-      * application may decide to set this flag.
-      */
-     void setRs2Valid();
+    /**
+     * Validate the RS2 data if necessary.
+     *
+     * The cache functions stores the RS2 data but does not set its valid flag. The
+     * application may decide to set this flag.
+     */
+    void setRs2Valid() const;
 
-     /**
-      * Get the secure since field
-      * 
-      * Returns the secure since field or 0 if no such field is available. Secure since
-      * uses the unixepoch.
-      */
-     [[nodiscard]] int64_t getSecureSince() const {
-         return (zidRec != nullptr) ? zidRec->getSecureSince() :  0;
-     }
+    /**
+     * Get the secure since field
+     *
+     * Returns the secure since field or 0 if no such field is available. Secure since
+     * uses unixepoch.
+     */
+    [[nodiscard]] int64_t getSecureSince() const {
+        return zidRec != nullptr ? zidRec->getSecureSince() : 0;
+    }
 
-     /**
-      * Set the resend counter of timer T1 - T1 controls the Hello packets.
-      * 
-      * This overwrites the standard value of 20 retries. Setting to <0 means
-      * 'indefinite', counter values less then 10 are ignored.
-      * 
-      * Applications may set the resend counter based on network  or some other 
-      * conditions. Applications may set this value any time and it's in effect
-      * for the current call. Setting the counter after the hello phase has no
-      * effect.
-      */
-     void setT1Resend(int32_t counter) const {
-         if (counter < 0 || counter > 10) stateEngine->setT1Resend(counter);
-     }
+    /**
+     * Set the resend counter of timer T1 - T1 controls the Hello packets.
+     *
+     * This overwrites the standard value of 20 retries. Setting to <0 means
+     * 'indefinite', counter-values less than 10 are ignored.
+     *
+     * Applications may set the resend counter based on network  or some other
+     * conditions. Applications may set this value any time, and it's in effect
+     * for the current call. Setting the counter after the hello phase has no
+     * effect.
+     */
+    void setT1Resend(int32_t const counter) const {
+        if (counter < 0 || counter > 10) stateEngine->setT1Resend(counter);
+    }
 
-     /**
-      * Set the extended resend counter of timer T1 - T1 controls the Hello packets.
-      *
-      * More retries to extend time, see RFC6189 chap. 6. This overwrites the standard 
-      * value of 60 extended retries.
-      * 
-      * Applications may set the resend counter based on network  or some other 
-      * conditions. 
-      */
-     void setT1ResendExtend(int32_t counter) const {
-         stateEngine->setT1ResendExtend(counter);
-     }
+    /**
+     * Set the extended resend counter of timer T1 - T1 controls the Hello packets.
+     *
+     * More retries to extend time, see RFC6189 chap. 6. This overwrites the standard
+     * value of 60 extended retries.
+     *
+     * Applications may set the resend counter based on network  or some other
+     * conditions.
+     */
+    void setT1ResendExtend(int32_t const counter) const {
+        stateEngine->setT1ResendExtend(counter);
+    }
 
-     /**
-      * Set the time capping of timer T1 - T1 controls the Hello packets.
-      * 
-      * Values <50ms are not set.
-      */
-     [[maybe_unused]] void setT1Capping(int32_t capping) const {
-         if (capping >= 50) stateEngine->setT1Capping(capping);
-     }
+    /**
+     * Set the time capping of timer T1 - T1 controls the Hello packets.
+     *
+     * Values <50 ms are not set.
+     */
+    [[maybe_unused]] void setT1Capping(int32_t const capping) const {
+        if (capping >= 50) stateEngine->setT1Capping(capping);
+    }
 
-     /**
-      * Set the resend counter of timer T2 - T2 controls other (post-Hello) packets.
-      * 
-      * This overwrites the standard value of 10 retiries. Setting to <0 means
-      * 'indefinite', counter values less then 10 are ignored.
-      * 
-      * Applications may set the resend counter based on network  or some other 
-      * conditions. Applications may set this value any time and it's in effect
-      * for the current call. Setting the counter after tZRTP enetered secure state
-      * has no effect.
-      */
-     void setT2Resend(int32_t counter) const {
-         if (counter < 0 || counter > 10) stateEngine->setT2Resend(counter);
-     }
+    /**
+     * Set the resend counter of timer T2 - T2 controls other (post-Hello) packets.
+     *
+     * This overwrites the standard value of 10 retries. Setting to <0 means
+     * 'indefinite', counter-values less than 10 are ignored.
+     *
+     * Applications may set the resend counter based on network  or some other
+     * conditions. Applications may set this value any time, and it's in effect
+     * for the current call. Setting the counter after tZRTP entered secure state
+     * has no effect.
+     */
+    void setT2Resend(int32_t const counter) const {
+        if (counter < 0 || counter > 10) stateEngine->setT2Resend(counter);
+    }
 
-     /**
-      * Set the time capping of timer T2 - T2 controls other (post-Hello) packets.
-      * 
-      * Values <150ms are not set.
-      */
-     [[maybe_unused]] void setT2Capping(int32_t capping) const {
-         if (capping >= 150) stateEngine->setT2Capping(capping);
-     }
+    /**
+     * Set the time capping of timer T2 - T2 controls other (post-Hello) packets.
+     *
+     * Values <150 ms are not set.
+     */
+    [[maybe_unused]] void setT2Capping(int32_t const capping) const {
+        if (capping >= 150) stateEngine->setT2Capping(capping);
+    }
 
-     /**
-      * @brief Get required buffer size to get all 32-bit statistic counters of ZRTP
-      *
-      * @return number of 32 bit integer elements required or < 0 on error
-      */
-     [[nodiscard]] int getNumberOfCountersZrtp() const {
-         // If we add some other counters add them here before returning
-         return stateEngine->getNumberOfRetryCounters();
-     }
+    /**
+     * @brief Get the required buffer size to get all 32-bit statistic counters of ZRTP
+     *
+     * @return number of 32-bit integer elements required or < 0 on error
+     */
+    [[nodiscard]] int getNumberOfCountersZrtp() const {
+        // If we add some other counters, add them here before returning
+        return stateEngine->getNumberOfRetryCounters();
+    }
 
-     /**
-      * @brief Read statistic counters of ZRTP
-      * 
-      * @param counters Pointer to buffer of 32-bit integers. The buffer must be able to
-      *         hold at least getNumberOfCountersZrtp() 32-bit integers
-      * @return number of 32-bit counters returned in buffer or < 0 on error
-      */
-     int getCountersZrtp(int32_t* counters) const {
-         return stateEngine->getRetryCounters(counters);
-     }
-     
-     /**
-      * @brief Get the computed ZRTP exported key.
-      * 
-      * Returns the computed exported key. The application should copy
-      * the data it needs.
-      * 
-      * @param length pointer to an int, gets the length of the exported key.
-      * @return pointer to the exported key data.
-      */
-     const uint8_t& getExportedKey(uint32_t *length) const {
-         if (length != nullptr)
-             *length = hashLength;
-         return *zrtpExport.data();
-     };
+    /**
+     * @brief Read statistic counters of ZRTP
+     *
+     * @param counters Pointer to buffer of 32-bit integers. The buffer must be able to
+     *         hold at least getNumberOfCountersZrtp() 32-bit integers
+     * @return number of 32-bit counters returned in buffer or < 0 on error
+     */
+    int getCountersZrtp(int32_t *counters) const {
+        return stateEngine->getRetryCounters(counters);
+    }
 
-     /**
-      * @brief Return either Initiator or Responder.
-      */
-     [[nodiscard]] int32_t getZrtpRole() const { return myRole; }
+    /**
+     * @brief Get the computed ZRTP exported key.
+     *
+     * Returns the computed exported key. The application should copy
+     * the data it needs.
+     *
+     * @param length pointer to an int, gets the length of the exported key.
+     * @return pointer to the exported key data.
+     */
+    const uint8_t &getExportedKey(uint32_t *length) const {
+        if (length != nullptr)
+            *length = hashLength;
+        return *zrtpExport.data();
+    }
 
-     /**
-      * @brief Get status of our peer's disclosure flag
-      */
-     [[nodiscard]] bool isPeerDisclosureFlag() const { return peerDisclosureFlagSeen; }
+    /**
+     * @brief Return either Initiator or Responder.
+     */
+    [[nodiscard]] int32_t getZrtpRole() const { return myRole; }
+
+    /**
+     * @brief Get status of our peer's disclosure flag
+     */
+    [[nodiscard]] bool isPeerDisclosureFlag() const { return peerDisclosureFlagSeen; }
 
     /**
      * @brief Get the ZID cache instance of this ZRTP connection.
      */
-     [[nodiscard]] std::shared_ptr<ZIDCache>& getZidCache() const { return configureAlgos->getZidCache(); }
+    [[nodiscard]] std::shared_ptr<ZIDCache> &getZidCache() const { return configureAlgos->getZidCache(); }
 
     /**
      * @brief Get the configuration data of this ZRTP connection.
      */
-     [[nodiscard]] std::shared_ptr<ZrtpConfigure> getZrtpConfigure() const { return configureAlgos; }
+    [[nodiscard]] std::shared_ptr<ZrtpConfigure> getZrtpConfigure() const { return configureAlgos; }
 
     /**
      * @brief Set the length of the transport protocol overhead in bytes.
      *
-     * ZRTP uses this to check consitency of input data. For example the transport protocol
+     * ZRTP uses this to check the consistency of input data. For example, the transport protocol
      * overhead of an RTP packet that contains ZRTP data is the fixed length 12.
      *
      * @param overhead Length of the transport overhead.
      */
-    void setTransportOverhead(int32_t overhead) const  {
+    void setTransportOverhead(int32_t const overhead) const {
         stateEngine->setTransportOverhead(overhead);
     }
 
@@ -700,7 +705,7 @@ class __EXPORT ZRtp {
      *
      * The method takes the data and unpacks the ZRTP messages in case of a multi-frame packet
      * or assembles a ZRTP message in case of a fragmented ZRTP message.
-     * After processing the data it forwards the resulting ZRTP message(s) for further
+     * After processing the data, it forwards the resulting ZRTP message(s) for further
      * processing. It's the caller's duty to check the ZRTP CRC and the ZRTP magic
      * cookie before calling this function.
      *
@@ -709,15 +714,15 @@ class __EXPORT ZRtp {
      * @param pSSRC
      *    The peer's SSRC.
      * @param length
-     *     of the received data packet, this includes the length of the ZRTP CRC field and
-     *     may include length of transport header, for example length of RTP header. Use
+     *     Of the received data packet, this includes the length of the ZRTP CRC field and
+     *     may include the length of transport header, for example, length of RTP header. Use
      *     setTransportOverhead(int32_t overhead) to set the length of the transport overhead.
      * @param frameByte
-     *     The second byte of the ZRTP/RTP header. If bit 1 is set then it's a ZRTP frame packet.
+     *     The second byte of the ZRTP/RTP header. If bit 1 is set, then it's a ZRTP frame packet.
      *
      * @sa  setTransportOverhead(int32_t)
      */
-    void processZrtpFramePacket(uint8_t const * zrtpMessage, uint32_t pSSRC, size_t length, uint8_t frameByte);
+    void processZrtpFramePacket(uint8_t const *zrtpMessage, uint32_t pSSRC, size_t length, uint8_t frameByte);
 
 #ifndef UNIT_TESTS
 private:
@@ -728,7 +733,7 @@ private:
      * @param packet
      *     points to the ZRTP message/packet to wrap and send in ZRTP frame(s)
      * @return
-     *     zero if sending failed, one if packet was send
+     *     zero if sending failed, one if a packet was sent
      */
     int32_t sendAsZrtpFrames(ZrtpPacketBase *packet);
 
@@ -738,9 +743,9 @@ private:
      * @param packets
      *    list of ZRTP message/packet pointers to wrap and send in ZRTP frame(s)
      * @return
-     *     zero if sending failed, one if packet was send
+     *     zero if sending failed, one if a packet was sent
      */
-    int32_t sendAsZrtpMultiFrames(std::unique_ptr<std::list<std::reference_wrapper<ZrtpPacketBase>>> packets);
+    int32_t sendAsZrtpMultiFrames(std::unique_ptr<std::list<std::reference_wrapper<ZrtpPacketBase> > > const &packets);
 
     /**
      * The state engine takes care of protocol processing.
@@ -787,7 +792,7 @@ private:
     Role myRole = NoRole;
 
     /**
-     * The human readable SAS value
+     * The human-readable SAS value
      */
     std::string SAS;
 
@@ -795,7 +800,7 @@ private:
      * The SAS hash for signaling and alike. Refer to chapters
      * 4.5 and 7 how sasHash, sasValue and the SAS string are derived.
      */
-    zrtp::NegotiatedArray  sasHash;
+    zrtp::NegotiatedArray sasHash;
     /**
      * The ids for the retained and other shared secrets
      */
@@ -824,50 +829,50 @@ private:
     /**
      * My hvi
      */
-    uint8_t hvi[MAX_DIGEST_LENGTH]  = {0};
+    uint8_t hvi[MAX_DIGEST_LENGTH] = {};
 
     /**
      * The peer's hvi
      */
-    uint8_t peerHvi[8*ZRTP_WORD_SIZE]  = {0};
+    uint8_t peerHvi[8 * ZRTP_WORD_SIZE] = {};
 
     /**
      * Context to compute the SHA256 hash of selected messages.
      * Used to compute the s0, refer to chapter 4.4.1.4
      */
-    void* msgShaContext = nullptr;
+    void *msgShaContext = nullptr;
     /**
      * Committed Hash, Cipher, and public key algorithms
      */
-    AlgorithmEnum* hash = nullptr;
-    AlgorithmEnum* cipher = nullptr;
-    AlgorithmEnum* pubKey = nullptr;
+    AlgorithmEnum *hash = nullptr;
+    AlgorithmEnum *cipher = nullptr;
+    AlgorithmEnum *pubKey = nullptr;
     /**
      * The selected SAS type.
      */
-    AlgorithmEnum* sasType = nullptr;
+    AlgorithmEnum *sasType = nullptr;
 
     /**
      * The selected SAS type.
      */
-    AlgorithmEnum* authLength = nullptr;
+    AlgorithmEnum *authLength = nullptr;
 
     /**
      * The Hash images as defined in chapter 5.1.1 (H0 is a random value,
-     * not stored here). Need full SHA 256 length to store hash value but
+     * not stored here). Need full SHA 256 length to store hash value, but
      * only the leftmost 128 bits are used in computations and comparisons.
      */
-    uint8_t H0[IMPL_MAX_DIGEST_LENGTH] = {0};
-    uint8_t H1[IMPL_MAX_DIGEST_LENGTH] = {0};
-    uint8_t H2[IMPL_MAX_DIGEST_LENGTH] = {0};
-    uint8_t H3[IMPL_MAX_DIGEST_LENGTH] = {0};
+    uint8_t H0[IMPL_MAX_DIGEST_LENGTH] = {};
+    uint8_t H1[IMPL_MAX_DIGEST_LENGTH] = {};
+    uint8_t H2[IMPL_MAX_DIGEST_LENGTH] = {};
+    uint8_t H3[IMPL_MAX_DIGEST_LENGTH] = {};
 
-    uint8_t peerHelloHash[IMPL_MAX_DIGEST_LENGTH] = {0};
-    uint8_t peerHelloVersion[ZRTP_WORD_SIZE + 1] = {0};   // +1 for nul byte
+    uint8_t peerHelloHash[IMPL_MAX_DIGEST_LENGTH] = {};
+    uint8_t peerHelloVersion[ZRTP_WORD_SIZE + 1] = {}; // +1 for nul byte
 
     // We get the peer's H? from the message where length is defined as 8 words
-    uint8_t peerH2[8*ZRTP_WORD_SIZE] = {0};
-    uint8_t peerH3[8*ZRTP_WORD_SIZE] = {0};
+    uint8_t peerH2[8 * ZRTP_WORD_SIZE] = {};
+    uint8_t peerH3[8 * ZRTP_WORD_SIZE] = {};
 
     /**
      * The hash over selected messages, use negotiated hash function
@@ -882,53 +887,53 @@ private:
     /**
      * The new Retained Secret
      */
-    zrtp::NegotiatedArray  newRs1;
+    zrtp::NegotiatedArray newRs1;
 
     /**
      * The confirm HMAC key
      */
-    zrtp::NegotiatedArray  hmacKeyI;
-    zrtp::NegotiatedArray  hmacKeyR;
+    zrtp::NegotiatedArray hmacKeyI;
+    zrtp::NegotiatedArray hmacKeyR;
 
     /**
      * The Initiator's srtp key and salt
      */
-    zrtp::NegotiatedArray  srtpKeyI;
-    zrtp::NegotiatedArray  srtpSaltI;
+    zrtp::NegotiatedArray srtpKeyI;
+    zrtp::NegotiatedArray srtpSaltI;
 
     /**
      * The Responder's srtp key and salt
      */
-    zrtp::NegotiatedArray  srtpKeyR;
-    zrtp::NegotiatedArray  srtpSaltR;
+    zrtp::NegotiatedArray srtpKeyR;
+    zrtp::NegotiatedArray srtpSaltR;
 
     /**
-     * The keys used to encrypt/decrypt the confirm message
+     * The keys used to encrypt/decrypt the Confirm message
      */
-    zrtp::NegotiatedArray  zrtpKeyI;
-    zrtp::NegotiatedArray  zrtpKeyR;
+    zrtp::NegotiatedArray zrtpKeyI;
+    zrtp::NegotiatedArray zrtpKeyR;
 
     /**
-     * Pointers to negotiated hash and HMAC functions
+     * Pointers to the negotiated hash and HMAC functions
      */
-    void (*hashListFunction)(const std::vector<const uint8_t*>& data,
-                             const std::vector<uint64_t>& dataLength,
+    void (*hashListFunction)(const std::vector<const uint8_t *> &data,
+                             const std::vector<uint64_t> &dataLength,
                              uint8_t *digest) = nullptr;
 
-    void (*hmacFunction)(const uint8_t* key, uint64_t key_length,
-                         const uint8_t* data, uint64_t data_length,
-                         zrtp::RetainedSecArray & macOut) = nullptr;
+    void (*hmacFunction)(const uint8_t *key, uint64_t key_length,
+                         const uint8_t *data, uint64_t data_length,
+                         zrtp::RetainedSecArray &macOut) = nullptr;
 
-    void (*hmacListFunction)(const uint8_t* key, uint64_t key_length,
-                             const std::vector<const uint8_t*>& data,
-                             const std::vector<uint64_t>& data_length,
-                             zrtp::RetainedSecArray & macOut) = nullptr;
+    void (*hmacListFunction)(const uint8_t *key, uint64_t key_length,
+                             const std::vector<const uint8_t *> &data,
+                             const std::vector<uint64_t> &data_length,
+                             zrtp::RetainedSecArray &macOut) = nullptr;
 
-    void* (*createHashCtx)() = nullptr;
+    void * (*createHashCtx)() = nullptr;
 
-    void (*closeHashCtx)(void* ctx, zrtp::RetainedSecArray & macOut) = nullptr;
+    void (*closeHashCtx)(void *ctx, zrtp::RetainedSecArray &macOut) = nullptr;
 
-    void (*hashCtxFunction)(void* ctx, const uint8_t* data, uint64_t dataLength) = nullptr;
+    void (*hashCtxFunction)(void *ctx, const uint8_t *data, uint64_t dataLength) = nullptr;
 
     uint32_t hashLength = 0;
 
@@ -937,8 +942,8 @@ private:
                              uint64_t data_length,
                              uint8_t *digest) = nullptr;
 
-    void (*hmacFunctionImpl)(const uint8_t* key, uint64_t key_length,
-                             const uint8_t* data, uint64_t data_length,
+    void (*hmacFunctionImpl)(const uint8_t *key, uint64_t key_length,
+                             const uint8_t *data, uint64_t data_length,
                              zrtp::RetainedSecArray &) = nullptr;
 
     int32_t hashLengthImpl = 0;
@@ -947,36 +952,36 @@ private:
      * The ZRTP Session Key
      * Refer to chapter 4.5.2
      */
-    zrtp::NegotiatedArray  zrtpSession;
+    zrtp::NegotiatedArray zrtpSession;
 
     /**
      * The ZRTP export Key
      * Refer to chapter 4.5.2
      */
-    zrtp::NegotiatedArray  zrtpExport;
+    zrtp::NegotiatedArray zrtpExport;
 
     /**
      * True if this ZRTP instance uses multi-stream mode.
      */
     bool multiStream = false;
 
-        /**
-     * True if the other ZRTP client supports multi-stream mode.
-     */
+    /**
+ * True if the other ZRTP client supports multi-stream mode.
+ */
     bool multiStreamAvailable = false;
 
     /**
      * Enable MitM (PBX) enrollment
-     * 
-     * If set to true then ZRTP honors the PBX enrollment flag in
+     *
+     * If set to true, then ZRTP honors the PBX enrollment flag in
      * Commit packets and calls the appropriate user callback
-     * methods. If the parameter is set to false ZRTP ignores the PBX
+     * methods. If the parameter is set to false, ZRTP ignores the PBX
      * enrollment flags.
      */
     bool enableMitmEnrollment = false;
 
     /**
-     * True if a valid trusted MitM key of the other peer is available, i.e. enrolled.
+     * True, if a valid trusted MitM key of the other peer is available, i.e., enrolled.
      */
     bool peerIsEnrolled = false;
 
@@ -987,16 +992,16 @@ private:
     bool mitmSeen = false;
 
     /**
-     * Temporarily store computed pbxSecret, if user accepts enrollment then
-     * it will copied to our ZID record of the PBX (MitM)  
+     * Temporarily store computed pbxSecret, if the user accepts enrollment then
+     * it will copy to our ZID record of the PBX (MitM)
      */
-    uint8_t* pbxSecretTmp = nullptr;
-    uint8_t  pbxSecretTmpBuffer[MAX_DIGEST_LENGTH] = {0};
+    uint8_t *pbxSecretTmp = nullptr;
+    uint8_t pbxSecretTmpBuffer[MAX_DIGEST_LENGTH] = {};
 
     /**
-     * If true then we will set the enrollment flag (E) in the confirm
-     * packets. Set to true if the PBX enrollment service started this ZRTP 
-     * session. Can be set to true only if mitmMode is also true. 
+     * If true, then we will set the enrollment flag (E) in the Confirm
+     * packets. Set to true if the PBX enrollment service started this ZRTP
+     * session. It can be set to true only if mitmMode is also true.
      */
     bool enrollmentMode = false;
 
@@ -1008,28 +1013,26 @@ private:
     /**
      * Pre-initialized packets.
      */
-    ZrtpPacketHello    zrtpHello_11;
-    ZrtpPacketHello    zrtpHello_12;   // Prepare for ZRTP protocol version 1.2
+    ZrtpPacketHello zrtpHello_11;
+    ZrtpPacketHello zrtpHello_12; // Prepare for ZRTP protocol version 1.2
 
     ZrtpPacketHelloAck zrtpHelloAck;
     ZrtpPacketConf2Ack zrtpConf2Ack;
-//    ZrtpPacketClearAck zrtpClearAck;
-//    ZrtpPacketGoClear  zrtpGoClear;
-    ZrtpPacketError    zrtpError;
+    ZrtpPacketError zrtpError;
     ZrtpPacketErrorAck zrtpErrorAck;
-    ZrtpPacketDHPart   zrtpDH1;
-    ZrtpPacketDHPart   zrtpDH2;
-    ZrtpPacketCommit   zrtpCommit;
-    ZrtpPacketConfirm  zrtpConfirm1;
-    ZrtpPacketConfirm  zrtpConfirm2;
-    ZrtpPacketPingAck  zrtpPingAck;
+    ZrtpPacketDHPart zrtpDH1;
+    ZrtpPacketDHPart zrtpDH2;
+    ZrtpPacketCommit zrtpCommit;
+    ZrtpPacketConfirm zrtpConfirm1;
+    ZrtpPacketConfirm zrtpConfirm2;
+    ZrtpPacketPingAck zrtpPingAck;
     ZrtpPacketSASrelay zrtpSasRelay;
     ZrtpPacketRelayAck zrtpRelayAck;
 
     HelloPacketVersion_t helloPackets[MAX_ZRTP_VERSIONS + 1] = {};
 
-    /// Pointer to Hello packet sent to partner, initialized in ZRtp, modified by ZrtpStateEngineImpl
-    ZrtpPacketHello* currentHelloPacket = nullptr;
+    /// Pointer to the Hello packet sent to partner, initialized in ZRtp, the pointer may be modified by ZrtpStateEngineImpl
+    ZrtpPacketHello *currentHelloPacket = nullptr;
 
     zrtp::SecureArray256 otherHelloPacket;
 
@@ -1040,53 +1043,53 @@ private:
 
     /**
      * Save record
-     * 
-     * If false don't save record until user verified and confirmed the SAS after a cache mismatch.
+     *
+     * If false don't save record until the user verified and confirmed the SAS after a cache mismatch.
      * See RFC6189, sections 4.6.1 and 4.6.1.1 and explanation.
      */
     bool saveZidRecord = true;
     /**
-     * Random IV data to encrypt the confirm data, 128 bit for AES
+     * Random IV data to encrypt the Confirm data, 128 bit for AES
      */
-    uint8_t randomIV[16] = {0};
+    uint8_t randomIV[16] = {};
 
-    uint8_t tempMsgBuffer[2500] = {0};
+    uint8_t tempMsgBuffer[2500] = {};
     uint32_t lengthOfMsgData = 0;
 
     /**
      * Variables to store signature data. Includes the signature type block
      */
-    const uint8_t* signatureData = nullptr;       // will be set when needed
-    int32_t  signatureLength = 0;     // overall length in bytes
+    const uint8_t *signatureData = nullptr; // will be set when needed
+    int32_t signatureLength = 0; // overall length in bytes
 
     /**
      * Is true if the other peer signaled SAS signature support in its Hello packet.
      */
     bool signSasSeen = false;
 
-    uint32_t peerSSRC = 0;           // peer's SSRC, required to set up PingAck packet
+    uint32_t peerSSRC = 0; // peer's SSRC, required to set up PingAck packet
 
-    zrtpInfo detailInfo = {};         // filled with some more detailed information if application would like to know
+    zrtpInfo detailInfo = {}; // filled with some more detailed information if application would like to know
 
-    std::string peerClientId;    // store the peer's client Id
+    std::string peerClientId; // store the peer's client id
 
-    ZRtp* masterStream = nullptr;          // This is the master stream in case this is a multi-stream
-    std::vector<std::string> peerNonces;   // Store nonces we got from our partner. Using std::string
-                                           // just simplifies memory management, nonces are binary data, not strings :-)
+    ZRtp *masterStream = nullptr; // This is the master stream in case this is a multi-stream
+    std::vector<std::string> peerNonces; // Store nonces we got from our partner. Using std::string
+    // just simplifies memory management, nonces are binary data, not strings :-)
     /**
      * Enable or disable paranoid mode.
      *
      * The Paranoid mode controls the behaviour and handling of the SAS verify flag. If
-     * Paranoid mode is set to false then ZRtp applies the normal handling. If Paranoid
-     * mode is set to true then the handling is:
+     * Paranoid mode is set to false, then ZRtp applies the normal handling. If Paranoid
+     * mode is set to true, then the handling is:
      *
      * <ul>
-     * <li> Force the SAS verify flag to be false at srtpSecretsOn() callback. This gives
+     * <li> Force the SAS to set the verify flag to false at srtpSecretsOn() callback. This gives
      *      the user interface (UI) the indication to handle the SAS as <b>not verified</b>.
      *      See implementation note below.</li>
      * <li> Don't set the SAS verify flag in the <code>Confirm</code> packets, thus the other
      *      also must report the SAS as <b>not verified</b>.</li>
-     * <li> ignore the <code>SASVerified()</code> function, thus do not set the SAS to verified
+     * <li> Ignore the <code>SASVerified()</code> function, thus do not set the SAS verify flag
      *      in the ZRTP cache. </li>
      * <li> Disable the <b>Trusted PBX MitM</b> feature. Just send the <code>SASRelay</code> packet
      *      but do not process the relayed data. This protects the user from a malicious
@@ -1100,7 +1103,7 @@ private:
      * <b>Implementation note:</b></br>
      * An application shall always display the SAS code if the SAS verify flag is <code>false</code>.
      * The application shall also use mechanisms to remind the user to compare the SAS code, for
-     * example using larger fonts, different colours and other display features.
+     * example, using larger fonts, different colours and other display features.
      */
     bool paranoidMode = false;
 
@@ -1110,8 +1113,8 @@ private:
     bool peerDisclosureFlagSeen = false;
 
     /**
-     * If true then send ZRTP frames according to ZRTP 2022 spec, change protocol flow,
-     * packet set up etc
+     * If true, then send ZRTP frames according to ZRTP 2022 spec, change protocol flow,
+     * packet set up, etc.
      */
     bool isNpAlgorithmActive = false;
 
@@ -1126,21 +1129,21 @@ private:
     uint16_t sendFrameBatch = 0;
     uint16_t receiveFrameBatch = USHRT_MAX;
     uint16_t lastFrameNumber = USHRT_MAX;
-    FrameHeader frameHeaders[(MAX_MSG_LENGTH + LENGTH_BEFORE_SPLIT) / LENGTH_BEFORE_SPLIT]{0};
-    uint8_t assembleBuffer[MAX_FRAMES * LENGTH_BEFORE_SPLIT * ZRTP_WORD_SIZE] {0};
-    uint8_t frameBuffers[MAX_FRAMES][LENGTH_BEFORE_SPLIT * ZRTP_WORD_SIZE]{0};
-    bool framesHandled[MAX_FRAMES] {false};
+    FrameHeader frameHeaders[(MAX_MSG_LENGTH + LENGTH_BEFORE_SPLIT) / LENGTH_BEFORE_SPLIT]{};
+    uint8_t assembleBuffer[MAX_FRAMES * LENGTH_BEFORE_SPLIT * ZRTP_WORD_SIZE]{};
+    uint8_t frameBuffers[MAX_FRAMES][LENGTH_BEFORE_SPLIT * ZRTP_WORD_SIZE]{};
+    bool framesHandled[MAX_FRAMES]{false};
 
     /**
      * @brief Initialize ZRTP data, packets etc
-     * @param id the client id to use in Hello packet
+     * @param id the client id to use in the Hello packet
      */
-    void initialize(const std::string& id);
+    void initialize(const std::string &id);
 
     /**
-     * Find the best Hash algorithm that is offered in Hello.
+     * Find the best Hash algorithm offered in Hello.
      *
-     * Find the best, that is the strongest, Hash algorithm that our peer
+     * Find the best and strongest Hash algorithm that our peer
      * offers in its Hello packet.
      *
      * @param hello
@@ -1149,12 +1152,12 @@ private:
      *    The Enum that identifies the best offered Hash algorithm. Return
      *    mandatory algorithm if no match was found.
      */
-    AlgorithmEnum* findBestHash(ZrtpPacketHello *hello);
+    AlgorithmEnum *findBestHash(ZrtpPacketHello const *hello) const;
 
     /**
-     * Find the best symmetric cipher algorithm that is offered in Hello.
+     * Find the best symmetric cipher algorithm offered in Hello.
      *
-     * Find the best, that is the strongest, cipher algorithm that our peer
+     * Find the best and strongest cipher algorithm that our peer
      * offers in its Hello packet.
      *
      * @param hello
@@ -1165,12 +1168,12 @@ private:
      *    The Enum that identifies the best offered Cipher algorithm. Return
      *    mandatory algorithm if no match was found.
      */
-    AlgorithmEnum* findBestCipher(ZrtpPacketHello *hello,  AlgorithmEnum* pk);
+    AlgorithmEnum *findBestCipher(ZrtpPacketHello const *hello, AlgorithmEnum const *pk) const;
 
     /**
-     * Find the best Public Key algorithm that is offered in Hello.
+     * Find the best Public Key algorithm offered in Hello.
      *
-     * Find the best, that is the strongest, public key algorithm that our peer
+     * Find the best, and the strongest public key algorithm that our peer
      * offers in its Hello packet.
      *
      * @param hello
@@ -1179,12 +1182,12 @@ private:
      *    The Enum that identifies the best offered Public Key algorithm. Return
      *    mandatory algorithm if no match was found.
      */
-    AlgorithmEnum* findBestPubkey(ZrtpPacketHello *hello);
+    AlgorithmEnum *findBestPubkey(ZrtpPacketHello const *hello);
 
     /**
-     * Find the best SAS algorithm that is offered in Hello.
+     * Find the best SAS algorithm offered in Hello.
      *
-     * Find the best, that is the strongest, SAS algorithm that our peer
+     * Find the best, and the strongest SAS algorithm that our peer
      * offers in its Hello packet. The method works as defined in RFC 6189,
      * chapter 4.1.2.
      *
@@ -1198,10 +1201,10 @@ private:
      *    The Enum that identifies the best offered SAS algorithm. Return
      *    mandatory algorithm if no match was found.
      */
-    AlgorithmEnum* findBestSASType(ZrtpPacketHello* hello);
+    AlgorithmEnum *findBestSASType(ZrtpPacketHello const *hello) const;
 
     /**
-     * Find the best authentication length that is offered in Hello.
+     * Find the best authentication length offered in Hello.
      *
      * Find the best, that is the strongest, authentication length that our peer
      * offers in its Hello packet.
@@ -1212,7 +1215,7 @@ private:
      *    The Enum that identifies the best offered authentication length. Return
      *    mandatory algorithm if no match was found.
      */
-    AlgorithmEnum* findBestAuthLen(ZrtpPacketHello* hello);
+    AlgorithmEnum *findBestAuthLen(ZrtpPacketHello const *hello) const;
 
     /**
      * Check if MultiStream mode is offered in Hello.
@@ -1225,102 +1228,107 @@ private:
      * @return
      *    True if multi stream mode is available, false otherwise.
      */
-    static bool checkMultiStream(ZrtpPacketHello* hello);
+    static bool checkMultiStream(ZrtpPacketHello const *hello);
 
     /**
-     * Checks if Hello packet contains a strong (384bit) hash based on selection policy.
-     * 
+     * Checks if the Hello packet contains a strong (384bit) hash based on selection policy.
+     *
      * The function currently implements the non-NIST policy only:
-     * If the public key algorithm is a non-NIST ECC algorithm this function prefers
-     * non-NIST HASH algorithms (Skein etc).
-     * 
-     * If Hello packet does not contain a strong hash then this functions returns @c NULL.
+     * If the public key algorithm is a non-NIST ECC algorithm, this function prefers
+     * non-NIST HASH algorithms (Skein etc.).
+     *
+     * If the Hello packet does not contain a strong hash, then this function returns @c NULL.
      *
      * @param hello The Hello packet.
      * @param algoName name of selected PK algorithm
-     * @return @c hash algorithm if found in Hello packet, @c NULL otherwise.
+     * @return @c hash algorithm if found in the Hello packet, @c NULL otherwise.
      */
-    AlgorithmEnum* getStrongHashOffered(ZrtpPacketHello *hello, int32_t algoName);
+    AlgorithmEnum *getStrongHashOffered(ZrtpPacketHello const *hello, char const *algoName) const;
 
     /**
-     * Checks if Hello packet offers a strong (256bit) symmetric cipher based on selection policy.
+     * Checks if the Hello packet offers a strong (256bit) symmetric cipher based on selection policy.
      *
      * The function currently implements the nonNist policy only:
-     * If the public key algorithm is a non-NIST ECC algorithm this function prefers
-     * non-NIST symmetric cipher algorithms (Twofish etc).
+     * If the public key algorithm is a non-NIST ECC algorithm, this function prefers
+     * non-NIST symmetric cipher algorithms (Twofish etc.).
      *
-     * If Hello packet does not contain a symmetric cipher then this functions returns @c NULL.
+     * If the Hello packet does not contain a symmetric cipher, then this function returns @c NULL.
 
      * @param hello The Hello packet.
      * @param algoName name of selected PK algorithm
-     * @return @c hash algorithm if found in Hello packet, @c NULL otherwise.
+     * @return @c hash algorithm if found in the Hello packet, @c NULL otherwise.
      *
-     * @return @c cipher algorithm if found in Hello packet, @c NULL otherwise.
+     * @return @c cipher algorithm if found in the Hello packet, @c NULL otherwise.
      */
-    AlgorithmEnum* getStrongCipherOffered(ZrtpPacketHello *hello, int32_t algoName);
+    AlgorithmEnum *getStrongCipherOffered(ZrtpPacketHello const *hello, char const *algoName) const;
 
     /**
-     * Checks if Hello packet contains a hash based on selection policy.
+     * Checks if the Hello packet contains a hash based on selection policy.
      *
      * The function currently implements the nonNist policy only:
-     * If the public key algorithm is a non-NIST ECC algorithm this function prefers
-     * non-NIST HASH algorithms (Skein etc).
+     * If the public key algorithm is a non-NIST ECC algorithm, this function prefers
+     * non-NIST HASH algorithms (Skein etc.).
      *
      * @param hello The Hello packet.
      * @param algoName name of selected PK algorithm
-     * @return @c hash algorithm found in Hello packet.
+     * @return @c hash algorithm found in the Hello packet.
      */
-    AlgorithmEnum* getHashOffered(ZrtpPacketHello *hello, int32_t algoName);
+    AlgorithmEnum *getHashOffered(ZrtpPacketHello const *hello, char const *algoName) const;
 
     /**
-     * Checks if Hello packet offers a symmetric cipher based on selection policy.
+     * Checks if the Hello packet offers a symmetric cipher based on selection policy.
      *
      * The function currently implements the nonNist policy only:
-     * If the public key algorithm is a non-NIST ECC algorithm this function prefers
-     * non-NIST symmetric cipher algorithms (Twofish etc).
+     * If the public key algorithm is a non-NIST ECC algorithm, this function prefers
+     * non-NIST symmetric cipher algorithms (Twofish etc.).
      *
      * @param hello The Hello packet.
      * @param algoName name of selected PK algorithm
-     * @return non-NIST @c cipher algorithm if found in Hello packet, @c NULL otherwise
+     * @return non-NIST @c cipher algorithm if found in the Hello packet, @c NULL otherwise
      */
-    AlgorithmEnum* getCipherOffered(ZrtpPacketHello *hello, int32_t algoName);
+    AlgorithmEnum *getCipherOffered(ZrtpPacketHello const *hello, char const *algoName) const;
 
     /**
-     * Checks if Hello packet offers a SRTP authentication length based on selection policy.
+     * Checks if the Hello packet offers a SRTP authentication length based on selection policy.
      *
      * The function currently implements the nonNist policy only:
-     * If the public key algorithm is a non-NIST ECC algorithm this function prefers
-     * non-NIST algorithms (Skein etc).
+     * If the public key algorithm is a non-NIST ECC algorithm, this function prefers
+     * non-NIST algorithms (Skein etc.).
      *
      * @param hello The Hello packet.
      * @param algoName algoName name of selected PK algorithm
      * @return @c authLen algorithm found in Hello packet
      */
-    AlgorithmEnum* getAuthLenOffered(ZrtpPacketHello *hello, int32_t algoName);
+    AlgorithmEnum *getAuthLenOffered(ZrtpPacketHello const *hello, char const *algoName) const;
 
     /**
      * Compute my hvi value according to ZRTP specification.
      */
-    void computeHvi(ZrtpPacketDHPart* dh, ZrtpPacketHello *hello);
+    void computeHvi(ZrtpPacketDHPart const *dh, ZrtpPacketHello const *hello);
 
-    void computeSharedSecretSet(ZIDRecord& zidRecord);
+    void computeSharedSecretSet(ZIDRecord &zidRecord);
 
     void computeAuxSecretIds();
 
     void computeSRTPKeys();
 
-    void KDF(uint8_t* key, size_t keyLength, char const * label, size_t labelLength,
-               uint8_t* context, size_t contextLength, size_t L, zrtp::NegotiatedArray & output);
+    void KDF(uint8_t const *key, size_t keyLength, char const *label, size_t labelLength,
+             uint8_t const *context, size_t contextLength, size_t L, zrtp::NegotiatedArray &output) const;
 
-    void generateKeysInitiator(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord);
+    void generateKeysInitiator(ZrtpPacketDHPart const *dhPart, ZIDRecord &zidRecord);
 
-    void generateKeysResponder(ZrtpPacketDHPart *dhPart, ZIDRecord& zidRecord);
+    void generateKeysResponder(ZrtpPacketDHPart const *dhPart, ZIDRecord &zidRecord);
 
     void generateKeysMultiStream();
 
+#ifdef ZRTP_SAS_RELAY_SUPPORT
     void computePBXSecret();
+#else
+    static void computePBXSecret();
+#endif
 
-    void setNegotiatedHash(AlgorithmEnum* hash);
+
+    void setNegotiatedHash(AlgorithmEnum const *hashNegotiated);
 
     /*
      * The following methods are helper functions for ZrtpStateEngineImpl.
@@ -1330,13 +1338,13 @@ private:
     /**
      * Send a ZRTP packet.
      *
-     * The state engines calls this method to send a packet via the RTP
+     * The state engine calls this method to send a packet via the RTP
      * stack.
      *
      * @param packet
      *    Points to the ZRTP packet.
      * @return
-     *    zero if sending failed, one if packet was send
+     *    zero if sending failed, one if the packet was sent
      */
     int32_t sendPacketZRTP(ZrtpPacketBase *packet);
 
@@ -1348,7 +1356,7 @@ private:
      * @return
      *    zero if activation failed, one if timer was activated
      */
-    int32_t activateTimer(int32_t tm);
+    [[nodiscard]] int32_t activateTimer(int32_t tm) const;
 
     /**
      * Cancel the active Timer using the host callback.
@@ -1356,36 +1364,36 @@ private:
      * @return
      *    zero if activation failed, one if timer was activated
      */
-    int32_t cancelTimer();
+    [[nodiscard]] int32_t cancelTimer() const;
 
     /**
      * Prepare a Hello packet.
      *
-     * Just take the pre-initialized Hello packet and return it. No
+     * Take the pre-initialized Hello packet and return it. No
      * further processing required.
      *
      * @return
      *    A pointer to the initialized Hello packet.
      */
-    ZrtpPacketHello* prepareHello();
+    [[nodiscard]] ZrtpPacketHello *prepareHello() const;
 
     /**
      * Prepare a HelloAck packet.
      *
-     * Just take the preinitialized HelloAck packet and return it. No
+     * Take the preinitialized HelloAck packet and return it. No
      * further processing required.
      *
      * @return
      *    A pointer to the initialized HelloAck packet.
      */
-    ZrtpPacketHelloAck* prepareHelloAck();
+    ZrtpPacketHelloAck *prepareHelloAck();
 
     /**
      * Prepare a Commit packet.
      *
      * We have received a Hello packet from our peer. Check the offers
      * it makes to us and select the most appropriate. Using the
-     * selected values prepare a Commit packet and return it to protocol
+     * selected values prepares a Commit packet and returns it to the protocol
      * state engine.
      *
      * @param hello
@@ -1395,12 +1403,12 @@ private:
      * @return
      *    A pointer to the prepared Commit packet
      */
-    ZrtpPacketCommit* prepareCommit(ZrtpPacketHello *hello, uint32_t* errMsg);
+    ZrtpPacketCommit *prepareCommit(ZrtpPacketHello const *hello, uint32_t *errMsg);
 
     /**
      * Prepare a Commit packet for Multi Stream mode.
      *
-     * Using the selected values prepare a Commit packet and return it to protocol
+     * Using the selected values prepares a Commit packet and returns it to the protocol
      * state engine.
      *
      * @param hello
@@ -1408,82 +1416,82 @@ private:
      * @return
      *    A pointer to the prepared Commit packet for multi stream mode
      */
-    ZrtpPacketCommit* prepareCommitMultiStream(ZrtpPacketHello *hello);
+    ZrtpPacketCommit *prepareCommitMultiStream(ZrtpPacketHello const *hello);
 
     /**
      * Prepare the DHPart1 packet.
      *
      * This method prepares a DHPart1 packet. The input to the method is always
-     * a Commit packet received from the peer. Also we a in the role of the
+     * a Commit packet received from the peer. Also, we are in the role of the
      * Responder.
      *
-     * When we receive a Commit packet we get the selected ciphers, hashes, etc
+     * When we receive a Commit packet, we get the selected ciphers, hashes, etc.
      * and cross-check if this is ok. Then we need to initialize a set of DH
-     * keys according to the selected cipher. Using this data we prepare our DHPart1
+     * keys according to the selected cipher. Using this data, we prepare our DHPart1
      * packet.
      */
-    ZrtpPacketDHPart* prepareDHPart1(ZrtpPacketCommit *commit, uint32_t* errMsg);
+    ZrtpPacketDHPart *prepareDHPart1(ZrtpPacketCommit const *commit, uint32_t *errMsg);
 
     /**
      * Prepare the DHPart2 packet.
      *
      * This method prepares a DHPart2 packet. The input to the method is always
      * a DHPart1 packet received from the peer. Our peer sends the DH1Part as
-     * response to our Commit packet. Thus we are in the role of the
+     * a response to our Commit packet. Thus, we are in the role of the
      * Initiator.
      *
      */
-    ZrtpPacketDHPart* prepareDHPart2(ZrtpPacketDHPart* dhPart1, uint32_t* errMsg);
+    ZrtpPacketDHPart *prepareDHPart2(ZrtpPacketDHPart const *dhPart1, uint32_t *errMsg);
 
     /**
      * Prepare the Confirm1 packet.
      *
-     * This method prepare the Confirm1 packet. The input to this method is the
+     * This method prepares the Confirm1 packet. The input to this method is the
      * DHPart2 packet received from our peer. The peer sends the DHPart2 packet
-     * as response of our DHPart1. Here we are in the role of the Responder
+     * as a response to our DHPart1. Here we are in the role of the Responder
      *
      */
-    ZrtpPacketConfirm* prepareConfirm1(ZrtpPacketDHPart* dhPart2, uint32_t* errMsg);
+    ZrtpPacketConfirm *prepareConfirm1(ZrtpPacketDHPart const *dhPart2, uint32_t *errMsg);
 
     /**
      * Prepare the Confirm1 packet in multi stream mode.
      *
-     * This method prepares the Confirm1 packet. The state engine call this method
+     * This method prepares the Confirm1 packet. The state engine calls this method
      * if multi stream mode is selected and a Commit packet was received. The input to
      * this method is the Commit.
      * Here we are in the role of the Responder
      *
      */
-    ZrtpPacketConfirm* prepareConfirm1MultiStream(ZrtpPacketCommit* commit, uint32_t* errMsg);
+    ZrtpPacketConfirm *prepareConfirm1MultiStream(ZrtpPacketCommit const *commit, uint32_t *errMsg);
 
     /**
      * Prepare the Confirm2 packet.
      *
-     * This method prepare the Confirm2 packet. The input to this method is the
+     * This method prepares the Confirm2 packet. The input to this method is the
      * Confirm1 packet received from our peer. The peer sends the Confirm1 packet
-     * as response of our DHPart2. Here we are in the role of the Initiator
+     * as a response to our DHPart2. Here we are in the role of the Initiator
      */
-    ZrtpPacketConfirm* prepareConfirm2(ZrtpPacketConfirm* confirm1, uint32_t* errMsg);
+    ZrtpPacketConfirm *prepareConfirm2(ZrtpPacketConfirm const *confirm1, uint32_t *errMsg);
 
     /**
      * Prepare the Confirm2 packet in multi stream mode.
      *
-     * This method prepares the Confirm2 packet. The state engine call this method if
-     * multi stream mode is active and in state CommitSent. The input to this method is
+     * This method prepares the Confirm2 packet. The state engine calls this method if
+     * multi-stream mode is active and in state CommitSent. The input to this method is
      * the Confirm1 packet received from our peer. The peer sends the Confirm1 packet
-     * as response of our Commit packet in multi stream mode.
+     * as a response to our Commit packet in multi stream mode.
      * Here we are in the role of the Initiator
      */
-    ZrtpPacketConfirm* prepareConfirm2MultiStream(ZrtpPacketConfirm* confirm1, uint32_t* errMsg);
+    ZrtpPacketConfirm *prepareConfirm2MultiStream(ZrtpPacketConfirm const *confirm1, uint32_t *errMsg);
 
     /**
      * Prepare the Conf2Ack packet.
      *
-     * This method prepare the Conf2Ack packet. The input to this method is the
+     * This method prepares the Conf2Ack packet. The input to this method is the
      * Confirm2 packet received from our peer. The peer sends the Confirm2 packet
-     * as response of our Confirm1. Here we are in the role of the Initiator
+     * as a response to our Confirm1. Here we are in the role of the Initiator
      */
-    ZrtpPacketConf2Ack* prepareConf2Ack(ZrtpPacketConfirm* confirm2, uint32_t* errMsg);
+    ZrtpPacketConf2Ack *prepareConf2Ack(ZrtpPacketConfirm const *confirm2, uint32_t *errMsg);
 
     /**
      * Prepare the ErrorAck packet.
@@ -1491,23 +1499,23 @@ private:
      * This method prepares the ErrorAck packet. The input to this method is the
      * Error packet received from the peer.
      */
-    ZrtpPacketErrorAck* prepareErrorAck(ZrtpPacketError* epkt);
+    ZrtpPacketErrorAck *prepareErrorAck(ZrtpPacketError const *epkt);
 
     /**
      * Prepare the Error packet.
      *
      * This method prepares the Error packet. The input to this method is the
-     * error code to be included into the message.
+     * error code to be included in the message.
      */
-    ZrtpPacketError* prepareError(uint32_t errMsg);
+    ZrtpPacketError *prepareError(uint32_t errMsg);
 
 #if 0
     /**
      * Prepare a ClearAck packet.
      *
-     * This method checks if the GoClear message is valid. If yes then switch
-     * off SRTP processing, stop sending of RTP packets (pause transmit) and
-     * inform the user about the fact. Only if user confirms the GoClear message
+     * This method checks if the GoClear message is valid. If yes, then switch
+     * off SRTP processing, stop sending of RTP packets (pause transmit), and
+     * inform the user about the fact. Only if the user confirms the GoClear message,
      * normal RTP processing is resumed.
      *
      * @return
@@ -1522,7 +1530,7 @@ private:
      * This method prepares the PingAck packet. The input to this method is the
      * Ping packet received from the peer.
      */
-    ZrtpPacketPingAck* preparePingAck(ZrtpPacketPing* ppkt);
+    ZrtpPacketPingAck *preparePingAck(ZrtpPacketPing const *ppkt);
 
     /**
      * Prepare the RelayAck packet.
@@ -1530,7 +1538,7 @@ private:
      * This method prepares the RelayAck packet. The input to this method is the
      * SASrelay packet received from the peer.
      */
-    ZrtpPacketRelayAck* prepareRelayAck(ZrtpPacketSASrelay* srly, const uint32_t* errMsg);
+    ZrtpPacketRelayAck *prepareRelayAck(ZrtpPacketSASrelay const *srly, const uint32_t *errMsg);
 #if 0
     /**
      * Prepare a GoClearAck packet w/o HMAC
@@ -1549,7 +1557,7 @@ private:
      *
      * Compare a received Commit packet with our Commit packet and returns
      * which Commit packt is "more important". See chapter 5.2 to get further
-     * information how to compare Commit packets.
+     * information on how to compare Commit packets.
      *
      * @param commit
      *    Pointer to the peer's commit packet we just received.
@@ -1558,7 +1566,7 @@ private:
      *    >0 if our Commit is "more important"
      *     0 shouldn't happen because we compare crypto hashes
      */
-    int32_t compareCommit(ZrtpPacketCommit *commit);
+    int32_t compareCommit(ZrtpPacketCommit const *commit) const;
 
     /**
      * Verify the H2 hash image.
@@ -1572,13 +1580,13 @@ private:
      *    true if H2 is ok and verified
      *    false if H2 could not be verified
      */
-    bool verifyH2(ZrtpPacketCommit *commit);
+    bool verifyH2(ZrtpPacketCommit const *commit) const;
 
     /**
      * Send information messages to the hosting environment.
      *
      * The ZRTP implementation uses this method to send information messages
-     * to the host. Along with the message ZRTP provides a severity indicator
+     * to the host. Along with the message, ZRTP provides a severity indicator
      * that defines: Info, Warning, Error, Alert. Refer to the MessageSeverity
      * enum in the ZrtpCallback class.
      *
@@ -1602,16 +1610,16 @@ private:
      *     The subcode identifying the reason.
      * @see ZrtpCodes#MessageSeverity
      */
-    void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode);
+    void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) const;
 
     /**
      * ZRTP state engine calls this method if the other side does not support ZRTP.
      *
-     * If the other side does not answer the ZRTP <em>Hello</em> packets then
-     * ZRTP calls this method,
+     * If the other side does not answer the ZRTP <em>Hello</em> packets, then
+     * ZRTP calls this method.
      *
      */
-    void zrtpNotSuppOther();
+    void zrtpNotSuppOther() const;
 
     /**
      * Signal SRTP secrets are ready.
@@ -1636,90 +1644,89 @@ private:
      * @param part
      *    Defines for which part (sender or receiver) to clear
      */
-    void srtpSecretsOff(EnableSecurity part);
+    void srtpSecretsOff(EnableSecurity part) const;
 
     /**
      * Helper function to store ZRTP message data in a temporary buffer
      *
      * This functions first clears the temporary buffer, then stores
      * the packet's data to it. We use this to check the packet's HMAC
-     * after we received the HMAC key in to following packet.
+     * after we received the HMAC key in the following packet.
      *
-     * @param data
+     * @param pkt
      *    Pointer to the packet's ZRTP message
     */
-     void storeMsgTemp(ZrtpPacketBase* pkt);
+    void storeMsgTemp(ZrtpPacketBase const *pkt);
 
-     /**
-      * Helper function to check a ZRTP message HMAC
-      *
-      * This function gets a HMAC key and uses it to compute a HMAC
-      * with this key and the stored data of a previous received ZRTP
-      * message. It compares the computed HMAC and the HMAC stored in
-      * the received message and returns the result.
-      *
-      * @param key
-      *    Pointer to the HMAC key.
-      * @return
-      *    Returns true if the computed HMAC and the stored HMAC match,
-      *    false otherwise.
-      */
-     bool checkMsgHmac(uint8_t* key);
+    /**
+     * Helper function to check a ZRTP message HMAC
+     *
+     * This function gets a HMAC key and uses it to compute a HMAC
+     * with this key and the stored data of a previous received ZRTP
+     * message. It compares the computed HMAC and the HMAC stored in
+     * the received message and returns the result.
+     *
+     * @param key
+     *    Pointer to the HMAC key.
+     * @return
+     *    Returns true if the computed HMAC and the stored HMAC match,
+     *    false otherwise.
+     */
+    bool checkMsgHmac(uint8_t const *key) const;
 
-     /**
-      * Set the client ID for ZRTP Hello message.
-      *
-      * The user of ZRTP must set its id to identify itself in the
-      * ZRTP HELLO message. The maximum length is 16 characters. Shorter
-      * id string are allowed, they will be filled with blanks. A longer id
-      * is truncated to 16 characters.
-      *
-      * The identifier is set in the Hello packet of ZRTP. Thus only after
-      * setting the identifier ZRTP can compute the HMAC and the final
-      * helloHash.
-      *
-      * @param id
-      *     The client's id
-      * @param hpv
-      *     Pointer to hello packet version structure.
-      */
-     void setClientId(const std::string& id, HelloPacketVersion_t* hpv);
-     
-     /**
-      * Check and set a nonce.
-      * 
-      * The function first checks if the nonce is already in use (was seen) in this ZRTP
-      * session. Refer to 4.4.3.1.
-      * 
-      * @param nonce
-      *     The nonce to check and to store if not already seen.
-      * 
-      * @return
-      *     True if the the nonce was stored, thus not yet seen.
-      */
-     bool checkAndSetNonce(uint8_t* nonce);
+    /**
+     * Set the client ID for ZRTP Hello message.
+     *
+     * The user of ZRTP must set its id to identify itself in the
+     * ZRTP HELLO message. The maximum length is 16 characters. Shorter
+     * id string is allowed, they will be filled with blanks. A longer id
+     * is truncated to 16 characters.
+     *
+     * The identifier is set in the Hello packet of ZRTP. Thus, only after
+     * setting the identifier ZRTP can compute the HMAC and the final
+     * helloHash.
+     *
+     * @param id
+     *     The client's id
+     * @param hpv
+     *     Pointer to hello packet version structure.
+     */
+    void setClientId(std::string const &id, HelloPacketVersion_t *hpv) const;
 
-     /**
-      * @brief Assemble a ZRTP message from several frames.
-      * @param zrtpFrame pointer to the received data, usually a ZRTP frame
-      * @param length Length of received frame data incl RTP and CRC
-      * @return 0 if not all data available, ZRTP message length in ZRTP words if data is available
-      */
-     int32_t assembleMessage(uint8_t const *zrtpFrame, size_t length);
+    /**
+     * Check and set nonce.
+     *
+     * The function first checks if the nonce is already in use (was seen) in this ZRTP
+     * session. Refer to 4.4.3.1.
+     *
+     * @param nonce
+     *     The nonce to check and to store if not already seen.
+     *
+     * @return
+     *     True, if the nonce was stored, thus not yet seen.
+     */
+    bool checkAndSetNonce(uint8_t const *nonce) const;
 
-     /**
-      * @brief Save data of peer's hello data.
-      *
-      * Due to changes in total_hash computation ZRTP may need this data some time
-      * after it was received.
-      *
-      * @param helloPacket hello packet to save.
-      */
-     void saveOtherHelloData(ZrtpPacketHello & helloPacket);
+    /**
+     * @brief Assemble a ZRTP message from several frames.
+     * @param zrtpFrame pointer to the received data, usually a ZRTP frame
+     * @param length Length of received frame data incl RTP and CRC
+     * @return 0 if not all data available, ZRTP message length in ZRTP words if data is available
+     */
+    int32_t assembleMessage(uint8_t const *zrtpFrame, size_t length);
+
+    /**
+     * @brief Save data of peer's hello data.
+     *
+     * Due to changes in total_hash computation ZRTP may need this data some time
+     * after it was received.
+     *
+     * @param helloPacket hello packet to save.
+     */
+    void saveOtherHelloData(ZrtpPacketHello const &helloPacket);
 };
 
 /**
  * @}
  */
 #endif // ZRTP
-

@@ -21,19 +21,17 @@
 #include <botan_all.h>
 #include <zrtp/crypto/skein256.h>
 
-struct hashCtx{
+struct hashCtx {
     std::unique_ptr<Botan::HashFunction> hash;
 };
 
-void skein256(const uint8_t *data, uint64_t dataLength, uint8_t *digest )
-{
+void skein256(const uint8_t* data, uint64_t dataLength, uint8_t* digest) {
     auto hash = Botan::HashFunction::create("Skein-512(256)");
     hash->update(data, dataLength);
     hash->final(digest);
 }
 
-void skein256(const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength, uint8_t *digest)
-{
+void skein256(const std::vector<const uint8_t *> &data, const std::vector<uint64_t> &dataLength, uint8_t* digest) {
     auto hash = Botan::HashFunction::create("Skein-512(256)");
 
     for (size_t i = 0, size = data.size(); i < size; i++) {
@@ -42,28 +40,25 @@ void skein256(const std::vector<const uint8_t*>& data, const std::vector<uint64_
     hash->final(digest);
 }
 
-void* createSkein256Context()
-{
-    auto *ctx = new hashCtx;
+void* createSkein256Context() {
+    auto* ctx = new hashCtx;
     ctx->hash = Botan::HashFunction::create("Skein-512(256)");
-    return (void*)ctx;
+    return (void *)ctx;
 }
 
-void closeSkein256Context(void* ctx, zrtp::RetainedSecArray & digestOut)
-{
-    auto* hd = reinterpret_cast<hashCtx*>(ctx);
+void closeSkein256Context(void* ctx, zrtp::RetainedSecArray &digestOut) {
+    auto* hd = static_cast<hashCtx *>(ctx);
 
     if (hd != nullptr) {
         hd->hash->final(digestOut.data());
         digestOut.size(hd->hash->output_length());
+        hd->hash.reset();
+        delete hd;
     }
-    hd->hash.reset();
-    delete hd;
 }
 
-void* initializeSkein256Context(void* ctx)
-{
-    auto* hd = reinterpret_cast<hashCtx*>(ctx);
+void* initializeSkein256Context(void* ctx) {
+    auto* hd = static_cast<hashCtx *>(ctx);
 
     if (hd != nullptr) {
         if (hd->hash == nullptr) {
@@ -73,28 +68,31 @@ void* initializeSkein256Context(void* ctx)
             hd->hash->clear();
         }
     }
-    return (void*)hd;
+    return (void *)hd;
 }
 
-void finalizeSkein256Context(void* ctx, zrtp::RetainedSecArray & digestOut)
-{
-    auto* hd = reinterpret_cast<hashCtx*>(ctx);
-    hd->hash->final(digestOut.data());
-    digestOut.size(hd->hash->output_length());
+void finalizeSkein256Context(void* ctx, zrtp::RetainedSecArray &digestOut) {
+    auto const* hd = static_cast<hashCtx *>(ctx);
+    if (hd != nullptr) {
+        hd->hash->final(digestOut.data());
+        digestOut.size(hd->hash->output_length());
+    }
 }
 
-void skein256Ctx(void* ctx, const uint8_t* data, uint64_t dataLength)
-{
-    auto* hd = reinterpret_cast<hashCtx*>(ctx);
+void skein256Ctx(void* ctx, const uint8_t* data, uint64_t dataLength) {
+    auto const* hd = static_cast<hashCtx *>(ctx);
 
-    hd->hash->update(data, dataLength);
+    if (hd != nullptr) {
+        hd->hash->update(data, dataLength);
+    }
 }
 
-void skein256Ctx(void* ctx, const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength)
-{
-    auto* hd = reinterpret_cast<hashCtx*>(ctx);
+void skein256Ctx(void* ctx, const std::vector<const uint8_t *> &data, const std::vector<uint64_t> &dataLength) {
+    auto const* hd = static_cast<hashCtx *>(ctx);
 
-    for (size_t i = 0, size = data.size(); i < size; i++) {
-        hd->hash->update(data[i], dataLength[i]);
+    if (hd != nullptr) {
+        for (size_t i = 0, size = data.size(); i < size; i++) {
+            hd->hash->update(data[i], dataLength[i]);
+        }
     }
 }

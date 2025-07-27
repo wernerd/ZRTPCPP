@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _ZRTPPACKETCON2FACK_H_
-#define _ZRTPPACKETCON2FACK_H_
+#ifndef ZRTPPACKETCON2FACK_H_
+#define ZRTPPACKETCON2FACK_H_
 
 /**
  * @file ZrtpPacketConf2Ack.h
@@ -36,7 +36,7 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-class __EXPORT ZrtpPacketConf2Ack : public ZrtpPacketBase {
+class __EXPORT ZrtpPacketConf2Ack final : public ZrtpPacketBase {
 
  public:
     /// Creates a Conf2Ack packet with default data
@@ -55,5 +55,5 @@ class __EXPORT ZrtpPacketConf2Ack : public ZrtpPacketBase {
 /**
  * @}
  */
-#endif // ZRTPPACKETCONF2ACK
+#endif // ZRTPPACKETCON2FACK_H_
 

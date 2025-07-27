@@ -48,7 +48,7 @@ public:
     /**
      * @brief Result of packet filter function.
      *
-     * After switching to `Secure` state and when handling SRTP packets the filter function may
+     * After switching to `Secure` state and when handling SRTP packets, the filter function may
      * return a specific error code `DecryptionFailedStartup`. This happens because some RTP
      * packets were already sent before ZRTP could negotiate keys and enable SRTP encryption.
      *
@@ -57,13 +57,13 @@ public:
      */
     enum FilterResult {
         Processed,               //!< ZRTP processed the data
-        NotStarted,              //!< Packet contains ZRTP data, however ZRTP was not started
-        UnknownData,             //!< Filter could not identify type of data
+        NotStarted,              //!< Packet contains ZRTP data. However, ZRTP was not started
+        UnknownData,             //!< Filter could not identify the type of data
         NotProcessed,            //!< Legit data packet, caller should handle it
         Decrypted,               //!< processSrtp() is true, keys available and decryption successful
         NotDecrypted,            //!< processSrtp() is true but no keys available yet
-        DecryptionFailedStartup, //!< processSrtp() is true, keys available but decryption failed while in SRTP startup
-        DecryptionFailed,        //!< processSrtp() is true, keys available but decryption failed
+        DecryptionFailedStartup, //!< processSrtp() is true, keys available, but decryption failed while in SRTP startup
+        DecryptionFailed,        //!< processSrtp() is true, keys available, but decryption failed
     };
 
     /**
@@ -115,7 +115,7 @@ public:
       *   - report all state changes, many of them are informational only
       *
       *  The callback function receives state details in `StateData` structure,
-      *  except in states `Discovery` and `NoPeer` because no further information available.
+      *  except in states `Discovery` and `NoPeer` because no further information is available.
       *
       *  @sa StateData
       */
@@ -146,14 +146,14 @@ public:
      * For all state changes except errors or warnings StateData::severity is set to GnuZrtpCodes::Info.
      * This is also true for the major state changes because these are not errors or warnings.
      *
-     * StateData::subCode contains GnuZrtpCodes::InfoCodes and StateData::infoText holds a human readable (english)
+     * StateData::subCode contains GnuZrtpCodes::InfoCodes and StateData::infoText holds a human-readable (english)
      * text which describes the state, warning or error. Application may use this text for logging.
      *
-     * When changing to GenericPacketFilter::Secure state then generic filter sets StateData::infoText to the
+     * When changing to GenericPacketFilter::Secure state, then generic filter sets StateData::infoText to the
      * computed Short Authentication String (SAS, may use UTF-8 encoding if SAS contains Emojis). An application
      * may also use getComputedSas() to get the SAS at any time after ZRTP entered GenericPacketFilter::Secure state.
      *
-     * In all other cases StateData::severity is set to either GnuZrtpCodes::Warning, GnuZrtpCodes::Severe, or GnuZrtpCodes::ZrtpError.
+     * In all other cases, StateData::severity is set to either GnuZrtpCodes::Warning, GnuZrtpCodes::Severe, or GnuZrtpCodes::ZrtpError.
      *
      * @sa ZrtpAppStates
      * @sa StateChangeFunction
@@ -164,7 +164,7 @@ public:
      * @sa GnuZrtpCodes::ZrtpErrorCodes
      */
     struct StateData {
-        StateData(GnuZrtpCodes::MessageSeverity sev, int32_t sc, std::string const & t) : severity(sev), subCode(sc), infoText(t) { }
+        StateData(GnuZrtpCodes::MessageSeverity const sev, int32_t const sc, std::string const & t) : severity(sev), subCode(sc), infoText(t) { }
         GnuZrtpCodes::MessageSeverity severity; //!< Contains a MessageSeverity::MessageSeverity code
         int32_t subCode;
         std::string const &infoText;
@@ -197,10 +197,10 @@ public:
      *
      * This functions checks if `packetData` contains valid ZRTP data and returns the
      * offset to the first byte of the ZRTP packet if it's valid ZRTP data. If this is
-     * not a valid ZRTP packet the function must return either `NotZrtp` or `Discard`
+     * not a valid ZRTP packet, the function must return either `NotZrtp` or `Discard`
      * and must not change the `offset` parameter.
      *
-     * For an RTP packet this is the first byte after the fixed length RTP
+     * For an RTP packet, this is the first byte after the fixed length RTP
      * header (12 bytes). Other transport protocols may have other offsets into
      * the data.
      *
@@ -220,7 +220,7 @@ public:
      * @brief Callback function to prepare a ZRTP packet to send using transport protocol.
      *
      * The function takes the prepared ZRTP data and sets up a transport packet with this
-     * data, for example an RTP packet. The function uses the `ProtocolData` structure to
+     * data, for example, an RTP packet. The function uses the `ProtocolData` structure to
      * return the prepared data. The `std::unique_ptr<void> ptr` member
      *
      * This `GenericPacketFilter` provides a ready-to-use static function to prepare an RTP packet.
@@ -229,7 +229,7 @@ public:
      * @param[in] length Length of the ZRTP date in bytes.
      * @sa prepareToSendRtp(const uint8_t *zrtpData, int32_t length);
      */
-    using PrepareToSendFunction = std::function<std::unique_ptr<GenericPacketFilter::ProtocolData>(GenericPacketFilter& thisFilter, const uint8_t *zrtpData, int32_t length, uint8_t frameFlag)>;
+    using PrepareToSendFunction = std::function<std::unique_ptr<ProtocolData>(GenericPacketFilter& thisFilter, const uint8_t *zrtpData, int32_t length, uint8_t frameFlag)>;
 
     /**
      * @brief Callback function to actually send the packet.
@@ -237,8 +237,8 @@ public:
      * This is a required callback function. The GenericPacketFilter does not implement
      * a functions to send data using a transport protocol.
      *
-     * @param[in] protocolData Contains pointer to packet data and its length. Same data as returned
-     *        by the prepare to send function.
+     * @param[in] protocolData Contains a pointer to packet data and its length. Same data as returned
+     *        by the prepare function to send function.
      *
      * @return `true` if no error occurred, `false` in case of failure.
      *
@@ -273,13 +273,13 @@ public:
     using KeysReadyFunction = std::function<bool(EnableSecurity part, KeysAndAlgorithms& keyData)>;
 
     /**
-     * @brief Prepare a RTP packet that contains ZRTP data.
+     * @brief Prepare an RTP packet that contains ZRTP data.
      *
-     * The functions returns a `ProtocolData` structure. The `ptr` field is a `secUtilities::SecureArrayFlex`
+     * The function returns a `ProtocolData` structure. The `ptr` field is a `secUtilities::SecureArrayFlex`
      * which contains the full RTP packet.
      *
-     * If the application does not set the prepare to send callback the `GenericPacketFilter` uses this
-     * function to setup an RTP packet which contains a ZRTP packet.
+     * If the application does not set the preparing to send callback, the `GenericPacketFilter` uses this
+     * function to set up an RTP packet which contains a ZRTP packet.
      *
      * @param[in] thisFilter Reference to the packet filter instance
      * @param[in] zrtpData pointer to the ZRTP raw data
@@ -287,14 +287,14 @@ public:
      * @param[in] frameFlag flag value if ZRTP packet contains more than one fragment
      * @return ProtocolData structure, `ptr` holds a `secUtilities::SecureArrayFlex` instance
      */
-    static std::unique_ptr<GenericPacketFilter::ProtocolData>
+    static std::unique_ptr<ProtocolData>
     prepareToSendRtp(GenericPacketFilter& thisFilter, uint8_t const *zrtpData, int32_t length, uint8_t frameFlag);
 
     /**
      * @brief Check if an RTP packet contains valid ZRTP data.
      *
      * This functions checks if `packetData` contains valid ZRTP data and returns a
-     * pointer to the first byte of the ZRTP packet. If this is no a valid ZRTP packet
+     * pointer to the first byte of the ZRTP packet. If there is not a valid ZRTP packet,
      * the function returns `NotProcessed`.
      *
      * @param[in] packetData Pointer to the packet data
@@ -309,10 +309,10 @@ public:
     /**
      * @brief Create a GenericPacketFilter.
      *
-     * Create an genetic packet filter, initializes the timeout helper, and sets
+     * Create a generic packet filter, initializes the timeout helper, and sets
      * some sensible defaults:
      *
-     * - filter type is `MasterStream`
+     * - the filter type is `MasterStream`
      *
      * @return Shared pointer to GenericPacketFilter instance.
      */
@@ -323,13 +323,13 @@ public:
      * @brief Destructor stops ZRTP engine.
      *
      */
-    virtual ~GenericPacketFilter();
+    ~GenericPacketFilter() override;
 
     /**
      * @brief Release the global, statically allocated time out provider.
      *
      * GenericFilter allocates a global timeout provider to provide the timeout service to ZRTP.
-     * To save resources it's a singleton which is usually not released if a ZRTP session stops.
+     * To save resources, it's a singleton which is usually not released if a ZRTP session stops.
      *
      * Applications may use this function to release the timeout provider.
      */
@@ -348,8 +348,8 @@ public:
      * @brief Check for ZRTP packet and process it.
      *
      * @param[in] packetData Pointer to the packet data
-     * @param[in, out] packetLength Length of the packet data in bytes. When performing S
-     *                 RTP decryption this is the length after decryption.
+     * @param[in, out] packetLength Length of the packet data in bytes. When performing
+     *                 SRTP decryption, this is the length after decryption.
      * @param[in] checkFunction `filterPacket` calls this function to check for ZRTP data.
      * @return FilterResult
      */
@@ -368,14 +368,14 @@ public:
     /**
      * @brief Set prepare to send callback function.
      *
-     * If the application does not set the prepare to send callback function the `GenericPacketFilter` uses
-     * the static function `prepareToSendRtp()` to setup an RTP packet.
+     * If the application does not set the preparing to send callback function the `GenericPacketFilter` uses
+     * the static function `prepareToSendRtp()` to set up an RTP packet.
      *
      * @param[in] pTS Functions pointer to PrepareToSendFunction.
      * @return reference of the current instance.
      */
     virtual GenericPacketFilter&
-    onPrepareToSend(PrepareToSendFunction pTS) { prepareToSend = pTS; return *this; }
+    onPrepareToSend(PrepareToSendFunction const &pTS) { prepareToSend = pTS; return *this; }
 
     /**
      * @brief Set do send callback function.
@@ -386,28 +386,28 @@ public:
      * @return reference of the current instance.
      */
     virtual GenericPacketFilter&
-    onDoSend(DoSendFunction dsf) { doSend = dsf; return *this; }
+    onDoSend(DoSendFunction const &dsf) { doSend = dsf; return *this; }
 
     /**
      * @brief Set own RTP SSRC.
      *
-     * When using RTP as transport protocol this is a required value.
+     * When using RTP as transport protocol, this is a required value.
      *
      * @param[in] ssrc SSRC value in host order
      * @return reference of the current instance.
      */
     virtual GenericPacketFilter&
-    ownRtpSsrc(uint32_t ssrc) { ownSSRC = ssrc; return *this; }
+    ownRtpSsrc(uint32_t const ssrc) { ownSSRC = ssrc; return *this; }
 
     /**
       * @brief Enable SRTP processing.
       *
-      * @param[in] yes If set to `true` GenericPacketFilter sets up an SRTP handler, manages keys and
-      *        application can forward packet to encrypt or decrypt.
+      * @param[in] yes If set to `true` GenericPacketFilter sets up an SRTP handler, manages keys, and
+      *        the application can forward a packet to encrypt or decrypt.
       * @return reference of the current instance.
       */
     virtual GenericPacketFilter&
-    processSrtp(bool yes) { doProcessSrtp = yes; return *this; }
+    processSrtp(bool const yes) { doProcessSrtp = yes; return *this; }
 
     /**
      * @brief Current value of `processSrtp`.
@@ -426,7 +426,7 @@ public:
      * @return reference of the current instance.
      */
     virtual GenericPacketFilter&
-    reportAllStates(bool yes) { reportAll = yes; return *this; }
+    reportAllStates(bool const yes) { reportAll = yes; return *this; }
 
     /**
      * @brief Set ZRTP state change callback.
@@ -439,7 +439,7 @@ public:
      * @return reference of the current instance.
      */
     virtual GenericPacketFilter&
-    onStateReport(StateChangeFunction stateHandlerFunction) { stateHandler = stateHandlerFunction; return *this; }
+    onStateReport(StateChangeFunction const &stateHandlerFunction) { stateHandler = stateHandlerFunction; return *this; }
 
     /**
      * @brief Set key data ready callback.
@@ -447,21 +447,21 @@ public:
      * If this function is not set _and_ processSrtp() is false, then ZRTP reports an error
      * and does not enter `Secure`.
      *
-     * If processSrtp() is true then GenericFilter handles the key data internally and does
+     * If processSrtp() is true, then GenericFilter handles the key data internally and does
      * not perform a callback even if this callback is not null.
      *
      * @param[in] keyDataFunction callback function which receives key data and algorithm information
      * @return reference of the current instance.
      */
     virtual GenericPacketFilter&
-    onKeyDataReady(KeysReadyFunction keyDataFunction) { keyDataReady = keyDataFunction; return *this; }
+    onKeyDataReady(KeysReadyFunction const &keyDataFunction) { keyDataReady = keyDataFunction; return *this; }
 
     /**
      * @brief Get the SAS (Short Authentication String).
      *
      * Generic filter also stores the SAS in `StateData::infoText` when changing to `Secure` state.
      *
-     * @return Computed SAS, ready to compare with other user.
+     * @return Computed SAS, ready to compare with another user.
      */
     virtual std::string const &
     computedSas() const { return computedSAS; }
@@ -469,14 +469,14 @@ public:
     /**
      * @brief Set the length of the transport protocol overhead in bytes.
      *
-     * ZRTP uses this to check consitency of input data. For example the transport protocol
+     * ZRTP uses this to check consitency of input data. For example, the transport protocol
      * overhead of an RTP packet that contains ZRTP data is the fixed length 12.
      *
      * @param overhead Length of the transport overhead.
      * @return reference of the current instance.
      */
     virtual GenericPacketFilter&
-    transportOverhead(int32_t overhead) { tpOverhead = overhead; return *this; }
+    transportOverhead(int32_t const overhead) { tpOverhead = overhead; return *this; }
 
     /**
      * @brief Get the cipher information.
@@ -510,7 +510,7 @@ public:
      * @param[in] sequence number in host order
      */
     virtual void
-    zrtpSequenceNo(uint16_t sequence) { senderZrtpSeqNo = sequence; }
+    zrtpSequenceNo(uint16_t const sequence) { senderZrtpSeqNo = sequence; }
 
     /**
      * @brief Get ZRTP packet sequence number.
@@ -526,20 +526,20 @@ public:
     /**
      * @brief Process outgoing RTP data.
      *
-     * Depending on ZRTP state the function either encrypts the buffer
+     * Depending on ZRTP state, the function either encrypts the buffer
      * or returns it unmodified.
      *
-     * The function takes a uint8_t buffer that must contain RTP packet data. The
+     * The function takes an uint8_t buffer that must contain RTP packet data. The
      * function also assumes that the RTP packet contains all protocol relevant fields
-     * (SSRC, sequence number etc.) in network order.
+     * (SSRC, sequence number, etc.) in network order.
      *
      * @param rtpData contains data in RTP packet format
      * @param length length of the RTP packet data in buffer.
-     * @return pointer to data, empty pointer if data could not be processed. This
-     *         usually happens if the data is not a valid RTP packet (RTP header etc wrong)
+     * @return Pointer to data, empty pointer if data could not be processed. This
+     *         usually happens if the data is not a valid RTP packet (RTP header etc. wrong)
      */
     std::unique_ptr<secUtilities::SecureArrayFlex>
-    processOutgoingRtp(uint8_t *rtpData, size_t length);
+    processOutgoingRtp(const uint8_t *rtpData, size_t length);
 
     /*
      * The following methods implement the GNU ZRTP callback interface.
@@ -578,10 +578,10 @@ public:
     void
     zrtpNotSuppOther() override;
 
-    void
+    [[deprecated]] void
     synchEnter() override { syncLock.lock(); }
 
-    void
+    [[deprecated]] void
     synchLeave() override {syncLock.unlock(); }
 
     void
@@ -604,7 +604,7 @@ private:
      * Creates a generic packet filter, initializes the timeout helper, and sets
      * some sensible defaults:
      *
-     * - filter type is `MasterStream`
+     * - a filter type is `MasterStream`
      */
     GenericPacketFilter();
 
@@ -650,6 +650,7 @@ private:
 
     uint16_t senderZrtpSeqNo = 0;
 
+public:
     bool zrtpStarted = false;
     bool doProcessSrtp = false;
     bool reportAll = false;

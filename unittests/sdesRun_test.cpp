@@ -31,8 +31,8 @@ static bool verbose = false;
 // static bool verbose = true;
 
 // This is the callback that we use for audio stream
-class TestCallbackAudio: public CtZrtpCb {
-    void onNewZrtpStatus(CtZrtpSession *session, char *p, CtZrtpSession::streamName streamNm) override {
+class TestCallbackAudio final : public CtZrtpCb {
+    void onNewZrtpStatus(CtZrtpSession *session, char *p, CtZrtpSession::streamName const streamNm) override {
         if (!verbose)
             return;
 
@@ -41,34 +41,34 @@ class TestCallbackAudio: public CtZrtpCb {
             uint8_t buffer[20];
 
             session->getInfo("rs1", buffer, 9);
-            printf("RS1: %s ", buffer);
+            printf("RS1: %s ", reinterpret_cast<char *>(buffer));
 
             session->getInfo("rs2", buffer, 9);
-            printf("RS2: %s ", buffer);
+            printf("RS2: %s ",  reinterpret_cast<char *>(buffer));
 
             session->getInfo("pbx", buffer, 9);
-            printf("PBX: %s ", buffer);
+            printf("PBX: %s ",  reinterpret_cast<char *>(buffer));
 
             session->getInfo("aux", buffer, 9);
-            printf("AUX: %s\n", buffer);
+            printf("AUX: %s\n",  reinterpret_cast<char *>(buffer));
 
             session->getInfo("lbClient", buffer, 19);
-            printf("Client: %s ", buffer);
+            printf("Client: %s ",  reinterpret_cast<char *>(buffer));
 
             session->getInfo("lbVersion", buffer, 19);
-            printf("Version: %s ", buffer);
+            printf("Version: %s ",  reinterpret_cast<char *>(buffer));
 
             session->getInfo("lbChiper", buffer, 19);
-            printf("cipher: %s ", buffer);
+            printf("cipher: %s ",  reinterpret_cast<char *>(buffer));
 
             session->getInfo("lbHash", buffer, 19);
-            printf("hash: %s ", buffer);
+            printf("hash: %s ",  reinterpret_cast<char *>(buffer));
 
             session->getInfo("lbAuthTag", buffer, 19);
-            printf("auth: %s ", buffer);
+            printf("auth: %s ",  reinterpret_cast<char *>(buffer));
 
             session->getInfo("lbKeyExchange", buffer, 19);
-            printf("KeyEx: %s\n", buffer);
+            printf("KeyEx: %s\n",  reinterpret_cast<char *>(buffer));
         }
     }
 
@@ -89,8 +89,8 @@ class TestCallbackAudio: public CtZrtpCb {
     }
 };
 
-class TestSendCallbackAudio: public CtZrtpSendCb {
-    void sendRtp(CtZrtpSession const *session, uint8_t* packet, size_t length, CtZrtpSession::streamName streamNm) override {
+class TestSendCallbackAudio final : public CtZrtpSendCb {
+    void sendRtp(CtZrtpSession const *session, uint8_t* packet, size_t const length, CtZrtpSession::streamName streamNm) override {
         if (!verbose)
             return;
         fprintf(stderr, "ZRTP send packet, length: %zu\n", length);
@@ -115,7 +115,7 @@ uint8_t answererPacket_fixed[] = {
         0x20, 0x19, 0x18, 0x17, 0x16, 0x15, 0x14, 0x13, 0x12, 0x11};
 
 
-class SdesRunTestFixture: public ::testing::Test {
+class SdesRunTestFixture: public testing::Test {
 public:
     SdesRunTestFixture() = default;
 
@@ -156,7 +156,7 @@ TEST_F(SdesRunTestFixture, BasicTest) {
 //    sdes.setCryptoMixAttribute("BABAB HMAC-SHA-384 XYZABC");
 
     rc = sdes.getCryptoMixAttribute(buffer, sizeof(buffer));
-    size_t len = strlen("HMAC-SHA-384");
+    size_t const len = strlen("HMAC-SHA-384");
     ASSERT_EQ(len, rc);
     ASSERT_EQ(0, strcmp(buffer, "HMAC-SHA-384"));
 }
@@ -166,19 +166,19 @@ TEST_F(SdesRunTestFixture, NormalSdes) {
     char invBuffer[200];
     char answBuffer[200];
 
-    auto callback = std::make_unique<TestCallbackAudio>();
-    auto sendCallback = std::make_unique<TestSendCallbackAudio>();
+    auto const callback = std::make_unique<TestCallbackAudio>();
+    auto const sendCallback = std::make_unique<TestSendCallbackAudio>();
 
     // The Inviter session (offerer)
     std::shared_ptr<ZrtpConfigure> config_i;               // empty ZrtpConfig, CtZrtpSession fills it
-    auto inviter = std::make_unique<CtZrtpSession>();
+    auto const inviter = std::make_unique<CtZrtpSession>();
     inviter->init(true, true, 0, "test_i.dat", config_i);        // audio and video
     inviter->setUserCallback(callback.get(), CtZrtpSession::AudioStream);
     inviter->setSendCallback(sendCallback.get(), CtZrtpSession::AudioStream);
 
     // The answerer session
     std::shared_ptr<ZrtpConfigure> config_a;               // empty ZrtpConfig, CtZrtpSession fills it
-    auto answerer = std::make_unique<CtZrtpSession>();
+    auto const answerer = std::make_unique<CtZrtpSession>();
     answerer->init(true, true, 0, "test_a.dat", config_a);         // audio and video
     answerer->setSendCallback(sendCallback.get(), CtZrtpSession::AudioStream);
 

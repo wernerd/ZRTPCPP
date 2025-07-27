@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _ZRTPPACKETHELLO_H_
-#define _ZRTPPACKETHELLO_H_
+#ifndef ZRTPPACKETHELLO_H_
+#define ZRTPPACKETHELLO_H_
 
 /**
  * @file ZrtpPacketHello.h
@@ -42,9 +42,8 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
-
- public:
+class __EXPORT ZrtpPacketHello final : public ZrtpPacketBase {
+public:
     /// Creates a Hello packet with default data
     ZrtpPacketHello() = default;
 
@@ -64,137 +63,165 @@ class __EXPORT ZrtpPacketHello : public ZrtpPacketBase {
      * @param config
      *    Pointer to ZrtpConfigure data.
      */
-    void configureHello(ZrtpConfigure& config);
+    void configureHello(ZrtpConfigure &config);
 
     /// Get version number from Hello message, fixed ASCII character array
-    [[nodiscard]] uint8_t* getVersion() const { return helloHeader->version; };
+    [[nodiscard]] uint8_t *getVersion() const { return helloHeader->version; }
 
-     /// Get version number from Hello message as integer, only relevant digits converted
+    /// Get version number from Hello message as integer, only relevant digits converted
     [[nodiscard]] int32_t getVersionInt() const;
 
     /// Get client id from Hello message, fixed ASCII character array
-    [[nodiscard]] uint8_t* getClientId() const { return helloHeader->clientId; };
+    [[nodiscard]] uint8_t *getClientId() const { return helloHeader->clientId; }
 
     /// Get H3 hash from Hello message, fixed byte array
-    [[nodiscard]] uint8_t* getH3() const      { return helloHeader->hashH3; };
+    [[nodiscard]] uint8_t *getH3() const { return helloHeader->hashH3; }
 
     /// Get client ZID from Hello message, fixed bytes array
-    [[nodiscard]] uint8_t* getZid() const     { return helloHeader->zid; };
+    [[nodiscard]] uint8_t *getZid() const { return helloHeader->zid; }
+
+    // All 'set*' functions actually copy into the data array via the header pointer
 
     /// Set version sting in Hello message, fixed ASCII character array
-    void setVersion(uint8_t const *text)     { memcpy(helloHeader->version, text,ZRTP_WORD_SIZE ); }
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    void setVersion(uint8_t const *text) { memcpy(helloHeader->version, text, ZRTP_WORD_SIZE); }
 
     /// Set client id in Hello message, fixed ASCII character array
+    // ReSharper disable once CppMemberFunctionMayBeConst
     void setClientId(uint8_t const *t) { memcpy(helloHeader->clientId, t, sizeof(helloHeader->clientId)); }
 
     /// Set H3 hash in Hello message, fixed byte array
-    void setH3(uint8_t const *hash)          { memcpy(helloHeader->hashH3, hash, sizeof(helloHeader->hashH3)); }
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    void setH3(uint8_t const *hash) { memcpy(helloHeader->hashH3, hash, sizeof(helloHeader->hashH3)); }
 
     /// Set client ZID in Hello message, fixed bytes array
-    void setZid(uint8_t const *text)   { memcpy(helloHeader->zid, text, sizeof(helloHeader->zid)); }
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    void setZid(uint8_t const *text) { memcpy(helloHeader->zid, text, sizeof(helloHeader->zid)); }
 
     /// Check passive mode (mode not implemented)
-    bool isPassive()       { return (helloHeader->flags & 0x10U) == 0x10 ; };
+    [[nodiscard]] bool isPassive() const { return (helloHeader->flags & 0x10U) == 0x10; }
 
     /// Check if MitM flag is set
-    bool isMitmMode()       { return (helloHeader->flags & 0x20U) == 0x20; };
+    [[nodiscard]] bool isMitmMode() const { return (helloHeader->flags & 0x20U) == 0x20; }
 
     /// Check if SAS sign flag is set
-    bool isSasSign()       { return (helloHeader->flags & 0x40U) == 0x40; };
+    [[nodiscard]] bool isSasSign() const { return (helloHeader->flags & 0x40U) == 0x40; }
 
     /// Get hash algorithm name at position n, fixed ASCII character array
-    [[nodiscard]] uint8_t* getHashType(int32_t n) const  { return ((uint8_t*)helloHeader)+oHash+(n*ZRTP_WORD_SIZE); }
+    [[nodiscard]] uint8_t *getHashType(int32_t const n) const {
+        return reinterpret_cast<uint8_t *>(helloHeader) + oHash + n * ZRTP_WORD_SIZE;
+    }
 
     /// Get cipher algorithm name at position n, fixed ASCII character array
-    [[nodiscard]] uint8_t* getCipherType(int32_t n) const{ return ((uint8_t*)helloHeader)+oCipher+(n*ZRTP_WORD_SIZE); }
+    [[nodiscard]] uint8_t *getCipherType(int32_t const n) const {
+        return reinterpret_cast<uint8_t *>(helloHeader) + oCipher + n * ZRTP_WORD_SIZE;
+    }
 
     /// Get SRTP authentication algorithm name at position n, fixed ASCII character array
-    [[nodiscard]] uint8_t* getAuthLen(int32_t n) const   { return ((uint8_t*)helloHeader)+oAuth+(n*ZRTP_WORD_SIZE); }
+    [[nodiscard]] uint8_t *getAuthLen(int32_t const n) const {
+        return reinterpret_cast<uint8_t *>(helloHeader) + oAuth + n * ZRTP_WORD_SIZE;
+    }
 
     /// Get key agreement algorithm name at position n, fixed ASCII character array
-    [[nodiscard]] uint8_t* getPubKeyType(int32_t n) const{ return ((uint8_t*)helloHeader)+oPubkey+(n*ZRTP_WORD_SIZE); }
+    [[nodiscard]] uint8_t *getPubKeyType(int32_t const n) const {
+        return reinterpret_cast<uint8_t *>(helloHeader) + oPubkey + n * ZRTP_WORD_SIZE;
+    }
 
     /// Get SAS algorithm name at position n, fixed ASCII character array
-    [[nodiscard]] uint8_t* getSasType(int32_t n) const   { return ((uint8_t*)helloHeader)+oSas+(n*ZRTP_WORD_SIZE); }
+    [[nodiscard]] uint8_t *getSasType(int32_t const n) const {
+        return reinterpret_cast<uint8_t *>(helloHeader) + oSas + n * ZRTP_WORD_SIZE;
+    }
 
     /// Get Hello MAC, fixed byte array
-    [[nodiscard]] uint8_t* getHMAC() const               { return ((uint8_t*)helloHeader)+oHmac; }
+    [[nodiscard]] uint8_t *getHMAC() const { return reinterpret_cast<uint8_t *>(helloHeader) + oHmac; }
+
 
     /// Set hash algorithm name at position n, fixed ASCII character array
-    void setHashType(int32_t n, int8_t const * t)
-        { memcpy(((uint8_t*)helloHeader)+oHash+(n*ZRTP_WORD_SIZE), t, ZRTP_WORD_SIZE); }
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    void setHashType(int32_t const n, char const *t) {
+        memcpy(reinterpret_cast<uint8_t *>(helloHeader) + oHash + n * ZRTP_WORD_SIZE, t, ZRTP_WORD_SIZE);
+    }
 
     /// Set ciper algorithm name at position n, fixed ASCII character array
-    void setCipherType(int32_t n, int8_t const * t)
-        { memcpy(((uint8_t*)helloHeader)+oCipher+(n*ZRTP_WORD_SIZE), t, ZRTP_WORD_SIZE); }
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    void setCipherType(int32_t const n, char const *t) {
+        memcpy(reinterpret_cast<uint8_t *>(helloHeader) + oCipher + n * ZRTP_WORD_SIZE, t, ZRTP_WORD_SIZE);
+    }
 
     /// Set SRTP authentication algorithm name at position n, fixed ASCII character array
-    void setAuthLen(int32_t n, int8_t const * t)
-        { memcpy(((uint8_t*)helloHeader)+oAuth+(n*ZRTP_WORD_SIZE), t, ZRTP_WORD_SIZE); }
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    void setAuthLen(int32_t const n, char const *t) {
+        memcpy(reinterpret_cast<uint8_t *>(helloHeader) + oAuth + n * ZRTP_WORD_SIZE, t, ZRTP_WORD_SIZE);
+    }
 
     /// Set key agreement algorithm name at position n, fixed ASCII character array
-    void setPubKeyType(int32_t n, int8_t const * t)
-        { memcpy(((uint8_t*)helloHeader)+oPubkey+(n*ZRTP_WORD_SIZE), t, ZRTP_WORD_SIZE); }
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    void setPubKeyType(int32_t const n, char const *t) {
+        memcpy(reinterpret_cast<uint8_t *>(helloHeader) + oPubkey + n * ZRTP_WORD_SIZE, t, ZRTP_WORD_SIZE);
+    }
 
     /// Set SAS algorithm name at position n, fixed ASCII character array
-    void setSasType(int32_t n, int8_t const * t)
-        { memcpy(((uint8_t*)helloHeader)+oSas+(n*ZRTP_WORD_SIZE), t, ZRTP_WORD_SIZE); }
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    void setSasType(int32_t const n, char const *t) {
+        memcpy(reinterpret_cast<uint8_t *>(helloHeader) + oSas + n * ZRTP_WORD_SIZE, t, ZRTP_WORD_SIZE);
+    }
 
     /// Set Hello MAC, fixed byte array
-    void setHMAC(zrtp::ImplicitDigest hmac)
-        { memcpy(((uint8_t*)helloHeader)+oHmac, hmac.data(), 2*ZRTP_WORD_SIZE); }
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    void setHMAC(zrtp::ImplicitDigest hmac) {
+        memcpy(reinterpret_cast<uint8_t *>(helloHeader) + oHmac, hmac.data(), 2 * ZRTP_WORD_SIZE);
+    }
 
     /// Get number of offered hash algorithms
-    [[nodiscard]] int32_t getNumHashes() const  {return nHash; }
+    [[nodiscard]] uint32_t getNumHashes() const { return nHash; }
 
     /// Get number of offered cipher algorithms
-    [[nodiscard]] int32_t getNumCiphers() const {return nCipher; }
+    [[nodiscard]] uint32_t getNumCiphers() const { return nCipher; }
 
     /// Get number of offered key agreement algorithms
-    [[nodiscard]] int32_t getNumPubKeys() const {return nPubkey; }
+    [[nodiscard]] uint32_t getNumPubKeys() const { return nPubkey; }
 
     /// Get number of offered SAS algorithms
-    [[nodiscard]] int32_t getNumSas() const     {return nSas; }
+    [[nodiscard]] uint32_t getNumSas() const { return nSas; }
 
     /// Get number of offered SRTP authentication algorithms
-    [[nodiscard]] int32_t getNumAuth() const    {return nAuth; }
+    [[nodiscard]] uint32_t getNumAuth() const { return nAuth; }
 
     /// set MitM flag
-    void setMitmMode()       {helloHeader->flags |= 0x20U; }
+    void setMitmMode() const { helloHeader->flags |= 0x20U; }
 
     /// set SAS sign flag
-    void setSasSign()        {helloHeader->flags |= 0x40U; }
+    void setSasSign() const { helloHeader->flags |= 0x40U; }
 
     /// Check if packet length matches
-    bool isLengthOk()        {return (computedLength == getLength());}
+    [[nodiscard]] bool isLengthOk() const { return computedLength == getLength(); }
 
- private:
-    Hello_t* helloHeader = nullptr;   ///< Point to the Hello message part
+private:
+    Hello_t *helloHeader = &reinterpret_cast<HelloPacket_t *>(data)->hello; ///< Point to the Hello message part
 
-    uint32_t nHash = 0,                 ///< number of hash algorithms offered
-            nCipher = 0,                ///< number of cipher algorithms offered
-            nPubkey = 0,                ///< number of key agreement algorithms offered
-            nSas = 0,                   ///< number of SAS algorithms offered
-            nAuth = 0;                  ///< number of SRTP authentication algorithms offered
+    uint32_t nHash = 0, ///< number of hash algorithms offered
+            nCipher = 0, ///< number of cipher algorithms offered
+            nPubkey = 0, ///< number of key agreement algorithms offered
+            nSas = 0, ///< number of SAS algorithms offered
+            nAuth = 0; ///< number of SRTP authentication algorithms offered
 
-    int32_t oHash = 0,                  ///< offsets in bytes to hash algorithm names
-            oCipher = 0,                ///< offsets in bytes to cipher algorithm names
-            oPubkey = 0,                ///< offsets in bytes to key agreement algorithm names
-            oSas = 0,                   ///< offsets in bytes to SAS algorithm names
-            oAuth = 0,                  ///< offsets in bytes to SRTP authentication algorithm names
-            oHmac = 0;                  ///< offsets in bytes to MAC of Hello message
+    uint32_t oHash = 0, ///< offsets in bytes to hash algorithm names
+            oCipher = 0, ///< offsets in bytes to cipher algorithm names
+            oPubkey = 0, ///< offsets in bytes to key agreement algorithm names
+            oSas = 0, ///< offsets in bytes to SAS algorithm names
+            oAuth = 0, ///< offsets in bytes to SRTP authentication algorithm names
+            oHmac = 0; ///< offsets in bytes to MAC of Hello message
 
-     uint32_t computedLength = 0;
+    uint32_t computedLength = 0;
 
-     // Hello packet is of variable length. Its maximum size is 46 words:
-     // - 20 words fixed size
-     // - up to 35 words variable part, depending on number of algorithms
-     // leads to a maximum of 4*55=220 bytes.
-     uint8_t data[256] = {0};       // large enough to hold a full-blown Hello packet
+    // Hello packet is of variable length. Its maximum size is 46 words:
+    // - 20 words fixed size
+    // - up to 35 words variable part, depending on number of algorithms
+    // leads to a maximum of 4*55=220 bytes.
+    uint8_t data[256] = {}; // large enough to hold a full-blown Hello packet
 };
 
 /**
  * @}
  */
-#endif // ZRTPPACKETHELLO
-
+#endif // ZRTPPACKETHELLO_H_

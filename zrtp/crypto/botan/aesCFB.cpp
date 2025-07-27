@@ -23,9 +23,10 @@
 #include <botan_all.h>
 #include <zrtp/crypto/aesCFB.h>
 
-void aesCfbEncrypt(uint8_t *key, size_t keyLength, uint8_t* IV, uint8_t *data, size_t dataLength)
-{
-    auto enc = Botan::Cipher_Mode::create_or_throw(keyLength == 16 ? "AES-128/CFB" : "AES-256/CFB", Botan::ENCRYPTION);
+void aesCfbEncrypt(uint8_t const *key, size_t const keyLength, uint8_t const *IV, uint8_t *data,
+                   size_t const dataLength) {
+    auto const enc = Botan::Cipher_Mode::create_or_throw(keyLength == 16 ? "AES-128/CFB" : "AES-256/CFB",
+                                                         Botan::ENCRYPTION);
 
     // Copy input data to a buffer that will be encrypted
     Botan::secure_vector<uint8_t> pt(data, data + dataLength);
@@ -37,9 +38,10 @@ void aesCfbEncrypt(uint8_t *key, size_t keyLength, uint8_t* IV, uint8_t *data, s
     memcpy(data, pt.data(), pt.size());
 }
 
-void aesCfbDecrypt(uint8_t *key, size_t keyLength, uint8_t* IV, uint8_t *data, size_t dataLength)
-{
-    auto enc = Botan::Cipher_Mode::create_or_throw(keyLength == 16 ? "AES-128/CFB" : "AES-256/CFB", Botan::DECRYPTION);
+void aesCfbDecrypt(uint8_t const *key, size_t const keyLength, uint8_t const *IV, uint8_t *data,
+                   size_t const dataLength) {
+    auto const enc = Botan::Cipher_Mode::create_or_throw(keyLength == 16 ? "AES-128/CFB" : "AES-256/CFB",
+                                                         Botan::DECRYPTION);
 
     // Copy input data to a buffer that will be encrypted
     Botan::secure_vector<uint8_t> pt(data, data + dataLength);

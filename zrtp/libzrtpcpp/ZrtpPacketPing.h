@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _ZRTPPACKETPING_H_
-#define _ZRTPPACKETPING_H_
+#ifndef ZRTPPACKETPING_H_
+#define ZRTPPACKETPING_H_
 
 /**
  * @file ZrtpPacketPing.h
@@ -34,9 +34,8 @@
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
-class __EXPORT ZrtpPacketPing : public ZrtpPacketBase {
-
- public:
+class __EXPORT ZrtpPacketPing final : public ZrtpPacketBase {
+public:
     /// Creates a Ping message with default data
     ZrtpPacketPing();
 
@@ -46,19 +45,19 @@ class __EXPORT ZrtpPacketPing : public ZrtpPacketBase {
     ~ZrtpPacketPing() override = default;
 
     /// Set ZRTP protocol version field, fixed ASCII character array
-    void setVersion(uint8_t *text)     { memcpy(pingHeader->version, text,ZRTP_WORD_SIZE ); }
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    void setVersion(uint8_t const* text) { memcpy(pingHeader->version, text, ZRTP_WORD_SIZE); }
 
     /// Get the endpoit hash, fixed byte array
-    uint8_t* getEpHash()               { return pingHeader->epHash; }
+    [[nodiscard]] uint8_t* getEpHash() const { return pingHeader->epHash; }
 
- private:
-     Ping_t* pingHeader = nullptr;     ///< Point the the Ping message
-     PingPacket_t data = {};
+private:
+    Ping_t* pingHeader = &data.ping;; ///< Point the Ping message
+    PingPacket_t data = {};
 };
 
 /**
  * @}
  */
 
-#endif // ZRTPPACKETCLEARACK
-
+#endif // ZRTPPACKETPING_H_

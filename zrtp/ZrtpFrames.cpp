@@ -36,25 +36,22 @@ ZRtp::sendAsZrtpFrames(ZrtpPacketBase *packet) {
     if (packet != sentFramePacket) {
         sentFramePacket = packet;
         currentBatch = sendFrameBatch++;
-        sendFrameBatch &= 0x7;  // batch number has 3 bits only, so 0 - 7
+        sendFrameBatch &= 0x7; // batch number has 3 bits only, so 0 - 7
     } else {
         currentBatch = sendFrameBatch;
     }
 
-    // space to store the ZRTP frame data: 1 -> CRC, 10 -> some security margin :)
-    uint8_t frameBuffer[(LENGTH_BEFORE_SPLIT + FRAME_HEADER_LEN + 1 + 10) * ZRTP_WORD_SIZE];
 
     auto packetLength = packet->getLength();
     auto packetPointer = packet->getHeaderBase();
 
     uint8_t currentFrame = 0;
-    uint8_t lastFrame = packetLength / LENGTH_BEFORE_SPLIT;
+    uint8_t const lastFrame = packetLength / LENGTH_BEFORE_SPLIT;
 
     do {
-        memset(frameBuffer, 0, sizeof(frameBuffer));
-        auto processedPacketLength = packetLength < LENGTH_BEFORE_SPLIT ? packetLength : LENGTH_BEFORE_SPLIT;
+        auto const processedPacketLength = packetLength < LENGTH_BEFORE_SPLIT ? packetLength : LENGTH_BEFORE_SPLIT;
         packetLength -= processedPacketLength;
-        uint16_t frameLength = processedPacketLength + FRAME_HEADER_LEN;
+        uint16_t const frameLength = processedPacketLength + FRAME_HEADER_LEN;
 
         FrameHeader_t frameHeader;
         frameHeader.frameInfo.f.batchNumber = currentBatch;
@@ -65,49 +62,52 @@ ZRtp::sendAsZrtpFrames(ZrtpPacketBase *packet) {
 
         frameHeader.frameInfo.value = zrtpHtons(frameHeader.frameInfo.value);
 
+        // space to store the ZRTP frame data: 1 -> CRC, 10 -> some security margin :)
+        uint8_t frameBuffer[(LENGTH_BEFORE_SPLIT + FRAME_HEADER_LEN + 1 + 10) * ZRTP_WORD_SIZE] = {};
+
         memcpy(frameBuffer, &frameHeader, FRAME_HEADER_LEN * ZRTP_WORD_SIZE);
-        memcpy(frameBuffer + (FRAME_HEADER_LEN * ZRTP_WORD_SIZE), packetPointer,
+        memcpy(frameBuffer + FRAME_HEADER_LEN * ZRTP_WORD_SIZE, packetPointer,
                processedPacketLength * ZRTP_WORD_SIZE);
         packetPointer += processedPacketLength * ZRTP_WORD_SIZE;
 
         if (auto ucb = callback.lock()) {
-            LOGGER(DEBUGGING, "Sending ", __func__, ", id: ", std::this_thread::get_id(), ", processed: ", processedPacketLength)
+            LOGGER(DEBUGGING, "Sending ", __func__, ", id: ", std::this_thread::get_id(), ", processed: ",
+                   processedPacketLength)
             if (ucb->sendFrameDataZRTP(frameBuffer, (frameLength * ZRTP_WORD_SIZE) + CRC_SIZE, 0) != 1)
                 return 0;
         }
-
     } while (packetLength > 0);
 
     return 1;
 }
 
 int32_t
-ZRtp::sendAsZrtpMultiFrames(std::unique_ptr<std::list<std::reference_wrapper<ZrtpPacketBase>>> packets) {
+ZRtp::sendAsZrtpMultiFrames(std::unique_ptr<std::list<std::reference_wrapper<ZrtpPacketBase> > > const &packets) {
     LOGGER(VERBOSE, "Enter ", __func__, ", id: ", std::this_thread::get_id())
 
     size_t lengthAllPackets = 0;
 
-    for (ZrtpPacketBase packet: *packets) {
+    for (ZrtpPacketBase &packet: *packets) {
         lengthAllPackets += packet.getLength();
     }
-    uint16_t totalLength = lengthAllPackets + packets->size() * FRAME_HEADER_LEN;
+    uint16_t const totalLength = lengthAllPackets + packets->size() * FRAME_HEADER_LEN;
     if (totalLength >= LENGTH_BEFORE_SPLIT) {
         return 0;
     }
-    uint8_t currentBatch = ++sendFrameBatch;
-    uint16_t numberOfFrames = packets->size();
+    uint8_t const currentBatch = ++sendFrameBatch;
+    uint16_t const numberOfFrames = packets->size();
 
     // space to store the ZRTP frame data: 1 -> CRC, 10 -> some security margin :)
     uint8_t frameBuffer[LENGTH_BEFORE_SPLIT]{0};
     uint8_t *frameBufferPointer = frameBuffer;
 
     // Frame info is static: contains same batch number and each packt is one frame only, thus: 0, 0
-    FrameHeader_t frameHeader{0};
+    FrameHeader_t frameHeader{};
     frameHeader.frameInfo.f.batchNumber = currentBatch;
     frameHeader.frameInfo.value = zrtpHtons(frameHeader.frameInfo.value);
 
-    for (ZrtpPacketBase packet: *packets) {
-        uint16_t frameLength = packet.getLength() + FRAME_HEADER_LEN;
+    for (ZrtpPacketBase &packet: *packets) {
+        uint16_t const frameLength = packet.getLength() + FRAME_HEADER_LEN;
         frameHeader.length = zrtpHtons(frameLength);
         memcpy(frameBufferPointer, &frameHeader, FRAME_HEADER_LEN * ZRTP_WORD_SIZE);
 
@@ -115,7 +115,7 @@ ZRtp::sendAsZrtpMultiFrames(std::unique_ptr<std::list<std::reference_wrapper<Zrt
         memcpy(frameBufferPointer, packet.getHeaderBase(), packet.getLength() * ZRTP_WORD_SIZE);
         frameBufferPointer += packet.getLength() * ZRTP_WORD_SIZE;
     }
-    if (auto ucb = callback.lock()) {
+    if (auto const ucb = callback.lock()) {
         return ucb->sendFrameDataZRTP(frameBuffer, (totalLength * ZRTP_WORD_SIZE) + CRC_SIZE, numberOfFrames);
     }
     return 0;
@@ -126,7 +126,7 @@ static uint32_t
 unpackAndCheck(uint8_t const *zrtpFrame, int numberOfFrames, uint8_t const *packetAddresses[]) {
     LOGGER(VERBOSE, "Enter ", __func__, "frames in packet: ", numberOfFrames)
 
-    uint8_t currentBatch;
+    uint8_t currentBatch = 0;
     uint32_t totalLength = 0;
 
     for (auto frameNum = 0; frameNum < numberOfFrames; frameNum++) {
@@ -138,8 +138,9 @@ unpackAndCheck(uint8_t const *zrtpFrame, int numberOfFrames, uint8_t const *pack
         if (frameNum == 0) {
             currentBatch = frameHeader.frameInfo.f.batchNumber;
         } else if (currentBatch != frameHeader.frameInfo.f.batchNumber) {
-            LOGGER(ERROR_LOG, __func__, " Mutli-frame packet, batch number do not match: ", currentBatch, ", received: ", frameHeader.frameInfo.f.batchNumber)
-            return 0;           // batch number of frames must match within multi-frame packets
+            LOGGER(ERROR_LOG, __func__, " Mutli-frame packet, batch number do not match: ", currentBatch,
+                   ", received: ", frameHeader.frameInfo.f.batchNumber)
+            return 0; // batch number of frames must match within multi-frame packets
         }
         packetAddresses[frameNum] = zrtpFrame;
 
@@ -147,7 +148,7 @@ unpackAndCheck(uint8_t const *zrtpFrame, int numberOfFrames, uint8_t const *pack
         frameHeader.length = zrtpNtohs(*reinterpret_cast<uint16_t const *>(zrtpFrame + 2));
 
         // Get the message length and compute the total length: used to perform sanity checks
-        auto currentMsgLength = zrtpNtohs(*reinterpret_cast<uint16_t const *>(zrtpFrame + 6));
+        auto const currentMsgLength = zrtpNtohs(*reinterpret_cast<uint16_t const *>(zrtpFrame + 6));
         totalLength += currentMsgLength + FRAME_HEADER_LEN;
 
         // skip over the current ZRTP message, point to next embedded frame
@@ -173,28 +174,30 @@ ZRtp::processZrtpFramePacket(uint8_t const *zrtpMessage, uint32_t pSSRC, size_t 
     if ((stateEngineLocal = stateEngine.get()) == nullptr) {
         return;
     }
-    auto numberOfFrames = (frameByte & 0xe) >> 1;
+    auto const numberOfFrames = (frameByte & 0xe) >> 1;
     constexpr auto MIN_MESSAGE_LENGTH = sizeof(HelloAckPacket);
 
     // If numberOfFrames > 0 then this is a multi-fram packet
     if (numberOfFrames > 0) {
-        auto minimumLength =
-                (numberOfFrames * FRAME_HEADER_LEN) * ZRTP_WORD_SIZE + MIN_MESSAGE_LENGTH + stateEngineLocal->getTransportOverhead();
+        auto const minimumLength =
+                numberOfFrames * FRAME_HEADER_LEN * ZRTP_WORD_SIZE + MIN_MESSAGE_LENGTH + stateEngineLocal->
+                getTransportOverhead();
 
         if (numberOfFrames > MAX_EMBEDDED_FRAMES || length < minimumLength) {
-            LOGGER(ERROR_LOG, "Received data too small/too big. Length: ", length, ", num of frames: ", numberOfFrames)
+            LOGGER(ERROR_LOG, __func__, " Received data too small/too big. Length: ", length, ", num of frames: ",
+                   numberOfFrames)
             stateEngineLocal->sendErrorPacket(GnuZrtpCodes::MalformedPacket);
             return;
         }
         // A multi-frame packet can contain up to 7 packets
         uint8_t const *packetAddresses[7]{nullptr};
-        auto msgLength = unpackAndCheck(zrtpMessage, numberOfFrames, packetAddresses);
+        auto const msgLength = unpackAndCheck(zrtpMessage, numberOfFrames, packetAddresses);
         if (msgLength == 0) {
             LOGGER(ERROR_LOG, __func__, " Unpacking embedded ZRTP messages failed")
             stateEngineLocal->sendErrorPacket(GnuZrtpCodes::MalformedPacket);
             return;
         }
-        auto totalLength = msgLength * ZRTP_WORD_SIZE + CRC_SIZE + stateEngineLocal->getTransportOverhead();
+        auto const totalLength = msgLength * ZRTP_WORD_SIZE + CRC_SIZE + stateEngineLocal->getTransportOverhead();
         if (totalLength != length) {
             LOGGER(ERROR_LOG, __func__, " Total length does not match received length: ", totalLength, " - ", length)
             stateEngineLocal->sendErrorPacket(GnuZrtpCodes::MalformedPacket);
@@ -209,7 +212,8 @@ ZRtp::processZrtpFramePacket(uint8_t const *zrtpMessage, uint32_t pSSRC, size_t 
             stateEngineLocal->processEvent(&ev);
         }
     } else {
-        auto minimumLength = FRAME_HEADER_LEN * ZRTP_WORD_SIZE + MIN_MESSAGE_LENGTH + stateEngineLocal->getTransportOverhead();
+        auto minimumLength = FRAME_HEADER_LEN * ZRTP_WORD_SIZE + MIN_MESSAGE_LENGTH + stateEngineLocal->
+                             getTransportOverhead();
         if (length < minimumLength) {
             LOGGER(ERROR_LOG, "Received data too small. Length: ", length, ", min: ", minimumLength)
             stateEngineLocal->sendErrorPacket(GnuZrtpCodes::MalformedPacket);
@@ -219,7 +223,7 @@ ZRtp::processZrtpFramePacket(uint8_t const *zrtpMessage, uint32_t pSSRC, size_t 
         if (assembledLength == 0) {
             return;
         }
-        auto zrtpMsgLength = zrtpNtohs(*reinterpret_cast<uint16_t *>(assembleBuffer + 2));
+        auto const zrtpMsgLength = zrtpNtohs(*reinterpret_cast<uint16_t *>(assembleBuffer + 2));
         if (assembledLength != zrtpMsgLength) {
             LOGGER(ERROR_LOG, "Message length does not match assembled length: ", zrtpMsgLength, " - ", assembledLength)
             stateEngineLocal->sendErrorPacket(GnuZrtpCodes::MalformedPacket);
@@ -261,7 +265,8 @@ ZRtp::assembleMessage(uint8_t const *zrtpFrame, size_t length) {
     if (lastFrameNumber == USHRT_MAX) {
         lastFrameNumber = frameHeader.frameInfo.f.lastFrame;
     } else if (lastFrameNumber != frameHeader.frameInfo.f.lastFrame) {
-        LOGGER(ERROR_LOG, "Last frame number changed during same batch, expected: ", lastFrameNumber, ", got: ", frameHeader.frameInfo.f.lastFrame)
+        LOGGER(ERROR_LOG, "Last frame number changed during same batch, expected: ", lastFrameNumber, ", got: ",
+               frameHeader.frameInfo.f.lastFrame)
         stateEngineLocal->sendErrorPacket(GnuZrtpCodes::MalformedPacket);
         return 0;
     }
@@ -281,7 +286,7 @@ ZRtp::assembleMessage(uint8_t const *zrtpFrame, size_t length) {
         return 0;
     }
 
-    auto currentFrame = frameHeader.frameInfo.f.frameNumber;
+    auto const currentFrame = frameHeader.frameInfo.f.frameNumber;
     frameHeaders[currentFrame] = frameHeader;
 
     // Copy the raw ZRTP message data without fragment header
@@ -302,9 +307,9 @@ ZRtp::assembleMessage(uint8_t const *zrtpFrame, size_t length) {
     uint8_t *bufferPointer = assembleBuffer;
 
     for (int i = 0; i <= lastFrameNumber; i++) {
-        auto header = frameHeaders[i];
+        auto const header = frameHeaders[i];
         totalLength += header.length - FRAME_HEADER_LEN;
-        auto frameNumber = header.frameInfo.f.frameNumber;
+        auto const frameNumber = header.frameInfo.f.frameNumber;
         memcpy(bufferPointer, frameBuffers[frameNumber], (header.length - 1) * ZRTP_WORD_SIZE);
         bufferPointer += (header.length - 1) * ZRTP_WORD_SIZE;
 
@@ -314,4 +319,3 @@ ZRtp::assembleMessage(uint8_t const *zrtpFrame, size_t length) {
     }
     return totalLength;
 }
-

@@ -24,7 +24,7 @@
 #include <botancrypto/ZrtpBotanRng.h>
 #include "ZrtpConfigureBuilder.h"
 
-void ZrtpConfigureBuilder::addAlgorithm(char const * name, AlgoTypes type ) {
+void ZrtpConfigureBuilder::addAlgorithm(char const* name, AlgoTypes const type) const {
     switch (type) {
         case HashAlgorithm:
             configuration->addAlgo(type, zrtpHashes.getByName(name));
@@ -49,10 +49,9 @@ void ZrtpConfigureBuilder::addAlgorithm(char const * name, AlgoTypes type ) {
 
 
 ZrtpConfigureBuilder&
-ZrtpConfigureBuilder::initializeCache(const std::string & zidFilename, ZidCacheType cacheType, bool & isSet) {
-
+ZrtpConfigureBuilder::initializeCache(const std::string &zidFilename, ZidCacheType const cacheType, bool &isSet) {
     std::shared_ptr<ZIDCache> zf;
-    uint8_t newZid[IDENTIFIER_LEN] = {0};
+    uint8_t newZid[IDENTIFIER_LEN] = {};
     isSet = true;
 
     switch (cacheType) {
@@ -76,7 +75,7 @@ ZrtpConfigureBuilder::initializeCache(const std::string & zidFilename, ZidCacheT
             isSet = false;
             return *this;
     }
-    if (zidFilename.empty() || zf->open((char *)zidFilename.c_str()) < 0) {
+    if (zidFilename.empty() || zf->open(const_cast<char *>(zidFilename.c_str())) < 0) {
         zf.reset();
         isSet = false;
     }

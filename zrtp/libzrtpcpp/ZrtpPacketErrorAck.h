@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _ZRTPPACKETERRORACK_H_
-#define _ZRTPPACKETERRORACK_H_
+#ifndef ZRTPPACKETERRORACK_H_
+#define ZRTPPACKETERRORACK_H_
 
 /**
  * @file ZrtpPacketErrorAck.h
@@ -35,21 +35,21 @@
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
-class __EXPORT ZrtpPacketErrorAck : public ZrtpPacketBase {
-
- public:
+class __EXPORT ZrtpPacketErrorAck final : public ZrtpPacketBase {
+public:
     /// Creates a ErrorAck packet with default data
     ZrtpPacketErrorAck();
 
     /// Creates a ErrorAck packet from received data
     explicit ZrtpPacketErrorAck(const uint8_t* data);
+
     ~ZrtpPacketErrorAck() override = default;
 
- private:
-     ErrorAckPacket_t data = {};
+private:
+    ErrorAckPacket_t data = {};
 };
 
 /**
  * @}
  */
-#endif  // _ZRTPPACKETERRORACK_H_
+#endif  // ZRTPPACKETERRORACK_H_

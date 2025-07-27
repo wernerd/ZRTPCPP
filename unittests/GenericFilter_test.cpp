@@ -40,7 +40,7 @@ uint8_t zrtpRawData[] = {
 //      preamble   | length    | ZRTP content                          | space for CRC
         0x50, 0x5a, 0x00, 0x03, 'H', 'e', 'l', 'l', 'o', 'A', 'C', 'K', 'c', 'r', 'c', 'x'};    // simulate a crc field
 
-class GenericFilterTestFixture: public ::testing::Test {
+class GenericFilterTestFixture: public testing::Test {
 public:
     GenericFilterTestFixture() = default;
 
@@ -80,15 +80,15 @@ TEST_F(GenericFilterTestFixture, zrtpDetection) {
 }
 
 TEST_F(GenericFilterTestFixture, prepareRtp) {
-    auto filter = GenericPacketFilter::createGenericFilter();
+    auto const filter = GenericPacketFilter::createGenericFilter();
 
-    auto protocolData = GenericPacketFilter::prepareToSendRtp(*filter, zrtpRawData, sizeof(zrtpRawData), 0);
+    auto const protocolData = GenericPacketFilter::prepareToSendRtp(*filter, zrtpRawData, sizeof(zrtpRawData), 0);
     ASSERT_EQ(sizeof(zrtpRawData) + 12, protocolData->length);
     ASSERT_TRUE(protocolData->ptr);
 
     // the ProtocolData structure contains a shared_ptr<void>, thus we need to cast to the
     // real data first.
-    auto ptr = static_pointer_cast<secUtilities::SecureArrayFlex>(protocolData->ptr);
+    auto const ptr = static_pointer_cast<secUtilities::SecureArrayFlex>(protocolData->ptr);
     size_t offset = 0;
     uint32_t ssrc = 0;
     ASSERT_EQ(GenericPacketFilter::IsZrtp, GenericPacketFilter::checkRtpData(ptr->data(), protocolData->length, offset, ssrc));
@@ -128,7 +128,7 @@ TEST_F(GenericFilterTestFixture, buildConfigure) {
 }
 
 TEST_F(GenericFilterTestFixture, SetterGetter) {
-    auto filter = GenericPacketFilter::createGenericFilter();
+    auto const filter = GenericPacketFilter::createGenericFilter();
 
     filter->ownRtpSsrc(1471).zrtpSequenceNo(815);
 
@@ -147,19 +147,19 @@ TEST_F(GenericFilterTestFixture, startStopZrtp) {
 
     // Just to check if doSend was called.
     bool doSendCalled = false;
-    auto doSend = [& doSendCalled](GenericPacketFilter::ProtocolData& protocolData) -> bool {
+    auto doSend = [& doSendCalled](GenericPacketFilter::ProtocolData const & protocolData) -> bool {
         if (protocolData.length > 0 && protocolData.ptr) {
             doSendCalled = true;
         }
         return true;
     };
 
-    auto filter = GenericPacketFilter::createGenericFilter();
+    auto const filter = GenericPacketFilter::createGenericFilter();
     filter->setZrtpConfiguration(config)
             .ownRtpSsrc(1471)
             .onDoSend(doSend);
 
-    auto result = filter->startZrtpEngine();
+    auto const result = filter->startZrtpEngine();
     ASSERT_EQ(GenericPacketFilter::Success, result);
     ASSERT_TRUE(doSendCalled);
 }

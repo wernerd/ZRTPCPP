@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _ZRTPSDESSTREAM_H_
-#define _ZRTPSDESSTREAM_H_
+#ifndef ZRTPSDESSTREAM_H_
+#define ZRTPSDESSTREAM_H_
 /**
  * @file ZrtpSdesStream.h
  * @brief The ZRTP main engine
@@ -217,7 +217,7 @@ public:
      * @return Length of algorithm names (excluding nul byte) or zero if crypto mix not supported or
      *         enabled.
      */
-    size_t getCryptoMixAttribute(char *algoNames, size_t length);
+    size_t getCryptoMixAttribute(char *algoNames, size_t length) const;
 
     /**
      * @brief Set Crypto Mix attribute string
@@ -262,7 +262,7 @@ public:
      *  - @c true if encryption is successful, app shall send packet to the recipient.
      *  - @c false if there was an error during encryption, don't send the packet.
      */
-    bool outgoingRtp(uint8_t *packet, size_t length, size_t *newLength);
+    bool outgoingRtp(uint8_t *packet, size_t length, size_t *newLength) const;
 
     /**
      * @brief Process an outgoing RTCP packet
@@ -309,7 +309,7 @@ public:
      *
      * @param newLength to an integer that get the new length of the packet excluding SRTCP data.
      *
-     * @param errorData Pointer to @c errorData structure or @c NULL, default is @c NULL
+     * @param errorData Pointer to @c errorData structure or @c nullptr, default is @c nullptr
      *
      * @return
      *       - 1: success,
@@ -317,7 +317,7 @@ public:
      *       - -1: SRTP authentication failed,
      *       - -2: SRTP replay check failed
      */
-    int incomingRtp(uint8_t *packet, size_t length, size_t *newLength, SrtpErrorData* errorData= nullptr);
+    int incomingRtp(uint8_t *packet, size_t length, size_t *newLength, SrtpErrorData* errorData= nullptr) const;
 
     /**
      * @brief Process an incoming RTCP or SRTCP packet
@@ -340,9 +340,9 @@ public:
 
     /**
      * @brief Process an outgoing ZRTP packet.
-     * 
+     *
      * Works like @c outgoingRtp, refer to that documentation.
-     * 
+     *
      * @param packet the buffer that contains the ZRTP packet.
      *
      * @param length length of the ZRTP packet
@@ -353,7 +353,7 @@ public:
      *  - @c true if encryption is successful, app shall send packet to the recipient.
      *  - @c false if there was an error during encryption, don't send the packet.
      */
-    bool outgoingZrtpTunnel(uint8_t *packet, size_t length, size_t *newLength);
+    bool outgoingZrtpTunnel(uint8_t *packet, size_t length, size_t *newLength) const;
 
     /**
      * @brief Process an incoming ZRTP packet
@@ -368,21 +368,21 @@ public:
      * @param newLength to an integer that get the new length of the packet excluding SRTCP data.
      *
      * @param errorData Pointer to @c errorData structure or @c NULL, default is @c NULL
-     * 
+     *
      * @return
      *       - 1: success,
      *       -  0: SRTP/RTP packet decode error
      *       - -1: SRTP authentication failed,
      *       - -2: SRTP replay check failed
      */
-    int incomingZrtpTunnel(uint8_t *packet, size_t length, size_t *newLength, SrtpErrorData* errorData=nullptr);
+    int incomingZrtpTunnel(uint8_t *packet, size_t length, size_t *newLength, SrtpErrorData* errorData= nullptr) const;
 
         /**
      * @brief Return state of SDES stream.
      *
      * @return state of stream.
      */
-    sdesZrtpStates getState() {return state;}
+    [[nodiscard]] sdesZrtpStates getState() const { return state; }
 
 #ifdef ENABLE_SDES_MIX
     /**
@@ -390,21 +390,21 @@ public:
      *
      * @return HMAC type
      */
-    sdesHmacTypeMix getHmacTypeMix() {return cryptoMixHashType;}
+    sdesHmacTypeMix getHmacTypeMix() const { return cryptoMixHashType; }
 #endif
     /**
      * @brief Return name of active cipher algorithm.
      *
      * @return point to name of cipher algorithm.
      */
-    const char* getCipher();
+    [[nodiscard]] const char* getCipher() const;
 
     /**
      * @brief Return name of active SRTP authentication algorithm.
      *
      * @return point to name of authentication algorithm.
      */
-    const char* getAuthAlgo();
+    [[nodiscard]] const char* getAuthAlgo() const;
 
 
     /*
@@ -443,12 +443,6 @@ private:
      *               conde. On return the functions sets @c maxLen to the
      *               actual length of the resultig crypto string.
      *
-     * @param tag the value of the @c tag field in the crypto string. The
-     *            answerer must use this input to make sure that the tag value
-     *            in the answer matches the value in the offer. See RFC 4568,
-     *            section 5.1.2.
-     *            If the tag value is @c -1 the function sets the tag to @c 1.
-     *
      * @return @c true if data could be created, @c false
      *          otherwise.
      */
@@ -469,7 +463,7 @@ private:
      * not evaluated and used. If these parameters are used in the input crypto
      * string the function return @c false.
      *
-     * @param cryptoString points to the crypto sting in raw format,
+     * @param cryptoStr points to the crypto sting in raw format,
      *        without any signaling prefix, for example @c a=crypto: in case of
      *        SDP signaling.
      *
@@ -481,7 +475,7 @@ private:
      *        @c createSdesProfile to make sure that it creates the same crypto suite.
      *        See RFC 4568, section 5.1.2
      *
-     * @param tag the function sets this to the @c tag value of the parsed crypto
+     * @param outTag the function sets this to the @c tag value of the parsed crypto
      *        string. The answerer must use this as input to @c createSdesProfile
      *        to make sure that it creates the correct tag in the crypto string.
      *        See RFC 4568, section 5.1.2
@@ -489,11 +483,11 @@ private:
      * @return @c true if checks were ok, @c false
      *          otherwise.
      */
-    bool parseCreateSdesProfile(const char *cryptoString, size_t length, sdesSuites *parsedSuite, int32_t *tag);
+    bool parseCreateSdesProfile(const char *cryptoStr, size_t length, sdesSuites *parsedSuite, int32_t *outTag);
 
     /**
      * @brief Create the SRTP contexts after all SDES creation and parsing is done.
-     * 
+     *
      * @param sipInvite if this is set to @c true (not zero) then the method
      *                  computes the key data for the inviting SIP application (offerer) and
      *                  for the answerer otherwise.
@@ -531,7 +525,7 @@ private:
 //    uint32_t srtcpIndex = 0;               //!< the local SRTCP index
 
     // Variables for crypto that this client creates and sends to the other client, filled during SDES create
-    uint8_t localKeySalt[((MAX_KEY_LEN + MAX_SALT_LEN + 3)/4)*4] {0};  //!< Some buffer for key and salt, multiple of 4
+    uint8_t localKeySalt[(MAX_KEY_LEN + MAX_SALT_LEN + 3)/4*4] {};  //!< Some buffer for key and salt, multiple of 4
     uint32_t localKeyLenBytes = 0;
     uint32_t localSaltLenBytes = 0;
     uint32_t localCipher = 0;
@@ -540,7 +534,7 @@ private:
     uint32_t localTagLength = 0;
 
     // Variables for crypto that this client receives from the other client, filled during SDES parse
-    uint8_t remoteKeySalt[((MAX_KEY_LEN + MAX_SALT_LEN + 3)/4)*4] {0};  //!< Some buffer for key and salt, multiple of 4
+    uint8_t remoteKeySalt[(MAX_KEY_LEN + MAX_SALT_LEN + 3)/4*4] {};  //!< Some buffer for key and salt, multiple of 4
     uint32_t remoteKeyLenBytes = 0;
     uint32_t remoteSaltLenBytes = 0;
     uint32_t remoteCipher = 0;
@@ -551,4 +545,4 @@ private:
 /**
  * @}
  */
-#endif
+#endif // ZRTPSDESSTREAM_H_

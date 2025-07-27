@@ -26,10 +26,10 @@
 
 #define REPLAY_WINDOW_SIZE 128
 
-constexpr int SrtpAuthenticationNull      = 0;
-constexpr int SrtpAuthenticationSha1Hmac  = 1;
+constexpr int SrtpAuthenticationNull = 0;
+constexpr int SrtpAuthenticationSha1Hmac = 1;
 constexpr int SrtpAuthenticationSkeinHmac = 2;
-constexpr int SrtpEncryptionNull  = 0;
+constexpr int SrtpEncryptionNull = 0;
 constexpr int SrtpEncryptionAESCM = 1;
 constexpr int SrtpEncryptionAESF8 = 2;
 constexpr int SrtpEncryptionTWOCM = 3;
@@ -38,10 +38,7 @@ constexpr int SrtpEncryptionTWOF8 = 4;
 // Check if included via CryptoContextCtrl.cpp - avoid double definitions
 #ifndef CRYPTOCONTEXTCTRL_H
 
-#include <cstdint>
 #include <memory>
-#include "crypto/hmac.h"
-#include "crypto/macSkein.h"
 
 class SrtpSymCrypto;
 
@@ -208,17 +205,17 @@ public:
      *    with 4 and 8 bytes (32 and 64 bits) tag length. Refer to chapter 4.2. in RFC 3711.
      */
     CryptoContext(uint32_t ssrc, int32_t roc,
-                   int64_t  keyDerivRate,
-                   int32_t ealg,
-                   int32_t aalg,
-                   uint8_t* masterKey,
-                   int32_t  masterKeyLength,
-                   uint8_t* masterSalt,
-                   int32_t  masterSaltLength,
-                   int32_t  ekeyl,
-                   int32_t  akeyl,
-                   int32_t  skeyl,
-                   int32_t  tagLength);
+                  int64_t keyDerivRate,
+                  int32_t ealg,
+                  int32_t aalg,
+                  uint8_t const* masterKey,
+                  int32_t masterKeyLength,
+                  uint8_t const* masterSalt,
+                  int32_t masterSaltLength,
+                  int32_t ekeyl,
+                  int32_t akeyl,
+                  int32_t skeyl,
+                  int32_t tagLength);
 
     /**
      * @brief Destructor.
@@ -236,7 +233,7 @@ public:
      * @param r
      *   The roll-over-counter
      */
-    inline void setRoc(uint32_t r) { roc = r; }
+    void setRoc(uint32_t const r) { roc = r; }
 
     /**
      * @brief Get the Roll-Over-Counter.
@@ -246,7 +243,7 @@ public:
      *
      * @return The roll-over-counter
      */
-    [[nodiscard]] inline uint32_t getRoc() const { return roc; }
+    [[nodiscard]] uint32_t getRoc() const { return roc; }
 
     /**
      * @brief Perform SRTP encryption.
@@ -270,7 +267,7 @@ public:
      * @param ssrc
      *    The RTP SSRC data in <em>host</em> order.
      */
-    void srtpEncrypt(uint8_t* pkt, uint8_t* payload, uint32_t paylen, uint64_t index, uint32_t ssrc);
+    void srtpEncrypt(uint8_t const* pkt, uint8_t* payload, uint32_t paylen, uint64_t index, uint32_t ssrc) const;
 
     /**
      * @brief Compute the authentication tag.
@@ -291,7 +288,7 @@ public:
      *    Points to a buffer that hold the computed tag. This buffer must
      *    be able to hold <code>tagLength</code> bytes.
      */
-    void srtpAuthenticate(uint8_t* pkt, uint32_t pktlen, uint32_t rocLocal, uint8_t* tag);
+    void srtpAuthenticate(uint8_t const* pkt, uint32_t pktlen, uint32_t rocLocal, uint8_t* tag) const;
 
     /**
      * @brief Perform key derivation according to SRTP specification
@@ -363,10 +360,10 @@ public:
      *
      * @return the length of the MKI.
      */
-    [[nodiscard]] int32_t getMkiLength() const { return mkiLength; }
+    [[nodiscard]] uint32_t getMkiLength() const { return mkiLength; }
 
     /**
-     * @brief Get the SSRC of this SRTP Cryptograhic context.
+     * @brief Get the SSRC of this SRTP Cryptographic context.
      *
      * @return the SSRC.
      */
@@ -388,7 +385,7 @@ public:
      * Applications may set the `labelBase` to other values to use the CryptoContext
      * for other purposes.
      */
-    void setLabelbase(uint8_t base) { labelBase = base; }
+    void setLabelbase(uint8_t const base) { labelBase = base; }
 
     /**
      * @brief Derive a new Crypto Context for use with a new SSRC
@@ -410,10 +407,9 @@ public:
      * @return
      *     a new CryptoContext with all relevant data set.
      */
-    CryptoContext* newCryptoContextForSSRC(uint32_t ssrc, int rocLocal, int64_t keyDerivRate);
+    [[nodiscard]] CryptoContext* newCryptoContextForSSRC(uint32_t ssrc, int rocLocal, int64_t keyDerivRate) const;
 
 private:
-
     uint32_t ssrcCtx;
     uint32_t mkiLength;
     uint8_t* mki;
@@ -421,22 +417,22 @@ private:
     uint32_t roc;
     uint32_t guessed_roc;
     uint16_t s_l;
-    int64_t  key_deriv_rate;
+    int64_t key_deriv_rate;
 
     /* bit mask for replay check */
     uint64_t replay_window[2] = {0, 0};
 
     uint8_t* master_key;
-    uint32_t master_key_length;
+    int32_t master_key_length;
     uint8_t* master_salt;
-    uint32_t master_salt_length;
+    int32_t master_salt_length;
 
     /* Session Encryption, Authentication keys, Salt */
-    int32_t  n_e;
+    int32_t n_e;
     uint8_t* k_e;
-    int32_t  n_a;
+    int32_t n_a;
     uint8_t* k_a;
-    int32_t  n_s;
+    int32_t n_s;
     uint8_t* k_s;
 
     int32_t ealg;
@@ -446,9 +442,9 @@ private:
     int32_t skeyl;
     int32_t tagLength;
     uint8_t labelBase;
-    bool  seqNumSet;
+    bool seqNumSet;
 
-    void*   macCtx;
+    void* macCtx;
 
     std::unique_ptr<SrtpSymCrypto> cipher;
     std::unique_ptr<SrtpSymCrypto> f8Cipher;
@@ -460,4 +456,3 @@ private:
  * @}
  */
 #endif
-

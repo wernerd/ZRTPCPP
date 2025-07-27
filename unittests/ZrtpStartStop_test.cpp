@@ -15,6 +15,7 @@
 // Copyright (c) 2020 Werner Dittmann. All rights reserved.
 //
 
+#include <zrtp/libzrtpcpp/ZIDCacheEmpty.h>
 #include <zrtp/libzrtpcpp/ZrtpConfigure.h>
 #include <zrtp/libzrtpcpp/ZRtp.h>
 #include "../logging/ZrtpLogging.h"
@@ -33,7 +34,7 @@ string BobId;
 uint8_t aliceZid[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
 uint8_t bobZid[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
 
-class ZrtpStartStopFixture: public ::testing::Test {
+class ZrtpStartStopFixture: public testing::Test {
 public:
     ZrtpStartStopFixture() = default;
 
@@ -65,21 +66,21 @@ public:
 // No timeout happens in this test: Start and cancel timer call must be in sync
 TEST_F(ZrtpStartStopFixture, check_timer_start_cancel) {
     // Configure with mandatory algorithms only
-    shared_ptr<ZrtpConfigure> configure = make_shared<ZrtpConfigure>();
+    auto const configure = make_shared<ZrtpConfigure>();
 
-    shared_ptr<ZIDCache> aliceCache = std::make_shared<ZIDCacheEmpty>();
+    shared_ptr<ZIDCache> const aliceCache = std::make_shared<ZIDCacheEmpty>();
     aliceCache->setZid(aliceZid);
     configure->setZidCache(aliceCache);
 
     int32_t timers = 0;
 
-    auto callback = std::make_shared<testing::NiceMock<MockZrtpCallback>>();
+    auto const callback = std::make_shared<testing::NiceMock<MockZrtpCallback>>();
 
-    ON_CALL(*callback, activateTimer).WillByDefault(DoAll(([&timers](int32_t time) { timers++; }), Return(1)));
-    ON_CALL(*callback, cancelTimer).WillByDefault(DoAll([&timers]() { timers--; }, Return(1)));
+    ON_CALL(*callback, activateTimer).WillByDefault(DoAll([&timers](int32_t) { timers++; }, Return(1)));
+    ON_CALL(*callback, cancelTimer).WillByDefault(DoAll([&timers] { timers--; }, Return(1)));
 
-    auto castedCallback = static_pointer_cast<ZrtpCallback>(callback);
-    ZRtp zrtp(aliceId, castedCallback, configure);
+    auto const castedCallback = static_pointer_cast<ZrtpCallback>(callback);
+    ZRtp const zrtp(aliceId, castedCallback, configure);
     zrtp.startZrtpEngine();
     zrtp.stopZrtp();
 

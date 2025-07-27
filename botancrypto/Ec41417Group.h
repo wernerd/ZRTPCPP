@@ -20,8 +20,6 @@
 
 #include "botan_all.h"
 
-#include "botancrypto/ZrtpBotanRng.h"
-
 namespace Botan {
 
     class Point41417p;
@@ -66,12 +64,12 @@ namespace Botan {
         /**
         * Return if a == 0 mod p
         */
-        bool a_is_zero() const;
+        [[nodiscard]] bool a_is_zero() const;
 
         /**
         * Return the size of p in bits (same as get_p().bits())
         */
-        size_t get_p_bits() const;
+        [[nodiscard]] size_t get_p_bits() const;
 
         /**
         * Return the size of p in bytes (same as get_p().bytes())
@@ -81,12 +79,12 @@ namespace Botan {
         /**
         * Return the size of group order in bits (same as get_order().bits())
         */
-        size_t get_order_bits() const;
+        [[nodiscard]] size_t get_order_bits() const;
 
         /**
         * Return the size of p in bytes (same as get_order().bytes())
         */
-        size_t get_order_bytes() const;
+        [[nodiscard]] size_t get_order_bytes() const;
 
         /**
         * Return the prime modulus of the field
@@ -101,7 +99,7 @@ namespace Botan {
         /**
         * Return the b parameter of the elliptic curve equation
         */
-        const BigInt &get_b() const;
+        [[nodiscard]] const BigInt &get_b() const;
 
         /**
         * Return group base point
@@ -162,12 +160,12 @@ namespace Botan {
         * In particular, checks that it is a point on the curve, not infinity,
         * and that it has order matching the group.
         */
-        [[nodiscard]] bool verify_public_element(const Point41417p &y) const ;
+        static bool verify_public_element(const Point41417p &y) ;
 
         /**
         * Return a point on this curve with the affine values x, y
         */
-        [[nodiscard]] Point41417p point(const BigInt &x, const BigInt &y) const;
+        static Point41417p point(const BigInt &x, const BigInt &y);
 
         /**
         * Base point multiplication
@@ -184,19 +182,19 @@ namespace Botan {
         * @param ws a temp workspace
         * @return point*k
         */
-        Point41417p point_multiply(const Point41417p &point, const BigInt &k, std::vector<BigInt> &ws) const;
+        static Point41417p point_multiply(const Point41417p &point, const BigInt &k, std::vector<BigInt> &ws) ;
 
         /**
         * Return a random scalar suitable as private key for curve 41417.
         */
-        BigInt random_scalar(RandomNumberGenerator &rng) const;
+        static BigInt random_scalar(RandomNumberGenerator &rng);
 
         /**
         * Return the zero (or infinite) point on this curve
         */
-        [[nodiscard]] Point41417p zero_point() const;
+        static Point41417p zero_point();
 
-        [[nodiscard]] bool initialized() const { return (m_data != nullptr); }
+        [[nodiscard]] bool initialized() const { return m_data != nullptr; }
 
         /**
          * Verify EC41417_Group domain

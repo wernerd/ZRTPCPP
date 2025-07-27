@@ -18,13 +18,11 @@
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <time.h>
-
 #include <libzrtpcpp/ZIDRecordEmpty.h>
 
-void ZIDRecordEmpty::setNewRs1(const unsigned char* data, int32_t expire) {
-    (void) data;
-    (void) expire;
+void ZIDRecordEmpty::setNewRs1(const unsigned char* data, int32_t const expire) {
+    (void)data;
+    (void)expire;
 }
 
 
@@ -37,5 +35,5 @@ bool ZIDRecordEmpty::isRs2NotExpired() {
 }
 
 void ZIDRecordEmpty::setMiTMData(const unsigned char* data) {
-    (void) data;
+    (void)data;
 }

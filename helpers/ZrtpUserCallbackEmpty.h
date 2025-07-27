@@ -22,8 +22,8 @@
  * @file
  * @brief ZRTP UserCallback class with empty functions
  * 
- * An application may derive from this class and implement (override) only thos functions
- * it is interessted in.
+ * An application may derive from this class and implement (override) only those functions
+ * it is interested in.
  *
  * @ingroup ZRTP
  * @{
@@ -32,13 +32,11 @@
 #include <libzrtpcpp/ZrtpUserCallback.h>
 
 class __EXPORT ZrtpUserCallbackEmpty : public ZrtpUserCallback {
-
 public:
-
     /// Create the standard user callback class.
     ZrtpUserCallbackEmpty() = default;
 
-    ~ZrtpUserCallbackEmpty() = default;
+    ~ZrtpUserCallbackEmpty() override = default;
 
     /**
      * Inform user interface that security is active now.
@@ -49,7 +47,8 @@ public:
      * @param cipher
      *    Name and mode of cipher used to encrypt the SRTP stream
      */
-    void virtual secureOn(std::string cipher) {}
+    void secureOn(std::string cipher) override {
+    }
 
     /**
      * Inform user interface that security is not active any more.
@@ -58,7 +57,8 @@ public:
      * left secure mode.
      *
      */
-    void virtual secureOff() {}
+    void secureOff() override {
+    }
 
     /**
      * Show the Short Authentication String (SAS) on user interface.
@@ -74,7 +74,8 @@ public:
      *    If <code>verified</code> is true then SAS was verified by both
      *    parties during a previous call, otherwise it is set to false.
      */
-    void virtual showSAS(std::string sas, bool verified) {}
+    void showSAS(std::string sas, bool verified) override {
+    }
 
     /**
      * Inform the user that ZRTP received "go clear" message from its peer.
@@ -83,7 +84,8 @@ public:
      * a switch to unsecure (clear) modus. Until the user confirms ZRTP
      * (and the underlying RTP) does not send any data.
      */
-    void virtual confirmGoClear() {}
+    void confirmGoClear() override {
+    }
 
     /**
      * Show some information to user.
@@ -99,7 +101,8 @@ public:
      * @param subCode
      *     The subcode identifying the reason.
      */
-    void virtual showMessage(GnuZrtpCodes::MessageSeverity sev, int32_t subCode) {}
+    void showMessage(GnuZrtpCodes::MessageSeverity sev, int32_t subCode) override {
+    }
 
     /**
      * ZRTPQueue calls this if the negotiation failed.
@@ -113,7 +116,8 @@ public:
      * @param subCode
      *     The subcode identifying the reason.
      */
-    void virtual zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) {}
+    void zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) override {
+    }
 
     /**
      * ZRTPQueue calls this method if the other side does not support ZRTP.
@@ -122,7 +126,8 @@ public:
      * ZRTP calls this method.
      *
      */
-    void virtual zrtpNotSuppOther() {}
+    void zrtpNotSuppOther() override {
+    }
 
     /**
      * ZRTPQueue calls this method to inform about a PBX enrollment request.
@@ -135,7 +140,8 @@ public:
      *    enrollment.
      *
      */
-    void virtual zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info) {}
+    void zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info) override {
+    }
 
     /**
      * ZRTPQueue calls this method to inform about PBX enrollment result.
@@ -148,7 +154,8 @@ public:
      *    enrollment.
      *
      */
-    void virtual zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment info) {}
+    void zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment info) override {
+    }
 
     /**
      * ZRTPQueue calls this method to request a SAS signature.
@@ -165,7 +172,8 @@ public:
      * @see ZrtpQueue#setSignatureData
      *
      */
-    void virtual signSAS(uint8_t* sasHash) {}
+    void signSAS(uint8_t* sasHash) override {
+    }
 
     /**
      * ZRTPQueue calls this method to request a SAS signature check.
@@ -186,7 +194,7 @@ public:
      *    true if the signature was ok, false otherwise.
      *
      */
-    bool virtual checkSASSignature(uint8_t* sasHash) {
+    bool checkSASSignature(uint8_t* sasHash) override {
         return true;
     }
 };

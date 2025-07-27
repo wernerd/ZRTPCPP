@@ -34,34 +34,34 @@ limitations under the License.
 #include <mutex>
 #include <sstream>
 #include <iostream>
+#include <utility>
 
 #include "osSpecifics.h"
-#include "logger_config.h"
 
 /**
  * @brief The usual log level definitions.
  */
 enum LoggingLogLevel {
-    NONE = 0,   //!< No log output
-    ERROR_LOG,  //!< The Error level log output
-    WARNING,    //!< The Warning level log output
-    INFO,       //!< The Info level log output
-    DEBUGGING,  //!< The Debug level log output
-    VERBOSE,    //!< The Verbose level log output
-    EPIC        //!< The Epic level log output, only for rare cases :-)
+    NONE = 0, //!< No log output
+    ERROR_LOG, //!< The Error level log output
+    WARNING, //!< The Warning level log output
+    INFO, //!< The Info level log output
+    DEBUGGING, //!< The Debug level log output
+    VERBOSE, //!< The Verbose level log output
+    EPIC //!< The Epic level log output, only for rare cases :-)
 };
 
 /**
  * @brief How to format/output the log data.
  */
 enum LoggingLogType {
-    RAW = 0,       //!< Output the RAW format as in the LOGGER call
-    FULL           //!< Add log header: log line number, date, time, etc
+    RAW = 0, //!< Output the RAW format as in the LOGGER call
+    FULL //!< Add log header: log line number, date, time, etc
 };
 
 // Callback for external logging function. If set then the LOGGER call this, does not
 // use the other loggers anymore
-typedef void (*LOG_FUNC)(int32_t level, const std::string& logData);
+typedef void (*LOG_FUNC)(int32_t level, const std::string &logData);
 
 /**
  * @brief The LOGGER_INSTANCE default definition
@@ -119,50 +119,62 @@ typedef void (*LOG_FUNC)(int32_t level, const std::string& logData);
  * @brief Groups the logging implementation
  */
 namespace logging {
-
     /**
      * Virtual logging policy
      */
-    class LogPolicy
-    {
+    class LogPolicy {
     public:
-        virtual void openStream(const std::string& name) = 0;
+        virtual ~LogPolicy() = default;
+
+        virtual void openStream(const std::string &name) = 0;
+
         virtual void closeStream() = 0;
-        virtual void write(LoggingLogLevel level, const std::string& tag, const std::string& msg) = 0;
+
+        virtual void write(LoggingLogLevel level, const std::string &tag, const std::string &msg) = 0;
+
         virtual LoggingLogType getLoggingLogType() = 0;
     };
 
     /**
      * Logging policy implementation which allow to write into a file
      */
-    class __EXPORT FileLogPolicy : public LogPolicy
-    {
+    class __EXPORT FileLogPolicy final : public LogPolicy {
         std::unique_ptr<std::ofstream> outStream;
 
     public:
-        FileLogPolicy() : outStream(new std::ofstream()) {}
-        virtual ~FileLogPolicy();
+        FileLogPolicy() : outStream(new std::ofstream()) {
+        }
 
-        void openStream(const std::string& name) override ;
-        void closeStream() override ;
-        void write(LoggingLogLevel level, const std::string& tag, const std::string& msg) override ;
+        ~FileLogPolicy() override;
+
+        void openStream(const std::string &name) override;
+
+        void closeStream() override;
+
+        void write(LoggingLogLevel level, const std::string &tag, const std::string &msg) override;
+
         LoggingLogType getLoggingLogType() override { return FULL; }
     };
 
     /**
      * Implements a logging Policy to write to std::cerr directly
      */
-    class __EXPORT CerrLogPolicy : public LogPolicy
-    {
+    class __EXPORT CerrLogPolicy final : public LogPolicy {
     public:
         CerrLogPolicy() = default;
-        virtual ~CerrLogPolicy() = default;
 
-        void openStream(const std::string& name) override {};
-        void closeStream() override {};
-        void write(LoggingLogLevel level, const std::string& tag, const std::string& msg) override {
+        ~CerrLogPolicy() override = default;
+
+        void openStream(const std::string &name) override {
+        }
+
+        void closeStream() override {
+        }
+
+        void write(LoggingLogLevel level, const std::string &tag, const std::string &msg) override {
             std::cerr << msg << std::endl;
-        };
+        }
+
         LoggingLogType getLoggingLogType() override { return FULL; }
     };
 
@@ -203,91 +215,94 @@ namespace logging {
     };
 #endif
 
-/**
- * The Logger class uses a LogPolicy which implements the low level functions to output
- * the log data which the logger class produces. Together with the macros @c LOGGER_INSTANCE,
- * @c LOG_MAX_LEVEL and @c LOGGER you can implement global Logger instances or local Logger
- * instances.
- *
- * An example for a global Logger instance:
- * - define a global, project specific Logger source file, for example MyGlobalLogger.cpp
- * - in this source file define you global Logger setup, for example
+    /**
+     * The Logger class uses a LogPolicy which implements the low level functions to output
+     * the log data which the logger class produces. Together with the macros @c LOGGER_INSTANCE,
+     * @c LOG_MAX_LEVEL and @c LOGGER you can implement global Logger instances or local Logger
+     * instances.
+     *
+     * An example for a global Logger instance:
+     * - define a global, project specific Logger source file, for example MyGlobalLogger.cpp
+     * - in this source file define you global Logger setup, for example
 
-@verbatim
+    @verbatim
 
-#define LOGGER_INSTANCE myGlobalLogger->
-#include "Logger.h"
-shared_ptr<logging::Logger<logging::CerrLogPolicy> >
-        myGlobalLogger = make_shared<logging::Logger<logging::CerrLogPolicy> >(std::string(""));
-@endverbatim
+    #define LOGGER_INSTANCE myGlobalLogger->
+    #include "Logger.h"
+    shared_ptr<logging::Logger<logging::CerrLogPolicy> >
+            myGlobalLogger = make_shared<logging::Logger<logging::CerrLogPolicy> >(std::string(""));
+    @endverbatim
 
- * Then declare the above Logger instance as external, either in an already existing include
- * file that most or all your project's source modules use or create a small @c MyGlobalLogger.h
- * for this purpose and include it in every source module that requires some logging.
- * The LogPolicy shown in the example uses the @c CerrLogPolicy which simply outputs all
- * log data to @c std::cerr
- *
- * In case of a global Logger instance it's important to define the @c LOGGER_INSTANCE macro
- * before including the @c logger.h files. Otherwise the default definition of the
- * @c LOGGER_INSTANCE macro kicks in.
- *
- * If a source module requires some special logging then it should not include the global
- * logging include file and use the plain @c Logger.h and setup its own Logger. This is a
- * simple setup, for example:
- *
-@verbatim
-#include "Logger.h"
+     * Then declare the above Logger instance as external, either in an already existing include
+     * file that most or all your project's source modules use or create a small @c MyGlobalLogger.h
+     * for this purpose and include it in every source module that requires some logging.
+     * The LogPolicy shown in the example uses the @c CerrLogPolicy which simply outputs all
+     * log data to @c std::cerr
+     *
+     * In case of a global Logger instance it's important to define the @c LOGGER_INSTANCE macro
+     * before including the @c logger.h files. Otherwise the default definition of the
+     * @c LOGGER_INSTANCE macro kicks in.
+     *
+     * If a source module requires some special logging then it should not include the global
+     * logging include file and use the plain @c Logger.h and setup its own Logger. This is a
+     * simple setup, for example:
+     *
+    @verbatim
+    #include "Logger.h"
 
-using namespace logging;
-static Logger <FileLogPolicy> logInst("example_1.log");
-@endverbatim
+    using namespace logging;
+    static Logger <FileLogPolicy> logInst("example_1.log");
+    @endverbatim
 
- * This example defines a static Logger instance which uses a @c FileLogPolicy that outputs
- * the log data to the file @c example_1.log. The name of the Logger instance @c logInst is
- * the standard definition of the @c LOGGER_INSTANCE macro.
- *
- * Now your functions can set the desired log level for this moduel (standard is @c VERBOSE)
- * and use the @c lOGGER macro to produce log data, for example:
- *
-@verbatim
-LOGGER_INSTANCE setLogLevel(DEBUG);
+     * This example defines a static Logger instance which uses a @c FileLogPolicy that outputs
+     * the log data to the file @c example_1.log. The name of the Logger instance @c logInst is
+     * the standard definition of the @c LOGGER_INSTANCE macro.
+     *
+     * Now your functions can set the desired log level for this moduel (standard is @c VERBOSE)
+     * and use the @c lOGGER macro to produce log data, for example:
+     *
+    @verbatim
+    LOGGER_INSTANCE setLogLevel(DEBUG);
 
-LOGGER(ERROR, "Starting the application..");
-for( short i = 0 ; i < 3 ; i++ ) {
-    LOGGER(DEBUG, "The value of 'i' is ", i , ". " , 3 - i - 1 , " more iterations left ");
-}
-LOGGER(WARNING, "Loop over");
-LOGGER(ERROR, "Exiting the application");
-return 0;
-@endverbatim
- *
- * For production builds you can restrict the log level during compilation: just define the
- * @c LOG_MAX_LEVEL in a project configuration file or set it via a @c -DLOG_MAX_LEVEL. The
- * implementation of the @c LOGGER macro together with the usual compiler optimizations
- * will remove any logging calls above the defined @c MAX_LOG_LEVEL. This safes space and
- * computing time and also no modifications in the source to change the run time log
- * level - if it isn't compiled then it will not run :-). If you set @c MAX_LOG_LEVEL to
- * @c NONE then no log statement is left in the compiled code.
- */
+    LOGGER(ERROR, "Starting the application..");
+    for( short i = 0 ; i < 3 ; i++ ) {
+        LOGGER(DEBUG, "The value of 'i' is ", i , ". " , 3 - i - 1 , " more iterations left ");
+    }
+    LOGGER(WARNING, "Loop over");
+    LOGGER(ERROR, "Exiting the application");
+    return 0;
+    @endverbatim
+     *
+     * For production builds you can restrict the log level during compilation: just define the
+     * @c LOG_MAX_LEVEL in a project configuration file or set it via a @c -DLOG_MAX_LEVEL. The
+     * implementation of the @c LOGGER macro together with the usual compiler optimizations
+     * will remove any logging calls above the defined @c MAX_LOG_LEVEL. This safes space and
+     * computing time and also no modifications in the source to change the run time log
+     * level - if it isn't compiled then it will not run :-). If you set @c MAX_LOG_LEVEL to
+     * @c NONE then no log statement is left in the compiled code.
+     */
 
     // When creating a standalone (library) version of Logger then enable the __EXPORT attribute
-    template<typename log_policy >
-    class Logger
-    {
-        std::string getTime();
+    template<typename log_policy>
+    class Logger {
+        static std::string getTime();
+
         std::string getLogLineHeader();
+
         std::stringstream logStream;
         std::unique_ptr<log_policy> policy;
         std::mutex write_mutex;
 
         //Core printing functionality
         void print_impl();
-        template<typename First, typename...Rest> void print_impl(First parm1, Rest...parm);
 
-        LoggingLogLevel logLevel;               //!< Write logs up to this level
-        LoggingLogType logType;                 //!< Log type: add full information or log raw format
-        LoggingLogLevel currentLogLevel;        //!< The log level as defined for the current LOGGER call
-        std::string tag;                        //!< Mainly used for Android logging
+        template<typename First, typename... Rest>
+        void print_impl(First parm1, Rest... parm);
+
+        LoggingLogLevel logLevel; //!< Write logs up to this level
+        LoggingLogType logType; //!< Log type: add full information or log raw format
+        LoggingLogLevel currentLogLevel; //!< The log level as defined for the current LOGGER call
+        std::string tag; //!< Mainly used for Android logging
         unsigned logLineNumber;
 
     public:
@@ -300,7 +315,7 @@ return 0;
          *
          * @param name The LogPolicy implementation may use this
          */
-        explicit Logger(const std::string& name);
+        explicit Logger(const std::string &name);
 
         /**
          * @brief Create a Logger instance.
@@ -312,32 +327,33 @@ return 0;
          * @param name The LogPolicy implementation may use this.
          * @param tag The LogPolicy implementation may use this.
          */
-        Logger(const std::string& name, const std::string& tag);
+        Logger(const std::string &name, std::string tag);
+
         ~Logger();
 
         /**
          * @brief Return the current log level.
          */
-        LoggingLogLevel getLogLevel() { return logLevel; }
+        LoggingLogLevel getLogLevel() const { return logLevel; }
 
         /**
          * @brief Set the current log level.
          *
          * @param level The log level, range is @c NONE to @c EPIC
          */
-        void setLogLevel(LoggingLogLevel level) {if (level >= NONE && level <= EPIC) {logLevel = level;}}
+        void setLogLevel(LoggingLogLevel const level) { if (level >= NONE && level <= EPIC) { logLevel = level; } }
 
         /**
          * @brief Return the current log type.
          */
-        int getLogType() { return logType; }
+        int getLogType() const { return logType; }
 
         /**
          * @brief Set the current log type.
          *
          * @param type The log format type, range is @c RAW to @c FULL
          */
-        void setLogType(LoggingLogType type) {if (type >= RAW && type <= FULL) {logType = type;}}
+        void setLogType(LoggingLogType const type) { if (type >= RAW && type <= FULL) { logType = type; } }
 
         /**
          * @brief Print log data
@@ -350,56 +366,51 @@ return 0;
          *
          * @param args Variable number of arguments.
          */
-        template<LoggingLogLevel level, typename...Args >
+        template<LoggingLogLevel level, typename... Args>
         void print(Args... args);
 
-        void setLogCallback(LOG_FUNC callback) { loggerCallback_ = callback; }
+        void setLogCallback(LOG_FUNC const callback) { loggerCallback_ = callback; }
 
     private:
         LOG_FUNC loggerCallback_ = nullptr;
     };
 
     // Template implementations
-    template<typename log_policy >
-    Logger<log_policy >::Logger(const std::string& name) : logLevel(VERBOSE), currentLogLevel(NONE),
-                                                           tag("Logger"), logLineNumber(0)
-    {
+    template<typename log_policy>
+    Logger<log_policy>::Logger(const std::string &name) : logLevel(VERBOSE), currentLogLevel(NONE),
+                                                          tag("Logger"), logLineNumber(0) {
         policy = std::make_unique<log_policy>();
         if (!policy) {
             throw std::runtime_error("LOGGER: Unable to create the logger instance");
         }
         logType = policy->getLoggingLogType();
-        policy->openStream( name );
+        policy->openStream(name);
     }
 
-    template<typename log_policy >
-    Logger<log_policy >::Logger(const std::string& name, const std::string& tag) : logLevel(VERBOSE),
-                                                                                   currentLogLevel(NONE), tag(tag),
-                                                                                   logLineNumber(0)
-    {
+    template<typename log_policy>
+    Logger<log_policy>::Logger(const std::string &name, std::string tag) : logLevel(VERBOSE),
+                                                                           currentLogLevel(NONE), tag(std::move(tag)),
+                                                                           logLineNumber(0) {
         policy = std::make_unique<log_policy>();
         if (!policy) {
             throw std::runtime_error("LOGGER: Unable to create the logger instance");
         }
         logType = policy->getLoggingLogType();
-        policy->openStream( name );
+        policy->openStream(name);
     }
 
-    template< typename log_policy >
-    Logger<log_policy >::~Logger()
-    {
+    template<typename log_policy>
+    Logger<log_policy>::~Logger() {
         if (policy) {
             policy->closeStream();
         }
     }
 
-    template< typename LogPolicy >
-    void Logger< LogPolicy >::print_impl()
-    {
+    template<typename log_policy>
+    void Logger<log_policy>::print_impl() {
         if (loggerCallback_ != nullptr) {
             loggerCallback_(currentLogLevel, logStream.str());
-        }
-        else {
+        } else {
             if (logType == FULL)
                 policy->write(currentLogLevel, tag, getLogLineHeader() + logStream.str());
             else
@@ -408,17 +419,16 @@ return 0;
         logStream.str("");
     }
 
-    template< typename LogPolicy >
-    template<typename First, typename... Rest >
-    void Logger<LogPolicy>::print_impl(First parm1, Rest... parm)
-    {
+    template<typename log_policy>
+    template<typename First, typename... Rest>
+    void Logger<log_policy>::print_impl(First parm1, Rest... parm) {
         logStream << parm1;
         print_impl(parm...);
     }
 
-    template<typename LogPolicy>
+    template<typename log_policy>
     template<LoggingLogLevel level, typename... Args>
-    void Logger<LogPolicy>::print(Args... args) {
+    void Logger<log_policy>::print(Args... args) {
         write_mutex.lock();
         currentLogLevel = level;
         if (logType == FULL && loggerCallback_ == nullptr) {
@@ -449,11 +459,10 @@ return 0;
         write_mutex.unlock();
     }
 
-    template< typename LogPolicy >
-    std::string Logger< LogPolicy >::getTime()
-    {
+    template<typename log_policy>
+    std::string Logger<log_policy>::getTime() {
         char dateTime[128];
-        struct tm tmData = {};
+        tm tmData = {};
         time_t rawTime;
 
         // Get and format time according to ISO 8601, UTC
@@ -465,18 +474,17 @@ return 0;
 #endif
         strftime(dateTime, sizeof(dateTime), "%FT%TZ", &tmData);
 
-        return std::string(dateTime);
+        return {dateTime};
     }
 
-    template< typename LogPolicy >
-    std::string Logger< LogPolicy >::getLogLineHeader()
-    {
+    template<typename log_policy>
+    std::string Logger<log_policy>::getLogLineHeader() {
         std::stringstream header;
 
         header.str("");
         header.fill('0');
         header.width(7);
-        header << logLineNumber++ << "<" << getTime() <<" - ";
+        header << logLineNumber++ << "<" << getTime() << " - ";
 
         header.fill('0');
         header.width(7);
@@ -485,6 +493,7 @@ return 0;
         return header.str();
     }
 }
+
 /**
  * @}
  */

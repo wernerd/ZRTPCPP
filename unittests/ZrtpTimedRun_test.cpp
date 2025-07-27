@@ -18,6 +18,7 @@
 #include <thread>
 #include <condition_variable>
 
+#include "zrtp/libzrtpcpp/ZIDCacheEmpty.h"
 #include "zrtp/libzrtpcpp/ZrtpConfigure.h"
 #include "zrtp/libzrtpcpp/ZRtp.h"
 #include "common/ZrtpTimeoutProvider.h"
@@ -43,7 +44,7 @@ uint8_t bobZid[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
 // and perform a 'send/receive' of ZRTP packet. Using the mock callbacks we
 // can perform several tests during the data exchange, save some intermediate
 // data and check them after the ZRTP protocol run completes.
-class ZrtpTimedRunFixture: public ::testing::Test {
+class ZrtpTimedRunFixture: public testing::Test {
 public:
     ZrtpTimedRunFixture() = default;
 
@@ -100,26 +101,25 @@ public:
         aliceQueueCv.notify_all();
     }
 
-    void aliceQueueData(zrtp::ZrtpDataPairPtr dataPairPtr, int64_t tts) {
-        auto* header = (zrtpPacketHeader_t *)dataPairPtr->first.get();
-        string packetType((char *)header->messageType, sizeof(header->messageType));
+    void aliceQueueData(zrtp::ZrtpDataPairPtr dataPairPtr, int64_t const tts) {
+        auto const * header = reinterpret_cast<zrtpPacketHeader_t *>(dataPairPtr->first.get());
+        string const packetType(reinterpret_cast<char *>(const_cast<uint8_t *>(header->messageType)), sizeof(header->messageType));
         LOGGER(INFO, "From Bob:   ", packetType, " at: ", tts)
 
-        unique_lock<mutex> queueLock(aliceQueueMutex);
+        unique_lock queueLock(aliceQueueMutex);
         aliceQueue.push_back(std::move(dataPairPtr));
         queueLock.unlock();
         aliceQueueCv.notify_all();
     }
 
-    static void aliceZrtpRun(ZrtpTimedRunFixture *thiz) {
-        {
-            unique_lock<mutex> startLock(thiz->aliceStartMutex);
+    static void aliceZrtpRun(ZrtpTimedRunFixture *thiz) { {
+            unique_lock startLock(thiz->aliceStartMutex);
             while (!thiz->aliceThreadRun) {
                 thiz->aliceStartCv.wait(startLock);
             }
             thiz->aliceZrtp->startZrtpEngine();
         }
-        unique_lock<mutex> queueLock(thiz->aliceQueueMutex);
+        unique_lock queueLock(thiz->aliceQueueMutex);
         while (thiz->aliceThreadRun) {
             while (thiz->aliceQueue.empty() && thiz->aliceThreadRun) {
                 LOGGER(DEBUGGING, "Alice thread waiting: ", thiz->aliceThreadRun)
@@ -128,8 +128,8 @@ public:
             if (!thiz->aliceThreadRun) break;
 
             for (; !thiz->aliceQueue.empty(); thiz->aliceQueue.pop_front()) {
-                auto& zrtpData = thiz->aliceQueue.front();
-                queueLock.unlock();          // unlock Alice's queue while processing 'received' data, Bob may add data
+                auto const &zrtpData = thiz->aliceQueue.front();
+                queueLock.unlock(); // unlock Alice's queue while processing 'received' data, Bob may add data
 
                 thiz->aliceZrtp->processZrtpMessage(zrtpData->first.get(), 123, zrtpData->second);
 
@@ -141,13 +141,14 @@ public:
         thiz->aliceZrtp->stopZrtp();
         LOGGER(DEBUGGING, "Alice thread terminating.")
     }
+
     // endregion
 
     // region Bob functions
-    void bobSetupThread(shared_ptr<ZrtpConfigure>& configure) {
-        shared_ptr<ZrtpCallback> cb = bobCb;      // perform implicit up-cast to base class
+    void bobSetupThread(shared_ptr<ZrtpConfigure> &configure) {
+        shared_ptr<ZrtpCallback> cb = bobCb; // perform implicit up-cast to base class
         bobZrtp = make_unique<ZRtp>(bobZid, cb, bobId, configure, false, false);
-        bobZrtp->setTransportOverhead(0);        // Testing, no transport protocol (e.g RTP)
+        bobZrtp->setTransportOverhead(0); // Testing, no transport protocol (e.g RTP)
         bobThread = thread(bobZrtpRun, this);
     }
 
@@ -161,26 +162,25 @@ public:
         bobQueueCv.notify_all();
     }
 
-    void bobQueueData(zrtp::ZrtpDataPairPtr dataPairPtr, int64_t tts) {
-        auto* header = (zrtpPacketHeader_t *)dataPairPtr->first.get();
-        string packetType((char *)header->messageType, sizeof(header->messageType));
+    void bobQueueData(zrtp::ZrtpDataPairPtr dataPairPtr, int64_t const tts) {
+        auto const *header = reinterpret_cast<zrtpPacketHeader_t *>(dataPairPtr->first.get());
+        string const packetType(reinterpret_cast<char *>(const_cast<uint8_t *>(header->messageType)), sizeof(header->messageType));
         LOGGER(INFO, "From Alice: ", packetType, " at: ", tts)
 
-        unique_lock<mutex> queueLock(bobQueueMutex);
+        unique_lock queueLock(bobQueueMutex);
         bobQueue.push_back(std::move(dataPairPtr));
         queueLock.unlock();
         bobQueueCv.notify_all();
     }
 
-    static void bobZrtpRun(ZrtpTimedRunFixture *thiz) {
-        {
-            unique_lock<mutex> startLock(thiz->bobStartMutex);
+    static void bobZrtpRun(ZrtpTimedRunFixture *thiz) { {
+            unique_lock startLock(thiz->bobStartMutex);
             while (!thiz->bobThreadRun) {
                 thiz->bobStartCv.wait(startLock);
             }
             thiz->bobZrtp->startZrtpEngine();
         }
-        unique_lock<mutex> queueLock(thiz->bobQueueMutex);
+        unique_lock queueLock(thiz->bobQueueMutex);
         while (thiz->bobThreadRun) {
             while (thiz->bobQueue.empty() && thiz->bobThreadRun) {
                 LOGGER(DEBUGGING, "Bob thread waiting: ", thiz->bobThreadRun)
@@ -189,8 +189,8 @@ public:
             if (!thiz->bobThreadRun) break;
 
             for (; !thiz->bobQueue.empty(); thiz->bobQueue.pop_front()) {
-                auto& zrtpData = thiz->bobQueue.front();
-                queueLock.unlock();          // unlock bob's queue while processing 'received' data, Bob may add data
+                auto const &zrtpData = thiz->bobQueue.front();
+                queueLock.unlock(); // unlock bob's queue while processing 'received' data, Bob may add data
 
                 thiz->bobZrtp->processZrtpMessage(zrtpData->first.get(), 321, zrtpData->second);
 
@@ -202,11 +202,12 @@ public:
         thiz->bobZrtp->stopZrtp();
         LOGGER(DEBUGGING, "Bob thread terminating.")
     }
+
     // endregion
     mutex securityOn;
     condition_variable securityOnCv;
 
-    shared_ptr<testing::NiceMock<MockZrtpCallback>> aliceCb;
+    shared_ptr<testing::NiceMock<MockZrtpCallback> > aliceCb;
     unique_ptr<ZRtp> aliceZrtp;
     thread aliceThread;
     mutex aliceStartMutex;
@@ -217,7 +218,7 @@ public:
     zrtp::ZrtpTimeoutProvider aliceTimoutProvider;
     std::unique_ptr<zrtp::NetworkSimulation> aliceNetwork;
 
-    shared_ptr<testing::NiceMock<MockZrtpCallback>> bobCb;
+    shared_ptr<testing::NiceMock<MockZrtpCallback> > bobCb;
     unique_ptr<ZRtp> bobZrtp;
     thread bobThread;
     mutex bobStartMutex;
@@ -240,16 +241,16 @@ TEST_F(ZrtpTimedRunFixture, full_run_test) {
     auto aliceConfigure = make_shared<ZrtpConfigure>();
     auto bobConfigure = make_shared<ZrtpConfigure>();
 
-    shared_ptr<ZIDCache> aliceCache = std::make_shared<ZIDCacheEmpty>();
+    shared_ptr<ZIDCache> const aliceCache = std::make_shared<ZIDCacheEmpty>();
     aliceCache->setZid(aliceZid);
     aliceConfigure->setZidCache(aliceCache);
 
-    shared_ptr<ZIDCache>  bobCache = std::make_shared<ZIDCacheEmpty>();
+    shared_ptr<ZIDCache> const bobCache = std::make_shared<ZIDCacheEmpty>();
     bobCache->setZid(bobZid);
     bobConfigure->setZidCache(bobCache);
 
-    aliceCb = make_shared<testing::NiceMock<MockZrtpCallback>>();
-    bobCb = make_shared<testing::NiceMock<MockZrtpCallback>>();
+    aliceCb = make_shared<testing::NiceMock<MockZrtpCallback> >();
+    bobCb = make_shared<testing::NiceMock<MockZrtpCallback> >();
 
     int32_t aliceTimers = 0;
     int32_t bobTimers = 0;
@@ -258,51 +259,51 @@ TEST_F(ZrtpTimedRunFixture, full_run_test) {
     bobNetwork->setNetworkDelay(100);
 
     ON_CALL(*aliceCb, activateTimer).WillByDefault(DoAll(
-            ([&aliceTimers, this](int32_t time) {
-                aliceTimers++;
-                aliceTimeoutId = aliceTimoutProvider.addTimer(time, 111, [&aliceTimers, this](int64_t d) {
-                    aliceTimers--;
-                    aliceZrtp->processTimeout();
-                });
-            }), Return(1)));
-    ON_CALL(*aliceCb, cancelTimer).WillByDefault(DoAll(
-            [&aliceTimers, this]() {
+        [&aliceTimers, this](int32_t const time) {
+            aliceTimers++;
+            aliceTimeoutId = aliceTimoutProvider.addTimer(time, 111, [&aliceTimers, this](int64_t) {
                 aliceTimers--;
-                aliceTimoutProvider.removeTimer(aliceTimeoutId);
-            }, Return(1)));
+                aliceZrtp->processTimeout();
+            });
+        }, Return(1)));
+    ON_CALL(*aliceCb, cancelTimer).WillByDefault(DoAll(
+        [&aliceTimers, this] {
+            aliceTimers--;
+            aliceTimoutProvider.removeTimer(aliceTimeoutId);
+        }, Return(1)));
 
     ON_CALL(*bobCb, activateTimer).WillByDefault(DoAll(
-            ([&bobTimers, this](int32_t time) {
-                bobTimers++;
-                bobTimeoutId = bobTimoutProvider.addTimer(time, 222, [&bobTimers, this](int64_t d) {
-                    bobTimers--;
-                    bobZrtp->processTimeout();
-                });
-            }), Return(1)));
-    ON_CALL(*bobCb, cancelTimer).WillByDefault(DoAll(
-            [&bobTimers, this]() {
+        [&bobTimers, this](int32_t const time) {
+            bobTimers++;
+            bobTimeoutId = bobTimoutProvider.addTimer(time, 222, [&bobTimers, this](int64_t) {
                 bobTimers--;
-                bobTimoutProvider.removeTimer(bobTimeoutId);
-            }, Return(1)));
+                bobZrtp->processTimeout();
+            });
+        }, Return(1)));
+    ON_CALL(*bobCb, cancelTimer).WillByDefault(DoAll(
+        [&bobTimers, this] {
+            bobTimers--;
+            bobTimoutProvider.removeTimer(bobTimeoutId);
+        }, Return(1)));
 
     // send data just forwards the data, no further checks yet.
     // When Alice sends data put the data into Bob's receive queue and signal 'data available'
     ON_CALL(*aliceCb, sendDataZRTP(_, _))
-            .WillByDefault(DoAll(([this](const uint8_t* data, int32_t length) {
-                auto tts = aliceNetwork->addDataToQueue(data, length);
-                auto* header = (zrtpPacketHeader_t *)data;
-                string packetType((char *)header->messageType, sizeof(header->messageType));
-                LOGGER(INFO, "To Bob:     ", packetType, " at: ", tts, " - now: ", zrtp::Utilities::currentTimeMillis())
-            }), Return(1)));
+            .WillByDefault(DoAll([this](const uint8_t *data, int32_t const length) {
+        auto const tts = aliceNetwork->addDataToQueue(data, length);
+        auto const *header = reinterpret_cast<zrtpPacketHeader_t *>(const_cast<uint8_t *>(data));
+        string const packetType(reinterpret_cast<char *>(const_cast<uint8_t*>(header->messageType)), sizeof(header->messageType));
+        LOGGER(INFO, "To Bob:     ", packetType, " at: ", tts, " - now: ", zrtp::Utilities::currentTimeMillis())
+    }, Return(1)));
 
     // When Bob sends data put the data into Alice's receive queue and signal 'data available'
     ON_CALL(*bobCb, sendDataZRTP(_, _))
-            .WillByDefault(DoAll(([this](const uint8_t* data, int32_t length) {
-                auto tts = bobNetwork->addDataToQueue(data, length);
-                auto* header = (zrtpPacketHeader_t *)data;
-                string packetType((char *)header->messageType, sizeof(header->messageType));
-                LOGGER(INFO, "To Alice:   ", packetType, " at: ", tts, " - now: ", zrtp::Utilities::currentTimeMillis())
-            }), Return(1)));
+            .WillByDefault(DoAll([this](const uint8_t* data, int32_t const length) {
+        auto const tts = bobNetwork->addDataToQueue(data, length);
+        auto const * header = reinterpret_cast<zrtpPacketHeader_t *>(const_cast<uint8_t *>(data));
+        string const packetType(reinterpret_cast<char *>(const_cast<uint8_t *>(header->messageType)));
+        LOGGER(INFO, "To Alice:   ", packetType, " at: ", tts, " - now: ", zrtp::Utilities::currentTimeMillis())
+    }, Return(1)));
 
     // We don't expect failures during the ZRTP protocol
     EXPECT_CALL(*aliceCb, zrtpNegotiationFailed(_, _)).Times(0);
@@ -330,7 +331,7 @@ TEST_F(ZrtpTimedRunFixture, full_run_test) {
         // Once all secrets set and the two endpoints are active report the ciphers and the
         // SAS. One call only.
         EXPECT_CALL(*aliceCb, srtpSecretsOn(_, _, Eq(false)))
-                .WillOnce([this, &aliceCipher, &aliceSas, &aliceSecureOn](string c, string s, bool v) {
+                .WillOnce([this, &aliceCipher, &aliceSas, &aliceSecureOn](string c, string s, bool) {
                     aliceCipher = std::move(c);
                     aliceSas = std::move(s);
                     aliceSecureOn = true;
@@ -348,7 +349,7 @@ TEST_F(ZrtpTimedRunFixture, full_run_test) {
         EXPECT_CALL(*bobCb, srtpSecretsReady(_, _)).Times(2).WillRepeatedly(Return(true));
 
         EXPECT_CALL(*bobCb, srtpSecretsOn(_, _, Eq(false)))
-                .WillOnce([this, &bobCipher, &bobSas, &bobSecureOn](string c, string s, bool v) {
+                .WillOnce([this, &bobCipher, &bobSas, &bobSecureOn](string c, string s, bool) {
                     bobCipher = std::move(c);
                     bobSas = std::move(s);
                     bobSecureOn = true;
@@ -367,7 +368,7 @@ TEST_F(ZrtpTimedRunFixture, full_run_test) {
 
     bobStartThread();
 
-    unique_lock<mutex> secure(securityOn);
+    unique_lock secure(securityOn);
     while (!(aliceSecureOn && bobSecureOn)) {
         securityOnCv.wait(secure);
     }

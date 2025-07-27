@@ -20,7 +20,9 @@
 // #define UNIT_TEST
 
 #include <string>
-#include <cstdlib>
+
+#include "libzrtpcpp/ZIDRecordFile.h"
+
 
 #ifdef _MSC_VER
 #include <io.h>
@@ -36,7 +38,7 @@
 static int errors = 0;  // maybe we will use as member of ZIDCache later...
 
 
-void ZIDCacheFile::createZIDFile(char* name) {
+void ZIDCacheFile::createZIDFile(char const * name) {
     zidFile = fopen(name, "wb+");
     // New file, generate an associated random ZID and save
     // it as first record
@@ -47,14 +49,14 @@ void ZIDCacheFile::createZIDFile(char* name) {
         rec.setZid(associatedZid);
         rec.setOwnZIDRecord();
         fseek(zidFile, 0L, SEEK_SET);
-        if (fwrite(rec.getRecordData(), rec.getRecordLength(), 1, zidFile) < 1)
+        if (fwrite(rec.getRecordData(), ZIDRecordFile::getRecordLength(), 1, zidFile) < 1)
             ++errors;
         fflush(zidFile);
     }
 }
 
 /**
- * Migrate old ZID file format to new one.
+ * Migrate the old ZID file format to new one.
  *
  * If ZID file is old format:
  * - close it, rename it, then re-open
@@ -62,7 +64,6 @@ void ZIDCacheFile::createZIDFile(char* name) {
  * - copy over contents and flags.
  */
 void ZIDCacheFile::checkDoMigration(char* name) {
-    FILE* fdOld;
     unsigned char inb[2];
     zidrecord1_t recOld;
 
@@ -72,22 +73,22 @@ void ZIDCacheFile::checkDoMigration(char* name) {
         inb[0] = 0;
     }
 
-    if (inb[0] > 0) {           // if it's new format just return
+    if (inb[0] > 0) {           // if it's a new format return
         return;
     }
     fclose(zidFile);            // close old ZID file
     zidFile = nullptr;
 
     // create save file name, rename and re-open
-    // if rename fails, just unlink old ZID file and create a brand new file
+    // if rename fails, just unlink old ZID file and create a brand-new file
     // just a little inconvenience for the user, need to verify new SAS
-    std::string fn = std::string(name) + std::string(".save");
+    std::string const fn = std::string(name) + std::string(".save");
     if (rename(name, fn.c_str()) < 0) {
         unlink(name);
         createZIDFile(name);
         return;
     }
-    fdOld = fopen(fn.c_str(), "rb");    // reopen old format in read only mode
+    FILE* fdOld = fopen(fn.c_str(), "rb");    // reopen the old format in read-only mode
 
     // Get first record from old file - is the own ZID
     fseek(fdOld, 0L, SEEK_SET);
@@ -99,7 +100,7 @@ void ZIDCacheFile::checkDoMigration(char* name) {
         fclose(fdOld);
         return;
     }
-    zidFile = fopen(name, "wb+");    // create new format file in binary r/w mode
+    zidFile = fopen(name, "wb+");    // create a new format file in binary r/w mode
     if (zidFile == nullptr) {
         fclose(fdOld);
         return;
@@ -108,10 +109,10 @@ void ZIDCacheFile::checkDoMigration(char* name) {
     ZIDRecordFile rec;
     rec.setZid(recOld.identifier);
     rec.setOwnZIDRecord();
-    if (fwrite(rec.getRecordData(), rec.getRecordLength(), 1, zidFile) < 1)
+    if (fwrite(rec.getRecordData(), ZIDRecordFile::getRecordLength(), 1, zidFile) < 1)
         ++errors;
 
-    // now copy over all valid records from old ZID file format.
+    // Now copy over all valid records from old ZID file format.
     // Sequentially read old records, sequentially write new records
     size_t numRead;
     do {
@@ -131,7 +132,7 @@ void ZIDCacheFile::checkDoMigration(char* name) {
         }
         rec2.setNewRs1(recOld.rs2Data, RS1_NO_EXPIRATION);
         rec2.setNewRs1(recOld.rs1Data, RS1_NO_EXPIRATION);
-        if (fwrite(rec2.getRecordData(), rec2.getRecordLength(), 1, zidFile) < 1)
+        if (fwrite(rec2.getRecordData(), ZIDRecordFile::getRecordLength(), 1, zidFile) < 1)
             ++errors;
 
     } while (numRead == 1);
@@ -140,13 +141,16 @@ void ZIDCacheFile::checkDoMigration(char* name) {
 }
 
 ZIDCacheFile::~ZIDCacheFile() {
-    close();
+    if (isOpen()) {
+        fclose(zidFile);
+        zidFile = nullptr;
+    }
 }
 
 int ZIDCacheFile::open(char* name) {
 
     // check for an already active ZID file
-    if (zidFile != nullptr) {
+    if (isOpen()) {
         return 0;
     }
     fileName = name;
@@ -158,7 +162,7 @@ int ZIDCacheFile::open(char* name) {
         if (zidFile != nullptr) {
             ZIDRecordFile rec;
             fseek(zidFile, 0L, SEEK_SET);
-            if (fread(rec.getRecordData(), rec.getRecordLength(), 1, zidFile) != 1) {
+            if (fread(rec.getRecordData(), ZIDRecordFile::getRecordLength(), 1, zidFile) != 1) {
                 fclose(zidFile);
                 zidFile = nullptr;
                 return -1;
@@ -171,12 +175,12 @@ int ZIDCacheFile::open(char* name) {
             memcpy(associatedZid, rec.getIdentifier(), IDENTIFIER_LEN);
         }
     }
-    return ((zidFile == nullptr) ? -1 : 1);
+    return zidFile == nullptr ? -1 : 1;
 }
 
 void ZIDCacheFile::close() {
 
-    if (zidFile != nullptr) {
+    if (isOpen()) {
         fclose(zidFile);
         zidFile = nullptr;
     }
@@ -186,40 +190,39 @@ std::unique_ptr<ZIDRecord>
 ZIDCacheFile::getRecord(unsigned char *zid) {
     long pos;
     size_t numRead;
+    bool ownRecord = false;
     //    ZIDRecordFile rec;
     auto zidRecord = std::make_unique<ZIDRecordFile>();
 
-    // Do _not_ created a remote ZID record in DB with my own ZID, return empty pointer
+    // Do _not_ create a remote ZID record in DB with my own ZID, return an empty pointer
     if (memcmp(associatedZid, zid, IDENTIFIER_LEN) == 0) {
         return {};
     }
 
     // set read pointer behind first record (
-    fseek(zidFile, zidRecord->getRecordLength(), SEEK_SET);
+    fseek(zidFile, ZIDRecordFile::getRecordLength(), SEEK_SET);
 
     do {
         pos = ftell(zidFile);
-        numRead = fread(zidRecord->getRecordData(), zidRecord->getRecordLength(), 1, zidFile);
+        numRead = fread(zidRecord->getRecordData(), ZIDRecordFile::getRecordLength(), 1, zidFile);
         if (numRead == 0) {
             break;
         }
 
         // skip own ZID record and invalid records
-        if (zidRecord->isOwnZIDRecord() || !zidRecord->isValid()) {
-            continue;
-        }
+        ownRecord = zidRecord->isOwnZIDRecord() || !zidRecord->isValid();
 
-    } while (numRead == 1 &&
+    } while (numRead == 1 && !ownRecord &&
              memcmp(zidRecord->getIdentifier(), zid, IDENTIFIER_LEN) != 0);
 
-    // If we reached end of file, then no record with the ZID
+    // If we reached the end of file, then no record with the ZID
     // found. We need to create a new ZID record.
     if (numRead == 0) {
         // create new record
         zidRecord = std::make_unique<ZIDRecordFile>();
         zidRecord->setZid(zid);
         zidRecord->setValid();
-        if (fwrite(zidRecord->getRecordData(), zidRecord->getRecordLength(), 1, zidFile) < 1)
+        if (fwrite(zidRecord->getRecordData(), ZIDRecordFile::getRecordLength(), 1, zidFile) < 1)
             ++errors;
     }
     //  remember position of record in file for save operation
@@ -227,11 +230,11 @@ ZIDCacheFile::getRecord(unsigned char *zid) {
     return zidRecord;
 }
 
-unsigned int ZIDCacheFile::saveRecord(ZIDRecord& zidRec) {
-    auto zidRecord = reinterpret_cast<ZIDRecordFile&>(zidRec);
+unsigned int ZIDCacheFile::saveRecord(ZIDRecord& zidRecord) {
+    auto record = reinterpret_cast<ZIDRecordFile&>(zidRecord);
 
-    fseek(zidFile, zidRecord.getPosition(), SEEK_SET);
-    if (fwrite(zidRecord.getRecordData(), zidRecord.getRecordLength(), 1, zidFile) < 1)
+    fseek(zidFile, record.getPosition(), SEEK_SET);
+    if (fwrite(record.getRecordData(), ZIDRecordFile::getRecordLength(), 1, zidFile) < 1)
         ++errors;
     fflush(zidFile);
     return 1;

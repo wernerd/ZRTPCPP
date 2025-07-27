@@ -19,8 +19,7 @@
 #define LIBZRTPCPP_POINT41417_H
 
 #include "botan_all.h"
-#include "botancrypto/ZrtpBotanRng.h"
-#include "botancrypto/Ec41417Group.h"
+//#include "botancrypto/Ec41417Group.h"
 
 namespace Botan {
     /**
@@ -63,10 +62,10 @@ namespace Botan {
         /**
         * Move Assignment
         */
-        Point41417p &operator=(Point41417p &&other) {
+        Point41417p &operator=(Point41417p &&other)  noexcept {
             if (this != &other)
                 this->swap(other);
-            return (*this);
+            return *this;
         }
 
         /**
@@ -74,6 +73,7 @@ namespace Botan {
          * Prefer EC_Group::point(x,y) for this operation.
          * @param x affine x coordinate
          * @param y affine y coordinate
+         * @param z affine z coordinate
          */
         Point41417p(const BigInt &x, const BigInt &y, const BigInt &z = 0) :
                 m_coord_x(x), m_coord_y(y), m_coord_z(z) {}
@@ -82,7 +82,7 @@ namespace Botan {
         * EC2OSP - elliptic curve to octet string primitive
         * @param format which format to encode using
         */
-        std::vector<uint8_t> encode(Point41417p::Compression_Type format) const;
+        std::vector<uint8_t> encode(Compression_Type format) const;
 
         std::pair<BigInt, BigInt> getAffineXY() const;
 
@@ -117,14 +117,14 @@ namespace Botan {
         * swaps the states of *this and other, does not throw!
         * @param other the object to swap values with
         */
-        void swap(Point41417p &other);
+        void swap(Point41417p &other) noexcept;
 
         /**
         * Point addition
-        * @param other the point to add to *this
+        * @param Q the point to add to *this
         * @param workspace temp space, at least WORKSPACE_SIZE elements
         */
-        void add(const Point41417p &other, std::vector<BigInt> &workspace);
+        void add(const Point41417p &Q, std::vector<BigInt> &workspace);
 
         /**
         * Point doubling
@@ -139,7 +139,7 @@ namespace Botan {
         * @return other plus *this
         */
         Point41417p plus(const Point41417p &other, std::vector<BigInt> &workspace) const {
-            Point41417p x = (*this);
+            Point41417p x = *this;
             x.add(other, workspace);
             return x;
         }
@@ -150,7 +150,7 @@ namespace Botan {
         * @return *this doubled
         */
         Point41417p double_of(std::vector<BigInt> &workspace) const {
-            Point41417p x = (*this);
+            Point41417p x = *this;
             x.mult2(workspace);
             return x;
         }

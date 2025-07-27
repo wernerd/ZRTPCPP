@@ -17,11 +17,14 @@
 
 #include "GenericPacketFilter.h"
 #include <libzrtpcpp/ZrtpStateEngineImpl.h>
+#include <libzrtpcpp/ZrtpTextData.h>
 #include <zrtp/libzrtpcpp/zrtpPacket.h>
 #include <common/osSpecifics.h>
 #include <common/ZrtpTimeoutProvider.h>
 
 #include <botancrypto/ZrtpBotanRng.h>
+
+#include "libzrtpcpp/ZrtpCrc32.h"
 
 static constexpr size_t RTPHeaderLength = 12;
 static constexpr int maxZrtpSize = 3072;
@@ -29,14 +32,13 @@ static constexpr int maxZrtpSize = 3072;
 static zrtp::ZrtpTimeoutProvider *staticTimeoutProvider = nullptr;
 
 GenericPacketFilter::GenericPacketFilter() {
-
     if (staticTimeoutProvider == nullptr) {
         staticTimeoutProvider = new zrtp::ZrtpTimeoutProvider;
     }
 }
 
 GenericPacketFilter::~GenericPacketFilter() {
-    std::lock_guard<std::mutex> guard(syncLock);
+    std::lock_guard guard(syncLock);
     if (zrtpStarted && zrtpEngine) {
         zrtpEngine->stopZrtp();
         zrtpStarted = false;
@@ -45,14 +47,14 @@ GenericPacketFilter::~GenericPacketFilter() {
 
 void
 GenericPacketFilter::releaseTimeoutProvider() {
-    auto timeoutProvider = staticTimeoutProvider;       // clear first before deleting
+    auto const timeoutProvider = staticTimeoutProvider; // clear first before deleting
     staticTimeoutProvider = nullptr;
     delete timeoutProvider;
 }
 
 GenericPacketFilter::PacketFilterReturnCodes
 GenericPacketFilter::startZrtpEngine() {
-    std::lock_guard<std::mutex> guard(syncLock);
+    std::lock_guard guard(syncLock);
 
     if (!zrtpStarted) {
         if (!configuration) {
@@ -61,7 +63,7 @@ GenericPacketFilter::startZrtpEngine() {
         std::shared_ptr<ZrtpCallback> mySelf = shared_from_this();
         zrtpEngine = std::make_unique<ZRtp>(clientId, mySelf, configuration);
 
-        // Check data that must be set before start of ZRTP engine
+        // Check data that must be set before the start of ZRTP engine
         if (tpOverhead >= 0) {
             zrtpEngine->setTransportOverhead(tpOverhead);
         }
@@ -78,26 +80,29 @@ GenericPacketFilter::startZrtpEngine() {
 }
 
 GenericPacketFilter::FilterResult
-GenericPacketFilter::filterPacket(uint8_t const * packetData, size_t & packetLength, CheckFunction const & checkFunction) {
-
+GenericPacketFilter::filterPacket(uint8_t const *packetData, size_t &packetLength, CheckFunction const &checkFunction) {
     size_t offset = 0;
     uint32_t ssrc = 0;
     auto const checkResult = checkFunction(packetData, packetLength, offset, ssrc);
 
     // This seems to be a legit data packet. Check what to do with it.
     if (checkResult == NotZrtp) {
-        if (!doProcessSrtp) {       // no further processing, application takes care
+        if (!doProcessSrtp) {
+            // no further processing, application takes care
             return NotProcessed;
         }
-        if (!recvSrtp) {            // No keys available yet - tell caller about it
+        if (!recvSrtp) {
+            // No keys available yet - tell caller about it
             return NotDecrypted;
         }
         // At this point we have an active ZRTP/SRTP context, unprotect with ZRTP/SRTP first
-        if (suppressCounter < supressWarn)       // Don't report SRTP problems while in startup mode
+        if (suppressCounter < supressWarn) // Don't report SRTP problems while in startup mode
             suppressCounter++;
 
         size_t newLength;
-        auto rc = SrtpHandler::unprotect(recvSrtp.get(), const_cast<uint8_t *>(packetData), packetLength, &newLength, &srtpErrorDetails);
+        auto const rc = SrtpHandler::unprotect(recvSrtp.get(), const_cast<uint8_t *>(packetData), packetLength,
+                                               &newLength,
+                                               &srtpErrorDetails);
         if (rc == 1) {
             zrtpUnprotect++;
             // Got a good SRTP, check state and if in WaitConfAck (an Initiator state)
@@ -105,7 +110,7 @@ GenericPacketFilter::filterPacket(uint8_t const * packetData, size_t & packetLen
             if (zrtpEngine->inState(WaitConfAck)) {
                 zrtpEngine->conf2AckSecure();
             }
-            packetLength = newLength;       // Length may have changed during SRTP processing
+            packetLength = newLength; // Length may have changed during SRTP processing
             return Decrypted;
         }
         // Well, here we have some SRTP problem.
@@ -123,7 +128,8 @@ GenericPacketFilter::filterPacket(uint8_t const * packetData, size_t & packetLen
     if (!zrtpStarted) {
         return NotStarted;
     }
-    if (peerSSRC == 0) {    // used when creating the CryptoContext
+    if (peerSSRC == 0) {
+        // used when creating the CryptoContext
         peerSSRC = ssrc;
     }
     zrtpEngine->processZrtpMessage(packetData + offset, peerSSRC, packetLength);
@@ -132,18 +138,17 @@ GenericPacketFilter::filterPacket(uint8_t const * packetData, size_t & packetLen
 }
 
 std::unique_ptr<secUtilities::SecureArrayFlex>
-GenericPacketFilter::processOutgoingRtp(uint8_t *rtpData, size_t length)
-{
+GenericPacketFilter::processOutgoingRtp(uint8_t const *rtpData, size_t const length) {
     // Add 10 bytes to capacity: maximum length of SRTP authentication tag
     auto processedData = make_unique<secUtilities::SecureArrayFlex>(length + 10);
     processedData->assign(rtpData, length);
 
-    if (!sendSrtp) {    // No keys yet - just return the data
+    if (!sendSrtp) {
+        // No keys yet - just return the data
         return processedData;
     }
     size_t newLength;
-    auto rc = SrtpHandler::protect(sendSrtp.get(), processedData->data(), length, &newLength);
-    if (rc) {
+    if (SrtpHandler::protect(sendSrtp.get(), processedData->data(), length, &newLength)) {
         zrtpProtect++;
         processedData->size(newLength);
         return processedData;
@@ -153,14 +158,16 @@ GenericPacketFilter::processOutgoingRtp(uint8_t *rtpData, size_t length)
 }
 
 GenericPacketFilter::DataCheckResult
-GenericPacketFilter::checkRtpData(uint8_t const * packetData, size_t packetLength, size_t & offset, uint32_t & ssrc) {
-    if ((*packetData & 0xc0U) == 0x80) {            // Most probably a real RTP packet -> no ZRTP data
+GenericPacketFilter::checkRtpData(uint8_t const *packetData, size_t const packetLength, size_t &offset, uint32_t &ssrc) {
+    if ((*packetData & 0xc0U) == 0x80) {
+        // Most probably a real RTP packet -> no ZRTP data
         return NotZrtp;
     }
-    // Not an RTP packet, check for possible ZRTP packet.
+    // Not an RTP packet, check for a possible ZRTP packet.
 
     // Fixed header length + smallest ZRTP packet (includes CRC)
-    if (packetLength < (RTPHeaderLength + sizeof(HelloAckPacket_t))) {  // data too small, dismiss
+    if (packetLength < RTPHeaderLength + sizeof(HelloAckPacket_t)) {
+        // data too small, dismiss
         return Discard;
     }
     // Check if it's really a ZRTP packet:
@@ -177,7 +184,7 @@ GenericPacketFilter::checkRtpData(uint8_t const * packetData, size_t packetLengt
         return Discard;
     }
     // return peer's SSRC in host order
-    ssrc = *(uint32_t*)(packetData + 8);    // RTP fixed offset to SSRC
+    ssrc = *reinterpret_cast<uint32_t const *>(packetData + 8); // RTP fixed offset to SSRC
     ssrc = zrtpNtohl(ssrc);
     offset = RTPHeaderLength;
 
@@ -185,46 +192,43 @@ GenericPacketFilter::checkRtpData(uint8_t const * packetData, size_t packetLengt
 }
 
 std::unique_ptr<GenericPacketFilter::ProtocolData>
-GenericPacketFilter::prepareToSendRtp(GenericPacketFilter& thisFilter, const uint8_t *zrtpData, int32_t length, uint8_t frameFlag) {
+GenericPacketFilter::prepareToSendRtp(GenericPacketFilter &thisFilter, const uint8_t *zrtpData, int32_t const length,
+                                      uint8_t const frameFlag) {
+    uint16_t totalLen = length + RTPHeaderLength; /* Fixed number of bytes of ZRTP header */
 
-    uint16_t totalLen = length + RTPHeaderLength;     /* Fixed number of bytes of ZRTP header */
+    auto protocolData = std::make_unique<ProtocolData>();
 
-    uint16_t* pus;
-    uint32_t* pui;
-
-    auto protocolData = std::make_unique<GenericPacketFilter::ProtocolData>();
-
-    if ((totalLen) > maxZrtpSize)
+    if (totalLen > maxZrtpSize)
         return protocolData;
 
     if (thisFilter.zrtpSequenceNo() == 0) {
         uint16_t seqNumber = 0;
         while (seqNumber == 0) {
-            ZrtpBotanRng::getRandomData((uint8_t *) &seqNumber, 2);
+            ZrtpBotanRng::getRandomData(reinterpret_cast<uint8_t *>(&seqNumber), 2);
         }
         thisFilter.zrtpSequenceNo(seqNumber & 0x7fffU);
     }
-    auto ptr = std::make_shared<secUtilities::SecureArrayFlex>(totalLen);
+    auto const ptr = std::make_shared<secUtilities::SecureArrayFlex>(totalLen);
     /* Get some handy pointers */
-    pus = (uint16_t*)ptr->data();
-    pui = (uint32_t*)ptr->data();
+    auto *pus = reinterpret_cast<uint16_t *>(ptr->data());
+    auto *pui = reinterpret_cast<uint32_t *>(ptr->data());
 
     // set up fixed ZRTP header - simulates RTP
-    ptr->at(0) = 0x10;                             // invalid RTP version - refer to RFC6189
+    ptr->at(0) = 0x10; // invalid RTP version - refer to RFC6189
     ptr->at(1) = frameFlag;
     auto seqNumber = thisFilter.zrtpSequenceNo();
     pus[1] = zrtpHtons(seqNumber++);
     thisFilter.zrtpSequenceNo(seqNumber);
 
     pui[1] = zrtpHtonl(ZRTP_MAGIC);
-    pui[2] = zrtpHtonl(thisFilter.ownRtpSsrc());      // ownSSRC is stored in host order
+    pui[2] = zrtpHtonl(thisFilter.ownRtpSsrc()); // ownSSRC is stored in host order
 
-    memcpy(ptr->data()+12, zrtpData, length);       // Copy ZRTP message data after the header data
+    memcpy(ptr->data() + 12, zrtpData, length); // Copy ZRTP message data after the header data
 
     // Compute the ZRTP CRC over the total length, including the transport (RTP) data
-    auto crc = zrtpGenerateCksum(ptr->data(), totalLen-CRC_SIZE);        // Setup and compute ZRTP CRC
-    crc = zrtpEndCksum(crc);                                       // convert and store CRC in ZRTP packet.
-    *(uint32_t*)(ptr->data()+totalLen-CRC_SIZE) = zrtpHtonl(crc);
+    auto crc = zrtpGenerateCksum(ptr->data(), totalLen - CRC_SIZE); // Setup and compute ZRTP CRC
+    crc = zrtpEndCksum(crc); // convert and store CRC in ZRTP packet.
+    *reinterpret_cast<uint32_t *>(ptr->data() + totalLen - CRC_SIZE) = zrtpHtonl(crc);
 
     protocolData->length = totalLen;
     protocolData->ptr = ptr;
@@ -233,11 +237,10 @@ GenericPacketFilter::prepareToSendRtp(GenericPacketFilter& thisFilter, const uin
 
 // region ZRTP callback methods
 int32_t
-GenericPacketFilter::sendDataZRTP(const unsigned char *data, int32_t length) {
-
-    auto protocolData = (prepareToSend == nullptr) ?
-                        GenericPacketFilter::prepareToSendRtp(*this, data, length, 0) :
-                        prepareToSend(*this, data, length, 0);
+GenericPacketFilter::sendDataZRTP(const unsigned char *data, int32_t const length) {
+    auto const protocolData = prepareToSend == nullptr
+                            ? prepareToSendRtp(*this, data, length, 0)
+                            : prepareToSend(*this, data, length, 0);
 
     // No data?
     if (protocolData->length == 0 || !protocolData->ptr) {
@@ -251,14 +254,14 @@ GenericPacketFilter::sendDataZRTP(const unsigned char *data, int32_t length) {
 }
 
 int32_t
-GenericPacketFilter::sendFrameDataZRTP(const uint8_t* data, int32_t length, uint8_t numberOfFrames) {
-    // prepare frame flag and number of frames. For RTP this goes into packet's 2nd byte.
+GenericPacketFilter::sendFrameDataZRTP(uint8_t const *data, int32_t const length, uint8_t const numberOfFrames) {
+    // Prepare frame flag and number of frames. For RTP, this goes into packet's 2nd byte.
     // 2nd byte in RTP is a marker flag and payload type: no harm for ZRTP and SRTP processing
-    uint8_t frameFlagCnt = ((numberOfFrames & 0x3) << 1) | 1;
+    uint8_t const frameFlagCnt = (numberOfFrames & 0x3) << 1 | 1;
 
-    auto protocolData = (prepareToSend == nullptr) ?
-                        GenericPacketFilter::prepareToSendRtp(*this, data, length, frameFlagCnt) :
-                        prepareToSend(*this, data, length, 0);
+    auto const protocolData = prepareToSend == nullptr
+                                  ? prepareToSendRtp(*this, data, length, frameFlagCnt)
+                                  : prepareToSend(*this, data, length, 0);
 
     // No data?
     if (protocolData->length == 0 || !protocolData->ptr) {
@@ -272,7 +275,7 @@ GenericPacketFilter::sendFrameDataZRTP(const uint8_t* data, int32_t length, uint
 }
 
 int32_t
-GenericPacketFilter::activateTimer(int32_t time) {
+GenericPacketFilter::activateTimer(int32_t const time) {
     if (staticTimeoutProvider != nullptr) {
         if (timeoutId != -1) {
             staticTimeoutProvider->removeTimer(timeoutId);
@@ -302,8 +305,7 @@ GenericPacketFilter::handleGoClear() {
 }
 
 bool
-GenericPacketFilter::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
-{
+GenericPacketFilter::srtpSecretsReady(SrtpSecret_t *secrets, EnableSecurity const part) {
     if (!doProcessSrtp && keyDataReady == nullptr) {
         return false;
     }
@@ -322,13 +324,7 @@ GenericPacketFilter::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part
 
         return keyDataReady(part, ka);
     }
-
     // Generic filter handles SRTP. Setup crypto contexts.
-
-    std::unique_ptr<CryptoContext> recvCryptoContext;
-    std::unique_ptr<CryptoContext> senderCryptoContext;
-    std::unique_ptr<CryptoContextCtrl> recvCryptoContextCtrl;
-    std::unique_ptr<CryptoContextCtrl> senderCryptoContextCtrl;
 
     int cipher = SrtpEncryptionNull;
     int authn = SrtpAuthenticationNull;
@@ -352,63 +348,81 @@ GenericPacketFilter::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part
     role = secrets->role;
 
     if (part == ForSender) {
+        std::unique_ptr<CryptoContextCtrl> senderCryptoContextCtrl;
+        std::unique_ptr<CryptoContext> senderCryptoContext;
         // To encrypt packets: initiator uses initiator keys,
         // responder uses responder keys
-        // Create a "half baked" crypto context first and store it. This is
+        // Create a "half-baked" crypto context first and store it. This is
         // the main crypto context for the sending part of the connection.
         if (secrets->role == Initiator) {
-            senderCryptoContext = std::make_unique<CryptoContext>(0,           // SSRC (used for lookup)
-                                      0,                                       // Roll-Over-Counter (ROC)
-                                      0L,                                      // key derivation << 48,
-                                      cipher,                                  // encryption algo
-                                      authn,                                   // authentication algo
-                                      (unsigned char*)secrets->keyInitiator,   // Master Key
-                                      secrets->initKeyLen / 8,                 // Master Key length
-                                      (unsigned char*)secrets->saltInitiator,  // Master Salt
-                                      secrets->initSaltLen / 8,                // Master Salt length
-                                      secrets->initKeyLen / 8,                 // encryption keylength
-                                      authKeyLen,                              // authentication key len
-                                      secrets->initSaltLen / 8,                // session salt len
-                                      secrets->srtpAuthTagLen / 8);            // authentication tag len
+            senderCryptoContext = std::make_unique<CryptoContext>(
+                0, // SSRC (used for lookup)
+                0, // Roll-Over-Counter (ROC)
+                0L, // key derivation << 48,
+                cipher, // encryption algo
+                authn, // authentication algo
+                secrets->keyInitiator, // Master Key
+                secrets->initKeyLen / 8, // Master Key length
+                secrets->saltInitiator,
+                // Master Salt
+                secrets->initSaltLen / 8, // Master Salt length
+                secrets->initKeyLen / 8, // encryption key length
+                authKeyLen, // authentication key len
+                secrets->initSaltLen / 8, // session salt len
+                secrets->srtpAuthTagLen / 8 // authentication tag len
+            );
 
-            senderCryptoContextCtrl = std::make_unique<CryptoContextCtrl>(0,           // SSRC (used for lookup)
-                                          cipher,                                    // encryption algo
-                                          authn,                                     // authentication algo
-                                          (unsigned char*)secrets->keyInitiator,     // Master Key
-                                          secrets->initKeyLen / 8,                   // Master Key length
-                                          (unsigned char*)secrets->saltInitiator,    // Master Salt
-                                          secrets->initSaltLen / 8,                  // Master Salt length
-                                          secrets->initKeyLen / 8,                   // encryption keyl
-                                          authKeyLen,                                // authentication key len
-                                          secrets->initSaltLen / 8,                  // session salt len
-                                          secrets->srtpAuthTagLen / 8);              // authentication tag len
-        }
-        else {
-            senderCryptoContext = std::make_unique<CryptoContext>(0,                                       // SSRC (used for lookup)
-                                      0,                                       // Roll-Over-Counter (ROC)
-                                      0L,                                      // key derivation << 48,
-                                      cipher,                                  // encryption algo
-                                      authn,                                   // authentication algo
-                                      (unsigned char*)secrets->keyResponder,   // Master Key
-                                      secrets->respKeyLen / 8,                 // Master Key length
-                                      (unsigned char*)secrets->saltResponder,  // Master Salt
-                                      secrets->respSaltLen / 8,                // Master Salt length
-                                      secrets->respKeyLen / 8,                 // encryption keylength
-                                      authKeyLen,                              // authentication key len
-                                      secrets->respSaltLen / 8,                // session salt len
-                                      secrets->srtpAuthTagLen / 8);            // authentication tag len
+            senderCryptoContextCtrl = std::make_unique<CryptoContextCtrl>(
+                0, // SSRC (used for lookup)
+                cipher, // encryption algo
+                authn, // authentication algo
+                secrets->keyInitiator,
+                // Master Key
+                secrets->initKeyLen / 8, // Master Key length
+                secrets->saltInitiator,
+                // Master Salt
+                secrets->initSaltLen / 8,
+                // Master Salt length
+                secrets->initKeyLen / 8, // encryption key length
+                authKeyLen, // authentication key len
+                secrets->initSaltLen / 8, // session salt len
+                secrets->srtpAuthTagLen / 8 // authentication tag len
+            );
+        } else {
+            senderCryptoContext = std::make_unique<CryptoContext>(
+                0, // SSRC (used for lookup)
+                0, // Roll-Over-Counter (ROC)
+                0L, // key derivation << 48,
+                cipher, // encryption algo
+                authn, // authentication algo
+                secrets->keyResponder, // Master Key
+                secrets->respKeyLen / 8, // Master Key length
+                secrets->saltResponder,
+                // Master Salt
+                secrets->respSaltLen / 8, // Master Salt length
+                secrets->respKeyLen / 8, // encryption key length
+                authKeyLen, // authentication key len
+                secrets->respSaltLen / 8, // session salt len
+                secrets->srtpAuthTagLen / 8 // authentication tag len
+            );
 
-            senderCryptoContextCtrl = std::make_unique<CryptoContextCtrl>(0,                                         // SSRC (used for lookup)
-                                          cipher,                                    // encryption algo
-                                          authn,                                     // authentication algo
-                                          (unsigned char*)secrets->keyResponder,     // Master Key
-                                          secrets->respKeyLen / 8,                   // Master Key length
-                                          (unsigned char*)secrets->saltResponder,    // Master Salt
-                                          secrets->respSaltLen / 8,                  // Master Salt length
-                                          secrets->respKeyLen / 8,                   // encryption key length
-                                          authKeyLen,                                // authentication key len
-                                          secrets->respSaltLen / 8,                  // session salt len
-                                          secrets->srtpAuthTagLen / 8);              // authentication tag len
+            senderCryptoContextCtrl = std::make_unique<CryptoContextCtrl>(
+                0, // SSRC (used for lookup)
+                cipher, // encryption algo
+                authn, // authentication algo
+                secrets->keyResponder,
+                // Master Key
+                secrets->respKeyLen / 8, // Master Key length
+                secrets->saltResponder,
+                // Master Salt
+                secrets->respSaltLen / 8,
+                // Master Salt length
+                secrets->respKeyLen / 8,
+                // encryption key length
+                authKeyLen, // authentication key len
+                secrets->respSaltLen / 8, // session salt len
+                secrets->srtpAuthTagLen / 8 // authentication tag len
+            );
         }
         senderCryptoContext->deriveSrtpKeys(0L);
         sendSrtp = std::move(senderCryptoContext);
@@ -417,62 +431,75 @@ GenericPacketFilter::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part
         sendSrtcp = std::move(senderCryptoContextCtrl);
     }
     if (part == ForReceiver) {
+        std::unique_ptr<CryptoContextCtrl> recvCryptoContextCtrl;
+        std::unique_ptr<CryptoContext> recvCryptoContext;
         // To decrypt packets: initiator uses responder keys,
         // responder initiator keys
         // See comment above.
         if (secrets->role == Initiator) {
-            recvCryptoContext = make_unique<CryptoContext>(0,                                       // SSRC (used for lookup)
-                                      0,                                       // Roll-Over-Counter (ROC)
-                                      0L,                                      // key derivation << 48,
-                                      cipher,                                  // encryption algo
-                                      authn,                                   // authentication algo
-                                      (unsigned char*)secrets->keyResponder,   // Master Key
-                                      secrets->respKeyLen / 8,                 // Master Key length
-                                      (unsigned char*)secrets->saltResponder,  // Master Salt
-                                      secrets->respSaltLen / 8,                // Master Salt length
-                                      secrets->respKeyLen / 8,                 // encryption key length
-                                      authKeyLen,                              // authentication key len
-                                      secrets->respSaltLen / 8,                // session salt len
-                                      secrets->srtpAuthTagLen / 8);            // authentication tag len
+            recvCryptoContext = make_unique<CryptoContext>(
+                0, // SSRC (used for lookup)
+                0, // Roll-Over-Counter (ROC)
+                0L, // key derivation << 48,
+                cipher, // encryption algo
+                authn, // authentication algo
+                secrets->keyResponder, // Master Key
+                secrets->respKeyLen / 8, // Master Key length
+                secrets->saltResponder, // Master Salt
+                secrets->respSaltLen / 8, // Master Salt length
+                secrets->respKeyLen / 8, // encryption key length
+                authKeyLen, // authentication key len
+                secrets->respSaltLen / 8, // session salt len
+                secrets->srtpAuthTagLen / 8 // authentication tag len
+            );
 
-            recvCryptoContextCtrl = make_unique<CryptoContextCtrl>(0,                                         // SSRC (used for lookup)
-                                          cipher,                                    // encryption algo
-                                          authn,                                     // authentication algo
-                                          (unsigned char*)secrets->keyResponder,     // Master Key
-                                          secrets->respKeyLen / 8,                   // Master Key length
-                                          (unsigned char*)secrets->saltResponder,    // Master Salt
-                                          secrets->respSaltLen / 8,                  // Master Salt length
-                                          secrets->respKeyLen / 8,                   // encryption key length
-                                          authKeyLen,                                // authentication key len
-                                          secrets->respSaltLen / 8,                  // session salt len
-                                          secrets->srtpAuthTagLen / 8);              // authentication tag len
-        }
-        else {
-            recvCryptoContext = make_unique<CryptoContext>(0,                                       // SSRC (used for lookup)
-                                      0,                                       // Roll-Over-Counter (ROC)
-                                      0L,                                      // key derivation << 48,
-                                      cipher,                                  // encryption algo
-                                      authn,                                   // authentication algo
-                                      (unsigned char*)secrets->keyInitiator,   // Master Key
-                                      secrets->initKeyLen / 8,                 // Master Key length
-                                      (unsigned char*)secrets->saltInitiator,  // Master Salt
-                                      secrets->initSaltLen / 8,                // Master Salt length
-                                      secrets->initKeyLen / 8,                 // encryption key length
-                                      authKeyLen,                              // authentication key len
-                                      secrets->initSaltLen / 8,                // session salt len
-                                      secrets->srtpAuthTagLen / 8);            // authentication tag len
+            recvCryptoContextCtrl = make_unique<CryptoContextCtrl>(
+                0, // SSRC (used for lookup)
+                cipher, // encryption algo
+                authn, // authentication algo
+                secrets->keyResponder,
+                // Master Key
+                secrets->respKeyLen / 8, // Master Key length
+                secrets->saltResponder,
+                // Master Salt
+                secrets->respSaltLen / 8, // Master Salt length
+                secrets->respKeyLen / 8, // encryption key length
+                authKeyLen, // authentication key len
+                secrets->respSaltLen / 8, // session salt len
+                secrets->srtpAuthTagLen / 8 // authentication tag len
+            );
+        } else {
+            recvCryptoContext = make_unique<CryptoContext>(
+                0, // SSRC (used for lookup)
+                0, // Roll-Over-Counter (ROC)
+                0L, // key derivation << 48,
+                cipher, // encryption algo
+                authn, // authentication algo
+                secrets->keyInitiator, // Master Key
+                secrets->initKeyLen / 8, // Master Key length
+                secrets->saltInitiator, // Master Salt
+                secrets->initSaltLen / 8, // Master Salt length
+                secrets->initKeyLen / 8, // encryption key length
+                authKeyLen, // authentication key len
+                secrets->initSaltLen / 8, // session salt len
+                secrets->srtpAuthTagLen / 8 // authentication tag len
+            );
 
-            recvCryptoContextCtrl = make_unique<CryptoContextCtrl>(0,                                         // SSRC (used for lookup)
-                                          cipher,                                    // encryption algo
-                                          authn,                                     // authentication algo
-                                          (unsigned char*)secrets->keyInitiator,     // Master Key
-                                          secrets->initKeyLen / 8,                   // Master Key length
-                                          (unsigned char*)secrets->saltInitiator,    // Master Salt
-                                          secrets->initSaltLen / 8,                  // Master Salt length
-                                          secrets->initKeyLen / 8,                   // encryption key length
-                                          authKeyLen,                                // authentication key len
-                                          secrets->initSaltLen / 8,                  // session salt len
-                                          secrets->srtpAuthTagLen / 8);              // authentication tag len
+            recvCryptoContextCtrl = make_unique<CryptoContextCtrl>(
+                0, // SSRC (used for lookup)
+                cipher, // encryption algo
+                authn, // authentication algo
+                secrets->keyInitiator,
+                // Master Key
+                secrets->initKeyLen / 8, // Master Key length
+                secrets->saltInitiator,
+                // Master Salt
+                secrets->initSaltLen / 8, // Master Salt length
+                secrets->initKeyLen / 8, // encryption key length
+                authKeyLen, // authentication key len
+                secrets->initSaltLen / 8, // session salt len
+                secrets->srtpAuthTagLen / 8 // authentication tag len
+            );
         }
         recvCryptoContext->deriveSrtpKeys(0L);
         recvSrtp = std::move(recvCryptoContext);
@@ -480,28 +507,23 @@ GenericPacketFilter::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part
         recvCryptoContextCtrl->deriveSrtcpKeys();
         recvSrtcp = std::move(recvCryptoContextCtrl);
 
-        suppressCounter = 0;         // suppress SRTP warnings for some packets after we switch to SRTP
+        suppressCounter = 0; // suppress SRTP warnings for some packets after we switch to SRTP
     }
     return true;
 }
 
 void
-GenericPacketFilter::srtpSecretsOn(std::string cipher, std::string sas, bool verified)
-{
-    auto currentState = Secure;
-
+GenericPacketFilter::srtpSecretsOn(std::string const c, std::string const s, bool const verified) {
     sasVerified_ = verified;
-    cipherInfo_ = cipher;
-    computedSAS = sas;
-
+    cipherInfo_ = c;
+    computedSAS = s;
 }
 
 void
-GenericPacketFilter::srtpSecretsOff(EnableSecurity part) {
+GenericPacketFilter::srtpSecretsOff(EnableSecurity const part) {
     if (part == ForSender) {
         sendSrtp.reset();
         sendSrtcp.reset();
-
     }
     if (part == ForReceiver) {
         recvSrtp.reset();
@@ -510,9 +532,7 @@ GenericPacketFilter::srtpSecretsOff(EnableSecurity part) {
 }
 
 void
-GenericPacketFilter::sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) {
-    std::string *msg;
-
+GenericPacketFilter::sendInfo(GnuZrtpCodes::MessageSeverity const severity, int32_t const subCode) {
     if (stateHandler == nullptr) {
         return;
     }
@@ -523,7 +543,8 @@ GenericPacketFilter::sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t su
             if (subCode == GnuZrtpCodes::InfoSecureStateOn) {
                 StateData sasData(GnuZrtpCodes::Info, GnuZrtpCodes::InfoSecureStateOn, computedSAS);
                 stateHandler(Secure, sasData);
-            } else if (subCode == GnuZrtpCodes::InfoRespCommitReceived || subCode == GnuZrtpCodes::InfoInitDH1Received) {
+            } else if (subCode == GnuZrtpCodes::InfoRespCommitReceived || subCode ==
+                       GnuZrtpCodes::InfoInitDH1Received) {
                 stateHandler(KeyNegotiation, stateData);
             } else if (reportAll) {
                 stateHandler(InfoOnly, stateData);
@@ -542,15 +563,13 @@ GenericPacketFilter::sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t su
 }
 
 void
-GenericPacketFilter::zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity, int32_t subCode) {
-
+GenericPacketFilter::zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity const severity, int32_t const subCode) {
     if (stateHandler == nullptr) {
         return;
     }
 
     StateData stateData(severity, subCode, codeToString.getStringForCode(severity, subCode));
     stateHandler(Error, stateData);
-
 }
 
 void

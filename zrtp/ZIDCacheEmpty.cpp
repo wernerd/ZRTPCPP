@@ -22,29 +22,30 @@
 #include <libzrtpcpp/ZIDRecordEmpty.h>
 
 int ZIDCacheEmpty::open(char* name) {
-    (void) name;
+    (void)name;
     return 1;
 }
 
-void ZIDCacheEmpty::close() {}
+void ZIDCacheEmpty::close() {
+}
 
-std::unique_ptr<ZIDRecord> ZIDCacheEmpty::getRecord(unsigned char *zid) {
+std::unique_ptr<ZIDRecord> ZIDCacheEmpty::getRecord(unsigned char* zid) {
     (void)zid;
     return std::make_unique<ZIDRecordEmpty>();
 }
 
-unsigned int ZIDCacheEmpty::saveRecord(ZIDRecord& zidRec) {
-    (void) zidRec;
+unsigned int ZIDCacheEmpty::saveRecord(ZIDRecord &zidRecord) {
+    (void)zidRecord;
     return 1;
 }
 
-int32_t ZIDCacheEmpty::getPeerName(const uint8_t *peerZid, std::string *name) {
-    (void) peerZid;
-    (void) name;
+int32_t ZIDCacheEmpty::getPeerName(const uint8_t* peerZid, std::string* name) {
+    (void)peerZid;
+    (void)name;
     return 0;
 }
 
-void ZIDCacheEmpty::putPeerName(const uint8_t *peerZid, const std::string& name) {
-    (void) peerZid;
-    (void) name;
+void ZIDCacheEmpty::putPeerName(const uint8_t* peerZid, const std::string &name) {
+    (void)peerZid;
+    (void)name;
 }

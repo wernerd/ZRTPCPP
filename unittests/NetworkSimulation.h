@@ -63,7 +63,7 @@ namespace zrtp {
 
             auto rawDataPtr = std::make_unique<ZrtpDataPair>(std::move(data), length);
 
-            auto currentTime = Utilities::currentTimeMillis();
+            auto const currentTime = Utilities::currentTimeMillis();
 
             if (networkDelay == 0) {
                 receiveFunction(std::move(rawDataPtr), currentTime);
@@ -72,14 +72,14 @@ namespace zrtp {
 
             int64_t timeToSend = currentTime + networkDelay;
             {
-                lock_guard<mutex> queueLock(queueMutex);
+                lock_guard queueLock(queueMutex);
                 auto timedPair = std::make_unique<TimedZrtpData >(timeToSend, std::move(rawDataPtr));
                 dataQueue.push_back(std::move(timedPair));
             }
             // Queue a timer event, the data is the time to send: requested time in handling lambda
-            timeoutProvider.addTimer(timeToSend, timeToSend, [this](int64_t requestedTime) {
+            timeoutProvider.addTimer(timeToSend, timeToSend, [this](int64_t const requestedTime) {
 
-                lock_guard<mutex> queueLock(queueMutex);
+                lock_guard queueLock(queueMutex);
                 for (auto it = dataQueue.begin(); it != dataQueue.end(); ) {
                     if ((*it)->first == requestedTime) {
                         receiveFunction(std::move((*it)->second), (*it)->first);
@@ -93,7 +93,7 @@ namespace zrtp {
             return timeToSend;
         }
 
-        void setNetworkDelay(int64_t delay) { networkDelay = delay; }
+        void setNetworkDelay(int64_t const delay) { networkDelay = delay; }
 
     private:
         ZrtpTimeoutProvider & timeoutProvider;

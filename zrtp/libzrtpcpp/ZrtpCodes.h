@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#ifndef _ZRTPCODES_H_
-#define _ZRTPCODES_H_
+#ifndef ZRTPCODES_H_
+#define ZRTPCODES_H_
 /**
  * @file ZrtpCodes.h
  * @brief The ZRTP info, warning, error codes, and other contants and enums that applications may use.
@@ -26,148 +26,150 @@
  */
 
 namespace GnuZrtpCodes {
-/**
- *
- * This enum defines the information message severity.
- *
- * The ZRTP implementation issues information messages to inform the user
- * about ongoing processing, unusual behavior, or alerts in case of severe
- * problems. Each main severity code a number of sub-codes exist that
- * specify the exact nature of the problem. 
- */
-enum MessageSeverity {
     /**
-     * Information about ongoing processing and security setup.
-     * The enumeration GnuZrtpCodes::InfoCodes defines the sub-codes.
+     *
+     * This enum defines the information message severity.
+     *
+     * The ZRTP implementation issues information messages to inform the user
+     * about ongoing processing, unusual behavior, or alerts in case of severe
+     * problems. Each main severity code a number of sub-codes exist that
+     * specify the exact nature of the problem.
      */
-    Info = 1,
+    enum MessageSeverity {
+        /**
+         * Information about ongoing processing and security setup.
+         * The enumeration GnuZrtpCodes::InfoCodes defines the sub-codes.
+         */
+        Info = 1,
 
-    /** information about some minor security issues.
-     * For example if an AES 256 encryption is requested but only DH 3072
-     * as public key scheme is supported. ZRTP continues key negotiation,
-     * however application may warn the user to change/adapt ZrtpConfiguration.
-     * The enumeration GnuZrtpCodes::WarningCodes defines the sub-codes. */
-    Warning,
+        /** information about some minor security issues.
+         * For example if an AES 256 encryption is requested but only DH 3072
+         * as public key scheme is supported. ZRTP continues key negotiation,
+         * however application may warn the user to change/adapt ZrtpConfiguration.
+         * The enumeration GnuZrtpCodes::WarningCodes defines the sub-codes. */
+        Warning,
+
+        /**
+         * An error occurred during ZRTP key negotiation.
+         * In case of _Severe_ ZRTP will **not** establish a secure session.
+         * The enumeration GnuZrtpCodes::SevereCodes defines the sub-codes.
+         */
+        Severe,
+
+        /**
+         * Reports a ZRTP security problem.
+         * Refer to the enumeration GnuZrtpCodes::ZrtpErrorCodes for sub-codes.
+         * ZRTP does **not** establish a secure session.
+         */
+        ZrtpError
+    };
 
     /**
-     * An error occurred during ZRTP key negotiation.
-     * In case of _Severe_ ZRTP will **not** establish a secure session.
-     * The enumeration GnuZrtpCodes::SevereCodes defines the sub-codes.
+     * Sub-codes for Info
      */
-    Severe,
+    enum InfoCodes {
+        InfoHelloReceived = 1, //!< Hello received and prepared a Commit, ready to get peer's hello hash
+        InfoCommitDHGenerated, //!< Commit: Generated a public DH key
+        InfoRespCommitReceived, //!< Responder: Commit received, preparing DHPart1
+        InfoDH1DHGenerated, //!< DH1Part: Generated a public DH key
+        InfoInitDH1Received, //!< Initiator: DHPart1 received, preparing DHPart2
+        InfoRespDH2Received, //!< Responder: DHPart2 received, preparing Confirm1
+        InfoInitConf1Received, //!< Initiator: Confirm1 received, preparing Confirm2
+        InfoRespConf2Received, //!< Responder: Confirm2 received, preparing Conf2Ack
+        InfoRSMatchFound, //!< At least one retained secrets matches - security OK
+        InfoSecureStateOn, //!< Entered secure state
+        InfoSecureStateOff //!< No more security for this session
+    };
 
     /**
-     * Reports a ZRTP security problem.
-     * Refer to the enumeration GnuZrtpCodes::ZrtpErrorCodes for sub-codes.
-     * ZRTP does **not** establish a secure session.
+     * Sub-codes for Warning
      */
-    ZrtpError
-};
+    enum WarningCodes {
+        WarningDHAESmismatch = 1,
+        //!< Commit contains an AES256 cipher but does not offer a Diffie-Helman 4096 - not used DH4096 was discarded
+        WarningGoClearReceived, //!< Received a GoClear message
+        WarningDHShort,
+        //!< Hello offers an AES256 cipher but does not offer a Diffie-Helman 4096- not used DH4096 was discarded
+        WarningNoRSMatch, //!< No retained shared secrets available - must verify SAS
+        WarningCRCmismatch, //!< Internal ZRTP packet checksum mismatch - packet dropped
+        WarningSRTPauthError, //!< Dropping packet because SRTP authentication failed!
+        WarningSRTPreplayError, //!< Dropping packet because SRTP replay check failed!
+        WarningNoExpectedRSMatch, //!< Valid retained shared secrets availabe but no matches found - must verify SAS
+        WarningNoExpectedAuxMatch //!< Our AUX secret was set but the other peer's AUX secret does not match ours
+    };
 
-/**
- * Sub-codes for Info
- */
-enum InfoCodes {
-    InfoHelloReceived = 1,          //!< Hello received and prepared a Commit, ready to get peer's hello hash
-    InfoCommitDHGenerated,          //!< Commit: Generated a public DH key
-    InfoRespCommitReceived,         //!< Responder: Commit received, preparing DHPart1
-    InfoDH1DHGenerated,             //!< DH1Part: Generated a public DH key
-    InfoInitDH1Received,            //!< Initiator: DHPart1 received, preparing DHPart2
-    InfoRespDH2Received,            //!< Responder: DHPart2 received, preparing Confirm1
-    InfoInitConf1Received,          //!< Initiator: Confirm1 received, preparing Confirm2
-    InfoRespConf2Received,          //!< Responder: Confirm2 received, preparing Conf2Ack
-    InfoRSMatchFound,               //!< At least one retained secrets matches - security OK
-    InfoSecureStateOn,              //!< Entered secure state
-    InfoSecureStateOff              //!< No more security for this session
-};
+    /**
+     * Sub-codes for Severe
+     */
+    enum SevereCodes {
+        SevereHelloHMACFailed = 1, //!< Hash HMAC check of Hello failed!
+        SevereCommitHMACFailed, //!< Hash HMAC check of Commit failed!
+        SevereDH1HMACFailed, //!< Hash HMAC check of DHPart1 failed!
+        SevereDH2HMACFailed, //!< Hash HMAC check of DHPart2 failed!
+        SevereCannotSend, //!< Cannot send data - connection or peer down?
+        SevereProtocolError, //!< Internal protocol error occurred!
+        SevereNoTimer, //!< Cannot start a timer - internal resources exhausted?
+        SevereTooMuchRetries //!< Too much retries during ZRTP negotiation - connection or peer down?
+    };
 
-/**
- * Sub-codes for Warning
- */
-enum WarningCodes {
-    WarningDHAESmismatch = 1,       //!< Commit contains an AES256 cipher but does not offer a Diffie-Helman 4096 - not used DH4096 was discarded
-    WarningGoClearReceived,         //!< Received a GoClear message
-    WarningDHShort,                 //!< Hello offers an AES256 cipher but does not offer a Diffie-Helman 4096- not used DH4096 was discarded
-    WarningNoRSMatch,               //!< No retained shared secrets available - must verify SAS
-    WarningCRCmismatch,             //!< Internal ZRTP packet checksum mismatch - packet dropped
-    WarningSRTPauthError,           //!< Dropping packet because SRTP authentication failed!
-    WarningSRTPreplayError,         //!< Dropping packet because SRTP replay check failed!
-    WarningNoExpectedRSMatch,       //!< Valid retained shared secrets availabe but no matches found - must verify SAS
-    WarningNoExpectedAuxMatch       //!< Our AUX secret was set but the other peer's AUX secret does not match ours
-};
+    /**
+      * Error codes according to the ZRTP specification chapter 6.9
+      *
+      * GNU ZRTP uses these error codes in two ways: to fill the appropriate
+      * field ing the ZRTP Error packet and as sub-code in
+      * ZrtpUserCallback#showMessage(). GNU ZRTP uses thes error codes also
+      * to report received Error packts, in this case the sub-codes are their
+      * negative values.
+      *
+      * The enumeration member comments are copied from the ZRTP specification.
+      */
+    enum ZrtpErrorCodes {
+        MalformedPacket = 0x10, //!< Malformed packet (CRC OK, but 0wrong structure)
+        CriticalSWError = 0x20, //!< Critical software error
+        UnsuppZRTPVersion = 0x30, //!< Unsupported ZRTP version
+        HelloCompMismatch = 0x40, //!< Hello components mismatch
+        UnsuppHashType = 0x51, //!< Hash type not supported
+        UnsuppCiphertype = 0x52, //!< Cipher type not supported
+        UnsuppPKExchange = 0x53, //!< Public key exchange not supported
+        UnsuppSRTPAuthTag = 0x54, //!< SRTP auth. tag not supported
+        UnsuppSASScheme = 0x55, //!< SAS scheme not supported
+        NoSharedSecret = 0x56, //!< No shared secret available, DH mode required
+        DHErrorWrongPV = 0x61, //!< DH Error: bad pvi or pvr ( == 1, 0, or p-1)
+        DHErrorWrongHVI = 0x62, //!< DH Error: hvi != hashed data
+        SASuntrustedMiTM = 0x63, //!< Received relayed SAS from untrusted MiTM
+        ConfirmHMACWrong = 0x70, //!< Auth. Error: Bad Confirm pkt HMAC
+        NonceReused = 0x80, //!< Nonce reuse
+        EqualZIDHello = 0x90, //!< Equal ZIDs in Hello
+        GoCleatNotAllowed = 0x100, //!< GoClear packet received, but not allowed
+        IgnorePacket = 0x7fffffff
+    };
 
-/**
- * Sub-codes for Severe
- */
-enum SevereCodes {
-    SevereHelloHMACFailed = 1,      //!< Hash HMAC check of Hello failed!
-    SevereCommitHMACFailed,         //!< Hash HMAC check of Commit failed!
-    SevereDH1HMACFailed,            //!< Hash HMAC check of DHPart1 failed!
-    SevereDH2HMACFailed,            //!< Hash HMAC check of DHPart2 failed!
-    SevereCannotSend,               //!< Cannot send data - connection or peer down?
-    SevereProtocolError,            //!< Internal protocol error occurred!
-    SevereNoTimer,                  //!< Cannot start a timer - internal resources exhausted?
-    SevereTooMuchRetries            //!< Too much retries during ZRTP negotiation - connection or peer down?
-};
+    /**
+     * Information codes for the Enrollment user callbacks.
+     */
+    enum InfoEnrollment {
+        EnrollmentRequest = 0, //!< Aks user to confirm or deny an Enrollemnt request
+        EnrollmentReconfirm, //!< User already enrolled, ask re-confirmation
+        EnrollmentCanceled, //!< User did not confirm the PBX enrollement
+        EnrollmentFailed, //!< Enrollment process failed, no PBX secret available
+        EnrollmentOk //!< Enrollment process for this PBX was ok
+    };
 
-/**
-  * Error codes according to the ZRTP specification chapter 6.9
-  *
-  * GNU ZRTP uses these error codes in two ways: to fill the appropriate
-  * field ing the ZRTP Error packet and as sub-code in 
-  * ZrtpUserCallback#showMessage(). GNU ZRTP uses thes error codes also
-  * to report received Error packts, in this case the sub-codes are their
-  * negative values.
-  *
-  * The enumeration member comments are copied from the ZRTP specification.
-  */
-enum ZrtpErrorCodes {
-    MalformedPacket =   0x10,    //!< Malformed packet (CRC OK, but 0wrong structure)
-    CriticalSWError =   0x20,    //!< Critical software error
-    UnsuppZRTPVersion = 0x30,    //!< Unsupported ZRTP version
-    HelloCompMismatch = 0x40,    //!< Hello components mismatch
-    UnsuppHashType =    0x51,    //!< Hash type not supported
-    UnsuppCiphertype =  0x52,    //!< Cipher type not supported
-    UnsuppPKExchange =  0x53,    //!< Public key exchange not supported
-    UnsuppSRTPAuthTag = 0x54,    //!< SRTP auth. tag not supported
-    UnsuppSASScheme =   0x55,    //!< SAS scheme not supported
-    NoSharedSecret =    0x56,    //!< No shared secret available, DH mode required
-    DHErrorWrongPV =    0x61,    //!< DH Error: bad pvi or pvr ( == 1, 0, or p-1)
-    DHErrorWrongHVI =   0x62,    //!< DH Error: hvi != hashed data
-    SASuntrustedMiTM =  0x63,    //!< Received relayed SAS from untrusted MiTM
-    ConfirmHMACWrong =  0x70,    //!< Auth. Error: Bad Confirm pkt HMAC
-    NonceReused =       0x80,    //!< Nonce reuse
-    EqualZIDHello =     0x90,    //!< Equal ZIDs in Hello
-    GoCleatNotAllowed = 0x100,   //!< GoClear packet received, but not allowed
-    IgnorePacket =      0x7fffffff
-};
-
-/**
- * Information codes for the Enrollment user callbacks.
- */
-enum InfoEnrollment {
-    EnrollmentRequest = 0,          //!< Aks user to confirm or deny an Enrollemnt request
-    EnrollmentReconfirm,            //!< User already enrolled, ask re-confirmation
-    EnrollmentCanceled,             //!< User did not confirm the PBX enrollement
-    EnrollmentFailed,               //!< Enrollment process failed, no PBX secret available
-    EnrollmentOk                    //!< Enrollment process for this PBX was ok
-};
-
-/**
- * Offsets into the ZRTP counter array.
- * 
- */
-//!< How many Hello packet retries in detect state
+    /**
+     * Offsets into the ZRTP counter array.
+     *
+     */
+    //!< How many Hello packet retries in detect state
 #define HelloRetry      0
-//!< How many Hello packet retries in Ack sent state
+    //!< How many Hello packet retries in Ack sent state
 #define HelloRetryAck   1
-//!< How many Commit packet retries
+    //!< How many Commit packet retries
 #define CommitRetry     2
-//!< How many DhPart2 packet retries
+    //!< How many DhPart2 packet retries
 #define DhPart2Retry    3
-//!< How many Confirm2 packet retries
+    //!< How many Confirm2 packet retries
 #define Confirm2Retry   4
-//!< How many Error packet retries
+    //!< How many Error packet retries
 #define ErrorRetry      5
 }
 
@@ -180,7 +182,7 @@ enum InfoEnrollment {
 typedef enum {
     DecodeError = 1,
     ReplayError = 2,
-    AuthError   = 3
+    AuthError = 3
 } SrtpErrorType;
 
 /**

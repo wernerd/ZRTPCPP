@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _ZRTPPACKETPINGACK_H_
-#define _ZRTPPACKETPINGACK_H_
+#ifndef ZRTPPACKETPINGACK_H_
+#define ZRTPPACKETPINGACK_H_
 
 #include <libzrtpcpp/ZrtpPacketBase.h>
 /**
@@ -33,9 +33,8 @@
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
-class __EXPORT ZrtpPacketPingAck : public ZrtpPacketBase {
-
- public:
+class __EXPORT ZrtpPacketPingAck final : public ZrtpPacketBase {
+public:
     /// Creates a PingAck message with default data
     ZrtpPacketPingAck();
 
@@ -45,27 +44,36 @@ class __EXPORT ZrtpPacketPingAck : public ZrtpPacketBase {
     ~ZrtpPacketPingAck() override = default;
 
     /// Get SSRC from PingAck message
-    uint32_t getSSRC() { return zrtpNtohl(pingAckHeader->ssrc); };
+    [[nodiscard]] uint32_t getSSRC() const { return zrtpNtohl(pingAckHeader->ssrc); }
+
+    // The set functions actually copy into the data array via the pingAckHeader
 
     /// Set ZRTP protocol version field, fixed ASCII character array
-    void setVersion(uint8_t *text)      { memcpy(pingAckHeader->version, text, ZRTP_WORD_SIZE ); }
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    void setVersion(uint8_t const* text) const { memcpy(pingAckHeader->version, text, ZRTP_WORD_SIZE); }
 
     /// Set SSRC in PingAck message
-    void setSSRC(uint32_t dataIn)         {pingAckHeader->ssrc = zrtpHtonl(dataIn); };
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    void setSSRC(uint32_t const dataIn) { pingAckHeader->ssrc = zrtpHtonl(dataIn); }
 
     /// Set remote endpoint hash, fixed byte array
-    void setRemoteEpHash(uint8_t *hash) { memcpy(pingAckHeader->remoteEpHash, hash, sizeof(pingAckHeader->remoteEpHash)); }
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    void setRemoteEpHash(uint8_t const* hash) {
+        memcpy(pingAckHeader->remoteEpHash, hash, sizeof(pingAckHeader->remoteEpHash));
+    }
 
     /// Set local endpoint hash, fixed byte array
-    void setLocalEpHash(uint8_t *hash)  { memcpy(pingAckHeader->localEpHash, hash, sizeof(pingAckHeader->localEpHash)); }
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    void setLocalEpHash(uint8_t const* hash) {
+        memcpy(pingAckHeader->localEpHash, hash, sizeof(pingAckHeader->localEpHash));
+    }
 
- private:
-     PingAck_t* pingAckHeader = nullptr;   ///< Points to PingAck message
-     PingAckPacket_t data = {};
+private:
+    PingAck_t* pingAckHeader = &data.pingAck; ///< Points to PingAck message
+    PingAckPacket_t data = {};
 };
 
 /**
  * @}
  */
-#endif // ZRTPPACKETCLEARACK
-
+#endif // ZRTPPACKETPINGACK_H_

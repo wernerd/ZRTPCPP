@@ -22,8 +22,7 @@
 
 #include <libzrtpcpp/ZIDRecordFile.h>
 
-void ZIDRecordFile::setNewRs1(const unsigned char* data, int32_t expire) {
-
+void ZIDRecordFile::setNewRs1(const unsigned char* data, int32_t const expire) {
     // shift RS1 data into RS2 position
     memcpy(record.rs2Data, record.rs1Data, RS_LENGTH);
     memcpy(record.rs2Interval, record.rs1Interval, TIME_LENGTH);
@@ -42,12 +41,12 @@ void ZIDRecordFile::setNewRs1(const unsigned char* data, int32_t expire) {
         validThru = time(nullptr) + expire;
     }
 
-    if (sizeof(time_t) == 4) {
-        long long temp = validThru;
-        memcpy(record.rs1Interval, (unsigned char*)&temp, TIME_LENGTH);
+    if constexpr (sizeof(time_t) == 4) {
+        long long const temp = validThru;
+        memcpy(record.rs1Interval, &temp, TIME_LENGTH);
     }
     else {
-        memcpy(record.rs1Interval, (unsigned char*)&validThru, TIME_LENGTH);
+        memcpy(record.rs1Interval, &validThru, TIME_LENGTH);
     }
     resetRs2Valid();
     setRs1Valid();
@@ -55,43 +54,43 @@ void ZIDRecordFile::setNewRs1(const unsigned char* data, int32_t expire) {
 
 
 bool ZIDRecordFile::isRs1NotExpired() {
-    time_t current = time(nullptr);
+    time_t const current = time(nullptr);
     time_t validThru;
 
-    if (sizeof(time_t) == 4) {
+    if constexpr (sizeof(time_t) == 4) {
         long long temp;
-        memcpy((unsigned char*)&temp, record.rs1Interval, TIME_LENGTH);
+        memcpy(&temp, record.rs1Interval, TIME_LENGTH);
         validThru = temp;
     }
     else {
-        memcpy((unsigned char*)&validThru, record.rs1Interval, TIME_LENGTH);
+        memcpy(&validThru, record.rs1Interval, TIME_LENGTH);
     }
 
     if (validThru == -1)
         return true;
     if (validThru == 0)
         return false;
-    return (current <= validThru);
+    return current <= validThru;
 }
 
 bool ZIDRecordFile::isRs2NotExpired() {
-    time_t current = time(nullptr);
+    time_t const current = time(nullptr);
     time_t validThru;
 
-    if (sizeof(time_t) == 4) {
+    if constexpr (sizeof(time_t) == 4) {
         long long temp;
-        memcpy((unsigned char*)&temp, record.rs2Interval, TIME_LENGTH);
+        memcpy(&temp, record.rs2Interval, TIME_LENGTH);
         validThru = temp;
     }
     else {
-        memcpy((unsigned char*)&validThru, record.rs2Interval, TIME_LENGTH);
+        memcpy(&validThru, record.rs2Interval, TIME_LENGTH);
     }
 
     if (validThru == -1)
         return true;
     if (validThru == 0)
         return false;
-    return (current <= validThru);
+    return current <= validThru;
 }
 
 void ZIDRecordFile::setMiTMData(const unsigned char* data) {
@@ -99,48 +98,48 @@ void ZIDRecordFile::setMiTMData(const unsigned char* data) {
     setMITMKeyAvailable();
 }
 
-void ZIDRecordFile::setZid(const unsigned char *zid) {
+void ZIDRecordFile::setZid(const unsigned char* zid) {
     memcpy(record.identifier, zid, IDENTIFIER_LEN);
 }
 
-void ZIDRecordFile::setRs1Valid()    { record.flags |= RS1Valid; }
+void ZIDRecordFile::setRs1Valid() { record.flags |= RS1Valid; }
 
-void ZIDRecordFile::resetRs1Valid()  { record.flags &= ~RS1Valid; }
+void ZIDRecordFile::resetRs1Valid() { record.flags &= ~RS1Valid; }
 
-bool ZIDRecordFile::isRs1Valid()     { return ((record.flags & RS1Valid) == RS1Valid); }
+bool ZIDRecordFile::isRs1Valid() { return (record.flags & RS1Valid) == RS1Valid; }
 
-void ZIDRecordFile::setRs2Valid()    { record.flags |= RS2Valid; }
+void ZIDRecordFile::setRs2Valid() { record.flags |= RS2Valid; }
 
-void ZIDRecordFile::resetRs2Valid()  { record.flags &= ~RS2Valid; }
+void ZIDRecordFile::resetRs2Valid() { record.flags &= ~RS2Valid; }
 
-bool ZIDRecordFile::isRs2Valid()     { return ((record.flags & RS2Valid) == RS2Valid); }
+bool ZIDRecordFile::isRs2Valid() { return (record.flags & RS2Valid) == RS2Valid; }
 
-void ZIDRecordFile::setMITMKeyAvailable()     { record.flags |= MITMKeyAvailable; }
+void ZIDRecordFile::setMITMKeyAvailable() { record.flags |= MITMKeyAvailable; }
 
-void ZIDRecordFile::resetMITMKeyAvailable()   { record.flags &= ~MITMKeyAvailable; }
+void ZIDRecordFile::resetMITMKeyAvailable() { record.flags &= ~MITMKeyAvailable; }
 
-bool ZIDRecordFile::isMITMKeyAvailable()      { return ((record.flags & MITMKeyAvailable) == MITMKeyAvailable); }
+bool ZIDRecordFile::isMITMKeyAvailable() { return (record.flags & MITMKeyAvailable) == MITMKeyAvailable; }
 
-void ZIDRecordFile::setOwnZIDRecord()   { record.flags = OwnZIDRecord; }
+void ZIDRecordFile::setOwnZIDRecord() { record.flags = OwnZIDRecord; }
 
-void ZIDRecordFile::resetOwnZIDRecord()  { record.flags = 0; }
+void ZIDRecordFile::resetOwnZIDRecord() { record.flags = 0; }
 
-bool ZIDRecordFile::isOwnZIDRecord()    { return (record.flags == OwnZIDRecord); }  // no other flag allowed if own ZID
+bool ZIDRecordFile::isOwnZIDRecord() { return record.flags == OwnZIDRecord; } // no other flag allowed if own ZID
 
-void ZIDRecordFile::setSasVerified()    { record.flags |= SASVerified; }
+void ZIDRecordFile::setSasVerified() { record.flags |= SASVerified; }
 
-void ZIDRecordFile::resetSasVerified()  { record.flags &= ~SASVerified; }
+void ZIDRecordFile::resetSasVerified() { record.flags &= ~SASVerified; }
 
-bool ZIDRecordFile::isSasVerified()     { return ((record.flags & SASVerified) == SASVerified); }
+bool ZIDRecordFile::isSasVerified() { return (record.flags & SASVerified) == SASVerified; }
 
-const uint8_t* ZIDRecordFile::getIdentifier()  {return record.identifier; }
+const uint8_t* ZIDRecordFile::getIdentifier() { return record.identifier; }
 
-const unsigned char* ZIDRecordFile::getRs1()   { return record.rs1Data; }
+const unsigned char* ZIDRecordFile::getRs1() { return record.rs1Data; }
 
-const unsigned char* ZIDRecordFile::getRs2()  { return record.rs2Data; }
+const unsigned char* ZIDRecordFile::getRs2() { return record.rs2Data; }
 
-const unsigned char* ZIDRecordFile::getMiTMData()  {return record.mitmKey; }
+const unsigned char* ZIDRecordFile::getMiTMData() { return record.mitmKey; }
 
-int ZIDRecordFile::getRecordType()  {return FILE_TYPE_RECORD; }
+int ZIDRecordFile::getRecordType() { return FILE_TYPE_RECORD; }
 
-int64_t ZIDRecordFile::getSecureSince()  { return 0; }
+int64_t ZIDRecordFile::getSecureSince() { return 0; }

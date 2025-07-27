@@ -96,7 +96,7 @@ int crypto_kem_sntrup1277_dec(unsigned char *k,const unsigned char *c,const unsi
 
 
 // Map some functions used by sntrup implementation to our existing internal functions
-inline void randombytes(unsigned char* c, unsigned long length) {
+inline void randombytes(unsigned char* c, unsigned long const length) {
     ZrtpBotanRng::getRandomData(c, length);
 }
 

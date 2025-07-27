@@ -18,12 +18,11 @@
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <time.h>
+#include <ctime>
 
 #include <libzrtpcpp/ZIDRecordDb.h>
 
-void ZIDRecordDb::setNewRs1(const unsigned char* data, int32_t expire) {
-
+void ZIDRecordDb::setNewRs1(const unsigned char* data, int32_t const expire) {
     // shift RS1 data into RS2 position
     memcpy(record.rs2, record.rs1, RS_LENGTH);
     record.rs2Ttl = record.rs1Ttl;
@@ -48,29 +47,27 @@ void ZIDRecordDb::setNewRs1(const unsigned char* data, int32_t expire) {
 
 
 bool ZIDRecordDb::isRs1NotExpired() {
-    time_t current = time(nullptr);
-    time_t validThru;
+    time_t const current = time(nullptr);
 
-    validThru = record.rs1Ttl;
+    time_t const validThru = record.rs1Ttl;
 
     if (validThru == -1)
         return true;
     if (validThru == 0)
         return false;
-    return (current <= validThru);
+    return current <= validThru;
 }
 
 bool ZIDRecordDb::isRs2NotExpired() {
-    time_t current = time(nullptr);
-    time_t validThru;
+    time_t const current = time(nullptr);
 
-    validThru = record.rs2Ttl;
+    time_t const validThru = record.rs2Ttl;
 
     if (validThru == -1)
         return true;
     if (validThru == 0)
         return false;
-    return (current <= validThru);
+    return current <= validThru;
 }
 
 void ZIDRecordDb::setMiTMData(const unsigned char* data) {

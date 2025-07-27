@@ -20,14 +20,17 @@
 
 #include <libzrtpcpp/ZrtpPacketClearAck.h>
 
+#include "libzrtpcpp/ZrtpTextData.h"
+
 ZrtpPacketClearAck::ZrtpPacketClearAck() {
-    zrtpHeader = &data.hdr;	// the standard header
+    zrtpHeader = &data.hdr; // the standard header
 
     setZrtpId();
-    setLength((sizeof(ClearAckPacket_t) / ZRTP_WORD_SIZE) - 1);
-    setMessageType((uint8_t*)ClearAckMsg);
+    setLength(sizeof(ClearAckPacket_t) / ZRTP_WORD_SIZE - 1);
+    setMessageType(ClearAckMsg);
 }
 
-ZrtpPacketClearAck::ZrtpPacketClearAck(const uint8_t *data) {
-    zrtpHeader = (zrtpPacketHeader_t *)&((ClearAckPacket_t*)data)->hdr;	// the standard header
+ZrtpPacketClearAck::ZrtpPacketClearAck(const uint8_t* data) {
+    // the standard header
+    zrtpHeader = const_cast<zrtpPacketHeader_t *>(&reinterpret_cast<ClearAckPacket_t const *>(data)->hdr);
 }

@@ -3,7 +3,6 @@
 //
 #include <iostream>
 // stdlib.h required for Android NDK builds, not included within the above includes
-#include <cstdlib>
 
 #include <libzrtpcpp/EmojiBase32.h>
 #include <common/osSpecifics.h>
@@ -29,50 +28,48 @@ To support the UTF-8 / UTF-16 conversion the common directory contains conversio
 functions that I extracted from ICU C++/C library source.
 */
 // The comments are:                  Seq. Nr.  Name
-static const char32_t emojis[] =
-        U"\U0001f601"               // 0002     GRINNING FACE WITH SMILING EYES
-                "\U0001f63a"        // 0080     SMILING CAT FACE WITH OPEN MOUTH
-                "\U0001f465"        // 0270     BUSTS IN SILHOUETTE
-                "\U0001f332"        // 0611     EVERGREEN TREE
-                "\U0001f45f"        // 0516     ATHLETIC SHOE
-                "\U0000270b"        // 0394     RAISED HAND
-                "\U0001f44d"        // 0412     THUMBS UP SIGN
-                "\U0001f435"        // 0528     MONKEY FACE
-                "\U0001f434"        // 0540     HORSE FACE
-                "\U0001f40d"        // 0580     SNAKE
-                "\U0001f41f"        // 0586     FISH
-                "\U0001f338"        // 0601     CHERRY BLOSSOM
-                "\U0001f310"        // 0694     GLOBE WITH MERIDIANS
-                "\U0001f3e0"        // 0711     HOUSE BUILDING
-                "\U0001f31e"        // 0876     SUN WITH FACE
-                "\U0001f698"        // 0779     ONCOMING AUTOMOBILE
-                "\U0001f535"        // 1367     LARGE BLUE CIRCLE
-                "\U0001f6a2"        // 0804     SHIP
-                "\U0001f53a"        // 1358     UP-POINTING RED TRIANGLE
-                "\U0001f42a"        // 0554     DROMEDARY CAMEL
-                "\U0001f525"        // 0903     FIRE
-                "\U0001f388"        // 0911     BALLOON
-                "\U0001f426"        // 0575     BIRD
-                "\U0001f50d"        // 1052     LEFT-POINTING MAGNIFYING GLASS
-                "\U0001f4d7"        // 1064     GREEN BOOK
-                "\U0001f4a1"        // 1058     ELECTRIC LIGHT BULB
-                "\U0001f536"        // 1354     LARGE ORANGE DIAMOND
-                "\U0001f528"        // 1134     HAMMER
-                "\U0001f55B"        // 0837     CLOCK FACE TWELVE OCLOCK
-                "\U0001f31f"        // 0878     GLOWING STAR
-                "\U0000274e"        // 1232     NEGATIVE SQUARED CROSS MARK
-                "\U0001f6a9"        // 1157     TRIANGULAR FLAG ON POST
+static constexpr char32_t emojis[] =
+        U"\U0001f601" // 0002     GRINNING FACE WITH SMILING EYES
+        "\U0001f63a" // 0080     SMILING CAT FACE WITH OPEN MOUTH
+        "\U0001f465" // 0270     BUSTS IN SILHOUETTE
+        "\U0001f332" // 0611     EVERGREEN TREE
+        "\U0001f45f" // 0516     ATHLETIC SHOE
+        "\U0000270b" // 0394     RAISED HAND
+        "\U0001f44d" // 0412     THUMBS UP SIGN
+        "\U0001f435" // 0528     MONKEY FACE
+        "\U0001f434" // 0540     HORSE FACE
+        "\U0001f40d" // 0580     SNAKE
+        "\U0001f41f" // 0586     FISH
+        "\U0001f338" // 0601     CHERRY BLOSSOM
+        "\U0001f310" // 0694     GLOBE WITH MERIDIANS
+        "\U0001f3e0" // 0711     HOUSE BUILDING
+        "\U0001f31e" // 0876     SUN WITH FACE
+        "\U0001f698" // 0779     ONCOMING AUTOMOBILE
+        "\U0001f535" // 1367     LARGE BLUE CIRCLE
+        "\U0001f6a2" // 0804     SHIP
+        "\U0001f53a" // 1358     UP-POINTING RED TRIANGLE
+        "\U0001f42a" // 0554     DROMEDARY CAMEL
+        "\U0001f525" // 0903     FIRE
+        "\U0001f388" // 0911     BALLOON
+        "\U0001f426" // 0575     BIRD
+        "\U0001f50d" // 1052     LEFT-POINTING MAGNIFYING GLASS
+        "\U0001f4d7" // 1064     GREEN BOOK
+        "\U0001f4a1" // 1058     ELECTRIC LIGHT BULB
+        "\U0001f536" // 1354     LARGE ORANGE DIAMOND
+        "\U0001f528" // 1134     HAMMER
+        "\U0001f55B" // 0837     CLOCK FACE TWELVE OCLOCK
+        "\U0001f31f" // 0878     GLOWING STAR
+        "\U0000274e" // 1232     NEGATIVE SQUARED CROSS MARK
+        "\U0001f6a9" // 1157     TRIANGULAR FLAG ON POST
 ;
 
-EmojiBase32::EmojiBase32(const unsigned char* data, size_t noOfBits)
-{
-    b2a_l(data, (noOfBits+7)/8, noOfBits);
+EmojiBase32::EmojiBase32(const unsigned char* data, size_t const noOfBits) {
+    b2a_l(data, (noOfBits + 7) / 8, noOfBits);
 }
 
 using namespace std;
 
-void EmojiBase32::b2a_l(const unsigned char* os, size_t len, const size_t lengthinbits) {
-
+void EmojiBase32::b2a_l(const unsigned char* os, size_t const len, const size_t lengthInBits) {
     /* if lengthinbits is not a multiple of 8 then this is allocating
      * space for 0, 1, or 2 extra quintets that will be truncated at the
      * end of this function if they are not needed
@@ -91,47 +88,47 @@ void EmojiBase32::b2a_l(const unsigned char* os, size_t len, const size_t length
 
     /* Now this is a real live Duff's device.  You gotta love it. */
 
-    unsigned long x = 0;	// to hold up to 32 bits worth of the input
+    unsigned long x = 0; // to hold up to 32 bits worth of the input
     switch ((osp - os) % 5) {
-
         case 0:
             do {
                 x = *--osp;
                 result[--resp] = emojis[x % 32]; /* The least sig 5 bits go into the final quintet. */
-                x /= 32;	/* ... now we have 3 bits worth in x... */
+                x /= 32; /* ... now we have 3 bits worth in x... */
 
-                case 4:
-                    x |= ((unsigned long)(*--osp)) << 3U; /* ... now we have 11 bits worth in x... */
-                    result[--resp] = emojis[x % 32];
-                    x /= 32; /* ... now we have 6 bits worth in x... */
-                    result[--resp] = emojis[x % 32];
-                    x /= 32; /* ... now we have 1 bits worth in x... */
+            case 4:
+                x |= static_cast<unsigned long>(*--osp) << 3U; /* ... now we have 11 bits worth in x... */
+                result[--resp] = emojis[x % 32];
+                x /= 32; /* ... now we have 6 bits worth in x... */
+                result[--resp] = emojis[x % 32];
+                x /= 32; /* ... now we have 1 bits worth in x... */
 
-                case 3:
-                    x |= ((unsigned long)(*--osp)) << 1U; /* The 8 bits from the 2-indexed octet.
+            case 3:
+                x |= static_cast<unsigned long>(*--osp) << 1U; /* The 8 bits from the 2-indexed octet.
 							    So now we have 9 bits worth in x... */
-                    result[--resp] = emojis[x % 32];
-                    x /= 32; /* ... now we have 4 bits worth in x... */
+                result[--resp] = emojis[x % 32];
+                x /= 32; /* ... now we have 4 bits worth in x... */
 
-                case 2:
-                    x |= ((unsigned long)(*--osp)) << 4U; /* The 8 bits from the 1-indexed octet.
+            case 2:
+                x |= static_cast<unsigned long>(*--osp) << 4U; /* The 8 bits from the 1-indexed octet.
 							    So now we have 12 bits worth in x... */
-                    result[--resp] = emojis[x%32];
-                    x /= 32; /* ... now we have 7 bits worth in x... */
-                    result[--resp] = emojis[x%32];
-                    x /= 32; /* ... now we have 2 bits worth in x... */
+                result[--resp] = emojis[x % 32];
+                x /= 32; /* ... now we have 7 bits worth in x... */
+                result[--resp] = emojis[x % 32];
+                x /= 32; /* ... now we have 2 bits worth in x... */
 
-                case 1:
-                    x |= ((unsigned long)(*--osp)) << 2U; /* The 8 bits from the 0-indexed octet.
+            case 1:
+                x |= static_cast<unsigned long>(*--osp) << 2U; /* The 8 bits from the 0-indexed octet.
 							    So now we have 10 bits worth in x... */
-                    result[--resp] = emojis[x%32];
-                    x /= 32; /* ... now we have 5 bits worth in x... */
-                    result[--resp] = emojis[x];
-            } while (osp > os);
+                result[--resp] = emojis[x % 32];
+                x /= 32; /* ... now we have 5 bits worth in x... */
+                result[--resp] = emojis[x];
+            }
+            while (osp > os);
     } /* switch ((osp - os.buf) % 5) */
 
     /* truncate any unused trailing zero quintets */
-    encoded = result.substr(0, static_cast<size_t>(divceil(static_cast<int>(lengthinbits), 5)));
+    encoded = result.substr(0, static_cast<size_t>(divceil(static_cast<int>(lengthInBits), 5)));
 }
 
 
@@ -173,12 +170,11 @@ void EmojiBase32::b2a_l(const unsigned char* os, size_t len, const size_t length
     } \
 }
 
-unique_ptr<string> EmojiBase32::u32StringToUtf8(const u32string& in)
-{
+unique_ptr<string> EmojiBase32::u32StringToUtf8(const u32string &in) {
     auto result = make_unique<string>();
 
     string out(6, '\0');
-    for (const auto& c32 : in) {
+    for (const auto &c32: in) {
         size_t offset = 0;
         U8_APPEND_UNSAFE(&out[0], offset, c32)
         result->append(out, 0, offset);

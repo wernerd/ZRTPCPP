@@ -14,23 +14,24 @@
  * limitations under the License.
  */
 
-/* Copyright (C) 2006
- *
+/*
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
 #include <libzrtpcpp/ZrtpPacketGoClear.h>
 
+#include "libzrtpcpp/ZrtpTextData.h"
+
 ZrtpPacketGoClear::ZrtpPacketGoClear() {
-    zrtpHeader = &data.hdr;	// the standard header
-    clearHeader = &data.goClear;
+    zrtpHeader = &data.hdr; // the standard header
 
     setZrtpId();
-    setLength((sizeof(GoClearPacket_t) / ZRTP_WORD_SIZE) - 1);
-    setMessageType((uint8_t*)GoClearMsg);
+    setLength(sizeof(GoClearPacket_t) / ZRTP_WORD_SIZE - 1);
+    setMessageType(GoClearMsg);
 }
 
-ZrtpPacketGoClear::ZrtpPacketGoClear(const uint8_t *data) {
-    zrtpHeader = (zrtpPacketHeader_t *)&((GoClearPacket_t *)data)->hdr;	// the standard header
-    clearHeader = (GoClear_t *)&((GoClearPacket_t *)data)->goClear;
+ZrtpPacketGoClear::ZrtpPacketGoClear(const uint8_t* data) {
+    // the standard header
+    zrtpHeader = const_cast<zrtpPacketHeader_t *>(&reinterpret_cast<GoClearPacket_t const *>(data)->hdr);
+    clearHeader = const_cast<GoClear_t *>(&reinterpret_cast<GoClearPacket_t const *>(data)->goClear);
 }

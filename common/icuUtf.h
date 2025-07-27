@@ -88,11 +88,13 @@ typedef int32_t UChar32;
 #define U_SENTINEL (-1)
 
 typedef enum UErrorCode {
-    U_STRING_NOT_TERMINATED_WARNING = -124,/**< An output string could not be NUL-terminated because output length==destCapacity. */
-    U_ZERO_ERROR              =  0,     /**< No error, no warning. */
-    U_ILLEGAL_ARGUMENT_ERROR  =  1,     /**< Start of codes indicating failure */
-    U_INVALID_CHAR_FOUND      = 10,     /**< Character conversion: Unmappable input sequence. In other APIs: Invalid character. */
-    U_BUFFER_OVERFLOW_ERROR   = 15,     /**< A result would not fit in the supplied buffer */
+    U_STRING_NOT_TERMINATED_WARNING = -124,
+    /**< An output string could not be NUL-terminated because output length==destCapacity. */
+    U_ZERO_ERROR = 0, /**< No error, no warning. */
+    U_ILLEGAL_ARGUMENT_ERROR = 1, /**< Start of codes indicating failure */
+    U_INVALID_CHAR_FOUND = 10,
+    /**< Character conversion: Unmappable input sequence. In other APIs: Invalid character. */
+    U_BUFFER_OVERFLOW_ERROR = 15, /**< A result would not fit in the supplied buffer */
 } UErrorCode;
 
 /**
@@ -210,8 +212,8 @@ extern "C"
  * @see u_strFromUTF8WithSub
  * @see u_strFromUTF8Lenient
  */
-UChar* u_strFromUTF8(UChar *dest, int32_t destCapacity, int32_t *pDestLength, const char *src, int32_t srcLength,
-                     UErrorCode *pErrorCode);
+UChar* u_strFromUTF8(UChar* dest, int32_t destCapacity, int32_t* pDestLength, const char* src, int32_t srcLength,
+                     UErrorCode* pErrorCode);
 
 /**
  * Convert a UTF-8 string to UTF-16.
@@ -249,8 +251,8 @@ UChar* u_strFromUTF8(UChar *dest, int32_t destCapacity, int32_t *pDestLength, co
  * @see u_strToUTF8WithSub
  * @stable ICU 3.6
  */
-UChar* u_strFromUTF8WithSub(UChar *dest, int32_t destCapacity, int32_t *pDestLength, const char *src, int32_t srcLength,
-                            UChar32 subchar, int32_t *pNumSubstitutions, UErrorCode *pErrorCode);
+UChar* u_strFromUTF8WithSub(UChar* dest, int32_t destCapacity, int32_t* pDestLength, const char* src, int32_t srcLength,
+                            UChar32 subchar, int32_t* pNumSubstitutions, UErrorCode* pErrorCode);
 
 #if defined(__cplusplus)
 }

@@ -20,6 +20,8 @@
 
 #include <libzrtpcpp/ZrtpPacketHello.h>
 
+#include "libzrtpcpp/ZrtpTextData.h"
+
 void ZrtpPacketHello::configureHello(ZrtpConfigure& config) {
     // The NumSupported* data is in ZrtpTextData.h 
     nHash = config.getNumConfiguredAlgos(HashAlgorithm);
@@ -29,7 +31,7 @@ void ZrtpPacketHello::configureHello(ZrtpConfigure& config) {
     nAuth = config.getNumConfiguredAlgos(AuthLength);
 
     // length is fixed Header plus HMAC size (2*ZRTP_WORD_SIZE)
-    int32_t length = sizeof(HelloPacket_t) + (2 * ZRTP_WORD_SIZE);
+    uint16_t length = sizeof(HelloPacket_t) + 2 * ZRTP_WORD_SIZE;
     length += nHash * ZRTP_WORD_SIZE;
     length += nCipher * ZRTP_WORD_SIZE;
     length += nPubkey * ZRTP_WORD_SIZE;
@@ -38,60 +40,57 @@ void ZrtpPacketHello::configureHello(ZrtpConfigure& config) {
 
     // Don't change order of this sequence
     oHash = sizeof(Hello_t);
-    oCipher = oHash + (nHash * ZRTP_WORD_SIZE);
-    oAuth = oCipher + (nCipher * ZRTP_WORD_SIZE);
-    oPubkey = oAuth + (nAuth * ZRTP_WORD_SIZE);
-    oSas = oPubkey + (nPubkey * ZRTP_WORD_SIZE);
-    oHmac = oSas + (nSas * ZRTP_WORD_SIZE);         // offset to HMAC
+    oCipher = oHash + nHash * ZRTP_WORD_SIZE;
+    oAuth = oCipher + nCipher * ZRTP_WORD_SIZE;
+    oPubkey = oAuth + nAuth * ZRTP_WORD_SIZE;
+    oSas = oPubkey + nPubkey * ZRTP_WORD_SIZE;
+    oHmac = oSas + nSas * ZRTP_WORD_SIZE;         // offset to HMAC
 
-    void* allocated = &data;
-    memset(allocated, 0, sizeof(data));
-
-    zrtpHeader = (zrtpPacketHeader_t *)&((HelloPacket_t *)allocated)->hdr;	// the standard header
-    helloHeader = (Hello_t *)&((HelloPacket_t *)allocated)->hello;
+    zrtpHeader = &reinterpret_cast<HelloPacket_t *>(data)->hdr;	// the standard header
 
     setZrtpId();
 
     // minus 1 for CRC size 
     setLength(length / ZRTP_WORD_SIZE);
-    setMessageType((uint8_t*)HelloMsg);
+    setMessageType(HelloMsg);
 
     uint32_t lenField = nHash << 16U;
-    for (uint32_t i = 0; i < nHash; i++) {
+    for (int32_t i = 0; i < nHash; i++) {
         AlgorithmEnum& hash = config.getAlgoAt(HashAlgorithm, i);
-        setHashType(i, (int8_t*)hash.getName());
+        setHashType(i, hash.getName());
     }
 
     lenField |= nCipher << 12U;
-    for (uint32_t i = 0; i < nCipher; i++) {
+    for (int32_t i = 0; i < nCipher; i++) {
         AlgorithmEnum& cipher = config.getAlgoAt(CipherAlgorithm, i);
-        setCipherType(i, (int8_t*)cipher.getName());
+        setCipherType(i, cipher.getName());
     }
 
     lenField |= nAuth << 8U;
-    for (uint32_t i = 0; i < nAuth; i++) {
+    for (int32_t i = 0; i < nAuth; i++) {
         AlgorithmEnum& authLength = config.getAlgoAt(AuthLength, i);
-        setAuthLen(i, (int8_t*)authLength.getName());
+        setAuthLen(i, authLength.getName());
     }
 
     lenField |= nPubkey << 4U;
-    for (uint32_t i = 0; i < nPubkey; i++) {
+    for (int32_t i = 0; i < nPubkey; i++) {
         AlgorithmEnum& pubKey = config.getAlgoAt(PubKeyAlgorithm, i);
-        setPubKeyType(i, (int8_t*)pubKey.getName());
+        setPubKeyType(i, pubKey.getName());
     }
 
     lenField |= nSas;
-    for (uint32_t i = 0; i < nSas; i++) {
+    for (int32_t i = 0; i < nSas; i++) {
         AlgorithmEnum& sas = config.getAlgoAt(SasType, i);
-        setSasType(i, (int8_t*)sas.getName());
+        setSasType(i, sas.getName());
     }
-    *((uint32_t*)&helloHeader->flags) = zrtpHtonl(lenField);
+    *reinterpret_cast<uint32_t*>(&helloHeader->flags) = zrtpHtonl(lenField);
 }
 
 ZrtpPacketHello::ZrtpPacketHello(const uint8_t *data) {
 
-    zrtpHeader = (zrtpPacketHeader_t *)&((HelloPacket_t *)data)->hdr;	// the standard header
-    helloHeader = (Hello_t *)&((HelloPacket_t *)data)->hello;
+    // the standard header
+    zrtpHeader = const_cast<zrtpPacketHeader_t *>(&reinterpret_cast<HelloPacket_t const *>(data)->hdr);
+    helloHeader = const_cast<Hello_t *>(&reinterpret_cast<HelloPacket_t const *>(data)->hello);
 
     // Force the isLengthOk() check to fail when we process the packet.
     if (getLength() < HELLO_FIXED_PART_LEN) {
@@ -99,16 +98,16 @@ ZrtpPacketHello::ZrtpPacketHello(const uint8_t *data) {
         return;
     }
 
-    uint32_t t = *((uint32_t*)&helloHeader->flags);
-    uint32_t temp = zrtpNtohl(t);
+    uint32_t const t = *reinterpret_cast<uint32_t*>(&helloHeader->flags);
+    uint32_t const temp = zrtpNtohl(t);
 
-    nHash = (temp & (0xfU << 16U)) >> 16U;
+    nHash = (temp & 0xfU << 16U) >> 16U;
     nHash &= 0x7U;                              // restrict to max 7 algorithms
-    nCipher = (temp & (0xfU << 12U)) >> 12U;
+    nCipher = (temp & 0xfU << 12U) >> 12U;
     nCipher &= 0x7U;
-    nAuth = (temp & (0xfU << 8U)) >> 8U;
+    nAuth = (temp & 0xfU << 8U) >> 8U;
     nAuth &= 0x7U;
-    nPubkey = (temp & (0xfU << 4U)) >> 4U;
+    nPubkey = (temp & 0xfU << 4U) >> 4U;
     nPubkey &= 0x7U;
     nSas = temp & 0xfU;
     nSas &= 0x7U;
@@ -117,15 +116,15 @@ ZrtpPacketHello::ZrtpPacketHello(const uint8_t *data) {
     computedLength = nHash + nCipher + nAuth + nPubkey + nSas + sizeof(HelloPacket_t)/ZRTP_WORD_SIZE + 2;
 
     oHash = sizeof(Hello_t);
-    oCipher = oHash + (nHash * ZRTP_WORD_SIZE);
-    oAuth = oCipher + (nCipher * ZRTP_WORD_SIZE);
-    oPubkey = oAuth + (nAuth * ZRTP_WORD_SIZE);
-    oSas = oPubkey + (nPubkey * ZRTP_WORD_SIZE);
-    oHmac = oSas + (nSas * ZRTP_WORD_SIZE);         // offset to HMAC
+    oCipher = oHash + nHash * ZRTP_WORD_SIZE;
+    oAuth = oCipher + nCipher * ZRTP_WORD_SIZE;
+    oPubkey = oAuth + nAuth * ZRTP_WORD_SIZE;
+    oSas = oPubkey + nPubkey * ZRTP_WORD_SIZE;
+    oHmac = oSas + nSas * ZRTP_WORD_SIZE;         // offset to HMAC
 }
 
 int32_t ZrtpPacketHello::getVersionInt() const {
-    uint8_t* vp = getVersion();
+    uint8_t const * const vp = getVersion();
     int32_t version = 0;
 
     if (isdigit(*vp) && isdigit(*vp+2)) {

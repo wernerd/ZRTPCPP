@@ -45,35 +45,30 @@ uint64_t  zrtpGetTickCount()
 # include <netinet/in.h>
 # include <sys/time.h>
 
-uint64_t zrtpGetTickCount()
-{
-   struct timeval tv;
-   gettimeofday(&tv, 0);
+uint64_t zrtpGetTickCount() {
+    struct timeval tv;
+    gettimeofday(&tv, 0);
 
-   return ((uint64_t)tv.tv_sec) * (uint64_t)1000 + ((uint64_t)tv.tv_usec) / (uint64_t)1000;
+    return (uint64_t)tv.tv_sec * (uint64_t)1000 + (uint64_t)tv.tv_usec / (uint64_t)1000;
 }
 
 #endif
 
-uint32_t zrtpNtohl (uint32_t net)
-{
+uint32_t zrtpNtohl(uint32_t const net) {
     return ntohl(net);
 }
 
 #ifdef UNIT_TESTS
 __EXPORT
 #endif
-uint16_t zrtpNtohs (uint16_t net)
-{
+uint16_t zrtpNtohs(uint16_t const net) {
     return ntohs(net);
 }
 
-uint32_t zrtpHtonl (uint32_t host)
-{
+uint32_t zrtpHtonl(uint32_t const host) {
     return htonl(host);
 }
-uint16_t zrtpHtons (uint16_t host)
-{
+
+uint16_t zrtpHtons(uint16_t const host) {
     return htons(host);
 }
-

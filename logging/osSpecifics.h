@@ -32,34 +32,34 @@ limitations under the License.
 
 #ifndef __EXPORT
 #if defined _WIN32 || defined __CYGWIN__
-    #ifdef BUILDING_DLL
-        #ifdef __GNUC__
+#ifdef BUILDING_DLL
+#ifdef __GNUC__
             #define __EXPORT __attribute__ ((dllexport))
-        #else
+#else
             #define __EXPORT __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
-        #endif
-    #else
-        #ifdef __GNUC__
+#endif
+#else
+#ifdef __GNUC__
             #define __EXPORT __attribute__ ((dllimport))
-        #else
+#else
             #define __EXPORT __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
-        #endif
-    #endif
+#endif
+#endif
     #define DLL_LOCAL
 #else
-    #if __GNUC__ >= 4 || __clang_major__  >= 3
-        #define __EXPORT __attribute__ ((visibility ("default")))
-        #define __LOCAL  __attribute__ ((visibility ("hidden")))
-    #else
+#if __GNUC__ >= 4 || __clang_major__  >= 3
+#define __EXPORT __attribute__ ((visibility ("default")))
+#define __LOCAL  __attribute__ ((visibility ("hidden")))
+#else
         #define DLL_PUBLIC
         #define DLL_LOCAL
-    #endif
+#endif
 #endif
 #endif
 
 #ifndef DEPRECATED
 #if __GNUC__ || __clang_major__  >= 3
-    #define DEPRECATED __attribute__((deprecated))
+#define DEPRECATED __attribute__((deprecated))
 #elif defined(_MSC_VER)
     #define DEPRECATED __declspec(deprecated)
 #else

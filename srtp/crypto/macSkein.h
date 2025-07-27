@@ -39,7 +39,7 @@
  * @param key
  *    The MAC key.
  * @param keyLength
- *    Lneght of the MAC key in bytes
+ *    Lnegth of the MAC key in bytes
  * @param data
  *    Points to the data chunk.
  * @param dataLength
@@ -63,7 +63,7 @@ void macSkein(const uint8_t* key, uint64_t keyLength,
  * @param key
  *    The MAC key.
  * @param keyLength
- *    Lneght of the MAC key in bytes
+ *    Length of the MAC key in bytes
  * @param data
  *    A Vector of pointers that point to the data chunks. A NULL
  *    pointer in an array element terminates the data chunks.
@@ -77,8 +77,8 @@ void macSkein(const uint8_t* key, uint64_t keyLength,
  *    The Skein size to use.
  */
 void macSkein(const uint8_t* key, uint64_t keyLength,
-              std::vector<const uint8_t*> data,
-              std::vector<uint64_t> dataLength,
+              std::vector<const uint8_t*> const &data,
+              std::vector<uint64_t> const &dataLength,
               uint8_t* mac, size_t macLength, int skeinSize);
 
 /**
@@ -137,7 +137,7 @@ void* initializeSkeinMacContext(void* ctx, const uint8_t* key, uint64_t keyLengt
 void macSkeinCtx(void* ctx, const uint8_t* data, uint64_t dataLength, uint8_t* mac);
 
 /**
- * Compute Skein MAC over several data cunks.
+ * Compute Skein MAC over several data chunks.
  *
  * This functions takes several data chunk and computes the SHA1 HAMAC.
  *

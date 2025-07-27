@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 
-#include <cstdio>
+#ifndef ZIDCACHEDB_H_
+#define ZIDCACHEDB_H_
 
 #include <libzrtpcpp/ZIDCache.h>
 #include <libzrtpcpp/ZIDRecordDb.h>
 #include <libzrtpcpp/zrtpCacheDbBackend.h>
-
-#ifndef _ZIDCACHEDB_H_
-#define _ZIDCACHEDB_H_
-
 
 /**
  * @file ZIDCacheDb.h
@@ -39,67 +36,63 @@
 /**
  * This class implements a ZID (ZRTP Identifiers) file.
  *
- * The interface defintion @c ZIDCache.h contains the method documentation.
+ * The interface definition @c ZIDCache.h contains the method documentation.
  * The ZID cache file holds information about peers.
  *
  * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-class __EXPORT ZIDCacheDb: public ZIDCache {
+class __EXPORT ZIDCacheDb final : public ZIDCache {
+    void* zidFile = nullptr;
+    unsigned char associatedZid[IDENTIFIER_LEN] = {};
 
-private:
+    dbCacheOps_t cacheOps = {nullptr};
 
-    void *zidFile = nullptr;
-    unsigned char associatedZid[IDENTIFIER_LEN] = {0};
+    char errorBuffer[DB_CACHE_ERR_BUFF_SIZE] = {};
 
-    dbCacheOps_t cacheOps = { nullptr };
-
-    char errorBuffer[DB_CACHE_ERR_BUFF_SIZE] = {'\0'};
-    
     std::string fileName;
 
-    void formatOutput(remoteZidRecord_t *remZid, const char *nameBuffer, std::string *output);
+    void formatOutput(remoteZidRecord_t const* remZid, const char* nameBuffer, std::string* output) const;
 
 public:
-
     ZIDCacheDb() {
         getDbCacheOps(&cacheOps);
-    };
+    }
 
     ~ZIDCacheDb() override;
 
-    int open(char *name) override;
+    int open(char* name) override;
 
-    bool isOpen() override { return (zidFile != nullptr); };
+    bool isOpen() override { return zidFile != nullptr; }
 
     void close() override;
 
-    CacheTypes getCacheType() override { return ZIDCache::Database; };
+    CacheTypes getCacheType() override { return Database; }
 
-    std::unique_ptr<ZIDRecord> getRecord(unsigned char *zid) override;
+    std::unique_ptr<ZIDRecord> getRecord(unsigned char* zid) override;
 
-    unsigned int saveRecord(ZIDRecord& zidRecord) override;
+    unsigned int saveRecord(ZIDRecord &zidRecord) override;
 
-    const unsigned char* getZid() override { return associatedZid; };
+    const unsigned char* getZid() override { return associatedZid; }
 
-    void setZid(const uint8_t *zid) override {};
+    void setZid(const uint8_t* zid) override { }
 
-    int32_t getPeerName(const uint8_t *peerZid, std::string *name) override;
+    int32_t getPeerName(const uint8_t* peerZid, std::string* name) override;
 
-    void putPeerName(const uint8_t *peerZid, const std::string& name) override;
+    void putPeerName(const uint8_t* peerZid, const std::string &name) override;
 
     void cleanup() override;
 
-    std::string& getFileName() override { return fileName; };
+    std::string& getFileName() override { return fileName; }
 
-    void *prepareReadAll() override;
+    void* prepareReadAll() override;
 
-    void *readNextRecord(void *stmt, std::string *name) override;
+    void* readNextRecord(void* stmt, std::string* name) override;
 
-    void closeOpenStatement(void *stmt) override;
+    void closeOpenStatement(void* stmt) override;
 };
 
 /**
  * @}
  */
-#endif
+#endif // ZIDCACHEDB_H_

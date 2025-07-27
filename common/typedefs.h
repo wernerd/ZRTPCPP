@@ -22,16 +22,15 @@
  */
 
 namespace zrtp {
-
     /** Unique pointer to a string */
-    using StringUnique = std::unique_ptr<std::string> ;
+    using StringUnique = std::unique_ptr<std::string>;
 
     using RetainedSecArray = secUtilities::SecureArray<MAX_DIGEST_LENGTH>;
     using ImplicitDigest = secUtilities::SecureArray<IMPL_MAX_DIGEST_LENGTH>;
     using NegotiatedArray = secUtilities::SecureArray<MAX_DIGEST_LENGTH>;
     using SecureArray256 = secUtilities::SecureArray<256>;
     using SecureArray1k = secUtilities::SecureArray<1024>;
-    using SecureArray4k = secUtilities::SecureArray<4*1024>;
+    using SecureArray4k = secUtilities::SecureArray<4 * 1024>;
 }
 
 #ifdef _WIN64

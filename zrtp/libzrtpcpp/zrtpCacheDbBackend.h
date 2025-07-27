@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef _ZRTP_CACHE_DB_BACKEND_H_
-#define _ZRTP_CACHE_DB_BACKEND_H_
+#ifndef ZRTP_CACHE_DB_BACKEND_H_
+#define ZRTP_CACHE_DB_BACKEND_H_
 
 #include <libzrtpcpp/ZIDRecordDb.h>
 
 #if defined(__cplusplus)
-extern "C"
-{
+extern "C" {
 #endif
 
 #define DB_CACHE_ERR_BUFF_SIZE  1000
@@ -50,7 +49,7 @@ extern "C"
  * </ul>
  *
  *
- * 
+ *
  */
 typedef struct {
     /**
@@ -64,7 +63,7 @@ typedef struct {
      * @param errString Pointer to a character buffer, see implementation
      *                  notes above.
      */
-    int (*openCache)(const char* name, void **pdb, char *errString);
+    int (*openCache)(const char* name, void** pdb, char* errString);
 
     /**
      * Close the cache.
@@ -72,7 +71,7 @@ typedef struct {
      * @param db Pointer to an internal structure that the database
      *           implementation requires.
      */
-    int (*closeCache)(void *db);
+    int (*closeCache)(void* db);
 
     /**
      * @brief Read a local ZID from the database.
@@ -86,7 +85,7 @@ typedef struct {
      *
      * The SQLite backend uses the string @c "_STANDARD_" in this case and
      * sets a specific type field.
-     * 
+     *
      * The first call to this method with a specific account information
      * generates a ZID, stores it in the database using the account
      * information as key, and returns the ZID to the application. Any
@@ -106,7 +105,7 @@ typedef struct {
      * @param errString Pointer to a character buffer, see implementation
      *                  notes above.
      */
-    int (*readLocalZid)(void *db, uint8_t *localZid, const char *accountInfo, char *errString);
+    int (*readLocalZid)(void* db, uint8_t* localZid, const char* accountInfo, char* errString);
 
     /**
      * @brief Read a remote ZID data structure.
@@ -132,8 +131,9 @@ typedef struct {
      * @param errString Pointer to a character buffer, see implementation
      *                  notes above.
      */
-    int (*readRemoteZidRecord)(void *db, const uint8_t *remoteZid, const uint8_t *localZid, 
-                               remoteZidRecord_t *remZid, char* errString);
+    int (*readRemoteZidRecord)(void* db, const uint8_t* remoteZid, const uint8_t* localZid,
+                               remoteZidRecord_t* remZid, char* errString);
+
     /**
      * @brief Update an existing remote ZID data structure.
      *
@@ -162,8 +162,9 @@ typedef struct {
      * @param errString Pointer to a character buffer, see implementation
      *                  notes above.
      */
-    int (*updateRemoteZidRecord)(void *db, const uint8_t *remoteZid, const uint8_t *localZid, 
-                                 const remoteZidRecord_t *remZid, char* errString);
+    int (*updateRemoteZidRecord)(void* db, const uint8_t* remoteZid, const uint8_t* localZid,
+                                 const remoteZidRecord_t* remZid, char* errString);
+
     /**
      * @brief Insert a new remote ZID data structure.
      *
@@ -190,8 +191,8 @@ typedef struct {
      * @param errString Pointer to a character buffer, see implementation
      *                  notes above.
      */
-    int (*insertRemoteZidRecord)(void *db, const uint8_t *remoteZid, const uint8_t *localZid, 
-                                 const remoteZidRecord_t *remZid, char* errString);
+    int (*insertRemoteZidRecord)(void* db, const uint8_t* remoteZid, const uint8_t* localZid,
+                                 const remoteZidRecord_t* remZid, char* errString);
 
     /**
      * @brief Read a remote ZID name.
@@ -201,7 +202,7 @@ typedef struct {
      * the method clears the @c flags field in the @c zidNameRecord_t structure and
      * returns without error. The application must check the flags if the
      * method found a valid record.
-     * 
+     *
      * @param vdb Pointer to an internal structure that the database
      *           implementation requires.
      *
@@ -220,8 +221,8 @@ typedef struct {
      * @param errString Pointer to a character buffer, see implementation
      *                  notes above.
      */
-    int (*readZidNameRecord)(void *vdb, const uint8_t *remoteZid, const uint8_t *localZid,
-                             const char *accountInfo, zidNameRecord_t *zidName, char* errString);
+    int (*readZidNameRecord)(void* vdb, const uint8_t* remoteZid, const uint8_t* localZid,
+                             const char* accountInfo, zidNameRecord_t* zidName, char* errString);
 
     /**
      * @brief Update an existing remote ZID data structure.
@@ -254,8 +255,8 @@ typedef struct {
      * @param errString Pointer to a character buffer, see implementation
      *                  notes above.
      */
-    int (*updateZidNameRecord)(void *vdb, const uint8_t *remoteZid, const uint8_t *localZid,
-                               const char *accountInfo, zidNameRecord_t const *zidName, char* errString);
+    int (*updateZidNameRecord)(void* vdb, const uint8_t* remoteZid, const uint8_t* localZid,
+                               const char* accountInfo, zidNameRecord_t const* zidName, char* errString);
 
     /**
      * @brief Insert a new ZID name record.
@@ -266,7 +267,7 @@ typedef struct {
      * @b NOTE: application must use this methods only if @c readZidName
      *         (see above) returned an @b invalid record.
      *
-     * @param db Pointer to an internal structure that the database
+     * @param vdb Pointer to an internal structure that the database
      *           implementation requires.
      *
      * @param localZid Pointer to a buffer of at least @c IDENTIFIER_LEN @c
@@ -285,13 +286,13 @@ typedef struct {
      * @param errString Pointer to a character buffer, see implementation
      *                  notes above.
      */
-    int (*insertZidNameRecord)(void *vdb, const uint8_t *remoteZid, const uint8_t *localZid,
-                               const char *accountInfo, zidNameRecord_t const *zidName, char* errString);
+    int (*insertZidNameRecord)(void* vdb, const uint8_t* remoteZid, const uint8_t* localZid,
+                               const char* accountInfo, zidNameRecord_t const* zidName, char* errString);
 
 
     /**
      * @brief Clean the cache.
-     * 
+     *
      * The function drops and re-creates all tables in the database. This removes all stored
      * data. The application must not call this while a ZRTP call is active. Also the application
      * <b>must</b> get the local ZID again.
@@ -302,68 +303,68 @@ typedef struct {
      * @param errString Pointer to a character buffer, see implementation
      *                  notes above.
      */
-    int (*cleanCache)(void *db, char* errString);
+    int (*cleanCache)(void* db, char* errString);
 
     /**
      * @brief Prepare a SQL cursor to read all records from the remote (peer) ZID table.
-     * 
+     *
      * The function creates a SQL cursor (prepares a statement in sqlite3 parlance) to
      * read all records from the table that contains the remote (peers') ZID data.
-     * 
+     *
      * This functions returns a pointer to the SQL cursor or @c NULL if it fails to
      * create a cursor.
-     * 
+     *
      * @param db Pointer to an internal structure that the database
      *           implementation requires.
-     * 
+     *
      * @param errString Pointer to a character buffer, see implementation
      *                  notes above.
-     * 
+     *
      * @return a void pointer to the sqlite3 statement (SQL cursor) or @c NULL
      */
-    void *(*prepareReadAllZid)(void *db, char *errString);
+    void*(*prepareReadAllZid)(void* db, char* errString);
 
     /**
      * @brief Read next ZID record from and SQL cursor.
-     * 
+     *
      * The function reads the next ZID record from a SQL cursor. If it cannot read a
      * record or encounters an error the function closes the cursor and returns @c NULL.
      * In this case the function must not use the SQL cursor pointer again.
-     * 
+     *
      * @param db Pointer to an internal structure that the database
      *           implementation requires.
-     * 
+     *
      * @param stmt a void pointer to a sqlite3 statement (SQL cursor)
      *
      * @param remZid Pointer to the @c remoteZidRecord_t structure. The method
      *               fills this structure with data it read from the database.
-     * 
+     *
      * @param errString Pointer to a character buffer, see implementation
      *                  notes above.
-     * 
+     *
      * @return void pointer to statement if successful. This is the same pointer as
      *         the @c stmt input parameter. The function returns @c nullptr if either
      *         no more record is available or it got another error.
      */
-    void *(*readNextZidRecord)(void *db, void *stmt, remoteZidRecord_t *remZid, char* errString);
+    void*(*readNextZidRecord)(void* db, void* stmt, remoteZidRecord_t* remZid, char* errString);
 
     /**
      * @brief Close sqlite3 statement (SQL cursor)
-     * 
+     *
      * This functions closes (finalizes) an open sqlite3 statement. Usually the
      * @c readNextZidRecord closes the statement if no more record is available. However, an
      * application may decide not to read every record. In this case it @b must close the
      * sqlite3 statement
-     * 
+     *
      * @param stmt a void pointer to a sqlite3 statement (SQL cursor)
      */
-    void (*closeStatement)(void *stmt);
+    void (*closeStatement)(void* stmt);
 } dbCacheOps_t;
 
-void getDbCacheOps(dbCacheOps_t *ops);
+void getDbCacheOps(dbCacheOps_t* ops);
 
 #if defined(__cplusplus)
 }
 #endif
 
-#endif /* _ZRTP_CACHE_DB_BACKEND_H_*/
+#endif // ZRTP_CACHE_DB_BACKEND_H_

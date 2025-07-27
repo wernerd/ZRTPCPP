@@ -24,7 +24,7 @@
 #define SHA512_DIGEST_LENGTH 64
 #endif
 
-class ZrtpBotanRng : public Botan::RandomNumberGenerator {
+class ZrtpBotanRng final : public Botan::RandomNumberGenerator {
 
 public:
     ZrtpBotanRng();

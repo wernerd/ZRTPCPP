@@ -28,7 +28,6 @@
  * @{
  */
 
-#include <cstdint>
 #include <list>
 #include <string>
 #include <vector>
@@ -36,10 +35,9 @@
 
 #include <libzrtpcpp/ZrtpCallback.h>
 #include "ZIDCache.h"
-#include "ZIDCacheEmpty.h"
 
 /**
- * This enumerations list all configurable algorithm types.
+ * These enumerations list all configurable algorithm types.
  */
 
 enum AlgoTypes {
@@ -51,8 +49,8 @@ enum AlgoTypes {
     AuthLength
 };
 
-using encrypt_t = void(*)(uint8_t*, size_t, uint8_t*, uint8_t*, size_t);
-using decrypt_t = void(*)(uint8_t*, size_t, uint8_t*, uint8_t*, size_t);
+using encrypt_t = void(*)(uint8_t const *, size_t, uint8_t const *, uint8_t *, size_t);
+using decrypt_t = void(*)(uint8_t const *, size_t, uint8_t const *, uint8_t *, size_t);
 
 /**
  * The algorithm enumeration class.
@@ -77,7 +75,7 @@ public:
      * @param klen
      *    The key length for this algorihm in byte, for example 16 or 32
      * @param ra
-     *    A human readable short string that describes the algorithm.
+     *    A human-readable short string that describes the algorithm.
      * @param en
      *    Pointer to the encryption function of this algorithm
      * @param de
@@ -88,8 +86,8 @@ public:
      *
      * @see AlgoTypes
      */
-    AlgorithmEnum(AlgoTypes type, const char* name, int32_t klen,
-                  const char* ra, encrypt_t en, decrypt_t de, NegotiatedAlgorithms alId);
+    AlgorithmEnum(AlgoTypes type, const char *name, int32_t klen,
+                  const char *ra, encrypt_t en, decrypt_t de, NegotiatedAlgorithms alId);
 
     /**
      * AlgorithmEnum destructor
@@ -103,7 +101,7 @@ public:
      *    Algorithm's name as null terminated C-string. The
      *    application must not free this memory.
      */
-    [[nodiscard]] const char* getName() const;
+    [[nodiscard]] char const *getName() const;
 
     /**
      * Get the algorithm's readable name
@@ -112,7 +110,7 @@ public:
      *    Algorithm's readable name as null terminated C-string. The
      *    application must not free this memory.
      */
-    [[nodiscard]] const char* getReadable() const;
+    [[nodiscard]] char const *getReadable() const;
 
     /**
      * Get the algorithm's key length.
@@ -199,7 +197,7 @@ public:
      *    The AlgorithmEnum if found or an invalid AlgorithmEnum if the name
      *    was not found
      */
-    AlgorithmEnum& getByName(const char* name);
+    AlgorithmEnum &getByName(const char *name) const;
 
     /**
      * Return all names of all currently stored AlgorithmEnums
@@ -207,7 +205,7 @@ public:
      * @return
      *    A C++ std::list of C++ std::strings that contain the names.
      */
-    std::unique_ptr<std::list<std::string>> getAllNames();
+    [[nodiscard]] std::unique_ptr<std::list<std::string> > getAllNames() const;
 
     /**
      * Get the number of currently stored AlgorithmEnums
@@ -234,7 +232,7 @@ public:
      * @return
      *     The AlgorithmEnum if found, an invalid Algorithm otherwise.
      */
-    AlgorithmEnum& getByOrdinal(int ord);
+    [[nodiscard]] AlgorithmEnum &getByOrdinal(int ord) const;
 
     /**
      * Get the ordinal number of an AlgorithmEnum
@@ -246,21 +244,21 @@ public:
      *    Return the ordinal number of this AlgorithmEnum if found,
      *    -1 otherwise.
      */
-    int getOrdinal(AlgorithmEnum&algo);
+    [[nodiscard]] int getOrdinal(AlgorithmEnum const &algo) const;
 
 protected:
     explicit EnumBase(AlgoTypes algo);
 
     ~EnumBase();
 
-    void insert(const char* name);
+    void insert(const char *name);
 
-    void insert(const char* name, int32_t klen,
-                const char* ra, encrypt_t en, decrypt_t de, NegotiatedAlgorithms alId);
+    void insert(const char *name, int32_t klen,
+                const char *ra, encrypt_t en, decrypt_t de, NegotiatedAlgorithms alId);
 
 private:
     AlgoTypes algoType;
-    std::vector<AlgorithmEnum *> algos;
+    std::vector<std::unique_ptr<AlgorithmEnum> > algos;
 };
 
 /**
@@ -405,7 +403,7 @@ public:
      * Adds the specified algorithm to the configuration data.
      * If no free configuration data slot is available the
      * function does not add the algorithm and returns -1. The
-     * methods appends the algorithm to the existing algorithms.
+     * methods append the algorithm to the existing algorithms.
      *
      * @param algoType
      *    Specifies which algorithm type to select
@@ -414,7 +412,7 @@ public:
      * @return
      *    Number of free configuration data slots or -1 on error
      */
-    int32_t addAlgo(AlgoTypes algoType, AlgorithmEnum&algo);
+    int32_t addAlgo(AlgoTypes algoType, AlgorithmEnum &algo);
 
     /**
      * Add an algorithm to configuration data at given index.
@@ -432,7 +430,7 @@ public:
      * @return
      *    Number of free configuration data slots or -1 on error
      */
-    int32_t addAlgoAt(AlgoTypes algoType, AlgorithmEnum&algo, int32_t index);
+    int32_t addAlgoAt(AlgoTypes algoType, AlgorithmEnum &algo, int32_t index);
 
     /**
      * Remove an algorithm from configuration data.
@@ -453,7 +451,7 @@ public:
      * @return
      *    Number of free configuration slots.
      */
-    int32_t removeAlgo(AlgoTypes algoType, AlgorithmEnum&algo);
+    int32_t removeAlgo(AlgoTypes algoType, AlgorithmEnum const &algo);
 
     /**
      * Returns the number of configured algorithms.
@@ -474,12 +472,12 @@ public:
      * @param index
      *    The index in the list of the algorihm type
      * @return
-     *    A pointer the the algorithm enumeration. If the index
+     *    A pointer the algorithm enumeration. If the index
      *    does not point to a configured slot then the function
      *    returns NULL.
      *
      */
-    AlgorithmEnum& getAlgoAt(AlgoTypes algoType, int32_t index);
+    AlgorithmEnum &getAlgoAt(AlgoTypes algoType, int32_t index);
 
     /**
      * Checks if the configuration data of the algorihm type already contains
@@ -493,7 +491,7 @@ public:
      *    True if the algorithm was found, false otherwise.
      *
      */
-    bool containsAlgo(AlgoTypes algoType, AlgorithmEnum&algo);
+    bool containsAlgo(AlgoTypes algoType, AlgorithmEnum &algo);
 
     /**
      * Enables or disables trusted MitM processing.
@@ -571,14 +569,14 @@ public:
     [[nodiscard]] bool isDisclosureFlag() const;
 
     /// Helper function to print some internal data
-    [[maybe_unused]] void printConfiguredAlgos(AlgoTypes algoTyp);
+    [[maybe_unused]] void printConfiguredAlgos(AlgoTypes algoType);
 
     [[nodiscard]] Policy getSelectionPolicy() const { return selectionPolicy; }
-    void setSelectionPolicy(Policy pol) { selectionPolicy = pol; }
+    void setSelectionPolicy(Policy const pol) { selectionPolicy = pol; }
 
     void setZidCache(std::shared_ptr<ZIDCache> const &zf) { zidCache = zf; }
 
-    std::shared_ptr<ZIDCache>& getZidCache() { return zidCache; }
+    std::shared_ptr<ZIDCache> &getZidCache() { return zidCache; }
 
 private:
     // Note: these vectors contain pointers to the global (static) algorithm structures,
@@ -599,21 +597,21 @@ private:
 
     std::shared_ptr<ZIDCache> zidCache = nullptr;
 
-    static AlgorithmEnum& getAlgoAt(std::vector<AlgorithmEnum *>&a, int32_t index);
+    static AlgorithmEnum &getAlgoAt(std::vector<AlgorithmEnum *> const &a, int32_t index);
 
-    static int32_t addAlgo(std::vector<AlgorithmEnum *>&a, AlgorithmEnum&algo);
+    static int32_t addAlgo(std::vector<AlgorithmEnum *> &a, AlgorithmEnum &algo);
 
-    static int32_t addAlgoAt(std::vector<AlgorithmEnum *>&a, AlgorithmEnum&algo, int32_t index);
+    static int32_t addAlgoAt(std::vector<AlgorithmEnum *> &a, AlgorithmEnum &algo, int32_t index);
 
-    static int32_t removeAlgo(std::vector<AlgorithmEnum *>&a, AlgorithmEnum&algo);
+    static int32_t removeAlgo(std::vector<AlgorithmEnum *> &a, AlgorithmEnum const &algo);
 
-    static uint32_t getNumConfiguredAlgos(std::vector<AlgorithmEnum *>&a);
+    static uint32_t getNumConfiguredAlgos(std::vector<AlgorithmEnum *> const &a);
 
-    static bool containsAlgo(std::vector<AlgorithmEnum *>&a, AlgorithmEnum&algo);
+    static bool containsAlgo(std::vector<AlgorithmEnum *> const &a, AlgorithmEnum &algo);
 
-    std::vector<AlgorithmEnum *>& getEnum(AlgoTypes algoType);
+    std::vector<AlgorithmEnum *> &getEnum(AlgoTypes algoType);
 
-    static void printConfiguredAlgos(std::vector<AlgorithmEnum *>&a);
+    static void printConfiguredAlgos(std::vector<AlgorithmEnum *> const &a);
 };
 
 /**

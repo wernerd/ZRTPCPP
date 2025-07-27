@@ -30,44 +30,44 @@
 
 using namespace std;
 
-int divceil(int a, int b) {
-	int c;
-	if (a > 0) {
-		if (b > 0) c=a+b-1;
-		else c=a;
-	}
-	else {
-		if (b > 0) c=a;
-		else c=a+b+1;
-	}
-	return c/b;
+int divceil(int const a, int const b) {
+    int c;
+    if (a > 0) {
+        if (b > 0) c = a + b - 1;
+        else c = a;
+    }
+    else {
+        if (b > 0) c = a;
+        else c = a + b + 1;
+    }
+    return c / b;
 }
 
 //                                         1         2         3
 //                               01234567890123456789012345678901
-static const char* const chars= "ybndrfg8ejkmcpqxot1uwisza345h769";
+static constexpr char chars[] = "ybndrfg8ejkmcpqxot1uwisza345h769";
 
 /*
  * revchars: index into this table with the ASCII value of the char.
  * The result is the value of that quintet.
  */
-static const unsigned char revchars[]= {
+static const unsigned char revchars[] = {
     255, 255, 255, 255, 255, 255, 255, 255,
     255, 255, 255, 255, 255, 255, 255, 255,
     255, 255, 255, 255, 255, 255, 255, 255,
     255, 255, 255, 255, 255, 255, 255, 255,
     255, 255, 255, 255, 255, 255, 255, 255,
     255, 255, 255, 255, 255, 255, 255, 255,
-    255,  18, 255,  25,  26,  27,  30,  29,
-      7,  31, 255, 255, 255, 255, 255, 255,
+    255, 18, 255, 25, 26, 27, 30, 29,
+    7, 31, 255, 255, 255, 255, 255, 255,
     255, 255, 255, 255, 255, 255, 255, 255,
     255, 255, 255, 255, 255, 255, 255, 255,
     255, 255, 255, 255, 255, 255, 255, 255,
     255, 255, 255, 255, 255, 255, 255, 255,
-    255,  24,   1,  12,   3,   8,   5,   6,
-    28,   21,   9,  10, 255,  11,   2,  16,
-    13,   14,   4,  22,  17,  19, 255,  20,
-    15,    0,  23, 255, 255, 255, 255, 255,
+    255, 24, 1, 12, 3, 8, 5, 6,
+    28, 21, 9, 10, 255, 11, 2, 16,
+    13, 14, 4, 22, 17, 19, 255, 20,
+    15, 0, 23, 255, 255, 255, 255, 255,
     255, 255, 255, 255, 255, 255, 255, 255,
     255, 255, 255, 255, 255, 255, 255, 255,
     255, 255, 255, 255, 255, 255, 255, 255,
@@ -86,16 +86,12 @@ static const unsigned char revchars[]= {
     255, 255, 255, 255, 255, 255, 255, 255
 };
 
-Base32::Base32(const string& encoded, int noOfBits):
-    binaryResult(nullptr), resultLength(0) {
-
+Base32::Base32(const string &encoded, int const noOfBits): binaryResult(nullptr), resultLength(0) {
     a2b_l(encoded, divceil(noOfBits, 5), noOfBits);
 }
 
-Base32::Base32(const unsigned char* data, int noOfBits):
-    binaryResult(nullptr), resultLength(0) {
-
-    b2a_l(data, (noOfBits+7)/8, noOfBits);
+Base32::Base32(const unsigned char* data, int const noOfBits): binaryResult(nullptr), resultLength(0) {
+    b2a_l(data, (noOfBits + 7) / 8, noOfBits);
 }
 
 Base32::~Base32() {
@@ -105,19 +101,18 @@ Base32::~Base32() {
     binaryResult = nullptr;
 }
 
-const unsigned char* Base32::getDecoded(int &length) {
+const unsigned char* Base32::getDecoded(int &length) const {
     length = resultLength;
     return binaryResult;
 }
 
-void Base32::b2a_l(const unsigned char* cs, int len,
-                   int noOfBits) {
-
+void Base32::b2a_l(const unsigned char* cs, int const len,
+                   int const noOfBits) {
     /* if lengthinbits is not a multiple of 8 then this is allocating
      * space for 0, 1, or 2 extra quintets that will be truncated at the
      * end of this function if they are not needed
      */
-    string result(divceil(len*8, 5), ' ');
+    string result(divceil(len * 8, 5), ' ');
 
     /* index into the result buffer, initially pointing to the
      * "one-past-the-end" quintet
@@ -131,53 +126,53 @@ void Base32::b2a_l(const unsigned char* cs, int len,
 
     /* Now this is a real live Duff's device.  You gotta love it. */
 
-    unsigned long x = 0;	// to hold up to 32 bits worth of the input
+    unsigned long x = 0; // to hold up to 32 bits worth of the input
     switch ((osp - cs) % 5) {
+        case 0:
+            do {
+                x = *--osp;
+                result[--resp] = chars[x % 32]; /* The least sig 5 bits go into the final quintet. */
+                x /= 32; /* ... now we have 3 bits worth in x... */
 
-	case 0:
-	    do {
-		x = *--osp;
-		result[--resp] = chars[x % 32]; /* The least sig 5 bits go into the final quintet. */
-		x /= 32;	/* ... now we have 3 bits worth in x... */
+            case 4:
+                x |= static_cast<unsigned long>(*--osp) << 3U; /* ... now we have 11 bits worth in x... */
+                result[--resp] = chars[x % 32];
+                x /= 32; /* ... now we have 6 bits worth in x... */
+                result[--resp] = chars[x % 32];
+                x /= 32; /* ... now we have 1 bits worth in x... */
 
-		case 4:
-		    x |= ((unsigned long)(*--osp)) << 3U; /* ... now we have 11 bits worth in x... */
-		    result[--resp] = chars[x % 32];
-		    x /= 32; /* ... now we have 6 bits worth in x... */
-		    result[--resp] = chars[x % 32];
-		    x /= 32; /* ... now we have 1 bits worth in x... */
-
-		case 3:
-		    x |= ((unsigned long)(*--osp)) << 1U; /* The 8 bits from the 2-indexed octet.
+            case 3:
+                x |= static_cast<unsigned long>(*--osp) << 1U; /* The 8 bits from the 2-indexed octet.
 							    So now we have 9 bits worth in x... */
-		    result[--resp] = chars[x % 32];
-		    x /= 32; /* ... now we have 4 bits worth in x... */
+                result[--resp] = chars[x % 32];
+                x /= 32; /* ... now we have 4 bits worth in x... */
 
-		case 2:
-		    x |= ((unsigned long)(*--osp)) << 4U; /* The 8 bits from the 1-indexed octet.
+            case 2:
+                x |= static_cast<unsigned long>(*--osp) << 4U; /* The 8 bits from the 1-indexed octet.
 							    So now we have 12 bits worth in x... */
-		    result[--resp] = chars[x%32];
-		    x /= 32; /* ... now we have 7 bits worth in x... */
-		    result[--resp] = chars[x%32];
-		    x /= 32; /* ... now we have 2 bits worth in x... */
+                result[--resp] = chars[x % 32];
+                x /= 32; /* ... now we have 7 bits worth in x... */
+                result[--resp] = chars[x % 32];
+                x /= 32; /* ... now we have 2 bits worth in x... */
 
-		case 1:
-		    x |= ((unsigned long)(*--osp)) << 2U; /* The 8 bits from the 0-indexed octet.
+            case 1:
+                x |= static_cast<unsigned long>(*--osp) << 2U; /* The 8 bits from the 0-indexed octet.
 							    So now we have 10 bits worth in x... */
-		    result[--resp] = chars[x%32];
-		    x /= 32; /* ... now we have 5 bits worth in x... */
-		    result[--resp] = chars[x];
-	    } while (osp > cs);
+                result[--resp] = chars[x % 32];
+                x /= 32; /* ... now we have 5 bits worth in x... */
+                result[--resp] = chars[x];
+            }
+            while (osp > cs);
     } /* switch ((osp - os.buf) % 5) */
 
     /* truncate any unused trailing zero quintets */
     encoded = result.substr(0, divceil(noOfBits, 5));
 }
 
-void Base32::a2b_l(const string& cs, int size, int lengthinbits ) {
-    unsigned long x = 0;	// to hold up to 32 bits worth of the input
+void Base32::a2b_l(const string &cs, int const size, int const lengthInBits) {
+    unsigned long x = 0; // to hold up to 32 bits worth of the input
 
-    int len = divceil(size*5, 8);
+    int const len = divceil(size * 5, 8);
 
     /* if lengthinbits is not a multiple of 5 then this is
      * allocating space for 0 or 1 extra octets that will be
@@ -200,52 +195,58 @@ void Base32::a2b_l(const string& cs, int size, int lengthinbits ) {
     /* index into the input buffer, initially pointing to the
      * "one-past-the-end" character
      */
-    int csp = size;
 
     /* Now this is a real live Duff's device.  You gotta love it. */
-    switch (csp % 8) {
-	case 0:
-	    do {
-		x = revchars[cs[--csp]&0xff]; /* 5 bits... */
+    switch (int csp = size; csp % 8) {
+        case 0:
+            do {
+                x = revchars[cs[--csp] & 0xff]; /* 5 bits... */
 
-		case 7:
-		    x |= revchars[cs[--csp]&0xff] << 5; /* 10 bits... */
-		    *--resp = x % 256;
-		    x /= 256; /* 2 bits... */
+            case 7:
+                x |= revchars[cs[--csp] & 0xff] << 5; /* 10 bits... */
+                *--resp = x % 256;
+                x /= 256; /* 2 bits... */
 
-		case 6:
-		    x |= revchars[cs[--csp]&0xff] << 2; /* 7 bits... */
+            case 6:
+                x |= revchars[cs[--csp] & 0xff] << 2; /* 7 bits... */
 
-		case 5:
-		    x |= revchars[cs[--csp]&0xff] << 7; /* 12 bits... */
-		    *--resp = x % 256;
-		    x /= 256; /* 4 bits... */
+            case 5:
+                x |= revchars[cs[--csp] & 0xff] << 7; /* 12 bits... */
+                *--resp = x % 256;
+                x /= 256; /* 4 bits... */
 
-		case 4:
-		    x |= revchars[cs[--csp]&0xff] << 4; /* 9 bits... */
-		    *--resp = x % 256;
-		    x /= 256; /* 1 bit... */
+            case 4:
+                x |= revchars[cs[--csp] & 0xff] << 4; /* 9 bits... */
+                *--resp = x % 256;
+                x /= 256; /* 1 bit... */
 
-		case 3:
-		    x |= revchars[cs[--csp]&0xff] << 1; /* 6 bits... */
+            case 3:
+                x |= revchars[cs[--csp] & 0xff] << 1; /* 6 bits... */
 
-		case 2:
-		    x |= revchars[cs[--csp]&0xff] << 6; /* 11 bits... */
-		    *--resp = x % 256;
-		    x /= 256; /* 3 bits... */
+            case 2:
+                x |= revchars[cs[--csp] & 0xff] << 6; /* 11 bits... */
+                *--resp = x % 256;
+                x /= 256; /* 3 bits... */
 
-		case 1:
-		    x |= revchars[cs[--csp]&0xff] << 3; /* 8 bits... */
-		    *--resp = x % 256;
-	    } while (csp);
+            case 1:
+                x |= revchars[cs[--csp] & 0xff] << 3; /* 8 bits... */
+                *--resp = x % 256;
+            }
+            while (csp);
     } /* switch ((csp - cs.buf) % 8) */
 
     /* truncate any unused trailing zero octets */
-    resultLength = divceil(lengthinbits, 8);
+    resultLength = divceil(lengthInBits, 8);
 }
 
 #ifdef UNIT_TEST
 #include <math.h>
+
+#include <cstdlib>
+
+#include <string.h>
+#include <assert.h>
+#include <stddef.h>
 
 
 static uint8_t *randz(const size_t len)

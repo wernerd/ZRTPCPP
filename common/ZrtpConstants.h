@@ -36,7 +36,7 @@
 
 // Prepare to support digest algorithms up to 512 bit (64 bytes)
 constexpr int MAX_DIGEST_LENGTH = 64;
-constexpr int  IMPL_MAX_DIGEST_LENGTH = 64;
+constexpr int IMPL_MAX_DIGEST_LENGTH = 64;
 
 // max. number of parallel supported ZRTP protocol versions.
 constexpr int MAX_ZRTP_VERSIONS = 2;

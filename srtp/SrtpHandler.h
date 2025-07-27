@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _SRTPHANDLER_H_
-#define _SRTPHANDLER_H_
+#ifndef SRTPHANDLER_H_
+#define SRTPHANDLER_H_
 
 #include <cstdint>
 #include <libzrtpcpp/ZrtpCodes.h>
@@ -37,8 +37,7 @@
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
-class SrtpHandler
-{
+class SrtpHandler {
 public:
     /**
      * @brief Protect an RTP packet.
@@ -78,7 +77,8 @@ public:
      *         - -1 - SRTP authentication failed
      *         - -2 - SRTP replay check failed
      */
-    static int32_t unprotect(CryptoContext* pcc, uint8_t* buffer, size_t length, size_t* newLength, SrtpErrorData* errorData=NULL);
+    static int32_t unprotect(CryptoContext* pcc, uint8_t* buffer, size_t length, size_t* newLength,
+                             SrtpErrorData* errorData = nullptr);
 
     /**
      * @brief Protect an RTCP packet.
@@ -115,7 +115,7 @@ public:
     static int32_t unprotectCtrl(CryptoContextCtrl* pcc, uint8_t* buffer, size_t length, size_t* newLength);
 
 private:
-    static bool decodeRtp(uint8_t* buffer, size_t length, uint32_t *ssrc, uint16_t *seq, uint8_t** payload, int32_t *payloadlen);
-
+    static bool decodeRtp(uint8_t* buffer, size_t length, uint32_t* ssrc, uint16_t* seq, uint8_t** payload,
+                          uint32_t* payloadlen);
 };
-#endif // _SRTPHANDLER_H_
+#endif // SRTPHANDLER_H_

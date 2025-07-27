@@ -20,17 +20,18 @@
 
 #include <libzrtpcpp/ZrtpPacketPingAck.h>
 
+#include "libzrtpcpp/ZrtpTextData.h"
+
 ZrtpPacketPingAck::ZrtpPacketPingAck() {
     zrtpHeader = &data.hdr;	// the standard header
-    pingAckHeader = &data.pingAck;
 
     setZrtpId();
-    setLength((sizeof(PingAckPacket_t) / ZRTP_WORD_SIZE) - 1);
-    setMessageType((uint8_t*)PingAckMsg);
-    setVersion((uint8_t*)zrtpVersion_11);  // TODO: fix version string after clarification
+    setLength(sizeof(PingAckPacket_t) / ZRTP_WORD_SIZE - 1);
+    setMessageType(PingAckMsg);
+    setVersion(reinterpret_cast<uint8_t const *>(zrtpVersion_11));  // TODO: fix version string after clarification
 }
 
 ZrtpPacketPingAck::ZrtpPacketPingAck(const uint8_t *data) {
-    zrtpHeader = (zrtpPacketHeader_t *)&((PingAckPacket_t*)data)->hdr; // the standard header
-    pingAckHeader = (PingAck_t *)&((PingAckPacket_t *)data)->pingAck;
+    zrtpHeader = const_cast<zrtpPacketHeader_t *>(&reinterpret_cast<PingAckPacket_t const *>(data)->hdr); // the standard header
+    pingAckHeader = const_cast<PingAck_t *>(&reinterpret_cast<PingAckPacket_t const *>(data)->pingAck);
 }

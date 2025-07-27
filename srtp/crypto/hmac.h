@@ -60,7 +60,7 @@
 
 void hmac_sha1(const uint8_t* key, uint64_t keyLength,
                const uint8_t* data, uint32_t dataLength,
-               uint8_t* mac, int32_t* macLength);
+               uint8_t* mac, size_t* macLength);
 
 /**
  * Compute SHA1 HMAC over several data cunks.
@@ -85,7 +85,7 @@ void hmac_sha1(const uint8_t* key, uint64_t keyLength,
 void hmac_sha1(const uint8_t* key, uint64_t keyLength,
                const std::vector<const uint8_t*>& data,
                const std::vector<uint64_t>& dataLength,
-               uint8_t* mac, int32_t* macLength);
+               uint8_t* mac, size_t* macLength);
 
 /**
  * Create an SHA1 HMAC context.
@@ -105,11 +105,11 @@ void* createSha1HmacContext();
  *     Pointer to initialized SHA1 HMAC context
  * @param key
  *    The MAC key.
- * @param key_length
- *    Lenght of the MAC key in bytes
+ * @param keyLength
+ *    Length of the MAC key in bytes
  * @return Returns a pointer to the initialized context.
  */
-void* initializeSha1HmacContext(void* ctx, uint8_t* key, uint64_t key_length);
+void* initializeSha1HmacContext(void* ctx, uint8_t const * key, uint64_t keyLength);
 
 /**
  * Compute SHA1 HMAC.
@@ -126,11 +126,11 @@ void* initializeSha1HmacContext(void* ctx, uint8_t* key, uint64_t key_length);
  * @param mac
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 20 bytes (SHA1_DIGEST_LENGTH).
- * @param mac_length
+ * @param macLength
  *    Point to an integer that receives the length of the computed HMAC.
  */
 void hmacSha1Ctx(void* ctx, const uint8_t* data, uint64_t dataLength,
-                 uint8_t* mac, int32_t* mac_length);
+                 uint8_t* mac, size_t* macLength);
 
 /**
  * Compute SHA1 HMAC over several data cunks.
@@ -154,7 +154,7 @@ void hmacSha1Ctx(void* ctx, const uint8_t* data, uint64_t dataLength,
 void hmacSha1Ctx(void* ctx,
                  const std::vector<const uint8_t*>& data,
                  const std::vector<uint64_t>& dataLength,
-                 uint8_t* mac, uint32_t* macLength);
+                 uint8_t* mac, size_t* macLength);
 
 /**
  * Free SHA1 HMAC context.

@@ -20,8 +20,8 @@
  * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#ifndef _SKEIN256_H
-#define _SKEIN256_H
+#ifndef SKEIN256_H
+#define SKEIN256_H
 
 /**
  * @file
@@ -55,7 +55,7 @@
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 32 bytes (Skein256_DIGEST_LENGTH).
  */
-void skein256(const uint8_t *data, uint64_t dataLength, uint8_t *digest);
+void skein256(const uint8_t* data, uint64_t dataLength, uint8_t* digest);
 
 /**
  * Compute Skein256 digest over several data cunks.
@@ -72,8 +72,9 @@ void skein256(const uint8_t *data, uint64_t dataLength, uint8_t *digest);
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 32 bytes (Skein256_DIGEST_LENGTH).
  */
-void skein256(const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength,
-              uint8_t *digest);
+void skein256(const std::vector<const uint8_t *> &data, const std::vector<uint64_t> &dataLength,
+              uint8_t* digest);
+
 /**
  * Create and initialize a Skein256 context.
  *
@@ -95,7 +96,7 @@ void* createSkein256Context();
  * @param digestOut
  *    Reference to a secure array that receives the computed digest.
  */
-void closeSkein256Context(void* ctx, zrtp::RetainedSecArray & digestOut);
+void closeSkein256Context(void* ctx, zrtp::RetainedSecArray &digestOut);
 
 /**
  * Initialize a Skein256 context.
@@ -119,7 +120,7 @@ void* initializeSkein256Context(void* ctx);
  * @param digestOut
  *    Reference to a secure array that receives the computed digest.
  */
-void finalizeSkein256Context(void* ctx, zrtp::RetainedSecArray & digestOut);
+void finalizeSkein256Context(void* ctx, zrtp::RetainedSecArray &digestOut);
 
 /**
  * Update the Skein256 context with data.
@@ -151,10 +152,9 @@ void skein256Ctx(void* ctx, const uint8_t* data, uint64_t dataLength);
  *    Vector of integers that hold the length of each data chunk.
  *
  */
-void skein256Ctx(void* ctx, const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength);
+void skein256Ctx(void* ctx, const std::vector<const uint8_t *> &data, const std::vector<uint64_t> &dataLength);
 
 /**
  * @}
  */
-#endif
-
+#endif // SKEIN256_H

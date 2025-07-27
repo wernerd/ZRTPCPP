@@ -26,8 +26,6 @@
  */
 
 #include <memory>
-#include "crypto/hmac.h"
-#include "crypto/macSkein.h"
 
 class SrtpSymCrypto;
 
@@ -54,7 +52,7 @@ class SrtpSymCrypto;
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 class CryptoContextCtrl {
-    public:
+public:
     /**
      * @brief Constructor for an active SRTCP cryptographic context.
      *
@@ -123,16 +121,16 @@ class CryptoContextCtrl {
      *    to the RTP packet. Refer to chapter 4.2. in the RFC 3711.
      */
     CryptoContextCtrl(uint32_t ssrc,
-               const  int32_t ealg,
-               const  int32_t aalg,
-               uint8_t* masterKey,
-               int32_t  masterKeyLength,
-               uint8_t* masterSalt,
-               int32_t  masterSaltLength,
-               int32_t  ekeyl,
-               int32_t  akeyl,
-               int32_t  skeyl,
-               int32_t  tagLength);
+                      int32_t ealg,
+                      int32_t aalg,
+                      uint8_t const* masterKey,
+                      int32_t masterKeyLength,
+                      uint8_t const* masterSalt,
+                      int32_t masterSaltLength,
+                      int32_t ekeyl,
+                      int32_t akeyl,
+                      int32_t skeyl,
+                      int32_t tagLength);
 
     /**
      * @brief Destructor.
@@ -159,7 +157,7 @@ class CryptoContextCtrl {
      * @param ssrc
      *    The RTCP SSRC data in <em>host</em> order.
      */
-    void srtcpEncrypt(uint8_t* rtp, int32_t len, uint32_t index, uint32_t ssrc);
+    void srtcpEncrypt(uint8_t* rtp, int32_t len, uint32_t index, uint32_t ssrc) const;
 
     /**
      * @brief Compute the authentication tag.
@@ -180,7 +178,7 @@ class CryptoContextCtrl {
      *    Points to a buffer that hold the computed tag. This buffer must
      *    be able to hold <code>tagLength</code> bytes.
      */
-    void srtcpAuthenticate(uint8_t* rtp, int32_t len, uint32_t index, uint8_t* tag);
+    void srtcpAuthenticate(uint8_t const* rtp, int32_t len, uint32_t index, uint8_t* tag) const;
 
     /**
      * @brief Perform key derivation according to SRTCP specification
@@ -193,7 +191,7 @@ class CryptoContextCtrl {
      * set key functions.
      *
      */
-     void deriveSrtcpKeys();
+    void deriveSrtcpKeys();
 
     /**
      * @brief Check for packet replay.
@@ -210,7 +208,7 @@ class CryptoContextCtrl {
      * @return <code>true</code> if no replay, <code>false</code> if packet
      *    is too old ar was already received.
      */
-     bool checkReplay(uint32_t newSeqNumber);
+    [[nodiscard]] bool checkReplay(uint32_t newSeqNumber) const;
 
     /**
      * @brief Update the SRTCP packet index.
@@ -228,28 +226,28 @@ class CryptoContextCtrl {
      *
      * @return the length of the authentication tag.
      */
-    inline int32_t getTagLength() const { return tagLength; }
+    [[nodiscard]] int32_t getTagLength() const { return tagLength; }
 
     /**
      * @brief Get the length of the MKI in bytes.
      *
      * @return the length of the MKI.
      */
-    inline int32_t getMkiLength() const { return mkiLength; }
+    [[nodiscard]] int32_t getMkiLength() const { return static_cast<int32_t>(mkiLength); }
 
     /**
      * @brief Get the SSRC of this SRTCP Cryptograhic context.
      *
      * @return the SSRC.
      */
-    inline uint32_t getSsrc() const { return ssrcCtx; }
+    [[nodiscard]] uint32_t getSsrc() const { return ssrcCtx; }
 
     /**
      * @brief Get the SRTCP index field of this SRTCP Cryptograhic context.
      *
      * @return the SRTCP.
      */
-    uint32_t getSrtcpIndex() const { return srtcpIndex; }
+    [[nodiscard]] uint32_t getSrtcpIndex() const { return srtcpIndex; }
 
     /**
      * @brief Set the SRTCP index field of this SRTCP Cryptograhic context.
@@ -257,7 +255,7 @@ class CryptoContextCtrl {
      * @param index the new SRTCP index value.
      *
      */
-    void setSrtcpIndex(uint32_t index) { srtcpIndex = index; }
+    void setSrtcpIndex(uint32_t const index) { srtcpIndex = index; }
 
     /**
      * @brief Set the start (base) number to compute the PRF labels.
@@ -275,7 +273,7 @@ class CryptoContextCtrl {
      * Applications may set `labelBase` to other values to use CryptoContextCtrl
      * for other purposes.
      */
-    void setLabelbase(uint8_t base) { labelBase = base; }
+    void setLabelbase(uint8_t const base) { labelBase = base; }
 
     /**
      * @brief Derive a new Crypto Context for use with a new SSRC
@@ -293,50 +291,48 @@ class CryptoContextCtrl {
      * @return
      *     a new CryptoContextCtrl with all relevant data set.
      */
-    CryptoContextCtrl* newCryptoContextForSSRC(uint32_t ssrc);
+    [[nodiscard]] CryptoContextCtrl* newCryptoContextForSSRC(uint32_t ssrc) const;
 
-    private:
+private:
+    uint32_t ssrcCtx;
+    uint32_t mkiLength;
+    uint8_t* mki;
 
-        uint32_t ssrcCtx;
-        uint32_t mkiLength;
-        uint8_t* mki;
+    uint32_t s_l;
 
-        uint32_t s_l;
+    /* bit mask for replay check */
+    uint64_t replay_window;
 
-        /* bit mask for replay check */
-        uint64_t replay_window;
+    uint8_t* master_key;
+    int32_t master_key_length;
+    uint8_t* master_salt;
+    int32_t master_salt_length;
 
-        uint8_t* master_key;
-        uint32_t master_key_length;
-        uint8_t* master_salt;
-        uint32_t master_salt_length;
+    /* Session Encryption, Authentication keys, Salt */
+    int32_t n_e;
+    uint8_t* k_e;
+    int32_t n_a;
+    uint8_t* k_a;
+    int32_t n_s;
+    uint8_t* k_s;
 
-        /* Session Encryption, Authentication keys, Salt */
-        int32_t  n_e;
-        uint8_t* k_e;
-        int32_t  n_a;
-        uint8_t* k_a;
-        int32_t  n_s;
-        uint8_t* k_s;
+    int32_t ealg;
+    int32_t aalg;
+    int32_t ekeyl;
+    int32_t akeyl;
+    int32_t skeyl;
+    int32_t tagLength;
+    uint32_t srtcpIndex;
+    uint8_t labelBase;
 
-        int32_t ealg;
-        int32_t aalg;
-        int32_t ekeyl;
-        int32_t akeyl;
-        int32_t skeyl;
-        int32_t tagLength;
-        uint32_t srtcpIndex;
-        uint8_t labelBase;
+    void* macCtx;
 
-        void*   macCtx;
-
-        std::unique_ptr<SrtpSymCrypto> cipher;
-        std::unique_ptr<SrtpSymCrypto> f8Cipher;
-    };
+    std::unique_ptr<SrtpSymCrypto> cipher;
+    std::unique_ptr<SrtpSymCrypto> f8Cipher;
+};
 
 /**
  * @}
  */
 
 #endif
-

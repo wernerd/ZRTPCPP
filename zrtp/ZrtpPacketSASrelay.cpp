@@ -20,38 +20,36 @@
 
 #include <libzrtpcpp/ZrtpPacketSASrelay.h>
 
+#include "libzrtpcpp/ZrtpTextData.h"
+
 ZrtpPacketSASrelay::ZrtpPacketSASrelay() {
     initialize();
     setSignatureLength(0);
 }
 
-ZrtpPacketSASrelay::ZrtpPacketSASrelay(uint32_t sl) {
+ZrtpPacketSASrelay::ZrtpPacketSASrelay(uint32_t const sl) {
     initialize();
     setSignatureLength(sl);
 }
 
 void ZrtpPacketSASrelay::initialize() {
-    void* allocated = &data;
-    memset(allocated, 0, sizeof(data));
-
-    zrtpHeader = (zrtpPacketHeader_t *)&((SASrelayPacket_t *)allocated)->hdr;	// the standard header
-    sasRelayHeader = (SASrelay_t *)&((SASrelayPacket_t *)allocated)->sasrelay;
+    zrtpHeader = &reinterpret_cast<SASrelayPacket_t *>(data)->hdr;	// the standard header
 
     setZrtpId();
-    setMessageType((uint8_t*)SasRelayMsg);
+    setMessageType(SasRelayMsg);
 }
 
 void ZrtpPacketSASrelay::setSignatureLength(uint32_t sl) {
     sl &= 0x1ffU;                                                       // make sure it is max 9 bits
-    int32_t length = sizeof(ConfirmPacket_t) + (sl * ZRTP_WORD_SIZE);
-    sasRelayHeader->sigLength = sl;                                     // sigLength is a uint byte
+    auto const length = sizeof(ConfirmPacket_t) + sl * ZRTP_WORD_SIZE;
+    sasRelayHeader->sigLength = sl;                                     // sigLength is an uint byte
     if (sl & 0x100U) {                                                  // check the 9th bit
         sasRelayHeader->filler[1] = 1;                                  // and set it if necessary
     }
     setLength(length / 4);
 }
 
-uint32_t ZrtpPacketSASrelay::getSignatureLength() {
+uint32_t ZrtpPacketSASrelay::getSignatureLength() const {
     uint32_t sl = sasRelayHeader->sigLength;
     if (sasRelayHeader->filler[1] == 1) {                              // do we have a 9th bit
         sl |= 0x100U;
@@ -60,7 +58,6 @@ uint32_t ZrtpPacketSASrelay::getSignatureLength() {
 }
 
 ZrtpPacketSASrelay::ZrtpPacketSASrelay(const uint8_t* data) {
-
-    zrtpHeader = (zrtpPacketHeader_t *)&((SASrelayPacket_t *)data)->hdr;	// the standard header
-    sasRelayHeader = (SASrelay_t *)&((SASrelayPacket_t *)data)->sasrelay;
+    zrtpHeader = const_cast<zrtpPacketHeader_t *>(&reinterpret_cast<SASrelayPacket_t const *>(data)->hdr);	// the standard header
+    sasRelayHeader = const_cast<SASrelay_t *>(&reinterpret_cast<SASrelayPacket_t const *>(data)->sasrelay);
 }

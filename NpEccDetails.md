@@ -36,8 +36,8 @@ message and performs the next steps:
 - extract _PQ_pk_ from Commit message, call NTRU prime encapsulation 
   which returns the shared secret _PQ_ss_ and the encrypted shared 
   secret _PQ_ct_ 
-- extract _ECC_pki_ and compute the ECC secret _ECC_z_ using the 
-  _ECC_pki_ and its _ECC_skr_ 
+- extract _ECC_pki_ and compute the ECC secret _ECC_z_ using 
+  _ECC_pki_ and _ECC_skr_ 
 - compute the ECC KEM: `ECC_ss = KDF_ecc(ECC_z, ECC_pki || ECC_z)`
 - create _pkr_ data: `pkr = PQ_ct || ECC_pkr`
 - send ZRTP DHPart1 message which contains _pkr_ 
@@ -49,15 +49,18 @@ padding between the two public keys.
 
 The Initiator performs the steps after it received DHPart1 message:
 
-- extract _PQ_ct_ and call NTRU prime decapsulation to get _PQ_ss_
-- extract_ECC_pkr_ and compute the ECC secret _ECC_z_ using the 
-  _ECC_pkr_ and its _ECC_ski_
+- extract _PQ_ct_ and call NTRU prime decapsulation which returns the 
+  shared secret _PQ_ss_
+- extract _ECC_pkr_ and compute the ECC secret _ECC_z_ using 
+  _ECC_pkr_ and _ECC_ski_
 - compute the ECC KEM: `ECC_ss = KDF_ecc(ECC_z, ECC_pki || ECC_z)` 
 
 ### Common flow ###
 
 Both peers now concatenate the shared secrets:
+
     combined_ss = PQ_ss || ECC_ss
+
 and use this as input to ZRTP KDF.
 
 The implementation concatenates the data in the order shown above, no

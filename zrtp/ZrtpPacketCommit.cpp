@@ -20,47 +20,47 @@
 
 #include <libzrtpcpp/ZrtpPacketCommit.h>
 
-constexpr int COMMIT_LENGTH_NO_NP = (sizeof(CommitPacket_t) + (2 * ZRTP_WORD_SIZE)) / ZRTP_WORD_SIZE;
+#include "libzrtpcpp/ZrtpTextData.h"
+
+constexpr int COMMIT_LENGTH_NO_NP = (sizeof(CommitPacket_t) + 2 * ZRTP_WORD_SIZE) / ZRTP_WORD_SIZE;
 
 ZrtpPacketCommit::ZrtpPacketCommit() {
-
-    zrtpHeader = &((CommitPacket_t *)data)->hdr;	// the standard header
-    commitHeader = &((CommitPacket_t *)data)->commit;
-
-    pv = const_cast<uint8_t*>(data + sizeof(CommitPacket_t));    // point to the public key value
+    zrtpHeader = &reinterpret_cast<CommitPacket_t *>(data)->hdr; // the standard header
 
     setZrtpId();
-    setLength((sizeof (CommitPacket_t) / ZRTP_WORD_SIZE + 3) - 1);
-    setMessageType((uint8_t*)CommitMsg);
+    setLength(sizeof(CommitPacket_t) / ZRTP_WORD_SIZE + 3 - 1);
+    setMessageType(CommitMsg);
 }
 
-ZrtpPacketCommit::ZrtpPacketCommit(uint8_t const *data) {
-    zrtpHeader = (zrtpPacketHeader_t *)&((CommitPacket_t *)data)->hdr;	// the standard header
-    commitHeader = (Commit_t *)&((CommitPacket_t *)data)->commit;
+ZrtpPacketCommit::ZrtpPacketCommit(uint8_t const* inputData) {
+    // the standard header
+    zrtpHeader = const_cast<zrtpPacketHeader_t *>(&reinterpret_cast<CommitPacket_t const *>(inputData)->hdr);
+    commitHeader = const_cast<Commit_t *>(&reinterpret_cast<CommitPacket_t const *>(inputData)->commit);
 
     if (getLength() > COMMIT_LENGTH_NO_NP) {
-        pv = const_cast<uint8_t *>(data + sizeof(CommitPacket_t));    // point to the public key value(s)
+        pv = const_cast<uint8_t *>(inputData + sizeof(CommitPacket_t)); // point to the public key value(s)
     }
 }
 
-void ZrtpPacketCommit::setPacketLength(size_t pubKeyLen) {
+void ZrtpPacketCommit::setPacketLength(size_t const pubKeyLen) {
     pvLength = pubKeyLen;
     // always round to multiple number of ZRTP_WORD_SIZE bytes
-    roundUp = ((pubKeyLen + (ZRTP_WORD_SIZE - 1)) / ZRTP_WORD_SIZE) * ZRTP_WORD_SIZE;
+    roundUp = (pubKeyLen + (ZRTP_WORD_SIZE - 1)) / ZRTP_WORD_SIZE * ZRTP_WORD_SIZE;
 
     // Compute total length in bytes, is always a multiple of ZRTP_WORD_SIZE, the computer number of ZRTP_WORDS
-    auto length = static_cast<uint16_t>(sizeof(CommitPacket_t) + roundUp + (2 * ZRTP_WORD_SIZE)); // HMAC field is 2*ZRTP_WORD_SIZE
+    auto const length = static_cast<uint16_t>(sizeof(CommitPacket_t) + roundUp + 2 * ZRTP_WORD_SIZE);
+    // HMAC field is 2*ZRTP_WORD_SIZE
     setLength(static_cast<uint16_t>(length / ZRTP_WORD_SIZE));
 }
 
-bool ZrtpPacketCommit::isLengthOk(commitType type) const  {
-    int32_t len = getLength();
+bool ZrtpPacketCommit::isLengthOk(commitType const type) const {
+    auto const len = getLength();
     // TODO: check length for various DH types including NPxx algorithms
     return type != MultiStream || len == COMMIT_MULTI;
 }
 
-void ZrtpPacketCommit::setNonce(uint8_t const * text) {
-    memcpy(commitHeader->hvi, text, sizeof(commitHeader->hvi)-4*ZRTP_WORD_SIZE);
+void ZrtpPacketCommit::setNonce(uint8_t const* text) {
+    memcpy(commitHeader->hvi, text, sizeof(commitHeader->hvi) - 4 * ZRTP_WORD_SIZE);
     uint16_t len = getLength();
     len -= 4;
     setLength(len);

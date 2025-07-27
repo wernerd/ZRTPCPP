@@ -27,11 +27,11 @@ using namespace std;
 using namespace zrtp;
 
 
-unique_ptr<vector<string> >
+unique_ptr<vector<string>>
 Utilities::splitString(const string &data, const string &delimiter) {
-    auto result = make_unique<vector<string> >();
+    auto result = make_unique<vector<string>>();
 
-    if (data.empty() || (delimiter.empty() || delimiter.size() > 1)) {
+    if (data.empty() || delimiter.empty() || delimiter.size() > 1) {
         return result;
     }
     string copy(data);
@@ -51,7 +51,8 @@ Utilities::splitString(const string &data, const string &delimiter) {
         if (result->at(idx).empty()) {
             result->pop_back();
             idx--;
-        } else
+        }
+        else
             break;
     }
     return result;
@@ -60,7 +61,7 @@ Utilities::splitString(const string &data, const string &delimiter) {
 int64_t
 Utilities::currentTimeMillis() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch()).count();
+        std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
 [[maybe_unused]] void
@@ -70,101 +71,100 @@ Utilities::wipeString(string &toWipe) {
     // implementation to really copy the string, and we can set the contents to 0. string.clear() does not clear the
     // contents, just sets the length to 0 which is not good enough.
     toWipe.append(" ");
-    wipeMemory((void *) toWipe.data(), toWipe.size());
+    wipeMemory(toWipe.data(), toWipe.size());
     toWipe.clear();
 }
 
-[[maybe_unused]] uint64_t Utilities::load64(const uint8_t *const ptr) {
-    uint64_t retval = ((uint64_t) ptr[0] << 56U)
-                      | ((uint64_t) ptr[1] << 48U)
-                      | ((uint64_t) ptr[2] << 40U)
-                      | ((uint64_t) ptr[3] << 32U)
-                      | ((uint64_t) ptr[4] << 24U)
-                      | ((uint64_t) ptr[5] << 16U)
-                      | ((uint64_t) ptr[6] << 8U)
-                      | ((uint64_t) ptr[7]);
+[[maybe_unused]] uint64_t Utilities::load64(uint8_t const* const ptr) {
+    uint64_t const retval = static_cast<uint64_t>(ptr[0]) << 56U
+                      | static_cast<uint64_t>(ptr[1]) << 48U
+                      | static_cast<uint64_t>(ptr[2]) << 40U
+                      | static_cast<uint64_t>(ptr[3]) << 32U
+                      | static_cast<uint64_t>(ptr[4]) << 24U
+                      | static_cast<uint64_t>(ptr[5]) << 16U
+                      | static_cast<uint64_t>(ptr[6]) << 8U
+                      | static_cast<uint64_t>(ptr[7]);
     return retval;
 }
 
-[[maybe_unused]] uint32_t Utilities::load32(const uint8_t *const ptr) {
-    uint32_t retval = ((uint32_t) ptr[0] << 24U) | ((uint32_t) ptr[1] << 16U) | ((uint32_t) ptr[2] << 8U) | ptr[3];
+[[maybe_unused]] uint32_t Utilities::load32(uint8_t const* const ptr) {
+    uint32_t const retval = static_cast<uint32_t>(ptr[0]) << 24U | static_cast<uint32_t>(ptr[1]) << 16U | static_cast<
+                          uint32_t>(ptr[2]) << 8U | ptr[3];
     return retval;
 }
 
-[[maybe_unused]] uint16_t Utilities::load16(const uint8_t *const ptr) {
-    uint16_t retval = ((uint32_t) ptr[0] << 8U) | ptr[1];
+[[maybe_unused]] uint16_t Utilities::load16(uint8_t const* const ptr) {
+    uint16_t const retval = static_cast<uint32_t>(ptr[0]) << 8U | ptr[1];
     return retval;
 }
 
-[[maybe_unused]] void Utilities::store64(uint64_t val, uint8_t *ptr) {
-    *ptr++ = (uint8_t) (val >> 56U);
-    *ptr++ = (uint8_t) (val >> 48U);
-    *ptr++ = (uint8_t) (val >> 40U);
-    *ptr++ = (uint8_t) (val >> 32U);
-    *ptr++ = (uint8_t) (val >> 24U);
-    *ptr++ = (uint8_t) (val >> 16U);
-    *ptr++ = (uint8_t) (val >> 8U);
-    *ptr = (uint8_t) val;
+[[maybe_unused]] void Utilities::store64(uint64_t const val, uint8_t* ptr) {
+    *ptr++ = static_cast<uint8_t>(val >> 56U);
+    *ptr++ = static_cast<uint8_t>(val >> 48U);
+    *ptr++ = static_cast<uint8_t>(val >> 40U);
+    *ptr++ = static_cast<uint8_t>(val >> 32U);
+    *ptr++ = static_cast<uint8_t>(val >> 24U);
+    *ptr++ = static_cast<uint8_t>(val >> 16U);
+    *ptr++ = static_cast<uint8_t>(val >> 8U);
+    *ptr = static_cast<uint8_t>(val);
 }
 
-[[maybe_unused]] void Utilities::store32(uint32_t val, uint8_t *ptr) {
-    *ptr++ = (uint8_t) (val >> 24U);
-    *ptr++ = (uint8_t) (val >> 16U);
-    *ptr++ = (uint8_t) (val >> 8U);
-    *ptr = (uint8_t) val;
+[[maybe_unused]] void Utilities::store32(uint32_t const val, uint8_t* ptr) {
+    *ptr++ = static_cast<uint8_t>(val >> 24U);
+    *ptr++ = static_cast<uint8_t>(val >> 16U);
+    *ptr++ = static_cast<uint8_t>(val >> 8U);
+    *ptr = static_cast<uint8_t>(val);
 }
 
-[[maybe_unused]] void Utilities::store16(uint16_t val, uint8_t *ptr) {
-    *ptr++ = (uint8_t) (val >> 8U);
-    *ptr = (uint8_t) val;
+[[maybe_unused]] void Utilities::store16(uint16_t const val, uint8_t* ptr) {
+    *ptr++ = static_cast<uint8_t>(val >> 8U);
+    *ptr = static_cast<uint8_t>(val);
 }
 
 string
-Utilities::getIsoTimeUtc(time_t theTime)
-{
+Utilities::getIsoTimeUtc(time_t const theTime) {
     static char dateFormat[] = "%FT%TZ";
-    struct tm timeInfo = {0};
+    tm timeInfo = {};
     char dateBuffer[200];
 
     strftime(dateBuffer, sizeof(dateBuffer), dateFormat, gmtime_r(&theTime, &timeInfo));
-    return string(dateBuffer);
+    return {dateBuffer};
 }
 
 string
-Utilities::getIsoTimeUtcMs(int64_t theTime)
-{
-    const char dateFormat[] = "%FT%T";
-    struct tm timeInfo = {0};
+Utilities::getIsoTimeUtcMs(int64_t const theTime) {
+    constexpr char dateFormat[] = "%FT%T";
+    tm timeInfo = {};
     char dateBuffer[200];
     char outBuffer[200];
 
-    int32_t ms = static_cast<int32_t>(theTime % 1000);
-    time_t seconds = theTime / 1000;
+    auto const ms = static_cast<int32_t>(theTime % 1000);
+    time_t const seconds = theTime / 1000;
 
     strftime(dateBuffer, sizeof(dateBuffer), dateFormat, gmtime_r(&seconds, &timeInfo));
     snprintf(outBuffer, sizeof(outBuffer), "%s.%03dZ", dateBuffer, ms);
 
-    return string(outBuffer);
+    return {outBuffer};
 }
 
 StringUnique
-Utilities::hexdump(const char *title, const unsigned char *s, size_t l) {
-    char hexBuffer[2000] = {0};
+Utilities::hexdump(const char* title, const unsigned char* s, size_t const l) {
+    char hexBuffer[2000] = {};
     size_t available = 2000;
 
-    if (s == nullptr) return make_unique<string>();     // return an empty string
+    if (s == nullptr) return make_unique<string>(); // return an empty string
 
     auto len = snprintf(hexBuffer, available, "%s", title);
     available -= len;
 
     for (size_t n = 0; n < l; ++n) {
-        if ((n % 16) == 0) {
-            auto used = snprintf(hexBuffer + len, available, "\n%04x", static_cast<int>(n));
+        if (n % 16 == 0) {
+            auto const used = snprintf(hexBuffer + len, available, "\n%04x", static_cast<int>(n));
             len += used;
             available -= used;
         }
 
-        auto used = snprintf(hexBuffer + len, available, " %02x", s[n]);
+        auto const used = snprintf(hexBuffer + len, available, " %02x", s[n]);
         len += used;
         available -= used;
         if (len > 1953) break;
@@ -174,37 +174,37 @@ Utilities::hexdump(const char *title, const unsigned char *s, size_t l) {
 }
 
 [[maybe_unused]] int64_t
-Utilities::getDifference(uint64_t first, uint64_t second, uint64_t limit) {
+Utilities::getDifference(uint64_t const first, uint64_t const second, uint64_t const limit) {
     assert(limit <= INT64_MAX);
-    uint64_t absDiff = (first > second) ? (first - second) : (second - first);
-    absDiff = (absDiff > limit) ? limit : absDiff;
-    return (first > second) ? (int64_t) absDiff : -(int64_t) absDiff;
+    uint64_t absDiff = first > second ? first - second : second - first;
+    absDiff = absDiff > limit ? limit : absDiff;
+    return first > second ? static_cast<int64_t>(absDiff) : -static_cast<int64_t>(absDiff);
 }
 
 // Uri encode and decode.
 // RFC1630, RFC1738, RFC2396
 
 static constexpr char HEX2DEC[256] = {
-        /*       0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F */
-        /* 0 */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-        /* 1 */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-        /* 2 */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-        /* 3 */  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 127, 127, 127, 127, 127, 127,
+    /*       0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F */
+    /* 0 */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
+    /* 1 */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
+    /* 2 */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
+    /* 3 */ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 127, 127, 127, 127, 127, 127,
 
-        /* 4 */ 127, 10, 11, 12, 13, 14, 15, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-        /* 5 */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-        /* 6 */ 127, 10, 11, 12, 13, 14, 15, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-        /* 7 */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
+    /* 4 */ 127, 10, 11, 12, 13, 14, 15, 127, 127, 127, 127, 127, 127, 127, 127, 127,
+    /* 5 */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
+    /* 6 */ 127, 10, 11, 12, 13, 14, 15, 127, 127, 127, 127, 127, 127, 127, 127, 127,
+    /* 7 */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
 
-        /* 8 */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-        /* 9 */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-        /* A */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-        /* B */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
+    /* 8 */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
+    /* 9 */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
+    /* A */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
+    /* B */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
 
-        /* C */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-        /* D */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-        /* E */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-        /* F */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127
+    /* C */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
+    /* D */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
+    /* E */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
+    /* F */ 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127
 };
 
 [[maybe_unused]] std::string
@@ -213,18 +213,18 @@ Utilities::uriDecode(std::string const &sSrc) {
     // but are not followed by two hexadecimal characters (0-9, A-F) are reserved
     // for future extension"
 
-    auto *pSrc = (const unsigned char *) sSrc.c_str();
+    auto* pSrc = reinterpret_cast<unsigned const char *>(sSrc.c_str());
     const size_t SRC_LEN = sSrc.length();
-    const unsigned char *const SRC_END = pSrc + SRC_LEN;
-    const unsigned char *const SRC_LAST_DEC = SRC_END - 2;   // last decodable '%'
+    const unsigned char* const SRC_END = pSrc + SRC_LEN;
+    const unsigned char* const SRC_LAST_DEC = SRC_END - 2; // last decodable '%'
 
     vector<unsigned char> decoded;
     decoded.reserve(SRC_LEN);
 
     while (pSrc < SRC_LAST_DEC) {
         if (*pSrc == '%') {
-            char dec1, dec2;
-            if ((dec1 = HEX2DEC[*(pSrc + 1)]) != 127 && (dec2 = HEX2DEC[*(pSrc + 2)]) != 127) {
+            char dec2;
+            if (char dec1; (dec1 = HEX2DEC[*(pSrc + 1)]) != 127 && (dec2 = HEX2DEC[*(pSrc + 2)]) != 127) {
                 decoded.push_back((dec1 << 4) + dec2);
                 pSrc += 3;
                 continue;
@@ -243,34 +243,33 @@ Utilities::uriDecode(std::string const &sSrc) {
 
 // Only alphanum is safe.
 static constexpr char SAFE[256] = {
-        /*      0 1 2 3  4 5 6 7  8 9 A B  C D E F */
-        /* 0 */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        /* 1 */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        /* 2 */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        /* 3 */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
+    /*      0 1 2 3  4 5 6 7  8 9 A B  C D E F */
+    /* 0 */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /* 1 */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /* 2 */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /* 3 */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
 
-        /* 4 */ 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        /* 5 */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
-        /* 6 */ 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        /* 7 */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+    /* 4 */ 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    /* 5 */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+    /* 6 */ 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    /* 7 */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
 
-        /* 8 */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        /* 9 */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        /* A */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        /* B */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /* 8 */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /* 9 */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /* A */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /* B */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 
-        /* C */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        /* D */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        /* E */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        /* F */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    /* C */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /* D */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /* E */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /* F */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
 [[maybe_unused]] std::string
 Utilities::uriEncode(std::string const &sSrc) {
-    const char DEC2HEX[16 + 1] = "0123456789ABCDEF";
-    auto *pSrc = (const unsigned char *) sSrc.c_str();
+    auto* pSrc = reinterpret_cast<unsigned char const *>(sSrc.c_str());
     const size_t SRC_LEN = sSrc.length();
-    const unsigned char *const SRC_END = pSrc + SRC_LEN;
+    const unsigned char* const SRC_END = pSrc + SRC_LEN;
 
     vector<unsigned char> encoded;
     encoded.reserve(SRC_LEN * 3);
@@ -278,7 +277,9 @@ Utilities::uriEncode(std::string const &sSrc) {
     for (; pSrc < SRC_END; ++pSrc) {
         if (SAFE[*pSrc]) {
             encoded.push_back(*pSrc);
-        } else {
+        }
+        else {
+            constexpr char DEC2HEX[16 + 1] = "0123456789ABCDEF";
             // escape this char
             encoded.push_back('%');
             encoded.push_back(DEC2HEX[*pSrc >> 4]);

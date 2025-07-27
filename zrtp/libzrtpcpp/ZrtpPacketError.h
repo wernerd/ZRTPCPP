@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _ZRTPPACKETERROR_H_
-#define _ZRTPPACKETERROR_H_
+#ifndef ZRTPPACKETERROR_H_
+#define ZRTPPACKETERROR_H_
 
 /**
  * @file ZrtpPacketError.h
@@ -36,11 +36,9 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-class __EXPORT ZrtpPacketError : public ZrtpPacketBase {
+class __EXPORT ZrtpPacketError final : public ZrtpPacketBase {
 
- protected:
-
- public:
+public:
     /// Creates a Error packet with default data
     ZrtpPacketError();
 
@@ -49,19 +47,22 @@ class __EXPORT ZrtpPacketError : public ZrtpPacketBase {
 
     ~ZrtpPacketError() override = default;
 
+
     /// Get the error code from Error message
-    uint32_t getErrorCode() { return zrtpNtohl(errorHeader->errorCode); };
+    [[nodiscard]] uint32_t getErrorCode() const { return zrtpNtohl(errorHeader->errorCode); }
 
+    // All 'set*' functions actually copy into the data array via the header pointer
+
+    // ReSharper disable once CppMemberFunctionMayBeConst
     /// Set error code in Error message
-    void setErrorCode(uint32_t code) {errorHeader->errorCode = zrtpHtonl(code); };
+    void setErrorCode(uint32_t const code) { errorHeader->errorCode = zrtpHtonl(code); }
 
- private:
-     Error_t* errorHeader = nullptr;   ///< Points to Error message
-     ErrorPacket_t data = {};
+private:
+    Error_t* errorHeader = &data.error; ///< Points to Error message
+    ErrorPacket_t data = {};
 };
 
 /**
  * @}
  */
-#endif // ZRTPPACKETERROR
-
+#endif // ZRTPPACKETERROR_H_

@@ -20,7 +20,6 @@
  */
 
 #include <string>
-#include <cstdio>
 #include <mutex>
 
 #include "libzrtpcpp/ZIDCache.h"
@@ -30,6 +29,7 @@
 #include "CtZrtpCallback.h"
 #include "CtZrtpSession.h"
 #include "buildInfo.h"
+#include "libzrtpcpp/ZrtpTextData.h"
 
 #ifdef ZID_DATABASE
 #include "zrtp/libzrtpcpp/ZIDCacheDb.h"

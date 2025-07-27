@@ -24,7 +24,6 @@
 #include <cstdint>
 #include <functional>
 #include <thread>
-#include <mutex>
 #include <condition_variable>
 #include "Utilities.h"
 
@@ -34,7 +33,7 @@ namespace zrtp {
     class ZrtpTimeoutProvider {
         // Internal timer task data
         struct TimerTask {
-            TimerTask(int32_t i, int64_t t, int64_t d, function<void(int64_t)> f) : id(i), timeToRun(t), data(d),
+            TimerTask(int32_t const i, int64_t const t, int64_t const d, function<void(int64_t)> f) : id(i), timeToRun(t), data(d),
                 cbFunction(std::move(f)) {
             }
 
@@ -62,16 +61,17 @@ namespace zrtp {
          *
          * @param relativeTime Execute function after waiting this number of milli-seconds
          * @param data Caller data, not interpreted or used by the timer tasks
+         * @param cbFunction Function to call when timer triggers
          * @return positive number: id of the timer task or an error code (< 0)
          */
-        int32_t addTimer(int32_t relativeTime, int64_t data, const function<void(int64_t)>&cbFunction) {
+        int32_t addTimer(int32_t relativeTime, int64_t data, const function<void(int64_t)> &cbFunction) {
             if (!runTimerThread) return -1;
 
-            auto steadyTime = chrono::duration_cast<chrono::milliseconds>(
+            auto const steadyTime = chrono::duration_cast<chrono::milliseconds>(
                 chrono::steady_clock::now().time_since_epoch()).count();
-            relativeTime = (relativeTime > 0) ? relativeTime : 1; // at least one millisecond, never negative
+            relativeTime = relativeTime > 0 ? relativeTime : 1; // at least one millisecond, never negative
 
-            lock_guard<mutex> tl(tasksLock);
+            lock_guard tl(tasksLock);
 
             auto taskId = nextTaskId++;
             nextTaskId %= INT32_MAX;
@@ -91,7 +91,7 @@ namespace zrtp {
             }
             else {
                 tasks.push_back(std::move(task));
-                tasks.sort([](const TimerTaskPtr&l, const TimerTaskPtr&r) { return l->timeToRun < r->timeToRun; });
+                tasks.sort([](const TimerTaskPtr &l, const TimerTaskPtr &r) { return l->timeToRun < r->timeToRun; });
             }
             waitForTasks.notify_all();
             return taskId;
@@ -100,11 +100,12 @@ namespace zrtp {
         /**
          * @brief Schedules the function for execution at specified absolute time since the Unix epoch
          *
-         * @param relativeTime Execute function at/after the specified time given in milli-seconds
+         * @param absoluteTime Execute function at/after the specified time given in milli-seconds
          * @param data Caller data, not interpreted or used by the timer tasks
+         * @param cbFunction Function to call when timer triggers
          * @return positive number: id of the timer task or an error code (< 0)
          */
-        int32_t addTimer(int64_t absoluteTime, int64_t data, const function<void(int64_t)>&cbFunction) {
+        int32_t addTimer(int64_t const absoluteTime, int64_t const data, const function<void(int64_t)> &cbFunction) {
             return addTimer(static_cast<int32_t>(absoluteTime - Utilities::currentTimeMillis()),
                             data, cbFunction);
         }
@@ -114,11 +115,11 @@ namespace zrtp {
          *
          * @param taskId Timer to remove
          */
-        void removeTimer(int32_t taskId) {
-            lock_guard<mutex> tl(tasksLock);
+        void removeTimer(int32_t const taskId) {
+            lock_guard tl(tasksLock);
 
             if (tasks.empty() || !runTimerThread) return;
-            tasks.remove_if([&](const TimerTaskPtr&t) { return t->id == taskId; });
+            tasks.remove_if([&](const TimerTaskPtr &t) { return t->id == taskId; });
             waitForTasks.notify_all();
         }
 
@@ -144,7 +145,7 @@ namespace zrtp {
                     waitForTasks.wait_for(runLock, chrono::milliseconds(waitTime));
                     continue;
                 }
-                auto task = std::move(tasks.front());
+                auto const task = std::move(tasks.front());
                 tasks.pop_front();
                 runLock.unlock();
                 task->cbFunction(task->data);

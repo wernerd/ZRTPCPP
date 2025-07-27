@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _ZRTPSTATECLASS_H_
-#define _ZRTPSTATECLASS_H_
+#ifndef ZRTPSTATECLASS_H_
+#define ZRTPSTATECLASS_H_
 
 /**
  * @file ZrtpStateEngineImpl.h
@@ -33,7 +33,7 @@
 /**
  * The ZRTP states
  *
- * Depending on the role of this state engine and the actual protocl flow
+ * Depending on the role of this state engine and the actual protocol flow
  * not all states are processed during a ZRTP handshake.
  */
 enum zrtpStates {
@@ -110,13 +110,10 @@ class ZRtp;
  * The methods of this class implement the ZRTP state actions.
  *
  */
+class __EXPORT ZrtpStateEngineImpl final : public ZrtpStateEngine {
 
-
-class __EXPORT ZrtpStateEngineImpl : public ZrtpStateEngine {
-
-private:
     ZRtp * parent;                           ///< The ZRTP implementation
-    ZrtpStates * engine = nullptr;           ///< The state switching engine
+    ZrtpStates * engine;                     ///< The state switching engine
     Event * event = nullptr;                 ///< Current event to process
 
     static state_t states[numberOfStates];
@@ -131,14 +128,14 @@ private:
     /**
      * Points to prepared Commit packet after receiving a Hello packet
      */
-    ZrtpPacketCommit* commitPkt;
+    ZrtpPacketCommit* commitPkt = nullptr;
 
     zrtpTimer_t T1 = {};         ///< The Hello message timeout timer
     zrtpTimer_t T2 = {};         ///< Timeout timer for other messages
 
-    int32_t t1Resend;       ///< configurable resend counter for T1 (Hello packets)
-    int32_t t1ResendExtend; ///< configurable extended resend counter for T1 (Hello packets)
-    int32_t t2Resend;       ///< configurable resend counter for T2 (other packets)
+    int32_t t1Resend = 20;       ///< configurable resend counter for T1 (Hello packets)
+    int32_t t1ResendExtend = 60; ///< configurable extended resend counter for T1 (Hello packets)
+    int32_t t2Resend = 10;       ///< configurable resend counter for T2 (other packets)
 
     std::string msgType;
 
@@ -146,10 +143,10 @@ private:
      * If this is set to true the protocol engine handle the multi-stream
      * variant of ZRTP. Refer to chapter 5.4.2 in the ZRTP specification.
      */
-    bool multiStream;
+    bool multiStream = false;
 
-    // Secure sub-state to handle SAS relay packets
-    SecureSubStates secSubState;
+    // Secure substate to handle SAS relay packets
+    SecureSubStates secSubState = Normal;
 
     /**
      * Secure Sub state WaitSasRelayAck.
@@ -170,9 +167,9 @@ private:
     /**
      * Hello packet version sent to other partner
      */
-    int32_t sentVersion;
+    int32_t sentVersion = 0;
     
-    int32_t retryCounters[ErrorRetry+1] = {0};  // TODO adjust
+    int32_t retryCounters[ErrorRetry+1] = {};
 
     int32_t transportOverhead = RTP_HEADER_LENGTH;
 
@@ -183,35 +180,35 @@ public:
 
     ~ZrtpStateEngineImpl() override;
 
-    [[nodiscard]] bool inState(const int32_t state) const override { return engine->inState(state); };
+    [[nodiscard]] bool inState(int32_t const state) const override { return engine->inState(state); }
 
     void processEvent(Event * ev) override;
 
     void sendErrorPacket(uint32_t errorCode) override;
 
-    void setT1Resend(int32_t counter) override {T1.maxResend = counter;}
+    void setT1Resend(int32_t const counter) override {T1.maxResend = counter;}
 
-    void setT1Capping(int32_t capping) override {T1.capping = capping;}
+    void setT1Capping(int32_t const capping) override {T1.capping = capping;}
 
-    void setT1ResendExtend(int32_t counter) override {t1ResendExtend = counter;}
+    void setT1ResendExtend(int32_t const counter) override {t1ResendExtend = counter;}
 
-    void setT2Resend(int32_t counter) override {T2.maxResend = counter;}
+    void setT2Resend(int32_t const counter) override {T2.maxResend = counter;}
 
-    void setT2Capping(int32_t capping) override {T2.capping = capping;}
+    void setT2Capping(int32_t const capping) override {T2.capping = capping;}
 
     int getNumberOfRetryCounters() override;
 
     int getRetryCounters(int32_t* counters) override;
 
-    void setTransportOverhead(int32_t overhead) override { transportOverhead = overhead; }
+    void setTransportOverhead(int32_t const overhead) override { transportOverhead = overhead; }
 
     int32_t getTransportOverhead() override { return transportOverhead; }
 
-    void setMultiStream(bool multi) override { multiStream = multi; }
+    void setMultiStream(bool const multi) override { multiStream = multi; }
     // endregion
 private:
     /// Switch to the specified state
-    void nextState(int32_t state)        { engine->nextState(state); };
+    void nextState(int32_t const state) const      { engine->nextState(state); }
 
     /**
      * The state event handling methods.
@@ -266,7 +263,7 @@ private:
      *    1 timer was activated
      *    0 activation failed
      */
-    int32_t startTimer(zrtpTimer_t *t);
+    int32_t startTimer(zrtpTimer_t *t) const;
 
     /**
      * Compute and set the next timeout value.
@@ -278,7 +275,7 @@ private:
      *    0 activation failed
      *   -1 resend counter exceeded
      */
-    int32_t nextTimer(zrtpTimer_t *t);
+    int32_t nextTimer(zrtpTimer_t *t) const;
 
     /**
      * Cancel the active timer.
@@ -287,9 +284,7 @@ private:
      *    1 timer was canceled
      *    0 timer cancel failed
      */
-    int32_t cancelTimer() {return parent->cancelTimer(); };
-
-    void adjustT2Sidh(int32_t adjustedStart) { T2.start = adjustedStart; }
+    [[nodiscard]] int32_t cancelTimer() const { return parent->cancelTimer(); }
 
     /**
      * Set status if an error occurred while sending a ZRTP packet.
@@ -306,7 +301,7 @@ private:
      * Set status if a timer problems occurs.
      *
      * This functions clears data and set state to Initial after a timer
-     * error occurred. Either no timer available or resend counter excesded.
+     * error occurred. Either no timer available or resend counter exceeded.
      *
      * @return
      *    Fail code
@@ -321,7 +316,7 @@ private:
      * @return
      *    Value of the multi-stream mode flag.
      */
-    [[maybe_unused]] bool isMultiStream() { return multiStream; };
+    [[nodiscard]] [[maybe_unused]] bool isMultiStream() const { return multiStream; }
 
     /**
      * Send a SAS relay packet.
@@ -335,11 +330,10 @@ private:
      *    Pointer to the SAS relay packet.
      */
     void sendSASRelay(ZrtpPacketSASrelay* relay);
-
 };
 
 /**
  * @}
  */
-#endif // _ZRTPSTATECLASS_H_
+#endif // ZRTPSTATECLASS_H_
 

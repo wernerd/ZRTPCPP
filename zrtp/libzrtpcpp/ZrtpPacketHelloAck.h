@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _ZRTPPACKETHELLOACK_H_
-#define _ZRTPPACKETHELLOACK_H_
+#ifndef ZRTPPACKETHELLOACK_H_
+#define ZRTPPACKETHELLOACK_H_
 
 /**
  * @file ZrtpPacketHelloAck.h
@@ -36,7 +36,7 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-class __EXPORT ZrtpPacketHelloAck : public ZrtpPacketBase {
+class __EXPORT ZrtpPacketHelloAck final : public ZrtpPacketBase {
 
  public:
     /// Creates a HelloAck packet with default data
@@ -54,5 +54,5 @@ class __EXPORT ZrtpPacketHelloAck : public ZrtpPacketBase {
 /**
  * @}
  */
-#endif // ZRTPPACKETHELLOACK
+#endif // ZRTPPACKETHELLOACK_H_
 

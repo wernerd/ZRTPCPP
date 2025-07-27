@@ -29,7 +29,7 @@
 // to plain Botan crypto functions. Make sure the crypto wrapper works.
 using namespace std;
 
-class ZrtpKemCryptoTestFixture: public ::testing::Test {
+class ZrtpKemCryptoTestFixture: public testing::Test {
 public:
     ZrtpKemCryptoTestFixture() = default;
 
@@ -112,8 +112,8 @@ TEST_F(ZrtpKemCryptoTestFixture, simpleExchange_1277) {
 }
 
 TEST_F(ZrtpKemCryptoTestFixture, zrtpDhExchange_653) {
-    ZrtpDH aliceDh(np06);
-    ZrtpDH bobDh(np06);
+    ZrtpDH const aliceDh(np06);
+    ZrtpDH const bobDh(np06);
 
     zrtp::SecureArray4k alicePubKey;
     aliceDh.getPubKeyBytes(alicePubKey, ZrtpDH::Commit);
@@ -135,8 +135,8 @@ TEST_F(ZrtpKemCryptoTestFixture, zrtpDhExchange_653) {
 }
 
 TEST_F(ZrtpKemCryptoTestFixture, zrtpDhExchange_953) {
-    ZrtpDH aliceDh(np09);
-    ZrtpDH bobDh(np09);
+    ZrtpDH const aliceDh(np09);
+    ZrtpDH const bobDh(np09);
 
     zrtp::SecureArray4k alicePubKey;
     aliceDh.getPubKeyBytes(alicePubKey, ZrtpDH::Commit);
@@ -158,8 +158,8 @@ TEST_F(ZrtpKemCryptoTestFixture, zrtpDhExchange_953) {
 }
 
 TEST_F(ZrtpKemCryptoTestFixture, zrtpDhExchange_1277) {
-    ZrtpDH aliceDh(np12);
-    ZrtpDH bobDh(np12);
+    ZrtpDH const aliceDh(np12);
+    ZrtpDH const bobDh(np12);
 
     zrtp::SecureArray4k alicePubKey;
     aliceDh.getPubKeyBytes(alicePubKey, ZrtpDH::Commit);

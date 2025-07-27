@@ -21,18 +21,18 @@
 
 #include <libzrtpcpp/ZrtpPacketError.h>
 
-ZrtpPacketError::ZrtpPacketError() {
+#include "libzrtpcpp/ZrtpTextData.h"
 
-    zrtpHeader = &data.hdr;	// the standard header
-    errorHeader = &data.error;
+ZrtpPacketError::ZrtpPacketError() {
+    zrtpHeader = &data.hdr; // the standard header
 
     setZrtpId();
-    setLength((sizeof(ErrorPacket_t) / ZRTP_WORD_SIZE) - 1);
-    setMessageType((uint8_t*)ErrorMsg);
+    setLength(sizeof(ErrorPacket_t) / ZRTP_WORD_SIZE - 1);
+    setMessageType(ErrorMsg);
 }
 
-ZrtpPacketError::ZrtpPacketError(const uint8_t *data) {
-    zrtpHeader = (zrtpPacketHeader_t *)&((ErrorPacket_t *)data)->hdr;	// the standard header
-    errorHeader = (Error_t *)&((ErrorPacket_t *)data)->error;
+ZrtpPacketError::ZrtpPacketError(const uint8_t* data) {
+    // the standard header
+    zrtpHeader = const_cast<zrtpPacketHeader_t *>(&reinterpret_cast<ErrorPacket_t const *>(data)->hdr);
+    errorHeader = const_cast<Error_t *>(&reinterpret_cast<ErrorPacket_t const *>(data)->error);
 }
-

@@ -18,15 +18,16 @@
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#ifndef _AESCFB_H__
-#define _AESCFB_H__
+#ifndef AESCFB_H_
+#define AESCFB_H_
 
 #include <cstdint>
+// ReSharper disable once CppUnusedIncludeDirective
 #include <cstddef>
 
 /**
  * @file aesCFB.h
- * @brief Function that provide AES CFB mode support
+ * @brief Function that provides AES CFB mode support
  * 
  * @ingroup ZRTP
  * @{
@@ -39,9 +40,9 @@
 /**
  * Encrypt data with AES CFB mode, full block feedback size.
  *
- * This functions takes one data chunk and encrypts it with
- * AES CFB mode. The lenght of the data may be arbitrary and
- * it is not needed to be a multiple of AES blocksize.
+ * This function takes one data chunk and encrypts it with
+ * AES CFB mode. The length of the data may be arbitrary, and
+ * it is unnecessary to be a multiple of AES blocksize.
  *
  * @param key
  *    Points to the key bytes.
@@ -56,15 +57,15 @@
  *    Length of the data in bytes
  */
 
-void aesCfbEncrypt(uint8_t* key, size_t keyLength, uint8_t* IV, uint8_t *data,
+void aesCfbEncrypt(uint8_t const* key, size_t keyLength, uint8_t const* IV, uint8_t* data,
                    size_t dataLength);
 
 /**
  * Decrypt data with AES CFB mode, full block feedback size.
  *
- * This functions takes one data chunk and decrypts it with
- * AES CFB mode. The lenght of the data may be arbitrary and
- * it is not needed to be a multiple of AES blocksize.
+ * This function takes one data chunk and decrypts it with
+ * AES CFB mode. The length of the data may be arbitrary, and
+ * it is unnecessary to be a multiple of AES blocksize.
  *
  * @param key
  *    Points to the key bytes.
@@ -79,9 +80,10 @@ void aesCfbEncrypt(uint8_t* key, size_t keyLength, uint8_t* IV, uint8_t *data,
  *    Length of the data in bytes
  */
 
-void aesCfbDecrypt(uint8_t* key, size_t keyLength, uint8_t* IV, uint8_t *data,
+void aesCfbDecrypt(uint8_t const* key, size_t keyLength, uint8_t const* IV, uint8_t* data,
                    size_t dataLength);
+
 /**
  * @}
  */
-#endif
+#endif // AESCFB_H_

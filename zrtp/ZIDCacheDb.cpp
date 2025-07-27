@@ -21,25 +21,23 @@
 #include <sstream>
 #include <string>
 #include <ctime>
-#include <cstdlib>
 
 #include <libzrtpcpp/ZIDCacheDb.h>
 
 ZIDCacheDb::~ZIDCacheDb() {
-    if (zidFile != nullptr) {
+    if (isOpen()) {
         cacheOps.closeCache(zidFile);
         zidFile = nullptr;
     }
 }
 
 int ZIDCacheDb::open(char* name) {
-
     // check for an already active ZID file
-    if (zidFile != nullptr) {
+    if (isOpen()) {
         return 0;
     }
     fileName = name;
-    
+
     if (cacheOps.openCache(name, &zidFile, errorBuffer) == 0)
         cacheOps.readLocalZid(zidFile, associatedZid, nullptr, errorBuffer);
     else {
@@ -47,21 +45,20 @@ int ZIDCacheDb::open(char* name) {
         zidFile = nullptr;
     }
 
-    return ((zidFile == nullptr) ? -1 : 1);
+    return zidFile == nullptr ? -1 : 1;
 }
 
 void ZIDCacheDb::close() {
-
-    if (zidFile != nullptr) {
+    if (isOpen()) {
         cacheOps.closeCache(zidFile);
         zidFile = nullptr;
     }
 }
 
-std::unique_ptr<ZIDRecord> ZIDCacheDb::getRecord(unsigned char *zid) {
+std::unique_ptr<ZIDRecord> ZIDCacheDb::getRecord(unsigned char* zid) {
     auto zidRecord = std::make_unique<ZIDRecordDb>();
 
-    // Do _not_ created a remote ZID record in DB with my own ZID, return empty pointer
+    // Do _not_ create a remote ZID record in DB with my own ZID, return an empty pointer
     if (memcmp(associatedZid, zid, IDENTIFIER_LEN) == 0) {
         return {};
     }
@@ -73,22 +70,23 @@ std::unique_ptr<ZIDRecord> ZIDCacheDb::getRecord(unsigned char *zid) {
     // We need to create a new ZID record.
     if (!zidRecord->isValid()) {
         zidRecord->setValid();
-        zidRecord->getRecordData()->secureSince = (int64_t)time(nullptr);
+        zidRecord->getRecordData()->secureSince = time(nullptr);
         cacheOps.insertRemoteZidRecord(zidFile, zid, associatedZid, zidRecord->getRecordData(), errorBuffer);
     }
     return zidRecord;
 }
 
-unsigned int ZIDCacheDb::saveRecord(ZIDRecord& zidRec) {
-    auto zidRecord = reinterpret_cast<ZIDRecordDb&>(zidRec);
+unsigned int ZIDCacheDb::saveRecord(ZIDRecord &zidRecord) {
+    auto record = reinterpret_cast<ZIDRecordDb &>(zidRecord);
 
-    cacheOps.updateRemoteZidRecord(zidFile, zidRecord.getIdentifier(), associatedZid, zidRecord.getRecordData(), errorBuffer);
+    cacheOps.updateRemoteZidRecord(zidFile, record.getIdentifier(), associatedZid, record.getRecordData(),
+                                   errorBuffer);
     return 1;
 }
 
-int32_t ZIDCacheDb::getPeerName(const uint8_t *peerZid, std::string *name) {
+int32_t ZIDCacheDb::getPeerName(const uint8_t* peerZid, std::string* name) {
     zidNameRecord_t nameRec;
-    char buffer[201] = {'\0'};
+    char buffer[201] = {};
 
     nameRec.name = buffer;
     nameRec.nameLength = 200;
@@ -97,19 +95,19 @@ int32_t ZIDCacheDb::getPeerName(const uint8_t *peerZid, std::string *name) {
         return 0;
     }
     name->assign(buffer);
-    return name->length();
+    return static_cast<int32_t>(name->length());
 }
 
-void ZIDCacheDb::putPeerName(const uint8_t *peerZid, const std::string& name) {
+void ZIDCacheDb::putPeerName(const uint8_t* peerZid, const std::string &name) {
     zidNameRecord_t nameRec;
-    char buffer[201] = {'\0'};
+    char buffer[201] = {};
 
     nameRec.name = buffer;
     nameRec.nameLength = 200;
     cacheOps.readZidNameRecord(zidFile, peerZid, associatedZid, nullptr, &nameRec, errorBuffer);
 
-    nameRec.name = (char*)name.c_str();
-    nameRec.nameLength = name.length();
+    nameRec.name = const_cast<char *>(name.c_str());
+    nameRec.nameLength = static_cast<int32_t>(name.length());
     nameRec.nameLength = nameRec.nameLength > 200 ? 200 : nameRec.nameLength;
     if ((nameRec.flags & Valid) != Valid) {
         nameRec.flags = Valid;
@@ -125,11 +123,11 @@ void ZIDCacheDb::cleanup() {
     cacheOps.readLocalZid(zidFile, associatedZid, nullptr, errorBuffer);
 }
 
-void *ZIDCacheDb::prepareReadAll() {
+void* ZIDCacheDb::prepareReadAll() {
     return cacheOps.prepareReadAllZid(zidFile, errorBuffer);
 }
 
-static void formatHex(std::ostringstream &stm, uint8_t *hexBuffer, int32_t length) {
+static void formatHex(std::ostringstream &stm, uint8_t const* hexBuffer, int32_t const length) {
     stm << std::hex;
     for (int i = 0; i < length; i++) {
         stm.width(2);
@@ -137,39 +135,51 @@ static void formatHex(std::ostringstream &stm, uint8_t *hexBuffer, int32_t lengt
     }
 }
 
-void ZIDCacheDb::formatOutput(remoteZidRecord_t *remZid, const char *nameBuffer, std::string *output) {
+void ZIDCacheDb::formatOutput(remoteZidRecord_t const* remZid, const char* nameBuffer, std::string* output) const {
     std::ostringstream stm;
 
     stm.fill('0');
-    formatHex(stm, associatedZid, IDENTIFIER_LEN); stm << '|';
-    formatHex(stm, remZid->identifier, IDENTIFIER_LEN); stm << '|';
-    uint8_t flag = remZid->flags & 0xffU;
-    formatHex(stm, &flag, 1); stm << '|';
+    formatHex(stm, associatedZid, IDENTIFIER_LEN);
+    stm << '|';
+    formatHex(stm, remZid->identifier, IDENTIFIER_LEN);
+    stm << '|';
+    uint8_t const flag = remZid->flags & 0xffU;
+    formatHex(stm, &flag, 1);
+    stm << '|';
 
-    formatHex(stm, remZid->rs1, RS_LENGTH); stm << '|';
+    formatHex(stm, remZid->rs1, RS_LENGTH);
+    stm << '|';
     stm << std::dec;
-    stm << remZid->rs1LastUse; stm << '|';
-    stm << remZid->rs1Ttl; stm << '|';
+    stm << remZid->rs1LastUse;
+    stm << '|';
+    stm << remZid->rs1Ttl;
+    stm << '|';
 
-    formatHex(stm, remZid->rs2, RS_LENGTH); stm << '|';
+    formatHex(stm, remZid->rs2, RS_LENGTH);
+    stm << '|';
     stm << std::dec;
-    stm << remZid->rs2LastUse; stm << '|';
-    stm << remZid->rs2Ttl; stm << '|';
+    stm << remZid->rs2LastUse;
+    stm << '|';
+    stm << remZid->rs2Ttl;
+    stm << '|';
 
-    formatHex(stm, remZid->mitmKey, RS_LENGTH); stm << '|';
+    formatHex(stm, remZid->mitmKey, RS_LENGTH);
+    stm << '|';
     stm << std::dec;
-    stm << remZid->mitmLastUse; stm << '|';
+    stm << remZid->mitmLastUse;
+    stm << '|';
 
-    stm << remZid->secureSince; stm << '|';
+    stm << remZid->secureSince;
+    stm << '|';
     stm << nameBuffer;
     output->assign(stm.str());
 }
 
-void *ZIDCacheDb::readNextRecord(void *stmt, std::string *output) {
-    void *iStmnt;
+void* ZIDCacheDb::readNextRecord(void* stmt, std::string* name) {
+    void* iStmnt;
     zidNameRecord_t nameRec;
     ZIDRecordDb zidRec;
-    char buffer[201] = {'\0'};
+    char buffer[201] = {};
 
     nameRec.name = buffer;
     nameRec.nameLength = 200;
@@ -178,14 +188,14 @@ void *ZIDCacheDb::readNextRecord(void *stmt, std::string *output) {
             continue;
         cacheOps.readZidNameRecord(zidFile, zidRec.getIdentifier(), associatedZid, nullptr, &nameRec, errorBuffer);
         if ((nameRec.flags & Valid) != Valid)
-            formatOutput(zidRec.getRecordData(), "", output);
+            formatOutput(zidRec.getRecordData(), "", name);
         else
-            formatOutput(zidRec.getRecordData(), buffer, output);
+            formatOutput(zidRec.getRecordData(), buffer, name);
         return iStmnt;
     }
     return nullptr;
 }
 
-void ZIDCacheDb::closeOpenStatement(void *stmt) {
+void ZIDCacheDb::closeOpenStatement(void* stmt) {
     cacheOps.closeStatement(stmt);
 }

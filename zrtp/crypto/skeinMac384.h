@@ -20,10 +20,11 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
 #ifndef HMAC_SKEIN384_H
 #define HMAC_SKEIN384_H
+
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
 
 /**
  * @file skeinMac384.h
@@ -44,7 +45,7 @@
  *
  * @param key
  *    The MAC key.
- * @param key_length
+ * @param keyLength
  *    Lneght of the MAC key in bytes
  * @param data
  *    Points to the data chunk.
@@ -53,7 +54,8 @@
  * @param macOut
  *    Reference to a secure array that receives the computed digest.
  */
-void macSkein384(const uint8_t* key, uint64_t key_length, const uint8_t* data, uint64_t dataLength, zrtp::RetainedSecArray & macOut);
+void macSkein384(const uint8_t* key, uint64_t keyLength, const uint8_t* data, uint64_t dataLength,
+                 zrtp::RetainedSecArray &macOut);
 
 /**
  * Compute Skein384 HMAC over several data cunks.
@@ -73,9 +75,10 @@ void macSkein384(const uint8_t* key, uint64_t key_length, const uint8_t* data, u
  *    Reference to a secure array that receives the computed digest.
  */
 void macSkein384(const uint8_t* key, uint64_t keyLength,
-                 const std::vector<const uint8_t*>& data,
-                 const std::vector<uint64_t>& dataLength,
-                 zrtp::RetainedSecArray & macOut);
+                 const std::vector<const uint8_t *> &data,
+                 const std::vector<uint64_t> &dataLength,
+                 zrtp::RetainedSecArray &macOut);
+
 /**
  * @}
  */

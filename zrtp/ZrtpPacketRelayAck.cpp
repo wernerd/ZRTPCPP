@@ -20,14 +20,16 @@
 
 #include <libzrtpcpp/ZrtpPacketRelayAck.h>
 
+#include "libzrtpcpp/ZrtpTextData.h"
+
 ZrtpPacketRelayAck::ZrtpPacketRelayAck() {
     zrtpHeader = &data.hdr;	// the standard header
 
     setZrtpId();
-    setLength((sizeof (RelayAckPacket_t) / ZRTP_WORD_SIZE) - 1);
-    setMessageType((uint8_t*)RelayAckMsg);
+    setLength(sizeof (RelayAckPacket_t) / ZRTP_WORD_SIZE - 1);
+    setMessageType(RelayAckMsg);
 }
 
 ZrtpPacketRelayAck::ZrtpPacketRelayAck(const uint8_t *data) {
-    zrtpHeader = (zrtpPacketHeader_t *)&((RelayAckPacket_t*)data)->hdr;	// the standard header
+    zrtpHeader = const_cast<zrtpPacketHeader_t *>(&reinterpret_cast<RelayAckPacket_t const *>(data)->hdr);	// the standard header
 }

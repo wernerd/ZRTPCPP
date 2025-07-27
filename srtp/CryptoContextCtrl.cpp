@@ -18,32 +18,36 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#include <cstdio>
 #include <cstring>
 #include <cstdint>
 
 #include <common/osSpecifics.h>
 
 #include "srtp/CryptoContextCtrl.h"
+
+#include "crypto/hmac.h"
+#include "crypto/macSkein.h"
 #include "srtp/CryptoContext.h"
 
 #include "srtp/crypto/SrtpSymCrypto.h"
 
 
-CryptoContextCtrl::CryptoContextCtrl(uint32_t ssrc,
-                                const int32_t ealg,
-                                const int32_t aalg,
-                                uint8_t* master_key,
-                                int32_t master_key_length,
-                                uint8_t* master_salt,
-                                int32_t master_salt_length,
-                                int32_t ekeyl,
-                                int32_t akeyl,
-                                int32_t skeyl,
-                                int32_t tagLength):
-ssrcCtx(ssrc), mkiLength(0),mki(nullptr), replay_window(0), srtcpIndex(0),
-labelBase(3), macCtx(nullptr), cipher(nullptr), f8Cipher(nullptr)        // SRTCP labels start at 3
-
+CryptoContextCtrl::CryptoContextCtrl(
+    uint32_t const ssrc,
+    int32_t const ealg,
+    int32_t const aalg,
+    uint8_t const *masterKey,
+    int32_t const masterKeyLength,
+    uint8_t const *masterSalt,
+    int32_t const masterSaltLength,
+    int32_t const ekeyl,
+    int32_t const akeyl,
+    int32_t const skeyl,
+    int32_t const tagLength
+): ssrcCtx(ssrc), mkiLength(0), mki(nullptr), s_l(0),
+   replay_window(0), srtcpIndex(0), labelBase(3),
+   macCtx(nullptr), cipher(nullptr),
+   f8Cipher(nullptr) // SRTCP labels start at 3
 {
     this->ealg = ealg;
     this->aalg = aalg;
@@ -51,13 +55,13 @@ labelBase(3), macCtx(nullptr), cipher(nullptr), f8Cipher(nullptr)        // SRTC
     this->akeyl = akeyl;
     this->skeyl = skeyl;
 
-    this->master_key_length = master_key_length;
-    this->master_key = new uint8_t[master_key_length];
-    memcpy(this->master_key, master_key, master_key_length);
+    this->master_key_length = masterKeyLength;
+    this->master_key = new uint8_t[masterKeyLength];
+    memcpy(this->master_key, masterKey, masterKeyLength);
 
-    this->master_salt_length = master_salt_length;
-    this->master_salt = new uint8_t[master_salt_length];
-    memcpy(this->master_salt, master_salt, master_salt_length);
+    this->master_salt_length = masterSaltLength;
+    this->master_salt = new uint8_t[masterSaltLength];
+    memcpy(this->master_salt, masterSalt, masterSaltLength);
 
     switch (ealg) {
         case SrtpEncryptionNull:
@@ -90,7 +94,7 @@ labelBase(3), macCtx(nullptr), cipher(nullptr), f8Cipher(nullptr)        // SRTC
             break;
 
         default:
-            break;      // TODO: throw exception? - cannot handle unknown encryption - what else?
+            break; // throw exception? - cannot handle unknown encryption - what else?
     }
 
     switch (aalg) {
@@ -108,7 +112,7 @@ labelBase(3), macCtx(nullptr), cipher(nullptr), f8Cipher(nullptr)        // SRTC
             break;
 
         default:
-            break;      // TODO: throw exception? - cannot handle unknown encryption - what else?
+            break; // throw exception? - cannot handle unknown encryption - what else?
     }
 }
 
@@ -121,8 +125,7 @@ labelBase(3), macCtx(nullptr), cipher(nullptr), f8Cipher(nullptr)        // SRTC
  */
 static void * (*volatile memset_volatile)(void *, int, size_t) = memset;
 
-CryptoContextCtrl::~CryptoContextCtrl(){
-
+CryptoContextCtrl::~CryptoContextCtrl() {
     delete [] mki;
 
     if (master_key_length > 0) {
@@ -152,19 +155,16 @@ CryptoContextCtrl::~CryptoContextCtrl(){
     }
     if (aalg == SrtpAuthenticationSha1Hmac) {
         freeSha1HmacContext(macCtx);
-    }
-    else {
+    } else {
         freeSkeinMacContext(macCtx);
     }
 }
 
-void CryptoContextCtrl::srtcpEncrypt( uint8_t* rtp, int32_t len, uint32_t index, uint32_t ssrc )
-{
+void CryptoContextCtrl::srtcpEncrypt(uint8_t *rtp, int32_t const len, uint32_t index, uint32_t const ssrc) const {
     if (ealg == SrtpEncryptionNull) {
         return;
     }
     if (ealg == SrtpEncryptionAESCM || ealg == SrtpEncryptionTWOCM) {
-
         /* Compute the CM IV (refer to chapter 4.1.1 in RFC 3711):
         *
         * k_s   XX XX XX XX XX XX XX XX XX XX XX XX XX XX
@@ -182,18 +182,18 @@ void CryptoContextCtrl::srtcpEncrypt( uint8_t* rtp, int32_t len, uint32_t index,
         iv[3] = k_s[3];
 
         // The shifts transform the ssrc and index into network order
-        iv[4] = ((ssrc >> 24U) & 0xffU) ^ k_s[4];
-        iv[5] = ((ssrc >> 16U) & 0xffU) ^ k_s[5];
-        iv[6] = ((ssrc >> 8U) & 0xffU) ^ k_s[6];
-        iv[7] = (ssrc & 0xffU) ^ k_s[7];
+        iv[4] = ssrc >> 24U & 0xffU ^ k_s[4];
+        iv[5] = ssrc >> 16U & 0xffU ^ k_s[5];
+        iv[6] = ssrc >> 8U & 0xffU ^ k_s[6];
+        iv[7] = ssrc & 0xffU ^ k_s[7];
 
         iv[8] = k_s[8];
         iv[9] = k_s[9];
 
-        iv[10] = ((index >> 24U) & 0xffU) ^ k_s[10];
-        iv[11] = ((index >> 16U) & 0xffU) ^ k_s[11];
-        iv[12] = ((index >> 8U) & 0xffU) ^ k_s[12];
-        iv[13] = (index & 0xffU) ^ k_s[13];
+        iv[10] = index >> 24U & 0xffU ^ k_s[10];
+        iv[11] = index >> 16U & 0xffU ^ k_s[11];
+        iv[12] = index >> 8U & 0xffU ^ k_s[12];
+        iv[13] = index & 0xffU ^ k_s[13];
 
         iv[14] = iv[15] = 0;
 
@@ -201,7 +201,6 @@ void CryptoContextCtrl::srtcpEncrypt( uint8_t* rtp, int32_t len, uint32_t index,
     }
 
     if (ealg == SrtpEncryptionAESF8 || ealg == SrtpEncryptionTWOF8) {
-
         unsigned char iv[16];
 
         // 4 bytes of the iv are zero
@@ -221,54 +220,56 @@ void CryptoContextCtrl::srtcpEncrypt( uint8_t* rtp, int32_t len, uint32_t index,
         iv[7] = index;
 
         // The fixed header follows and fills the rest of the IV
-        memcpy(iv+8, rtp, 8);
+        memcpy(iv + 8, rtp, 8);
 
         cipher->f8_encrypt(rtp, len, iv, f8Cipher.get());
     }
 }
 
 /* Warning: tag must have been initialized */
-void CryptoContextCtrl::srtcpAuthenticate(uint8_t* rtp, int32_t len, uint32_t index, uint8_t* tag )
-{
+void CryptoContextCtrl::srtcpAuthenticate(uint8_t const *rtp, int32_t const len, uint32_t const index,
+                                          uint8_t *tag) const {
     if (aalg == SrtpAuthenticationNull) {
         return;
     }
-    uint32_t macL;
+    size_t macL;
 
     unsigned char temp[20];
-    std::vector<const uint8_t*>chunks;
+    std::vector<const uint8_t *> chunks;
     std::vector<uint64_t> chunkLength;
-    uint32_t beIndex = zrtpHtonl(index);
+    uint32_t const beIndex = zrtpHtonl(index);
 
     chunks.push_back(rtp);
     chunkLength.push_back(len);
 
-    chunks.push_back((unsigned char *)&beIndex);
+    chunks.push_back(reinterpret_cast<unsigned char const *>(&beIndex));
     chunkLength.push_back(4);
 
     switch (aalg) {
-    case SrtpAuthenticationSha1Hmac:
-        hmacSha1Ctx(macCtx,
-                    chunks,           // data chunks to hash
-                    chunkLength,      // length of the data to hash
-                    temp, &macL);
-        /* truncate the result */
-        memcpy(tag, temp, getTagLength());
-        break;
-    case SrtpAuthenticationSkeinHmac:
-        macSkeinCtx(macCtx,
-                    chunks,           // data chunks to hash
-                    chunkLength,      // length of the data to hash
-                    temp);
-        /* truncate the result */
-        memcpy(tag, temp, getTagLength());
-        break;
+        case SrtpAuthenticationSha1Hmac:
+            hmacSha1Ctx(macCtx,
+                        chunks, // data chunks to hash
+                        chunkLength, // length of the data to hash
+                        temp, &macL);
+            /* truncate the result */
+            memcpy(tag, temp, getTagLength());
+            break;
+        case SrtpAuthenticationSkeinHmac:
+            macSkeinCtx(macCtx,
+                        chunks, // data chunks to hash
+                        chunkLength, // length of the data to hash
+                        temp);
+            /* truncate the result */
+            memcpy(tag, temp, getTagLength());
+            break;
+
+        default:
+            ;
     }
 }
 
 /* used by the key derivation method */
-static void computeIv(unsigned char* iv, uint8_t label, uint8_t* master_salt)
-{
+static void computeIv(unsigned char *iv, uint8_t const label, uint8_t const *master_salt) {
     //printf( "Key_ID: %llx\n", key_id );
 
     /* compute the IV
@@ -285,8 +286,7 @@ static void computeIv(unsigned char* iv, uint8_t label, uint8_t* master_salt)
 }
 
 /* Derives the srtp session keys from the master key */
-void CryptoContextCtrl::deriveSrtcpKeys()
-{
+void CryptoContextCtrl::deriveSrtcpKeys() {
     uint8_t iv[16];
 
     // prepare cipher to compute derived keys.
@@ -305,14 +305,17 @@ void CryptoContextCtrl::deriveSrtcpKeys()
 
     // Initialize MAC context with the derived key
     switch (aalg) {
-    case SrtpAuthenticationSha1Hmac:
-        macCtx = createSha1HmacContext();
-        macCtx = initializeSha1HmacContext(macCtx, k_a, n_a);
-        break;
-    case SrtpAuthenticationSkeinHmac:
-        // Skein MAC uses number of bits as MAC size, not just bytes
-        macCtx = createSkeinMacContext(k_a, n_a, tagLength*8, 0);
-        break;
+        case SrtpAuthenticationSha1Hmac:
+            macCtx = createSha1HmacContext();
+            macCtx = initializeSha1HmacContext(macCtx, k_a, n_a);
+            break;
+        case SrtpAuthenticationSkeinHmac:
+            // Skein MAC uses number of bits as MAC size, not just bytes
+            macCtx = createSkeinMacContext(k_a, n_a, tagLength * 8, 0);
+            break;
+
+        default:
+            ;
     }
     memset(k_a, 0, n_a);
 
@@ -329,59 +332,49 @@ void CryptoContextCtrl::deriveSrtcpKeys()
     memset(k_e, 0, n_e);
 }
 
-bool CryptoContextCtrl::checkReplay( uint32_t index )
-{
-    if ( aalg == SrtpAuthenticationNull && ealg == SrtpEncryptionNull ) {
+bool CryptoContextCtrl::checkReplay(uint32_t const newSeqNumber) const {
+    if (aalg == SrtpAuthenticationNull && ealg == SrtpEncryptionNull) {
         /* No security policy, don't use the replay protection */
         return true;
     }
 
-    int64_t delta = index - s_l;
-    if (delta > 0) {
+    if (int64_t delta = newSeqNumber - s_l; delta > 0) {
         /* Packet not yet received*/
         return true;
-    }
-    else {
+    } else {
         delta = -delta;
-        if (delta >= REPLAY_WINDOW_SIZE ) {
-            return false;       /* Packet too old */
+        if (delta >= REPLAY_WINDOW_SIZE) {
+            return false; /* Packet too old */
         }
-        else {
-            return ((replay_window >> (static_cast<uint64_t>(delta))) & 0x1U) == 0;
-        }
+        return (replay_window >> static_cast<uint64_t>(delta) & 0x1U) == 0;
     }
 }
 
-void CryptoContextCtrl::update(uint32_t index)
-{
-    int64_t delta = index - s_l;
-
+void CryptoContextCtrl::update(uint32_t const newSeqNumber) {
     /* update the replay bit mask */
-    if( delta > 0 ){
+    if (int64_t const delta = newSeqNumber - s_l; delta > 0) {
         replay_window = replay_window << static_cast<uint64_t>(delta);
         replay_window |= 1U;
+    } else {
+        replay_window |= static_cast<uint64_t>(1) << static_cast<uint64_t>(-delta);
     }
-    else {
-        replay_window |= ((uint64_t)1 << static_cast<uint64_t>(-delta));
-    }
-    if (index > s_l)
-        s_l = index;
+    if (newSeqNumber > s_l)
+        s_l = newSeqNumber;
 }
 
-CryptoContextCtrl* CryptoContextCtrl::newCryptoContextForSSRC(uint32_t ssrc)
-{
-    auto* pcc = new CryptoContextCtrl(
-            ssrc,
-            this->ealg,                              // encryption algo
-            this->aalg,                              // authentication algo
-            this->master_key,                        // Master Key
-            this->master_key_length,                 // Master Key length
-            this->master_salt,                       // Master Salt
-            this->master_salt_length,                // Master Salt length
-            this->ekeyl,                             // encryption keyl
-            this->akeyl,                             // authentication key len
-            this->skeyl,                             // session salt len
-            this->tagLength);                        // authentication tag len
+CryptoContextCtrl *CryptoContextCtrl::newCryptoContextForSSRC(uint32_t const ssrc) const {
+    auto *pcc = new CryptoContextCtrl(
+        ssrc,
+        this->ealg, // encryption algo
+        this->aalg, // authentication algo
+        this->master_key, // Master Key
+        this->master_key_length, // Master Key length
+        this->master_salt, // Master Salt
+        this->master_salt_length, // Master Salt length
+        this->ekeyl, // encryption keyl
+        this->akeyl, // authentication key len
+        this->skeyl, // session salt len
+        this->tagLength); // authentication tag len
 
     return pcc;
 }

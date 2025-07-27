@@ -42,7 +42,7 @@
 // to plain Botan crypto functions. Make sure the crypto wrapper works.
 using namespace std;
 
-class ZrtpNewCryptoTestFixture: public ::testing::Test {
+class ZrtpNewCryptoTestFixture: public testing::Test {
 public:
     ZrtpNewCryptoTestFixture() = default;
 
@@ -68,8 +68,8 @@ public:
 };
 
 TEST_F(ZrtpNewCryptoTestFixture, simpleAliceBob) {
-    ZrtpDH aliceDh(dh3k);
-    ZrtpDH bobDh(dh3k);
+    ZrtpDH const aliceDh(dh3k);
+    ZrtpDH const bobDh(dh3k);
 
     zrtp::SecureArray4k alicePubKey;
     auto aliceKeyLen = aliceDh.getPubKeyBytes(alicePubKey, ZrtpDH::Ignore);
@@ -124,28 +124,28 @@ TEST_F(ZrtpNewCryptoTestFixture, botanSimple) {
 TEST_F(ZrtpNewCryptoTestFixture, mixedLibs) {
 
     // Setup with existing DH code fpr Alice
-    ZrtpDH aliceDh(dh3k);
+    ZrtpDH const aliceDh(dh3k);
     zrtp::SecureArray4k alicePubKey;
     aliceDh.getPubKeyBytes(alicePubKey, ZrtpDH::Ignore);
 
     // Using Botan lib for Bob
     ZrtpBotanRng rng;
     // dh group
-    Botan::DL_Group group("modp/ietf/3072");
-    std::string kdf = "Raw";
+    Botan::DL_Group const group("modp/ietf/3072");
+    std::string const kdf = "Raw";
 
     // generate DH keys - Bob
-    Botan::DH_PrivateKey keyBob(rng, group);
+    Botan::DH_PrivateKey const keyBob(rng, group);
     auto bobPubKey = keyBob.public_value();
 
     // Agree on keys. Alice first
     zrtp::SecureArray1k aliceSharedData;
     ASSERT_EQ(1, aliceDh.checkPubKey(bobPubKey.data()));  // check must return OK
-    auto aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data(), aliceSharedData, ZrtpDH::Ignore);
+    auto const aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data(), aliceSharedData, ZrtpDH::Ignore);
     ASSERT_GT(aliceKeyLen, 0);
 
-    Botan::PK_Key_Agreement dhBob(keyBob,rng, kdf);
-    Botan::secure_vector<uint8_t> sB = dhBob.derive_key(384, alicePubKey.data(), alicePubKey.size()).bits_of();
+    Botan::PK_Key_Agreement const dhBob(keyBob,rng, kdf);
+    Botan::secure_vector<uint8_t> const sB = dhBob.derive_key(384, alicePubKey.data(), alicePubKey.size()).bits_of();
 
     ASSERT_EQ(aliceKeyLen, sB.size());
 
@@ -223,25 +223,25 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh384) {
 
 TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh25519) {
 // Setup with existing DH code fpr Alice
-    ZrtpDH aliceDh(e255);
+    ZrtpDH const aliceDh(e255);
 
     zrtp::SecureArray4k alicePubKey;
     aliceDh.getPubKeyBytes(alicePubKey, ZrtpDH::Ignore);
 
 // Using Botan lib for Bob, generate curve25519 keys
     ZrtpBotanRng rng;
-    std::string kdf = "Raw";
-    Botan::Curve25519_PrivateKey keyBob(rng);
-    Botan::PK_Key_Agreement ecdhBob(keyBob, rng, kdf);
+    std::string const kdf = "Raw";
+    Botan::Curve25519_PrivateKey const keyBob(rng);
+    Botan::PK_Key_Agreement const ecdhBob(keyBob, rng, kdf);
     auto bobPubKey = keyBob.public_value();
 
 // Agree on keys. Alice first
     zrtp::SecureArray1k aliceSharedData;
     ASSERT_EQ(1, aliceDh.checkPubKey(bobPubKey.data()));  // check must return OK
-    auto aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data(), aliceSharedData, ZrtpDH::Ignore);
+    auto const aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data(), aliceSharedData, ZrtpDH::Ignore);
     ASSERT_GT(aliceKeyLen, 0);
 
-    Botan::secure_vector<uint8_t> sB = ecdhBob.derive_key(32, alicePubKey.data(), alicePubKey.size()).bits_of();
+    Botan::secure_vector<uint8_t> const sB = ecdhBob.derive_key(32, alicePubKey.data(), alicePubKey.size()).bits_of();
 
     ASSERT_EQ(aliceKeyLen, sB.size());
     ASSERT_TRUE(aliceSharedData.equals(sB.data(), aliceSharedData.size()));
@@ -249,11 +249,11 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh25519) {
 
 TEST_F(ZrtpNewCryptoTestFixture, mixedSha256) {
 
-    string toHash("The quick brown fox jumps over the lazy dog's back");
+    string const toHash("The quick brown fox jumps over the lazy dog's back");
 
-    std::unique_ptr<Botan::HashFunction> hash1(Botan::HashFunction::create_or_throw("SHA-256"));
+    std::unique_ptr const hash1(Botan::HashFunction::create_or_throw("SHA-256"));
     hash1->update(reinterpret_cast<const uint8_t *>(toHash.data()), toHash.size());
-    auto botanHash = hash1->final();
+    auto const botanHash = hash1->final();
 
     ASSERT_EQ(SHA256_DIGEST_LENGTH, botanHash.size());
 
@@ -266,11 +266,11 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedSha256) {
 
 TEST_F(ZrtpNewCryptoTestFixture, mixedSha384) {
 
-    string toHash("The quick brown fox jumps over the lazy dog's back");
+    string const toHash("The quick brown fox jumps over the lazy dog's back");
 
-    std::unique_ptr<Botan::HashFunction> hash1(Botan::HashFunction::create_or_throw("SHA-384"));
+    std::unique_ptr const hash1(Botan::HashFunction::create_or_throw("SHA-384"));
     hash1->update(reinterpret_cast<const uint8_t *>(toHash.data()), toHash.size());
-    auto botanHash = hash1->final();
+    auto const botanHash = hash1->final();
 
     ASSERT_EQ(SHA384_DIGEST_LENGTH, botanHash.size());
 
@@ -282,11 +282,11 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedSha384) {
 
 TEST_F(ZrtpNewCryptoTestFixture, mixedSkein256) {
 
-    string toHash("The quick brown fox jumps over the lazy dog's back");
+    string const toHash("The quick brown fox jumps over the lazy dog's back");
 
-    std::unique_ptr<Botan::HashFunction> hash1(Botan::HashFunction::create_or_throw("Skein-512(256)"));
+    std::unique_ptr const hash1(Botan::HashFunction::create_or_throw("Skein-512(256)"));
     hash1->update(reinterpret_cast<const uint8_t *>(toHash.data()), toHash.size());
-    auto botanHash = hash1->final();
+    auto const botanHash = hash1->final();
     ASSERT_EQ(SHA256_DIGEST_LENGTH, botanHash.size());
 
     secUtilities::SecureArray<SHA256_DIGEST_LENGTH> oldHash;
@@ -296,11 +296,11 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedSkein256) {
 
 TEST_F(ZrtpNewCryptoTestFixture, mixedSkein384) {
 
-    string toHash("The quick brown fox jumps over the lazy dog's back");
+    string const toHash("The quick brown fox jumps over the lazy dog's back");
 
-    std::unique_ptr<Botan::HashFunction> hash1(Botan::HashFunction::create_or_throw("Skein-512(384)"));
+    std::unique_ptr const hash1(Botan::HashFunction::create_or_throw("Skein-512(384)"));
     hash1->update(reinterpret_cast<const uint8_t *>(toHash.data()), toHash.size());
-    auto botanHash = hash1->final();
+    auto const botanHash = hash1->final();
 
     ASSERT_EQ(SHA384_DIGEST_LENGTH, botanHash.size());
 
@@ -312,19 +312,19 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedSkein384) {
 
 TEST_F(ZrtpNewCryptoTestFixture, mixedHmacSha1) {
 
-    string toHash("The quick brown fox jumps over the lazy dog's back");
+    string const toHash("The quick brown fox jumps over the lazy dog's back");
     ZrtpBotanRng rng;
 
-    auto hmac = Botan::MessageAuthenticationCode::create_or_throw("HMAC(SHA-1)");
+    auto const hmac = Botan::MessageAuthenticationCode::create_or_throw("HMAC(SHA-1)");
     const auto key = rng.random_vec(32); // 256 bit random key
     hmac->set_key(key);
     hmac->update(reinterpret_cast<const uint8_t *>(toHash.data()), toHash.size());
-    auto botanMac = hmac->final();
+    auto const botanMac = hmac->final();
 
     ASSERT_EQ(SHA1_DIGEST_LENGTH, botanMac.size());
 
     zrtp::RetainedSecArray oldMac;
-    int32_t macLen = 0;
+    size_t macLen = 0;
 
     hmac_sha1(key.data(), key.size(),
             reinterpret_cast<const uint8_t *>(toHash.data()), static_cast<uint32_t>(toHash.size()), oldMac.data(), &macLen);
@@ -334,33 +334,33 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedHmacSha1) {
 
 TEST_F(ZrtpNewCryptoTestFixture, hmacSha1Multiple) {
 
-    string toHash("The quick brown fox jumps over the lazy dog's back");
+    string const toHash("The quick brown fox jumps over the lazy dog's back");
     ZrtpBotanRng rng;
 
-    auto hmac = Botan::MessageAuthenticationCode::create_or_throw("HMAC(SHA-1)");
+    auto const hmac = Botan::MessageAuthenticationCode::create_or_throw("HMAC(SHA-1)");
     const auto key = rng.random_vec(32); // 256 bit random key
     hmac->set_key(key);
     hmac->update(reinterpret_cast<const uint8_t *>(toHash.data()), toHash.size());
-    auto botanMac = hmac->final();
+    auto const botanMac = hmac->final();
 
     ASSERT_EQ(SHA1_DIGEST_LENGTH, botanMac.size());
 
     hmac->update(reinterpret_cast<const uint8_t *>(toHash.data()), toHash.size());
-    auto botanMac1 = hmac->final();
+    auto const botanMac1 = hmac->final();
     ASSERT_EQ(botanMac.size(), botanMac1.size());
     ASSERT_TRUE(memcmp(botanMac.data(), botanMac1.data(), botanMac.size()) == 0);
 }
 
 TEST_F(ZrtpNewCryptoTestFixture, mixedHmacSha256) {
 
-    string toHash("The quick brown fox jumps over the lazy dog's back");
+    string const toHash("The quick brown fox jumps over the lazy dog's back");
     ZrtpBotanRng rng;
 
-    auto hmac = Botan::MessageAuthenticationCode::create_or_throw("HMAC(SHA-256)");
+    auto const hmac = Botan::MessageAuthenticationCode::create_or_throw("HMAC(SHA-256)");
     const auto key = rng.random_vec(32); // 256 bit random key
     hmac->set_key(key);
     hmac->update(reinterpret_cast<const uint8_t *>(toHash.data()), toHash.size());
-    auto botanMac = hmac->final();
+    auto const botanMac = hmac->final();
 
     ASSERT_EQ(SHA256_DIGEST_LENGTH, botanMac.size());
 
@@ -372,14 +372,14 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedHmacSha256) {
 
 TEST_F(ZrtpNewCryptoTestFixture, mixedHmacSha384) {
 
-    string toHash("The quick brown fox jumps over the lazy dog's back");
+    string const toHash("The quick brown fox jumps over the lazy dog's back");
     ZrtpBotanRng rng;
 
-    auto hmac = Botan::MessageAuthenticationCode::create_or_throw("HMAC(SHA-384)");
+    auto const hmac = Botan::MessageAuthenticationCode::create_or_throw("HMAC(SHA-384)");
     const auto key = rng.random_vec(32); // 256 bit random key
     hmac->set_key(key);
     hmac->update(reinterpret_cast<const uint8_t *>(toHash.data()), toHash.size());
-    auto botanMac = hmac->final();
+    auto const botanMac = hmac->final();
 
     ASSERT_EQ(SHA384_DIGEST_LENGTH, botanMac.size());
 
@@ -399,13 +399,13 @@ static std::array<unsigned char, 16> iv_s = {  0x23, 0x48, 0x29, 0x00, 0x84, 0x6
 
 TEST_F(ZrtpNewCryptoTestFixture, mixedHmacSkein256) {
 
-    string toHash("The quick brown fox jumps over the lazy dog's back");
+    string const toHash("The quick brown fox jumps over the lazy dog's back");
 
-    auto hash1(new Botan::Skein_512(256, "" ));
+    auto const hash1(new Botan::Skein_512(256, "" ));
 
     hash1->setMacKey(key_s.begin(), key_s.size());
     hash1->update(reinterpret_cast<const uint8_t *>(toHash.data()), toHash.size());
-    auto botanMac = hash1->final();
+    auto const botanMac = hash1->final();
 
     ASSERT_EQ(SKEIN256_DIGEST_LENGTH, botanMac.size());
 
@@ -421,13 +421,13 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedHmacSkein256) {
 
 TEST_F(ZrtpNewCryptoTestFixture, mixedHmacSkein384) {
 
-    string toHash("The quick brown fox jumps over the lazy dog's back");
+    string const toHash("The quick brown fox jumps over the lazy dog's back");
 
-    auto hash1(new Botan::Skein_512(384, "" ));
+    auto const hash1(new Botan::Skein_512(384, "" ));
 
     hash1->setMacKey(key_s.begin(), key_s.size());
     hash1->update(reinterpret_cast<const uint8_t *>(toHash.data()), toHash.size());
-    auto botanMac = hash1->final();
+    auto const botanMac = hash1->final();
 
     ASSERT_EQ(SKEIN384_DIGEST_LENGTH, botanMac.size());
 
@@ -445,7 +445,7 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedAesCfb256) {
 
     string toEncrypt("The quick brown fox jumps over the lazy dog's back");
 
-    auto enc = Botan::Cipher_Mode::create_or_throw("AES-256/CFB", Botan::ENCRYPTION);
+    auto const enc = Botan::Cipher_Mode::create_or_throw("AES-256/CFB", Botan::ENCRYPTION);
 
     // Copy input data to a buffer that will be encrypted
     Botan::secure_vector<uint8_t> pt(toEncrypt.data(), toEncrypt.data()+toEncrypt.length());
@@ -456,11 +456,11 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedAesCfb256) {
 
     secUtilities::SecureArrayFlex pt_old(reinterpret_cast<uint8_t const *>(toEncrypt.data()), toEncrypt.size());
 
-    aesCfbEncrypt(key_s.data(), 32, iv_s.begin(), pt_old.data(), (int32_t)pt_old.size());
+    aesCfbEncrypt(key_s.data(), 32, iv_s.begin(), pt_old.data(), static_cast<int32_t>(pt_old.size()));
     ASSERT_TRUE(pt_old.equals(pt.data(), pt.size()));
 
     // Decrypt and check result.
-    auto dec = Botan::Cipher_Mode::create_or_throw("AES-256/CFB", Botan::DECRYPTION);
+    auto const dec = Botan::Cipher_Mode::create_or_throw("AES-256/CFB", Botan::DECRYPTION);
     dec->set_key(key_s.begin(), key_s.size());
     dec->start(iv_s.begin(), iv_s.size());
     dec->finish(pt);
@@ -469,7 +469,7 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedAesCfb256) {
     x.assign(reinterpret_cast<char const *>(pt.data()), pt.size());
     ASSERT_TRUE(x == toEncrypt);
 
-    aesCfbDecrypt(key_s.data(), 32, iv_s.begin(), pt_old.data(), (int32_t)pt_old.size());
+    aesCfbDecrypt(key_s.data(), 32, iv_s.begin(), pt_old.data(), static_cast<int32_t>(pt_old.size()));
     x.assign(reinterpret_cast<char const *>(pt_old.data()), pt_old.size());
     ASSERT_TRUE(x == toEncrypt);
 }
@@ -478,7 +478,7 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedTwofishCfb256) {
 
     string toEncrypt("The quick brown fox jumps over the lazy dog's back");
 
-    auto enc = Botan::Cipher_Mode::create_or_throw("Twofish/CFB", Botan::ENCRYPTION);
+    auto const enc = Botan::Cipher_Mode::create_or_throw("Twofish/CFB", Botan::ENCRYPTION);
 
     // Copy input data to a buffer that will be encrypted
     Botan::secure_vector<uint8_t> pt(toEncrypt.data(), toEncrypt.data()+toEncrypt.size());
@@ -489,13 +489,13 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedTwofishCfb256) {
 
     secUtilities::SecureArrayFlex pt_old(reinterpret_cast<uint8_t const *>(toEncrypt.data()), toEncrypt.size());
 
-    twoCfbEncrypt(key_s.data(), 32, iv_s.begin(), pt_old.data(), (int32_t)pt_old.size());
+    twoCfbEncrypt(key_s.data(), 32, iv_s.begin(), pt_old.data(), static_cast<int32_t>(pt_old.size()));
     ASSERT_TRUE(pt_old.equals(pt.data(), pt.size()));
 
 //    std::cout << "Encrypted: " << *zrtp::Utilities::hexdump("Encrypted", pt.data(), pt.size()) << '\n';
 
     // Decrypt and check result.
-    auto dec = Botan::Cipher_Mode::create_or_throw("Twofish/CFB", Botan::DECRYPTION);
+    auto const dec = Botan::Cipher_Mode::create_or_throw("Twofish/CFB", Botan::DECRYPTION);
     dec->set_key(key_s.begin(), key_s.size());
     dec->start(iv_s.begin(), iv_s.size());
     dec->finish(pt);
@@ -504,7 +504,7 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedTwofishCfb256) {
     x.assign(reinterpret_cast<char const *>(pt.data()), pt.size());
     ASSERT_TRUE(x == toEncrypt);
 
-    twoCfbDecrypt(key_s.data(), 32, iv_s.begin(), pt_old.data(), (int32_t)pt_old.size());
+    twoCfbDecrypt(key_s.data(), 32, iv_s.begin(), pt_old.data(), static_cast<int32_t>(pt_old.size()));
     x.assign(reinterpret_cast<char const *>(pt_old.data()), pt_old.size());
     ASSERT_TRUE(x == toEncrypt);
 
@@ -545,7 +545,7 @@ TEST_F(ZrtpNewCryptoTestFixture, mixedEcDh41417) {
 TEST_F(ZrtpNewCryptoTestFixture, ecbModeAes256) {
     string toEncrypt("0123456789ABCDEF");       // 16 bytes, blocksize of twofish and AES
 
-    auto enc = Botan::BlockCipher::create_or_throw("AES-256");
+    auto const enc = Botan::BlockCipher::create_or_throw("AES-256");
 
     // Copy input data to a buffer that will be encrypted
     Botan::secure_vector<uint8_t> pt(toEncrypt.data(), toEncrypt.data()+toEncrypt.size());
@@ -553,11 +553,11 @@ TEST_F(ZrtpNewCryptoTestFixture, ecbModeAes256) {
     enc->set_key(key_s.data(), 32);
     enc->encrypt(pt);
 
-    auto out = zrtp::Utilities::hexdump("Encrypted block AES-256", pt.data(), 16);
+    auto const out = zrtp::Utilities::hexdump("Encrypted block AES-256", pt.data(), 16);
     LOGGER(DEBUGGING, "encrypted block: ", *out)
 
     // Decrypt and check result.
-    auto dec = Botan::BlockCipher::create_or_throw("AES-256");
+    auto const dec = Botan::BlockCipher::create_or_throw("AES-256");
     dec->set_key(key_s.data(), 32);
     dec->decrypt(pt);
 
@@ -569,7 +569,7 @@ TEST_F(ZrtpNewCryptoTestFixture, ecbModeAes256) {
 TEST_F(ZrtpNewCryptoTestFixture, ecbModeAes128) {
     string toEncrypt("0123456789ABCDEF");       // 16 bytes, blocksize of twofish and AES
 
-    auto enc = Botan::BlockCipher::create_or_throw("AES-128");
+    auto const enc = Botan::BlockCipher::create_or_throw("AES-128");
 
     // Copy input data to a buffer that will be encrypted
     Botan::secure_vector<uint8_t> pt(toEncrypt.data(), toEncrypt.data()+toEncrypt.size());
@@ -577,11 +577,11 @@ TEST_F(ZrtpNewCryptoTestFixture, ecbModeAes128) {
     enc->set_key(key_s.data(), 16);
     enc->encrypt(pt);
 
-    auto out = zrtp::Utilities::hexdump("Encrypted block AES-128", pt.data(), 16);
+    auto const out = zrtp::Utilities::hexdump("Encrypted block AES-128", pt.data(), 16);
     LOGGER(DEBUGGING, "encrypted block: ", *out)
 
     // Decrypt and check result.
-    auto dec = Botan::BlockCipher::create_or_throw("AES-128");
+    auto const dec = Botan::BlockCipher::create_or_throw("AES-128");
     dec->set_key(key_s.data(), 16);
     dec->decrypt(pt);
 
@@ -593,7 +593,7 @@ TEST_F(ZrtpNewCryptoTestFixture, ecbModeAes128) {
 TEST_F(ZrtpNewCryptoTestFixture, ecbModeTwofish256) {
     string toEncrypt("0123456789ABCDEF");       // 16 bytes, blocksize of twofish and AES
 
-    auto enc = Botan::BlockCipher::create_or_throw("Twofish");
+    auto const enc = Botan::BlockCipher::create_or_throw("Twofish");
 
     // Copy input data to a buffer that will be encrypted
     Botan::secure_vector<uint8_t> pt(toEncrypt.data(), toEncrypt.data()+toEncrypt.size());
@@ -601,11 +601,11 @@ TEST_F(ZrtpNewCryptoTestFixture, ecbModeTwofish256) {
     enc->set_key(key_s.data(), 32);
     enc->encrypt(pt);
 
-    auto out = zrtp::Utilities::hexdump("Encrypted block Twofish", pt.data(), 16);
+    auto const out = zrtp::Utilities::hexdump("Encrypted block Twofish", pt.data(), 16);
     LOGGER(DEBUGGING, "encrypted block: ", *out)
 
     // Decrypt and check result.
-    auto dec = Botan::BlockCipher::create_or_throw("Twofish");
+    auto const dec = Botan::BlockCipher::create_or_throw("Twofish");
     dec->set_key(key_s.data(), 32);
     dec->decrypt(pt);
 
@@ -617,7 +617,7 @@ TEST_F(ZrtpNewCryptoTestFixture, ecbModeTwofish256) {
 TEST_F(ZrtpNewCryptoTestFixture, ecbModeTwofish128) {
     string toEncrypt("0123456789ABCDEF");       // 16 bytes, blocksize of twofish and AES
 
-    auto enc = Botan::BlockCipher::create_or_throw("Twofish");
+    auto const enc = Botan::BlockCipher::create_or_throw("Twofish");
 
     // Copy input data to a buffer that will be encrypted
     Botan::secure_vector<uint8_t> pt(toEncrypt.data(), toEncrypt.data()+toEncrypt.size());
@@ -625,11 +625,11 @@ TEST_F(ZrtpNewCryptoTestFixture, ecbModeTwofish128) {
     enc->set_key(key_s.data(), 16);
     enc->encrypt(pt);
 
-    auto out = zrtp::Utilities::hexdump("Encrypted block Twofish 128", pt.data(), 16);
+    auto const out = zrtp::Utilities::hexdump("Encrypted block Twofish 128", pt.data(), 16);
     LOGGER(DEBUGGING, "encrypted block: ", *out)
 
     // Decrypt and check result.
-    auto dec = Botan::BlockCipher::create_or_throw("Twofish");
+    auto const dec = Botan::BlockCipher::create_or_throw("Twofish");
     dec->set_key(key_s.data(), 16);
     dec->decrypt(pt);
 

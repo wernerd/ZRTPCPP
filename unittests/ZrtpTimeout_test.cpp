@@ -22,7 +22,7 @@
 
 using namespace std;
 
-class ZrtpTimeoutTestFixture : public ::testing::Test {
+class ZrtpTimeoutTestFixture : public testing::Test {
 public:
     ZrtpTimeoutTestFixture() = default;
 
@@ -55,7 +55,7 @@ TEST_F(ZrtpTimeoutTestFixture, AddRemove) {
 
     ASSERT_TRUE(provider.getTasks().empty());
     // The check for incorrect value just proves that no callback happened - add/remove is too fast
-    auto id = provider.addTimer(100, 321, [](int64_t d) { ASSERT_EQ(555, d); });
+    auto const id = provider.addTimer(100, 321, [](int64_t const d) { ASSERT_EQ(555, d); });
     ASSERT_TRUE(id > 0);
     ASSERT_EQ(1, provider.getTasks().size());
     provider.removeTimer(id);
@@ -67,14 +67,17 @@ TEST_F(ZrtpTimeoutTestFixture, AddThenCallback) {
 
     ASSERT_TRUE(provider.getTasks().empty());
     // The check for incorrect value just proves that callback happened - add/remove is too fast
-    auto current = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now().time_since_epoch()).count();
+    auto const current = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now().time_since_epoch()).
+            count();
 
-    auto id = provider.addTimer(100, 321, [&](int64_t d) {
+    auto const id = provider.addTimer(100, 321, [&](int64_t const d) {
         ASSERT_EQ(321, d);
-        auto calledAt = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now().time_since_epoch()).count();
+        auto const calledAt = chrono::duration_cast<chrono::milliseconds>(
+            chrono::steady_clock::now().time_since_epoch()).count();
         // Check if callback is in a reasonable time range
         ASSERT_TRUE(calledAt >= current + 100 && calledAt <= current + 105)
-                                    << "timeout range missed, expected between: " << current + 100 << " and +5ms, actual: "
+                                    << "timeout range missed, expected between: " << current + 100 <<
+ " and +5ms, actual: "
                                     << calledAt;
     });
     ASSERT_TRUE(id > 0);
@@ -88,14 +91,15 @@ TEST_F(ZrtpTimeoutTestFixture, AddThenCallbackAbsoluteTime) {
 
     ASSERT_TRUE(provider.getTasks().empty());
     // The check for incorrect value just proves that callback happened - add/remove is too fast
-    auto current = zrtp::Utilities::currentTimeMillis();
+    auto const current = zrtp::Utilities::currentTimeMillis();
 
-    auto id = provider.addTimer(current + 100, 321, [&](int64_t d) {
+    auto const id = provider.addTimer(current + 100, 321, [&](int64_t const d) {
         ASSERT_EQ(321, d);
-        auto calledAt = zrtp::Utilities::currentTimeMillis();
+        auto const calledAt = zrtp::Utilities::currentTimeMillis();
         // Check if callback is in a reasonable time range
         ASSERT_TRUE(calledAt >= current + 100 && calledAt <= current + 105)
-                                    << "timeout range missed, expected between: " << current + 100 << " and +5ms, actual: "
+                                    << "timeout range missed, expected between: " << current + 100 <<
+ " and +5ms, actual: "
                                     << calledAt;
     });
     ASSERT_TRUE(id > 0);

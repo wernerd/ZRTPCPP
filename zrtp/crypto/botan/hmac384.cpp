@@ -18,8 +18,6 @@
  * Authors: Werner Dittmann
  */
 
-#include <cstdint>
-#include <cstring>
 #include <botan_all.h>
 #include "zrtp/crypto/hmac384.h"
 
@@ -27,9 +25,9 @@ struct shaCtx {
     std::unique_ptr<Botan::MessageAuthenticationCode> mac;
 };
 
-void hmac_sha384(const uint8_t *key, uint64_t keyLength, const uint8_t* data, uint64_t dataLength, zrtp::RetainedSecArray & macOut)
-{
-    auto hmac = Botan::MessageAuthenticationCode::create("HMAC(SHA-384)");
+void hmac_sha384(const uint8_t *key, uint64_t const keyLength, const uint8_t *data, uint64_t const dataLength,
+                 zrtp::RetainedSecArray &macOut) {
+    auto const hmac = Botan::MessageAuthenticationCode::create("HMAC(SHA-384)");
 
     hmac->set_key(key, keyLength);
     hmac->update(data, dataLength);
@@ -37,12 +35,11 @@ void hmac_sha384(const uint8_t *key, uint64_t keyLength, const uint8_t* data, ui
     macOut.size(hmac->output_length());
 }
 
-void hmacSha384(const uint8_t* key, uint64_t keyLength,
-                const std::vector<const uint8_t*>& dataChunks,
-                const std::vector<uint64_t>& dataChunkLength,
-                zrtp::RetainedSecArray & macOut)
-{
-    auto hmac = Botan::MessageAuthenticationCode::create("HMAC(SHA-384)");
+void hmacSha384(const uint8_t *key, uint64_t const keyLength,
+                const std::vector<const uint8_t *> &dataChunks,
+                const std::vector<uint64_t> &dataChunkLength,
+                zrtp::RetainedSecArray &macOut) {
+    auto const hmac = Botan::MessageAuthenticationCode::create("HMAC(SHA-384)");
 
     hmac->set_key(key, keyLength);
 
@@ -53,33 +50,29 @@ void hmacSha384(const uint8_t* key, uint64_t keyLength,
     macOut.size(hmac->output_length());
 }
 
-void* createSha384HmacContext(const uint8_t* key, uint64_t keyLength)
-{
+void *createSha384HmacContext(const uint8_t *key, uint64_t const keyLength) {
     auto *ctx = new shaCtx;
     ctx->mac = Botan::MessageAuthenticationCode::create("HMAC(SHA-384)");
     ctx->mac->set_key(key, keyLength);
 
-    return (void*)ctx;
+    return (void *) ctx;
 }
 
-void hmacSha384Ctx(void* ctx,
-                 const std::vector<const uint8_t*>& data,
-                 const std::vector<uint64_t>& dataLength,
-                 uint8_t* mac, uint32_t* macLength )
-{
-    auto *pctx = reinterpret_cast<shaCtx *>(ctx);
-
-    for (size_t i = 0, size = data.size(); i < size; i++) {
-        pctx->mac->update(data[i], dataLength[i]);
+void hmacSha384Ctx(void *ctx,
+                   const std::vector<const uint8_t *> &data,
+                   const std::vector<uint64_t> &dataLength,
+                   uint8_t *mac, uint32_t *macLength) {
+    if (auto const *pctx = static_cast<shaCtx *>(ctx); pctx != nullptr) {
+        for (size_t i = 0, size = data.size(); i < size; i++) {
+            pctx->mac->update(data[i], dataLength[i]);
+        }
+        pctx->mac->final(mac);
+        *macLength = pctx->mac->output_length();
     }
-    pctx->mac->final(mac);
-    *macLength = pctx->mac->output_length();
 }
 
-void freeSha384HmacContext(void* ctx)
-{
-    auto *pctx = reinterpret_cast<shaCtx *>(ctx);
-    if (pctx != nullptr && pctx->mac) {
+void freeSha384HmacContext(void *ctx) {
+    if (auto *pctx = static_cast<shaCtx *>(ctx); pctx != nullptr && pctx->mac) {
         pctx->mac->clear();
         pctx->mac.reset();
         delete pctx;

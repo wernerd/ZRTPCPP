@@ -20,15 +20,17 @@
 
 #include <libzrtpcpp/ZrtpPacketHelloAck.h>
 
+#include "libzrtpcpp/ZrtpTextData.h"
+
 ZrtpPacketHelloAck::ZrtpPacketHelloAck() {
-    zrtpHeader = &data.hdr;	// the standard header
+    zrtpHeader = &data.hdr; // the standard header
 
     setZrtpId();
-    setLength((sizeof(HelloAckPacket_t) / ZRTP_WORD_SIZE) - 1);
-    setMessageType((uint8_t*)HelloAckMsg);
+    setLength(sizeof(HelloAckPacket_t) / ZRTP_WORD_SIZE - 1);
+    setMessageType(HelloAckMsg);
 }
 
-ZrtpPacketHelloAck::ZrtpPacketHelloAck(const uint8_t *data) {
-    zrtpHeader = (zrtpPacketHeader_t *)&((HelloAckPacket_t *)data)->hdr;	// the standard header
+ZrtpPacketHelloAck::ZrtpPacketHelloAck(const uint8_t* data) {
+    // the standard header
+    zrtpHeader = const_cast<zrtpPacketHeader_t *>(&reinterpret_cast<HelloAckPacket_t const *>(data)->hdr);
 }
-

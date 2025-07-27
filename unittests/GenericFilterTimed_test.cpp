@@ -19,6 +19,7 @@
 #include <condition_variable>
 
 #include <zrtp/libzrtpcpp/ZrtpConfigure.h>
+#include <zrtp/libzrtpcpp/ZrtpTextData.h>
 #include <zrtp/libzrtpcpp/ZRtp.h>
 #include <helpers/ZrtpConfigureBuilder.h>
 #include "../logging/ZrtpLogging.h"
@@ -35,39 +36,42 @@ uint8_t aliceZid[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
 uint8_t bobZid[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
 
 
-// This fixture contains necessary functions and data to run two independent
-// ZRtp instances in two threads. This setup allows to run these two instances
-// and perform a 'send/receive' of ZRTP packet. Using the mock callbacks we
+// This fixture contains the necessary functions and data to run two independent
+// ZRtp instances in two threads. This setup allows running these two instances
+// and performing a 'send/receive' of ZRTP packet. Using the mock callbacks, we
 // can perform several tests during the data exchange, save some intermediate
 // data and check them after the ZRTP protocol run completes.
-class GenericTimedFixture: public ::testing::Test {
+class GenericTimedFixture : public testing::Test {
 public:
     GenericTimedFixture() = default;
 
-    GenericTimedFixture(const GenericTimedFixture& other) = delete;
-    GenericTimedFixture(const GenericTimedFixture&& other) = delete;
-    GenericTimedFixture& operator= (const GenericTimedFixture& other) = delete;
-    GenericTimedFixture& operator= (const GenericTimedFixture&& other) = delete;
+    GenericTimedFixture(const GenericTimedFixture &other) = delete;
+
+    GenericTimedFixture(const GenericTimedFixture &&other) = delete;
+
+    GenericTimedFixture &operator=(const GenericTimedFixture &other) = delete;
+
+    GenericTimedFixture &operator=(const GenericTimedFixture &&other) = delete;
 
     void SetUp() override {
-        // code here will execute just before the test ensues
+        // code here will execute just before test runs
         LOGGER_INSTANCE setLogLevel(ERROR_LOG);
         aliceId = "Alice";
         bobId = "Bob";
 
         aliceNetwork = std::make_unique<zrtp::NetworkSimulation>(
-                aliceTimoutProvider,
-                [this](zrtp::ZrtpDataPairPtr dataPtr, int64_t tts) { bobQueueData(std::move(dataPtr), tts); }
+            aliceTimoutProvider,
+            [this](zrtp::ZrtpDataPairPtr dataPtr, int64_t const tts) { bobQueueData(std::move(dataPtr), tts); }
         );
         bobNetwork = std::make_unique<zrtp::NetworkSimulation>(
-                bobTimoutProvider,
-                [this](zrtp::ZrtpDataPairPtr dataPtr, int64_t tts) { aliceQueueData(std::move(dataPtr), tts); }
+            bobTimoutProvider,
+            [this](zrtp::ZrtpDataPairPtr dataPtr, int64_t const tts) { aliceQueueData(std::move(dataPtr), tts); }
         );
     }
 
     void TearDown() override {
         // code here will be called just after the test completes
-        // ok to through exceptions from here if need be
+        // ok to throw exceptions from here
         aliceId.clear();
         bobId.clear();
 
@@ -81,28 +85,28 @@ public:
         unlink("bob.data");
     }
 
-    ~GenericTimedFixture( ) override {
+    ~GenericTimedFixture() override {
         // cleanup any pending stuff, but no exceptions allowed
         LOGGER_INSTANCE setLogLevel(VERBOSE);
     }
 
     // region Alice functions
-    void aliceSetup(std::shared_ptr<ZrtpConfigure>& configuration) {
-
+    void aliceSetup(std::shared_ptr<ZrtpConfigure> &configuration) {
         // Set configuration, flags, required callbacks
         aliceZrtp = GenericPacketFilter::createGenericFilter();
         aliceZrtp->setZrtpConfiguration(configuration)
                 .processSrtp(true)
                 .reportAllStates(true)
-                .onDoSend([this](GenericPacketFilter::ProtocolData& data) -> bool {
+                .onDoSend([this](GenericPacketFilter::ProtocolData const &data) -> bool {
                     // the static prepareToSend uses SecureArrayFlex to store packet data. ProtocolData.ptr is a void ptr, thus cast it
-                    shared_ptr<secUtilities::SecureArrayFlex> packetPtr = static_pointer_cast<secUtilities::SecureArrayFlex>(data.ptr);
-                    auto tts = aliceNetwork->addDataToQueue(packetPtr->data(), data.length);
+                    shared_ptr<secUtilities::SecureArrayFlex> const packetPtr = static_pointer_cast<
+                        secUtilities::SecureArrayFlex>(data.ptr);
+                    auto const tts = aliceNetwork->addDataToQueue(packetPtr->data(), data.length);
                     LOGGER(DEBUGGING, "To Bob:    at: ", tts, " - now: ", zrtp::Utilities::currentTimeMillis())
                     return true;
                 })
-                .onStateReport([this]
-                                       (GenericPacketFilter::ZrtpAppStates state, GenericPacketFilter::StateData & stateData) {
+                .onStateReport([this](GenericPacketFilter::ZrtpAppStates const state,
+                                        GenericPacketFilter::StateData const &stateData) {
                     switch (state) {
                         case GenericPacketFilter::InfoOnly: {
                             LOGGER(INFO, "Alice Info: ", stateData.infoText)
@@ -136,7 +140,8 @@ public:
                             aliceSas = aliceZrtp->computedSas();
                             aliceCipher = aliceZrtp->cipherInfo();
 
-                            LOGGER(INFO, "Alice Secure: ", stateData.infoText, ", SAS: ", aliceZrtp->computedSas(), ", cipher: ", aliceZrtp->cipherInfo())
+                            LOGGER(INFO, "Alice Secure: ", stateData.infoText, ", SAS: ", aliceZrtp->computedSas(),
+                                   ", cipher: ", aliceZrtp->cipherInfo())
                             aliceSecureOn = true;
                             zrtpDoneCv.notify_all();
                             break;
@@ -156,64 +161,64 @@ public:
         aliceQueueCv.notify_all();
     }
 
-    void aliceQueueData(zrtp::ZrtpDataPairPtr dataPairPtr, int64_t tts) {
+    void aliceQueueData(zrtp::ZrtpDataPairPtr dataPairPtr, int64_t const tts) {
         LOGGER(DEBUGGING, "From Bob   at: ", tts)
 
-        unique_lock<mutex> queueLock(aliceQueueMutex);
+        unique_lock queueLock(aliceQueueMutex);
         aliceQueue.push_back(std::move(dataPairPtr));
         queueLock.unlock();
         aliceQueueCv.notify_all();
     }
 
-    static void aliceZrtpRun(GenericTimedFixture *thiz) {
-        {
-            unique_lock<mutex> startLock(thiz->aliceStartMutex);
+    static void aliceZrtpRun(GenericTimedFixture *thiz) { {
+            unique_lock startLock(thiz->aliceStartMutex);
             while (!thiz->aliceThreadRun) {
                 thiz->aliceStartCv.wait(startLock);
             }
             thiz->aliceZrtp->startZrtpEngine();
         }
-        unique_lock<mutex> queueLock(thiz->aliceQueueMutex);
-        while (thiz->aliceThreadRun) {
-            while (thiz->aliceQueue.empty() && thiz->aliceThreadRun) {
+        unique_lock queueLock(thiz->aliceQueueMutex);
+        while (thiz->aliceThreadRun) { // NOLINT
+            while (thiz->aliceQueue.empty() && thiz->aliceThreadRun) { // NOLINT
                 LOGGER(DEBUGGING, "Alice thread waiting: ", thiz->aliceThreadRun)
                 thiz->aliceQueueCv.wait(queueLock);
             }
-            if (!thiz->aliceThreadRun) break;
+            if (!thiz->aliceThreadRun) break; // NOLINT
 
             for (; !thiz->aliceQueue.empty(); thiz->aliceQueue.pop_front()) {
-                auto& zrtpData = thiz->aliceQueue.front();
-                queueLock.unlock();          // unlock Alice's queue while processing 'received' data, Bob may add data
+                auto const &zrtpData = thiz->aliceQueue.front();
+                queueLock.unlock(); // unlock Alice's queue while processing 'received' data, Bob may add data
 
-                auto result = thiz->aliceZrtp->filterPacket(zrtpData->first.get(), zrtpData->second, GenericPacketFilter::checkRtpData);
+                auto const result = thiz->aliceZrtp->filterPacket(zrtpData->first.get(), zrtpData->second,
+                                                            GenericPacketFilter::checkRtpData);
                 LOGGER(DEBUGGING, "Alice filter result: ", result)
 
-                if (!thiz->aliceThreadRun) break;
+                if (!thiz->aliceThreadRun) break; // NOLINT
                 queueLock.lock();
             }
         }
 
-        thiz->aliceZrtp.reset();
+        thiz->aliceZrtp.reset(); // NOLINT
         LOGGER(DEBUGGING, "Alice thread terminating.")
-    }
+    } // NOLINT
     // endregion
 
     // region Bob functions
-    void bobSetup(std::shared_ptr<ZrtpConfigure>& configuration) {
-
+    void bobSetup(std::shared_ptr<ZrtpConfigure> &configuration) {
         bobZrtp = GenericPacketFilter::createGenericFilter();
         bobZrtp->setZrtpConfiguration(configuration)
                 .processSrtp(true)
                 .reportAllStates(true)
-                .onDoSend([this](GenericPacketFilter::ProtocolData& data) -> bool {
+                .onDoSend([this](GenericPacketFilter::ProtocolData const &data) -> bool {
                     // the static prepareToSend uses SecureArrayFlex to store packet data. ProtocolData.ptr is a void ptr, thus cast it
-                    shared_ptr<secUtilities::SecureArrayFlex> packetPtr = static_pointer_cast<secUtilities::SecureArrayFlex>(data.ptr);
-                    auto tts = bobNetwork->addDataToQueue(packetPtr->data(), data.length);
+                    shared_ptr<secUtilities::SecureArrayFlex> const packetPtr = static_pointer_cast<
+                        secUtilities::SecureArrayFlex>(data.ptr);
+                    auto const tts = bobNetwork->addDataToQueue(packetPtr->data(), data.length);
                     LOGGER(DEBUGGING, "To Alice:  at: ", tts, " - now: ", zrtp::Utilities::currentTimeMillis())
                     return true;
                 })
-                .onStateReport([this]
-                                       (GenericPacketFilter::ZrtpAppStates state, GenericPacketFilter::StateData & stateData) {
+                .onStateReport([this](GenericPacketFilter::ZrtpAppStates const state,
+                                      GenericPacketFilter::StateData const &stateData) {
                     switch (state) {
                         case GenericPacketFilter::InfoOnly: {
                             LOGGER(INFO, "Bob   Info: ", stateData.infoText)
@@ -247,7 +252,8 @@ public:
                             bobSas = bobZrtp->computedSas();
                             bobCipher = bobZrtp->cipherInfo();
 
-                            LOGGER(INFO, "Bob   Secure: ", stateData.infoText, ", SAS: ", bobZrtp->computedSas(), ", cipher: ", bobZrtp->cipherInfo())
+                            LOGGER(INFO, "Bob   Secure: ", stateData.infoText, ", SAS: ", bobZrtp->computedSas(),
+                                   ", cipher: ", bobZrtp->cipherInfo())
                             bobSecureOn = true;
                             zrtpDoneCv.notify_all();
                             break;
@@ -267,47 +273,48 @@ public:
         bobQueueCv.notify_all();
     }
 
-    void bobQueueData(zrtp::ZrtpDataPairPtr dataPairPtr, int64_t tts) {
+    void bobQueueData(zrtp::ZrtpDataPairPtr dataPairPtr, int64_t const tts) {
         LOGGER(DEBUGGING, "From Alice at: ", tts)
 
-        unique_lock<mutex> queueLock(bobQueueMutex);
-        bobQueue.push_back(move(dataPairPtr));
+        unique_lock queueLock(bobQueueMutex);
+        bobQueue.push_back(std::move(dataPairPtr));
         queueLock.unlock();
         bobQueueCv.notify_all();
     }
 
-    static void bobZrtpRun(GenericTimedFixture *thiz) {
-        {
-            unique_lock<mutex> startLock(thiz->bobStartMutex);
+    static void bobZrtpRun(GenericTimedFixture *thiz) { {
+            unique_lock startLock(thiz->bobStartMutex);
             while (!thiz->bobThreadRun) {
                 thiz->bobStartCv.wait(startLock);
             }
             thiz->bobZrtp->startZrtpEngine();
         }
-        unique_lock<mutex> queueLock(thiz->bobQueueMutex);
-        while (thiz->bobThreadRun) {
-            while (thiz->bobQueue.empty() && thiz->bobThreadRun) {
+        unique_lock queueLock(thiz->bobQueueMutex);
+        while (thiz->bobThreadRun) { // NOLINT
+            while (thiz->bobQueue.empty() && thiz->bobThreadRun) { // NOLINT
                 LOGGER(DEBUGGING, "Bob thread waiting: ", thiz->bobThreadRun)
                 thiz->bobQueueCv.wait(queueLock);
             }
-            if (!thiz->bobThreadRun) break;
+            if (!thiz->bobThreadRun) break; // NOLINT
 
             for (; !thiz->bobQueue.empty(); thiz->bobQueue.pop_front()) {
-                auto& zrtpData = thiz->bobQueue.front();
-                queueLock.unlock();          // unlock bob's queue while processing 'received' data, Bob may add data
+                auto const &zrtpData = thiz->bobQueue.front();
+                queueLock.unlock(); // unlock Bob's queue while processing 'received' data, Bob may add data
 
-                auto result = thiz->bobZrtp->filterPacket(zrtpData->first.get(), zrtpData->second, GenericPacketFilter::checkRtpData);
+                auto const result = thiz->bobZrtp->filterPacket(zrtpData->first.get(), zrtpData->second,
+                                                          GenericPacketFilter::checkRtpData);
                 LOGGER(DEBUGGING, "Bob   filter result: ", result)
 
-                if (!thiz->bobThreadRun) break;
+                if (!thiz->bobThreadRun) break; // NOLINT
                 queueLock.lock();
             }
         }
 
-        thiz->bobZrtp.reset();
+        thiz->bobZrtp.reset(); // NOLINT
         LOGGER(DEBUGGING, "Bob thread terminating.")
-    }
+    } // NOLINT
     // endregion
+
     mutex zrtpDoneMutex;
     condition_variable zrtpDoneCv;
     bool protocolFailure = false;
@@ -323,7 +330,7 @@ public:
     std::unique_ptr<zrtp::NetworkSimulation> aliceNetwork;
     string aliceCipher;
     string aliceSas;
-    GenericPacketFilter::StateData aliceErrorState {static_cast<GnuZrtpCodes::MessageSeverity>(0), 0, ""};
+    GenericPacketFilter::StateData aliceErrorState{static_cast<GnuZrtpCodes::MessageSeverity>(0), 0, ""};
     bool aliceSecureOn = false;
     bool aliceThreadRun = false;
     bool aliceCacheIsOk = false;
@@ -339,14 +346,13 @@ public:
     std::unique_ptr<zrtp::NetworkSimulation> bobNetwork;
     string bobCipher;
     string bobSas;
-    GenericPacketFilter::StateData bobErrorState {static_cast<GnuZrtpCodes::MessageSeverity>(0), 0, ""};
+    GenericPacketFilter::StateData bobErrorState{static_cast<GnuZrtpCodes::MessageSeverity>(0), 0, ""};
     bool bobSecureOn = false;
     bool bobThreadRun = false;
     bool bobCacheIsOk = false;
 };
 
 TEST_F(GenericTimedFixture, full_run_test) {
-
     // Configure algorithms, ZID cache file
     auto aliceConfig = ZrtpConfigureBuilder::builder()
             .publicKeyAlgorithms(ec25, ec38)
@@ -369,7 +375,7 @@ TEST_F(GenericTimedFixture, full_run_test) {
     aliceStartThread();
     bobStartThread();
 
-    unique_lock<mutex> secure(zrtpDoneMutex);
+    unique_lock secure(zrtpDoneMutex);
     while (!(aliceSecureOn && bobSecureOn) && !protocolFailure) {
         zrtpDoneCv.wait(secure);
     }

@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-#include <libzrtpcpp/ZIDCache.h>
+#ifndef ZIDCACHEEMPTY_H_
+#define ZIDCACHEEMPTY_H_
+
 #include <memory>
 #include <cstring>
-
-#ifndef _ZIDCACHEEMPTY_H_
-#define _ZIDCACHEEMPTY_H_
-
+#include <libzrtpcpp/ZIDCache.h>
 
 /**
  * @file ZIDCacheEmpty.h
  * @brief ZID cache management
  *
- * An empty ZID file, thus thus implements an empty or non-existent
+ * An empty ZID file, thus implements an empty or non-existent
  * ZRTP cache. This is a valid option for ZRTP because ZRTP does not
  * require a cache. However, applications using ZRTP without cache
  * should check SAS on every session.
@@ -43,9 +42,8 @@
  * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-class __EXPORT ZIDCacheEmpty: public ZIDCache {
-private:
-    unsigned char associatedZid[IDENTIFIER_LEN] = {0};
+class __EXPORT ZIDCacheEmpty final : public ZIDCache {
+    unsigned char associatedZid[IDENTIFIER_LEN] = {};
     uint8_t *zidPointer = nullptr;
     std::string fileName;
 
@@ -57,17 +55,17 @@ public:
 
     int open(char *name) override ;
 
-    bool isOpen() override { return true; };
+    bool isOpen() override { return true; }
 
     void close() override ;
 
-    CacheTypes getCacheType() override { return ZIDCache::NoCache; };
+    CacheTypes getCacheType() override { return NoCache; }
 
     std::unique_ptr<ZIDRecord> getRecord(unsigned char *zid) override;
 
     unsigned int saveRecord(ZIDRecord& zidRecord) override;
 
-    const unsigned char* getZid() override { return zidPointer; };
+    const unsigned char* getZid() override { return zidPointer; }
 
     void setZid(const uint8_t *zid) override {
         memcpy(associatedZid, zid, IDENTIFIER_LEN);
@@ -78,17 +76,17 @@ public:
 
     void putPeerName(const uint8_t *peerZid, const std::string& name) override ;
 
-    // Not implemented for file based cache
-    void cleanup() override {};
+    // Not implemented for file-based cache
+    void cleanup() override {}
 
-    std::string& getFileName() override { return fileName; };
+    std::string& getFileName() override { return fileName; }
 
-    void *prepareReadAll() override { return nullptr; };
-    void *readNextRecord(void *stmt, std::string *output) override { return nullptr; };
+    void *prepareReadAll() override { return nullptr; }
+    void *readNextRecord(void *stmt, std::string *output) override { return nullptr; }
     void closeOpenStatement(void *stmt) override {}
 };
 
 /**
  * @}
  */
-#endif
+#endif // ZIDCACHEEMPTY_H_

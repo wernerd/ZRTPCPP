@@ -41,17 +41,17 @@
  *
  * @param key
  *    The MAC key.
- * @param key_length
+ * @param keyLength
  *    Length of the MAC key in bytes
  * @param data
  *    Points to the data chunk.
- * @param data_length
+ * @param dataLength
  *    Length of the data in bytes
  * @param macOut
  *    Reference to a secure array that receives the computed digest.
  */
-void hmac_sha384(const uint8_t* key, uint64_t key_length,
-                 const uint8_t* data, uint64_t data_length,
+void hmac_sha384(const uint8_t* key, uint64_t keyLength,
+                 const uint8_t* data, uint64_t dataLength,
                  zrtp::RetainedSecArray &macOut);
 
 /**
@@ -61,19 +61,20 @@ void hmac_sha384(const uint8_t* key, uint64_t key_length,
  *
  * @param key
  *    The MAC key.
- * @param key_length
- *    Lneght of the MAC key in bytes
- * @param data
+ * @param keyLength
+ *    Length of the MAC key in bytes
+ * @param dataChunks
  *    Vector of pointers that point to the data chunks.
- * @param dataLength
+ * @param dataChunkLength
  *   Vector of integers that hold the length of each data chunk.
  * @param macOut
  *    Reference to a secure array that receives the computed digest..
  */
-void hmacSha384(const uint8_t* key, uint64_t key_length,
-                const std::vector<const uint8_t*>& data,
-                const std::vector<uint64_t>& dataLength,
+void hmacSha384(const uint8_t* key, uint64_t keyLength,
+                const std::vector<const uint8_t *> &dataChunks,
+                const std::vector<uint64_t> &dataChunkLength,
                 zrtp::RetainedSecArray &macOut);
+
 /**
  * @}
  */

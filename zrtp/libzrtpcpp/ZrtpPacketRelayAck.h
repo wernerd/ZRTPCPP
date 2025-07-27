@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _ZRTPPACKETRELAYACK_H_
-#define _ZRTPPACKETRELAYACK_H_
+#ifndef ZRTPPACKETRELAYACK_H_
+#define ZRTPPACKETRELAYACK_H_
 
 /**
  * @file ZrtpPacketRelayAck.h
@@ -35,7 +35,7 @@
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
-class __EXPORT ZrtpPacketRelayAck : public ZrtpPacketBase {
+class __EXPORT ZrtpPacketRelayAck final : public ZrtpPacketBase {
 
  public:
     /// Creates a RelayAck packet with default data
@@ -52,4 +52,4 @@ class __EXPORT ZrtpPacketRelayAck : public ZrtpPacketBase {
 /**
  * @}
  */
-#endif  // _ZRTPPACKETRELAYACK_H_
+#endif  // ZRTPPACKETRELAYACK_H_

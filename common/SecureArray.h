@@ -34,7 +34,7 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-static inline void wipeMemory(void* data, size_t length) {
+static void wipeMemory(void* data, size_t const length) {
     static void * (*volatile memset_volatile)(void *, int, size_t) = std::memset;
     memset_volatile(data, 0, length);
 }
@@ -56,6 +56,8 @@ namespace secUtilities {
         using const_pointer   = value_type const *;
         using iterator        = pointer;
         using const_iterator  = const_pointer;
+
+        virtual ~SecureArrayBase() = default;
 
         /**
          * @brief Current size.
@@ -87,7 +89,7 @@ namespace secUtilities {
          * @return Begin iterator.
          */
         [[nodiscard]] auto
-        begin() noexcept -> iterator { return iterator(data()); }
+        begin() noexcept -> iterator { return data(); }
 
         /**
          * @brief Constant begin iterator of secure array.
@@ -95,7 +97,7 @@ namespace secUtilities {
          * @return Constant begin iterator.
          */
         [[nodiscard]] auto
-        begin() const noexcept -> const_iterator { return const_iterator(data()); }
+        begin() const noexcept -> const_iterator { return data(); }
 
         /**
          * @brief End iterator of secure array.
@@ -103,7 +105,7 @@ namespace secUtilities {
          * @return End iterator.
          */
         [[nodiscard]] auto
-        end() noexcept -> iterator { return iterator(data() + size()); }
+        end() noexcept -> iterator { return data() + size(); }
 
         /**
          * @brief Constant end iterator of secure array.
@@ -111,7 +113,7 @@ namespace secUtilities {
          * @return Constant end iterator.
          */
         [[nodiscard]] auto
-        end() const noexcept -> const_iterator { return const_iterator(data() + size()); }
+        end() const noexcept -> const_iterator { return data() + size(); }
 
         /**
          * @brief Return the element at given index.
@@ -126,8 +128,8 @@ namespace secUtilities {
          * @throws out_of_range
          */
         auto
-        at(size_type index) -> reference {
-            if (index < 0 || index >= capacity())
+        at(size_type const index) -> reference {
+            if (index >= capacity())
                 throw std::out_of_range("const SecureArrayBase::at or operator[], idx: " + std::to_string(index) + ", capacity: " + std::to_string(capacity()));
 
             if (index + 1 > size()) size(index + 1);
@@ -146,8 +148,8 @@ namespace secUtilities {
          * @throws out_of_range
          */
         [[nodiscard]] auto
-        at(size_type idx) const -> const_reference {
-            if (idx < 0 || idx >= size())
+        at(size_type const idx) const -> const_reference {
+            if (idx >= size())
                 throw std::out_of_range("const SecureArrayBase::at or operator[], idx: " + std::to_string(idx) + ", size: " + std::to_string(size()));
             return data()[idx];
         }
@@ -178,7 +180,7 @@ namespace secUtilities {
          * @throws out_of_range
          */
         auto
-        assign(const_pointer inData, size_type len) -> SecureArrayBase & {
+        assign(const_pointer const inData, size_type const len) -> SecureArrayBase & {
             if (len > capacity())
                 throw std::out_of_range("SecureArrayBase::assign(), len: " + std::to_string(len) + ", capacity: " + std::to_string(capacity()));
             clear();
@@ -214,7 +216,7 @@ namespace secUtilities {
          * @throws out_of_range
          */
         auto
-        append(const_pointer inData, size_type len) -> SecureArrayBase & {
+        append(const_pointer const inData, size_type const len) -> SecureArrayBase & {
             if (len + size() > capacity())
                 throw std::out_of_range("SecureArrayBase::assign(), len: " + std::to_string(len+size()) + ", capacity: " + std::to_string(capacity()));
 
@@ -237,7 +239,7 @@ namespace secUtilities {
          * @throws out_of_range
          */
         auto
-        operator[](size_type idx) -> reference { return at(idx); }
+        operator[](size_type const idx) -> reference { return at(idx); }
 
         /**
          * @brief Return the element at given index.
@@ -251,7 +253,7 @@ namespace secUtilities {
          * @throws out_of_range
          */
         auto
-        operator[](size_type idx) const -> const_reference { return at(idx); }
+        operator[](size_type const idx) const -> const_reference { return at(idx); }
 
         /**
          * @brief Get pointer to data of secure array.
@@ -284,7 +286,7 @@ namespace secUtilities {
          * @brief Perform constant time compare of this secure array with another secure array.
          *
          * The function compares @c len number of @c value_type elements, thus both arrays must have a
-         * capacity that's less or equal to the specified length. Otherwise memory access violation
+         * capacity that's less or equal to the specified length. Otherwise, memory access violation
          * may occur.
          *
          * @param other secure byte array to compare with.
@@ -300,7 +302,7 @@ namespace secUtilities {
          * @brief Perform constant time compare of this secure array with some array of same value type.
          *
          * The function compares @c len number of @c value_type elements, thus both arrays must have a
-         * capacity/length that's less or equal to the specified length. Otherwise memory access violation
+         * capacity/length that's less or equal to the specified length. Otherwise, memory access violation
          * may occur.
          *
          * @param otherData secure byte array to compare with.
@@ -313,7 +315,7 @@ namespace secUtilities {
 
             value_type result = 0;
             for (size_type i = 0; i < len; i++) {
-                value_type x = *in1++ ^ *otherData++;
+                value_type const x = *in1++ ^ *otherData++;
                 result |= x;
             }
             return result == 0;
@@ -365,7 +367,7 @@ namespace secUtilities {
      *   if the requested capacity during construction is larger than the SAO threshold.
      *
      * - During instantiation you can define a maximum capacity of the SecureArray. Code can
-     *   access elements only up to the defined capacity, even if the capacity if lower then
+     *   access elements only up to the defined capacity, even if the capacity is lower than
      *   the pre-defined SAO threshold.
      *
      * - Accessing elements which are out of range will throw an out-of-range exception if
@@ -374,7 +376,7 @@ namespace secUtilities {
      *
      * - A constant copy or constant reference of an existing SecureArray, for example when
      *   handing over as a parameter, operator [] or @c at function return elements only up to
-     *   the 'filled' size of the array. Thus you may have a SecureArray for variable key sizes
+     *   the 'filled' size of the array. Thus, you may have a SecureArray for variable key sizes
      *   with a capacity of the maximum key length. The code can now assign some shorter key
      *   and hand over the SecureArray to a function which can use data up to the 'filled' size.
      *
@@ -385,7 +387,7 @@ namespace secUtilities {
      *       elements only. Enhancing this class to other types is possible: set the
      *       correct @c value_type in the class.
      */
-    class SecureArrayFlex : public SecureArrayBase {
+    class SecureArrayFlex final : public SecureArrayBase {
 
     public:
         /**
@@ -396,7 +398,7 @@ namespace secUtilities {
         /**
          * @brief SecureArray with given capacity
          */
-        explicit SecureArrayFlex(size_type cap) {
+        explicit SecureArrayFlex(size_type const cap) {
             capacity_ = cap;
             allocate();
         }
@@ -407,7 +409,7 @@ namespace secUtilities {
          * The capacity is set to @c length if it is larger than the default capacity, stays at
          * default capacity if @c length is smaller than default capacity.
          */
-        SecureArrayFlex(const_pointer data, size_type length) {
+        SecureArrayFlex(const_pointer const data, size_type const length) {
             if (length > capacity_) {
                 capacity_ =length;
                 allocate();
@@ -444,7 +446,7 @@ namespace secUtilities {
             other.clear();
         }
 
-        virtual ~SecureArrayFlex() { reset(); }
+        ~SecureArrayFlex() override { reset(); }
 
         auto
         operator=(const SecureArrayFlex &x) -> SecureArrayFlex & {
@@ -467,7 +469,7 @@ namespace secUtilities {
         data() const noexcept -> const_pointer override { return data_; }
 
         auto
-        size(size_type newSize) -> void override {
+        size(size_type const newSize) -> void override {
             if (newSize > capacity_) throw std::out_of_range("SecureArrayFlex::setSize() overflows capacity");
             size_ = newSize;
         }
@@ -475,7 +477,7 @@ namespace secUtilities {
     private:
 
         auto
-        capacity(size_type cap) -> void override { capacity_ = cap; }
+        capacity(size_type const cap) -> void override { capacity_ = cap; }
 
         auto
         data(pointer data) -> void override { data_ = data; }
@@ -504,7 +506,7 @@ namespace secUtilities {
 
         size_type size_ = 0;
         size_type capacity_ = SECURE_PRE_ALLOCATED;
-        value_type preAllocated_[SECURE_PRE_ALLOCATED] = {0};
+        value_type preAllocated_[SECURE_PRE_ALLOCATED] = {};
         pointer data_ = preAllocated_;
     };
 
@@ -515,7 +517,7 @@ namespace secUtilities {
      * @tparam CAPACITY length of the secure array
      */
     template <size_t CAPACITY>
-    class SecureArray : public SecureArrayBase {
+    class SecureArray final : public SecureArrayBase {
 
     public:
         SecureArray() = default;
@@ -523,7 +525,7 @@ namespace secUtilities {
         [[nodiscard]] auto
         capacity() const -> size_type override { return CAPACITY; }
 
-        SecureArray(const_pointer data, size_type length) {
+        SecureArray(const_pointer const data, size_type const length) {
             assign(data, length);
         }
 
@@ -541,7 +543,7 @@ namespace secUtilities {
             other.clear();
         }
 
-        virtual ~SecureArray() { reset(); }
+        ~SecureArray() override { reset(); }
 
         auto
         operator=(const SecureArray &x) -> SecureArray & {
@@ -561,7 +563,7 @@ namespace secUtilities {
         data() const noexcept -> const_pointer override { return preAllocated(); }
 
         auto
-        size(size_type newSize) -> void override {
+        size(size_type const newSize) -> void override {
             if (newSize > CAPACITY) throw std::out_of_range("SecureArray::setSize() overflows capacity");
             size_ = newSize;
         }
@@ -587,7 +589,7 @@ namespace secUtilities {
         }
 
         size_type size_ = 0;
-        value_type preAllocated_[CAPACITY] = {0};
+        value_type preAllocated_[CAPACITY] = {};
     };
 }
 

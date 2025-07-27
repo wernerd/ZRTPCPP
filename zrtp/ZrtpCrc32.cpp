@@ -29,7 +29,7 @@
 /* with 24 and 32 Parity Bits",                                  */
 /* IEEE Transactions on Communications, Vol.41, No.6, June 1993  */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-static const uint32_t crc_c[256] = {
+static constexpr uint32_t crc_c[256] = {
     0x00000000, 0xF26B8303, 0xE13B70F7, 0x1350F3F4,
     0xC79A971F, 0x35F1141C, 0x26A1E7E8, 0xD4CA64EB,
     0x8AD958CF, 0x78B2DBCC, 0x6BE22838, 0x9989AB3B,
@@ -97,33 +97,26 @@ static const uint32_t crc_c[256] = {
 };
 
 
-bool zrtpCheckCksum(const uint8_t *buffer, uint16_t length, uint32_t crc32)
-{
+bool zrtpCheckCksum(const uint8_t* buffer, uint16_t const length, uint32_t const crc32) {
     uint32_t chksum = zrtpGenerateCksum(buffer, length);
     chksum = zrtpEndCksum(chksum);
     // fprintf(stderr, "Received crc %x, computed crc: %x\n", crc32, chksum);
-    return (crc32 == chksum);
+    return crc32 == chksum;
 }
 
-uint32_t zrtpGenerateCksum(const uint8_t *buffer, uint16_t length)
-{
-    uint32_t crc32 = ~(uint32_t) 0;
-    uint32_t i;
+uint32_t zrtpGenerateCksum(const uint8_t* buffer, uint16_t const length) {
+    uint32_t crc32 = ~0U;
 
     // fprintf(stderr, "Buffer %xl, length: %d\n", buffer, length);
     /* Calculate the CRC. */
-    for (i = 0; i < length ; i++)
+    for (uint32_t i = 0; i < length; i++)
         CRC32C(crc32, buffer[i]);
 
     return crc32;
 }
 
-uint32_t zrtpEndCksum(uint32_t crc32)
-{
-    uint32_t result;
-    uint8_t byte0, byte1, byte2, byte3;
-
-    result = ~crc32;
+uint32_t zrtpEndCksum(uint32_t crc32) {
+    uint32_t const result = ~crc32;
 
     /*  result  now holds the negated polynomial remainder;
      *  since the table and algorithm is "reflected" [williams95].
@@ -138,16 +131,15 @@ uint32_t zrtpEndCksum(uint32_t crc32)
      *  byteswap.  On a little-endian machine, this byteswap and
      *  the final ntohl cancel out and could be elided.
      */
-    byte0 = result & 0xffU;
-    byte1 = (result>>8U) & 0xffU;
-    byte2 = (result>>16U) & 0xffU;
-    byte3 = (result>>24U) & 0xffU;
+    uint8_t const byte0 = result & 0xffU;
+    uint8_t const byte1 = result >> 8U & 0xffU;
+    uint8_t const byte2 = result >> 16U & 0xffU;
+    uint8_t const byte3 = result >> 24U & 0xffU;
 
-    crc32 = ((byte0 << 24U) |
-    (byte1 << 16U) |
-    (byte2 << 8U)  |
-    byte3);
+    crc32 = byte0 << 24U |
+             byte1 << 16U |
+             byte2 << 8U |
+             byte3;
     // fprintf(stderr, "Computed crc32: %x\n", crc32);
     return crc32;
 }
-

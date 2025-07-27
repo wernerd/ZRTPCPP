@@ -20,16 +20,15 @@
 
 #include "crypto/hmac.h"
 #include <botan_all.h>
-#include <cstring>
 
 struct macCtx {
     std::unique_ptr<Botan::MessageAuthenticationCode> hmac;
 };
 
 
-void hmac_sha1(const uint8_t *key, uint64_t keyLength, const uint8_t* data, uint32_t dataLength, uint8_t* mac, int32_t* macLength)
-{
-    auto hmac = Botan::MessageAuthenticationCode::create("HMAC(SHA-1)");
+void hmac_sha1(const uint8_t *key, uint64_t const keyLength, const uint8_t *data, uint32_t const dataLength,
+               uint8_t *mac, size_t *macLength) {
+    auto const hmac = Botan::MessageAuthenticationCode::create("HMAC(SHA-1)");
 
     hmac->set_key(key, keyLength);
     hmac->update(data, dataLength);
@@ -37,12 +36,11 @@ void hmac_sha1(const uint8_t *key, uint64_t keyLength, const uint8_t* data, uint
     *macLength = hmac->output_length();
 }
 
-void hmac_sha1(const uint8_t* key, uint64_t keyLength,
-               const std::vector<const uint8_t*>& data,
-               const std::vector<uint64_t>& dataLength,
-               uint8_t* mac, uint32_t* macLength )
-{
-    auto hmac = Botan::MessageAuthenticationCode::create("HMAC(SHA-1)");
+void hmac_sha1(const uint8_t *key, uint64_t const keyLength,
+               const std::vector<const uint8_t *> &data,
+               const std::vector<uint64_t> &dataLength,
+               uint8_t *mac, size_t *macLength) {
+    auto const hmac = Botan::MessageAuthenticationCode::create("HMAC(SHA-1)");
 
     hmac->set_key(key, keyLength);
 
@@ -53,45 +51,40 @@ void hmac_sha1(const uint8_t* key, uint64_t keyLength,
     *macLength = hmac->output_length();
 }
 
-void* createSha1HmacContext()
-{
+void *createSha1HmacContext() {
     auto *ctx = new macCtx;
     ctx->hmac = Botan::MessageAuthenticationCode::create("HMAC(SHA-1)");
-    return (void*)ctx;
+    return ctx;
 }
 
-void* initializeSha1HmacContext(void* ctx, uint8_t* key, uint64_t keyLength)
-{
-    auto* hd = reinterpret_cast<macCtx *>(ctx);
+void *initializeSha1HmacContext(void *ctx, uint8_t const *key, uint64_t const keyLength) {
+    auto *hd = static_cast<macCtx *>(ctx);
 
     if (hd != nullptr) {
         if (hd->hmac == nullptr) {
             hd->hmac = Botan::MessageAuthenticationCode::create("HMAC(SHA-1)");
-        }
-        else {
+        } else {
             hd->hmac->clear();
         }
         hd->hmac->set_key(key, keyLength);
     }
-    return (void*)hd;
+    return hd;
 }
 
-void hmacSha1Ctx(void* ctx, const uint8_t* data, uint64_t dataLength,
-                uint8_t* mac, uint32_t* macLength)
-{
-    auto *pctx = reinterpret_cast<macCtx *>(ctx);
+void hmacSha1Ctx(void *ctx, const uint8_t *data, uint64_t const dataLength,
+                 uint8_t *mac, size_t *macLength) {
+    auto const *const pctx = static_cast<macCtx *>(ctx);
 
     pctx->hmac->update(data, dataLength);
     pctx->hmac->final(mac);
     *macLength = pctx->hmac->output_length();
 }
 
-void hmacSha1Ctx(void* ctx,
-                 const std::vector<const uint8_t*>& data,
-                 const std::vector<uint64_t>& dataLength,
-                 uint8_t* mac, uint32_t* macLength )
-{
-    auto *pctx = reinterpret_cast<macCtx *>(ctx);
+void hmacSha1Ctx(void *ctx,
+                 const std::vector<const uint8_t *> &data,
+                 const std::vector<uint64_t> &dataLength,
+                 uint8_t *mac, size_t *macLength) {
+    auto const *const pctx = static_cast<macCtx *>(ctx);
 
     for (size_t i = 0, size = data.size(); i < size; i++) {
         pctx->hmac->update(data[i], dataLength[i]);
@@ -100,10 +93,8 @@ void hmacSha1Ctx(void* ctx,
     *macLength = pctx->hmac->output_length();
 }
 
-void freeSha1HmacContext(void* ctx)
-{
-    auto *pctx = reinterpret_cast<macCtx *>(ctx);
-    if (pctx != nullptr && pctx->hmac) {
+void freeSha1HmacContext(void *ctx) {
+    if (auto *pctx = static_cast<macCtx *>(ctx); pctx != nullptr && pctx->hmac) {
         pctx->hmac->clear();
         pctx->hmac.reset();
         delete pctx;

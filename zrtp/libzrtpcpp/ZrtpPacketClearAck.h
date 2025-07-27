@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _ZRTPPACKETCLEARACK_H_
-#define _ZRTPPACKETCLEARACK_H_
+#ifndef ZRTPPACKETCLEARACK_H_
+#define ZRTPPACKETCLEARACK_H_
 
 /**
  * @file ZrtpPacketClearAck.h
@@ -35,19 +35,17 @@
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
-class __EXPORT ZrtpPacketClearAck : public ZrtpPacketBase {
-
- public:
-    ZrtpPacketClearAck();       /// Creates a ClearAck packet with default data
-    explicit ZrtpPacketClearAck(const uint8_t* data);  /// Creates a ClearAck packet from received data
+class __EXPORT ZrtpPacketClearAck final : public ZrtpPacketBase {
+public:
+    ZrtpPacketClearAck(); /// Creates a ClearAck packet with default data
+    explicit ZrtpPacketClearAck(const uint8_t* data); /// Creates a ClearAck packet from received data
     ~ZrtpPacketClearAck() override = default;
 
- private:
-     ClearAckPacket_t data = {};
+private:
+    ClearAckPacket_t data = {};
 };
 
 /**
  * @}
  */
-#endif // ZRTPPACKETCLEARACK
-
+#endif // ZRTPPACKETCLEARACK_H_

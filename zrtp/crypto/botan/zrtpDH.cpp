@@ -28,7 +28,7 @@
 #include "botan_all.h"
 #include "botancrypto/ZrtpCurve41417.h"
 
-void randomZRTP(uint8_t* buf, int32_t length) {
+void randomZRTP(uint8_t* buf, int32_t const length) {
     ZrtpBotanRng::getRandomData(buf, length);
 }
 
@@ -51,25 +51,34 @@ ZrtpDH::version() {
 
 ZrtpDH::ZrtpDH(const char* type) : ctx(std::make_unique<ZrtpDH::dhCtx>()) {
     // Well - the algo type is only 4 char thus cast to int32 and compare
-    if (*(int32_t *)type == *(int32_t *)dh2k) {
+    if (strncmp(type, dh2k, 4) == 0) {
         pkType = DH2K;
-    } else if (*(int32_t *)type == *(int32_t *)dh3k) {
+    }
+    else if (strncmp(type, dh3k, 4) == 0) {
         pkType = DH3K;
-    } else if (*(int32_t *)type == *(int32_t *)ec25) {
+    }
+    else if (strncmp(type, ec25, 4) == 0) {
         pkType = EC25;
-    } else if (*(int32_t *)type == *(int32_t *)ec38) {
+    }
+    else if (strncmp(type, ec38, 4) == 0) {
         pkType = EC38;
-    } else if (*(int32_t *)type == *(int32_t *)e255) {
+    }
+    else if (strncmp(type, e255, 4) == 0) {
         pkType = E255;
-    } else if (*(int32_t *)type == *(int32_t *)e414) {
+    }
+    else if (strncmp(type, e414, 4) == 0) {
         pkType = E414;
-    } else if (*(int32_t *)type == *(int32_t *)np06) {
+    }
+    else if (strncmp(type, np06, 4) == 0) {
         pkType = NP06;
-    } else if (*(int32_t *)type == *(int32_t *)np09) {
+    }
+    else if (strncmp(type, np09, 4) == 0) {
         pkType = NP09;
-    } else if (*(int32_t *)type == *(int32_t *)np12) {
+    }
+    else if (strncmp(type, np12, 4) == 0) {
         pkType = NP12;
-    } else {
+    }
+    else {
         errorCode = UNKNOWN_ALGORITHM;
         return;
     }
@@ -148,16 +157,16 @@ void ZrtpDH::generateSntrupKeyPair() const {
     }
 }
 
-size_t ZrtpDH::computeSecretKey(uint8_t* pubKeyBytes, zrtp::SecureArray1k& secret, MessageType msgType) {
+size_t ZrtpDH::computeSecretKey(uint8_t const* pubKeyBytes, zrtp::SecureArray1k &secret, MessageType const msgType) const {
     auto const length = getSharedSecretSize();
-    ZrtpBotanRng rng;
     Botan::secure_vector<uint8_t> sharedSecret;
 
     try {
+        ZrtpBotanRng rng;
         switch (pkType) {
             case DH2K:
             case DH3K: {
-                Botan::PK_Key_Agreement dhBob(*ctx->eccPrivateKey, rng, kdfString);
+                Botan::PK_Key_Agreement const dhBob(*ctx->eccPrivateKey, rng, kdfString);
                 sharedSecret = dhBob.derive_key(length, pubKeyBytes, length).bits_of();
                 secret.assign(sharedSecret.data(), sharedSecret.size());
                 zap(sharedSecret);
@@ -175,7 +184,7 @@ size_t ZrtpDH::computeSecretKey(uint8_t* pubKeyBytes, zrtp::SecureArray1k& secre
                 pubKey.at(0) = 4; // 4 -> magic number: x, y coordinates are in uncompressed format
                 memcpy(pubKey.data() + 1, pubKeyBytes, getPubKeySize());
 
-                Botan::PK_Key_Agreement ecdhBob(*ctx->eccPrivateKey, rng, kdfString);
+                Botan::PK_Key_Agreement const ecdhBob(*ctx->eccPrivateKey, rng, kdfString);
                 sharedSecret = ecdhBob.derive_key(length, pubKey).bits_of();
 
                 secret.assign(sharedSecret.data(), sharedSecret.size());
@@ -184,7 +193,7 @@ size_t ZrtpDH::computeSecretKey(uint8_t* pubKeyBytes, zrtp::SecureArray1k& secre
             }
 
             case E255: {
-                Botan::PK_Key_Agreement ecdhBob(*ctx->eccPrivateKey, rng, kdfString);
+                Botan::PK_Key_Agreement const ecdhBob(*ctx->eccPrivateKey, rng, kdfString);
                 sharedSecret = ecdhBob.derive_key(length, pubKeyBytes, getPubKeySize()).bits_of();
 
                 secret.assign(sharedSecret.data(), sharedSecret.size());
@@ -212,19 +221,21 @@ size_t ZrtpDH::computeSecretKey(uint8_t* pubKeyBytes, zrtp::SecureArray1k& secre
             default:
                 break;
         }
-    } catch (Botan::Exception& e) {
+    }
+    catch (Botan::Exception &e) {
+        (void)e;
         zap(sharedSecret);
     }
     return -1;
 }
 
 bool
-ZrtpDH::eccEncapDecap(uint8_t* pubKeyBytes, ZrtpBotanRng& rng, zrtp::SecureArray256 const& secretSntrup,
-                      MessageType msgType, zrtp::SecureArray256& secretEcc) const {
+ZrtpDH::eccEncapDecap(uint8_t const* pubKeyBytes, ZrtpBotanRng &rng, zrtp::SecureArray256 const &secretSntrup,
+                      MessageType const msgType, zrtp::SecureArray256 &secretEcc) const {
     std::vector<uint8_t> coordinates;
 
     if (bool const isDecompressed = Botan::Curve41417_PrivateKey::decompress_y_coordinate(
-            pubKeyBytes, coordinates); !isDecompressed) {
+        pubKeyBytes, coordinates); !isDecompressed) {
         return false;
     }
 
@@ -241,8 +252,8 @@ ZrtpDH::eccEncapDecap(uint8_t* pubKeyBytes, ZrtpBotanRng& rng, zrtp::SecureArray
 }
 
 void
-ZrtpDH::eccKdf(Botan::secure_vector<uint8_t> const& dhSharedSecret, std::vector<uint8_t> const& pubKeyBytes,
-               size_t length, zrtp::SecureArray256 const& secretSntrup, zrtp::SecureArray256& secretEcc) const {
+ZrtpDH::eccKdf(Botan::secure_vector<uint8_t> const &dhSharedSecret, std::vector<uint8_t> const &pubKeyBytes,
+               size_t const length, zrtp::SecureArray256 const &secretSntrup, zrtp::SecureArray256 &secretEcc) const {
     // ecc_z = ECC_DH(ecc_ska, ecc_pkb)
     // ecc_ss = KDF(ecc_ct || ecc_z)
     // Public key bytes is the public key of the ZRTP Initiator
@@ -250,7 +261,7 @@ ZrtpDH::eccKdf(Botan::secure_vector<uint8_t> const& dhSharedSecret, std::vector<
     kdfIn.assign(pubKeyBytes.data(), pubKeyBytes.size());
     kdfIn.append(dhSharedSecret.data(), dhSharedSecret.size());
 
-    auto hkdf = Botan::KDF::create("HKDF(HMAC(SHA-256))");
+    auto const hkdf = Botan::KDF::create("HKDF(HMAC(SHA-256))");
     hkdf->kdf(secretEcc.data(), length, kdfIn.data(), kdfIn.size(), secretSntrup.data(),
               secretSntrup.size(),
               reinterpret_cast<const uint8_t *>(getDHtype()), 4);
@@ -258,7 +269,7 @@ ZrtpDH::eccKdf(Botan::secure_vector<uint8_t> const& dhSharedSecret, std::vector<
 }
 
 size_t
-ZrtpDH::computeSntrupSharedSecret(uint8_t const* pubKeyBytes, zrtp::SecureArray256& secret,
+ZrtpDH::computeSntrupSharedSecret(uint8_t const* pubKeyBytes, zrtp::SecureArray256 &secret,
                                   MessageType const msgType) const {
     int offsetNextKeyData = -1;
     switch (pkType) {
@@ -270,7 +281,8 @@ ZrtpDH::computeSntrupSharedSecret(uint8_t const* pubKeyBytes, zrtp::SecureArray2
                     SNTRUP_CRYPTO_CIPHERTEXTBYTES_653);
                 crypto_kem_sntrup653_enc(ctx->sntrupCipherText->data(), secret.data(), pubKeyBytes);
                 ctx->sntrupCipherText->size(SNTRUP_CRYPTO_CIPHERTEXTBYTES_653);
-            } else {
+            }
+            else {
                 // DHPart1 packet contains SNTRUP cipher text, decrypt it to get shared key
                 offsetNextKeyData = SNTRUP_CRYPTO_CIPHERTEXTBYTES_653;
                 crypto_kem_sntrup653_dec(secret.data(), pubKeyBytes, ctx->sntrupSecretKey->data());
@@ -285,7 +297,8 @@ ZrtpDH::computeSntrupSharedSecret(uint8_t const* pubKeyBytes, zrtp::SecureArray2
                     SNTRUP_CRYPTO_CIPHERTEXTBYTES_953);
                 crypto_kem_sntrup953_enc(ctx->sntrupCipherText->data(), secret.data(), pubKeyBytes);
                 ctx->sntrupCipherText->size(SNTRUP_CRYPTO_CIPHERTEXTBYTES_953);
-            } else {
+            }
+            else {
                 // DHPart1 packet contains SNTRUP cipher text, decrypt it to get shared key
                 offsetNextKeyData = SNTRUP_CRYPTO_CIPHERTEXTBYTES_953;
                 crypto_kem_sntrup953_dec(secret.data(), pubKeyBytes, ctx->sntrupSecretKey->data());
@@ -300,7 +313,8 @@ ZrtpDH::computeSntrupSharedSecret(uint8_t const* pubKeyBytes, zrtp::SecureArray2
                     SNTRUP_CRYPTO_CIPHERTEXTBYTES_1277);
                 crypto_kem_sntrup1277_enc(ctx->sntrupCipherText->data(), secret.data(), pubKeyBytes);
                 ctx->sntrupCipherText->size(SNTRUP_CRYPTO_CIPHERTEXTBYTES_1277);
-            } else {
+            }
+            else {
                 // DHPart1 packet contains SNTRUP cipher text, decrypt it to get shared key
                 offsetNextKeyData = SNTRUP_CRYPTO_CIPHERTEXTBYTES_1277;
                 crypto_kem_sntrup1277_dec(secret.data(), pubKeyBytes, ctx->sntrupSecretKey->data());
@@ -368,12 +382,12 @@ size_t ZrtpDH::getPubKeySize() const {
     }
 }
 
-size_t ZrtpDH::getPubKeyBytes(zrtp::SecureArray4k& pubKey, MessageType msgType) const {
+size_t ZrtpDH::getPubKeyBytes(zrtp::SecureArray4k &pubKey, MessageType const msgType) const {
     switch (pkType) {
         case DH2K:
         case DH3K: {
             // get len of pub_key, prepend with zeros to DH size
-            auto size = getPubKeySize();
+            auto const size = getPubKeySize();
             size_t prepend = getSharedSecretSize() - size;
             if (prepend > 0) {
                 memset(pubKey.data(), 0, prepend);
@@ -401,13 +415,14 @@ size_t ZrtpDH::getPubKeyBytes(zrtp::SecureArray4k& pubKey, MessageType msgType) 
         case NP12: {
             if (msgType == DhPart1) {
                 pubKey.assign(*ctx->sntrupCipherText);
-            } else {
+            }
+            else {
                 generateSntrupKeyPair();
                 pubKey.assign(*ctx->sntrupPublicKey);
             }
 
-            auto dhPrivateKey = dynamic_cast<Botan::Curve41417_PrivateKey *>(ctx->eccPrivateKey.get());
-            auto const& compressed =
+            auto const dhPrivateKey = dynamic_cast<Botan::Curve41417_PrivateKey *>(ctx->eccPrivateKey.get());
+            auto const &compressed =
                     dhPrivateKey->Botan::Curve41417_PublicKey::public_value(Botan::Point41417p::COMPRESSED);
             pubKey.append(compressed.data(), compressed.size());
             return pubKey.size();
@@ -420,7 +435,7 @@ size_t ZrtpDH::getPubKeyBytes(zrtp::SecureArray4k& pubKey, MessageType msgType) 
     return 0;
 }
 
-int32_t ZrtpDH::checkPubKey(uint8_t* pubKeyBytes) {
+int32_t ZrtpDH::checkPubKey(uint8_t* pubKeyBytes) const {
     ZrtpBotanRng rng;
 
     switch (pkType) {
@@ -429,7 +444,7 @@ int32_t ZrtpDH::checkPubKey(uint8_t* pubKeyBytes) {
             // In these cases ctx private key actually holds a DH private key which
             // is a subclass of Botan::PK_Key_Agreement_Key. This downcast is valid.
             auto dhPrivateKey = dynamic_cast<Botan::DH_PrivateKey *>(ctx->eccPrivateKey.get());
-            const auto& dhGroup = dhPrivateKey->get_group();
+            const auto &dhGroup = dhPrivateKey->get_group();
             auto singleLen = getPubKeySize();
             auto pubKeyBigInt = Botan::BigInt(pubKeyBytes, singleLen);
 
@@ -449,7 +464,7 @@ int32_t ZrtpDH::checkPubKey(uint8_t* pubKeyBytes) {
             // In these cases ctx private key actually holds a ECDH private key which
             // is a subclass of Botan::PK_Key_Agreement_Key. This downcast is valid.
             auto ecPrivateKey = dynamic_cast<Botan::ECDH_PrivateKey *>(ctx->eccPrivateKey.get());
-            const auto& ecGroup = ecPrivateKey->domain();
+            const auto &ecGroup = ecPrivateKey->domain();
             auto singleLen = getPubKeySize() / 2; // function returns size of X + Y size
 
             auto xBig = Botan::BigInt(pubKeyBytes, singleLen);

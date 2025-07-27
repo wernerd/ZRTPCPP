@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _ZRTPUSERCALLBACK_H_
-#define _ZRTPUSERCALLBACK_H_
+#ifndef ZRTPUSERCALLBACK_H_
+#define ZRTPUSERCALLBACK_H_
 
 /**
  * @file
@@ -210,4 +210,4 @@ class __EXPORT ZrtpUserCallback {
         }
 };
 
-#endif
+#endif // ZRTPUSERCALLBACK_H_

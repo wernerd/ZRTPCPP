@@ -15,6 +15,7 @@
 // Copyright (c) 2020 Werner Dittmann. All rights reserved.
 //
 
+#include <zrtp/libzrtpcpp/ZIDCacheEmpty.h>
 #include <zrtp/libzrtpcpp/ZrtpConfigure.h>
 #include <zrtp/libzrtpcpp/ZRtp.h>
 #include "../logging/ZrtpLogging.h"
@@ -33,14 +34,17 @@ string BobId;
 uint8_t aliceZid[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
 uint8_t bobZid[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
 
-class ZrtpHelloTestFixture: public ::testing::Test {
+class ZrtpHelloTestFixture : public testing::Test {
 public:
     ZrtpHelloTestFixture() = default;
 
-    ZrtpHelloTestFixture(const ZrtpHelloTestFixture& other) = delete;
-    ZrtpHelloTestFixture(const ZrtpHelloTestFixture&& other) = delete;
-    ZrtpHelloTestFixture& operator= (const ZrtpHelloTestFixture& other) = delete;
-    ZrtpHelloTestFixture& operator= (const ZrtpHelloTestFixture&& other) = delete;
+    ZrtpHelloTestFixture(const ZrtpHelloTestFixture &other) = delete;
+
+    ZrtpHelloTestFixture(const ZrtpHelloTestFixture &&other) = delete;
+
+    ZrtpHelloTestFixture &operator=(const ZrtpHelloTestFixture &other) = delete;
+
+    ZrtpHelloTestFixture &operator=(const ZrtpHelloTestFixture &&other) = delete;
 
     void SetUp() override {
         // code here will execute just before the test ensues
@@ -49,12 +53,12 @@ public:
         BobId = "test zid 2";
     }
 
-    void TearDown( ) override {
+    void TearDown() override {
         // code here will be called just after the test completes
         // ok to through exceptions from here if need be
     }
 
-    ~ZrtpHelloTestFixture( ) override {
+    ~ZrtpHelloTestFixture() override {
         // cleanup any pending stuff, but no exceptions allowed
         LOGGER_INSTANCE setLogLevel(VERBOSE);
         aliceId.clear();
@@ -72,7 +76,7 @@ TEST_F(ZrtpHelloTestFixture, HelloPacketConfigMandatory) {
     SasType: b32
     AuthLength: hs32, hs80
     */
-    shared_ptr<ZrtpConfigure> configure = make_shared<ZrtpConfigure>();
+    auto const configure = make_shared<ZrtpConfigure>();
 
     ZrtpPacketHello hpExpected;
     hpExpected.configureHello(*configure);
@@ -82,33 +86,33 @@ TEST_F(ZrtpHelloTestFixture, HelloPacketConfigMandatory) {
     ASSERT_EQ(1, hpExpected.getNumSas());
     ASSERT_EQ(2, hpExpected.getNumAuth());
 
-    ASSERT_EQ(string("S256"), string((char *)hpExpected.getHashType(0), 4));
-    ASSERT_EQ(string("AES1"), string((char *)hpExpected.getCipherType(0), 4));
-    ASSERT_EQ(string("DH3k"), string((char *)hpExpected.getPubKeyType(0), 4));
-    ASSERT_EQ(string("Mult"), string((char *)hpExpected.getPubKeyType(1), 4));
-    ASSERT_EQ(string("B32 "), string((char *)hpExpected.getSasType(0), 4));
-    ASSERT_EQ(string("HS32"), string((char *)hpExpected.getAuthLen(0), 4));
-    ASSERT_EQ(string("HS80"), string((char *)hpExpected.getAuthLen(1), 4));
+    ASSERT_EQ(string("S256"), string(reinterpret_cast<char *>(hpExpected.getHashType(0)), 4));
+    ASSERT_EQ(string("AES1"), string(reinterpret_cast<char *>(hpExpected.getCipherType(0)), 4));
+    ASSERT_EQ(string("DH3k"), string(reinterpret_cast<char *>(hpExpected.getPubKeyType(0)), 4));
+    ASSERT_EQ(string("Mult"), string(reinterpret_cast<char *>(hpExpected.getPubKeyType(1)), 4));
+    ASSERT_EQ(string("B32 "), string(reinterpret_cast<char *>(hpExpected.getSasType(0)), 4));
+    ASSERT_EQ(string("HS32"), string(reinterpret_cast<char *>(hpExpected.getAuthLen(0)), 4));
+    ASSERT_EQ(string("HS80"), string(reinterpret_cast<char *>(hpExpected.getAuthLen(1)), 4));
 }
 
 // No timeout happens in this test: Start and cancel timer must be in sync
 TEST_F(ZrtpHelloTestFixture, check_timer_start_cancel) {
     // Configure with mandatory algorithms only
-    shared_ptr<ZrtpConfigure> configure = make_shared<ZrtpConfigure>();
+    auto const configure = make_shared<ZrtpConfigure>();
 
-    shared_ptr<ZIDCache> aliceCache = std::make_shared<ZIDCacheEmpty>();
+    shared_ptr<ZIDCache> const aliceCache = std::make_shared<ZIDCacheEmpty>();
     aliceCache->setZid(aliceZid);
     configure->setZidCache(aliceCache);
 
     int32_t timers = 0;
 
-    auto mockCallback = make_shared<testing::NiceMock<MockZrtpCallback>>();
-    std::shared_ptr<ZrtpCallback> callback = mockCallback;      // perform implicit up-cast to base
+    auto const mockCallback = make_shared<testing::NiceMock<MockZrtpCallback> >();
+    std::shared_ptr<ZrtpCallback> const callback = mockCallback; // perform implicit up-cast to base
 
-    ON_CALL(*mockCallback, activateTimer).WillByDefault(DoAll(([&timers](int32_t time) { timers++; }), Return(1)));
-    ON_CALL(*mockCallback, cancelTimer).WillByDefault(DoAll([&timers]() { timers--; }, Return(1)));
+    ON_CALL(*mockCallback, activateTimer).WillByDefault(DoAll([&timers](int32_t) { timers++; }, Return(1)));
+    ON_CALL(*mockCallback, cancelTimer).WillByDefault(DoAll([&timers] { timers--; }, Return(1)));
 
-    ZRtp zrtp(aliceId, callback, configure);
+    ZRtp const zrtp(aliceId, callback, configure);
     zrtp.startZrtpEngine();
     zrtp.stopZrtp();
 
@@ -117,15 +121,15 @@ TEST_F(ZrtpHelloTestFixture, check_timer_start_cancel) {
 
 TEST_F(ZrtpHelloTestFixture, check_first_sent_Hello) {
     // Configure with mandatory algorithms only
-    shared_ptr<ZrtpConfigure> configure = make_shared<ZrtpConfigure>();
+    auto configure = make_shared<ZrtpConfigure>();
     shared_ptr<ZIDCache> aliceCache = std::make_shared<ZIDCacheEmpty>();
     aliceCache->setZid(aliceZid);
     configure->setZidCache(aliceCache);
 
-    auto mockCallback = make_shared<testing::NiceMock<MockZrtpCallback>>();
-    std::shared_ptr<ZrtpCallback> callback = mockCallback;      // perform implicit up-cast to base
+    auto mockCallback = make_shared<testing::NiceMock<MockZrtpCallback> >();
+    std::shared_ptr<ZrtpCallback> callback = mockCallback; // perform implicit up-cast to base
 
-    uint8_t const * packetData;
+    uint8_t const *packetData;
     int32_t dataLength;
 
     EXPECT_CALL(*mockCallback, sendDataZRTP(_, _))
@@ -137,15 +141,15 @@ TEST_F(ZrtpHelloTestFixture, check_first_sent_Hello) {
     zrtp.startZrtpEngine();
     zrtp.stopZrtp();
 
-    auto* header = (zrtpPacketHeader_t *)packetData;
-    string packetType((char *)header->messageType, sizeof(header->messageType));
+    auto *header = reinterpret_cast<zrtpPacketHeader_t *>(const_cast<uint8_t *>(packetData));
+    string packetType(reinterpret_cast<char *>(header->messageType), sizeof(header->messageType));
     ASSERT_EQ("Hello   ", packetType);
 
     ZrtpPacketHello hpExpected;
     hpExpected.configureHello(*configure);
 
-    ZrtpPacketHello hp(packetData);         // packetData provides 4 bytes at the end for CRC, not computed by ZrtpPacketHello
-    ASSERT_TRUE(hp.isLengthOk());   // if OK -> data parsing looks good
+    ZrtpPacketHello hp(packetData); // packetData provides 4 bytes at the end for CRC, not computed by ZrtpPacketHello
+    ASSERT_TRUE(hp.isLengthOk()); // if OK -> data parsing looks good
 
     ASSERT_EQ(hpExpected.getNumHashes(), hp.getNumHashes());
     ASSERT_EQ(hpExpected.getNumCiphers(), hp.getNumCiphers());
@@ -153,11 +157,18 @@ TEST_F(ZrtpHelloTestFixture, check_first_sent_Hello) {
     ASSERT_EQ(hpExpected.getNumSas(), hp.getNumSas());
     ASSERT_EQ(hpExpected.getNumAuth(), hp.getNumAuth());
 
-    ASSERT_EQ(string((char *)hpExpected.getHashType(0), 4), string((char *)hp.getHashType(0), 4));
-    ASSERT_EQ(string((char *)hpExpected.getCipherType(0), 4), string((char *)hp.getCipherType(0), 4));
-    ASSERT_EQ(string((char *)hpExpected.getPubKeyType(0), 4), string((char *)hp.getPubKeyType(0), 4));
-    ASSERT_EQ(string((char *)hpExpected.getPubKeyType(1), 4), string((char *)hp.getPubKeyType(1), 4));
-    ASSERT_EQ(string((char *)hpExpected.getSasType(0), 4), string((char *)hp.getSasType(0), 4));
-    ASSERT_EQ(string((char *)hpExpected.getAuthLen(0), 4), string((char *)hp.getAuthLen(0), 4));
-    ASSERT_EQ(string((char *)hpExpected.getAuthLen(1), 4), string((char *)hp.getAuthLen(1), 4));
+    ASSERT_EQ(string(reinterpret_cast<char *>(hpExpected.getHashType(0)), 4),
+              string(reinterpret_cast<char *>(hp.getHashType(0)), 4));
+    ASSERT_EQ(string(reinterpret_cast<char *>(hpExpected.getCipherType(0)), 4),
+              string(reinterpret_cast<char *>(hp.getCipherType(0)), 4));
+    ASSERT_EQ(string(reinterpret_cast<char *>(hpExpected.getPubKeyType(0)), 4),
+              string(reinterpret_cast<char *>(hp.getPubKeyType(0)), 4));
+    ASSERT_EQ(string(reinterpret_cast<char *>(hpExpected.getPubKeyType(1)), 4),
+              string(reinterpret_cast<char *>(hp.getPubKeyType(1)), 4));
+    ASSERT_EQ(string(reinterpret_cast<char *>(hpExpected.getSasType(0)), 4),
+              string(reinterpret_cast<char *>(hp.getSasType(0)), 4));
+    ASSERT_EQ(string(reinterpret_cast<char *>(hpExpected.getAuthLen(0)), 4),
+              string(reinterpret_cast<char *>(hp.getAuthLen(0)), 4));
+    ASSERT_EQ(string(reinterpret_cast<char *>(hpExpected.getAuthLen(1)), 4),
+              string(reinterpret_cast<char *>(hp.getAuthLen(1)), 4));
 }

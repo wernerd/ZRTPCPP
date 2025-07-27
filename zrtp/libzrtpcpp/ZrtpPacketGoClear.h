@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _ZRTPPACKETGOCLEAR_H_
-#define _ZRTPPACKETGOCLEAR_H_
+#ifndef ZRTPPACKETGOCLEAR_H_
+#define ZRTPPACKETGOCLEAR_H_
 
 /**
  * @file ZrtpPacketGoClear.h
@@ -37,9 +37,8 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-class __EXPORT ZrtpPacketGoClear : public ZrtpPacketBase {
-
- public:
+class __EXPORT ZrtpPacketGoClear final : public ZrtpPacketBase {
+public:
     /// Creates a GoCLear packet with default data
     ZrtpPacketGoClear();
 
@@ -49,21 +48,23 @@ class __EXPORT ZrtpPacketGoClear : public ZrtpPacketBase {
     ~ZrtpPacketGoClear() override = default;
 
     /// Not used
-    const uint8_t* getClearHmac() { return clearHeader->clearHmac; };
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    [[nodiscard]] const uint8_t* getClearHmac() const { return clearHeader->clearHmac; }
 
     /// Not used
-    void setClearHmac(uint8_t *text) { memcpy(clearHeader->clearHmac, text, 32); };
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    void setClearHmac(uint8_t const * text) { memcpy(clearHeader->clearHmac, text, 32); }
 
     /// Not used
-    void clrClearHmac()              { memset(clearHeader->clearHmac, 0, 32); };
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    void clrClearHmac() { memset(clearHeader->clearHmac, 0, 32); }
 
- private:
-     GoClear_t* clearHeader = nullptr;
-     GoClearPacket_t data = {};
+private:
+    GoClear_t* clearHeader = &data.goClear;
+    GoClearPacket_t data = {};
 };
 
 /**
  * @}
  */
-#endif // ZRTPPACKETGOCLEAR
-
+#endif // ZRTPPACKETGOCLEAR_H_

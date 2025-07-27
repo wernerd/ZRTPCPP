@@ -20,6 +20,7 @@
 
 #include <botancrypto/Point41417.h>
 #include "../logging/ZrtpLogging.h"
+#include "botancrypto/Ec41417Group.h"
 #include "gtest/gtest.h"
 
 using namespace std;
@@ -68,9 +69,9 @@ using namespace std;
 static char resultX31415[] = "30553475802749957144362965037321709320356477475486539679158004672956949220949505188481387089370025578448230875777441695420305";
 static char resultY31415[] = "29273231244339256955699668356694183924984615939477469174536339873148548197480670899551170046439682076270123478944260632709195";
 
-static char random414117[] = "3BD8B33E37C66342ED1CCC0F9A09211B547E4FB68E926E784B5D15977E330587156379BBEB63B5E2F6616DFC8FE36CE0085809D8";
+// static char random414117[] = "3BD8B33E37C66342ED1CCC0F9A09211B547E4FB68E926E784B5D15977E330587156379BBEB63B5E2F6616DFC8FE36CE0085809D8";
 
-class BotanEc41417TestFixture: public ::testing::Test {
+class BotanEc41417TestFixture: public testing::Test {
 public:
     BotanEc41417TestFixture() = default;
 
@@ -150,8 +151,8 @@ TEST_F(BotanEc41417TestFixture, TestVector) {
     const Botan::BigInt piMult("31415");
     auto piResult = piMult * basePnt;
 
-    auto affineXy = piResult.getAffineXY();
-    auto affinePnt = Botan::Point41417p(affineXy.first, affineXy.second, 1);
+    auto [first, second] = piResult.getAffineXY();
+    auto affinePnt = Botan::Point41417p(first, second, 1);
     auto onCurve = affinePnt.on_the_curve();
 
     ASSERT_TRUE(onCurve);
@@ -163,27 +164,27 @@ TEST_F(BotanEc41417TestFixture, DiffieHellman) {
     // Test simulates a Diffie-Hellman as used by ZRTP - test must run using the Botan based zrtpDH class
 
     // Setup with  DH code for Alice
-    ZrtpDH aliceDh(e414);
+    ZrtpDH const aliceDh(e414);
     ASSERT_TRUE(aliceDh.version() == "Botan");
 
     zrtp::SecureArray4k alicePubKey;
     aliceDh.getPubKeyBytes(alicePubKey, ZrtpDH::Ignore);
 
     // Setup with  DH code for Bob
-    ZrtpDH bobDh(e414);
+    ZrtpDH const bobDh(e414);
 
     zrtp::SecureArray4k bobPubKey;
     bobDh.getPubKeyBytes(bobPubKey, ZrtpDH::Ignore);
 
     // Agree on keys. Alice first
     zrtp::SecureArray1k aliceSharedData;
-    auto aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data(), aliceSharedData, ZrtpDH::Ignore);
+    auto const aliceKeyLen = aliceDh.computeSecretKey(bobPubKey.data(), aliceSharedData, ZrtpDH::Ignore);
     ASSERT_GT(aliceKeyLen, 0);
     ASSERT_EQ(aliceKeyLen, aliceSharedData.size());
 
     // Now Bob
     zrtp::SecureArray1k bobSharedData;
-    auto bobKeyLen = bobDh.computeSecretKey(alicePubKey.data(), bobSharedData, ZrtpDH::Ignore);
+    auto const bobKeyLen = bobDh.computeSecretKey(alicePubKey.data(), bobSharedData, ZrtpDH::Ignore);
     ASSERT_GT(bobKeyLen, 0);
     ASSERT_EQ(bobKeyLen, bobSharedData.size());
 
@@ -206,11 +207,11 @@ TEST_F(BotanEc41417TestFixture, compressX) {
     const Botan::BigInt piMult("31415");
     auto piResult = piMult * basePnt;
 
-    auto affineXy = piResult.getAffineXY();
-    auto affinePnt = Botan::Point41417p(affineXy.first, affineXy.second, 1);
+    auto [first, second] = piResult.getAffineXY();
+    auto affinePnt = Botan::Point41417p(first, second, 1);
 
     // Perform the same steps as above for the computed point 31415, check the result
-    result = Botan::Point41417p::decompress_point(affineXy.first.is_odd(), affinePnt.get_y());
+    result = Botan::Point41417p::decompress_point(first.is_odd(), affinePnt.get_y());
     ASSERT_TRUE(result == affinePnt.get_x());
 }
 
@@ -229,11 +230,11 @@ TEST_F(BotanEc41417TestFixture, compressY) {
     const Botan::BigInt piMult("31415");
     auto piResult = piMult * basePnt;
 
-    auto affineXy = piResult.getAffineXY();
-    auto affinePnt = Botan::Point41417p(affineXy.first, affineXy.second, 1);
+    auto [first, second] = piResult.getAffineXY();
+    auto affinePnt = Botan::Point41417p(first, second, 1);
 
     // Perform the same steps as above for the computed point 31415, check the result
-    result = Botan::Point41417p::decompress_point(affineXy.second.is_odd(), affinePnt.get_x());
+    result = Botan::Point41417p::decompress_point(second.is_odd(), affinePnt.get_x());
     ASSERT_TRUE(result == affinePnt.get_y());
 }
 

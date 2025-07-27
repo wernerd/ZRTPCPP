@@ -523,8 +523,8 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
         }
         // Insert the Crypto templates (SSRC == 0) into the queue. When we send
         // the first RTP or RTCP packet the real crypto context will be created.
-        // Refer to putData(), sendImmediate() in ccrtp's outqueue.cpp and
-        // takeinControlPacket() in ccrtp's control.cpp.
+        // Refer to putData(), sendImmediate() in ccrtp's outqueue and
+        // takeinControlPacket() in ccrtp's control.
         //
          setOutQueueCryptoContext(senderCryptoContext);
          setOutQueueCryptoContextCtrl(senderCryptoContextCtrl);
@@ -590,7 +590,7 @@ bool ZrtpQueue::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
         }
         // Insert the Crypto templates (SSRC == 0) into the queue. When we receive
         // the first RTP or RTCP packet the real crypto context will be created.
-        // Refer to rtpDataPacket() above and takeinControlPacket in ccrtp's control.cpp.
+        // Refer to rtpDataPacket() above and takeinControlPacket in ccrtp's control.
         //
         setInQueueCryptoContext(recvCryptoContext);
         setInQueueCryptoContextCtrl(recvCryptoContextCtrl);

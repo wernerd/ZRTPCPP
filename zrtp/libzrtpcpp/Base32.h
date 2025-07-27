@@ -37,20 +37,13 @@
  */
 
 #include <iostream>
-#include <cstdlib>
-
-#include <string.h>
-#include <assert.h>
-#include <stddef.h>
 
 using namespace std;
 
 extern int divceil(int a, int b);
 
 class Base32 {
-
- public:
-
+public:
     /**
      * A Constructor that decodes from base32 into binary.
      *
@@ -64,7 +57,7 @@ class Base32 {
      * @param noOfBits
      *     How many bits to decode into binary data.
      */
-    Base32(const string& encoded, int noOfBits);
+    Base32(const string &encoded, int noOfBits);
 
     /**
      * A Constructor that encodes binary data.
@@ -101,7 +94,7 @@ class Base32 {
      * @return
      *     A pointer to the decoded binary data.
      */
-    const unsigned char* getDecoded(int &length);
+    const unsigned char* getDecoded(int &length) const;
 
     /**
      * Get the encoded base32 string.
@@ -113,7 +106,7 @@ class Base32 {
      * @return
      *     The string containing the base32 encoded data.
      */
-    const string getEncoded() { return encoded; };
+    [[nodiscard]] string getEncoded() const { return encoded; }
 
     /**
      * Compute the number of base32 encoded characters given the
@@ -124,11 +117,11 @@ class Base32 {
      * @return
      *      The length of the base-32 encoding of the data in characters
      */
-    static size_t const b2alen(const size_t lengthInBits) {
-	return divceil(lengthInBits, 5); };
+    static int b2alen(const int lengthInBits) {
+        return divceil(lengthInBits, 5);
+    }
 
- private:
-
+private:
     /**
      * Decodes a string with base32 presentation into binary data.
      *
@@ -152,10 +145,10 @@ class Base32 {
      *    The data to be decoded
      * @param size
      *    The length of the input data buffer. Usually divceil(length in bits, 5).
-     * @param lengthinbits
+     * @param lengthInBits
      *    The number of bits of data in <code>cs</code> to be decoded
      */
-    void a2b_l(const string& cs, int size, int lengthinbits);
+    void a2b_l(const string &cs, int size, int lengthInBits);
 
     /**
      * Encodes binary to to base32 presentation.
@@ -196,7 +189,7 @@ class Base32 {
     /**
      * Holds the pointer to decoded binary data
      */
-    unsigned char *binaryResult;
+    unsigned char* binaryResult;
 
     /**
      * Length of decoding result
@@ -208,10 +201,10 @@ class Base32 {
      */
     string encoded;
 
-    unsigned char smallBuffer[128] = {'\0'};
+    unsigned char smallBuffer[128] = {};
 };
 
 /**
  * @}
  */
-#endif
+#endif // BASE32_H

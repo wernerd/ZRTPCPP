@@ -21,8 +21,8 @@
  * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#ifndef _SKEIN384_H
-#define _SKEIN384_H
+#ifndef SKEIN384_H
+#define SKEIN384_H
 
 /**
  * @file skein384.h
@@ -51,9 +51,9 @@
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 48 bytes (Skein384_DIGEST_LENGTH).
  */
-void skein384(const uint8_t *data,
+void skein384(const uint8_t* data,
               uint64_t dataLength,
-              uint8_t *digest);
+              uint8_t* digest);
 
 /**
  * Compute Skein384 digest over several data cunks.
@@ -70,9 +70,10 @@ void skein384(const uint8_t *data,
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 48 bytes (Skein384_DIGEST_LENGTH).
  */
-void skein384(const std::vector<const uint8_t*>& data,
-              const std::vector<uint64_t>& dataLength,
-              uint8_t *digest);
+void skein384(const std::vector<const uint8_t *> &data,
+              const std::vector<uint64_t> &dataLength,
+              uint8_t* digest);
+
 /**
  * Create and initialize a Skein384 context.
  *
@@ -94,7 +95,7 @@ void* createSkein384Context();
  * @param digestOut
  *    Reference to a secure array that receives the computed digest.
  */
-void closeSkein384Context(void* ctx, zrtp::RetainedSecArray & digestOut);
+void closeSkein384Context(void* ctx, zrtp::RetainedSecArray &digestOut);
 
 /**
  * Initialize a Skein384 context.
@@ -118,7 +119,7 @@ void* initializeSkein384Context(void* ctx);
  * @param digestOut
  *    Reference to a secure array that receives the computed digest.
  */
-void finalizeSkein384Context(void* ctx, zrtp::RetainedSecArray & digestOut);
+void finalizeSkein384Context(void* ctx, zrtp::RetainedSecArray &digestOut);
 
 /**
  * Update the Skein384 context with data.
@@ -151,11 +152,10 @@ void skein384Ctx(void* ctx, const uint8_t* data, uint64_t dataLength);
  *
  */
 void skein384Ctx(void* ctx,
-                 const std::vector<const uint8_t*>& data,
-                 const std::vector<uint64_t>& dataLength);
+                 const std::vector<const uint8_t *> &data,
+                 const std::vector<uint64_t> &dataLength);
 
 /**
  * @}
  */
-#endif
-
+#endif // SKEIN384_H

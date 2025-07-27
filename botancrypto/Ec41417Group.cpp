@@ -15,8 +15,6 @@
 // Copyright (c) 2020 Werner Dittmann. All rights reserved.
 //
 
-#include <iostream>
-
 #include "Ec41417Group.h"
 #include "Point41417.h"
 
@@ -78,11 +76,11 @@ namespace Botan {
         bool match(const BigInt &p, const BigInt &a, const BigInt &b,
                    const BigInt &g_x, const BigInt &g_y,
                    const BigInt &order, const BigInt &cofactor) const {
-            return (this->p() == p &&
-                    this->order() == order &&
-                    this->cofactor() == cofactor &&
-                    this->g_x() == g_x &&
-                    this->g_y() == g_y);
+            return this->p() == p &&
+                   this->order() == order &&
+                   this->cofactor() == cofactor &&
+                   this->g_x() == g_x &&
+                   this->g_y() == g_y;
         }
 
         const BigInt &p() const { return m_p; }
@@ -167,8 +165,7 @@ namespace Botan {
         return std::make_shared<EC41417_Group_Data>(p, a, g_x, g_y, order, cofactor);
     }
 
-    BigInt EC41417_Group::random_scalar(RandomNumberGenerator &rng) const
-    {
+    BigInt EC41417_Group::random_scalar(RandomNumberGenerator &rng) {
         auto random = rng.random_vec(52);
         /* prepare the secret random data: clear bottom 3 bits. Clearing top 2 bits
          * makes is a 414 bit value
@@ -180,12 +177,11 @@ namespace Botan {
         return BigInt(random);
     }
 
-    Point41417p EC41417_Group::point(const BigInt &x, const BigInt &y) const
-    {
+    Point41417p EC41417_Group::point(const BigInt &x, const BigInt &y) {
         return {x, y};
     }
 
-    Point41417p EC41417_Group::zero_point() const {
+    Point41417p EC41417_Group::zero_point() {
         return {0, 0};
     }
 
@@ -264,11 +260,11 @@ namespace Botan {
         return k * get_base_point();
     }
 
-    Point41417p EC41417_Group::point_multiply(const Point41417p &point, const BigInt &k, std::vector<BigInt> &ws) const {
+    Point41417p EC41417_Group::point_multiply(const Point41417p &point, const BigInt &k, std::vector<BigInt> &ws) {
         return k * point;
     }
 
-    bool EC41417_Group::verify_public_element(const Point41417p& point) const
+    bool EC41417_Group::verify_public_element(const Point41417p& point)
     {
         //check that public point is not at infinity
         if(point.is_zero())

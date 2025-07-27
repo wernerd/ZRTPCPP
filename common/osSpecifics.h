@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _OSSPECIFICS_H_
-#define _OSSPECIFICS_H_
+#ifndef OSSPECIFICS_H_
+#define OSSPECIFICS_H_
 
 #include <stdint.h>
 /**
@@ -126,4 +126,4 @@ extern uint16_t zrtpHtons (uint16_t host);
 /**
  * @}
  */
-#endif
+#endif // OSSPECIFICS_H_

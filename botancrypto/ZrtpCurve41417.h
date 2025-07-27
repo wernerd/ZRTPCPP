@@ -19,7 +19,6 @@
 #define LIBZRTPCPP_ZRTPCURVE41417_H
 
 #include "botan_all.h"
-#include "botancrypto/ZrtpBotanRng.h"
 #include "botancrypto/Ec41417Group.h"
 #include "botancrypto/Point41417.h"
 
@@ -31,7 +30,7 @@ namespace Botan {
         // Must match domain().get_p_bytes(), this is 52 for this curve
         static constexpr size_t COORDINATE_BYTES = 52;
 
-        explicit Curve41417_PublicKey(uint8_t *otherKey);
+        explicit Curve41417_PublicKey(uint8_t const *otherKey);
 
         ~Curve41417_PublicKey() override = default;
 
@@ -50,12 +49,12 @@ namespace Botan {
         /**
          * @return public point value, uncompressed format
          */
-        std::vector<uint8_t> public_value() const { return m_public.encode(Point41417p::UNCOMPRESSED); }
+        virtual std::vector<uint8_t> public_value() const { return m_public.encode(Point41417p::UNCOMPRESSED); }
 
         /**
          * @return public point value encoded to `format`
          */
-        std::vector<uint8_t> public_value(Point41417p::Compression_Type format) const {
+        std::vector<uint8_t> public_value(Point41417p::Compression_Type const format) const {
             return m_public.encode(format);
         }
 

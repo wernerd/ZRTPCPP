@@ -21,7 +21,7 @@
 #include <memory>
 
 #include <libzrtpcpp/ZrtpConfigure.h>
-#include <libzrtpcpp/ZIDCache.h>
+// #include <libzrtpcpp/ZIDCache.h>
 #include <common/osSpecifics.h>
 
 /**
@@ -261,7 +261,7 @@ public:
      * @return reference of the current instance.
      */
     ZrtpConfigureBuilder&
-    setSelectionPolicy(ZrtpConfigure::Policy pol) { configuration->setSelectionPolicy(pol);return *this;}
+    setSelectionPolicy(ZrtpConfigure::Policy const pol) { configuration->setSelectionPolicy(pol);return *this;}
 
     std::shared_ptr<ZrtpConfigure>
     build() { return configuration; }
@@ -270,7 +270,7 @@ public:
 private:
     ZrtpConfigureBuilder() = default;
 
-    void addAlgorithm(char const * name, AlgoTypes type );
+    void addAlgorithm(char const * name, AlgoTypes type ) const;
 
     std::shared_ptr<ZrtpConfigure> configuration = std::make_shared<ZrtpConfigure>();
 

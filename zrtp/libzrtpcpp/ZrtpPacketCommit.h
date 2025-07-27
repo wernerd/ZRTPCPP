@@ -17,8 +17,8 @@
 /*
  * Authors: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
-#ifndef _ZRTPPACKETCOMMIT_H_
-#define _ZRTPPACKETCOMMIT_H_
+#ifndef ZRTPPACKETCOMMIT_H_
+#define ZRTPPACKETCOMMIT_H_
 
 /**
  * @file ZrtpPacketCommit.h
@@ -33,8 +33,8 @@
 #include "crypto/zrtpKem.h"
 
 // PRSH here only for completeness. We don't support PRSH in the other ZRTP parts.
-#define COMMIT_DH_EX      29
-#define COMMIT_MULTI      25
+constexpr uint16_t COMMIT_DH_EX = 29;
+constexpr uint16_t COMMIT_MULTI = 25;
 
 /**
  * Implement the Commit packet.
@@ -46,11 +46,10 @@
  *
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
-class __EXPORT ZrtpPacketCommit : public ZrtpPacketBase {
-
+class __EXPORT ZrtpPacketCommit final : public ZrtpPacketBase {
 public:
     typedef enum _commitType {
-        DhExchange =  1,
+        DhExchange = 1,
         MultiStream = 2
     } commitType;
 
@@ -58,96 +57,112 @@ public:
     ZrtpPacketCommit();
 
     /// Creates a Commit packet from received data
-    explicit ZrtpPacketCommit(uint8_t const * data);
+    explicit ZrtpPacketCommit(uint8_t const* inputData);
 
     /// Normal destructor
     ~ZrtpPacketCommit() override = default;
 
     /// Get pointer to hash algorithm type field, a fixed length character array
-    [[nodiscard]] uint8_t* getHashType() const   { return commitHeader->hash; };
+    [[nodiscard]] uint8_t* getHashType() const { return commitHeader->hash; }
 
     /// Get pointer to cipher algorithm type field, a fixed length character array
-    [[nodiscard]] uint8_t* getCipherType() const { return commitHeader->cipher; };
+    [[nodiscard]] uint8_t* getCipherType() const { return commitHeader->cipher; }
 
     /// Get pointer to SRTP authentication algorithm type field, a fixed length character array
-    [[nodiscard]] uint8_t* getAuthLen() const    { return commitHeader->authlengths; };
+    [[nodiscard]] uint8_t* getAuthLen() const { return commitHeader->authlengths; }
 
     /// Get pointer to key agreement algorithm type field, a fixed length character array
-    [[nodiscard]] uint8_t* getPubKeysType() const { return commitHeader->pubkey; };
+    [[nodiscard]] uint8_t* getPubKeysType() const { return commitHeader->pubkey; }
 
     /// Get pointer to SAS algorithm type field, a fixed length character array
-    [[nodiscard]] uint8_t* getSasType() const    { return commitHeader->sas; };
+    [[nodiscard]] uint8_t* getSasType() const { return commitHeader->sas; }
 
     /// Get pointer to ZID field, a fixed length byte array
-    [[nodiscard]] uint8_t* getZid() const        { return commitHeader->zid; };
+    [[nodiscard]] uint8_t* getZid() const { return commitHeader->zid; }
 
     /// Get pointer to HVI field, a fixed length byte array
-    [[nodiscard]] uint8_t* getHvi() const        { return commitHeader->hvi; };
+    [[nodiscard]] uint8_t* getHvi() const { return commitHeader->hvi; }
 
     /// Get pointer to NONCE field, a fixed length byte array, overlaps HVI field
-    [[nodiscard]] uint8_t* getNonce() const      { return commitHeader->hvi; };
+    [[nodiscard]] uint8_t* getNonce() const { return commitHeader->hvi; }
 
     /// Get pointer to hashH2 field, a fixed length byte array
-    [[nodiscard]] uint8_t* getH2() const         { return commitHeader->hashH2; };
+    [[nodiscard]] uint8_t* getH2() const { return commitHeader->hashH2; }
 
     /// Get pointer to MAC field, a fixed length byte array
-    [[nodiscard]] uint8_t* getHMAC() const       { return pv+roundUp; };
+    [[nodiscard]] uint8_t* getHMAC() const { return pv + roundUp; }
 
     /// Get pointer to MAC field during multi-stream mode, a fixed length byte array
-    [[maybe_unused]] [[nodiscard]] uint8_t* getHMACMulti() const  { return commitHeader->hvi; };
+    [[maybe_unused]] [[nodiscard]] uint8_t* getHMACMulti() const { return commitHeader->hvi; }
 
     /// Check if packet length makes sense.
     [[nodiscard]] bool isLengthOk(commitType type) const;
 
     /// Get pointer to public key value, variable length byte array
-    [[nodiscard]] uint8_t* getPv() const            { return pv; }
+    [[nodiscard]] uint8_t* getPv() const { return pv; }
 
+    // All 'set*' functions actually copy into the data array via the header pointer
+
+    // ReSharper disable once CppMemberFunctionMayBeConst
     /// Set hash algorithm type field, fixed length character field
-    void setHashType(uint8_t const * text)    { memcpy(commitHeader->hash, text, ZRTP_WORD_SIZE); };
+    void setHashType(uint8_t const *text) { memcpy(commitHeader->hash, text, ZRTP_WORD_SIZE); }
 
+    // ReSharper disable once CppMemberFunctionMayBeConst
     /// Set cipher algorithm type field, fixed length character field
-    void setCipherType(uint8_t const * text)  { memcpy(commitHeader->cipher, text, ZRTP_WORD_SIZE); };
+    void setCipherType(uint8_t const *text) { memcpy(commitHeader->cipher, text, ZRTP_WORD_SIZE); }
 
+    // ReSharper disable once CppMemberFunctionMayBeConst
     /// Set SRTP authentication algorithm algorithm type field, fixed length character field
-    void setAuthLen(uint8_t const * text)     { memcpy(commitHeader->authlengths, text, ZRTP_WORD_SIZE); };
+    void setAuthLen(uint8_t const *text) { memcpy(commitHeader->authlengths, text, ZRTP_WORD_SIZE); }
 
+    // ReSharper disable once CppMemberFunctionMayBeConst
     /// Set key agreement algorithm type field, fixed length character field
-    void setPubKeyType(uint8_t const * text)  { memcpy(commitHeader->pubkey, text, ZRTP_WORD_SIZE); };
+    void setPubKeyType(uint8_t const *text) { memcpy(commitHeader->pubkey, text, ZRTP_WORD_SIZE); }
 
+    // ReSharper disable once CppMemberFunctionMayBeConst
     /// Set SAS algorithm type field, fixed length character field
-    void setSasType(uint8_t const * text)     { memcpy(commitHeader->sas, text, ZRTP_WORD_SIZE); };
+    void setSasType(uint8_t const *text) { memcpy(commitHeader->sas, text, ZRTP_WORD_SIZE); }
 
+    // ReSharper disable once CppMemberFunctionMayBeConst
     /// Set ZID field, a fixed length byte array
-    void setZid(uint8_t const * text)         { memcpy(commitHeader->zid, text, sizeof(commitHeader->zid)); };
+    void setZid(uint8_t const* text) { memcpy(commitHeader->zid, text, sizeof(commitHeader->zid)); }
 
+    // ReSharper disable once CppMemberFunctionMayBeConst
     /// Set HVI field, a fixed length byte array
-    void setHvi(uint8_t const * text)         { memcpy(commitHeader->hvi, text, sizeof(commitHeader->hvi)); };
+    void setHvi(uint8_t const* text) { memcpy(commitHeader->hvi, text, sizeof(commitHeader->hvi)); }
 
     /// Set Nonce field, a fixed length byte array, overlapping HVI field
-    void setNonce(uint8_t const * text);
+    void setNonce(uint8_t const* text);
 
+    // ReSharper disable once CppMemberFunctionMayBeConst
     /// Set hashH2 field, a fixed length byte array
-    void setH2(uint8_t const * hash)          { memcpy(commitHeader->hashH2, hash, sizeof(commitHeader->hashH2)); };
+    void setH2(uint8_t const* hash) { memcpy(commitHeader->hashH2, hash, sizeof(commitHeader->hashH2)); }
 
+    // ReSharper disable once CppMemberFunctionMayBeConst
     /// Set first MAC, fixed length byte array, copied after the PKI (pv) data
-    void setHMAC(zrtp::ImplicitDigest const & hmac) { memcpy(pv+roundUp, hmac.data(), HMAC_SIZE); };
+    void setHMAC(zrtp::ImplicitDigest const &hmac) { memcpy(pv + roundUp, hmac.data(), HMAC_SIZE); }
 
+    // ReSharper disable once CppMemberFunctionMayBeConst
     /// Set MAC field during multi-stream mode, a fixed length byte array - triggers compiler warning, but it's OK
-    void setHMACMulti(zrtp::ImplicitDigest const & hmac) { uint8_t *p = commitHeader->hvi; memcpy(p, hmac.data(), HMAC_SIZE); };
+    void setHMACMulti(zrtp::ImplicitDigest const &hmac) {
+        uint8_t* p = commitHeader->hvi;
+        memcpy(p, hmac.data(), HMAC_SIZE);
+    }
 
     /// Set key length and compute overall packet length
     void setPacketLength(size_t pubKeyLen);
 
+    // ReSharper disable once CppMemberFunctionMayBeConst
     /// Set public key value(s), variable length byte array
-    void setPv(uint8_t const * text)         { memcpy(pv, text, pvLength); };
-
+    void setPv(uint8_t const* text) { memcpy(pv, text, pvLength); }
 
 private:
-    uint8_t * pv = nullptr;                   ///< points to public key values inside Commit message (after HVI)
-    size_t pvLength = 0;                      ///< length of public key data
-    size_t roundUp = 0;                       ///< Public key length, rounded up to ZRTP_WORD_SIZE
+    // The ZrtpPacketCommit(uint8_t const* inputData) constructor overwrite the next two pointers
+    Commit_t* commitHeader = &reinterpret_cast<CommitPacket_t *>(data)->commit; ///< Points to Commit message part
+    uint8_t* pv = data + sizeof(CommitPacket_t); ///< points to public key values inside Commit message (after HVI)
 
-    Commit_t* commitHeader = nullptr;         ///< Points to Commit message part
+    size_t pvLength = 0; ///< length of public key data
+    size_t roundUp = 0; ///< Public key length, rounded up to ZRTP_WORD_SIZE
 
     // Commit packet is of variable length:
     // - 24 words fixed size
@@ -155,11 +170,10 @@ private:
     //   leads to a maximum of 4*475=1900 bytes.
     // - HMAC (2 words)
     // - CRC (1 word)
-    uint8_t data[2100] = {};       // large enough to hold a full-blown commit packet
+    uint8_t data[2100] = {}; // large enough to hold a full-blown commit packet
 };
 
 /**
  * @}
  */
-#endif // _ZRTPPACKETCOMMIT_H_
-
+#endif // ZRTPPACKETCOMMIT_H_

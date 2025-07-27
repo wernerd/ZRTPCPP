@@ -37,7 +37,7 @@ public:
         initialize();
     }
 
-    std::string const &
+    std::string const&
     getStringForCode(GnuZrtpCodes::MessageSeverity sev, int32_t subCode);
 
 private:

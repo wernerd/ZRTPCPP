@@ -60,11 +60,11 @@
  * - %n - the number of parsed characters to far. The pointer to the session
  *   parameters is: cryptoString + numParsedChars.
  */
-static const char parseCrypto[] = "%d %99s %99s %n";
+static constexpr char parseCrypto[] = "%d %99s %99s %n";
 
 // static const int64_t maxTagValue = 999999999; For some later use
 
-static const int minElementsCrypto = 3;
+static constexpr int minElementsCrypto = 3;
 
 /*
  * The ABNF grammar for the key-param (from RFC 4568):
@@ -94,16 +94,16 @@ static const int minElementsCrypto = 3;
  * If the key parameter string does not contain the optional fields lifetime
  * and MKI information the respective parameters are not filled.
  */
-static const char parseKeyParam[] = " inline:%[A-Za-z0-9+/=]|%[0-9^]|%[0-9]:%d";
+static constexpr char parseKeyParam[] = " inline:%[A-Za-z0-9+/=]|%[0-9^]|%[0-9]:%d";
 
-static const int minElementsKeyParam = 1;
+static constexpr int minElementsKeyParam = 1;
 
-typedef struct _suite {
+typedef struct suite_ {
     ZrtpSdesStream::sdesSuites suite;
     const char *name;
-    uint32_t    keyLength;             // key length in bits
-    uint32_t    saltLength;            // salt lenght in bits
-    uint32_t    authKeyLength;         // authentication key length in bits
+    uint32_t   keyLength;             // key length in bits
+    uint32_t   saltLength;            // salt lenght in bits
+    uint32_t   authKeyLength;         // authentication key length in bits
     const char *tagLength;            // tag type hs80 or hs32
     const char *cipher;               // aes1 or aes3
     uint32_t   b64length;             // length of b64 encoded key/saltstring
@@ -114,17 +114,17 @@ typedef struct _suite {
 /* NOTE: the b64len of a 128 bit suite is 40, a 256bit suite uses 64 characters */
 static suiteParam knownSuites[] = {
     {ZrtpSdesStream::AES_CM_128_HMAC_SHA1_32, "AES_CM_128_HMAC_SHA1_32", 128, 112, 160,
-     hs32, "AES-128", 40, (uint64_t)1<<48U, (uint64_t)1<<31U
+     hs32, "AES-128", 40, static_cast<uint64_t>(1)<<48U, static_cast<uint64_t>(1)<<31U
     },
     {ZrtpSdesStream::AES_CM_128_HMAC_SHA1_80, "AES_CM_128_HMAC_SHA1_80", 128, 112, 160,
-     hs80, "AES-128", 40, (uint64_t)1<<48U, (uint64_t)1<<31U
+     hs80, "AES-128", 40, static_cast<uint64_t>(1)<<48U, static_cast<uint64_t>(1)<<31U
     },
-    {(ZrtpSdesStream::sdesSuites)0, nullptr, 0, 0, 0, nullptr, nullptr, 0, 0, 0}
+    {static_cast<ZrtpSdesStream::sdesSuites>(0), nullptr, 0, 0, 0, nullptr, nullptr, 0, 0, 0}
 };
 
-ZrtpSdesStream::ZrtpSdesStream(const sdesSuites s) : suite(s) { }
+ZrtpSdesStream::ZrtpSdesStream(const sdesSuites suite) : suite(suite) { }
 
-bool ZrtpSdesStream::createSdes(char *cryptoString, size_t *maxLen, bool sipInvite) {
+bool ZrtpSdesStream::createSdes(char *cryptoString, size_t *maxLen, bool const sipInvite) {
 
     if (sipInvite) {
         if (state != STREAM_INITALIZED)
@@ -136,7 +136,7 @@ bool ZrtpSdesStream::createSdes(char *cryptoString, size_t *maxLen, bool sipInvi
             return false;
     }
 
-    bool s = createSdesProfile(cryptoString, maxLen);
+    bool const s = createSdesProfile(cryptoString, maxLen);
     if (!s)
         return s;
 
@@ -150,7 +150,7 @@ bool ZrtpSdesStream::createSdes(char *cryptoString, size_t *maxLen, bool sipInvi
     return s;
 }
 
-bool ZrtpSdesStream::parseSdes(const char *cryptoString, size_t length, bool sipInvite) {
+bool ZrtpSdesStream::parseSdes(const char *cryptoString, size_t const length, bool const sipInvite) {
 
     if (sipInvite) {
         if (state != OUT_PROFILE_READY)
@@ -163,7 +163,7 @@ bool ZrtpSdesStream::parseSdes(const char *cryptoString, size_t length, bool sip
     sdesSuites tmpSuite;
     int32_t tmpTag;
 
-    bool s = parseCreateSdesProfile(cryptoString, length, &tmpSuite, &tmpTag);
+    bool const s = parseCreateSdesProfile(cryptoString, length, &tmpSuite, &tmpTag);
     if (!s)
         return s;
 
@@ -183,24 +183,24 @@ bool ZrtpSdesStream::parseSdes(const char *cryptoString, size_t length, bool sip
     return s;
 }
 
-bool ZrtpSdesStream::outgoingRtp(uint8_t *packet, size_t length, size_t *newLength) {
+bool ZrtpSdesStream::outgoingRtp(uint8_t *packet, size_t const length, size_t *newLength) const {
 
     if (state != SDES_SRTP_ACTIVE || sendSrtp == nullptr) {
         *newLength = length;
         return true;
     }
-    bool rc = SrtpHandler::protect(sendSrtp.get(), packet, length, newLength);
+    bool const rc = SrtpHandler::protect(sendSrtp.get(), packet, length, newLength);
 //    if (rc)
 //        ;//protect++;
     return rc;
 }
 
-int ZrtpSdesStream::incomingRtp(uint8_t *packet, size_t length, size_t *newLength, SrtpErrorData* errorData) {
+int ZrtpSdesStream::incomingRtp(uint8_t *packet, size_t const length, size_t *newLength, SrtpErrorData* errorData) const {
     if (state != SDES_SRTP_ACTIVE || recvSrtp == nullptr) {    // SRTP inactive, just return with newLength set
         *newLength = length;
         return 1;
     }
-    int32_t rc = SrtpHandler::unprotect(recvSrtp.get(), packet, length, newLength, errorData);
+    int32_t const rc = SrtpHandler::unprotect(recvSrtp.get(), packet, length, newLength, errorData);
 //    if (rc == 1) {
 ////            unprotect++
 //    }
@@ -211,24 +211,24 @@ int ZrtpSdesStream::incomingRtp(uint8_t *packet, size_t length, size_t *newLengt
 }
 
 
-bool ZrtpSdesStream::outgoingZrtpTunnel(uint8_t *packet, size_t length, size_t *newLength) {
+bool ZrtpSdesStream::outgoingZrtpTunnel(uint8_t *packet, size_t const length, size_t *newLength) const {
 
     if (state != SDES_SRTP_ACTIVE || sendZrtpTunnel == nullptr) {
         *newLength = length;
         return true;
     }
-    bool rc = SrtpHandler::protect(sendZrtpTunnel.get(), packet, length, newLength);
+    bool const rc = SrtpHandler::protect(sendZrtpTunnel.get(), packet, length, newLength);
 //    if (rc)
 //        ;//protect++;
     return rc;
 }
 
-int ZrtpSdesStream::incomingZrtpTunnel(uint8_t *packet, size_t length, size_t *newLength, SrtpErrorData* errorData) {
+int ZrtpSdesStream::incomingZrtpTunnel(uint8_t *packet, size_t const length, size_t *newLength, SrtpErrorData* errorData) const {
     if (state != SDES_SRTP_ACTIVE || recvZrtpTunnel == nullptr) {    // SRTP inactive, just return with newLength set
         *newLength = length;
         return 1;
     }
-    int32_t rc = SrtpHandler::unprotect(recvZrtpTunnel.get(), packet, length, newLength, errorData);
+    int32_t const rc = SrtpHandler::unprotect(recvZrtpTunnel.get(), packet, length, newLength, errorData);
 //    if (rc == 1) {
 ////            unprotect++
 //    }
@@ -258,30 +258,30 @@ int ZrtpSdesStream::incomingZrtpTunnel(uint8_t *packet, size_t length, size_t *n
 //    return 0;
 //}
 
-const char* ZrtpSdesStream::getCipher() {
+const char* ZrtpSdesStream::getCipher() const {
     return knownSuites[suite].cipher;
 }
 
-const char* ZrtpSdesStream::getAuthAlgo() {
-    return (strcmp(knownSuites[suite].tagLength, hs80) == 0) ? "HMAC-SHA1 80 bit" : "HMAC-SHA1 32 bit";
+const char* ZrtpSdesStream::getAuthAlgo() const {
+    return strcmp(knownSuites[suite].tagLength, hs80) == 0 ? "HMAC-SHA1 80 bit" : "HMAC-SHA1 32 bit";
 }
 
 #ifdef ENABLE_SDES_MIX
 
-typedef struct _cryptoMix {
+typedef struct cryptoMix_ {
     const char* name;
     uint32_t hashLength;
     ZrtpSdesStream::sdesHmacTypeMix hashType;
 } cryptoMix;
 
-static const size_t MIX_HMAC_STRING_MIN_LEN = sizeof("HMAC-SHA-384");
+static constexpr size_t MIX_HMAC_STRING_MIN_LEN = sizeof("HMAC-SHA-384");
 
 static cryptoMix knownMixAlgos[] = {
     {"HMAC-SHA-384", 384, ZrtpSdesStream::MIX_HMAC_SHA},
     {nullptr, 0, ZrtpSdesStream::MIX_NONE}
 };
 
-size_t ZrtpSdesStream::getCryptoMixAttribute(char *algoNames, size_t length) {
+size_t ZrtpSdesStream::getCryptoMixAttribute(char *algoNames, size_t length) const {
 
     if (length < MIX_HMAC_STRING_MIN_LEN)
         return 0;
@@ -316,11 +316,10 @@ bool ZrtpSdesStream::setCryptoMixAttribute(const char *algoNames) {
     // split input name string and lookup if we support one of the offered algorithms
     // We take the first match.
     std::string delimiters = " ";
-    size_t current;
     size_t next = 0;
 
     do {
-        current = next;
+        size_t current = next;
         next = algoIn.find_first_of(delimiters, current);
         if (next == std::string::npos)
             break;
@@ -347,10 +346,8 @@ void hmacSha384Ctx(void* ctx, const std::vector<const uint8_t*>& data,
                    const std::vector<uint64_t>& dataLength,
                    uint8_t* mac, uint32_t* macLength );
 
-static int expand(uint8_t* prk, uint32_t prkLen, uint8_t* info, uint32_t infoLen, int32_t L, uint32_t hashLen, uint8_t* outbuffer)
+static int expand(uint8_t const * prk, uint32_t const prkLen, uint8_t* info, uint32_t infoLen, uint32_t const L, uint32_t const hashLen, uint8_t* outbuffer)
 {
-    int32_t n;
-    uint8_t *T;
     void* hmacCtx;
 
     std::vector<const uint8_t*>data;
@@ -362,10 +359,10 @@ static int expand(uint8_t* prk, uint32_t prkLen, uint8_t* info, uint32_t infoLen
     if (prkLen < hashLen)
         return -1;
 
-    n = (L + (hashLen-1)) / hashLen;
+    auto const n = (L + (hashLen-1)) / hashLen;
 
     // T points to buffer that holds concatenated T(1) || T(2) || ... T(N))
-    T = reinterpret_cast<uint8_t*>(malloc(n * hashLen));
+    uint8_t * T = static_cast<uint8_t*>(malloc(n * hashLen));
 
     if (hashLen == 384/8)
         hmacCtx = createSha384HmacContext(prk, prkLen);
@@ -442,7 +439,7 @@ void ZrtpSdesStream::computeMixedKeys(bool sipInvite) {
     expand(prk.data(), prk.size(), nullptr, 0U, L, cryptoMixHashLength/8, T);
 
     // We have a new set of SRTP key data now, replace the old with the new.
-    int32_t offset = 0;
+    uint32_t offset = 0;
     if (sipInvite) {    // We are offerer, replace local created data with mso and mko, remote with msa, mka
         memcpy(&localKeySalt[localKeyLenBytes], T, localSaltLenBytes);
         offset += localSaltLenBytes;
@@ -466,19 +463,19 @@ void ZrtpSdesStream::computeMixedKeys(bool sipInvite) {
 }
 #endif
 
-static int _random(uint8_t *output, int32_t len) {
+static int random_(uint8_t *output, int32_t const len) {
     randomZRTP(output, len);
-    return (0);
+    return 0;
 }
 
-static int b64Encode(const uint8_t *binData, size_t binLength, char *b64Data, int32_t b64Length)
+static int b64Encode(const uint8_t *binData, size_t const binLength, char *b64Data, int32_t const b64Length)
 {
     (void) b64Length;
     size_t consumed = 0;
     return static_cast<int>(Botan::base64_encode(b64Data, binData, binLength, consumed, true));
 }
 
-static int b64Decode(const char *b64Data, size_t b64length, uint8_t *binData, size_t binLength)
+static int b64Decode(const char *b64Data, size_t const b64length, uint8_t *binData, size_t const binLength)
 {
     (void) binLength;
     return static_cast<int>(Botan::base64_decode(binData, b64Data, b64length));
@@ -560,21 +557,20 @@ void ZrtpSdesStream::createSrtpContexts(bool sipInvite) {
 
 bool ZrtpSdesStream::createSdesProfile(char *cryptoString, size_t *maxLen) {
 
-    char b64keySalt[(MAX_KEY_LEN + MAX_SALT_LEN) * 2] = {'\0'};
+    char b64keySalt[(MAX_KEY_LEN + MAX_SALT_LEN) * 2] = {};
     uint32_t sidx;
-    int32_t b64Len;
 
     for (sidx = 0; knownSuites[sidx].name != nullptr; sidx++) {  // Lookup crypto suite parameters
         if (knownSuites[sidx].suite == suite)
             break;
     }
-    if (sidx >= sizeof(knownSuites)/sizeof(struct _suite)) {
+    if (sidx >= sizeof(knownSuites)/sizeof(suite_)) {
         return false;
     }
-    suiteParam *pSuite = &knownSuites[sidx];
-    _random(localKeySalt, sizeof(localKeySalt));
+    suiteParam const *pSuite = &knownSuites[sidx];
+    random_(localKeySalt, sizeof(localKeySalt));
 
-    AlgorithmEnum& auth = zrtpAuthLengths.getByName(pSuite->tagLength);
+    AlgorithmEnum const & auth = zrtpAuthLengths.getByName(pSuite->tagLength);
     localAuthn = SrtpAuthenticationSha1Hmac;
     localAuthKeyLen = pSuite->authKeyLength / 8u;
     localTagLength = auth.getKeylen() / 8;
@@ -590,7 +586,7 @@ bool ZrtpSdesStream::createSdesProfile(char *cryptoString, size_t *maxLen) {
         tag = 1;
 
     // Get B64 code for master key and master salt and then construct the SDES crypto string
-    b64Len = b64Encode(localKeySalt, localKeyLenBytes + localSaltLenBytes, b64keySalt, sizeof(b64keySalt));
+    auto const b64Len = b64Encode(localKeySalt, localKeyLenBytes + localSaltLenBytes, b64keySalt, sizeof(b64keySalt));
     b64keySalt[b64Len] = '\0';
     memset(cryptoString, 0, *maxLen);
     *maxLen = snprintf(cryptoString, *maxLen-1, "%d %s inline:%s", tag, pSuite->name, b64keySalt);
@@ -600,14 +596,14 @@ bool ZrtpSdesStream::createSdesProfile(char *cryptoString, size_t *maxLen) {
 
 bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length, sdesSuites *parsedSuite, int32_t *outTag) {
 
-    char cryptoString[MAX_CRYPT_STRING_LEN+1] = {'\0'};
+    char cryptoString[MAX_CRYPT_STRING_LEN+1] = {};
 
     /* Parsed strings */
-    char suiteName[MAX_INNER_LEN]  = {'\0'};
-    char keyParams[MAX_INNER_LEN]  = {'\0'};
-    char keySaltB64[MAX_INNER_LEN] = {'\0'};
-    char lifetime[MAX_INNER_LEN]   = {'\0'};
-    char mkiVal[MAX_INNER_LEN]     = {'\0'};
+    char suiteName[MAX_INNER_LEN]  = {};
+    char keyParams[MAX_INNER_LEN]  = {};
+    char keySaltB64[MAX_INNER_LEN] = {};
+    char lifetime[MAX_INNER_LEN]   = {};
+    char mkiVal[MAX_INNER_LEN]     = {};
 
     if (length == 0)
         length = strlen(cryptoStr);
@@ -630,10 +626,10 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
         if (!strcmp(knownSuites[sidx].name, suiteName))
             break;
     }
-    if (sidx >= sizeof(knownSuites)/sizeof(struct _suite)) {
+    if (sidx >= sizeof(knownSuites)/sizeof(suite_)) {
         return false;
     }
-    suiteParam *pSuite = &knownSuites[sidx];
+    suiteParam const *pSuite = &knownSuites[sidx];
     *parsedSuite = pSuite->suite;
 
     /* Now scan the key parameters */
@@ -650,13 +646,12 @@ bool ZrtpSdesStream::parseCreateSdesProfile(const char *cryptoStr, size_t length
     if (strlen(keySaltB64) != pSuite->b64length) {  // Check if key||salt B64 string hast the correct length
         return false;
     }
-    auto decoded = b64Decode(keySaltB64, pSuite->b64length, remoteKeySalt, remoteKeyLenBytes + remoteSaltLenBytes);
 
-    if (decoded != (remoteKeyLenBytes + remoteSaltLenBytes)) {  // Did the B64 decode delivered enough data for key||salt
+    if (auto const decoded = b64Decode(keySaltB64, pSuite->b64length, remoteKeySalt, remoteKeyLenBytes + remoteSaltLenBytes); decoded != remoteKeyLenBytes + remoteSaltLenBytes) {  // Did the B64 decode delivered enough data for key||salt
         return false;
     }
 
-    AlgorithmEnum& auth = zrtpAuthLengths.getByName(pSuite->tagLength);
+    AlgorithmEnum const & auth = zrtpAuthLengths.getByName(pSuite->tagLength);
     remoteAuthn = SrtpAuthenticationSha1Hmac;
     remoteAuthKeyLen = pSuite->authKeyLength / 8;
     remoteTagLength = auth.getKeylen() / 8;

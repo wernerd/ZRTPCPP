@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _ZRTPCALLBACK_H_
-#define _ZRTPCALLBACK_H_
+#ifndef ZRTPCALLBACK_H_
+#define ZRTPCALLBACK_H_
 
 /**
  * @file ZrtpCallback.h
@@ -25,7 +25,6 @@
  */
 
 #include <string>
-#include <cstdint>
 #include <libzrtpcpp/ZrtpCodes.h>
 #include <common/osSpecifics.h>
 
@@ -44,10 +43,10 @@
  * </li>
  * </ul>
  */
-enum Role  {
-    NoRole = 0,     ///< ZRTP role not yet set
-    Responder = 1,  ///< This client is in ZRTP Responder mode
-    Initiator       ///< This client is in ZRTP Initiator mode
+enum Role {
+    NoRole = 0, ///< ZRTP role not yet set
+    Responder = 1, ///< This client is in ZRTP Responder mode
+    Initiator ///< This client is in ZRTP Initiator mode
 };
 
 /**
@@ -55,11 +54,11 @@ enum Role  {
  */
 enum NegotiatedAlgorithms {
     None,
-    Aes = 1,        ///< Use AES as symmetrical cipher algorithm
-    TwoFish,        ///< Use TwoFish as symmetrical cipher algorithm
-    Sha1,           ///< Use Sha1 as authentication algorithm
-    Skein           ///< Use Skein as authentication algorithm
-} ;
+    Aes = 1, ///< Use AES as symmetrical cipher algorithm
+    TwoFish, ///< Use TwoFish as symmetrical cipher algorithm
+    Sha1, ///< Use Sha1 as authentication algorithm
+    Skein ///< Use Skein as authentication algorithm
+};
 
 /**
  * This structure contains pointers to the SRTP secrets and the role info.
@@ -71,22 +70,22 @@ enum NegotiatedAlgorithms {
  * of ZRtp clears the data.
  */
 struct SrtpSecret_t {
-//    srtpSecrets();
-//    ~srtpSecrets();
+    //    srtpSecrets();
+    //    ~srtpSecrets();
 
-    NegotiatedAlgorithms symEncAlgorithm;     ///< symmetrical cipher algorithm
-    const uint8_t* keyInitiator;        ///< Initiator's key
-    int32_t initKeyLen;                 ///< Initiator's key length
-    const uint8_t* saltInitiator;       ///< Initiator's salt
-    int32_t initSaltLen;                ///< Initiator's salt length
-    const uint8_t* keyResponder;        ///< Responder's key
-    int32_t respKeyLen;                 ///< Responder's key length
-    const uint8_t* saltResponder;       ///< Responder's salt
-    int32_t respSaltLen;                ///< Responder's salt length
-    NegotiatedAlgorithms authAlgorithm;       ///< SRTP authentication algorithm
-    int32_t srtpAuthTagLen;             ///< SRTP authentication length
-    std::string sas;                    ///< The SAS string
-    Role  role;                         ///< ZRTP role of this client
+    NegotiatedAlgorithms symEncAlgorithm {}; ///< symmetrical cipher algorithm
+    const uint8_t* keyInitiator {}; ///< Initiator's key
+    int32_t initKeyLen {}; ///< Initiator's key length
+    const uint8_t* saltInitiator {}; ///< Initiator's salt
+    int32_t initSaltLen {}; ///< Initiator's salt length
+    const uint8_t* keyResponder {}; ///< Responder's key
+    int32_t respKeyLen {}; ///< Responder's key length
+    const uint8_t* saltResponder {}; ///< Responder's salt
+    int32_t respSaltLen {}; ///< Responder's salt length
+    NegotiatedAlgorithms authAlgorithm {}; ///< SRTP authentication algorithm
+    int32_t srtpAuthTagLen {}; ///< SRTP authentication length
+    std::string sas {}; ///< The SAS string
+    Role role {}; ///< ZRTP role of this client
 };
 
 /**
@@ -99,8 +98,8 @@ struct SrtpSecret_t {
  * and/or setup an UI.
  */
 enum EnableSecurity {
-    ForReceiver = 1,        ///< Enable security for SRTP receiver
-    ForSender   = 2         ///< Enable security for SRTP sender
+    ForReceiver = 1, ///< Enable security for SRTP receiver
+    ForSender = 2 ///< Enable security for SRTP sender
 };
 
 /**
@@ -119,7 +118,6 @@ enum EnableSecurity {
  */
 
 class __EXPORT ZrtpCallback {
-
 public:
     virtual ~ZrtpCallback() = default;
 
@@ -377,7 +375,7 @@ public:
     virtual bool checkSASSignature(uint8_t* sasHash) =0;
 };
 
-#endif // ZRTPCALLBACK
+#endif // ZRTPCALLBACK_H_
 
 /**
  * @}

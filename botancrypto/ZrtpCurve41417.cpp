@@ -28,8 +28,8 @@ namespace Botan {
         class Curve41417_KA_Operation final : public PK_Ops::Key_Agreement {
         public:
 
-            Curve41417_KA_Operation(const Curve41417_PrivateKey &key, const std::string &kdf) :
-                    PK_Ops::Key_Agreement(),
+            Curve41417_KA_Operation(const Curve41417_PrivateKey &key, const std::string &) :
+                    Key_Agreement(),
                     m_key(key),
                     m_group(key.domain()) {}
 
@@ -48,14 +48,13 @@ namespace Botan {
                 Point41417p pubPoint(x, y, 1);                  // The public point uses affine coordinates
 
                 std::vector<BigInt> ws(Point41417p::WORKSPACE_SIZE);
-                auto resultPoint = m_group.point_multiply(pubPoint, m_key.private_value(), ws);
-                auto affineXY = resultPoint.getAffineXY();
-                auto affinePntDouble = Botan::Point41417p(affineXY.first, affineXY.second, 1);
+                auto resultPoint = EC41417_Group::point_multiply(pubPoint, m_key.private_value(), ws);
+                auto [fst, snd] = resultPoint.getAffineXY();
 
-                if(!affinePntDouble.on_the_curve())
+                if(auto affinePntDouble = Point41417p(fst, snd, 1); !affinePntDouble.on_the_curve())
                     throw Illegal_Point("ECDH 41417 agreed point is not on the curve");
 
-                auto secret = BigInt::encode_1363(affineXY.first, m_group.get_p_bytes());
+                auto secret = BigInt::encode_1363(fst, m_group.get_p_bytes());
                 return secret;
             }
 
@@ -69,7 +68,7 @@ namespace Botan {
     Curve41417_PrivateKey::Curve41417_PrivateKey(RandomNumberGenerator & rng, const BigInt& x)
     {
         if (x == 0) {
-            m_private_key = m_domain_params.random_scalar(rng);
+            m_private_key = EC41417_Group::random_scalar(rng);
         }
         else {
             m_private_key = x;
@@ -95,10 +94,9 @@ namespace Botan {
     Curve41417_PrivateKey::check_key(RandomNumberGenerator &rng, bool strong) const { return false; }
 
     // Optimized for use in ZRTP: the protocol uses affine raw X/Y coordinates
-    Curve41417_PublicKey::Curve41417_PublicKey(uint8_t *otherKey) {
-        auto x = BigInt::decode(&otherKey[0], Curve41417_PrivateKey::COORDINATE_BYTES);
-        auto y = BigInt::decode(
-                &otherKey[Curve41417_PrivateKey::COORDINATE_BYTES], Curve41417_PrivateKey::COORDINATE_BYTES);
+    Curve41417_PublicKey::Curve41417_PublicKey(uint8_t const *otherKey) {
+        auto const x = BigInt::decode(&otherKey[0], COORDINATE_BYTES);
+        auto const y = BigInt::decode( &otherKey[COORDINATE_BYTES], COORDINATE_BYTES);
 
         // Set other key's affine x/y coordinates
         m_public = Point41417p(x, y, 1);
@@ -106,7 +104,7 @@ namespace Botan {
 
     bool
     Curve41417_PublicKey::check_key(RandomNumberGenerator &rng, bool strong) const {
-        return domain().verify_public_element(m_public);
+        return EC41417_Group::verify_public_element(m_public);
     }
 
     std::vector<uint8_t>
@@ -114,26 +112,23 @@ namespace Botan {
 
     bool
     Curve41417_PublicKey::decompress_y_coordinate(uint8_t const *compressedData, std::vector<uint8_t> &coordinates) {
-        auto isOdd = *compressedData != 2;
+        auto const isOdd = *compressedData != 2;
 
         // plus 1 -> skip format byte
-        Botan::BigInt xCoordinate(compressedData + 1, Curve41417_PrivateKey::COORDINATE_BYTES);
-        auto const y = Botan::Point41417p::decompress_point(isOdd, xCoordinate);
+        BigInt const xCoordinate(compressedData + 1, COORDINATE_BYTES);
+        auto const y = Point41417p::decompress_point(isOdd, xCoordinate);
 
         if (y == -1) {
             return false;
         }
-        coordinates.resize(1 + 2 * Curve41417_PrivateKey::COORDINATE_BYTES);
+        coordinates.resize(1 + 2 * COORDINATE_BYTES);
         // Format is decompressed
         coordinates[0] = 0x04;
         // copy over the X-coordinate data
-        memcpy(&coordinates[1], compressedData + 1, Curve41417_PrivateKey::COORDINATE_BYTES);
+        memcpy(&coordinates[1], compressedData + 1, COORDINATE_BYTES);
 
         // append the computed Y-coordinate (encode BigInt value into bytes)
-        BigInt::encode_1363(
-                &coordinates[1 + Curve41417_PrivateKey::COORDINATE_BYTES],
-                Curve41417_PrivateKey::COORDINATE_BYTES,
-                y);
+        BigInt::encode_1363( &coordinates[1 + COORDINATE_BYTES], COORDINATE_BYTES, y);
 
         return true;
     }

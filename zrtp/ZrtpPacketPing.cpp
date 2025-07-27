@@ -20,17 +20,19 @@
 
 #include <libzrtpcpp/ZrtpPacketPing.h>
 
+#include "libzrtpcpp/ZrtpTextData.h"
+
 ZrtpPacketPing::ZrtpPacketPing() {
-    zrtpHeader = &data.hdr;	// the standard header
-    pingHeader = &data.ping;
+    zrtpHeader = &data.hdr; // the standard header
 
     setZrtpId();
-    setLength((sizeof(PingPacket_t) / ZRTP_WORD_SIZE) - 1);
-    setMessageType((uint8_t*)PingMsg);
-    setVersion((uint8_t*)zrtpVersion_11);  // TODO: fix version string after clarification
+    setLength(sizeof(PingPacket_t) / ZRTP_WORD_SIZE - 1);
+    setMessageType(PingMsg);
+    setVersion(reinterpret_cast<uint8_t const *>(zrtpVersion_11)); // TODO: fix version string after clarification
 }
 
-ZrtpPacketPing::ZrtpPacketPing(const uint8_t *data) {
-    zrtpHeader = (zrtpPacketHeader_t *)&((PingPacket_t*)data)->hdr;	// the standard header
-    pingHeader = (Ping_t *)&((PingPacket_t *)data)->ping;
+ZrtpPacketPing::ZrtpPacketPing(const uint8_t* data) {
+    zrtpHeader = const_cast<zrtpPacketHeader_t *>(&reinterpret_cast<PingPacket_t const *>(data)->hdr);
+    // the standard header
+    pingHeader = const_cast<Ping_t *>(&reinterpret_cast<PingPacket_t const *>(data)->ping);
 }

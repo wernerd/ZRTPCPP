@@ -21,26 +21,29 @@
 
 using namespace std;
 
-class ZidStorageTestFixture: public ::testing::Test {
+class ZidStorageTestFixture : public testing::Test {
 public:
     ZidStorageTestFixture() = default;
 
-    ZidStorageTestFixture(const ZidStorageTestFixture& other) = delete;
-    ZidStorageTestFixture(const ZidStorageTestFixture&& other) = delete;
-    ZidStorageTestFixture& operator= (const ZidStorageTestFixture& other) = delete;
-    ZidStorageTestFixture& operator= (const ZidStorageTestFixture&& other) = delete;
+    ZidStorageTestFixture(const ZidStorageTestFixture &other) = delete;
+
+    ZidStorageTestFixture(const ZidStorageTestFixture &&other) = delete;
+
+    ZidStorageTestFixture& operator=(const ZidStorageTestFixture &other) = delete;
+
+    ZidStorageTestFixture& operator=(const ZidStorageTestFixture &&other) = delete;
 
     void SetUp() override {
         // code here will execute just before the test ensues
         LOGGER_INSTANCE setLogLevel(DEBUGGING);
     }
 
-    void TearDown( ) override {
+    void TearDown() override {
         // code here will be called just after the test completes
         // ok to through exceptions from here if need be
     }
 
-    ~ZidStorageTestFixture( ) override {
+    ~ZidStorageTestFixture() override {
         // cleanup any pending stuff, but no exceptions allowed
         LOGGER_INSTANCE setLogLevel(VERBOSE);
     }
@@ -51,18 +54,17 @@ constexpr char memoryDb[] = ":memory:";
 constexpr uint8_t otherZid[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
 
 TEST_F(ZidStorageTestFixture, Database) {
-
     ZIDCacheDb zidDb;
     ASSERT_EQ(1, zidDb.open(const_cast<char *>(memoryDb)));
 
-    auto ownZid = zidDb.getZid();
+    auto const ownZid = zidDb.getZid();
     ASSERT_TRUE(ownZid != nullptr);
 
     // Cannot get/create a remote ZID record with my own ZID
-    auto ownZidRecord = zidDb.getRecord(const_cast<unsigned char *>(ownZid));
+    auto const ownZidRecord = zidDb.getRecord(const_cast<unsigned char *>(ownZid));
     ASSERT_FALSE(ownZidRecord);
 
-    auto otherZidRecord = zidDb.getRecord(const_cast<unsigned char *>(otherZid));
+    auto const otherZidRecord = zidDb.getRecord(const_cast<unsigned char *>(otherZid));
     ASSERT_FALSE(otherZidRecord->isOwnZIDRecord());
     ASSERT_FALSE(otherZidRecord->isSasVerified());
 
@@ -76,4 +78,3 @@ TEST_F(ZidStorageTestFixture, Database) {
     zidDb.close();
 }
 #endif
-

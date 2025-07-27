@@ -32,17 +32,17 @@ limitations under the License.
 
 #elif defined __APPLE__
 #include <TargetConditionals.h>
-  #if TARGET_IPHONE_SIMULATOR == 1
+#if TARGET_IPHONE_SIMULATOR == 1
   /* iOS in Xcode simulator */
   #define APPLE_LOGGER
-  #elif TARGET_OS_IPHONE == 1
+#elif TARGET_OS_IPHONE == 1
   /* iOS on iPhone, iPad, etc. */
   #define APPLE_LOGGER
-  #elif TARGET_OS_MAC == 1
-  /* OSX - handle like Linux, i.e. logging output to cerr */
-  #define LINUX_LOGGER
+#elif TARGET_OS_MAC == 1
+/* OSX - handle like Linux, i.e. logging output to cerr */
+#define LINUX_LOGGER
 // add other specifics here
-  #endif
+#endif
 #endif
 
 #endif //LOGGING_LOGER_CONFIG_H_H

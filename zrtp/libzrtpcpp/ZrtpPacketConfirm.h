@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _ZRTPPACKETCONFIRM_H_
-#define _ZRTPPACKETCONFIRM_H_
+#ifndef ZRTPPACKETCONFIRM_H_
+#define ZRTPPACKETCONFIRM_H_
 
 /**
  * @file ZrtpPacketConfirm.h
@@ -38,97 +38,108 @@
  * @author Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-class __EXPORT ZrtpPacketConfirm : public ZrtpPacketBase {
+class __EXPORT ZrtpPacketConfirm final : public ZrtpPacketBase {
+public:
+    /// Creates a Confirm packet with default data
+    ZrtpPacketConfirm();
 
-    public:
-        /// Creates a Confirm packet with default data
-        ZrtpPacketConfirm();
+    /// Creates a Confirm packet with default data and a given signature length
+    explicit ZrtpPacketConfirm(int32_t sl);
 
-        /// Creates a Confirm packet with default data and a given signature length
-        explicit ZrtpPacketConfirm(int32_t sl);
+    /// Creates a Confirm packet from received data
+    explicit ZrtpPacketConfirm(const uint8_t* data);
 
-        /// Creates a Confirm packet from received data
-        explicit ZrtpPacketConfirm(const uint8_t* d);
+    /// Normal destructor
+    ~ZrtpPacketConfirm() override = default;
 
-        /// Normal destructor
-        ~ZrtpPacketConfirm() override = default;
+    /// Check if SAS verify flag is set
+    [[nodiscard]] bool isSASFlag() const { return (confirmHeader->flags & 0x4U) == 0x4; }
 
-        /// Check if SAS verify flag is set
-        bool isSASFlag()            { return (confirmHeader->flags & 0x4U) == 0x4; }
+    /// Check if Disclosure flag is set
+    [[nodiscard]] bool isDisclosureFlag() const { return (confirmHeader->flags & 0x1U) == 0x1; }
 
-        /// Check if Disclosure flag is set
-        bool isDisclosureFlag()     { return (confirmHeader->flags & 0x1U) == 0x1; }
+    /// Check if PBXEnrollment flag is set
+    [[nodiscard]] bool isPBXEnrollment() const { return (confirmHeader->flags & 0x8U) == 0x8; }
 
-        /// Check if PBXEnrollment flag is set
-        bool isPBXEnrollment()      { return (confirmHeader->flags & 0x8U) == 0x8; }
+    /// Get pointer to filler bytes (contains one bit of signature length)
+    [[nodiscard]] const uint8_t* getFiller() const { return confirmHeader->filler; }
 
-        /// Get pointer to filler bytes (contains one bit of signature length)
-        const uint8_t* getFiller()        { return confirmHeader->filler; }
+    /// Get pointer to IV data, fixed byte array
+    [[nodiscard]] const uint8_t* getIv() const { return confirmHeader->iv; }
 
-        /// Get pointer to IV data, fixed byte array
-        const uint8_t* getIv()            { return confirmHeader->iv; }
+    /// Get pointer to MAC data, fixed byte array
+    [[nodiscard]] const uint8_t* getHmac() const { return confirmHeader->hmac; }
 
-        /// Get pointer to MAC data, fixed byte array
-        const uint8_t* getHmac()          { return confirmHeader->hmac; }
+    /// Get Expiration time data
+    [[nodiscard]] uint32_t getExpTime() const { return zrtpNtohl(confirmHeader->expTime); }
 
-        /// Get Expiration time data
-        uint32_t getExpTime()       { return zrtpNtohl(confirmHeader->expTime); }
+    /// Get pointer to initial hash chain (H0) data, fixed byte array
+    [[nodiscard]] uint8_t* getHashH0() const { return confirmHeader->hashH0; }
 
-        /// Get pointer to initial hash chain (H0) data, fixed byte array
-        uint8_t* getHashH0()              { return confirmHeader->hashH0; }
+    /// Get pointer to signature data, variable length, refer to getSignatureLength()
+    [[nodiscard]] const uint8_t* getSignatureData() const { return reinterpret_cast<uint8_t *>(&confirmHeader->expTime) + 4; }
 
-        /// Get pointer to signature data, variable length, refer to getSignatureLength()
-        const uint8_t* getSignatureData() { return ((uint8_t*)&confirmHeader->expTime) + 4; }
+    /// get the signature length in words
+    [[nodiscard]] int32_t getSignatureLength() const;
 
-        /// get the signature length in words
-        int32_t getSignatureLength();
+    /// Check if packet length makes sense. Confirm packets are 19 words at minimum
+    [[nodiscard]] bool isLengthOk() const { return getLength() >= 19; }
 
-        /// Check if packet length makes sense. Confirm packets are 19 words at minumum
-        bool isLengthOk()             {return (getLength() >= 19); }
+    [[nodiscard]] bool isSignatureLengthOk() const;
 
-        bool isSignatureLengthOk();
+    // All 'set*' functions actually copy into the data array via the header pointer
 
-        /// set SAS verified flag
-        void setSASFlag()            { confirmHeader->flags |= 0x4U; }
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    /// set SAS verified flag
+    void setSASFlag() { confirmHeader->flags |= 0x4U; }
 
-        /// set Disclosure flag
-        void setDisclosureFlag()     { confirmHeader->flags |= 0x1U; }
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    /// set Disclosure flag
+    void setDisclosureFlag() { confirmHeader->flags |= 0x1U; }
 
-        /// set setPBXEnrollment flag
-        void setPBXEnrollment()      { confirmHeader->flags |= 0x8U; }
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    /// set setPBXEnrollment flag
+    void setPBXEnrollment() { confirmHeader->flags |= 0x8U; }
 
-        /// Set MAC data, fixed length byte array
-        void setHmac(zrtp::ImplicitDigest const & hmac)  { memcpy(confirmHeader->hmac, hmac.data(), sizeof(confirmHeader->hmac)); }
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    /// Set MAC data, fixed length byte array
+    void setHmac(zrtp::ImplicitDigest const &hmac) {
+        memcpy(confirmHeader->hmac, hmac.data(), sizeof(confirmHeader->hmac));
+    }
 
-        /// Set IV data, fixed length byte array
-        void setIv(uint8_t* text)    { memcpy(confirmHeader->iv, text, sizeof(confirmHeader->iv)); }
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    /// Set IV data, fixed length byte array
+    void setIv(uint8_t const * text) { memcpy(confirmHeader->iv, text, sizeof(confirmHeader->iv)); }
 
-        /// Set expiration time data
-        void setExpTime(uint32_t t)  { confirmHeader->expTime = zrtpHtonl(t); }
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    /// Set expiration time data
+    void setExpTime(uint32_t const t) { confirmHeader->expTime = zrtpHtonl(t); }
 
-        /// Set initial hash chain (H0) data, fixed length byte array
-        void setHashH0(uint8_t* t)   { memcpy(confirmHeader->hashH0, t, sizeof(confirmHeader->hashH0)); }
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    /// Set initial hash chain (H0) data, fixed length byte array
+    void setHashH0(uint8_t const * t) { memcpy(confirmHeader->hashH0, t, sizeof(confirmHeader->hashH0)); }
 
-        /// Set signature data, length of the signature data in bytes and must be a multiple of 4.
-        bool setSignatureData(const uint8_t* dataIn, int32_t length);
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    /// Set signature data, length of the signature data in bytes and must be a multiple of 4.
+    bool setSignatureData(const uint8_t* dataIn, int32_t length) const;
 
-        /// Set signature length in words
-        bool setSignatureLength(int32_t sl);
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    /// Set signature length in words
+    bool setSignatureLength(int32_t sl);
 
-    private:
-        void initialize();
-        Confirm_t* confirmHeader = nullptr;   ///< Point to the Confirm message part
+private:
+    void initialize();
 
-        // Confirm packet is of variable length. It maximum size is 524 words:
-        // - 11 words fixed size
-        // - up to 513 words variable part, depending if signature is present and its length.
-        // This leads to a maximum of 4*524=2096 bytes.
-        uint8_t data[2100] = {0};       // large enough to hold a full blown Confirm packet
+    Confirm_t* confirmHeader = &reinterpret_cast<ConfirmPacket_t *>(data)->confirm; ///< Point to the Confirm message part
 
+    // Confirm packet is of variable length. Its maximum size is 524 words:
+    // - 11 words fixed size
+    // - up to 513 words variable part, depending on if signature is present and its length.
+    // This leads to a maximum of 4*524=2096 bytes.
+    uint8_t data[2100] = {}; // large enough to hold a full-blown Confirm packet
 };
 
 /**
  * @}
  */
-#endif // _ZRTPPACKETCONFIRM_H_
-
+#endif // ZRTPPACKETCONFIRM_H_

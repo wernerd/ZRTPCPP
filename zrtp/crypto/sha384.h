@@ -20,8 +20,8 @@
  * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 
-#ifndef _SHA384_H
-#define _SHA384_H
+#ifndef SHA384_H
+#define SHA384_H
 
 /**
  * @file sha384.h
@@ -50,9 +50,9 @@
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 48 bytes (SHA384_DIGEST_LENGTH).
  */
-void sha384(const uint8_t *data,
+void sha384(const uint8_t* data,
             uint64_t dataLength,
-            uint8_t *digest);
+            uint8_t* digest);
 
 /**
  * Compute SHA384 digest over several data cunks.
@@ -70,7 +70,7 @@ void sha384(const uint8_t *data,
  *    Points to a buffer that receives the computed digest. This
  *    buffer must have a size of at least 48 bytes (SHA384_DIGEST_LENGTH).
  */
-void sha384(const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength, uint8_t* digest);
+void sha384(const std::vector<const uint8_t *> &data, const std::vector<uint64_t> &dataLength, uint8_t* digest);
 
 /**
  * Create and initialize a SHA384 context.
@@ -93,7 +93,7 @@ void* createSha384Context();
  * @param digestOut
  *    Reference to a secure array that receives the computed digest.
  */
-void closeSha384Context(void* ctx, zrtp::RetainedSecArray & digestOut);
+void closeSha384Context(void* ctx, zrtp::RetainedSecArray &digestOut);
 
 /**
  * Initialize a SHA384 context.
@@ -117,7 +117,7 @@ void* initializeSha384Context(void* ctx);
  * @param digestOut
  *    Reference to a secure array that receives the computed digest.
  */
-void finalizeSha384Context(void* ctx, zrtp::RetainedSecArray & digestOut);
+void finalizeSha384Context(void* ctx, zrtp::RetainedSecArray &digestOut);
 
 /**
  * Update the SHA384 context with data.
@@ -149,10 +149,9 @@ void sha384Ctx(void* ctx, const uint8_t* data, uint64_t dataLength);
  *    Vector of integers that hold the length of each data chunk.
  *
  */
-void sha384Ctx(void* ctx, const std::vector<const uint8_t*>& data, const std::vector<uint64_t>& dataLength);
+void sha384Ctx(void* ctx, const std::vector<const uint8_t *> &data, const std::vector<uint64_t> &dataLength);
 
 /**
  * @}
  */
-#endif
-
+#endif // SHA384_H

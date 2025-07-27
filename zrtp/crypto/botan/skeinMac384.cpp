@@ -19,7 +19,6 @@
  */
 
 #include <cstdint>
-#include <cstring>
 #include <botan_all.h>
 #include "zrtp/crypto/skeinMac384.h"
 
@@ -27,9 +26,9 @@ struct shaCtx {
     std::unique_ptr<Botan::MessageAuthenticationCode> mac;
 };
 
-void macSkein384(const uint8_t *key, uint64_t keyLength, const uint8_t* data, uint64_t dataLength, zrtp::RetainedSecArray & macOut)
-{
-    auto hmac = std::make_unique<Botan::Skein_512>(384, "" );
+void macSkein384(uint8_t const* key, uint64_t const keyLength, uint8_t const* data, uint64_t const dataLength,
+                 zrtp::RetainedSecArray &macOut) {
+    auto const hmac = std::make_unique<Botan::Skein_512>(384, "");
 
     hmac->setMacKey(key, keyLength);
     hmac->update(data, dataLength);
@@ -37,12 +36,11 @@ void macSkein384(const uint8_t *key, uint64_t keyLength, const uint8_t* data, ui
     macOut.size(hmac->output_length());
 }
 
-void macSkein384(const uint8_t* key, uint64_t keyLength,
-                const std::vector<const uint8_t*>& dataChunks,
-                const std::vector<uint64_t>& dataChunkLength,
-                zrtp::RetainedSecArray & macOut)
-{
-    auto hmac = std::make_unique<Botan::Skein_512>(384, "" );
+void macSkein384(uint8_t const* key, uint64_t keyLength,
+                 const std::vector<uint8_t const *> &dataChunks,
+                 const std::vector<uint64_t> &dataChunkLength,
+                 zrtp::RetainedSecArray &macOut) {
+    auto const hmac = std::make_unique<Botan::Skein_512>(384, "");
 
     hmac->setMacKey(key, keyLength);
 

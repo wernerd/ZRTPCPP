@@ -22,7 +22,7 @@ aclocal.m4
 .directory
 helper/
 docLocal/
-cmake-build-*/
+cmake-build*/
 .idea/
 
 **/.cxx/
@@ -31,9 +31,3 @@ clion.idea/
 androidStudio.idea/
 toAs.sh
 toClion.sh
-docLocal/
-cmake-build-*/
-.idea/
-
-**/.cxx/
-**/.gradle/

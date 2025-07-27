@@ -20,6 +20,7 @@
 
 #include "zrtp/libzrtpcpp/ZrtpConfigure.h"
 #include "zrtp/libzrtpcpp/ZRtp.h"
+#include "zrtp/libzrtpcpp/ZIDCacheEmpty.h"
 #include "../common/Utilities.h"
 #include "ZrtpTestCommon.h"
 
@@ -47,7 +48,7 @@ struct PacketInfo {
 // and perform a 'send/receive' of ZRTP packet. Using the mock callbacks we
 // can perform several tests during the data exchange, save some intermediate
 // data and check them after the ZRTP protocol run completes.
-class ZrtpBasicRunFixture : public ::testing::Test {
+class ZrtpBasicRunFixture : public testing::Test {
 public:
     ZrtpBasicRunFixture() = default;
 
@@ -288,14 +289,14 @@ public:
             if (!thiz->aliceThreadRun) break; // NOLINT
 
             for (; !thiz->aliceQueue.empty(); thiz->aliceQueue.pop_front()) {
-                auto &zrtpData = thiz->aliceQueue.front();
+                auto &[packet, length, numberOfFrames] = thiz->aliceQueue.front();
                 queueLock.unlock();          // unlock Alice's queue while processing 'received' data, Bob may add data
 
-                if ((zrtpData.numberOfFrames & 0x1) == 0x1) {
-                    thiz->aliceZrtp->processZrtpFramePacket(zrtpData.packet.get(), 123, zrtpData.length,
-                                                            zrtpData.numberOfFrames);
+                if ((numberOfFrames & 0x1) == 0x1) {
+                    thiz->aliceZrtp->processZrtpFramePacket(packet.get(), 123, length,
+                                                            numberOfFrames);
                 } else {
-                    thiz->aliceZrtp->processZrtpMessage(zrtpData.packet.get(), 123, zrtpData.length);
+                    thiz->aliceZrtp->processZrtpMessage(packet.get(), 123, length);
                 }
 
                 if (!thiz->aliceThreadRun) break;
@@ -365,14 +366,14 @@ public:
             if (!thiz->bobThreadRun) break;
 
             for (; !thiz->bobQueue.empty(); thiz->bobQueue.pop_front()) {
-                auto &zrtpData = thiz->bobQueue.front();
+                auto &[packet, length, numberOfFrames] = thiz->bobQueue.front();
                 queueLock.unlock();          // unlock Bob's queue while processing 'received' data, Alice may add data
 
-                if ((zrtpData.numberOfFrames & 0x1) == 0x1) {
-                    thiz->bobZrtp->processZrtpFramePacket(zrtpData.packet.get(), 123, zrtpData.length,
-                                                          zrtpData.numberOfFrames);
+                if ((numberOfFrames & 0x1) == 0x1) {
+                    thiz->bobZrtp->processZrtpFramePacket(packet.get(), 123, length,
+                                                          numberOfFrames);
                 } else {
-                    thiz->bobZrtp->processZrtpMessage(zrtpData.packet.get(), 123, zrtpData.length);
+                    thiz->bobZrtp->processZrtpMessage(packet.get(), 123, length);
                 }
 
                 if (!thiz->bobThreadRun) break;

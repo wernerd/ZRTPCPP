@@ -34,7 +34,7 @@
 #include <cstdint>
 #include <libzrtpcpp/ZIDRecord.h>
 
-constexpr int32_t TIME_LENGTH =     8;      // 64 bit, can hold time on 64 bit systems
+constexpr int32_t TIME_LENGTH = 8; // 64 bit, can hold time on 64 bit systems
 
 /**
  * This is the recod structure of version 1 ZID records.
@@ -42,10 +42,10 @@ constexpr int32_t TIME_LENGTH =     8;      // 64 bit, can hold time on 64 bit s
  * This is not longer in use - only during migration.
  */
 typedef struct zidrecord1 {
-    char recValid;  //!< if 1 record is valid, if 0: invalid
-    char ownZid;    //!< if >1 record contains own ZID, usually 1st record
-    char rs1Valid;  //!< if 1 RS1 contains valid data
-    char rs2Valid;  //!< if 1 RS2 contains valid data
+    char recValid; //!< if 1 record is valid, if 0: invalid
+    char ownZid; //!< if >1 record contains own ZID, usually 1st record
+    char rs1Valid; //!< if 1 RS1 contains valid data
+    char rs2Valid; //!< if 1 RS2 contains valid data
     unsigned char identifier[IDENTIFIER_LEN]; ///< the peer's ZID or own ZID
     unsigned char rs1Data[RS_LENGTH], rs2Data[RS_LENGTH]; ///< the peer's RS data
 } zidrecord1_t;
@@ -54,16 +54,16 @@ typedef struct zidrecord1 {
  * This is the recod structure of version 2 ZID records.
  */
 typedef struct zidrecord2 {
-    char version;   ///< version number of file format, this is #2
-    char flags;     ///< bit field holding various flags, see below
-    char filler1;   ///< round up to next 32 bit
-    char filler2;   ///< round up to next 32 bit
+    char version; ///< version number of file format, this is #2
+    char flags; ///< bit field holding various flags, see below
+    char filler1; ///< round up to next 32 bit
+    char filler2; ///< round up to next 32 bit
     unsigned char identifier[IDENTIFIER_LEN]; ///< the peer's ZID or own ZID
-    unsigned char rs1Interval[TIME_LENGTH];   ///< expiration time of RS1; -1 means indefinite
-    unsigned char rs1Data[RS_LENGTH];         ///< the peer's RS2 data
-    unsigned char rs2Interval[TIME_LENGTH];   ///< expiration time of RS2; -1 means indefinite
-    unsigned char rs2Data[RS_LENGTH];         ///< the peer's RS2 data
-    unsigned char mitmKey[RS_LENGTH];         ///< MiTM key if available
+    unsigned char rs1Interval[TIME_LENGTH]; ///< expiration time of RS1; -1 means indefinite
+    unsigned char rs1Data[RS_LENGTH]; ///< the peer's RS2 data
+    unsigned char rs2Interval[TIME_LENGTH]; ///< expiration time of RS2; -1 means indefinite
+    unsigned char rs2Data[RS_LENGTH]; ///< the peer's RS2 data
+    unsigned char mitmKey[RS_LENGTH]; ///< MiTM key if available
 } zidrecord2_t;
 
 /**
@@ -78,26 +78,25 @@ typedef struct zidrecord2 {
  *
  * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
-class __EXPORT ZIDRecordFile: public ZIDRecord {
+class __EXPORT ZIDRecordFile final : public ZIDRecord {
     friend class ZIDCacheFile;
 
-private:
-    zidrecord2_t record = { };
+    zidrecord2_t record = {};
     long position = 0;
 
     /**
-     * Functions for I/O availabe for ZID file handling
+     * Functions for I/O available for ZID file handling
      *
      * These functions are private, thus only friends may use it.
      */
-    void setPosition(long pos)             { position = pos; }
+    void setPosition(long const pos) { position = pos; }
     [[nodiscard]] long getPosition() const { return position; }
 
-    zidrecord2_t* getRecordData()          { return &record; }
-    static int getRecordLength()           { return sizeof(zidrecord2_t); }
+    zidrecord2_t *getRecordData() { return &record; }
+    static int getRecordLength() { return sizeof(zidrecord2_t); }
 
-    [[nodiscard]] bool isValid() const     { return ((record.flags & Valid) == Valid); }
-    void setValid()                        { record.flags |= Valid; }
+    [[nodiscard]] bool isValid() const { return (record.flags & Valid) == Valid; }
+    void setValid() { record.flags |= Valid; }
 
 public:
     /*
@@ -114,6 +113,7 @@ public:
      * Set the ZID in this record before calling read or save.
      */
     void setZid(const unsigned char *zid) override;
+
     /**
      * @brief Set @c valid flag in RS1
      */
@@ -163,6 +163,7 @@ public:
      * @brief Mark this as own ZID record
      */
     void setOwnZIDRecord() override;
+
     /**
      * @brief Reset own ZID record marker
      */
@@ -177,6 +178,7 @@ public:
      * @brief Set SAS for this ZID as verified
      */
     void setSasVerified() override;
+
     /**
      * @brief Reset SAS for this ZID as verified
      */
@@ -190,7 +192,7 @@ public:
     /**
      * @brief Return the ZID for this record
      */
-    const uint8_t* getIdentifier() override;
+    const uint8_t *getIdentifier() override;
 
     /**
      * @brief Check if RS1 is still valid
@@ -200,12 +202,12 @@ public:
      * @return
      *    Returns true is RS1 is not expired (valid), false otherwise.
      */
-    bool isRs1NotExpired() override ;
+    bool isRs1NotExpired() override;
 
     /**
      * @brief Returns pointer to RS1 data.
      */
-    const unsigned char* getRs1() override;
+    const unsigned char *getRs1() override;
 
     /**
      * @brief Check if RS2 is still valid
@@ -215,12 +217,12 @@ public:
      * @return
      *    Returns true is RS2 is not expired (valid), false otherwise.
      */
-    bool isRs2NotExpired() override ;
+    bool isRs2NotExpired() override;
 
     /**
      * @brief Returns pointer to RS1 data.
      */
-    const unsigned char* getRs2() override;
+    const unsigned char *getRs2() override;
 
     /**
      * @brief Sets new RS1 data and associated expiration value.
@@ -243,22 +245,22 @@ public:
      *    The expiration interval in seconds. Default is -1.
      *
      */
-    void setNewRs1(const unsigned char* data, int32_t expire) override ;
+    void setNewRs1(const unsigned char *data, int32_t expire) override;
 
     /**
      * @brief Set MiTM key data.
      *
      */
-    void setMiTMData(const unsigned char* data) override ;
+    void setMiTMData(const unsigned char *data) override;
 
     /**
      * @brief Get MiTM key data.
      *
      */
-    const unsigned char* getMiTMData() override;
+    const unsigned char *getMiTMData() override;
 
     int getRecordType() override;
-    
+
     /**
      * @brief Get Secure since date.
      * 
@@ -269,4 +271,3 @@ public:
 };
 
 #endif // ZIDRECORDFILE_H_
-

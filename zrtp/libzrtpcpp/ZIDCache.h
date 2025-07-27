@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include <string>
+#ifndef ZIDCACHE_H_
+#define ZIDCACHE_H_
+
 #include <memory>
+#include <string>
 
 #include "ZIDRecord.h"
-
-#ifndef _ZIDCACHE_H_
-#define _ZIDCACHE_H_
 
 /**
  * @file ZIDCache.h
@@ -44,10 +44,8 @@ class ZIDCache;
  * @author: Werner Dittmann <Werner.Dittmann@t-online.de>
  */
 class __EXPORT ZIDCache {
-
 public:
-
-    typedef enum _CacheTypes {
+    typedef enum CacheTypes_ {
         File = 1,
         Database = 2,
         NoCache = 4
@@ -74,7 +72,7 @@ public:
      *    1 if file could be opened/created, 0 if the ZID instance
      *    already has an open file, -1 if open/creation of file failed.
      */
-    virtual int open(char *name) =0;
+    virtual int open(char* name) =0;
 
     /**
      * @brief Check if ZIDCache has an active (open) file.
@@ -84,11 +82,11 @@ public:
      */
     virtual bool isOpen() =0;
 
-     /**
-      * @brief Close the ZID file.
-      *
-      * Closes the ZID file, and prepares to open a new ZID file.
-      */
+    /**
+     * @brief Close the ZID file.
+     *
+     * Closes the ZID file, and prepares to open a new ZID file.
+     */
     virtual void close() =0;
 
     /**
@@ -110,7 +108,7 @@ public:
      * @return pointer to the ZID record. The call must @c delete the
      *         record if it is not longer used.
      */
-    virtual std::unique_ptr<ZIDRecord> getRecord(unsigned char *zid) =0;
+    virtual std::unique_ptr<ZIDRecord> getRecord(unsigned char* zid) =0;
 
     /**
      * @brief Save a ZID record into the active ZID file.
@@ -124,7 +122,7 @@ public:
      * @return
      *    1 on success
      */
-    virtual unsigned int saveRecord(ZIDRecord& zidRecord) =0;
+    virtual unsigned int saveRecord(ZIDRecord &zidRecord) =0;
 
     /**
      * @brief Get the ZID associated with this ZID file.
@@ -142,7 +140,7 @@ public:
      * must bew unique for different devices using ZRTP.
      *
      */
-    virtual void setZid(const uint8_t *zid) =0;
+    virtual void setZid(const uint8_t* zid) =0;
 
     /**
      * @brief Get peer name from database.
@@ -159,7 +157,7 @@ public:
      *
      * @return length of the name read or 0 if no name was previously stored.
      */
-    virtual int32_t getPeerName(const uint8_t *peerZid, std::string *name) =0;
+    virtual int32_t getPeerName(const uint8_t* peerZid, std::string* name) =0;
 
     /**
      * @brief Write peer name to database.
@@ -174,7 +172,7 @@ public:
      * @param name the name string
      *
      */
-    virtual void putPeerName(const uint8_t *peerZid, const std::string& name) =0;
+    virtual void putPeerName(const uint8_t* peerZid, const std::string &name) =0;
 
     /**
      * @brief Clean the cache - only for ZID cache with Sqlite3 backend.
@@ -204,7 +202,7 @@ public:
      * 
      * @return a void pointer to the sqlite3 statement (SQL cursor) or @c NULL
      */
-    virtual void *prepareReadAll() =0;
+    virtual void* prepareReadAll() =0;
 
     /**
      * @brief Read next ZID record from and SQL cursor.
@@ -252,13 +250,12 @@ public:
      *         the @c stmt input parameter. The function returns @c NULL if either 
      *         no more record is available or it got another error.
      */
-    virtual void *readNextRecord(void *stmt, std::string *output) =0;
+    virtual void* readNextRecord(void* stmt, std::string* output) =0;
 
-    virtual void closeOpenStatement(void *stmt) =0;
-
+    virtual void closeOpenStatement(void* stmt) =0;
 };
 
 /**
  * @}
  */
-#endif
+#endif // ZIDCACHE_H_

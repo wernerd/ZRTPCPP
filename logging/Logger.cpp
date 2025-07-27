@@ -18,34 +18,30 @@ limitations under the License.
 using namespace std;
 using namespace logging;
 
-FileLogPolicy::~FileLogPolicy()
-{
+FileLogPolicy::~FileLogPolicy() {
     if (outStream) {
         closeStream();
     }
 }
 
-void FileLogPolicy::openStream(const std::string& name)
-{
-    outStream->open(name.c_str(), std::ios_base::binary|std::ios_base::out);
+void FileLogPolicy::openStream(const std::string &name) {
+    outStream->open(name.c_str(), std::ios_base::binary | std::ios_base::out);
     if (!outStream->is_open()) {
-        throw(std::runtime_error("LOGGER: Unable to open an output stream"));
+        throw std::runtime_error("LOGGER: Unable to open an output stream");
     }
 }
 
-void FileLogPolicy::closeStream()
-{
+void FileLogPolicy::closeStream() {
     if (outStream) {
         outStream->close();
     }
 }
 
-void FileLogPolicy::write(LoggingLogLevel level, const std::string& tag, const std::string& msg)
-{
+void FileLogPolicy::write(LoggingLogLevel const level, const std::string &tag, const std::string &msg) {
     (void)level;
     (void)tag;
 
-    (*outStream) << msg << std::endl;
+    *outStream << msg << std::endl;
 }
 
 #ifdef ANDROID_LOGGER

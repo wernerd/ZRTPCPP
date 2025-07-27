@@ -22,12 +22,12 @@ limitations under the License.
 
 #ifdef ANDROID_LOGGER
 std::unique_ptr<logging::Logger<logging::AndroidLogPolicy> >
-        _globalLoggerZrtp = std::make_unique<logging::Logger<logging::AndroidLogPolicy> >(std::string(""),  std::string("ZRTP"));
+        globalLoggerZrtp = std::make_unique<logging::Logger<logging::AndroidLogPolicy> >(std::string(""),  std::string("ZRTP"));
 
 #elif defined(LINUX_LOGGER)
 
 __EXPORT std::unique_ptr<logging::Logger<logging::CerrLogPolicy> >
-        _globalLoggerZrtp = std::make_unique<logging::Logger<logging::CerrLogPolicy> >(
+        globalLoggerZrtp = std::make_unique<logging::Logger<logging::CerrLogPolicy> >(
                 std::string(""),
                 std::string("ZRTP"));
 
@@ -51,7 +51,7 @@ void logging::zrtp_log(const char *tag, const char *buf) {
 }
 
 std::unique_ptr<logging::Logger<logging::IosLogPolicy> >
-        _globalLoggerZrtp = std::make_unique<logging::Logger<logging::IosLogPolicy> >(std::string(""), std::string("ZRTP"));
+        globalLoggerZrtp = std::make_unique<logging::Logger<logging::IosLogPolicy> >(std::string(""), std::string("ZRTP"));
 
 #else
 #error "Define Logger instance according to the system in use."
@@ -59,5 +59,5 @@ std::unique_ptr<logging::Logger<logging::IosLogPolicy> >
 
 void setZrtpLogLevel(int32_t level)
 {
-    _globalLoggerZrtp->setLogLevel(static_cast<LoggingLogLevel>(level));
+    globalLoggerZrtp->setLogLevel(static_cast<LoggingLogLevel>(level));
 }
