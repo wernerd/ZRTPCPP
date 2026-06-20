@@ -23,7 +23,6 @@
 
 #include <cstdint>
 #include <cstring>
-#include <cstddef>
 #include <string>
 #include <stdexcept>
 
@@ -158,14 +157,14 @@ namespace secUtilities {
          * @brief Assign data of one secure array to another.
          *
          * The capacity of the receiving secure array must be large enough to store @c size()
-         * number of elements of the @c from secure array.
+         * number of elements of the @c source secure array.
          *
-         * @param from Secure array to copy from.
+         * @param source Secure array to copy from.
          * @return Reference to the same secure array.
          * @throws out_of_range
          */
         auto
-        assign(const SecureArrayBase &from) -> SecureArrayBase & { return assign(from.data(), from.size()); }
+        assign(const SecureArrayBase &source) -> SecureArrayBase & { return assign(source.data(), source.size()); }
 
         /**
          * @brief Assign data to secure array.
@@ -193,7 +192,7 @@ namespace secUtilities {
          * @brief Append data of one secure array to another.
          *
          * The capacity of the receiving secure array must be large enough to append @c size()
-         * number of elements of the @c from secure array.
+         * number of elements of the @c other secure array.
          *
          * Throws an exception in case the data would overflow the capacity.
          *
@@ -324,6 +323,7 @@ namespace secUtilities {
         virtual auto
         size(size_type newSize) -> void = 0;
 
+    private:
         virtual auto
         capacity(size_type cap) -> void = 0;
 
@@ -335,7 +335,7 @@ namespace secUtilities {
     };
 
     /**
-      * @brief Implementation of a secure array class.
+     * @brief Implementation of a secure array class.
      *
      * The SecureArray classes provides some features that are needed when writing code
      * that deals with security and handles encryption keys, secure data etc. Within this
